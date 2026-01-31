@@ -8,11 +8,11 @@ repositories {
     mavenCentral()
 }
 
-val libs = project.extensions.getByType<VersionCatalogsExtension>().named("libs")
+val libs = the<VersionCatalogsExtension>().named("libs")
 
 kotlin {
     jvmToolchain {
-        languageVersion.set(JavaLanguageVersion.of(libs.findVersion("jvm").get().toString()))
+        languageVersion = JavaLanguageVersion.of(libs.findVersion("jvm").get().toString())
     }
 }
 
