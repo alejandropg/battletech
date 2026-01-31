@@ -11,8 +11,12 @@ repositories {
 val libs = the<VersionCatalogsExtension>().named("libs")
 
 kotlin {
+    val jvmVersion = libs.findVersion("jvm").get().toString()
     jvmToolchain {
-        languageVersion = JavaLanguageVersion.of(libs.findVersion("jvm").get().toString())
+        languageVersion = JavaLanguageVersion.of(jvmVersion)
+    }
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(jvmVersion))
     }
 }
 
