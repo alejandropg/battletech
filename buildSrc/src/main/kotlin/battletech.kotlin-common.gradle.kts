@@ -1,7 +1,7 @@
-import org.gradle.api.tasks.testing.logging.TestLogEvent
+//import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
-    id("org.jetbrains.kotlin.jvm")
+    kotlin("jvm")
 }
 
 repositories {
@@ -16,15 +16,15 @@ kotlin {
         languageVersion = JavaLanguageVersion.of(jvmVersion)
     }
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(jvmVersion))
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(jvmVersion)
     }
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
-    testLogging {
-        events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
-    }
+//    testLogging {
+//        events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
+//    }
 }
 
 dependencies {
