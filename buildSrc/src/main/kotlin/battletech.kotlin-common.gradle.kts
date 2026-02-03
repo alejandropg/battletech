@@ -1,4 +1,4 @@
-//import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
     kotlin("jvm")
@@ -22,9 +22,9 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
-//    testLogging {
-//        events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
-//    }
+    testLogging {
+        events(TestLogEvent.SKIPPED, TestLogEvent.FAILED)
+    }
 }
 
 dependencies {
