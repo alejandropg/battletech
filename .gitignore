@@ -10,8 +10,9 @@ build/
 *.swp
 *.swo
 
-# Claude
+# AI agents
 .claude/settings.local.json
+.bot_env/
 
 # OS
 .DS_Store
