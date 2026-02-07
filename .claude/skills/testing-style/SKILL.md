@@ -25,5 +25,5 @@ description: Apply patterns and conventions when writing or editing JUnit tests 
 
 - Use real classes within the same domain
 - Mock only external dependencies or other domains/layers (databases, APIs, file systems, other modules)
-- Use Mockito
+- Use Mockk
 - Prefer state-based testing over interaction verification
