@@ -30,6 +30,7 @@ tasks.withType<Test> {
 dependencies {
     testImplementation(platform(libs.findLibrary("junit-bom").get()))
     testImplementation(libs.findBundle("junit").get())
+    testImplementation(libs.findLibrary("mockk").get())
     testRuntimeOnly(libs.findLibrary("junit-jupiter-engine").get())
     testRuntimeOnly(libs.findLibrary("junit-platform-launcher").get())
 }
