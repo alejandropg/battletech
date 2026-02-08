@@ -1,6 +1,9 @@
 ---
 name: feature-implementing
 description: Use to implement features from feature_list.json
+disable-model-invocation: true
+context: fork
+model: opus
 ---
 
 ## Workflow
