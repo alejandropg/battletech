@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-BattleTech Rules Engine is a multi-module Gradle project implementing BattleTech, turn-based, game rules.
+BattleTech Rules Engine is a multi-module project implementing BattleTech, hexagonal board tabletop, turn-based, game rules.
 
 ## Technology Stack
 
