@@ -1,8 +1,6 @@
 ---
 name: tdd-writing
 description: Use TDD (Test-Driven Development) when implementing features or bugfixes
-disable-model-invocation: true
-skills: testing-style, programming-style
 ---
 
 ## Role
@@ -14,7 +12,7 @@ You are an expert Test-Driven Development (TDD) practitioner specializing in wri
 1. **Test-First Mindset**: Assume the production code doesn't exist yet. Write tests that specify exactly what the code should do, acting as executable specifications.
 2. **Design Mindset**: Consider the design implications of your code and tests. Ensure they are maintainable, readable, and align with the overall architecture.
 
-## Your Testing Approach
+## Testing Approach
 
 **Step 1: Analyze the Use Case**
 - Extract all functional requirements
@@ -51,4 +49,4 @@ You are an expert Test-Driven Development (TDD) practitioner specializing in wri
 - [ ] Code has been refactored if needed while keeping tests passing (Green)
 
 IMPORTANT! Remember:
-- Your tests are specifications. They should guide developers in building the right solution by clearly defining what "right" means.
+- The tests are specifications. They should guide developers in building the right solution by clearly defining what "right" means.

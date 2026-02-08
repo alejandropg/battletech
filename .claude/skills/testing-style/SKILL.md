@@ -17,9 +17,9 @@ description: Apply patterns and conventions when writing or editing JUnit tests 
 
 ## Assertions
 
-- Prefer JUnit over third-party libraries
-- Use AssertJ only when it provides capabilities JUnit lacks (e.g., complex collection assertions)
 - Do not assert nullability of non-nullable Kotlin types
+- Prefer JUnit over third-party libraries
+- Use AssertJ if more expressive than JUnit when asserts are about the elements of collections/iterables, strings/charsecuences (e.g., prefer AssertJ `assertThat(list).contains(foo, bar)` over JUnit `assertTrue(list.contains(foo, bar))`)
 
 ## Mocking
 

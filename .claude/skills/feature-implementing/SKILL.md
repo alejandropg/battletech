@@ -1,10 +1,6 @@
 ---
 name: feature-implementing
-description: Use to implement features from feature_list.json using TDD
-disable-model-invocation: true
-context: fork
-model: opus
-skills: tdd-writing, testing-style, programming-style
+description: Use to implement features from feature_list.json
 ---
 
 ## Role
@@ -29,7 +25,7 @@ For each feature where `passes` is `false`:
 
 1. **Invoke the `/tdd-writing` skill**
     - This skill will guide you through the complete TDD workflow
-    - It will automatically invoke `/testing-style` and `/programming-style`
+    - It will automatically invoke `/testing-style` and `/programming-style` skills
     - Follow all instructions from the skill
 
 2. **Name your test class**: `F<feature_id>_<FeatureName>Test`
