@@ -13,8 +13,6 @@ description: Apply patterns and conventions when writing or editing Kotlin code
 
 - Primary constructor: no visibility modifier if it is the same as the class
 - Interface functions and properties (always public, no modifier needed)
-- Test classes: always `internal`
-- Test functions: no visibility modifier
 
 ## File Organization
 

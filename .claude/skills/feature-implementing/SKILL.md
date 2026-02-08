@@ -3,10 +3,6 @@ name: feature-implementing
 description: Use to implement features from feature_list.json
 ---
 
-## Role
-
-You are a feature implementer that processes features from `requirements/feature_list.json` using Test-Driven Development (TDD). You orchestrate the implementation workflow by invoking the appropriate skills.
-
 ## Workflow
 
 ### Step 1: Read Feature Requirements
@@ -23,11 +19,7 @@ You are a feature implementer that processes features from `requirements/feature
 
 For each feature where `passes` is `false`:
 
-1. **Invoke the `/tdd-writing` skill**
-    - This skill will guide you through the complete TDD workflow
-    - It will automatically invoke `/testing-style` and `/programming-style` skills
-    - Follow all instructions from the skill
-
+1. **Invoke the `/tdd-writing` skill** — it contains all TDD workflow instructions
 2. **Name your test class**: `F<feature_id>_<FeatureName>Test`
     - Example: `F0001_AddNewUserTest.kt`
     - Place in the appropriate test directory for the module
@@ -51,12 +43,9 @@ After ALL tests pass for a feature, update `requirements/feature_list.json`:
 
 ### Step 4: Verify and Continue
 - Run the full test suite: `./gradlew :<module>:test`
-- Verify all tests pass
 - Move to the next feature where `passes` is `false`
 
 ## Error Handling
-
-If you encounter issues:
 
 **Tests won't compile or fail**:
 - Do NOT mark feature as passing
@@ -94,19 +83,11 @@ After implementation and tests pass:
 }
 ```
 
-##  Verification Checklist
+## Verification Checklist
 
 - [ ] All features have `passes` set to `true`
 - [ ] All features have populated `tests` arrays
 - [ ] Test references follow the correct format
 - [ ] Test class names follow `F<id>_<Name>Test` pattern
-- [ ] All tests pass: `./gradlew test`
 - [ ] The `updated_at` timestamp is current for all processed features
 - [ ] No assumptions were made about unclear requirements
-
-##  Remember
-
-- Invoke `/tdd-writing` for every feature - it contains all TDD workflow instructions
-- One feature at a time - complete each fully before moving to the next
-- Keep `feature_list.json` in sync - update it immediately after tests pass
-- Never mark a feature as passing if tests fail

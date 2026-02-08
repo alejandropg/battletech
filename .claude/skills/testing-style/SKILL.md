@@ -27,3 +27,8 @@ description: Apply patterns and conventions when writing or editing JUnit tests 
 - Mock only external dependencies or other domains/layers (databases, APIs, file systems, other modules)
 - Use Mockk
 - Prefer state-based testing over interaction verification
+
+## Visibility
+
+- Test classes: always `internal`
+- Test functions: no visibility modifier
