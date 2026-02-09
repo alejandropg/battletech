@@ -4,8 +4,8 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.Weapon
 
 public data class ActionContext(
-    val actor: Unit,
-    val target: Unit? = null,
-    val weapon: Weapon? = null,
-    val gameState: GameState,
+    public val actor: Unit,
+    public val target: Unit? = null,
+    public val weapon: Weapon? = null,
+    public val gameState: GameState,
 )

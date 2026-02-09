@@ -1,4 +1,4 @@
 package battletech.tactical.action
 
 @JvmInline
-public value class UnitId(val value: String)
+public value class UnitId(public val value: String)

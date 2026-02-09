@@ -1,8 +1,8 @@
 package battletech.tactical.model
 
 public data class GameState(
-    val units: List<battletech.tactical.action.Unit>,
-    val map: GameMap,
+    public val units: List<battletech.tactical.action.Unit>,
+    public val map: GameMap,
 )
 
-public data class GameMap(val hexes: Map<HexCoordinates, Hex>)
+public data class GameMap(public val hexes: Map<HexCoordinates, Hex>)

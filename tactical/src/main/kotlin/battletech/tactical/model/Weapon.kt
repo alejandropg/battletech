@@ -1,13 +1,13 @@
 package battletech.tactical.model
 
 public data class Weapon(
-    val name: String,
-    val damage: Int,
-    val heat: Int,
-    val minimumRange: Int = 0,
-    val shortRange: Int,
-    val mediumRange: Int,
-    val longRange: Int,
-    val ammo: Int? = null,
-    val destroyed: Boolean = false,
+    public val name: String,
+    public val damage: Int,
+    public val heat: Int,
+    public val minimumRange: Int = 0,
+    public val shortRange: Int,
+    public val mediumRange: Int,
+    public val longRange: Int,
+    public val ammo: Int? = null,
+    public val destroyed: Boolean = false,
 )

@@ -8,13 +8,13 @@ public sealed interface ActionOption {
 public data class AvailableAction(
     override val id: ActionId,
     override val name: String,
-    val successChance: Int,
-    val warnings: List<Warning>,
-    val preview: ActionPreview,
+    public val successChance: Int,
+    public val warnings: List<Warning>,
+    public val preview: ActionPreview,
 ) : ActionOption
 
 public data class UnavailableAction(
     override val id: ActionId,
     override val name: String,
-    val reasons: List<UnavailabilityReason>,
+    public val reasons: List<UnavailabilityReason>,
 ) : ActionOption
