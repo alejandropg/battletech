@@ -2,7 +2,9 @@ package battletech.tactical.action
 
 import battletech.tactical.model.GameState
 
-public class ActionQueryService(private val definitions: List<ActionDefinition>) {
+public class ActionQueryService(
+    private val definitions: List<ActionDefinition>
+) {
 
     public fun getActions(unit: Unit, phase: TurnPhase, gameState: GameState): PhaseActionReport {
         val actions = definitions
