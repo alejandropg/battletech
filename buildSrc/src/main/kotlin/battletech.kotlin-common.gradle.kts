@@ -18,6 +18,7 @@ kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(jvmVersion)
     }
+    explicitApi()
 }
 
 tasks.withType<Test> {
