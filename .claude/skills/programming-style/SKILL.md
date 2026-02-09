@@ -5,8 +5,8 @@ description: Apply patterns and conventions when writing or editing Kotlin code
 
 ## Explicit Visibility
 
-- Always write visibility modifiers explicitly for all top-level declarations (classes, interfaces, objects, functions, properties, constructors)
-- Never rely on Kotlin's default visibility (public)
+- Always write visibility modifiers explicitly for all declarations: classes, interfaces, objects, functions, properties, constructors
+- Never rely on Kotlin's default visibility (public), and always explicitly specify the `public` modifier
 - Use the most restrictive visibility that makes sense for the context
 
 ### Exceptions

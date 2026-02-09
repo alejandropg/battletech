@@ -5,8 +5,9 @@ description: Use TDD (Test-Driven Development) when implementing features or bug
 
 ## Core Principles
 
-1. **Test-First Mindset**: Assume the production code doesn't exist yet. Write tests that specify exactly what the code should do, acting as executable specifications.
-2. **Design Mindset**: Consider the design implications of your code and tests. Ensure they are maintainable, readable, and align with the overall architecture.
+- **Behavior-Driven Development**: Write comprehensive, behavior-focused tests. Create test specifications that define expected behavior.
+- **Test-First Mindset**: Assume the production code doesn't exist yet. Write tests that specify exactly what the code should do, acting as executable specifications.
+- **Design Mindset**: Consider the design implications of your code and tests. Ensure they are maintainable, readable, and align with the overall architecture.
 
 ## Workflow
 
@@ -30,6 +31,8 @@ description: Use TDD (Test-Driven Development) when implementing features or bug
 
 ## Verification Checklist
 
+- [ ] Tests are readable and self-documenting
+- [ ] Each test has a single, clear responsibility
 - [ ] All edge cases and error conditions are covered
 - [ ] All tests pass after implementation (Green)
 - [ ] Code has been refactored if needed while keeping tests passing

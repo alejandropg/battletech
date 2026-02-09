@@ -1,9 +1,7 @@
 ---
 name: brainstorming-to-design
-description: "Use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
+description: Use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation.
 disable-model-invocation: true
-context: fork
-model: opus
 ---
 
 ## Overview
@@ -12,31 +10,44 @@ Help turn ideas into fully formed designs and specs through natural collaborativ
 
 Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design in sections, checking after each section whether it looks right so far.
 
-## The Process
+## Workflow
 
-**Understanding the idea:**
-- Check out the current project state first (files, docs, recent commits)
+Copy this checklist and track your progress:
+
+```
+Brainstorming progress:
+- [ ] Step 1: Understanding the idea
+- [ ] Step 2: Presenting the design
+- [ ] Step 3: Writing the documentation
+```
+
+**Step 1: Understanding the idea**
+
+Check out the current project state first (files, docs, recent commits).
+
+Focus on understanding: purpose, constraints, success criteria.
+
+To go deep into a topic and clarify your understanding:
 - Ask questions one at a time to refine the idea
 - Prefer multiple choice questions when possible, but open-ended is fine too
 - Only one question per message, if a topic needs more exploration, break it into multiple questions
-- Focus on understanding: purpose, constraints, success criteria
 
-**Exploring approaches:**
+Exploring approaches:
 - Propose 2-3 different approaches with trade-offs
 - Present options conversationally with your recommendation and reasoning
 - Lead with your recommended option and explain why
 
-**Presenting the design:**
-- Once you believe you understand what you're building, present the design
+**Step 2: Presenting the design**
+
+Once you believe you understand what you're building, present the design:
 - Break it into sections
 - Ask after each section whether it looks right so far
 - Cover: architecture, components, data flow, error handling, testing
 - Be ready to go back and clarify if something doesn't make sense
 
-## After the Design
+**Step 3: Writing the documentation**
 
-**Documentation:**
-- Write the validated design to `requirements/YYYY-MM-DD - design - <Topic name>.md`
+Write the validated design to `requirements/YYYY-MM-DD - design - <Topic name>.md`
 
 ## Key Principles
 
