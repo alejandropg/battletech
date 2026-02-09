@@ -3,7 +3,7 @@ package battletech
 import battletech.strategic.StrategicRules
 import battletech.tactical.TacticalRules
 
-fun main() {
+public fun main() {
     println("BattleTech Rules Engine")
     println("======================")
 

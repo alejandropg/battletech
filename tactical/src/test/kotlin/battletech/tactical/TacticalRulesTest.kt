@@ -3,7 +3,7 @@ package battletech.tactical
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 
-class TacticalRulesTest {
+internal class TacticalRulesTest {
     @Test
     fun `should calculate to-hit number`() {
         val rules = TacticalRules()

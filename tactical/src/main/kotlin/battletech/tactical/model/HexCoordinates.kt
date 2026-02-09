@@ -3,7 +3,10 @@ package battletech.tactical.model
 import kotlin.math.abs
 import kotlin.math.max
 
-public data class HexCoordinates(public val col: Int, public val row: Int) {
+public data class HexCoordinates(
+    public val col: Int,
+    public val row: Int
+) {
 
     public fun distanceTo(other: HexCoordinates): Int {
         val (ax, ay, az) = toCube()
