@@ -30,6 +30,9 @@ description: Apply patterns and conventions when writing or editing Kotlin code
   )
   ```
   - **Interface members**: Functions and properties are always public, no modifier needed
+  - **Testing**
+    - Test classes: always `internal`
+    - Test functions: no visibility modifier
 
 ## Primary Constructor Properties
 
