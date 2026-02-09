@@ -1,6 +1,6 @@
 package battletech.tactical.action
 
 public sealed interface ActionOption {
-    val id: ActionId
-    val name: String
+    public val id: ActionId
+    public val name: String
 }
