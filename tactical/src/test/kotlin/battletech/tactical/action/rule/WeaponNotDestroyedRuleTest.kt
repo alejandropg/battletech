@@ -4,6 +4,7 @@ import battletech.tactical.action.RuleResult
 import battletech.tactical.action.anActionContext
 import battletech.tactical.action.aWeapon
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class WeaponNotDestroyedRuleTest {
@@ -16,7 +17,7 @@ internal class WeaponNotDestroyedRuleTest {
 
         val result = rule.evaluate(context)
 
-        assertThat(result).isEqualTo(RuleResult.Satisfied)
+        assertEquals(RuleResult.Satisfied, result)
     }
 
     @Test
@@ -27,7 +28,7 @@ internal class WeaponNotDestroyedRuleTest {
 
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
         val unsatisfied = result as RuleResult.Unsatisfied
-        assertThat(unsatisfied.reason.code).isEqualTo("WEAPON_DESTROYED")
+        assertEquals("WEAPON_DESTROYED", unsatisfied.reason.code)
         assertThat(unsatisfied.reason.description).contains("AC/20")
     }
 }

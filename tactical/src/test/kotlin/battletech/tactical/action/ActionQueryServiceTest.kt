@@ -7,6 +7,7 @@ import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Weapon
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class ActionQueryServiceTest {
@@ -25,8 +26,8 @@ internal class ActionQueryServiceTest {
 
         val report = service.getActions(actor, TurnPhase.MOVEMENT, gameState)
 
-        assertThat(report.phase).isEqualTo(TurnPhase.MOVEMENT)
-        assertThat(report.unitId).isEqualTo(actor.id)
+        assertEquals(TurnPhase.MOVEMENT, report.phase)
+        assertEquals(actor.id, report.unitId)
     }
 
     @Test
@@ -102,7 +103,7 @@ internal class ActionQueryServiceTest {
         assertThat(action).isInstanceOf(AvailableAction::class.java)
         val available = action as AvailableAction
         assertThat(available.warnings).isNotEmpty
-        assertThat(available.warnings[0].code).isEqualTo("HEAT_PENALTY")
+        assertEquals("HEAT_PENALTY", available.warnings[0].code)
     }
 
     @Test
@@ -154,8 +155,8 @@ internal class ActionQueryServiceTest {
 
         val report = service.getActions(atlas, TurnPhase.WEAPON_ATTACK, gameState)
 
-        assertThat(report.phase).isEqualTo(TurnPhase.WEAPON_ATTACK)
-        assertThat(report.unitId).isEqualTo(atlas.id)
+        assertEquals(TurnPhase.WEAPON_ATTACK, report.phase)
+        assertEquals(atlas.id, report.unitId)
         assertThat(report.actions).hasSize(3)
 
         val available = report.actions.filterIsInstance<AvailableAction>()
@@ -169,7 +170,7 @@ internal class ActionQueryServiceTest {
 
         assertThat(unavailable).hasSize(1)
         val brokenAction = unavailable[0]
-        assertThat(brokenAction.name).isEqualTo("Fire AC/20 at Hunchback")
+        assertEquals("Fire AC/20 at Hunchback", brokenAction.name)
         assertThat(brokenAction.reasons.map { it.code }).containsExactlyInAnyOrder(
             "WEAPON_DESTROYED",
             "NO_AMMO",

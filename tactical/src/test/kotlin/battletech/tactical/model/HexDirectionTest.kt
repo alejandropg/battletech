@@ -1,55 +1,54 @@
 package battletech.tactical.model
 
-import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class HexDirectionTest {
 
     @Test
     fun `rotate clockwise from N goes to NE`() {
-        assertThat(HexDirection.N.rotateClockwise()).isEqualTo(HexDirection.NE)
+        assertEquals(HexDirection.NE, HexDirection.N.rotateClockwise())
     }
 
     @Test
     fun `rotate clockwise from NW wraps to N`() {
-        assertThat(HexDirection.NW.rotateClockwise()).isEqualTo(HexDirection.N)
+        assertEquals(HexDirection.N, HexDirection.NW.rotateClockwise())
     }
 
     @Test
     fun `rotate counter-clockwise from N goes to NW`() {
-        assertThat(HexDirection.N.rotateCounterClockwise()).isEqualTo(HexDirection.NW)
+        assertEquals(HexDirection.NW, HexDirection.N.rotateCounterClockwise())
     }
 
     @Test
     fun `rotate counter-clockwise from NE goes to N`() {
-        assertThat(HexDirection.NE.rotateCounterClockwise()).isEqualTo(HexDirection.N)
+        assertEquals(HexDirection.N, HexDirection.NE.rotateCounterClockwise())
     }
 
     @Test
     fun `turn cost to same direction is zero`() {
-        assertThat(HexDirection.N.turnCostTo(HexDirection.N)).isEqualTo(0)
+        assertEquals(0, HexDirection.N.turnCostTo(HexDirection.N))
     }
 
     @Test
     fun `turn cost to adjacent direction is one`() {
-        assertThat(HexDirection.N.turnCostTo(HexDirection.NE)).isEqualTo(1)
-        assertThat(HexDirection.N.turnCostTo(HexDirection.NW)).isEqualTo(1)
+        assertEquals(1, HexDirection.N.turnCostTo(HexDirection.NE))
+        assertEquals(1, HexDirection.N.turnCostTo(HexDirection.NW))
     }
 
     @Test
     fun `turn cost to opposite direction is three`() {
-        assertThat(HexDirection.N.turnCostTo(HexDirection.S)).isEqualTo(3)
+        assertEquals(3, HexDirection.N.turnCostTo(HexDirection.S))
     }
 
     @Test
     fun `turn cost is two for directions two steps apart`() {
-        assertThat(HexDirection.N.turnCostTo(HexDirection.SE)).isEqualTo(2)
-        assertThat(HexDirection.N.turnCostTo(HexDirection.SW)).isEqualTo(2)
+        assertEquals(2, HexDirection.N.turnCostTo(HexDirection.SE))
+        assertEquals(2, HexDirection.N.turnCostTo(HexDirection.SW))
     }
 
     @Test
     fun `turn cost is symmetric`() {
-        assertThat(HexDirection.NE.turnCostTo(HexDirection.SW))
-            .isEqualTo(HexDirection.SW.turnCostTo(HexDirection.NE))
+        assertEquals(HexDirection.SW.turnCostTo(HexDirection.NE), HexDirection.NE.turnCostTo(HexDirection.SW))
     }
 }

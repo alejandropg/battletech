@@ -4,6 +4,7 @@ import battletech.tactical.action.RuleResult
 import battletech.tactical.action.aUnit
 import battletech.tactical.action.anActionContext
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class HeatPenaltyRuleTest {
@@ -16,7 +17,7 @@ internal class HeatPenaltyRuleTest {
 
         val result = rule.evaluate(anActionContext(actor = actor))
 
-        assertThat(result).isEqualTo(RuleResult.Satisfied)
+        assertEquals(RuleResult.Satisfied, result)
     }
 
     @Test
@@ -25,7 +26,7 @@ internal class HeatPenaltyRuleTest {
 
         val result = rule.evaluate(anActionContext(actor = actor))
 
-        assertThat(result).isEqualTo(RuleResult.Satisfied)
+        assertEquals(RuleResult.Satisfied, result)
     }
 
     @Test
@@ -36,8 +37,8 @@ internal class HeatPenaltyRuleTest {
 
         assertThat(result).isInstanceOf(RuleResult.Penalized::class.java)
         val penalized = result as RuleResult.Penalized
-        assertThat(penalized.warning.code).isEqualTo("HEAT_PENALTY")
-        assertThat(penalized.warning.modifier).isEqualTo(1)
+        assertEquals("HEAT_PENALTY", penalized.warning.code)
+        assertEquals(1, penalized.warning.modifier)
     }
 
     @Test
@@ -47,7 +48,7 @@ internal class HeatPenaltyRuleTest {
         val result = rule.evaluate(anActionContext(actor = actor))
 
         val penalized = result as RuleResult.Penalized
-        assertThat(penalized.warning.modifier).isEqualTo(2)
+        assertEquals(2, penalized.warning.modifier)
     }
 
     @Test

@@ -8,7 +8,10 @@ import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MovementMode
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
 
 internal class MoveActionDefinitionTest {
 
@@ -16,7 +19,7 @@ internal class MoveActionDefinitionTest {
 
     @Test
     fun `phase is movement`() {
-        assertThat(definition.phase).isEqualTo(TurnPhase.MOVEMENT)
+        assertEquals(TurnPhase.MOVEMENT, definition.phase)
     }
 
     @Test
@@ -77,8 +80,8 @@ internal class MoveActionDefinitionTest {
         val preview = definition.preview(context)
 
         val reachability = preview.reachability
-        assertThat(reachability).isNotNull
-        assertThat(reachability!!.mode).isEqualTo(MovementMode.WALK)
+        assertNotNull(reachability)
+        assertEquals(MovementMode.WALK, reachability.mode)
         assertThat(reachability.destinations).isNotEmpty()
     }
 
@@ -90,7 +93,7 @@ internal class MoveActionDefinitionTest {
 
         val preview = definition.preview(context)
 
-        assertThat(preview.reachability).isNull()
+        assertNull(preview.reachability)
     }
 
     @Test
@@ -102,9 +105,9 @@ internal class MoveActionDefinitionTest {
         val runContext = ActionContext(actor = actor, movementMode = MovementMode.RUN, gameState = gameState)
         val jumpContext = ActionContext(actor = actor, movementMode = MovementMode.JUMP, gameState = gameState)
 
-        assertThat(definition.actionName(walkContext)).isEqualTo("Walk Atlas")
-        assertThat(definition.actionName(runContext)).isEqualTo("Run Atlas")
-        assertThat(definition.actionName(jumpContext)).isEqualTo("Jump Atlas")
+        assertEquals("Walk Atlas", definition.actionName(walkContext))
+        assertEquals("Run Atlas", definition.actionName(runContext))
+        assertEquals("Jump Atlas", definition.actionName(jumpContext))
     }
 
     @Test
@@ -112,6 +115,6 @@ internal class MoveActionDefinitionTest {
         val actor = aUnit()
         val context = ActionContext(actor = actor, gameState = aGameState())
 
-        assertThat(definition.successChance(context)).isEqualTo(100)
+        assertEquals(100, definition.successChance(context))
     }
 }

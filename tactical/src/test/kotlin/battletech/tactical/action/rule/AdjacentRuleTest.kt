@@ -5,6 +5,7 @@ import battletech.tactical.action.aUnit
 import battletech.tactical.action.anActionContext
 import battletech.tactical.model.HexCoordinates
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class AdjacentRuleTest {
@@ -18,7 +19,7 @@ internal class AdjacentRuleTest {
 
         val result = rule.evaluate(anActionContext(actor = actor, target = target))
 
-        assertThat(result).isEqualTo(RuleResult.Satisfied)
+        assertEquals(RuleResult.Satisfied, result)
     }
 
     @Test
@@ -30,7 +31,7 @@ internal class AdjacentRuleTest {
 
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
         val unsatisfied = result as RuleResult.Unsatisfied
-        assertThat(unsatisfied.reason.code).isEqualTo("NOT_ADJACENT")
+        assertEquals("NOT_ADJACENT", unsatisfied.reason.code)
     }
 
     @Test

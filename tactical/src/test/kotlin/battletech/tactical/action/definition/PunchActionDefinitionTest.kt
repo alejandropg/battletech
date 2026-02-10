@@ -7,6 +7,7 @@ import battletech.tactical.action.rule.AdjacentRule
 import battletech.tactical.action.rule.HeatPenaltyRule
 import battletech.tactical.model.HexCoordinates
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class PunchActionDefinitionTest {
@@ -15,7 +16,7 @@ internal class PunchActionDefinitionTest {
 
     @Test
     fun `phase is physical attack`() {
-        assertThat(definition.phase).isEqualTo(TurnPhase.PHYSICAL_ATTACK)
+        assertEquals(TurnPhase.PHYSICAL_ATTACK, definition.phase)
     }
 
     @Test
@@ -55,7 +56,7 @@ internal class PunchActionDefinitionTest {
 
         val preview = definition.preview(context)
 
-        assertThat(preview.expectedDamage).isEqualTo(5..5)
+        assertEquals(5..5, preview.expectedDamage)
     }
 
     @Test
@@ -68,6 +69,6 @@ internal class PunchActionDefinitionTest {
             gameState = aGameState(),
         )
 
-        assertThat(definition.successChance(context)).isEqualTo(83)
+        assertEquals(83, definition.successChance(context))
     }
 }

@@ -13,6 +13,8 @@ import battletech.tactical.action.rule.WeaponNotDestroyedRule
 import battletech.tactical.action.srm4
 import battletech.tactical.model.HexCoordinates
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 internal class FireWeaponActionDefinitionTest {
@@ -21,7 +23,7 @@ internal class FireWeaponActionDefinitionTest {
 
     @Test
     fun `phase is weapon attack`() {
-        assertThat(definition.phase).isEqualTo(TurnPhase.WEAPON_ATTACK)
+        assertEquals(TurnPhase.WEAPON_ATTACK, definition.phase)
     }
 
     @Test
@@ -85,9 +87,9 @@ internal class FireWeaponActionDefinitionTest {
 
         val preview = definition.preview(context)
 
-        assertThat(preview.expectedDamage).isEqualTo(5..5)
-        assertThat(preview.heatGenerated).isEqualTo(3)
-        assertThat(preview.ammoConsumed).isNull()
+        assertEquals(5..5, preview.expectedDamage)
+        assertEquals(3, preview.heatGenerated)
+        assertNull(preview.ammoConsumed)
     }
 
     @Test
@@ -104,9 +106,9 @@ internal class FireWeaponActionDefinitionTest {
 
         val preview = definition.preview(context)
 
-        assertThat(preview.expectedDamage).isEqualTo(20..20)
-        assertThat(preview.heatGenerated).isEqualTo(7)
-        assertThat(preview.ammoConsumed).isEqualTo(1)
+        assertEquals(20..20, preview.expectedDamage)
+        assertEquals(7, preview.heatGenerated)
+        assertEquals(1, preview.ammoConsumed)
     }
 
     @Test
@@ -121,7 +123,7 @@ internal class FireWeaponActionDefinitionTest {
             gameState = aGameState(units = listOf(actor, target)),
         )
 
-        assertThat(definition.successChance(context)).isEqualTo(92)
+        assertEquals(92, definition.successChance(context))
     }
 
     @Test
@@ -136,7 +138,7 @@ internal class FireWeaponActionDefinitionTest {
             gameState = aGameState(units = listOf(actor, target)),
         )
 
-        assertThat(definition.successChance(context)).isEqualTo(72)
+        assertEquals(72, definition.successChance(context))
     }
 
     @Test
@@ -151,7 +153,7 @@ internal class FireWeaponActionDefinitionTest {
             gameState = aGameState(units = listOf(actor, target)),
         )
 
-        assertThat(definition.successChance(context)).isEqualTo(42)
+        assertEquals(42, definition.successChance(context))
     }
 
     @Test
@@ -167,7 +169,7 @@ internal class FireWeaponActionDefinitionTest {
             gameState = aGameState(units = listOf(overheatedActor, target)),
         )
 
-        assertThat(definition.successChance(context)).isEqualTo(0)
+        assertEquals(0, definition.successChance(context))
     }
 
     @Test
@@ -182,6 +184,6 @@ internal class FireWeaponActionDefinitionTest {
             gameState = aGameState(units = listOf(actor, target)),
         )
 
-        assertThat(definition.actionName(context)).isEqualTo("Fire Medium Laser at Hunchback")
+        assertEquals("Fire Medium Laser at Hunchback", definition.actionName(context))
     }
 }

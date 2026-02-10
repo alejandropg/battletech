@@ -1,14 +1,11 @@
 package battletech.tactical.movement
 
 import battletech.tactical.action.aUnit
-import battletech.tactical.model.GameMap
-import battletech.tactical.model.Hex
-import battletech.tactical.model.HexCoordinates
-import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
-import battletech.tactical.model.Terrain
+import battletech.tactical.model.*
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
 
 internal class ReachabilityCalculatorTest {
 
@@ -188,10 +185,10 @@ internal class ReachabilityCalculatorTest {
         val twoNorth = result.destinations.find {
             it.position == HexCoordinates(0, -2) && it.facing == HexDirection.N
         }
-        assertThat(twoNorth).isNotNull
-        assertThat(twoNorth!!.path).hasSize(2)
-        assertThat(twoNorth.path[0]).isEqualTo(MovementStep(HexCoordinates(0, -1), HexDirection.N))
-        assertThat(twoNorth.path[1]).isEqualTo(MovementStep(HexCoordinates(0, -2), HexDirection.N))
+        assertNotNull(twoNorth)
+        assertThat(twoNorth.path).hasSize(2)
+        assertEquals(MovementStep(HexCoordinates(0, -1), HexDirection.N), twoNorth.path[0])
+        assertEquals(MovementStep(HexCoordinates(0, -2), HexDirection.N), twoNorth.path[1])
     }
 
     @Test
@@ -207,12 +204,12 @@ internal class ReachabilityCalculatorTest {
         val turnAndMove = result.destinations.find {
             it.position == neNeighbor && it.facing == HexDirection.NE
         }
-        assertThat(turnAndMove).isNotNull
-        assertThat(turnAndMove!!.path).hasSize(2)
+        assertNotNull(turnAndMove)
+        assertThat(turnAndMove.path).hasSize(2)
         // First step: turn at origin
-        assertThat(turnAndMove.path[0]).isEqualTo(MovementStep(HexCoordinates(0, 0), HexDirection.NE))
+        assertEquals(MovementStep(HexCoordinates(0, 0), HexDirection.NE), turnAndMove.path[0])
         // Second step: move to NE neighbor
-        assertThat(turnAndMove.path[1]).isEqualTo(MovementStep(neNeighbor, HexDirection.NE))
+        assertEquals(MovementStep(neNeighbor, HexDirection.NE), turnAndMove.path[1])
     }
 
     @Test
@@ -263,7 +260,7 @@ internal class ReachabilityCalculatorTest {
             .filter { it != origin }
             .filter { origin.distanceTo(it) in 1..2 }
             .toSet()
-        assertThat(positions).isEqualTo(expectedPositions)
+        assertEquals(expectedPositions, positions)
     }
 
     @Test
@@ -280,7 +277,7 @@ internal class ReachabilityCalculatorTest {
             .filter { it.position == northHex }
             .map { it.facing }
             .toSet()
-        assertThat(facingsAtNorth).isEqualTo(HexDirection.entries.toSet())
+        assertEquals(HexDirection.entries.toSet(), facingsAtNorth)
     }
 
     @Test
@@ -337,7 +334,7 @@ internal class ReachabilityCalculatorTest {
         val result = calc.calculate(actor, MovementMode.JUMP, HexDirection.N)
 
         result.destinations.forEach { dest ->
-            assertThat(dest.mpSpent).isEqualTo(origin.distanceTo(dest.position))
+            assertEquals(origin.distanceTo(dest.position), dest.mpSpent)
         }
     }
 
@@ -351,7 +348,7 @@ internal class ReachabilityCalculatorTest {
 
         val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
 
-        assertThat(result.mode).isEqualTo(MovementMode.WALK)
+        assertEquals(MovementMode.WALK, result.mode)
     }
 
     @Test
@@ -362,6 +359,6 @@ internal class ReachabilityCalculatorTest {
 
         val result = calc.calculate(actor, MovementMode.RUN, HexDirection.N)
 
-        assertThat(result.maxMP).isEqualTo(6)
+        assertEquals(6, result.maxMP)
     }
 }

@@ -8,6 +8,7 @@ import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Terrain
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class LineOfSightRuleTest {
@@ -23,7 +24,7 @@ internal class LineOfSightRuleTest {
 
         val result = rule.evaluate(anActionContext(target = target, gameState = gameState))
 
-        assertThat(result).isEqualTo(RuleResult.Satisfied)
+        assertEquals(RuleResult.Satisfied, result)
     }
 
     @Test
@@ -37,7 +38,7 @@ internal class LineOfSightRuleTest {
 
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
         val unsatisfied = result as RuleResult.Unsatisfied
-        assertThat(unsatisfied.reason.code).isEqualTo("NO_LINE_OF_SIGHT")
+        assertEquals("NO_LINE_OF_SIGHT", unsatisfied.reason.code)
     }
 
     @Test
@@ -49,6 +50,6 @@ internal class LineOfSightRuleTest {
 
         val result = rule.evaluate(anActionContext(target = target, gameState = gameState))
 
-        assertThat(result).isEqualTo(RuleResult.Satisfied)
+        assertEquals(RuleResult.Satisfied, result)
     }
 }

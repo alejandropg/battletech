@@ -1,6 +1,7 @@
 package battletech.tactical.model
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class HexCoordinatesTest {
@@ -9,17 +10,17 @@ internal class HexCoordinatesTest {
     fun `distance to same hex is zero`() {
         val hex = HexCoordinates(3, 4)
 
-        assertThat(hex.distanceTo(hex)).isEqualTo(0)
+        assertEquals(0, hex.distanceTo(hex))
     }
 
     @Test
     fun `distance to adjacent hex is one`() {
         val origin = HexCoordinates(3, 3)
 
-        assertThat(origin.distanceTo(HexCoordinates(4, 3))).isEqualTo(1)
-        assertThat(origin.distanceTo(HexCoordinates(2, 3))).isEqualTo(1)
-        assertThat(origin.distanceTo(HexCoordinates(3, 2))).isEqualTo(1)
-        assertThat(origin.distanceTo(HexCoordinates(3, 4))).isEqualTo(1)
+        assertEquals(1, origin.distanceTo(HexCoordinates(4, 3)))
+        assertEquals(1, origin.distanceTo(HexCoordinates(2, 3)))
+        assertEquals(1, origin.distanceTo(HexCoordinates(3, 2)))
+        assertEquals(1, origin.distanceTo(HexCoordinates(3, 4)))
     }
 
     @Test
@@ -27,7 +28,7 @@ internal class HexCoordinatesTest {
         val a = HexCoordinates(2, 1)
         val b = HexCoordinates(5, 4)
 
-        assertThat(a.distanceTo(b)).isEqualTo(b.distanceTo(a))
+        assertEquals(b.distanceTo(a), a.distanceTo(b))
     }
 
     @Test
@@ -35,7 +36,7 @@ internal class HexCoordinatesTest {
         val origin = HexCoordinates(0, 0)
         val far = HexCoordinates(3, 3)
 
-        assertThat(origin.distanceTo(far)).isEqualTo(5)
+        assertEquals(5, origin.distanceTo(far))
     }
 
     @Test
@@ -43,7 +44,7 @@ internal class HexCoordinatesTest {
         val a = HexCoordinates(0, 0)
         val b = HexCoordinates(2, 0)
 
-        assertThat(a.distanceTo(b)).isEqualTo(2)
+        assertEquals(2, a.distanceTo(b))
     }
 
     @Test
@@ -51,31 +52,31 @@ internal class HexCoordinatesTest {
         val a = HexCoordinates(1, 1)
         val b = HexCoordinates(4, 2)
 
-        assertThat(a.distanceTo(b)).isEqualTo(3)
+        assertEquals(3, a.distanceTo(b))
     }
 
     @Test
     fun `neighbors from even column`() {
         val hex = HexCoordinates(2, 2)
 
-        assertThat(hex.neighbor(HexDirection.N)).isEqualTo(HexCoordinates(2, 1))
-        assertThat(hex.neighbor(HexDirection.NE)).isEqualTo(HexCoordinates(3, 1))
-        assertThat(hex.neighbor(HexDirection.SE)).isEqualTo(HexCoordinates(3, 2))
-        assertThat(hex.neighbor(HexDirection.S)).isEqualTo(HexCoordinates(2, 3))
-        assertThat(hex.neighbor(HexDirection.SW)).isEqualTo(HexCoordinates(1, 2))
-        assertThat(hex.neighbor(HexDirection.NW)).isEqualTo(HexCoordinates(1, 1))
+        assertEquals(HexCoordinates(2, 1), hex.neighbor(HexDirection.N))
+        assertEquals(HexCoordinates(3, 1), hex.neighbor(HexDirection.NE))
+        assertEquals(HexCoordinates(3, 2), hex.neighbor(HexDirection.SE))
+        assertEquals(HexCoordinates(2, 3), hex.neighbor(HexDirection.S))
+        assertEquals(HexCoordinates(1, 2), hex.neighbor(HexDirection.SW))
+        assertEquals(HexCoordinates(1, 1), hex.neighbor(HexDirection.NW))
     }
 
     @Test
     fun `neighbors from odd column`() {
         val hex = HexCoordinates(3, 2)
 
-        assertThat(hex.neighbor(HexDirection.N)).isEqualTo(HexCoordinates(3, 1))
-        assertThat(hex.neighbor(HexDirection.NE)).isEqualTo(HexCoordinates(4, 2))
-        assertThat(hex.neighbor(HexDirection.SE)).isEqualTo(HexCoordinates(4, 3))
-        assertThat(hex.neighbor(HexDirection.S)).isEqualTo(HexCoordinates(3, 3))
-        assertThat(hex.neighbor(HexDirection.SW)).isEqualTo(HexCoordinates(2, 3))
-        assertThat(hex.neighbor(HexDirection.NW)).isEqualTo(HexCoordinates(2, 2))
+        assertEquals(HexCoordinates(3, 1), hex.neighbor(HexDirection.N))
+        assertEquals(HexCoordinates(4, 2), hex.neighbor(HexDirection.NE))
+        assertEquals(HexCoordinates(4, 3), hex.neighbor(HexDirection.SE))
+        assertEquals(HexCoordinates(3, 3), hex.neighbor(HexDirection.S))
+        assertEquals(HexCoordinates(2, 3), hex.neighbor(HexDirection.SW))
+        assertEquals(HexCoordinates(2, 2), hex.neighbor(HexDirection.NW))
     }
 
     @Test
@@ -100,7 +101,7 @@ internal class HexCoordinatesTest {
         val hex = HexCoordinates(3, 3)
 
         hex.neighbors().forEach { neighbor ->
-            assertThat(hex.distanceTo(neighbor)).isEqualTo(1)
+            assertEquals(1, hex.distanceTo(neighbor))
         }
     }
 }
