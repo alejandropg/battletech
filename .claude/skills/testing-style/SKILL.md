@@ -19,6 +19,7 @@ description: Apply patterns and conventions when writing or editing JUnit tests 
 
 - Do not assert nullability of non-nullable Kotlin types
 - Prefer JUnit over third-party libraries
+- If availabe use specific JUnit Kotlin fun assertions from `Assertions.kt` (e.g., `import org.junit.jupiter.api.assertNotNull`) 
 - Use AssertJ if more expressive than JUnit when asserts are about the elements of collections/iterables, strings/charsecuences (e.g., prefer AssertJ `assertThat(list).contains(foo, bar)` over JUnit `assertTrue(list.contains(foo, bar))`)
 
 ## Mocking
