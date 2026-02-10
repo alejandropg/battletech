@@ -3,6 +3,7 @@ package battletech.tactical.action
 import battletech.tactical.action.definition.FireWeaponActionDefinition
 import battletech.tactical.action.definition.MoveActionDefinition
 import battletech.tactical.action.definition.PunchActionDefinition
+import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Weapon
 import org.assertj.core.api.Assertions.assertThat
@@ -38,7 +39,7 @@ internal class ActionQueryServiceTest {
         val weaponReport = service.getActions(actor, TurnPhase.WEAPON_ATTACK, gameState)
 
         assertThat(movementReport.actions).allSatisfy { action ->
-            assertThat(action.name).contains("Move")
+            assertThat(action.name).containsAnyOf("Walk", "Run", "Jump")
         }
         assertThat(weaponReport.actions).allSatisfy { action ->
             assertThat(action.name).contains("Fire")
@@ -173,5 +174,44 @@ internal class ActionQueryServiceTest {
             "WEAPON_DESTROYED",
             "NO_AMMO",
         )
+    }
+
+    @Test
+    fun `movement phase returns walk and run actions`() {
+        val origin = HexCoordinates(0, 0)
+        val hexes = mapOf(
+            origin to Hex(origin),
+            HexCoordinates(0, -1) to Hex(HexCoordinates(0, -1)),
+        )
+        val actor = aUnit(position = origin, walkingMP = 4, runningMP = 6, jumpMP = 0)
+        val gameState = aGameState(units = listOf(actor), hexes = hexes)
+
+        val report = service.getActions(actor, TurnPhase.MOVEMENT, gameState)
+
+        assertThat(report.actions).hasSize(2)
+        assertThat(report.actions.map { it.name }).containsExactlyInAnyOrder(
+            "Walk Test Mech",
+            "Run Test Mech",
+        )
+    }
+
+    @Test
+    fun `movement preview contains reachability map`() {
+        val origin = HexCoordinates(0, 0)
+        val hexes = mapOf(
+            origin to Hex(origin),
+            HexCoordinates(0, -1) to Hex(HexCoordinates(0, -1)),
+        )
+        val actor = aUnit(position = origin, walkingMP = 4, runningMP = 6)
+        val gameState = aGameState(units = listOf(actor), hexes = hexes)
+
+        val report = service.getActions(actor, TurnPhase.MOVEMENT, gameState)
+
+        val available = report.actions.filterIsInstance<AvailableAction>()
+        assertThat(available).isNotEmpty
+        available.forEach { action ->
+            assertThat(action.preview.reachability).isNotNull
+            assertThat(action.preview.reachability!!.destinations).isNotEmpty()
+        }
     }
 }

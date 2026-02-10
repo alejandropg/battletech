@@ -53,4 +53,54 @@ internal class HexCoordinatesTest {
 
         assertThat(a.distanceTo(b)).isEqualTo(3)
     }
+
+    @Test
+    fun `neighbors from even column`() {
+        val hex = HexCoordinates(2, 2)
+
+        assertThat(hex.neighbor(HexDirection.N)).isEqualTo(HexCoordinates(2, 1))
+        assertThat(hex.neighbor(HexDirection.NE)).isEqualTo(HexCoordinates(3, 1))
+        assertThat(hex.neighbor(HexDirection.SE)).isEqualTo(HexCoordinates(3, 2))
+        assertThat(hex.neighbor(HexDirection.S)).isEqualTo(HexCoordinates(2, 3))
+        assertThat(hex.neighbor(HexDirection.SW)).isEqualTo(HexCoordinates(1, 2))
+        assertThat(hex.neighbor(HexDirection.NW)).isEqualTo(HexCoordinates(1, 1))
+    }
+
+    @Test
+    fun `neighbors from odd column`() {
+        val hex = HexCoordinates(3, 2)
+
+        assertThat(hex.neighbor(HexDirection.N)).isEqualTo(HexCoordinates(3, 1))
+        assertThat(hex.neighbor(HexDirection.NE)).isEqualTo(HexCoordinates(4, 2))
+        assertThat(hex.neighbor(HexDirection.SE)).isEqualTo(HexCoordinates(4, 3))
+        assertThat(hex.neighbor(HexDirection.S)).isEqualTo(HexCoordinates(3, 3))
+        assertThat(hex.neighbor(HexDirection.SW)).isEqualTo(HexCoordinates(2, 3))
+        assertThat(hex.neighbor(HexDirection.NW)).isEqualTo(HexCoordinates(2, 2))
+    }
+
+    @Test
+    fun `neighbors returns all six adjacent hexes`() {
+        val hex = HexCoordinates(2, 2)
+
+        val neighbors = hex.neighbors()
+
+        assertThat(neighbors).hasSize(6)
+        assertThat(neighbors).containsExactlyInAnyOrder(
+            HexCoordinates(2, 1),
+            HexCoordinates(3, 1),
+            HexCoordinates(3, 2),
+            HexCoordinates(2, 3),
+            HexCoordinates(1, 2),
+            HexCoordinates(1, 1),
+        )
+    }
+
+    @Test
+    fun `all neighbors are at distance one`() {
+        val hex = HexCoordinates(3, 3)
+
+        hex.neighbors().forEach { neighbor ->
+            assertThat(hex.distanceTo(neighbor)).isEqualTo(1)
+        }
+    }
 }

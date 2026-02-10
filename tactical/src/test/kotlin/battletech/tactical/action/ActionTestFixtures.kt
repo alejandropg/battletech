@@ -65,6 +65,9 @@ internal fun aUnit(
     pilotingSkill: Int = 5,
     weapons: List<Weapon> = listOf(mediumLaser()),
     position: HexCoordinates = HexCoordinates(0, 0),
+    walkingMP: Int = 4,
+    runningMP: Int = 6,
+    jumpMP: Int = 0,
     currentHeat: Int = 0,
     heatSinkCapacity: Int = 10,
 ): Unit = Unit(
@@ -74,6 +77,9 @@ internal fun aUnit(
     pilotingSkill = pilotingSkill,
     weapons = weapons,
     position = position,
+    walkingMP = walkingMP,
+    runningMP = runningMP,
+    jumpMP = jumpMP,
     currentHeat = currentHeat,
     heatSinkCapacity = heatSinkCapacity,
 )
@@ -90,10 +96,12 @@ internal fun anActionContext(
     actor: Unit = aUnit(),
     target: Unit? = null,
     weapon: Weapon? = null,
+    movementMode: battletech.tactical.model.MovementMode? = null,
     gameState: GameState = aGameState(),
 ): ActionContext = ActionContext(
     actor = actor,
     target = target,
     weapon = weapon,
+    movementMode = movementMode,
     gameState = gameState,
 )

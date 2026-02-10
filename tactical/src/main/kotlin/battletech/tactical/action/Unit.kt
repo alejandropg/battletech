@@ -10,6 +10,9 @@ public data class Unit(
     public val pilotingSkill: Int = 5,
     public val weapons: List<Weapon>,
     public val position: HexCoordinates,
+    public val walkingMP: Int = 0,
+    public val runningMP: Int = 0,
+    public val jumpMP: Int = 0,
     public val currentHeat: Int = 0,
     public val heatSinkCapacity: Int = 10,
 )
