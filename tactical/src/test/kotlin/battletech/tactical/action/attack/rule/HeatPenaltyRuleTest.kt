@@ -1,8 +1,8 @@
-package battletech.tactical.action.rule
+package battletech.tactical.action.attack.rule
 
 import battletech.tactical.action.RuleResult
+import battletech.tactical.action.attack.aPhysicalAttackContext
 import battletech.tactical.action.aUnit
-import battletech.tactical.action.anActionContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -15,7 +15,7 @@ internal class HeatPenaltyRuleTest {
     fun `satisfied when heat is at capacity`() {
         val actor = aUnit(currentHeat = 10, heatSinkCapacity = 10)
 
-        val result = rule.evaluate(anActionContext(actor = actor))
+        val result = rule.evaluate(aPhysicalAttackContext(actor = actor))
 
         assertEquals(RuleResult.Satisfied, result)
     }
@@ -24,7 +24,7 @@ internal class HeatPenaltyRuleTest {
     fun `satisfied when heat is below capacity`() {
         val actor = aUnit(currentHeat = 5, heatSinkCapacity = 10)
 
-        val result = rule.evaluate(anActionContext(actor = actor))
+        val result = rule.evaluate(aPhysicalAttackContext(actor = actor))
 
         assertEquals(RuleResult.Satisfied, result)
     }
@@ -33,7 +33,7 @@ internal class HeatPenaltyRuleTest {
     fun `penalized when heat exceeds capacity`() {
         val actor = aUnit(currentHeat = 13, heatSinkCapacity = 10)
 
-        val result = rule.evaluate(anActionContext(actor = actor))
+        val result = rule.evaluate(aPhysicalAttackContext(actor = actor))
 
         assertThat(result).isInstanceOf(RuleResult.Penalized::class.java)
         val penalized = result as RuleResult.Penalized
@@ -45,7 +45,7 @@ internal class HeatPenaltyRuleTest {
     fun `modifier rounds up excess heat divided by three`() {
         val actor = aUnit(currentHeat = 16, heatSinkCapacity = 10)
 
-        val result = rule.evaluate(anActionContext(actor = actor))
+        val result = rule.evaluate(aPhysicalAttackContext(actor = actor))
 
         val penalized = result as RuleResult.Penalized
         assertEquals(2, penalized.warning.modifier)
@@ -55,7 +55,7 @@ internal class HeatPenaltyRuleTest {
     fun `description includes heat values`() {
         val actor = aUnit(currentHeat = 14, heatSinkCapacity = 10)
 
-        val result = rule.evaluate(anActionContext(actor = actor))
+        val result = rule.evaluate(aPhysicalAttackContext(actor = actor))
 
         val penalized = result as RuleResult.Penalized
         assertThat(penalized.warning.description).contains("14")

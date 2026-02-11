@@ -1,52 +1,44 @@
 package battletech.tactical.action
 
+import battletech.tactical.action.attack.AttackDefinition
+import battletech.tactical.action.movement.MovementDefinition
+import battletech.tactical.action.movement.MovementPreview
 import battletech.tactical.model.GameState
 
 public class ActionQueryService(
-    private val definitions: List<ActionDefinition>
+    private val movementDefinitions: List<MovementDefinition>,
+    private val attackDefinitions: List<AttackDefinition<*>>,
 ) {
 
-    public fun getActions(unit: Unit, phase: TurnPhase, gameState: GameState): PhaseActionReport {
-        val actions = definitions
+    public fun getMovementActions(unit: Unit, gameState: GameState): PhaseActionReport {
+        val actions = movementDefinitions.flatMap { definition ->
+            definition.expand(unit, gameState).map { context ->
+                AvailableAction(
+                    id = ActionId(definition.actionName(context)),
+                    name = definition.actionName(context),
+                    successChance = 100,
+                    warnings = emptyList(),
+                    preview = definition.preview(context),
+                )
+            }
+        }
+
+        return PhaseActionReport(
+            phase = TurnPhase.MOVEMENT,
+            unitId = unit.id,
+            actions = actions,
+        )
+    }
+
+    public fun getAttackActions(unit: Unit, phase: TurnPhase, gameState: GameState): PhaseActionReport {
+        val actions = attackDefinitions
             .filter { it.phase == phase }
-            .flatMap { definition -> expandAndEvaluate(definition, unit, gameState) }
+            .flatMap { definition -> definition.evaluateAll(unit, gameState) }
 
         return PhaseActionReport(
             phase = phase,
             unitId = unit.id,
             actions = actions,
         )
-    }
-
-    private fun expandAndEvaluate(
-        definition: ActionDefinition,
-        unit: Unit,
-        gameState: GameState,
-    ): List<ActionOption> {
-        return definition.expand(unit, gameState).map { context ->
-            val results = definition.rules.map { rule -> rule.evaluate(context) }
-
-            val reasons = results.filterIsInstance<RuleResult.Unsatisfied>().map { it.reason }
-            val warnings = results.filterIsInstance<RuleResult.Penalized>().map { it.warning }
-
-            val actionName = definition.actionName(context)
-            val actionId = ActionId(actionName)
-
-            if (reasons.isNotEmpty()) {
-                UnavailableAction(
-                    id = actionId,
-                    name = actionName,
-                    reasons = reasons,
-                )
-            } else {
-                AvailableAction(
-                    id = actionId,
-                    name = actionName,
-                    successChance = definition.successChance(context),
-                    warnings = warnings,
-                    preview = definition.preview(context),
-                )
-            }
-        }
     }
 }

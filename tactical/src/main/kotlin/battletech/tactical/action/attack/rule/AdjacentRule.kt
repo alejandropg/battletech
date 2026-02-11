@@ -1,15 +1,15 @@
-package battletech.tactical.action.rule
+package battletech.tactical.action.attack.rule
 
-import battletech.tactical.action.ActionContext
-import battletech.tactical.action.ActionRule
 import battletech.tactical.action.RuleResult
+import battletech.tactical.action.Unit
 import battletech.tactical.action.UnavailabilityReason
+import battletech.tactical.action.attack.AttackContext
+import battletech.tactical.action.attack.AttackRule
 
-public class AdjacentRule : ActionRule {
+public class AdjacentRule : AttackRule<AttackContext> {
 
-    override fun evaluate(context: ActionContext): RuleResult {
-        val target = context.target ?: return RuleResult.Satisfied
-        val distance = context.actor.position.distanceTo(target.position)
+    override fun evaluate(context: AttackContext): RuleResult {
+        val distance = context.actor.position.distanceTo(context.target.position)
         return if (distance == 1) {
             RuleResult.Satisfied
         } else {

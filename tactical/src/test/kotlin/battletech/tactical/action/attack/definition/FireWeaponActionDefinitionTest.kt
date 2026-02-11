@@ -1,15 +1,17 @@
-package battletech.tactical.action.definition
+package battletech.tactical.action.attack.definition
 
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.ac20
 import battletech.tactical.action.aGameState
 import battletech.tactical.action.aUnit
 import battletech.tactical.action.aWeapon
+import battletech.tactical.action.attack.WeaponAttackContext
+import battletech.tactical.action.attack.WeaponAttackPreview
+import battletech.tactical.action.attack.rule.HasAmmoRule
+import battletech.tactical.action.attack.rule.HeatPenaltyRule
+import battletech.tactical.action.attack.rule.InRangeRule
+import battletech.tactical.action.attack.rule.WeaponNotDestroyedRule
 import battletech.tactical.action.mediumLaser
-import battletech.tactical.action.rule.HasAmmoRule
-import battletech.tactical.action.rule.HeatPenaltyRule
-import battletech.tactical.action.rule.InRangeRule
-import battletech.tactical.action.rule.WeaponNotDestroyedRule
 import battletech.tactical.action.srm4
 import battletech.tactical.model.HexCoordinates
 import org.assertj.core.api.Assertions.assertThat
@@ -78,14 +80,14 @@ internal class FireWeaponActionDefinitionTest {
         val actor = aUnit(position = HexCoordinates(0, 0))
         val target = aUnit(id = "enemy", position = HexCoordinates(2, 0))
         val weapon = mediumLaser()
-        val context = battletech.tactical.action.ActionContext(
+        val context = WeaponAttackContext(
             actor = actor,
             target = target,
             weapon = weapon,
             gameState = aGameState(units = listOf(actor, target)),
         )
 
-        val preview = definition.preview(context)
+        val preview = definition.preview(context) as WeaponAttackPreview
 
         assertEquals(5..5, preview.expectedDamage)
         assertEquals(3, preview.heatGenerated)
@@ -97,14 +99,14 @@ internal class FireWeaponActionDefinitionTest {
         val actor = aUnit(position = HexCoordinates(0, 0))
         val target = aUnit(id = "enemy", position = HexCoordinates(2, 0))
         val weapon = ac20()
-        val context = battletech.tactical.action.ActionContext(
+        val context = WeaponAttackContext(
             actor = actor,
             target = target,
             weapon = weapon,
             gameState = aGameState(units = listOf(actor, target)),
         )
 
-        val preview = definition.preview(context)
+        val preview = definition.preview(context) as WeaponAttackPreview
 
         assertEquals(20..20, preview.expectedDamage)
         assertEquals(7, preview.heatGenerated)
@@ -116,7 +118,7 @@ internal class FireWeaponActionDefinitionTest {
         val actor = aUnit(gunnerySkill = 4, position = HexCoordinates(0, 0))
         val target = aUnit(id = "enemy", position = HexCoordinates(2, 0))
         val weapon = aWeapon(shortRange = 3, mediumRange = 6, longRange = 9)
-        val context = battletech.tactical.action.ActionContext(
+        val context = WeaponAttackContext(
             actor = actor,
             target = target,
             weapon = weapon,
@@ -131,7 +133,7 @@ internal class FireWeaponActionDefinitionTest {
         val actor = aUnit(gunnerySkill = 4, position = HexCoordinates(0, 0))
         val target = aUnit(id = "enemy", position = HexCoordinates(5, 0))
         val weapon = aWeapon(shortRange = 3, mediumRange = 6, longRange = 9)
-        val context = battletech.tactical.action.ActionContext(
+        val context = WeaponAttackContext(
             actor = actor,
             target = target,
             weapon = weapon,
@@ -146,7 +148,7 @@ internal class FireWeaponActionDefinitionTest {
         val actor = aUnit(gunnerySkill = 4, position = HexCoordinates(0, 0))
         val target = aUnit(id = "enemy", position = HexCoordinates(8, 0))
         val weapon = aWeapon(shortRange = 3, mediumRange = 6, longRange = 9)
-        val context = battletech.tactical.action.ActionContext(
+        val context = WeaponAttackContext(
             actor = actor,
             target = target,
             weapon = weapon,
@@ -162,7 +164,7 @@ internal class FireWeaponActionDefinitionTest {
         val target = aUnit(id = "enemy", position = HexCoordinates(8, 0))
         val weapon = aWeapon(shortRange = 3, mediumRange = 6, longRange = 9)
         val overheatedActor = actor.copy(currentHeat = 30, heatSinkCapacity = 10)
-        val context = battletech.tactical.action.ActionContext(
+        val context = WeaponAttackContext(
             actor = overheatedActor,
             target = target,
             weapon = weapon,
@@ -177,7 +179,7 @@ internal class FireWeaponActionDefinitionTest {
         val actor = aUnit(position = HexCoordinates(0, 0))
         val target = aUnit(id = "enemy", name = "Hunchback", position = HexCoordinates(3, 0))
         val weapon = mediumLaser()
-        val context = battletech.tactical.action.ActionContext(
+        val context = WeaponAttackContext(
             actor = actor,
             target = target,
             weapon = weapon,

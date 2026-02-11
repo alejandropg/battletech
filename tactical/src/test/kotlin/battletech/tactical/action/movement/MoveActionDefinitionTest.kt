@@ -1,7 +1,5 @@
-package battletech.tactical.action.definition
+package battletech.tactical.action.movement
 
-import battletech.tactical.action.ActionContext
-import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.aGameState
 import battletech.tactical.action.aUnit
 import battletech.tactical.model.Hex
@@ -9,18 +7,11 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MovementMode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertNotNull
 
 internal class MoveActionDefinitionTest {
 
     private val definition = MoveActionDefinition()
-
-    @Test
-    fun `phase is movement`() {
-        assertEquals(TurnPhase.MOVEMENT, definition.phase)
-    }
 
     @Test
     fun `expand returns walk and run for unit without jump`() {
@@ -71,7 +62,7 @@ internal class MoveActionDefinitionTest {
         )
         val actor = aUnit(position = origin, walkingMP = 2)
         val gameState = aGameState(units = listOf(actor), hexes = hexes)
-        val context = ActionContext(
+        val context = MovementContext(
             actor = actor,
             movementMode = MovementMode.WALK,
             gameState = gameState,
@@ -79,21 +70,8 @@ internal class MoveActionDefinitionTest {
 
         val preview = definition.preview(context)
 
-        val reachability = preview.reachability
-        assertNotNull(reachability)
-        assertEquals(MovementMode.WALK, reachability.mode)
-        assertThat(reachability.destinations).isNotEmpty()
-    }
-
-    @Test
-    fun `preview without mode returns empty`() {
-        val actor = aUnit()
-        val gameState = aGameState(units = listOf(actor))
-        val context = ActionContext(actor = actor, gameState = gameState)
-
-        val preview = definition.preview(context)
-
-        assertNull(preview.reachability)
+        assertEquals(MovementMode.WALK, preview.reachability.mode)
+        assertThat(preview.reachability.destinations).isNotEmpty()
     }
 
     @Test
@@ -101,20 +79,12 @@ internal class MoveActionDefinitionTest {
         val actor = aUnit(name = "Atlas")
         val gameState = aGameState()
 
-        val walkContext = ActionContext(actor = actor, movementMode = MovementMode.WALK, gameState = gameState)
-        val runContext = ActionContext(actor = actor, movementMode = MovementMode.RUN, gameState = gameState)
-        val jumpContext = ActionContext(actor = actor, movementMode = MovementMode.JUMP, gameState = gameState)
+        val walkContext = MovementContext(actor = actor, movementMode = MovementMode.WALK, gameState = gameState)
+        val runContext = MovementContext(actor = actor, movementMode = MovementMode.RUN, gameState = gameState)
+        val jumpContext = MovementContext(actor = actor, movementMode = MovementMode.JUMP, gameState = gameState)
 
         assertEquals("Walk Atlas", definition.actionName(walkContext))
         assertEquals("Run Atlas", definition.actionName(runContext))
         assertEquals("Jump Atlas", definition.actionName(jumpContext))
-    }
-
-    @Test
-    fun `success chance is always 100 percent`() {
-        val actor = aUnit()
-        val context = ActionContext(actor = actor, gameState = aGameState())
-
-        assertEquals(100, definition.successChance(context))
     }
 }

@@ -1,8 +1,10 @@
 package battletech.tactical.action
 
-import battletech.tactical.action.definition.FireWeaponActionDefinition
-import battletech.tactical.action.definition.MoveActionDefinition
-import battletech.tactical.action.definition.PunchActionDefinition
+import battletech.tactical.action.attack.WeaponAttackPreview
+import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
+import battletech.tactical.action.attack.definition.PunchActionDefinition
+import battletech.tactical.action.movement.MoveActionDefinition
+import battletech.tactical.action.movement.MovementPreview
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Weapon
@@ -12,36 +14,54 @@ import org.junit.jupiter.api.Test
 
 internal class ActionQueryServiceTest {
 
-    private val allDefinitions = listOf(
-        MoveActionDefinition(),
-        FireWeaponActionDefinition(),
-        PunchActionDefinition(),
+    private val service = ActionQueryService(
+        movementDefinitions = listOf(MoveActionDefinition()),
+        attackDefinitions = listOf(FireWeaponActionDefinition(), PunchActionDefinition()),
     )
-    private val service = ActionQueryService(allDefinitions)
 
     @Test
-    fun `report contains correct phase and unit id`() {
+    fun `movement report contains correct phase and unit id`() {
         val actor = aUnit()
         val gameState = aGameState(units = listOf(actor))
 
-        val report = service.getActions(actor, TurnPhase.MOVEMENT, gameState)
+        val report = service.getMovementActions(actor, gameState)
 
         assertEquals(TurnPhase.MOVEMENT, report.phase)
         assertEquals(actor.id, report.unitId)
     }
 
     @Test
-    fun `only includes actions for matching phase`() {
+    fun `attack report contains correct phase and unit id`() {
+        val actor = aUnit()
+        val gameState = aGameState(units = listOf(actor))
+
+        val report = service.getAttackActions(actor, TurnPhase.WEAPON_ATTACK, gameState)
+
+        assertEquals(TurnPhase.WEAPON_ATTACK, report.phase)
+        assertEquals(actor.id, report.unitId)
+    }
+
+    @Test
+    fun `movement actions only contain movement names`() {
         val actor = aUnit(weapons = listOf(mediumLaser()))
         val enemy = aUnit(id = "enemy", position = HexCoordinates(3, 0))
         val gameState = aGameState(units = listOf(actor, enemy))
 
-        val movementReport = service.getActions(actor, TurnPhase.MOVEMENT, gameState)
-        val weaponReport = service.getActions(actor, TurnPhase.WEAPON_ATTACK, gameState)
+        val movementReport = service.getMovementActions(actor, gameState)
 
         assertThat(movementReport.actions).allSatisfy { action ->
             assertThat(action.name).containsAnyOf("Walk", "Run", "Jump")
         }
+    }
+
+    @Test
+    fun `attack actions only contain attack names`() {
+        val actor = aUnit(weapons = listOf(mediumLaser()))
+        val enemy = aUnit(id = "enemy", position = HexCoordinates(3, 0))
+        val gameState = aGameState(units = listOf(actor, enemy))
+
+        val weaponReport = service.getAttackActions(actor, TurnPhase.WEAPON_ATTACK, gameState)
+
         assertThat(weaponReport.actions).allSatisfy { action ->
             assertThat(action.name).contains("Fire")
         }
@@ -52,7 +72,7 @@ internal class ActionQueryServiceTest {
         val actor = aUnit()
         val gameState = aGameState(units = listOf(actor))
 
-        val report = service.getActions(actor, TurnPhase.INITIATIVE, gameState)
+        val report = service.getAttackActions(actor, TurnPhase.INITIATIVE, gameState)
 
         assertThat(report.actions).isEmpty()
     }
@@ -73,7 +93,7 @@ internal class ActionQueryServiceTest {
         val enemy = aUnit(id = "enemy", position = HexCoordinates(3, 0))
         val gameState = aGameState(units = listOf(actor, enemy))
 
-        val report = service.getActions(actor, TurnPhase.WEAPON_ATTACK, gameState)
+        val report = service.getAttackActions(actor, TurnPhase.WEAPON_ATTACK, gameState)
 
         assertThat(report.actions).hasSize(1)
         val action = report.actions[0]
@@ -96,7 +116,7 @@ internal class ActionQueryServiceTest {
         val enemy = aUnit(id = "enemy", position = HexCoordinates(2, 0))
         val gameState = aGameState(units = listOf(actor, enemy))
 
-        val report = service.getActions(actor, TurnPhase.WEAPON_ATTACK, gameState)
+        val report = service.getAttackActions(actor, TurnPhase.WEAPON_ATTACK, gameState)
 
         assertThat(report.actions).hasSize(1)
         val action = report.actions[0]
@@ -116,7 +136,7 @@ internal class ActionQueryServiceTest {
         val enemy2 = aUnit(id = "enemy-2", name = "Enemy 2", position = HexCoordinates(3, 0))
         val gameState = aGameState(units = listOf(actor, enemy1, enemy2))
 
-        val report = service.getActions(actor, TurnPhase.WEAPON_ATTACK, gameState)
+        val report = service.getAttackActions(actor, TurnPhase.WEAPON_ATTACK, gameState)
 
         assertThat(report.actions).hasSize(4)
     }
@@ -153,7 +173,7 @@ internal class ActionQueryServiceTest {
         )
         val gameState = aGameState(units = listOf(atlas, hunchback))
 
-        val report = service.getActions(atlas, TurnPhase.WEAPON_ATTACK, gameState)
+        val report = service.getAttackActions(atlas, TurnPhase.WEAPON_ATTACK, gameState)
 
         assertEquals(TurnPhase.WEAPON_ATTACK, report.phase)
         assertEquals(atlas.id, report.unitId)
@@ -187,7 +207,7 @@ internal class ActionQueryServiceTest {
         val actor = aUnit(position = origin, walkingMP = 4, runningMP = 6, jumpMP = 0)
         val gameState = aGameState(units = listOf(actor), hexes = hexes)
 
-        val report = service.getActions(actor, TurnPhase.MOVEMENT, gameState)
+        val report = service.getMovementActions(actor, gameState)
 
         assertThat(report.actions).hasSize(2)
         assertThat(report.actions.map { it.name }).containsExactlyInAnyOrder(
@@ -206,13 +226,31 @@ internal class ActionQueryServiceTest {
         val actor = aUnit(position = origin, walkingMP = 4, runningMP = 6)
         val gameState = aGameState(units = listOf(actor), hexes = hexes)
 
-        val report = service.getActions(actor, TurnPhase.MOVEMENT, gameState)
+        val report = service.getMovementActions(actor, gameState)
 
         val available = report.actions.filterIsInstance<AvailableAction>()
         assertThat(available).isNotEmpty
         available.forEach { action ->
-            assertThat(action.preview.reachability).isNotNull
-            assertThat(action.preview.reachability!!.destinations).isNotEmpty()
+            val preview = action.preview as MovementPreview
+            assertThat(preview.reachability.destinations).isNotEmpty()
         }
+    }
+
+    @Test
+    fun `weapon attack preview contains damage and heat`() {
+        val actor = aUnit(
+            weapons = listOf(mediumLaser()),
+            position = HexCoordinates(0, 0),
+        )
+        val enemy = aUnit(id = "enemy", position = HexCoordinates(2, 0))
+        val gameState = aGameState(units = listOf(actor, enemy))
+
+        val report = service.getAttackActions(actor, TurnPhase.WEAPON_ATTACK, gameState)
+
+        val available = report.actions.filterIsInstance<AvailableAction>()
+        assertThat(available).hasSize(1)
+        val preview = available[0].preview as WeaponAttackPreview
+        assertEquals(5..5, preview.expectedDamage)
+        assertEquals(3, preview.heatGenerated)
     }
 }

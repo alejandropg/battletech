@@ -1,9 +1,9 @@
-package battletech.tactical.action.rule
+package battletech.tactical.action.attack.rule
 
 import battletech.tactical.action.RuleResult
 import battletech.tactical.action.aUnit
-import battletech.tactical.action.anActionContext
 import battletech.tactical.action.aWeapon
+import battletech.tactical.action.attack.aWeaponAttackContext
 import battletech.tactical.model.HexCoordinates
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -19,7 +19,7 @@ internal class InRangeRuleTest {
         val target = aUnit(id = "target", position = HexCoordinates(2, 0))
         val weapon = aWeapon(longRange = 9)
 
-        val result = rule.evaluate(anActionContext(actor = actor, target = target, weapon = weapon))
+        val result = rule.evaluate(aWeaponAttackContext(actor = actor, target = target, weapon = weapon))
 
         assertEquals(RuleResult.Satisfied, result)
     }
@@ -30,7 +30,7 @@ internal class InRangeRuleTest {
         val target = aUnit(id = "target", position = HexCoordinates(9, 0))
         val weapon = aWeapon(longRange = 9)
 
-        val result = rule.evaluate(anActionContext(actor = actor, target = target, weapon = weapon))
+        val result = rule.evaluate(aWeaponAttackContext(actor = actor, target = target, weapon = weapon))
 
         assertEquals(RuleResult.Satisfied, result)
     }
@@ -41,7 +41,7 @@ internal class InRangeRuleTest {
         val target = aUnit(id = "target", position = HexCoordinates(10, 0))
         val weapon = aWeapon(name = "Medium Laser", longRange = 9)
 
-        val result = rule.evaluate(anActionContext(actor = actor, target = target, weapon = weapon))
+        val result = rule.evaluate(aWeaponAttackContext(actor = actor, target = target, weapon = weapon))
 
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
         val unsatisfied = result as RuleResult.Unsatisfied

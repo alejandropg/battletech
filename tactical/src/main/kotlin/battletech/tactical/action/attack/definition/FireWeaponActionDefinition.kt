@@ -1,37 +1,37 @@
-package battletech.tactical.action.definition
+package battletech.tactical.action.attack.definition
 
-import battletech.tactical.action.ActionContext
-import battletech.tactical.action.ActionDefinition
 import battletech.tactical.action.ActionPreview
-import battletech.tactical.action.ActionRule
-import battletech.tactical.action.RuleResult
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.Unit
-import battletech.tactical.action.rule.HasAmmoRule
-import battletech.tactical.action.rule.HeatPenaltyRule
-import battletech.tactical.action.rule.InRangeRule
-import battletech.tactical.action.rule.WeaponNotDestroyedRule
+import battletech.tactical.action.attack.AttackDefinition
+import battletech.tactical.action.attack.AttackRule
+import battletech.tactical.action.attack.WeaponAttackContext
+import battletech.tactical.action.attack.WeaponAttackPreview
+import battletech.tactical.action.attack.rule.HasAmmoRule
+import battletech.tactical.action.attack.rule.HeatPenaltyRule
+import battletech.tactical.action.attack.rule.InRangeRule
+import battletech.tactical.action.attack.rule.WeaponNotDestroyedRule
 import battletech.tactical.model.GameState
 import kotlin.math.ceil
 
-public class FireWeaponActionDefinition : ActionDefinition {
+public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> {
 
     override val phase: TurnPhase = TurnPhase.WEAPON_ATTACK
 
     override val name: String = "Fire Weapon"
 
-    override val rules: List<ActionRule> = listOf(
+    override val rules: List<AttackRule<WeaponAttackContext>> = listOf(
         WeaponNotDestroyedRule(),
         HasAmmoRule(),
         InRangeRule(),
         HeatPenaltyRule(),
     )
 
-    override fun expand(actor: Unit, gameState: GameState): List<ActionContext> {
+    override fun expand(actor: Unit, gameState: GameState): List<WeaponAttackContext> {
         val enemies = gameState.units.filter { it.id != actor.id }
         return actor.weapons.flatMap { weapon ->
             enemies.map { target ->
-                ActionContext(
+                WeaponAttackContext(
                     actor = actor,
                     target = target,
                     weapon = weapon,
@@ -41,19 +41,18 @@ public class FireWeaponActionDefinition : ActionDefinition {
         }
     }
 
-    override fun preview(context: ActionContext): ActionPreview {
-        val weapon = context.weapon ?: return ActionPreview()
-        return ActionPreview(
+    override fun preview(context: WeaponAttackContext): ActionPreview {
+        val weapon = context.weapon
+        return WeaponAttackPreview(
             expectedDamage = weapon.damage..weapon.damage,
             heatGenerated = weapon.heat,
             ammoConsumed = if (weapon.ammo != null) 1 else null,
         )
     }
 
-    override fun successChance(context: ActionContext): Int {
-        val weapon = context.weapon ?: return 0
-        val target = context.target ?: return 0
-        val distance = context.actor.position.distanceTo(target.position)
+    override fun successChance(context: WeaponAttackContext): Int {
+        val weapon = context.weapon
+        val distance = context.actor.position.distanceTo(context.target.position)
         val rangeModifier = when {
             distance <= weapon.shortRange -> 0
             distance <= weapon.mediumRange -> 2
@@ -63,20 +62,17 @@ public class FireWeaponActionDefinition : ActionDefinition {
 
         var targetNumber = context.actor.gunnerySkill + rangeModifier
 
-        val heatPenalty = heatPenaltyModifier(context)
+        val heatPenalty = heatPenaltyModifier(context.actor)
         targetNumber += heatPenalty
 
         return TWO_D6_PROBABILITY.getOrElse(targetNumber) { 0 }
     }
 
-    override fun actionName(context: ActionContext): String {
-        val weaponName = context.weapon?.name ?: "Unknown Weapon"
-        val targetName = context.target?.name ?: "Unknown Target"
-        return "Fire $weaponName at $targetName"
-    }
+    override fun actionName(context: WeaponAttackContext): String =
+        "Fire ${context.weapon.name} at ${context.target.name}"
 
-    private fun heatPenaltyModifier(context: ActionContext): Int {
-        val excessHeat = context.actor.currentHeat - context.actor.heatSinkCapacity
+    private fun heatPenaltyModifier(actor: Unit): Int {
+        val excessHeat = actor.currentHeat - actor.heatSinkCapacity
         return if (excessHeat <= 0) 0 else ceil(excessHeat / 3.0).toInt()
     }
 

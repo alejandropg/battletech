@@ -1,9 +1,9 @@
-package battletech.tactical.action.rule
+package battletech.tactical.action.attack.rule
 
 import battletech.tactical.action.RuleResult
 import battletech.tactical.action.aGameState
 import battletech.tactical.action.aUnit
-import battletech.tactical.action.anActionContext
+import battletech.tactical.action.attack.aWeaponAttackContext
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Terrain
@@ -22,7 +22,7 @@ internal class LineOfSightRuleTest {
         val hexes = mapOf(targetPos to Hex(targetPos, Terrain.CLEAR))
         val gameState = aGameState(hexes = hexes)
 
-        val result = rule.evaluate(anActionContext(target = target, gameState = gameState))
+        val result = rule.evaluate(aWeaponAttackContext(target = target, gameState = gameState))
 
         assertEquals(RuleResult.Satisfied, result)
     }
@@ -34,7 +34,7 @@ internal class LineOfSightRuleTest {
         val hexes = mapOf(targetPos to Hex(targetPos, Terrain.HEAVY_WOODS))
         val gameState = aGameState(hexes = hexes)
 
-        val result = rule.evaluate(anActionContext(target = target, gameState = gameState))
+        val result = rule.evaluate(aWeaponAttackContext(target = target, gameState = gameState))
 
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
         val unsatisfied = result as RuleResult.Unsatisfied
@@ -48,7 +48,7 @@ internal class LineOfSightRuleTest {
         val hexes = mapOf(targetPos to Hex(targetPos, Terrain.LIGHT_WOODS))
         val gameState = aGameState(hexes = hexes)
 
-        val result = rule.evaluate(anActionContext(target = target, gameState = gameState))
+        val result = rule.evaluate(aWeaponAttackContext(target = target, gameState = gameState))
 
         assertEquals(RuleResult.Satisfied, result)
     }

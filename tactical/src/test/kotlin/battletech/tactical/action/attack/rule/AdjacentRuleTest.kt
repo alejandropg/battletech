@@ -1,8 +1,8 @@
-package battletech.tactical.action.rule
+package battletech.tactical.action.attack.rule
 
 import battletech.tactical.action.RuleResult
+import battletech.tactical.action.attack.aPhysicalAttackContext
 import battletech.tactical.action.aUnit
-import battletech.tactical.action.anActionContext
 import battletech.tactical.model.HexCoordinates
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,7 +17,7 @@ internal class AdjacentRuleTest {
         val actor = aUnit(position = HexCoordinates(3, 3))
         val target = aUnit(id = "target", position = HexCoordinates(4, 3))
 
-        val result = rule.evaluate(anActionContext(actor = actor, target = target))
+        val result = rule.evaluate(aPhysicalAttackContext(actor = actor, target = target))
 
         assertEquals(RuleResult.Satisfied, result)
     }
@@ -27,7 +27,7 @@ internal class AdjacentRuleTest {
         val actor = aUnit(position = HexCoordinates(0, 0))
         val target = aUnit(id = "target", position = HexCoordinates(3, 0))
 
-        val result = rule.evaluate(anActionContext(actor = actor, target = target))
+        val result = rule.evaluate(aPhysicalAttackContext(actor = actor, target = target))
 
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
         val unsatisfied = result as RuleResult.Unsatisfied
@@ -39,7 +39,7 @@ internal class AdjacentRuleTest {
         val actor = aUnit(position = HexCoordinates(2, 2))
         val target = aUnit(id = "target", position = HexCoordinates(2, 2))
 
-        val result = rule.evaluate(anActionContext(actor = actor, target = target))
+        val result = rule.evaluate(aPhysicalAttackContext(actor = actor, target = target))
 
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
     }

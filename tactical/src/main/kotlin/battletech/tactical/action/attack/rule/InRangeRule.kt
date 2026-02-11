@@ -1,16 +1,15 @@
-package battletech.tactical.action.rule
+package battletech.tactical.action.attack.rule
 
-import battletech.tactical.action.ActionContext
-import battletech.tactical.action.ActionRule
 import battletech.tactical.action.RuleResult
 import battletech.tactical.action.UnavailabilityReason
+import battletech.tactical.action.attack.AttackRule
+import battletech.tactical.action.attack.WeaponAttackContext
 
-public class InRangeRule : ActionRule {
+public class InRangeRule : AttackRule<WeaponAttackContext> {
 
-    override fun evaluate(context: ActionContext): RuleResult {
-        val weapon = context.weapon ?: return RuleResult.Satisfied
-        val target = context.target ?: return RuleResult.Satisfied
-        val distance = context.actor.position.distanceTo(target.position)
+    override fun evaluate(context: WeaponAttackContext): RuleResult {
+        val weapon = context.weapon
+        val distance = context.actor.position.distanceTo(context.target.position)
         return if (distance <= weapon.longRange) {
             RuleResult.Satisfied
         } else {

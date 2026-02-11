@@ -92,16 +92,3 @@ internal fun aGameState(
     map = GameMap(hexes),
 )
 
-internal fun anActionContext(
-    actor: Unit = aUnit(),
-    target: Unit? = null,
-    weapon: Weapon? = null,
-    movementMode: battletech.tactical.model.MovementMode? = null,
-    gameState: GameState = aGameState(),
-): ActionContext = ActionContext(
-    actor = actor,
-    target = target,
-    weapon = weapon,
-    movementMode = movementMode,
-    gameState = gameState,
-)

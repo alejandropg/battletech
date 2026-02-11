@@ -1,10 +1,12 @@
-package battletech.tactical.action.definition
+package battletech.tactical.action.attack.definition
 
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.aGameState
 import battletech.tactical.action.aUnit
-import battletech.tactical.action.rule.AdjacentRule
-import battletech.tactical.action.rule.HeatPenaltyRule
+import battletech.tactical.action.attack.PhysicalAttackContext
+import battletech.tactical.action.attack.PhysicalAttackPreview
+import battletech.tactical.action.attack.rule.AdjacentRule
+import battletech.tactical.action.attack.rule.HeatPenaltyRule
 import battletech.tactical.model.HexCoordinates
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -38,7 +40,7 @@ internal class PunchActionDefinitionTest {
         val contexts = definition.expand(actor, gameState)
 
         assertThat(contexts).hasSize(2)
-        assertThat(contexts.map { it.target?.id }).containsExactlyInAnyOrder(
+        assertThat(contexts.map { it.target.id }).containsExactlyInAnyOrder(
             enemy1.id,
             enemy2.id,
         )
@@ -48,13 +50,13 @@ internal class PunchActionDefinitionTest {
     fun `preview includes fixed punch damage`() {
         val actor = aUnit(position = HexCoordinates(0, 0))
         val target = aUnit(id = "enemy", position = HexCoordinates(1, 0))
-        val context = battletech.tactical.action.ActionContext(
+        val context = PhysicalAttackContext(
             actor = actor,
             target = target,
             gameState = aGameState(),
         )
 
-        val preview = definition.preview(context)
+        val preview = definition.preview(context) as PhysicalAttackPreview
 
         assertEquals(5..5, preview.expectedDamage)
     }
@@ -63,7 +65,7 @@ internal class PunchActionDefinitionTest {
     fun `success chance is based on piloting skill`() {
         val actor = aUnit(pilotingSkill = 5, position = HexCoordinates(0, 0))
         val target = aUnit(id = "enemy", position = HexCoordinates(1, 0))
-        val context = battletech.tactical.action.ActionContext(
+        val context = PhysicalAttackContext(
             actor = actor,
             target = target,
             gameState = aGameState(),
