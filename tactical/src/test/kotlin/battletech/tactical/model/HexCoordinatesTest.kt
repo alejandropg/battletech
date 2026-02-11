@@ -85,14 +85,16 @@ internal class HexCoordinatesTest {
 
         val neighbors = hex.neighbors()
 
-        assertThat(neighbors).hasSize(6)
-        assertThat(neighbors).containsExactlyInAnyOrder(
-            HexCoordinates(2, 1),
-            HexCoordinates(3, 1),
-            HexCoordinates(3, 2),
-            HexCoordinates(2, 3),
-            HexCoordinates(1, 2),
-            HexCoordinates(1, 1),
+        assertEquals(
+            listOf(
+                HexCoordinates(2, 1),
+                HexCoordinates(3, 1),
+                HexCoordinates(3, 2),
+                HexCoordinates(2, 3),
+                HexCoordinates(1, 2),
+                HexCoordinates(1, 1)
+            ),
+            neighbors
         )
     }
 
