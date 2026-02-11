@@ -3,6 +3,21 @@ package battletech.tactical.model
 import kotlin.math.abs
 import kotlin.math.max
 
+/**
+ * Hexagonal coordinates using the "odd-q" offset coordinate system (pointy top).
+ *
+ * Visualization of the coordinate system:
+ * ```text
+ *      ___     ___     ___
+ *     /0,0\___/2,0\___/4,0\___
+ *     \___/1,0\___/3,0\___/5,0\
+ *     /0,1\___/2,1\___/4,1\___/
+ *     \___/1,1\___/3,1\___/5,1\
+ *     /0,2\___/2,2\___/4,2\___/
+ *     \___/1,2\___/3,2\___/5,2\
+ *         \___/   \___/   \___/
+ * ```
+ */
 public data class HexCoordinates(
     public val col: Int,
     public val row: Int
