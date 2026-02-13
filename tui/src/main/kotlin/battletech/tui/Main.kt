@@ -1,0 +1,223 @@
+package battletech.tui
+
+import battletech.tui.game.AttackPhaseController
+import battletech.tui.game.EndPhaseController
+import battletech.tui.game.GameLoop
+import battletech.tui.game.GameLoopResult
+import battletech.tui.game.HeatPhaseController
+import battletech.tui.game.InitiativePhaseController
+import battletech.tui.game.MovementPhaseController
+import battletech.tui.game.PhaseControllerResult
+import battletech.tui.game.PhaseState
+import battletech.tui.input.CursorState
+import battletech.tui.input.InputAction
+import battletech.tui.input.InputMapper
+import battletech.tui.screen.ScreenBuffer
+import battletech.tui.screen.ScreenRenderer
+import battletech.tui.view.BoardView
+import battletech.tui.view.SidebarView
+import battletech.tui.view.StatusBarView
+import battletech.tui.view.Viewport
+import battletech.tactical.action.ActionQueryService
+import battletech.tactical.action.TurnPhase
+import battletech.tactical.action.Unit
+import battletech.tactical.action.UnitId
+import battletech.tactical.model.GameMap
+import battletech.tactical.model.GameState
+import battletech.tactical.model.Hex
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.Terrain
+import battletech.tactical.model.Weapon
+import com.github.ajalt.mordant.input.MouseEvent
+import com.github.ajalt.mordant.input.KeyboardEvent
+import com.github.ajalt.mordant.input.enterRawMode
+import com.github.ajalt.mordant.terminal.Terminal
+
+public fun main() {
+    val terminal = Terminal()
+    val renderer = ScreenRenderer(terminal)
+    val actionQueryService = ActionQueryService(emptyList(), emptyList())
+
+    val controllers = mapOf(
+        TurnPhase.INITIATIVE to InitiativePhaseController() as battletech.tui.game.PhaseController,
+        TurnPhase.MOVEMENT to MovementPhaseController(actionQueryService),
+        TurnPhase.WEAPON_ATTACK to AttackPhaseController(actionQueryService, TurnPhase.WEAPON_ATTACK),
+        TurnPhase.PHYSICAL_ATTACK to AttackPhaseController(actionQueryService, TurnPhase.PHYSICAL_ATTACK),
+        TurnPhase.HEAT to HeatPhaseController(),
+        TurnPhase.END to EndPhaseController(),
+    )
+
+    val gameLoop = GameLoop(sampleGameState(), TurnPhase.MOVEMENT)
+    var cursor = CursorState(HexCoordinates(0, 0))
+    var phaseState: PhaseState? = null
+
+    renderer.clear()
+
+    try {
+        terminal.enterRawMode().use { rawMode ->
+            var running = true
+            while (running) {
+                val size = terminal.updateSize()
+                val width = size.width
+                val height = size.height
+                val sidebarWidth = 22
+                val statusBarHeight = 3
+                val boardWidth = width - sidebarWidth - 1
+                val boardHeight = height - statusBarHeight
+
+                val buffer = ScreenBuffer(width, height)
+                val viewport = Viewport(0, 0, boardWidth, boardHeight)
+
+                val selectedUnit = gameLoop.gameState.units.find { it.position == cursor.position }
+
+                val highlights = phaseState?.hexHighlights() ?: emptyMap()
+                val boardView = BoardView(
+                    gameLoop.gameState, viewport,
+                    cursorPosition = cursor.position,
+                    hexHighlights = highlights,
+                )
+                boardView.render(buffer, 0, 0, boardWidth, boardHeight)
+
+                val sidebarView = SidebarView(selectedUnit)
+                sidebarView.render(buffer, boardWidth + 1, 0, sidebarWidth, boardHeight)
+
+                val prompt = phaseState?.prompt ?: "Move cursor to select a hex"
+                val statusBarView = StatusBarView(gameLoop.currentPhase, prompt)
+                statusBarView.render(buffer, 0, boardHeight, width, statusBarHeight)
+
+                renderer.render(buffer)
+
+                val event = rawMode.readEvent()
+                val action = when (event) {
+                    is KeyboardEvent -> InputMapper.mapKeyboardEvent(event.key, event.ctrl, event.alt)
+                    is MouseEvent -> InputMapper.mapMouseEvent(
+                        event.x, event.y, 0, 0, 0,
+                    )
+                    else -> null
+                }
+
+                if (action == null) continue
+
+                val loopResult = gameLoop.handleAction(action)
+                if (loopResult is GameLoopResult.Quit) {
+                    running = false
+                    continue
+                }
+
+                when (action) {
+                    is InputAction.MoveCursor -> {
+                        cursor = cursor.moveCursor(action.direction, gameLoop.gameState.map)
+                        val currentPhaseState = phaseState
+                        if (currentPhaseState != null) {
+                            val controller = controllers[gameLoop.currentPhase]
+                            if (controller is MovementPhaseController) {
+                                phaseState = controller.updatePathForCursor(cursor.position, currentPhaseState)
+                            }
+                        }
+                    }
+                    is InputAction.ClickHex -> {
+                        cursor = CursorState(action.coords, cursor.selectedUnitId)
+                        val currentPhaseState = phaseState
+                        if (currentPhaseState != null) {
+                            val controller = controllers[gameLoop.currentPhase]!!
+                            val result = controller.handleAction(action, currentPhaseState, gameLoop.gameState)
+                            when (result) {
+                                is PhaseControllerResult.UpdateState -> phaseState = result.phaseState
+                                is PhaseControllerResult.Complete -> {
+                                    gameLoop.gameState = result.updatedGameState
+                                    gameLoop.advancePhase()
+                                    phaseState = null
+                                }
+                                is PhaseControllerResult.Cancelled -> phaseState = null
+                            }
+                        }
+                    }
+                    is InputAction.Confirm -> {
+                        val currentPhaseState = phaseState
+                        if (currentPhaseState != null) {
+                            val controller = controllers[gameLoop.currentPhase]!!
+                            val result = controller.handleAction(action, currentPhaseState, gameLoop.gameState)
+                            when (result) {
+                                is PhaseControllerResult.UpdateState -> phaseState = result.phaseState
+                                is PhaseControllerResult.Complete -> {
+                                    gameLoop.gameState = result.updatedGameState
+                                    gameLoop.advancePhase()
+                                    phaseState = null
+                                }
+                                is PhaseControllerResult.Cancelled -> phaseState = null
+                            }
+                        } else {
+                            // Select unit and enter phase
+                            val unit = gameLoop.gameState.units.find { it.position == cursor.position }
+                            if (unit != null) {
+                                val controller = controllers[gameLoop.currentPhase]!!
+                                phaseState = controller.enter(unit, gameLoop.gameState)
+                            }
+                        }
+                    }
+                    is InputAction.Cancel -> {
+                        phaseState = null
+                    }
+                    is InputAction.CycleUnit -> {
+                        val units = gameLoop.gameState.units
+                        if (units.isNotEmpty()) {
+                            val currentIdx = units.indexOfFirst { it.position == cursor.position }
+                            val nextIdx = (currentIdx + 1) % units.size
+                            cursor = CursorState(units[nextIdx].position, units[nextIdx].id)
+                        }
+                    }
+                    else -> {}
+                }
+            }
+        }
+    } finally {
+        renderer.cleanup()
+    }
+}
+
+private fun sampleGameState(): GameState {
+    val hexes = mutableMapOf<HexCoordinates, Hex>()
+    for (col in 0..9) {
+        for (row in 0..9) {
+            val coords = HexCoordinates(col, row)
+            val terrain = when {
+                col == 3 && row in 2..5 -> Terrain.LIGHT_WOODS
+                col == 4 && row in 3..4 -> Terrain.HEAVY_WOODS
+                col == 6 && row in 1..3 -> Terrain.WATER
+                else -> Terrain.CLEAR
+            }
+            val elevation = if (col == 5 && row in 2..4) 2 else 0
+            hexes[coords] = Hex(coords, terrain, elevation)
+        }
+    }
+
+    val units = listOf(
+        Unit(
+            id = UnitId("atlas"),
+            name = "Atlas",
+            gunnerySkill = 4,
+            pilotingSkill = 5,
+            weapons = listOf(
+                Weapon("Medium Laser", damage = 5, heat = 3, shortRange = 3, mediumRange = 6, longRange = 9),
+                Weapon("AC/20", damage = 20, heat = 7, shortRange = 3, mediumRange = 6, longRange = 9, ammo = 5),
+            ),
+            position = HexCoordinates(1, 1),
+            walkingMP = 3,
+            runningMP = 5,
+        ),
+        Unit(
+            id = UnitId("hunchback"),
+            name = "Hunchback",
+            gunnerySkill = 4,
+            pilotingSkill = 5,
+            weapons = listOf(
+                Weapon("AC/20", damage = 20, heat = 7, shortRange = 3, mediumRange = 6, longRange = 9, ammo = 5),
+            ),
+            position = HexCoordinates(7, 3),
+            walkingMP = 4,
+            runningMP = 6,
+        ),
+    )
+
+    return GameState(units = units, map = GameMap(hexes))
+}
