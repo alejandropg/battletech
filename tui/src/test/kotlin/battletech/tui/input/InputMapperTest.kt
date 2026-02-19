@@ -1,6 +1,7 @@
 package battletech.tui.input
 
 import battletech.tactical.model.HexDirection
+import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -85,11 +86,10 @@ internal class InputMapperTest {
     }
 
     @Test
-    fun `mouse click maps to click hex`() {
-        val action = InputMapper.mapMouseEvent(x = 10, y = 5, button = 0, scrollX = 0, scrollY = 0)
+    fun `mouse left click maps to click hex`() {
+        val event = MouseEvent(x = 10, y = 5, left = true)
+        val action = InputMapper.mapMouseEvent(event, boardX = 0, boardY = 0)
 
-        assertEquals(InputAction.ClickHex(action?.let {
-            (it as InputAction.ClickHex).coords
-        }!!), action)
+        assertEquals(InputAction.ClickHex((action as InputAction.ClickHex).coords), action)
     }
 }

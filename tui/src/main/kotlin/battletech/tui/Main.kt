@@ -30,6 +30,7 @@ import battletech.tui.view.StatusBarView
 import battletech.tui.view.Viewport
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
+import com.github.ajalt.mordant.input.MouseTracking
 import com.github.ajalt.mordant.input.enterRawMode
 import com.github.ajalt.mordant.terminal.Terminal
 
@@ -54,7 +55,7 @@ public fun main() {
     renderer.clear()
 
     try {
-        terminal.enterRawMode().use { rawMode ->
+        terminal.enterRawMode(mouseTracking = MouseTracking.Normal).use { rawMode ->
             var running = true
             while (running) {
                 val size = terminal.updateSize()
@@ -90,9 +91,7 @@ public fun main() {
                 val event = rawMode.readEvent()
                 val action = when (event) {
                     is KeyboardEvent -> InputMapper.mapKeyboardEvent(event.key, event.ctrl, event.alt)
-                    is MouseEvent -> InputMapper.mapMouseEvent(
-                        event.x - 2, event.y - 2, 0, 0, 0,
-                    )
+                    is MouseEvent -> InputMapper.mapMouseEvent(event, boardX = 2, boardY = 2)
                     else -> null
                 }
 
