@@ -15,22 +15,22 @@ public object UnitRenderer {
         facing: HexDirection,
         color: Color,
     ) {
-        // Unit initial at hex center (row 2, col 3)
-        buffer.set(x + 3, y + 2, Cell(initial, color, buffer.get(x + 3, y + 2).bg))
+        // Unit initial at hex center (row 3, col 4)
+        buffer.set(x + 4, y + 3, Cell(initial, color, buffer.get(x + 4, y + 3).bg))
 
-        // Facing arrow in row 1
+        // Facing arrow in row 2
         val (arrowChar, arrowOffset) = facingArrow(facing)
         val arrowX = x + arrowOffset
-        val arrowY = y + 1
+        val arrowY = y + 2
         buffer.set(arrowX, arrowY, Cell(arrowChar, color, buffer.get(arrowX, arrowY).bg))
     }
 
     private fun facingArrow(direction: HexDirection): Pair<Char, Int> = when (direction) {
-        HexDirection.N -> '^' to 3
-        HexDirection.NE -> '/' to 4
-        HexDirection.SE -> '\\' to 4
-        HexDirection.S -> 'v' to 3
-        HexDirection.SW -> '/' to 2
-        HexDirection.NW -> '\\' to 2
+        HexDirection.N -> '^' to 4
+        HexDirection.NE -> '/' to 5
+        HexDirection.SE -> '\\' to 5
+        HexDirection.S -> 'v' to 4
+        HexDirection.SW -> '/' to 3
+        HexDirection.NW -> '\\' to 3
     }
 }

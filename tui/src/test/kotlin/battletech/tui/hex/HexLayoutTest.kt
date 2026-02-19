@@ -19,7 +19,7 @@ internal class HexLayoutTest {
     fun `hexToScreen for even column`() {
         val (charX, charY) = HexLayout.hexToScreen(2, 1)
 
-        assertEquals(16, charX) // 2 * 8
+        assertEquals(14, charX) // 2 * 7
         assertEquals(4, charY)  // 1 * 4, no odd offset
     }
 
@@ -27,7 +27,7 @@ internal class HexLayoutTest {
     fun `hexToScreen for odd column applies row offset`() {
         val (charX, charY) = HexLayout.hexToScreen(1, 0)
 
-        assertEquals(8, charX)  // 1 * 8
+        assertEquals(7, charX)  // 1 * 7
         assertEquals(2, charY)  // 0 * 4 + 2 (odd column offset)
     }
 
@@ -35,20 +35,20 @@ internal class HexLayoutTest {
     fun `hexToScreen for odd column with nonzero row`() {
         val (charX, charY) = HexLayout.hexToScreen(3, 2)
 
-        assertEquals(24, charX) // 3 * 8
+        assertEquals(21, charX) // 3 * 7
         assertEquals(10, charY) // 2 * 4 + 2
     }
 
     @Test
     fun `screenToHex recovers even column hex`() {
-        val coords = HexLayout.screenToHex(16, 4, 0, 0)
+        val coords = HexLayout.screenToHex(14, 4, 0, 0)
 
         assertEquals(HexCoordinates(2, 1), coords)
     }
 
     @Test
     fun `screenToHex recovers odd column hex`() {
-        val coords = HexLayout.screenToHex(8, 2, 0, 0)
+        val coords = HexLayout.screenToHex(7, 2, 0, 0)
 
         assertEquals(HexCoordinates(1, 0), coords)
     }
@@ -62,7 +62,7 @@ internal class HexLayoutTest {
 
     @Test
     fun `screenToHex applies scroll offset`() {
-        val coords = HexLayout.screenToHex(0, 0, 16, 4)
+        val coords = HexLayout.screenToHex(0, 0, 14, 4)
 
         assertEquals(HexCoordinates(2, 1), coords)
     }
@@ -83,7 +83,7 @@ internal class HexLayoutTest {
 
     @Test
     fun `screenToHex with negative result returns null`() {
-        val coords = HexLayout.screenToHex(0, 0, -16, 0)
+        val coords = HexLayout.screenToHex(0, 0, -14, 0)
 
         assertNull(coords)
     }

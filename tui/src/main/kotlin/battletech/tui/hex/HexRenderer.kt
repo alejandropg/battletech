@@ -33,36 +33,46 @@ public object HexRenderer {
     }
 
     private fun renderBorder(buffer: ScreenBuffer, x: Int, y: Int, fg: Color) {
-        // Top: " _____ "
-        for (i in 1..5) {
+        // Row 0: "  _____  "
+        for (i in 2..6) {
             buffer.set(x + i, y, Cell('_', fg))
         }
-        // Upper sides: "/     \"
-        buffer.set(x, y + 1, Cell('/', fg))
-        buffer.set(x + 6, y + 1, Cell('\\', fg))
-        // Lower sides: "\     /"
-        buffer.set(x, y + 2, Cell('\\', fg))
-        buffer.set(x + 6, y + 2, Cell('/', fg))
-        // Bottom: " \___/ "
-        buffer.set(x + 1, y + 3, Cell('\\', fg))
-        for (i in 2..4) {
-            buffer.set(x + i, y + 3, Cell('_', fg))
+        // Row 1: " /     \ "
+        buffer.set(x + 1, y + 1, Cell('/', fg))
+        buffer.set(x + 7, y + 1, Cell('\\', fg))
+        // Row 2: "/       \"
+        buffer.set(x, y + 2, Cell('/', fg))
+        buffer.set(x + 8, y + 2, Cell('\\', fg))
+        // Row 3: "\       /"
+        buffer.set(x, y + 3, Cell('\\', fg))
+        buffer.set(x + 8, y + 3, Cell('/', fg))
+        // Row 4: " \_____/ "
+        buffer.set(x + 1, y + 4, Cell('\\', fg))
+        for (i in 2..6) {
+            buffer.set(x + i, y + 4, Cell('_', fg))
         }
-        buffer.set(x + 5, y + 3, Cell('/', fg))
+        buffer.set(x + 7, y + 4, Cell('/', fg))
     }
 
     private fun renderContent(buffer: ScreenBuffer, x: Int, y: Int, bg: Color) {
-        // Fill content area (inner cells of rows 1 and 2)
-        for (i in 1..5) {
+        // Row 1 content (narrow): x+2..x+6
+        for (i in 2..6) {
             buffer.set(x + i, y + 1, Cell(' ', Color.DEFAULT, bg))
+        }
+        // Row 2 content (wide): x+1..x+7
+        for (i in 1..7) {
             buffer.set(x + i, y + 2, Cell(' ', Color.DEFAULT, bg))
+        }
+        // Row 3 content (wide): x+1..x+7
+        for (i in 1..7) {
+            buffer.set(x + i, y + 3, Cell(' ', Color.DEFAULT, bg))
         }
     }
 
     private fun renderElevation(buffer: ScreenBuffer, x: Int, y: Int, elevation: Int, bg: Color) {
         if (elevation != 0) {
             val elevStr = elevation.toString()
-            buffer.set(x + 5, y + 1, Cell(elevStr.last(), Color.WHITE, bg))
+            buffer.set(x + 6, y + 1, Cell(elevStr.last(), Color.WHITE, bg))
         }
     }
 }

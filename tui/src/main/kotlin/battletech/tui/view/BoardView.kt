@@ -1,5 +1,6 @@
 package battletech.tui.view
 
+import battletech.tui.hex.HexGeometry
 import battletech.tui.hex.HexHighlight
 import battletech.tui.hex.HexLayout
 import battletech.tui.hex.HexRenderer
@@ -26,8 +27,8 @@ public class BoardView(
                 val hex = gameState.map.hexes[coords] ?: continue
 
                 val (screenX, screenY) = HexLayout.hexToScreen(col, row)
-                val drawX = x + screenX - viewport.scrollCol * 8
-                val drawY = y + screenY - viewport.scrollRow * 4
+                val drawX = x + screenX - viewport.scrollCol * HexGeometry.COL_STRIDE
+                val drawY = y + screenY - viewport.scrollRow * HexGeometry.ROW_STRIDE
 
                 val highlight = when {
                     coords == cursorPosition -> HexHighlight.CURSOR

@@ -1,5 +1,15 @@
 package battletech.tui
 
+import battletech.tactical.action.ActionQueryService
+import battletech.tactical.action.TurnPhase
+import battletech.tactical.action.Unit
+import battletech.tactical.action.UnitId
+import battletech.tactical.model.GameMap
+import battletech.tactical.model.GameState
+import battletech.tactical.model.Hex
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.Terrain
+import battletech.tactical.model.Weapon
 import battletech.tui.game.AttackPhaseController
 import battletech.tui.game.EndPhaseController
 import battletech.tui.game.GameLoop
@@ -18,18 +28,8 @@ import battletech.tui.view.BoardView
 import battletech.tui.view.SidebarView
 import battletech.tui.view.StatusBarView
 import battletech.tui.view.Viewport
-import battletech.tactical.action.ActionQueryService
-import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.Unit
-import battletech.tactical.action.UnitId
-import battletech.tactical.model.GameMap
-import battletech.tactical.model.GameState
-import battletech.tactical.model.Hex
-import battletech.tactical.model.HexCoordinates
-import battletech.tactical.model.Terrain
-import battletech.tactical.model.Weapon
-import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
+import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.input.enterRawMode
 import com.github.ajalt.mordant.terminal.Terminal
 
@@ -58,8 +58,8 @@ public fun main() {
             var running = true
             while (running) {
                 val size = terminal.updateSize()
-                val width = size.width
-                val height = size.height
+                val width = if (size.width > 0) size.width else 80
+                val height = if (size.height > 0) size.height else 24
                 val sidebarWidth = 22
                 val statusBarHeight = 3
                 val boardWidth = width - sidebarWidth - 1

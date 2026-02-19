@@ -20,12 +20,12 @@ internal class BoardViewTest {
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Hex at (0,0) should have '/' at charX=0, charY=1
-        assertEquals('/', buffer.get(0, 1).char)
-        // Hex at (1,0) should have '/' at charX=8, charY=3 (odd col offset +2)
+        // Hex at (0,0) should have '/' at charX=0, charY=2 (wide row)
+        assertEquals('/', buffer.get(0, 2).char)
+        // Hex at (1,0) should have '/' at charX=8, charY=3 (narrow row, odd col offset +2)
         assertEquals('/', buffer.get(8, 3).char)
-        // Hex at (2,0) should have '/' at charX=16, charY=1
-        assertEquals('/', buffer.get(16, 1).char)
+        // Hex at (2,0) should have '/' at charX=14, charY=2 (wide row)
+        assertEquals('/', buffer.get(14, 2).char)
     }
 
     @Test
@@ -37,8 +37,8 @@ internal class BoardViewTest {
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Unit initial 'A' at hex center: charX=0+3, charY=0+2
-        assertEquals('A', buffer.get(3, 2).char)
+        // Unit initial 'A' at hex center: charX=0+4, charY=0+3
+        assertEquals('A', buffer.get(4, 3).char)
     }
 
     @Test
@@ -63,7 +63,7 @@ internal class BoardViewTest {
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Hex at (1,1) → charX=8, charY=6 (row=1*4 + odd_offset=2)
+        // Hex at (1,1) → charX=7, charY=6 (row=1*4 + odd_offset=2)
         // Border '/' at (8, 7) should be bright yellow
         assertEquals(Color.BRIGHT_YELLOW, buffer.get(8, 7).fg)
     }
@@ -80,9 +80,9 @@ internal class BoardViewTest {
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Hex (1,0) content area at charX=8+3, charY=2+1=3 should be cyan
-        assertEquals(Color.CYAN, buffer.get(11, 3).bg)
-        // Hex (2,0) content area at charX=16+3, charY=0+1=1 should be yellow
-        assertEquals(Color.YELLOW, buffer.get(19, 1).bg)
+        // Hex (1,0) content area at charX=7+4, charY=2+2=4 should be cyan
+        assertEquals(Color.CYAN, buffer.get(11, 4).bg)
+        // Hex (2,0) content area at charX=14+4, charY=0+2=2 should be yellow
+        assertEquals(Color.YELLOW, buffer.get(18, 2).bg)
     }
 }
