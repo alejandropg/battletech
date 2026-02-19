@@ -12,8 +12,8 @@ public class StatusBarView(
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         buffer.drawBox(x, y, width, height, "COMMAND")
 
-        val cx = x + 1
-        val cy = y + 1
+        val cx = x + 2
+        val cy = y + 2
         buffer.writeString(cx, cy, "[${phase.name}]", Color.BRIGHT_YELLOW)
         buffer.writeString(cx, cy + 1, prompt, Color.WHITE)
         buffer.writeString(cx, cy + 2, "Arrow keys: move | Enter: confirm | Esc: back | q: quit", Color.WHITE)

@@ -21,8 +21,8 @@ public class BoardView(
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         buffer.drawBox(x, y, width, height, "TACTICAL MAP")
 
-        val contentX = x + 1
-        val contentY = y + 1
+        val contentX = x + 2
+        val contentY = y + 2
         val (colRange, rowRange) = viewport.visibleHexRange()
 
         for (col in colRange) {

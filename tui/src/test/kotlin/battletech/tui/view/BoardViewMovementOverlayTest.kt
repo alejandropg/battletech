@@ -18,15 +18,16 @@ internal class BoardViewMovementOverlayTest {
             HexCoordinates(1, 1) to HexHighlight.REACHABLE,
             HexCoordinates(2, 1) to HexHighlight.REACHABLE,
         )
-        val view = BoardView(state, Viewport(0, 0, 40, 24), hexHighlights = highlights)
+        val view = BoardView(state, Viewport(0, 0, 36, 20), hexHighlights = highlights)
         val buffer = ScreenBuffer(40, 24)
 
         view.render(buffer, 0, 0, 40, 24)
 
-        // Hex (1,1) at charX=7, charY=6, content at (11, 8)
-        assertEquals(Color.CYAN, buffer.get(11, 8).bg)
-        // Hex (2,1) at charX=14, charY=4, content at (18, 6)
-        assertEquals(Color.CYAN, buffer.get(18, 6).bg)
+        // Content offset +2,+2 for border + padding
+        // Hex (1,1) content at (11+2, 8+2) = (13, 10)
+        assertEquals(Color.CYAN, buffer.get(13, 10).bg)
+        // Hex (2,1) content at (18+2, 6+2) = (20, 8)
+        assertEquals(Color.CYAN, buffer.get(20, 8).bg)
     }
 
     @Test
@@ -36,14 +37,15 @@ internal class BoardViewMovementOverlayTest {
             HexCoordinates(0, 0) to HexHighlight.PATH,
             HexCoordinates(1, 0) to HexHighlight.PATH,
         )
-        val view = BoardView(state, Viewport(0, 0, 40, 24), hexHighlights = highlights)
+        val view = BoardView(state, Viewport(0, 0, 36, 20), hexHighlights = highlights)
         val buffer = ScreenBuffer(40, 24)
 
         view.render(buffer, 0, 0, 40, 24)
 
-        // Hex (0,0) content at (4, 2)
-        assertEquals(Color.YELLOW, buffer.get(4, 2).bg)
-        // Hex (1,0) at charX=7, charY=2, content at (11, 4)
-        assertEquals(Color.YELLOW, buffer.get(11, 4).bg)
+        // Content offset +2,+2
+        // Hex (0,0) content at (4+2, 2+2) = (6, 4)
+        assertEquals(Color.YELLOW, buffer.get(6, 4).bg)
+        // Hex (1,0) content at (11+2, 4+2) = (13, 6)
+        assertEquals(Color.YELLOW, buffer.get(13, 6).bg)
     }
 }

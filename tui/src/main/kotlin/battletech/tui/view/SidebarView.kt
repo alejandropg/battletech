@@ -11,8 +11,8 @@ public class SidebarView(
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         buffer.drawBox(x, y, width, height, "UNIT STATUS")
 
-        val cx = x + 1
-        val cy = y + 1
+        val cx = x + 2
+        val cy = y + 2
 
         if (unit == null) {
             buffer.writeString(cx, cy, "No unit selected", Color.WHITE)
