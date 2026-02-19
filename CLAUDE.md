@@ -37,6 +37,13 @@ BattleTech Rules Engine is a multi-module project implementing BattleTech, hexag
 
 # Run the application
 ./gradlew :bt:run
+
+# Run the TUI application
+./gradlew :tui:run
+
+# Build TUI fat JAR (single-file distributable, ~7 MB)
+./gradlew :tui:shadowJar     # → tui/build/libs/tui.jar
+./gradlew :tui:createExecutable  # → tui/build/tui (self-executing, Unix/macOS)
 ```
 
 ## Architecture
@@ -52,5 +59,9 @@ The project uses a layered module architecture:
 - **`bt/`**
   - Application module that integrates strategic and tactical libraries
   - Application entry point is `battletech.MainKt`
+- **`tui/`**
+  - Terminal UI application using [Mordant](https://github.com/ajalt/mordant)
+  - Uses the Shadow plugin (`com.gradleup.shadow`) to produce a fat JAR and self-executing binary
+  - Entry point is `battletech.tui.MainKt`
 
-Dependencies flow: `bt` → `strategic` + `tactical` (libraries are independent of each other)
+Dependencies flow: `bt` → `strategic` + `tactical`, `tui` → `tactical` (libraries are independent of each other)

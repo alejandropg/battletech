@@ -5,6 +5,7 @@ junit = "6.0.2"
 mockk = "1.14.9"
 assertj = "3.27.7"
 mordant = "3.0.2"
+shadow = "8.3.6"
 
 [libraries]
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
@@ -19,6 +20,7 @@ mordant-coroutines = { module = "com.github.ajalt.mordant:mordant-coroutines", v
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 
 [bundles]
 junit = ["junit-jupiter-api", "junit-jupiter-engine", "junit-jupiter-params"]
