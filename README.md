@@ -29,20 +29,3 @@ battletech/
     └── src/
         └── main/kotlin/battletech/tui/
 ```
-
-## TUI Application
-
-The `tui/` module is a terminal UI for the game. It produces a single-file distributable via the [Shadow plugin](https://gradleup.com/shadow/).
-
-```bash
-# Run during development (requires Gradle)
-./gradlew :tui:run
-
-# Build a fat JAR (~7 MB, requires Java to run)
-./gradlew :tui:shadowJar
-java -jar tui/build/libs/tui.jar
-
-# Build a self-executing binary (Unix/macOS)
-./gradlew :tui:createExecutable
-./tui/build/tui
-```

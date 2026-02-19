@@ -7,14 +7,25 @@ application {
     mainClass.set("battletech.tui.MainKt")
 }
 
+// Gradle always runs tasks in a forked JVM that has no controlling terminal,
+// so Mordant's enterRawMode() cannot work here. Run the JAR directly instead:
+//   ./gradlew :tui:shadowJar && java -jar tui/build/libs/tui.jar
 tasks.named<JavaExec>("run") {
-    standardInput = System.`in`
+    doFirst {
+        throw GradleException(
+            "The TUI requires a direct terminal connection that Gradle cannot provide " +
+            "(Gradle always forks a separate JVM detached from the terminal).\n" +
+            "Build and run the JAR directly:\n" +
+            "  ./gradlew :tui:shadowJar && java -jar tui/build/libs/tui.jar"
+        )
+    }
 }
 
 dependencies {
     implementation(project(":tactical"))
     implementation(libs.mordant)
     implementation(libs.mordant.coroutines)
+
 }
 
 tasks.shadowJar {

@@ -38,12 +38,13 @@ BattleTech Rules Engine is a multi-module project implementing BattleTech, hexag
 # Run the application
 ./gradlew :bt:run
 
-# Run the TUI application
-./gradlew :tui:run
-
 # Build TUI fat JAR (single-file distributable, ~7 MB)
 ./gradlew :tui:shadowJar     # → tui/build/libs/tui.jar
 ./gradlew :tui:createExecutable  # → tui/build/tui (self-executing, Unix/macOS)
+
+# Run the TUI application
+# (Gradle always forks a JVM detached from the terminal, so use the JAR directly)
+./gradlew :tui:shadowJar && java -jar tui/build/libs/tui.jar
 ```
 
 ## Architecture
