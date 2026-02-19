@@ -19,6 +19,10 @@ public class BoardView(
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
+        buffer.drawBox(x, y, width, height, "TACTICAL MAP")
+
+        val contentX = x + 1
+        val contentY = y + 1
         val (colRange, rowRange) = viewport.visibleHexRange()
 
         for (col in colRange) {
@@ -27,8 +31,8 @@ public class BoardView(
                 val hex = gameState.map.hexes[coords] ?: continue
 
                 val (screenX, screenY) = HexLayout.hexToScreen(col, row)
-                val drawX = x + screenX - viewport.scrollCol * HexGeometry.COL_STRIDE
-                val drawY = y + screenY - viewport.scrollRow * HexGeometry.ROW_STRIDE
+                val drawX = contentX + screenX - viewport.scrollCol * HexGeometry.COL_STRIDE
+                val drawY = contentY + screenY - viewport.scrollRow * HexGeometry.ROW_STRIDE
 
                 val highlight = when {
                     coords == cursorPosition -> HexHighlight.CURSOR

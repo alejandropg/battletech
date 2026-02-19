@@ -122,4 +122,76 @@ internal class ScreenBufferTest {
         assertEquals(10, buffer.width)
         assertEquals(20, buffer.height)
     }
+
+    @Test
+    fun `drawBox renders corners`() {
+        val buffer = ScreenBuffer(10, 5)
+
+        buffer.drawBox(0, 0, 10, 5)
+
+        assertEquals('╭', buffer.get(0, 0).char)
+        assertEquals('╮', buffer.get(9, 0).char)
+        assertEquals('╰', buffer.get(0, 4).char)
+        assertEquals('╯', buffer.get(9, 4).char)
+    }
+
+    @Test
+    fun `drawBox renders horizontal and vertical borders`() {
+        val buffer = ScreenBuffer(6, 4)
+
+        buffer.drawBox(0, 0, 6, 4)
+
+        for (i in 1..4) {
+            assertEquals('─', buffer.get(i, 0).char)
+            assertEquals('─', buffer.get(i, 3).char)
+        }
+        for (i in 1..2) {
+            assertEquals('│', buffer.get(0, i).char)
+            assertEquals('│', buffer.get(5, i).char)
+        }
+    }
+
+    @Test
+    fun `drawBox renders title`() {
+        val buffer = ScreenBuffer(20, 3)
+
+        buffer.drawBox(0, 0, 20, 3, "TEST")
+
+        assertEquals(' ', buffer.get(1, 0).char)
+        assertEquals('T', buffer.get(2, 0).char)
+        assertEquals('E', buffer.get(3, 0).char)
+        assertEquals('S', buffer.get(4, 0).char)
+        assertEquals('T', buffer.get(5, 0).char)
+        assertEquals(' ', buffer.get(6, 0).char)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 0).fg)
+        assertEquals(Color.GREEN, buffer.get(0, 0).fg)
+    }
+
+    @Test
+    fun `drawBox uses specified colors`() {
+        val buffer = ScreenBuffer(10, 3)
+
+        buffer.drawBox(0, 0, 10, 3, "", Color.RED, Color.WHITE)
+
+        assertEquals(Color.RED, buffer.get(0, 0).fg)
+    }
+
+    @Test
+    fun `drawBox skips title when box too narrow`() {
+        val buffer = ScreenBuffer(6, 3)
+
+        buffer.drawBox(0, 0, 6, 3, "TOOLONG")
+
+        assertEquals('─', buffer.get(1, 0).char)
+    }
+
+    @Test
+    fun `drawBox with offset position`() {
+        val buffer = ScreenBuffer(15, 8)
+
+        buffer.drawBox(2, 1, 10, 5)
+
+        assertEquals('╭', buffer.get(2, 1).char)
+        assertEquals('╯', buffer.get(11, 5).char)
+    }
 }

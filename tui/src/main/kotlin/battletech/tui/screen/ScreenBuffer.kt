@@ -32,6 +32,39 @@ public class ScreenBuffer(
         }
     }
 
+    public fun drawBox(
+        x: Int,
+        y: Int,
+        width: Int,
+        height: Int,
+        title: String = "",
+        borderColor: Color = Color.GREEN,
+        titleColor: Color = Color.BRIGHT_YELLOW,
+    ) {
+        if (width < 2 || height < 2) return
+
+        set(x, y, Cell('╭', borderColor))
+        set(x + width - 1, y, Cell('╮', borderColor))
+        set(x, y + height - 1, Cell('╰', borderColor))
+        set(x + width - 1, y + height - 1, Cell('╯', borderColor))
+
+        for (i in 1 until width - 1) {
+            set(x + i, y, Cell('─', borderColor))
+            set(x + i, y + height - 1, Cell('─', borderColor))
+        }
+
+        for (i in 1 until height - 1) {
+            set(x, y + i, Cell('│', borderColor))
+            set(x + width - 1, y + i, Cell('│', borderColor))
+        }
+
+        if (title.isNotEmpty() && width > title.length + 4) {
+            set(x + 1, y, Cell(' ', borderColor))
+            writeString(x + 2, y, title, titleColor)
+            set(x + 2 + title.length, y, Cell(' ', borderColor))
+        }
+    }
+
     public fun diff(other: ScreenBuffer): List<CellChange> {
         val changes = mutableListOf<CellChange>()
         for (y in 0 until height) {

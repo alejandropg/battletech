@@ -15,57 +15,57 @@ internal class BoardViewTest {
     @Test
     fun `renders hex borders for a 3x3 map`() {
         val state = aGameState(map = aGameMap(cols = 3, rows = 3))
-        val view = BoardView(state, viewport = Viewport(0, 0, 30, 16))
+        val view = BoardView(state, viewport = Viewport(0, 0, 28, 14))
         val buffer = ScreenBuffer(30, 16)
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Hex at (0,0) should have '/' at charX=0, charY=2 (wide row)
-        assertEquals('/', buffer.get(0, 2).char)
-        // Hex at (1,0) should have '/' at charX=8, charY=3 (narrow row, odd col offset +2)
-        assertEquals('/', buffer.get(8, 3).char)
-        // Hex at (2,0) should have '/' at charX=14, charY=2 (wide row)
-        assertEquals('/', buffer.get(14, 2).char)
+        // Content offset +1,+1 for border
+        // Hex at (0,0) should have '/' at charX=0+1, charY=2+1
+        assertEquals('/', buffer.get(1, 3).char)
+        // Hex at (1,0) should have '/' at charX=8+1, charY=3+1
+        assertEquals('/', buffer.get(9, 4).char)
+        // Hex at (2,0) should have '/' at charX=14+1, charY=2+1
+        assertEquals('/', buffer.get(15, 3).char)
     }
 
     @Test
     fun `renders unit initial on hex`() {
         val unit = aUnit(name = "Atlas", position = HexCoordinates(0, 0))
         val state = aGameState(units = listOf(unit), map = aGameMap())
-        val view = BoardView(state, viewport = Viewport(0, 0, 30, 16))
+        val view = BoardView(state, viewport = Viewport(0, 0, 28, 14))
         val buffer = ScreenBuffer(30, 16)
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Unit initial 'A' at hex center: charX=0+4, charY=0+3
-        assertEquals('A', buffer.get(4, 3).char)
+        // Unit initial 'A' at hex center: charX=4+1, charY=3+1
+        assertEquals('A', buffer.get(5, 4).char)
     }
 
     @Test
     fun `scroll offset hides column 0`() {
         val state = aGameState(map = aGameMap(cols = 5, rows = 3))
-        val view = BoardView(state, viewport = Viewport(1, 0, 30, 16))
+        val view = BoardView(state, viewport = Viewport(1, 0, 28, 14))
         val buffer = ScreenBuffer(30, 16)
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Column 0 should not be rendered - default cells
-        assertEquals(' ', buffer.get(0, 1).char)
-        assertEquals(' ', buffer.get(3, 1).char)
+        // Column 0 should not be rendered in content area - check inside content area
+        assertEquals(' ', buffer.get(1, 2).char)
+        assertEquals(' ', buffer.get(4, 2).char)
     }
 
     @Test
     fun `cursor position highlights hex`() {
         val state = aGameState(map = aGameMap())
         val cursor = HexCoordinates(1, 1)
-        val view = BoardView(state, viewport = Viewport(0, 0, 30, 16), cursorPosition = cursor)
+        val view = BoardView(state, viewport = Viewport(0, 0, 28, 14), cursorPosition = cursor)
         val buffer = ScreenBuffer(30, 16)
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Hex at (1,1) → charX=7, charY=6 (row=1*4 + odd_offset=2)
-        // Border '/' at (8, 7) should be bright yellow
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(8, 7).fg)
+        // Hex at (1,1) border '/' offset by +1,+1
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(9, 8).fg)
     }
 
     @Test
@@ -75,14 +75,13 @@ internal class BoardViewTest {
             HexCoordinates(1, 0) to HexHighlight.REACHABLE,
             HexCoordinates(2, 0) to HexHighlight.PATH,
         )
-        val view = BoardView(state, viewport = Viewport(0, 0, 30, 16), hexHighlights = highlights)
+        val view = BoardView(state, viewport = Viewport(0, 0, 28, 14), hexHighlights = highlights)
         val buffer = ScreenBuffer(30, 16)
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Hex (1,0) content area at charX=7+4, charY=2+2=4 should be cyan
-        assertEquals(Color.CYAN, buffer.get(11, 4).bg)
-        // Hex (2,0) content area at charX=14+4, charY=0+2=2 should be yellow
-        assertEquals(Color.YELLOW, buffer.get(18, 2).bg)
+        // Content offset +1,+1
+        assertEquals(Color.CYAN, buffer.get(12, 5).bg)
+        assertEquals(Color.YELLOW, buffer.get(19, 3).bg)
     }
 }

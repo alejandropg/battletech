@@ -10,8 +10,12 @@ public class StatusBarView(
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.writeString(x, y, "[${phase.name}]", Color.BRIGHT_YELLOW)
-        buffer.writeString(x, y + 1, prompt, Color.WHITE)
-        buffer.writeString(x, y + 2, "Arrow keys: move | Enter: confirm | Esc: back | q: quit", Color.WHITE)
+        buffer.drawBox(x, y, width, height, "COMMAND")
+
+        val cx = x + 1
+        val cy = y + 1
+        buffer.writeString(cx, cy, "[${phase.name}]", Color.BRIGHT_YELLOW)
+        buffer.writeString(cx, cy + 1, prompt, Color.WHITE)
+        buffer.writeString(cx, cy + 2, "Arrow keys: move | Enter: confirm | Esc: back | q: quit", Color.WHITE)
     }
 }

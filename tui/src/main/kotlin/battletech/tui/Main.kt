@@ -61,12 +61,12 @@ public fun main() {
                 val width = if (size.width > 0) size.width else 80
                 val height = if (size.height > 0) size.height else 24
                 val sidebarWidth = 22
-                val statusBarHeight = 3
-                val boardWidth = width - sidebarWidth - 1
+                val statusBarHeight = 5
+                val boardWidth = width - sidebarWidth
                 val boardHeight = height - statusBarHeight
 
                 val buffer = ScreenBuffer(width, height)
-                val viewport = Viewport(0, 0, boardWidth, boardHeight)
+                val viewport = Viewport(0, 0, boardWidth - 2, boardHeight - 2)
 
                 val selectedUnit = gameLoop.gameState.units.find { it.position == cursor.position }
 
@@ -79,7 +79,7 @@ public fun main() {
                 boardView.render(buffer, 0, 0, boardWidth, boardHeight)
 
                 val sidebarView = SidebarView(selectedUnit)
-                sidebarView.render(buffer, boardWidth + 1, 0, sidebarWidth, boardHeight)
+                sidebarView.render(buffer, boardWidth, 0, sidebarWidth, boardHeight)
 
                 val prompt = phaseState?.prompt ?: "Move cursor to select a hex"
                 val statusBarView = StatusBarView(gameLoop.currentPhase, prompt)
@@ -91,7 +91,7 @@ public fun main() {
                 val action = when (event) {
                     is KeyboardEvent -> InputMapper.mapKeyboardEvent(event.key, event.ctrl, event.alt)
                     is MouseEvent -> InputMapper.mapMouseEvent(
-                        event.x, event.y, 0, 0, 0,
+                        event.x - 1, event.y - 1, 0, 0, 0,
                     )
                     else -> null
                 }

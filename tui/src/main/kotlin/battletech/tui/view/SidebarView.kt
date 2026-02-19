@@ -9,20 +9,25 @@ public class SidebarView(
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
+        buffer.drawBox(x, y, width, height, "UNIT STATUS")
+
+        val cx = x + 1
+        val cy = y + 1
+
         if (unit == null) {
-            buffer.writeString(x, y, "No unit selected", Color.WHITE)
+            buffer.writeString(cx, cy, "No unit selected", Color.WHITE)
             return
         }
 
-        buffer.writeString(x, y, unit.name, Color.WHITE)
-        buffer.writeString(x, y + 1, "Pilot: ${unit.gunnerySkill} / ${unit.pilotingSkill}", Color.WHITE)
-        buffer.writeString(x, y + 2, "Heat: ${unit.currentHeat} / ${unit.heatSinkCapacity}", Color.WHITE)
+        buffer.writeString(cx, cy, unit.name, Color.WHITE)
+        buffer.writeString(cx, cy + 1, "Pilot: ${unit.gunnerySkill} / ${unit.pilotingSkill}", Color.WHITE)
+        buffer.writeString(cx, cy + 2, "Heat: ${unit.currentHeat} / ${unit.heatSinkCapacity}", Color.WHITE)
 
         if (unit.weapons.isNotEmpty()) {
-            buffer.writeString(x, y + 4, "Weapons:", Color.WHITE)
+            buffer.writeString(cx, cy + 4, "Weapons:", Color.WHITE)
             for ((i, weapon) in unit.weapons.withIndex()) {
                 val ammoStr = weapon.ammo?.let { " [$it]" } ?: ""
-                buffer.writeString(x, y + 5 + i, "${weapon.name}$ammoStr", Color.WHITE)
+                buffer.writeString(cx, cy + 5 + i, "${weapon.name}$ammoStr", Color.WHITE)
             }
         }
     }
