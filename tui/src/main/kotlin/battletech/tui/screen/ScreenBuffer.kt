@@ -58,10 +58,10 @@ public class ScreenBuffer(
             set(x + width - 1, y + i, Cell('│', borderColor))
         }
 
-        if (title.isNotEmpty() && width > title.length + 4) {
-            set(x + 1, y, Cell(' ', borderColor))
-            writeString(x + 2, y, title, titleColor)
-            set(x + 2 + title.length, y, Cell(' ', borderColor))
+        if (title.isNotEmpty() && width > title.length + 6) {
+            set(x + 3, y, Cell(' ', borderColor))
+            writeString(x + 4, y, title, titleColor)
+            set(x + 4 + title.length, y, Cell(' ', borderColor))
         }
     }
 

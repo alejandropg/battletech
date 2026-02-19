@@ -157,13 +157,13 @@ internal class ScreenBufferTest {
 
         buffer.drawBox(0, 0, 20, 3, "TEST")
 
-        assertEquals(' ', buffer.get(1, 0).char)
-        assertEquals('T', buffer.get(2, 0).char)
-        assertEquals('E', buffer.get(3, 0).char)
-        assertEquals('S', buffer.get(4, 0).char)
-        assertEquals('T', buffer.get(5, 0).char)
-        assertEquals(' ', buffer.get(6, 0).char)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 0).fg)
+        assertEquals(' ', buffer.get(3, 0).char)
+        assertEquals('T', buffer.get(4, 0).char)
+        assertEquals('E', buffer.get(5, 0).char)
+        assertEquals('S', buffer.get(6, 0).char)
+        assertEquals('T', buffer.get(7, 0).char)
+        assertEquals(' ', buffer.get(8, 0).char)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(4, 0).fg)
         assertEquals(Color.GREEN, buffer.get(0, 0).fg)
     }
 
@@ -178,11 +178,11 @@ internal class ScreenBufferTest {
 
     @Test
     fun `drawBox skips title when box too narrow`() {
-        val buffer = ScreenBuffer(6, 3)
+        val buffer = ScreenBuffer(8, 3)
 
-        buffer.drawBox(0, 0, 6, 3, "TOOLONG")
+        buffer.drawBox(0, 0, 8, 3, "TOOLONG")
 
-        assertEquals('─', buffer.get(1, 0).char)
+        assertEquals('─', buffer.get(3, 0).char)
     }
 
     @Test
