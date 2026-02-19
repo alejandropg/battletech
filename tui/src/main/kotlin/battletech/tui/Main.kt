@@ -1,6 +1,7 @@
 package battletech.tui
 
 import battletech.tactical.action.ActionQueryService
+import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.Unit
 import battletech.tactical.action.UnitId
@@ -37,7 +38,7 @@ import com.github.ajalt.mordant.terminal.Terminal
 public fun main() {
     val terminal = Terminal()
     val renderer = ScreenRenderer(terminal)
-    val actionQueryService = ActionQueryService(emptyList(), emptyList())
+    val actionQueryService = ActionQueryService(listOf(MoveActionDefinition()), emptyList())
 
     val controllers = mapOf(
         TurnPhase.INITIATIVE to InitiativePhaseController() as battletech.tui.game.PhaseController,
