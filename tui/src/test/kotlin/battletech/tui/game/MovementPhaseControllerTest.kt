@@ -56,26 +56,60 @@ internal class MovementPhaseControllerTest {
         ),
     )
 
-    private val reachabilityMap = ReachabilityMap(
+    private val walkReachabilityMap = ReachabilityMap(
         mode = MovementMode.WALK,
         maxMP = 4,
         destinations = reachableHexes,
     )
 
-    private fun createController(): MovementPhaseController {
-        val actionQueryService = mockk<ActionQueryService>()
-        every { actionQueryService.getMovementActions(any(), any()) } returns PhaseActionReport(
-            phase = TurnPhase.MOVEMENT,
-            unitId = aUnit().id,
-            actions = listOf(
+    private val runReachabilityMap = ReachabilityMap(
+        mode = MovementMode.RUN,
+        maxMP = 6,
+        destinations = reachableHexes + listOf(
+            ReachableHex(
+                position = HexCoordinates(3, 0),
+                facing = HexDirection.N,
+                mpSpent = 3,
+                path = listOf(
+                    MovementStep(HexCoordinates(0, 0), HexDirection.N),
+                    MovementStep(HexCoordinates(1, 0), HexDirection.N),
+                    MovementStep(HexCoordinates(2, 0), HexDirection.N),
+                    MovementStep(HexCoordinates(3, 0), HexDirection.N),
+                ),
+            ),
+        ),
+    )
+
+    private fun createController(
+        includeRun: Boolean = false,
+    ): MovementPhaseController {
+        val actions = buildList {
+            add(
                 AvailableAction(
                     id = ActionId("walk"),
                     name = "Walk",
                     successChance = 100,
                     warnings = emptyList(),
-                    preview = MovementPreview(reachabilityMap),
+                    preview = MovementPreview(walkReachabilityMap),
                 ),
-            ),
+            )
+            if (includeRun) {
+                add(
+                    AvailableAction(
+                        id = ActionId("run"),
+                        name = "Run",
+                        successChance = 100,
+                        warnings = emptyList(),
+                        preview = MovementPreview(runReachabilityMap),
+                    ),
+                )
+            }
+        }
+        val actionQueryService = mockk<ActionQueryService>()
+        every { actionQueryService.getMovementActions(any(), any()) } returns PhaseActionReport(
+            phase = TurnPhase.MOVEMENT,
+            unitId = aUnit().id,
+            actions = actions,
         )
         return MovementPhaseController(actionQueryService)
     }
@@ -173,5 +207,80 @@ internal class MovementPhaseControllerTest {
         val result = controller.handleAction(InputAction.Cancel, phaseState, gameState)
 
         assert(result is PhaseControllerResult.Cancelled)
+    }
+
+    @Test
+    fun `enter populates availableModes with all movement modes`() {
+        val controller = createController(includeRun = true)
+        val unit = aUnit()
+        val gameState = aGameState(units = listOf(unit))
+
+        val phaseState = controller.enter(unit, gameState)
+
+        assertEquals(2, phaseState.availableModes.size)
+        assertEquals(MovementMode.WALK, phaseState.availableModes[0].mode)
+        assertEquals(MovementMode.RUN, phaseState.availableModes[1].mode)
+        assertEquals(0, phaseState.currentModeIndex)
+        assertEquals(phaseState.availableModes[0], phaseState.reachability)
+    }
+
+    @Test
+    fun `cycleMode advances to next mode and updates reachability`() {
+        val controller = createController(includeRun = true)
+        val unit = aUnit()
+        val gameState = aGameState(units = listOf(unit))
+        val phaseState = controller.enter(unit, gameState)
+
+        val cycled = controller.cycleMode(phaseState, unit.name)
+
+        assertEquals(1, cycled.currentModeIndex)
+        assertEquals(MovementMode.RUN, cycled.reachability!!.mode)
+        assertEquals(6, cycled.reachability!!.maxMP)
+    }
+
+    @Test
+    fun `cycleMode wraps around to first mode`() {
+        val controller = createController(includeRun = true)
+        val unit = aUnit()
+        val gameState = aGameState(units = listOf(unit))
+        val phaseState = controller.enter(unit, gameState)
+
+        val cycledOnce = controller.cycleMode(phaseState, unit.name)
+        val cycledTwice = controller.cycleMode(cycledOnce, unit.name)
+
+        assertEquals(0, cycledTwice.currentModeIndex)
+        assertEquals(MovementMode.WALK, cycledTwice.reachability!!.mode)
+    }
+
+    @Test
+    fun `cycleMode clears highlighted path and selected destination`() {
+        val controller = createController(includeRun = true)
+        val unit = aUnit()
+        val gameState = aGameState(units = listOf(unit))
+        val phaseState = controller.enter(unit, gameState).copy(
+            highlightedPath = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
+            selectedDestination = reachableHexes[0],
+        )
+
+        val cycled = controller.cycleMode(phaseState, unit.name)
+
+        assertNull(cycled.highlightedPath)
+        assertNull(cycled.selectedDestination)
+    }
+
+    @Test
+    fun `prompt includes mode name and MP`() {
+        val controller = createController(includeRun = true)
+        val unit = aUnit(name = "Atlas")
+        val gameState = aGameState(units = listOf(unit))
+
+        val phaseState = controller.enter(unit, gameState)
+        assert(phaseState.prompt.contains("Walk"))
+        assert(phaseState.prompt.contains("4 MP"))
+
+        val cycled = controller.cycleMode(phaseState, unit.name)
+        assert(cycled.prompt.contains("Run"))
+        assert(cycled.prompt.contains("6 MP"))
+        assert(cycled.prompt.contains("+2 to-hit"))
     }
 }

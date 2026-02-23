@@ -11,6 +11,8 @@ public data class PhaseState(
     val phase: TurnPhase,
     val selectedUnitId: UnitId?,
     val reachability: ReachabilityMap? = null,
+    val availableModes: List<ReachabilityMap> = emptyList(),
+    val currentModeIndex: Int = 0,
     val highlightedPath: List<HexCoordinates>? = null,
     val selectedDestination: ReachableHex? = null,
     val prompt: String = "",

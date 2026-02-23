@@ -159,11 +159,19 @@ public fun main() {
                         phaseState = null
                     }
                     is InputAction.CycleUnit -> {
-                        val units = gameLoop.gameState.units
-                        if (units.isNotEmpty()) {
-                            val currentIdx = units.indexOfFirst { it.position == cursor.position }
-                            val nextIdx = (currentIdx + 1) % units.size
-                            cursor = CursorState(units[nextIdx].position, units[nextIdx].id)
+                        val currentPhaseState = phaseState
+                        val controller = controllers[gameLoop.currentPhase]
+                        if (currentPhaseState != null && controller is MovementPhaseController) {
+                            val unitName = gameLoop.gameState.units
+                                .find { it.id == currentPhaseState.selectedUnitId }?.name ?: ""
+                            phaseState = controller.cycleMode(currentPhaseState, unitName)
+                        } else {
+                            val units = gameLoop.gameState.units
+                            if (units.isNotEmpty()) {
+                                val currentIdx = units.indexOfFirst { it.position == cursor.position }
+                                val nextIdx = (currentIdx + 1) % units.size
+                                cursor = CursorState(units[nextIdx].position, units[nextIdx].id)
+                            }
                         }
                     }
                     else -> {}
