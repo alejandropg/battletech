@@ -2,6 +2,7 @@ package battletech.tui
 
 import battletech.tactical.action.Unit
 import battletech.tactical.action.UnitId
+import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
@@ -43,6 +44,7 @@ internal fun aUnit(
     walkingMP: Int = 0,
     runningMP: Int = 0,
     jumpMP: Int = 0,
+    armor: ArmorLayout? = null,
 ): Unit = Unit(
     id = UnitId(id),
     name = name,
@@ -54,6 +56,23 @@ internal fun aUnit(
     walkingMP = walkingMP,
     runningMP = runningMP,
     jumpMP = jumpMP,
+    armor = armor,
+)
+
+internal fun anArmorLayout(
+    head: Int = 9,
+    centerTorso: Int = 47, centerTorsoRear: Int = 14,
+    leftTorso: Int = 32, leftTorsoRear: Int = 10,
+    rightTorso: Int = 32, rightTorsoRear: Int = 10,
+    leftArm: Int = 34, rightArm: Int = 34,
+    leftLeg: Int = 41, rightLeg: Int = 41,
+): ArmorLayout = ArmorLayout(
+    head = head,
+    centerTorso = centerTorso, centerTorsoRear = centerTorsoRear,
+    leftTorso = leftTorso, leftTorsoRear = leftTorsoRear,
+    rightTorso = rightTorso, rightTorsoRear = rightTorsoRear,
+    leftArm = leftArm, rightArm = rightArm,
+    leftLeg = leftLeg, rightLeg = rightLeg,
 )
 
 internal fun aGameState(
