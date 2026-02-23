@@ -34,12 +34,12 @@ public object HexRenderer {
         when (terrain) {
             Terrain.CLEAR -> Unit
             Terrain.LIGHT_WOODS ->
-                buffer.set(x + 4, y + 2, Cell(ICON_LIGHT_WOODS, Color.GREEN, bg))
+                buffer.set(x + 2, y + 1, Cell(ICON_LIGHT_WOODS, Color.GREEN, bg))
             Terrain.HEAVY_WOODS -> {
-                buffer.set(x + 4, y + 2, Cell(ICON_HEAVY_WOODS, Color.DARK_GREEN, bg))
+                buffer.set(x + 2, y + 1, Cell(ICON_HEAVY_WOODS, Color.DARK_GREEN, bg))
             }
             Terrain.WATER ->
-                buffer.set(x + 4, y + 2, Cell(ICON_WATER, Color.BLUE, bg))
+                buffer.set(x + 2, y + 1, Cell(ICON_WATER, Color.BLUE, bg))
         }
     }
 
