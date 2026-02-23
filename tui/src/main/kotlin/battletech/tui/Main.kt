@@ -225,6 +225,20 @@ private fun sampleGameState(): GameState {
             walkingMP = 4,
             runningMP = 6,
         ),
+        Unit(
+            id = UnitId("wolverine-1"),
+            name = "Wolverine",
+            gunnerySkill = 4,
+            pilotingSkill = 4,
+            weapons = listOf(
+                Weapon("SRM 6", damage = 12, heat = 4, shortRange = 3, mediumRange = 6, longRange = 9, ammo = 15),
+                Weapon("Medium Laser", damage = 5, heat = 3, shortRange = 3, mediumRange = 6, longRange = 9),
+            ),
+            position = HexCoordinates(4, 7),
+            walkingMP = 5,
+            runningMP = 8,
+            jumpMP = 5,
+        ),
     )
 
     return GameState(units = units, map = GameMap(hexes))
