@@ -89,22 +89,23 @@ internal class HexRendererTest {
     }
 
     @Test
-    fun `reachable highlight uses cyan background in content area`() {
+    fun `reachable highlight shows dot marker at center`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.REACHABLE)
 
-        assertEquals(Color.CYAN, buffer.get(4, 2).bg)
+        assertEquals(".", buffer.get(4, 2).char)
+        assertEquals(Color.DEFAULT, buffer.get(4, 2).bg)
     }
 
     @Test
-    fun `path highlight uses yellow background in content area`() {
+    fun `path highlight shows star marker at center`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH)
 
-        assertEquals(Color.YELLOW, buffer.get(4, 2).bg)
+        assertEquals("*", buffer.get(4, 2).char)
     }
 }

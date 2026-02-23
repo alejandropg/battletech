@@ -80,8 +80,8 @@ internal class BoardViewTest {
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Content offset +2,+2
-        assertEquals(Color.CYAN, buffer.get(13, 6).bg)
-        assertEquals(Color.YELLOW, buffer.get(20, 4).bg)
+        // Hex center is at x+4, y+2 from hex render origin
+        assertEquals(".", buffer.get(13, 6).char)
+        assertEquals("*", buffer.get(20, 4).char)
     }
 }
