@@ -3,14 +3,14 @@ package battletech.tui
 import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.Unit
 import battletech.tactical.action.UnitId
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.MechModels
 import battletech.tactical.model.Terrain
-import battletech.tactical.model.Weapon
+import battletech.tactical.model.createUnit
 import battletech.tui.game.AttackPhaseController
 import battletech.tui.game.EndPhaseController
 import battletech.tui.game.GameLoop
@@ -200,45 +200,9 @@ private fun sampleGameState(): GameState {
     }
 
     val units = listOf(
-        Unit(
-            id = UnitId("atlas"),
-            name = "Atlas",
-            gunnerySkill = 4,
-            pilotingSkill = 5,
-            weapons = listOf(
-                Weapon("Medium Laser", damage = 5, heat = 3, shortRange = 3, mediumRange = 6, longRange = 9),
-                Weapon("AC/20", damage = 20, heat = 7, shortRange = 3, mediumRange = 6, longRange = 9, ammo = 5),
-            ),
-            position = HexCoordinates(1, 1),
-            walkingMP = 3,
-            runningMP = 5,
-        ),
-        Unit(
-            id = UnitId("hunchback"),
-            name = "Hunchback",
-            gunnerySkill = 4,
-            pilotingSkill = 5,
-            weapons = listOf(
-                Weapon("AC/20", damage = 20, heat = 7, shortRange = 3, mediumRange = 6, longRange = 9, ammo = 5),
-            ),
-            position = HexCoordinates(7, 3),
-            walkingMP = 4,
-            runningMP = 6,
-        ),
-        Unit(
-            id = UnitId("wolverine-1"),
-            name = "Wolverine",
-            gunnerySkill = 4,
-            pilotingSkill = 4,
-            weapons = listOf(
-                Weapon("SRM 6", damage = 12, heat = 4, shortRange = 3, mediumRange = 6, longRange = 9, ammo = 15),
-                Weapon("Medium Laser", damage = 5, heat = 3, shortRange = 3, mediumRange = 6, longRange = 9),
-            ),
-            position = HexCoordinates(4, 7),
-            walkingMP = 5,
-            runningMP = 8,
-            jumpMP = 5,
-        ),
+        MechModels["AS7-D"].createUnit(id = UnitId("atlas"), position = HexCoordinates(1, 1)),
+        MechModels["HBK-4G"].createUnit(id = UnitId("hunchback"), position = HexCoordinates(7, 3)),
+        MechModels["WVR-6R"].createUnit(id = UnitId("wolverine-1"), pilotingSkill = 4, position = HexCoordinates(4, 7)),
     )
 
     return GameState(units = units, map = GameMap(hexes))

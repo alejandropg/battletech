@@ -6,15 +6,9 @@ import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.Weapon
+import battletech.tactical.model.Weapons
 
-internal fun mediumLaser(): Weapon = Weapon(
-    name = "Medium Laser",
-    damage = 5,
-    heat = 3,
-    shortRange = 3,
-    mediumRange = 6,
-    longRange = 9,
-)
+internal fun mediumLaser(): Weapon = Weapons.mediumLaser()
 
 internal fun srm4(): Weapon = Weapon(
     name = "SRM-4",
@@ -26,16 +20,7 @@ internal fun srm4(): Weapon = Weapon(
     ammo = 25,
 )
 
-internal fun ac20(): Weapon = Weapon(
-    name = "AC/20",
-    damage = 20,
-    heat = 7,
-    minimumRange = 3,
-    shortRange = 3,
-    mediumRange = 6,
-    longRange = 9,
-    ammo = 5,
-)
+internal fun ac20(): Weapon = Weapons.ac20()
 
 internal fun aWeapon(
     name: String = "Test Weapon",
