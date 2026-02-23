@@ -10,19 +10,26 @@ public object HexRenderer {
 
     public fun render(buffer: ScreenBuffer, x: Int, y: Int, hex: Hex, highlight: HexHighlight) {
         val bg = contentBackground(hex.terrain, highlight)
-        val borderFg = if (highlight == HexHighlight.CURSOR) Color.BRIGHT_YELLOW else Color.DEFAULT
+        val borderFg = if (highlight == HexHighlight.CURSOR || highlight == HexHighlight.PATH_CURSOR) Color.BRIGHT_YELLOW else Color.DEFAULT
 
         renderBorder(buffer, x, y, borderFg)
         renderContent(buffer, x, y, bg)
         renderTerrainIcon(buffer, x, y, hex.terrain, bg)
         renderElevation(buffer, x, y, hex.elevation, bg)
+        if (highlight == HexHighlight.PATH || highlight == HexHighlight.PATH_CURSOR) {
+            renderPathDot(buffer, x, y)
+        }
+    }
+
+    private fun renderPathDot(buffer: ScreenBuffer, x: Int, y: Int) {
+        buffer.set(x + 4, y + 2, Cell(".", Color.WHITE))
     }
 
     private fun contentBackground(terrain: Terrain, highlight: HexHighlight): Color = when (highlight) {
         HexHighlight.REACHABLE -> Color.CYAN
-        HexHighlight.PATH -> Color.YELLOW
+        HexHighlight.PATH -> Color.DEFAULT
         HexHighlight.ATTACK_RANGE -> Color.RED
-        HexHighlight.CURSOR, HexHighlight.NONE -> Color.DEFAULT
+        HexHighlight.CURSOR, HexHighlight.PATH_CURSOR, HexHighlight.NONE -> Color.DEFAULT
     }
 
     // nf-md-tree_outline, nf-md-tree and another Nerd Fonts icons are above U+FFFF, need surrogate pairs

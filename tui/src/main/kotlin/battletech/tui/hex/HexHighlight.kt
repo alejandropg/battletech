@@ -5,5 +5,6 @@ public enum class HexHighlight {
     CURSOR,
     REACHABLE,
     PATH,
+    PATH_CURSOR,
     ATTACK_RANGE,
 }

@@ -34,6 +34,7 @@ public class BoardView(
                 val drawY = contentY + screenY - viewport.scrollRow * HexGeometry.ROW_STRIDE
 
                 val highlight = when {
+                    coords == cursorPosition && hexHighlights[coords] == HexHighlight.PATH -> HexHighlight.PATH_CURSOR
                     coords == cursorPosition -> HexHighlight.CURSOR
                     coords in hexHighlights -> hexHighlights.getValue(coords)
                     else -> HexHighlight.NONE
