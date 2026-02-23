@@ -25,12 +25,19 @@ public object UnitRenderer {
         buffer.set(arrowX, arrowY, Cell(arrowChar, color, buffer.get(arrowX, arrowY).bg))
     }
 
+    private val ICON_FACING_N  = String(Character.toChars(0xF09C7))
+    private val ICON_FACING_NE = String(Character.toChars(0xF09C5))
+    private val ICON_FACING_SE = String(Character.toChars(0xF09B9))
+    private val ICON_FACING_S  = String(Character.toChars(0xF09BF))
+    private val ICON_FACING_SW = String(Character.toChars(0xF09B7))
+    private val ICON_FACING_NW = String(Character.toChars(0xF09C3))
+
     private fun facingArrow(direction: HexDirection): Pair<String, Int> = when (direction) {
-        HexDirection.N -> "^" to 4
-        HexDirection.NE -> "/" to 5
-        HexDirection.SE -> "\\" to 5
-        HexDirection.S -> "v" to 4
-        HexDirection.SW -> "/" to 3
-        HexDirection.NW -> "\\" to 3
+        HexDirection.N  -> ICON_FACING_N  to 4
+        HexDirection.NE -> ICON_FACING_NE to 5
+        HexDirection.SE -> ICON_FACING_SE to 5
+        HexDirection.S  -> ICON_FACING_S  to 4
+        HexDirection.SW -> ICON_FACING_SW to 3
+        HexDirection.NW -> ICON_FACING_NW to 3
     }
 }
