@@ -62,7 +62,7 @@ public fun main() {
                 val size = terminal.updateSize()
                 val width = if (size.width > 0) size.width else 80
                 val height = if (size.height > 0) size.height else 24
-                val sidebarWidth = 22
+                val sidebarWidth = 28
                 val statusBarHeight = 7
                 val boardWidth = width - sidebarWidth
                 val boardHeight = height - statusBarHeight

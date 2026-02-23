@@ -40,6 +40,9 @@ internal fun aUnit(
     name: String = "Atlas",
     position: HexCoordinates = HexCoordinates(0, 0),
     facing: HexDirection = HexDirection.N,
+    walkingMP: Int = 0,
+    runningMP: Int = 0,
+    jumpMP: Int = 0,
 ): Unit = Unit(
     id = UnitId(id),
     name = name,
@@ -48,6 +51,9 @@ internal fun aUnit(
     weapons = emptyList(),
     position = position,
     facing = facing,
+    walkingMP = walkingMP,
+    runningMP = runningMP,
+    jumpMP = jumpMP,
 )
 
 internal fun aGameState(
