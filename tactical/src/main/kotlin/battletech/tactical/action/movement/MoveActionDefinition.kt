@@ -2,7 +2,6 @@ package battletech.tactical.action.movement
 
 import battletech.tactical.action.Unit
 import battletech.tactical.model.GameState
-import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityCalculator
 
@@ -26,7 +25,7 @@ public class MoveActionDefinition : MovementDefinition {
 
     override fun preview(context: MovementContext): MovementPreview {
         val calculator = ReachabilityCalculator(context.gameState.map, context.gameState.units)
-        val reachability = calculator.calculate(context.actor, context.movementMode, HexDirection.N)
+        val reachability = calculator.calculate(context.actor, context.movementMode, context.actor.facing)
         return MovementPreview(reachability = reachability)
     }
 

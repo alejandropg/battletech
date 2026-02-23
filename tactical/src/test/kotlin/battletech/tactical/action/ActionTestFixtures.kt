@@ -4,6 +4,7 @@ import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.Weapon
 
 internal fun mediumLaser(): Weapon = Weapon(
@@ -65,6 +66,7 @@ internal fun aUnit(
     pilotingSkill: Int = 5,
     weapons: List<Weapon> = listOf(mediumLaser()),
     position: HexCoordinates = HexCoordinates(0, 0),
+    facing: HexDirection = HexDirection.N,
     walkingMP: Int = 4,
     runningMP: Int = 6,
     jumpMP: Int = 0,
@@ -77,6 +79,7 @@ internal fun aUnit(
     pilotingSkill = pilotingSkill,
     weapons = weapons,
     position = position,
+    facing = facing,
     walkingMP = walkingMP,
     runningMP = runningMP,
     jumpMP = jumpMP,

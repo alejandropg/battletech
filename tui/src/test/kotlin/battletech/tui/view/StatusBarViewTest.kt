@@ -49,9 +49,9 @@ internal class StatusBarViewTest {
 
         view.render(buffer, 0, 0, 50, 7)
 
-        assertEquals('╭', buffer.get(0, 0).char)
-        assertEquals('╮', buffer.get(49, 0).char)
-        assertEquals('╰', buffer.get(0, 6).char)
-        assertEquals('╯', buffer.get(49, 6).char)
+        assertEquals("╭", buffer.get(0, 0).char)
+        assertEquals("╮", buffer.get(49, 0).char)
+        assertEquals("╰", buffer.get(0, 6).char)
+        assertEquals("╯", buffer.get(49, 6).char)
     }
 }

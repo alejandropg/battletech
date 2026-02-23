@@ -19,54 +19,51 @@ internal class HexRendererTest {
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         // Row 0: "  _____  "
-        assertEquals('_', buffer.get(2, 0).char)
-        assertEquals('_', buffer.get(6, 0).char)
+        assertEquals("_", buffer.get(2, 0).char)
+        assertEquals("_", buffer.get(6, 0).char)
         // Row 1: " /     \ "
-        assertEquals('/', buffer.get(1, 1).char)
-        assertEquals('\\', buffer.get(7, 1).char)
+        assertEquals("/", buffer.get(1, 1).char)
+        assertEquals("\\", buffer.get(7, 1).char)
         // Row 2: "/       \"
-        assertEquals('/', buffer.get(0, 2).char)
-        assertEquals('\\', buffer.get(8, 2).char)
+        assertEquals("/", buffer.get(0, 2).char)
+        assertEquals("\\", buffer.get(8, 2).char)
         // Row 3: "\       /"
-        assertEquals('\\', buffer.get(0, 3).char)
-        assertEquals('/', buffer.get(8, 3).char)
+        assertEquals("\\", buffer.get(0, 3).char)
+        assertEquals("/", buffer.get(8, 3).char)
         // Row 4: " \_____/ "
-        assertEquals('\\', buffer.get(1, 4).char)
-        assertEquals('_', buffer.get(2, 4).char)
-        assertEquals('/', buffer.get(7, 4).char)
+        assertEquals("\\", buffer.get(1, 4).char)
+        assertEquals("_", buffer.get(2, 4).char)
+        assertEquals("/", buffer.get(7, 4).char)
     }
 
     @Test
-    fun `water hex has blue background in content area`() {
+    fun `water hex renders terrain icon with blue foreground`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER)
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        // Content area cells should have blue background
-        assertEquals(Color.BLUE, buffer.get(2, 1).bg)
-        assertEquals(Color.BLUE, buffer.get(6, 1).bg)
-        assertEquals(Color.BLUE, buffer.get(1, 2).bg)
+        assertEquals(Color.BLUE, buffer.get(2, 1).fg)
     }
 
     @Test
-    fun `light woods hex has green background`() {
+    fun `light woods hex renders terrain icon with green foreground`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals(Color.GREEN, buffer.get(4, 2).bg)
+        assertEquals(Color.GREEN, buffer.get(2, 1).fg)
     }
 
     @Test
-    fun `heavy woods hex has dark green background`() {
+    fun `heavy woods hex renders terrain icon with dark green foreground`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.HEAVY_WOODS)
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals(Color.DARK_GREEN, buffer.get(4, 2).bg)
+        assertEquals(Color.DARK_GREEN, buffer.get(2, 1).fg)
     }
 
     @Test
@@ -76,7 +73,7 @@ internal class HexRendererTest {
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals('2', buffer.get(6, 1).char)
+        assertEquals("2", buffer.get(6, 1).char)
     }
 
     @Test

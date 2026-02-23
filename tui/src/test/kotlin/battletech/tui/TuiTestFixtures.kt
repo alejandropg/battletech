@@ -6,6 +6,7 @@ import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.Terrain
 
 internal fun aHex(
@@ -38,6 +39,7 @@ internal fun aUnit(
     id: String = "unit-1",
     name: String = "Atlas",
     position: HexCoordinates = HexCoordinates(0, 0),
+    facing: HexDirection = HexDirection.N,
 ): Unit = Unit(
     id = UnitId(id),
     name = name,
@@ -45,6 +47,7 @@ internal fun aUnit(
     pilotingSkill = 5,
     weapons = emptyList(),
     position = position,
+    facing = facing,
 )
 
 internal fun aGameState(

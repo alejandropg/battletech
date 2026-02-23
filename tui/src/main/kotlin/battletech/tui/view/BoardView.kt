@@ -9,7 +9,6 @@ import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
-import battletech.tactical.model.HexDirection
 
 public class BoardView(
     private val gameState: GameState,
@@ -47,7 +46,7 @@ public class BoardView(
                     UnitRenderer.render(
                         buffer, drawX, drawY,
                         unit.name.first(),
-                        HexDirection.N,
+                        unit.facing,
                         Color.CYAN,
                     )
                 }

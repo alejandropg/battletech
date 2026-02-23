@@ -90,7 +90,7 @@ public class MovementPhaseController(
     ): GameState {
         val updatedUnits = gameState.units.map { unit ->
             if (unit.id == phaseState.selectedUnitId) {
-                unit.copy(position = destination.position)
+                unit.copy(position = destination.position, facing = destination.facing)
             } else {
                 unit
             }

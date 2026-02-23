@@ -22,11 +22,11 @@ internal class BoardViewTest {
 
         // Content offset +2,+2 for border + padding
         // Hex at (0,0) should have '/' at charX=0+2, charY=2+2
-        assertEquals('/', buffer.get(2, 4).char)
+        assertEquals("/", buffer.get(2, 4).char)
         // Hex at (1,0) should have '/' at charX=8+2, charY=3+2
-        assertEquals('/', buffer.get(10, 5).char)
+        assertEquals("/", buffer.get(10, 5).char)
         // Hex at (2,0) should have '/' at charX=14+2, charY=2+2
-        assertEquals('/', buffer.get(16, 4).char)
+        assertEquals("/", buffer.get(16, 4).char)
     }
 
     @Test
@@ -39,7 +39,7 @@ internal class BoardViewTest {
         view.render(buffer, 0, 0, 30, 16)
 
         // Unit initial 'A' at hex center: charX=4+2, charY=3+2
-        assertEquals('A', buffer.get(6, 5).char)
+        assertEquals("A", buffer.get(6, 5).char)
     }
 
     @Test
@@ -51,8 +51,8 @@ internal class BoardViewTest {
         view.render(buffer, 0, 0, 30, 16)
 
         // Column 0 should not be rendered in content area - check inside content area
-        assertEquals(' ', buffer.get(2, 3).char)
-        assertEquals(' ', buffer.get(5, 3).char)
+        assertEquals(" ", buffer.get(2, 3).char)
+        assertEquals(" ", buffer.get(5, 3).char)
     }
 
     @Test

@@ -61,9 +61,9 @@ internal class SidebarViewTest {
 
         view.render(buffer, 0, 0, 22, 14)
 
-        assertEquals('╭', buffer.get(0, 0).char)
-        assertEquals('╮', buffer.get(21, 0).char)
-        assertEquals('╰', buffer.get(0, 13).char)
-        assertEquals('╯', buffer.get(21, 13).char)
+        assertEquals("╭", buffer.get(0, 0).char)
+        assertEquals("╮", buffer.get(21, 0).char)
+        assertEquals("╰", buffer.get(0, 13).char)
+        assertEquals("╯", buffer.get(21, 13).char)
     }
 }

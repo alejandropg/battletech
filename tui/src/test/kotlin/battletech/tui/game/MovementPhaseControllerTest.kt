@@ -147,6 +147,23 @@ internal class MovementPhaseControllerTest {
     }
 
     @Test
+    fun `confirm persists facing from destination`() {
+        val controller = createController()
+        val unit = aUnit()
+        val gameState = aGameState(units = listOf(unit))
+        val destination = reachableHexes[2] // facing = SE
+        val phaseState = controller.enter(unit, gameState).copy(
+            selectedDestination = destination,
+        )
+
+        val result = controller.handleAction(InputAction.Confirm, phaseState, gameState)
+
+        val complete = result as PhaseControllerResult.Complete
+        val movedUnit = complete.updatedGameState.units.first { it.id == unit.id }
+        assertEquals(HexDirection.SE, movedUnit.facing)
+    }
+
+    @Test
     fun `cancel returns cancelled`() {
         val controller = createController()
         val unit = aUnit()

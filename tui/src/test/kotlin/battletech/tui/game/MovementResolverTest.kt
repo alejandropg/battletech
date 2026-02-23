@@ -30,6 +30,7 @@ internal class MovementResolverTest {
 
         val movedUnit = result.units.find { it.id == unit.id }!!
         assertEquals(HexCoordinates(2, 1), movedUnit.position)
+        assertEquals(HexDirection.SE, movedUnit.facing)
     }
 
     @Test
