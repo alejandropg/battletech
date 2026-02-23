@@ -15,7 +15,7 @@ public enum class Color {
 }
 
 public data class Cell(
-    val char: Char = ' ',
+    val char: String = " ",
     val fg: Color = Color.DEFAULT,
     val bg: Color = Color.DEFAULT,
 )

@@ -28,7 +28,7 @@ public class ScreenBuffer(
         for ((i, char) in text.withIndex()) {
             val cx = x + i
             if (cx >= width) break
-            set(cx, y, Cell(char, fg, bg))
+            set(cx, y, Cell(char.toString(), fg, bg))
         }
     }
 
@@ -43,25 +43,25 @@ public class ScreenBuffer(
     ) {
         if (width < 2 || height < 2) return
 
-        set(x, y, Cell('╭', borderColor))
-        set(x + width - 1, y, Cell('╮', borderColor))
-        set(x, y + height - 1, Cell('╰', borderColor))
-        set(x + width - 1, y + height - 1, Cell('╯', borderColor))
+        set(x, y, Cell("╭", borderColor))
+        set(x + width - 1, y, Cell("╮", borderColor))
+        set(x, y + height - 1, Cell("╰", borderColor))
+        set(x + width - 1, y + height - 1, Cell("╯", borderColor))
 
         for (i in 1 until width - 1) {
-            set(x + i, y, Cell('─', borderColor))
-            set(x + i, y + height - 1, Cell('─', borderColor))
+            set(x + i, y, Cell("─", borderColor))
+            set(x + i, y + height - 1, Cell("─", borderColor))
         }
 
         for (i in 1 until height - 1) {
-            set(x, y + i, Cell('│', borderColor))
-            set(x + width - 1, y + i, Cell('│', borderColor))
+            set(x, y + i, Cell("│", borderColor))
+            set(x + width - 1, y + i, Cell("│", borderColor))
         }
 
         if (title.isNotEmpty() && width > title.length + 6) {
-            set(x + 3, y, Cell(' ', borderColor))
+            set(x + 3, y, Cell(" ", borderColor))
             writeString(x + 4, y, title, titleColor)
-            set(x + 4 + title.length, y, Cell(' ', borderColor))
+            set(x + 4 + title.length, y, Cell(" ", borderColor))
         }
     }
 
