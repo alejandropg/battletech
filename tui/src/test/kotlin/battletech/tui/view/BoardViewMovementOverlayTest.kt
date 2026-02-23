@@ -14,8 +14,8 @@ internal class BoardViewMovementOverlayTest {
     fun `reachable hexes show dot marker at center`() {
         val state = aGameState(map = aGameMap(cols = 5, rows = 5))
         val highlights = mapOf(
-            HexCoordinates(1, 1) to HexHighlight.REACHABLE,
-            HexCoordinates(2, 1) to HexHighlight.REACHABLE,
+            HexCoordinates(1, 1) to HexHighlight.REACHABLE_WALK,
+            HexCoordinates(2, 1) to HexHighlight.REACHABLE_WALK,
         )
         val view = BoardView(state, Viewport(0, 0, 36, 20), hexHighlights = highlights)
         val buffer = ScreenBuffer(40, 24)

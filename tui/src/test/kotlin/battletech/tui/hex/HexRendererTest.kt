@@ -93,7 +93,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.REACHABLE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.REACHABLE_WALK)
 
         assertEquals(".", buffer.get(4, 2).char)
         assertEquals(Color.DEFAULT, buffer.get(4, 2).bg)

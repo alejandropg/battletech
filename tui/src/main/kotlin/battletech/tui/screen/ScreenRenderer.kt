@@ -86,6 +86,7 @@ public class ScreenRenderer(private val terminal: Terminal) {
         Color.DARK_GREEN -> TextColors.Companion.color(Ansi256(22))
         Color.BROWN -> TextColors.Companion.color(Ansi256(130))
         Color.BRIGHT_YELLOW -> TextColors.brightYellow
+        Color.ORANGE -> TextColors.Companion.color(Ansi256(208))
     }
 
     private fun toBgStyle(color: Color): TextStyle? = when (color) {
@@ -100,5 +101,6 @@ public class ScreenRenderer(private val terminal: Terminal) {
         Color.DARK_GREEN -> TextColors.Companion.color(Ansi256(22)).bg
         Color.BROWN -> TextColors.Companion.color(Ansi256(130)).bg
         Color.BRIGHT_YELLOW -> TextColors.brightYellow.bg
+        Color.ORANGE -> TextColors.Companion.color(Ansi256(208)).bg
     }
 }

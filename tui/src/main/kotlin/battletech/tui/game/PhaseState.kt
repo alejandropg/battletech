@@ -4,6 +4,7 @@ import battletech.tui.hex.HexHighlight
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
 
@@ -21,7 +22,12 @@ public data class PhaseState(
         val highlights = mutableMapOf<HexCoordinates, HexHighlight>()
 
         reachability?.destinations?.forEach { dest ->
-            highlights[dest.position] = HexHighlight.REACHABLE
+            val highlight = when (reachability.mode) {
+                MovementMode.WALK -> HexHighlight.REACHABLE_WALK
+                MovementMode.RUN -> HexHighlight.REACHABLE_RUN
+                MovementMode.JUMP -> HexHighlight.REACHABLE_JUMP
+            }
+            highlights[dest.position] = highlight
         }
 
         highlightedPath?.forEach { pos ->

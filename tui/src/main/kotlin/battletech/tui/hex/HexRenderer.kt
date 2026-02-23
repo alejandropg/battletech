@@ -24,14 +24,16 @@ public object HexRenderer {
         renderTerrainIcon(buffer, x, y, hex.terrain, bg)
         renderElevation(buffer, x, y, hex.elevation, bg)
         when (highlight) {
-            HexHighlight.REACHABLE -> renderOverlayChar(buffer, x, y, ".")
-            HexHighlight.PATH, HexHighlight.PATH_CURSOR -> renderOverlayChar(buffer, x, y, "*")
+            HexHighlight.REACHABLE_WALK -> renderOverlayChar(buffer, x, y, ".", Color.WHITE)
+            HexHighlight.REACHABLE_RUN -> renderOverlayChar(buffer, x, y, ".", Color.ORANGE)
+            HexHighlight.REACHABLE_JUMP -> renderOverlayChar(buffer, x, y, ".", Color.CYAN)
+            HexHighlight.PATH, HexHighlight.PATH_CURSOR -> renderOverlayChar(buffer, x, y, "*", Color.WHITE)
             else -> Unit
         }
     }
 
-    private fun renderOverlayChar(buffer: ScreenBuffer, x: Int, y: Int, char: String) {
-        buffer.set(x + 4, y + 2, Cell(char, Color.WHITE))
+    private fun renderOverlayChar(buffer: ScreenBuffer, x: Int, y: Int, char: String, color: Color) {
+        buffer.set(x + 4, y + 2, Cell(char, color))
     }
 
     private fun contentBackground(highlight: HexHighlight): Color = when (highlight) {

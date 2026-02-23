@@ -72,7 +72,7 @@ internal class BoardViewTest {
     fun `highlights map with reachable and path overlays`() {
         val state = aGameState(map = aGameMap())
         val highlights = mapOf(
-            HexCoordinates(1, 0) to HexHighlight.REACHABLE,
+            HexCoordinates(1, 0) to HexHighlight.REACHABLE_WALK,
             HexCoordinates(2, 0) to HexHighlight.PATH,
         )
         val view = BoardView(state, viewport = Viewport(0, 0, 26, 12), hexHighlights = highlights)
