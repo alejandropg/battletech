@@ -73,10 +73,18 @@ public fun main() {
                 val selectedUnit = gameLoop.gameState.units.find { it.position == cursor.position }
 
                 val highlights = phaseState?.hexHighlights() ?: emptyMap()
+                val reachableFacings = phaseState?.facingsByPosition ?: emptyMap()
+                val facingSelectionHex = phaseState?.facingSelectionHex
+                val facingSelectionFacings = phaseState?.facingOptions
+                    ?.map { it.facing }?.toSet()
+                    ?.takeIf { facingSelectionHex != null }
                 val boardView = BoardView(
                     gameLoop.gameState, viewport,
                     cursorPosition = cursor.position,
                     hexHighlights = highlights,
+                    reachableFacings = reachableFacings,
+                    facingSelectionHex = facingSelectionHex,
+                    facingSelectionFacings = facingSelectionFacings,
                 )
                 boardView.render(buffer, 0, 0, boardWidth, boardHeight)
 
@@ -156,7 +164,36 @@ public fun main() {
                         }
                     }
                     is InputAction.Cancel -> {
-                        phaseState = null
+                        val currentPhaseState = phaseState
+                        if (currentPhaseState != null) {
+                            val controller = controllers[gameLoop.currentPhase]!!
+                            val result = controller.handleAction(action, currentPhaseState, gameLoop.gameState)
+                            when (result) {
+                                is PhaseControllerResult.UpdateState -> phaseState = result.phaseState
+                                is PhaseControllerResult.Cancelled -> phaseState = null
+                                is PhaseControllerResult.Complete -> {
+                                    gameLoop.gameState = result.updatedGameState
+                                    gameLoop.advancePhase()
+                                    phaseState = null
+                                }
+                            }
+                        }
+                    }
+                    is InputAction.SelectAction -> {
+                        val currentPhaseState = phaseState
+                        if (currentPhaseState != null) {
+                            val controller = controllers[gameLoop.currentPhase]!!
+                            val result = controller.handleAction(action, currentPhaseState, gameLoop.gameState)
+                            when (result) {
+                                is PhaseControllerResult.UpdateState -> phaseState = result.phaseState
+                                is PhaseControllerResult.Complete -> {
+                                    gameLoop.gameState = result.updatedGameState
+                                    gameLoop.advancePhase()
+                                    phaseState = null
+                                }
+                                is PhaseControllerResult.Cancelled -> phaseState = null
+                            }
+                        }
                     }
                     is InputAction.CycleUnit -> {
                         val currentPhaseState = phaseState

@@ -8,6 +8,7 @@ import battletech.tactical.action.Unit
 import battletech.tactical.action.movement.MovementPreview
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
@@ -15,6 +16,11 @@ import battletech.tactical.movement.ReachableHex
 public class MovementPhaseController(
     private val actionQueryService: ActionQueryService,
 ) : PhaseController {
+
+    public companion object {
+        public val FACING_ORDER: List<HexDirection> =
+            listOf(HexDirection.N, HexDirection.NE, HexDirection.SE, HexDirection.S, HexDirection.SW, HexDirection.NW)
+    }
 
     override fun enter(unit: Unit, gameState: GameState): PhaseState {
         val report = actionQueryService.getMovementActions(unit, gameState)
@@ -43,6 +49,8 @@ public class MovementPhaseController(
             reachability = nextReachability,
             highlightedPath = null,
             selectedDestination = null,
+            facingSelectionHex = null,
+            facingOptions = emptyList(),
             prompt = modePrompt(unitName, nextReachability),
         )
     }
@@ -53,28 +61,102 @@ public class MovementPhaseController(
         gameState: GameState,
     ): PhaseControllerResult {
         return when (action) {
-            is InputAction.Cancel -> PhaseControllerResult.Cancelled
+            is InputAction.Cancel -> {
+                if (phaseState.facingSelectionHex != null) {
+                    PhaseControllerResult.UpdateState(
+                        phaseState.copy(
+                            facingSelectionHex = null,
+                            facingOptions = emptyList(),
+                        ),
+                    )
+                } else {
+                    PhaseControllerResult.Cancelled
+                }
+            }
             is InputAction.Confirm -> {
+                if (phaseState.facingSelectionHex != null) {
+                    return PhaseControllerResult.UpdateState(phaseState)
+                }
                 val destination = phaseState.selectedDestination
                     ?: return PhaseControllerResult.UpdateState(phaseState)
-                val updatedState = applyMovement(gameState, phaseState, destination)
-                PhaseControllerResult.Complete(updatedState)
+                val facingsAtHex = phaseState.reachability?.destinations
+                    ?.filter { it.position == destination.position } ?: emptyList()
+                if (facingsAtHex.size > 1) {
+                    val cheapest = facingsAtHex.minByOrNull { it.mpSpent }
+                    val path = cheapest?.path?.map { it.position }
+                    return PhaseControllerResult.UpdateState(
+                        phaseState.copy(
+                            highlightedPath = path,
+                            selectedDestination = null,
+                            facingSelectionHex = destination.position,
+                            facingOptions = facingsAtHex,
+                        ),
+                    )
+                }
+                PhaseControllerResult.Complete(applyMovement(gameState, phaseState, destination))
             }
-            is InputAction.ClickHex -> {
-                val reachability = phaseState.reachability
-                    ?: return PhaseControllerResult.UpdateState(phaseState)
-                val cheapest = findCheapestPath(action.coords, reachability)
+            is InputAction.ClickHex -> handleClickHex(action.coords, phaseState, gameState)
+            is InputAction.SelectAction -> handleSelectAction(action.index, phaseState, gameState)
+            is InputAction.MoveCursor -> PhaseControllerResult.UpdateState(phaseState)
+            else -> PhaseControllerResult.UpdateState(phaseState)
+        }
+    }
+
+    private fun handleClickHex(
+        coords: HexCoordinates,
+        phaseState: PhaseState,
+        gameState: GameState,
+    ): PhaseControllerResult {
+        val reachability = phaseState.reachability
+            ?: return PhaseControllerResult.UpdateState(phaseState)
+
+        val facingsAtHex = reachability.destinations.filter { it.position == coords }
+
+        return when (facingsAtHex.size) {
+            0 -> PhaseControllerResult.UpdateState(
+                phaseState.copy(
+                    highlightedPath = null,
+                    selectedDestination = null,
+                    facingSelectionHex = null,
+                    facingOptions = emptyList(),
+                ),
+            )
+            1 -> {
+                val destination = facingsAtHex.first()
+                PhaseControllerResult.Complete(applyMovement(gameState, phaseState, destination))
+            }
+            else -> {
+                // Multiple facings available — enter facing selection sub-state
+                val cheapest = facingsAtHex.minByOrNull { it.mpSpent }
                 val path = cheapest?.path?.map { it.position }
                 PhaseControllerResult.UpdateState(
                     phaseState.copy(
                         highlightedPath = path,
-                        selectedDestination = cheapest,
+                        selectedDestination = null,
+                        facingSelectionHex = coords,
+                        facingOptions = facingsAtHex,
                     ),
                 )
             }
-            is InputAction.MoveCursor -> PhaseControllerResult.UpdateState(phaseState)
-            else -> PhaseControllerResult.UpdateState(phaseState)
         }
+    }
+
+    private fun handleSelectAction(
+        index: Int,
+        phaseState: PhaseState,
+        gameState: GameState,
+    ): PhaseControllerResult {
+        val selectionHex = phaseState.facingSelectionHex
+            ?: return PhaseControllerResult.UpdateState(phaseState)
+
+        val directionIndex = index - 1  // 1-based input → 0-based
+        if (directionIndex !in FACING_ORDER.indices) return PhaseControllerResult.UpdateState(phaseState)
+
+        val direction = FACING_ORDER[directionIndex]
+        val destination = phaseState.facingOptions.find { it.facing == direction }
+            ?: return PhaseControllerResult.UpdateState(phaseState)
+
+        return PhaseControllerResult.Complete(applyMovement(gameState, phaseState, destination))
     }
 
     public fun updatePathForCursor(
@@ -87,6 +169,8 @@ public class MovementPhaseController(
         return phaseState.copy(
             highlightedPath = path,
             selectedDestination = cheapest,
+            facingSelectionHex = null,
+            facingOptions = emptyList(),
         )
     }
 

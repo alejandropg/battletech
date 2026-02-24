@@ -17,7 +17,12 @@ public data class PhaseState(
     val highlightedPath: List<HexCoordinates>? = null,
     val selectedDestination: ReachableHex? = null,
     val prompt: String = "",
+    val facingSelectionHex: HexCoordinates? = null,
+    val facingOptions: List<ReachableHex> = emptyList(),
 ) {
+    val facingsByPosition: Map<HexCoordinates, Set<battletech.tactical.model.HexDirection>>
+        get() = reachability?.facingsByPosition() ?: emptyMap()
+
     public fun hexHighlights(): Map<HexCoordinates, HexHighlight> {
         val highlights = mutableMapOf<HexCoordinates, HexHighlight>()
 
@@ -30,7 +35,7 @@ public data class PhaseState(
             highlights[dest.position] = highlight
         }
 
-        highlightedPath?.forEach { pos ->
+        highlightedPath?.dropLast(1)?.forEach { pos ->
             highlights[pos] = HexHighlight.PATH
         }
 

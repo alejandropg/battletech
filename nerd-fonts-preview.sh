@@ -45,6 +45,12 @@ TERRAINS=(
   "Direction SW;nf-md-arrow_bottom_left_bold_outline;f09b7;203;213;225;50;50;50"
   "Direction W;nf-md-arrow_left_bold_outline;f09c0;203;213;225;50;50;50"
   "Direction NW;nf-md-arrow_top_left_bold_outline;f09c3;203;213;225;50;50;50"
+  "Walk;nf-md-walk;f0583;203;213;225;50;50;50"
+  "Run;nf-md-run_fast;f046e;203;213;225;50;50;50"
+  "Jump;nf-md-rocket_launch;f14de;203;213;225;50;50;50"
+  "Level 1;nf-md-numeric_1_box_multiple_outline;f03a5;203;213;225;50;50;50"
+  "Level 2;nf-md-numeric_2_box_multiple_outline;f03a8;203;213;225;50;50;50"
+  "Level 9;nf-md-numeric_9_box_multiple_outline;f03bd;203;213;225;50;50;50"
 
 )
 

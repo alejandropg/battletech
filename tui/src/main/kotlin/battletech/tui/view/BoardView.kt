@@ -9,12 +9,16 @@ import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 
 public class BoardView(
     private val gameState: GameState,
     private val viewport: Viewport,
     private val cursorPosition: HexCoordinates? = null,
     private val hexHighlights: Map<HexCoordinates, HexHighlight> = emptyMap(),
+    private val reachableFacings: Map<HexCoordinates, Set<HexDirection>> = emptyMap(),
+    private val facingSelectionHex: HexCoordinates? = null,
+    private val facingSelectionFacings: Set<HexDirection>? = null,
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -33,14 +37,34 @@ public class BoardView(
                 val drawX = contentX + screenX - viewport.scrollCol * HexGeometry.COL_STRIDE
                 val drawY = contentY + screenY - viewport.scrollRow * HexGeometry.ROW_STRIDE
 
-                val highlight = when {
+                val baseHighlight = when {
                     coords == cursorPosition && hexHighlights[coords] == HexHighlight.PATH -> HexHighlight.PATH_CURSOR
                     coords == cursorPosition -> HexHighlight.CURSOR
                     coords in hexHighlights -> hexHighlights.getValue(coords)
                     else -> HexHighlight.NONE
                 }
 
+                val hasFacingOverlay = coords in reachableFacings || coords == facingSelectionHex
+                val highlight = if (hasFacingOverlay && baseHighlight in setOf(
+                    HexHighlight.REACHABLE_WALK, HexHighlight.REACHABLE_RUN, HexHighlight.REACHABLE_JUMP,
+                )) HexHighlight.NONE else baseHighlight
+
                 HexRenderer.render(buffer, drawX, drawY, hex, highlight)
+
+                // Facing overlays (drawn after base render, over the reachability dot)
+                when {
+                    coords == facingSelectionHex && facingSelectionFacings != null ->
+                        HexRenderer.renderFacingNumbers(buffer, drawX, drawY, facingSelectionFacings)
+                    coords in reachableFacings && highlight !in setOf(HexHighlight.PATH, HexHighlight.PATH_CURSOR) -> {
+                        val facings = reachableFacings.getValue(coords)
+                        val color = when (baseHighlight) {
+                            HexHighlight.REACHABLE_RUN -> Color.ORANGE
+                            HexHighlight.REACHABLE_JUMP -> Color.CYAN
+                            else -> Color.WHITE
+                        }
+                        HexRenderer.renderFacingArrows(buffer, drawX, drawY, facings, color)
+                    }
+                }
 
                 val unit = gameState.units.find { it.position == coords }
                 if (unit != null) {

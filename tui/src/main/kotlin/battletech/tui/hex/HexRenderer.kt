@@ -1,6 +1,7 @@
 package battletech.tui.hex
 
 import battletech.tactical.model.Hex
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.Terrain
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
@@ -12,6 +13,73 @@ public object HexRenderer {
     private val ICON_LIGHT_WOODS = String(Character.toChars(0xF0E69))
     private val ICON_HEAVY_WOODS = String(Character.toChars(0xF0531))
     private val ICON_WATER = String(Character.toChars(0xF078D))
+
+    // Facing arrow icons (same codepoints as UnitRenderer)
+    private val ICON_FACING_N  = String(Character.toChars(0xF09C7))
+    private val ICON_FACING_NE = String(Character.toChars(0xF09C5))
+    private val ICON_FACING_SE = String(Character.toChars(0xF09B9))
+    private val ICON_FACING_S  = String(Character.toChars(0xF09BF))
+    private val ICON_FACING_SW = String(Character.toChars(0xF09B7))
+    private val ICON_FACING_NW = String(Character.toChars(0xF09C3))
+
+    // Arrow positions within hex: (col-offset, row-offset) relative to hex origin
+    // Row 2: NW(+2), N(+4), NE(+6)
+    // Row 3: SW(+2), S(+4), SE(+6)
+    private val FACING_POSITIONS: Map<HexDirection, Pair<Int, Int>> = mapOf(
+        HexDirection.N  to (4 to 2),
+        HexDirection.NE to (6 to 2),
+        HexDirection.SE to (6 to 3),
+        HexDirection.S  to (4 to 3),
+        HexDirection.SW to (2 to 3),
+        HexDirection.NW to (2 to 2),
+    )
+
+    private fun facingIcon(direction: HexDirection): String = when (direction) {
+        HexDirection.N  -> ICON_FACING_N
+        HexDirection.NE -> ICON_FACING_NE
+        HexDirection.SE -> ICON_FACING_SE
+        HexDirection.S  -> ICON_FACING_S
+        HexDirection.SW -> ICON_FACING_SW
+        HexDirection.NW -> ICON_FACING_NW
+    }
+
+    // Number mapping: 1=N, 2=NE, 3=SE, 4=S, 5=SW, 6=NW
+    private val FACING_NUMBERS: Map<HexDirection, String> = mapOf(
+        HexDirection.N  to "1",
+        HexDirection.NE to "2",
+        HexDirection.SE to "3",
+        HexDirection.S  to "4",
+        HexDirection.SW to "5",
+        HexDirection.NW to "6",
+    )
+
+    /**
+     * Renders facing arrows for reachable facings at a hex.
+     * If all 6 facings are reachable, renders a dot at center (same as before).
+     * Otherwise, renders individual arrows at their hex positions.
+     */
+    public fun renderFacingArrows(buffer: ScreenBuffer, x: Int, y: Int, facings: Set<HexDirection>, color: Color) {
+        if (facings.size == HexDirection.entries.size) {
+            renderOverlayChar(buffer, x, y, ".", color)
+            return
+        }
+        for (direction in facings) {
+            val (dx, dy) = FACING_POSITIONS[direction] ?: continue
+            buffer.set(x + dx, y + dy, Cell(facingIcon(direction), color))
+        }
+    }
+
+    /**
+     * Renders number labels (1-6) for available facings during facing selection.
+     * Drawn in BRIGHT_YELLOW.
+     */
+    public fun renderFacingNumbers(buffer: ScreenBuffer, x: Int, y: Int, facings: Set<HexDirection>) {
+        for (direction in facings) {
+            val (dx, dy) = FACING_POSITIONS[direction] ?: continue
+            val number = FACING_NUMBERS[direction] ?: continue
+            buffer.set(x + dx, y + dy, Cell(number, Color.BRIGHT_YELLOW))
+        }
+    }
 
     public fun render(buffer: ScreenBuffer, x: Int, y: Int, hex: Hex, highlight: HexHighlight) {
         val bg = contentBackground(highlight)
