@@ -14,6 +14,19 @@ public object HexRenderer {
     private val ICON_HEAVY_WOODS = String(Character.toChars(0xF0531))
     private val ICON_WATER = String(Character.toChars(0xF078D))
 
+    // Elevation icons (nf-md-numeric_N_box_multiple_outline)
+    private val ELEVATION_ICONS = mapOf(
+        1 to String(Character.toChars(0xF03A5)),
+        2 to String(Character.toChars(0xF03A8)),
+        3 to String(Character.toChars(0xF03AB)),
+        4 to String(Character.toChars(0xF03B2)),
+        5 to String(Character.toChars(0xF03AF)),
+        6 to String(Character.toChars(0xF03B4)),
+        7 to String(Character.toChars(0xF03B7)),
+        8 to String(Character.toChars(0xF03BA)),
+        9 to String(Character.toChars(0xF03BD)),
+    )
+
     // Facing arrow icons (same codepoints as UnitRenderer)
     private val ICON_FACING_N  = String(Character.toChars(0xF09C7))
     private val ICON_FACING_NE = String(Character.toChars(0xF09C5))
@@ -161,10 +174,8 @@ public object HexRenderer {
     }
 
     private fun renderElevation(buffer: ScreenBuffer, x: Int, y: Int, elevation: Int, bg: Color) {
-        if (elevation != 0) {
-            val elevStr = elevation.toString()
-            buffer.set(x + 6, y + 1, Cell(elevStr.last().toString(), Color.WHITE, bg))
-        }
+        val icon = ELEVATION_ICONS[elevation] ?: return
+        buffer.set(x + 6, y + 1, Cell(icon, Color.WHITE, bg))
     }
 
 }

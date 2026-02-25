@@ -73,7 +73,7 @@ internal class HexRendererTest {
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals("2", buffer.get(6, 1).char)
+        assertEquals(String(Character.toChars(0xF03A8)), buffer.get(6, 1).char)
     }
 
     @Test
