@@ -1,9 +1,9 @@
 package battletech.tui.hex
 
+import battletech.tactical.model.HexDirection
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
-import battletech.tactical.model.HexDirection
 
 public object UnitRenderer {
 
@@ -15,14 +15,14 @@ public object UnitRenderer {
         facing: HexDirection,
         color: Color,
     ) {
-        // Unit initial at hex center (row 3, col 4)
-        buffer.set(x + 4, y + 3, Cell(initial.toString(), color, buffer.get(x + 4, y + 3).bg))
-
-        // Facing arrow in row 2
         val (arrowChar, arrowOffset) = facingArrow(facing)
         val arrowX = x + arrowOffset
-        val arrowY = y + 2
-        buffer.set(arrowX, arrowY, Cell(arrowChar, color, buffer.get(arrowX, arrowY).bg))
+        val southFacing = facing == HexDirection.SE || facing == HexDirection.S || facing == HexDirection.SW
+        val initialRow = if (southFacing) 2 else 3
+        val arrowRow = if (southFacing) 3 else 2
+
+        buffer.set(x + 4, y + initialRow, Cell(initial.toString(), color, buffer.get(x + 4, y + initialRow).bg))
+        buffer.set(arrowX, y + arrowRow, Cell(arrowChar, color, buffer.get(arrowX, y + arrowRow).bg))
     }
 
     private val ICON_FACING_N  = String(Character.toChars(0xF09C7))

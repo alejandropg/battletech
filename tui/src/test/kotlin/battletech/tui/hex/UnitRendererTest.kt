@@ -1,8 +1,8 @@
 package battletech.tui.hex
 
+import battletech.tactical.model.HexDirection
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
-import battletech.tactical.model.HexDirection
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -40,7 +40,8 @@ internal class UnitRendererTest {
 
         UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.S, Color.CYAN)
 
-        assertEquals(ICON_FACING_S, buffer.get(4, 2).char)
+        assertEquals(ICON_FACING_S, buffer.get(4, 3).char)
+        assertEquals("A", buffer.get(4, 2).char)
     }
 
     @Test
@@ -58,7 +59,8 @@ internal class UnitRendererTest {
 
         UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.SE, Color.CYAN)
 
-        assertEquals(ICON_FACING_SE, buffer.get(5, 2).char)
+        assertEquals(ICON_FACING_SE, buffer.get(5, 3).char)
+        assertEquals("A", buffer.get(4, 2).char)
     }
 
     @Test
@@ -67,7 +69,8 @@ internal class UnitRendererTest {
 
         UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.SW, Color.CYAN)
 
-        assertEquals(ICON_FACING_SW, buffer.get(3, 2).char)
+        assertEquals(ICON_FACING_SW, buffer.get(3, 3).char)
+        assertEquals("A", buffer.get(4, 2).char)
     }
 
     @Test
