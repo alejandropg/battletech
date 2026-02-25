@@ -19,6 +19,7 @@ public class BoardView(
     private val reachableFacings: Map<HexCoordinates, Set<HexDirection>> = emptyMap(),
     private val facingSelectionHex: HexCoordinates? = null,
     private val facingSelectionFacings: Set<HexDirection>? = null,
+    private val pathDestination: HexCoordinates? = null,
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -57,9 +58,10 @@ public class BoardView(
                         HexRenderer.renderFacingNumbers(buffer, drawX, drawY, facingSelectionFacings)
                     coords in reachableFacings && highlight !in setOf(HexHighlight.PATH, HexHighlight.PATH_CURSOR) -> {
                         val facings = reachableFacings.getValue(coords)
-                        val color = when (baseHighlight) {
-                            HexHighlight.REACHABLE_RUN -> Color.ORANGE
-                            HexHighlight.REACHABLE_JUMP -> Color.CYAN
+                        val color = when {
+                            coords == pathDestination -> Color.BRIGHT_YELLOW
+                            baseHighlight == HexHighlight.REACHABLE_RUN -> Color.ORANGE
+                            baseHighlight == HexHighlight.REACHABLE_JUMP -> Color.CYAN
                             else -> Color.WHITE
                         }
                         HexRenderer.renderFacingArrows(buffer, drawX, drawY, facings, color)

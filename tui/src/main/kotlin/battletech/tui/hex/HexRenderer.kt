@@ -101,7 +101,7 @@ public object HexRenderer {
             HexHighlight.REACHABLE_WALK -> renderOverlayChar(buffer, x, y, ".", Color.WHITE)
             HexHighlight.REACHABLE_RUN -> renderOverlayChar(buffer, x, y, ".", Color.ORANGE)
             HexHighlight.REACHABLE_JUMP -> renderOverlayChar(buffer, x, y, ".", Color.CYAN)
-            HexHighlight.PATH, HexHighlight.PATH_CURSOR -> renderOverlayChar(buffer, x, y, "*", Color.WHITE)
+            HexHighlight.PATH, HexHighlight.PATH_CURSOR -> renderOverlayChar(buffer, x, y, "*", Color.BRIGHT_YELLOW)
             else -> Unit
         }
     }
