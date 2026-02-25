@@ -16,7 +16,6 @@ import battletech.tui.game.AppState
 import battletech.tui.game.AttackController
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.MovementController
-import battletech.tui.game.PhaseOutcome
 import battletech.tui.game.PhaseState
 import battletech.tui.game.autoAdvanceGlobalPhases
 import battletech.tui.game.extractRenderData
@@ -79,14 +78,9 @@ public fun main() {
                 if (action is InputAction.MoveCursor) {
                     val newCursor = moveCursor(appState.cursor, action.direction, appState.gameState.map)
                     appState = appState.copy(cursor = newCursor)
-                    val phase = appState.phaseState
-                    if (phase is PhaseState.Movement) {
-                        val outcome = movementController.handle(action, phase, newCursor, appState.gameState)
-                        if (outcome is PhaseOutcome.Continue) {
-                            appState = appState.copy(phaseState = outcome.phaseState)
-                        }
-                    }
-                    continue
+                } else if (action is InputAction.ClickHex) {
+                    val newCursor = action.coords
+                    appState = appState.copy(cursor = newCursor)
                 }
 
                 // Phase-specific dispatch
@@ -175,7 +169,8 @@ private fun renderFrame(
     val movementMode = (appState.phaseState as? PhaseState.Movement)?.reachability?.mode
 
     val boardView = BoardView(
-        appState.gameState, viewport,
+        appState.gameState,
+        viewport,
         cursorPosition = appState.cursor,
         hexHighlights = renderData.hexHighlights,
         reachableFacings = renderData.reachableFacings,

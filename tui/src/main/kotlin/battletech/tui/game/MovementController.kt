@@ -55,12 +55,12 @@ public class MovementController(
     ): PhaseOutcome = when (action) {
         is InputAction.Cancel -> PhaseOutcome.Cancelled
         is InputAction.Confirm -> handleBrowsingConfirm(state, gameState)
-        is InputAction.ClickHex -> handleClickHex(action.coords, state, gameState)
         is InputAction.SelectAction -> handleBrowsingSelectAction(action.index, state, gameState)
-        is InputAction.MoveCursor -> {
+        is InputAction.MoveCursor, is InputAction.ClickHex -> {
             val updated = updatePathForCursor(cursor, state)
             PhaseOutcome.Continue(updated)
         }
+
         is InputAction.CycleUnit -> PhaseOutcome.Continue(cycleMode(state))
         else -> PhaseOutcome.Continue(state)
     }
@@ -107,27 +107,6 @@ public class MovementController(
         return PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination))
     }
 
-    private fun handleClickHex(
-        coords: HexCoordinates,
-        state: PhaseState.Movement.Browsing,
-        gameState: GameState,
-    ): PhaseOutcome {
-        if (state.modes.isEmpty()) return PhaseOutcome.Continue(state)
-        val reachability = state.reachability
-        val facingsAtHex = reachability.destinations.filter { it.position == coords }
-
-        return when (facingsAtHex.size) {
-            0 -> PhaseOutcome.Continue(
-                state.copy(hoveredPath = null, hoveredDestination = null),
-            )
-            1 -> {
-                val destination = facingsAtHex.first()
-                PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination))
-            }
-            else -> PhaseOutcome.Continue(enterFacingSelection(state, coords, facingsAtHex))
-        }
-    }
-
     private fun handleBrowsingSelectAction(
         index: Int,
         state: PhaseState.Movement.Browsing,
@@ -137,12 +116,13 @@ public class MovementController(
         if (directionIndex !in FACING_ORDER.indices) return PhaseOutcome.Continue(state)
         val direction = FACING_ORDER[directionIndex]
 
-        val selected = state.hoveredDestination ?: return PhaseOutcome.Continue(state)
+        val selected = state.hoveredDestination
+            ?: return PhaseOutcome.Continue(state)
         val facingsAtHex = state.reachability.destinations
             .filter { it.position == selected.position }
-        if (facingsAtHex.size <= 1) return PhaseOutcome.Continue(state)
         val destination = facingsAtHex.find { it.facing == direction }
             ?: return PhaseOutcome.Continue(state)
+
         return PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination))
     }
 
