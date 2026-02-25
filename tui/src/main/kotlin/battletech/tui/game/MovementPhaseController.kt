@@ -1,6 +1,5 @@
 package battletech.tui.game
 
-import battletech.tui.input.InputAction
 import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.AvailableAction
 import battletech.tactical.action.TurnPhase
@@ -12,6 +11,7 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
+import battletech.tui.input.InputAction
 
 public class MovementPhaseController(
     private val actionQueryService: ActionQueryService,
@@ -146,16 +146,24 @@ public class MovementPhaseController(
         phaseState: PhaseState,
         gameState: GameState,
     ): PhaseControllerResult {
-        val selectionHex = phaseState.facingSelectionHex
-            ?: return PhaseControllerResult.UpdateState(phaseState)
-
-        val directionIndex = index - 1  // 1-based input → 0-based
+        val directionIndex = index - 1
         if (directionIndex !in FACING_ORDER.indices) return PhaseControllerResult.UpdateState(phaseState)
-
         val direction = FACING_ORDER[directionIndex]
-        val destination = phaseState.facingOptions.find { it.facing == direction }
-            ?: return PhaseControllerResult.UpdateState(phaseState)
 
+        // Already in facing selection sub-state (existing behavior)
+        if (phaseState.facingSelectionHex != null) {
+            val destination = phaseState.facingOptions.find { it.facing == direction }
+                ?: return PhaseControllerResult.UpdateState(phaseState)
+            return PhaseControllerResult.Complete(applyMovement(gameState, phaseState, destination))
+        }
+
+        // Direct facing selection from movement browsing (new shortcut)
+        val selected = phaseState.selectedDestination ?: return PhaseControllerResult.UpdateState(phaseState)
+        val facingsAtHex = phaseState.reachability?.destinations
+            ?.filter { it.position == selected.position } ?: emptyList()
+        if (facingsAtHex.size <= 1) return PhaseControllerResult.UpdateState(phaseState)
+        val destination = facingsAtHex.find { it.facing == direction }
+            ?: return PhaseControllerResult.UpdateState(phaseState)
         return PhaseControllerResult.Complete(applyMovement(gameState, phaseState, destination))
     }
 
