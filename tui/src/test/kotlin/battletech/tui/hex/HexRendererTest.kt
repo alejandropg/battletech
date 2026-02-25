@@ -5,6 +5,7 @@ import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.Terrain
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -100,12 +101,42 @@ internal class HexRendererTest {
     }
 
     @Test
-    fun `path highlight shows star marker at center`() {
+    fun `path highlight without mode shows star`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH)
 
         assertEquals("*", buffer.get(4, 2).char)
+    }
+
+    @Test
+    fun `path highlight with WALK mode shows walk icon`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0))
+
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH, MovementMode.WALK)
+
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(4, 2).char)
+    }
+
+    @Test
+    fun `path highlight with RUN mode shows run icon`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0))
+
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH, MovementMode.RUN)
+
+        assertEquals(String(Character.toChars(0xF046E)), buffer.get(4, 2).char)
+    }
+
+    @Test
+    fun `path highlight with JUMP mode shows jump icon`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0))
+
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH, MovementMode.JUMP)
+
+        assertEquals(String(Character.toChars(0xF14DE)), buffer.get(4, 2).char)
     }
 }

@@ -10,6 +10,7 @@ import battletech.tui.screen.ScreenBuffer
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
 
 public class BoardView(
     private val gameState: GameState,
@@ -20,6 +21,7 @@ public class BoardView(
     private val facingSelectionHex: HexCoordinates? = null,
     private val facingSelectionFacings: Set<HexDirection>? = null,
     private val pathDestination: HexCoordinates? = null,
+    private val movementMode: MovementMode? = null,
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -50,7 +52,7 @@ public class BoardView(
                     HexHighlight.REACHABLE_WALK, HexHighlight.REACHABLE_RUN, HexHighlight.REACHABLE_JUMP,
                 )) HexHighlight.NONE else baseHighlight
 
-                HexRenderer.render(buffer, drawX, drawY, hex, highlight)
+                HexRenderer.render(buffer, drawX, drawY, hex, highlight, movementMode)
 
                 // Facing overlays (drawn after base render, over the reachability dot)
                 when {
@@ -64,7 +66,8 @@ public class BoardView(
                             baseHighlight == HexHighlight.REACHABLE_JUMP -> Color.CYAN
                             else -> Color.WHITE
                         }
-                        HexRenderer.renderFacingArrows(buffer, drawX, drawY, facings, color)
+                        val mode = if (coords == pathDestination) movementMode else null
+                        HexRenderer.renderFacingArrows(buffer, drawX, drawY, facings, color, mode)
                     }
                 }
 

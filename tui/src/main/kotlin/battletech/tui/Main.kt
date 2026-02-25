@@ -88,6 +88,7 @@ public fun main() {
                     facingSelectionHex = facingSelectionHex,
                     facingSelectionFacings = facingSelectionFacings,
                     pathDestination = phaseState?.highlightedPath?.lastOrNull(),
+                    movementMode = phaseState?.reachability?.mode,
                 )
                 boardView.render(buffer, 0, 0, boardWidth, boardHeight)
 

@@ -2,6 +2,7 @@ package battletech.tui.hex
 
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.Terrain
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
@@ -25,6 +26,13 @@ public object HexRenderer {
         7 to String(Character.toChars(0xF03B7)),
         8 to String(Character.toChars(0xF03BA)),
         9 to String(Character.toChars(0xF03BD)),
+    )
+
+    // Movement mode icons (nf-md-walk, nf-md-run-fast, nf-md-rocket-launch)
+    private val MOVEMENT_MODE_ICONS: Map<MovementMode, String> = mapOf(
+        MovementMode.WALK to String(Character.toChars(0xF0583)),
+        MovementMode.RUN to String(Character.toChars(0xF046E)),
+        MovementMode.JUMP to String(Character.toChars(0xF14DE)),
     )
 
     // Facing arrow icons (same codepoints as UnitRenderer)
@@ -64,9 +72,10 @@ public object HexRenderer {
      * If all 6 facings are reachable, renders a dot at center (same as before).
      * Otherwise, renders individual arrows at their hex positions.
      */
-    public fun renderFacingArrows(buffer: ScreenBuffer, x: Int, y: Int, facings: Set<HexDirection>, color: Color) {
+    public fun renderFacingArrows(buffer: ScreenBuffer, x: Int, y: Int, facings: Set<HexDirection>, color: Color, movementMode: MovementMode? = null) {
         if (facings.size == HexDirection.entries.size) {
-            renderOverlayChar(buffer, x, y, ".", color)
+            val icon = if (movementMode != null) MOVEMENT_MODE_ICONS[movementMode]!! else "."
+            renderOverlayChar(buffer, x, y, icon, color)
             return
         }
         for (direction in facings) {
@@ -87,7 +96,7 @@ public object HexRenderer {
         }
     }
 
-    public fun render(buffer: ScreenBuffer, x: Int, y: Int, hex: Hex, highlight: HexHighlight) {
+    public fun render(buffer: ScreenBuffer, x: Int, y: Int, hex: Hex, highlight: HexHighlight, movementMode: MovementMode? = null) {
         val bg = contentBackground(highlight)
         val borderFg =
             if (highlight == HexHighlight.CURSOR || highlight == HexHighlight.PATH_CURSOR) Color.BRIGHT_YELLOW
@@ -101,7 +110,10 @@ public object HexRenderer {
             HexHighlight.REACHABLE_WALK -> renderOverlayChar(buffer, x, y, ".", Color.WHITE)
             HexHighlight.REACHABLE_RUN -> renderOverlayChar(buffer, x, y, ".", Color.ORANGE)
             HexHighlight.REACHABLE_JUMP -> renderOverlayChar(buffer, x, y, ".", Color.CYAN)
-            HexHighlight.PATH, HexHighlight.PATH_CURSOR -> renderOverlayChar(buffer, x, y, "*", Color.BRIGHT_YELLOW)
+            HexHighlight.PATH, HexHighlight.PATH_CURSOR -> {
+                val icon = if (movementMode != null) MOVEMENT_MODE_ICONS[movementMode]!! else "*"
+                renderOverlayChar(buffer, x, y, icon, Color.BRIGHT_YELLOW)
+            }
             else -> Unit
         }
     }

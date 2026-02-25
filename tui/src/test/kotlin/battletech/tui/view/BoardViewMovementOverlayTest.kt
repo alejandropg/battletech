@@ -6,6 +6,7 @@ import battletech.tui.hex.HexHighlight
 import battletech.tui.screen.ScreenBuffer
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
@@ -55,7 +56,7 @@ internal class BoardViewMovementOverlayTest {
     }
 
     @Test
-    fun `path hexes show star even when also in reachable facings`() {
+    fun `path hexes show walk icon even when also in reachable facings`() {
         val state = aGameState(map = aGameMap(cols = 5, rows = 5))
         val highlights = mapOf(
             HexCoordinates(1, 0) to HexHighlight.PATH,
@@ -68,30 +69,56 @@ internal class BoardViewMovementOverlayTest {
             state, Viewport(0, 0, 36, 20),
             hexHighlights = highlights,
             reachableFacings = reachableFacings,
+            movementMode = MovementMode.WALK,
         )
         val buffer = ScreenBuffer(40, 24)
 
         view.render(buffer, 0, 0, 40, 24)
 
         // Hex (1,0) center at (13, 6); N arrow also lands at (13, 6)
-        assertEquals("*", buffer.get(13, 6).char)
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(13, 6).char)
     }
 
     @Test
-    fun `path hexes show star marker at center`() {
+    fun `path hexes show walk icon at center`() {
         val state = aGameState(map = aGameMap(cols = 5, rows = 5))
         val highlights = mapOf(
             HexCoordinates(0, 0) to HexHighlight.PATH,
             HexCoordinates(1, 0) to HexHighlight.PATH,
         )
-        val view = BoardView(state, Viewport(0, 0, 36, 20), hexHighlights = highlights)
+        val view = BoardView(
+            state, Viewport(0, 0, 36, 20),
+            hexHighlights = highlights,
+            movementMode = MovementMode.WALK,
+        )
         val buffer = ScreenBuffer(40, 24)
 
         view.render(buffer, 0, 0, 40, 24)
 
         // Hex (0,0) center at (6, 4)
-        assertEquals("*", buffer.get(6, 4).char)
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(6, 4).char)
         // Hex (1,0) center at (13, 6)
-        assertEquals("*", buffer.get(13, 6).char)
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(13, 6).char)
+    }
+
+    @Test
+    fun `destination hex with all facings and walk mode shows walk icon`() {
+        val state = aGameState(map = aGameMap(cols = 5, rows = 5))
+        val allFacings = HexDirection.entries.toSet()
+        val reachableFacings = mapOf(
+            HexCoordinates(1, 0) to allFacings,
+        )
+        val view = BoardView(
+            state, Viewport(0, 0, 36, 20),
+            reachableFacings = reachableFacings,
+            pathDestination = HexCoordinates(1, 0),
+            movementMode = MovementMode.WALK,
+        )
+        val buffer = ScreenBuffer(40, 24)
+
+        view.render(buffer, 0, 0, 40, 24)
+
+        // Hex (1,0) center at (13, 6); all-facings destination shows mode icon
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(13, 6).char)
     }
 }
