@@ -70,8 +70,8 @@ public object HexRenderer {
             return
         }
         for (direction in facings) {
-            val (dx, dy) = FACING_POSITIONS[direction] ?: continue
-            buffer.set(x + dx, y + dy, Cell(FACING_ICONS[direction] ?: continue, color))
+            val (dx, dy) = FACING_POSITIONS[direction]!!
+            buffer.set(x + dx, y + dy, Cell(FACING_ICONS[direction]!!, color))
         }
     }
 
@@ -81,8 +81,8 @@ public object HexRenderer {
      */
     public fun renderFacingNumbers(buffer: ScreenBuffer, x: Int, y: Int, facings: Set<HexDirection>) {
         for (direction in facings) {
-            val (dx, dy) = FACING_POSITIONS[direction] ?: continue
-            val number = FACING_NUMBERS[direction] ?: continue
+            val (dx, dy) = FACING_POSITIONS[direction]!!
+            val number = FACING_NUMBERS[direction]!!
             buffer.set(x + dx, y + dy, Cell(number, Color.BRIGHT_YELLOW))
         }
     }
