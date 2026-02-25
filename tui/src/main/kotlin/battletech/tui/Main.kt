@@ -70,7 +70,9 @@ public fun main() {
                 val buffer = ScreenBuffer(width, height)
                 val viewport = Viewport(0, 0, boardWidth - 4, boardHeight - 4)
 
-                val selectedUnit = gameLoop.gameState.units.find { it.position == cursor.position }
+                val selectedUnit = phaseState?.selectedUnitId
+                    ?.let { id -> gameLoop.gameState.units.find { it.id == id } }
+                    ?: gameLoop.gameState.units.find { it.position == cursor.position }
 
                 val highlights = phaseState?.hexHighlights() ?: emptyMap()
                 val reachableFacings = phaseState?.facingsByPosition ?: emptyMap()
