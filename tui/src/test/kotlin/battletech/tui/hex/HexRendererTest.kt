@@ -1,12 +1,11 @@
 package battletech.tui.hex
 
-import battletech.tui.screen.Cell
-import battletech.tui.screen.Color
-import battletech.tui.screen.ScreenBuffer
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.Terrain
+import battletech.tui.screen.Color
+import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
