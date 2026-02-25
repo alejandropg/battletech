@@ -28,12 +28,14 @@ public object HexRenderer {
     )
 
     // Facing arrow icons (same codepoints as UnitRenderer)
-    private val ICON_FACING_N  = String(Character.toChars(0xF09C7))
-    private val ICON_FACING_NE = String(Character.toChars(0xF09C5))
-    private val ICON_FACING_SE = String(Character.toChars(0xF09B9))
-    private val ICON_FACING_S  = String(Character.toChars(0xF09BF))
-    private val ICON_FACING_SW = String(Character.toChars(0xF09B7))
-    private val ICON_FACING_NW = String(Character.toChars(0xF09C3))
+    private val FACING_ICONS: Map<HexDirection, String> = mapOf(
+        HexDirection.N  to String(Character.toChars(0xF09C7)),
+        HexDirection.NE to String(Character.toChars(0xF09C5)),
+        HexDirection.SE to String(Character.toChars(0xF09B9)),
+        HexDirection.S  to String(Character.toChars(0xF09BF)),
+        HexDirection.SW to String(Character.toChars(0xF09B7)),
+        HexDirection.NW to String(Character.toChars(0xF09C3)),
+    )
 
     // Arrow positions within hex: (col-offset, row-offset) relative to hex origin
     // Row 2: NW(+2), N(+4), NE(+6)
@@ -46,15 +48,6 @@ public object HexRenderer {
         HexDirection.SW to (2 to 3),
         HexDirection.NW to (2 to 2),
     )
-
-    private fun facingIcon(direction: HexDirection): String = when (direction) {
-        HexDirection.N  -> ICON_FACING_N
-        HexDirection.NE -> ICON_FACING_NE
-        HexDirection.SE -> ICON_FACING_SE
-        HexDirection.S  -> ICON_FACING_S
-        HexDirection.SW -> ICON_FACING_SW
-        HexDirection.NW -> ICON_FACING_NW
-    }
 
     // Number mapping: 1=N, 2=NE, 3=SE, 4=S, 5=SW, 6=NW
     private val FACING_NUMBERS: Map<HexDirection, String> = mapOf(
@@ -78,7 +71,7 @@ public object HexRenderer {
         }
         for (direction in facings) {
             val (dx, dy) = FACING_POSITIONS[direction] ?: continue
-            buffer.set(x + dx, y + dy, Cell(facingIcon(direction), color))
+            buffer.set(x + dx, y + dy, Cell(FACING_ICONS[direction] ?: continue, color))
         }
     }
 
