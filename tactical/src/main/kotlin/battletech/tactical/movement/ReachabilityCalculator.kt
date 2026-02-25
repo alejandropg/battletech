@@ -57,7 +57,7 @@ public class ReachabilityCalculator(
 
         val occupiedPositions = enemyPositions + friendlyPositions
         return best
-            .filter { (state, _) -> state.position != actor.position }
+            .filter { (state, _) -> state != startState }
             .filter { (state, _) -> state.position !in occupiedPositions }
             .map { (state, costAndPath) ->
                 ReachableHex(

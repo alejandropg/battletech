@@ -162,66 +162,23 @@ internal class MovementControllerTest {
     @Nested
     inner class ClickHexTest {
         @Test
-        fun `click hex with single facing auto-applies movement`() {
+        fun `click hex updates hover to clicked position`() {
             val controller = createController()
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
             val state = controller.enter(unit, gameState)
 
+            // Main loop moves cursor to clicked hex before dispatching
             val result = controller.handle(
                 InputAction.ClickHex(HexCoordinates(2, 0)),
                 state,
-                HexCoordinates(0, 0),
+                HexCoordinates(2, 0),
                 gameState,
             )
 
-            assertTrue(result is PhaseOutcome.Complete)
-            val movedUnit = (result as PhaseOutcome.Complete).gameState.units.first { it.id == unit.id }
-            assertEquals(HexCoordinates(2, 0), movedUnit.position)
-            assertEquals(HexDirection.N, movedUnit.facing)
-        }
-
-        @Test
-        fun `click hex with multiple facings enters facing selection`() {
-            val controller = createController()
-            val unit = aUnit()
-            val gameState = aGameState(units = listOf(unit))
-            val state = controller.enter(unit, gameState)
-
-            val result = controller.handle(
-                InputAction.ClickHex(HexCoordinates(1, 0)),
-                state,
-                HexCoordinates(0, 0),
-                gameState,
-            )
-
-            assertTrue(result is PhaseOutcome.Continue)
-            val newState = (result as PhaseOutcome.Continue).phaseState
-            assertTrue(newState is PhaseState.Movement.SelectingFacing)
-            val facing = newState as PhaseState.Movement.SelectingFacing
-            assertEquals(HexCoordinates(1, 0), facing.hex)
-            assertEquals(2, facing.options.size)
-        }
-
-        @Test
-        fun `click hex with multiple facings shows cheapest path`() {
-            val controller = createController()
-            val unit = aUnit()
-            val gameState = aGameState(units = listOf(unit))
-            val state = controller.enter(unit, gameState)
-
-            val result = controller.handle(
-                InputAction.ClickHex(HexCoordinates(1, 0)),
-                state,
-                HexCoordinates(0, 0),
-                gameState,
-            )
-
-            val facing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.SelectingFacing
-            assertEquals(
-                listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
-                facing.path,
-            )
+            val browsing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
+            assertNotNull(browsing.hoveredDestination)
+            assertEquals(HexCoordinates(2, 0), browsing.hoveredDestination!!.position)
         }
 
         @Test
@@ -234,7 +191,7 @@ internal class MovementControllerTest {
             val result = controller.handle(
                 InputAction.ClickHex(HexCoordinates(5, 5)),
                 state,
-                HexCoordinates(0, 0),
+                HexCoordinates(5, 5),
                 gameState,
             )
 

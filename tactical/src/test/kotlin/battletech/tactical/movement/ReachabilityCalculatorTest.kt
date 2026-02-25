@@ -1,7 +1,12 @@
 package battletech.tactical.movement
 
 import battletech.tactical.action.aUnit
-import battletech.tactical.model.*
+import battletech.tactical.model.GameMap
+import battletech.tactical.model.Hex
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
+import battletech.tactical.model.Terrain
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -26,7 +31,7 @@ internal class ReachabilityCalculatorTest {
     // --- Walk/Run Tests ---
 
     @Test
-    fun `1 MP walk - only forward neighbor reachable`() {
+    fun `1 MP walk - forward neighbor or turn in place`() {
         val map = flatClearMap(3)
         val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 1)
         val calc = calculator(map, listOf(actor))
@@ -34,7 +39,15 @@ internal class ReachabilityCalculatorTest {
         val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
 
         val positions = result.destinations.map { it.position }.toSet()
-        assertThat(positions).containsExactly(HexCoordinates(0, -1))
+        assertThat(positions).containsExactlyInAnyOrder(
+            HexCoordinates(0, -1), // forward
+            HexCoordinates(0, 0),  // turn in place
+        )
+        // Only adjacent facings reachable with 1 MP
+        val originFacings = result.destinations
+            .filter { it.position == HexCoordinates(0, 0) }
+            .map { it.facing }.toSet()
+        assertThat(originFacings).containsExactlyInAnyOrder(HexDirection.NE, HexDirection.NW)
     }
 
     @Test
@@ -162,15 +175,30 @@ internal class ReachabilityCalculatorTest {
     }
 
     @Test
-    fun `start position is never a destination`() {
+    fun `start position is reachable with different facing`() {
         val map = flatClearMap(3)
         val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 4)
         val calc = calculator(map, listOf(actor))
 
         val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
 
-        val positions = result.destinations.map { it.position }
-        assertThat(positions).doesNotContain(HexCoordinates(0, 0))
+        val atOrigin = result.destinations.filter { it.position == HexCoordinates(0, 0) }
+        assertThat(atOrigin).isNotEmpty
+        assertThat(atOrigin.map { it.facing }).doesNotContain(HexDirection.N)
+    }
+
+    @Test
+    fun `start position with same facing is not a destination`() {
+        val map = flatClearMap(3)
+        val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 4)
+        val calc = calculator(map, listOf(actor))
+
+        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+
+        val sameState = result.destinations.find {
+            it.position == HexCoordinates(0, 0) && it.facing == HexDirection.N
+        }
+        assertThat(sameState).isNull()
     }
 
     @Test
@@ -228,7 +256,7 @@ internal class ReachabilityCalculatorTest {
     }
 
     @Test
-    fun `surrounded by enemies produces no destinations`() {
+    fun `surrounded by enemies can only change facing in place`() {
         val origin = HexCoordinates(0, 0)
         val hexes = mutableMapOf(origin to Hex(origin))
         val enemies = origin.neighbors().mapIndexed { index, pos ->
@@ -241,7 +269,9 @@ internal class ReachabilityCalculatorTest {
 
         val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
 
-        assertThat(result.destinations).isEmpty()
+        val positions = result.destinations.map { it.position }.toSet()
+        assertThat(positions).containsExactly(origin)
+        assertThat(result.destinations.map { it.facing }).doesNotContain(HexDirection.N)
     }
 
     // --- Jump Tests ---
