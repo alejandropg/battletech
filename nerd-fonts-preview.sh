@@ -50,6 +50,12 @@ TERRAINS=(
   "Jump;nf-md-rocket_launch;f14de;203;213;225;50;50;50"
   "Level 1;nf-md-numeric_1_box_multiple_outline;f03a5;203;213;225;50;50;50"
   "Level 2;nf-md-numeric_2_box_multiple_outline;f03a8;203;213;225;50;50;50"
+  "Level 3;nf-md-numeric_3_box_multiple_outline;f03ab;203;213;225;50;50;50"
+  "Level 4;nf-md-numeric_4_box_multiple_outline;f03b2;203;213;225;50;50;50"
+  "Level 5;nf-md-numeric_5_box_multiple_outline;f03af;203;213;225;50;50;50"
+  "Level 6;nf-md-numeric_6_box_multiple_outline;f03b4;203;213;225;50;50;50"
+  "Level 7;nf-md-numeric_7_box_multiple_outline;f03b7;203;213;225;50;50;50"
+  "Level 8;nf-md-numeric_8_box_multiple_outline;f03ba;203;213;225;50;50;50"
   "Level 9;nf-md-numeric_9_box_multiple_outline;f03bd;203;213;225;50;50;50"
 
 )
