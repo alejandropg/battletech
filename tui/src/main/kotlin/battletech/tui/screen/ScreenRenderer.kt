@@ -19,6 +19,7 @@ public class ScreenRenderer(private val terminal: Terminal) {
                 renderCell(change.x, change.y, change.cell)
             }
         }
+        System.out.flush()
         previousBuffer = buffer
     }
 
@@ -46,12 +47,10 @@ public class ScreenRenderer(private val terminal: Terminal) {
             if (y < buffer.height - 1) sb.append("\r\n")
         }
         print(sb)
-        System.out.flush()
     }
 
     private fun renderCell(x: Int, y: Int, cell: Cell) {
         print("\u001b[${y + 1};${x + 1}H${styledChar(cell)}")
-        System.out.flush()
     }
 
     private fun styledChar(cell: Cell): String {
