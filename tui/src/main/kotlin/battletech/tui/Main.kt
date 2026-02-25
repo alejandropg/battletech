@@ -1,13 +1,14 @@
 package battletech.tui
 
 import battletech.tactical.action.ActionQueryService
-import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
+import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MechModels
 import battletech.tactical.model.Terrain
 import battletech.tactical.model.createUnit
@@ -241,7 +242,7 @@ private fun sampleGameState(): GameState {
     }
 
     val units = listOf(
-        MechModels["AS7-D"].createUnit(id = UnitId("atlas"), position = HexCoordinates(1, 1)),
+        MechModels["AS7-D"].createUnit(id = UnitId("atlas"), position = HexCoordinates(1, 1), facing = HexDirection.SE),
         MechModels["HBK-4G"].createUnit(id = UnitId("hunchback"), position = HexCoordinates(7, 3)),
         MechModels["WVR-6R"].createUnit(id = UnitId("wolverine-1"), pilotingSkill = 4, position = HexCoordinates(4, 7)),
     )
