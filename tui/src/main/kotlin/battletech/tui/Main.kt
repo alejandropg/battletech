@@ -12,16 +12,16 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MechModels
 import battletech.tactical.model.Terrain
 import battletech.tactical.model.createUnit
-import battletech.tui.game.AttackPhaseController
-import battletech.tui.game.EndPhaseController
-import battletech.tui.game.GameLoop
-import battletech.tui.game.GameLoopResult
-import battletech.tui.game.HeatPhaseController
-import battletech.tui.game.InitiativePhaseController
-import battletech.tui.game.MovementPhaseController
-import battletech.tui.game.PhaseControllerResult
+import battletech.tui.game.AppState
+import battletech.tui.game.AttackController
+import battletech.tui.game.FlashMessage
+import battletech.tui.game.MovementController
+import battletech.tui.game.PhaseOutcome
 import battletech.tui.game.PhaseState
-import battletech.tui.input.CursorState
+import battletech.tui.game.autoAdvanceGlobalPhases
+import battletech.tui.game.extractRenderData
+import battletech.tui.game.handlePhaseOutcome
+import battletech.tui.game.moveCursor
 import battletech.tui.input.InputAction
 import battletech.tui.input.InputMapper
 import battletech.tui.screen.ScreenBuffer
@@ -41,188 +41,159 @@ public fun main() {
     val renderer = ScreenRenderer(terminal)
     val actionQueryService = ActionQueryService(listOf(MoveActionDefinition()), emptyList())
 
-    val controllers = mapOf(
-        TurnPhase.INITIATIVE to InitiativePhaseController() as battletech.tui.game.PhaseController,
-        TurnPhase.MOVEMENT to MovementPhaseController(actionQueryService),
-        TurnPhase.WEAPON_ATTACK to AttackPhaseController(actionQueryService, TurnPhase.WEAPON_ATTACK),
-        TurnPhase.PHYSICAL_ATTACK to AttackPhaseController(actionQueryService, TurnPhase.PHYSICAL_ATTACK),
-        TurnPhase.HEAT to HeatPhaseController(),
-        TurnPhase.END to EndPhaseController(),
-    )
+    val movementController = MovementController(actionQueryService)
+    val attackController = AttackController(actionQueryService)
 
-    val gameLoop = GameLoop(sampleGameState(), TurnPhase.MOVEMENT)
-    var cursor = CursorState(HexCoordinates(0, 0))
-    var phaseState: PhaseState? = null
+    var appState = AppState(
+        gameState = sampleGameState(),
+        currentPhase = TurnPhase.MOVEMENT,
+        cursor = HexCoordinates(0, 0),
+        phaseState = PhaseState.Idle(),
+    )
 
     renderer.clear()
 
     try {
         terminal.enterRawMode(mouseTracking = MouseTracking.Normal).use { rawMode ->
-            var running = true
-            while (running) {
-                val size = terminal.updateSize()
-                val width = if (size.width > 0) size.width else 80
-                val height = if (size.height > 0) size.height else 24
-                val sidebarWidth = 28
-                val statusBarHeight = 7
-                val boardWidth = width - sidebarWidth
-                val boardHeight = height - statusBarHeight
+            while (true) {
+                // Auto-advance global phases (Initiative, Heat, End)
+                val (advancedState, flash) = autoAdvanceGlobalPhases(appState)
+                if (flash != null) {
+                    appState = advancedState
+                    renderFrame(terminal, renderer, appState, flash)
+                    continue
+                }
 
-                val buffer = ScreenBuffer(width, height)
-                val viewport = Viewport(0, 0, boardWidth - 4, boardHeight - 4)
-
-                val selectedUnit = phaseState?.selectedUnitId
-                    ?.let { id -> gameLoop.gameState.units.find { it.id == id } }
-                    ?: gameLoop.gameState.units.find { it.position == cursor.position }
-
-                val highlights = phaseState?.hexHighlights() ?: emptyMap()
-                val reachableFacings = phaseState?.facingsByPosition ?: emptyMap()
-                val facingSelectionHex = phaseState?.facingSelectionHex
-                val facingSelectionFacings = phaseState?.facingOptions
-                    ?.map { it.facing }?.toSet()
-                    ?.takeIf { facingSelectionHex != null }
-                val boardView = BoardView(
-                    gameLoop.gameState, viewport,
-                    cursorPosition = cursor.position,
-                    hexHighlights = highlights,
-                    reachableFacings = reachableFacings,
-                    facingSelectionHex = facingSelectionHex,
-                    facingSelectionFacings = facingSelectionFacings,
-                    pathDestination = phaseState?.highlightedPath?.lastOrNull(),
-                    movementMode = phaseState?.reachability?.mode,
-                )
-                boardView.render(buffer, 0, 0, boardWidth, boardHeight)
-
-                val sidebarView = SidebarView(selectedUnit)
-                sidebarView.render(buffer, boardWidth, 0, sidebarWidth, boardHeight)
-
-                val prompt = phaseState?.prompt ?: "Move cursor to select a hex"
-                val statusBarView = StatusBarView(gameLoop.currentPhase, prompt)
-                statusBarView.render(buffer, 0, boardHeight, width, statusBarHeight)
-
-                renderer.render(buffer)
+                renderFrame(terminal, renderer, appState)
 
                 val event = rawMode.readEvent()
                 val action = when (event) {
                     is KeyboardEvent -> InputMapper.mapKeyboardEvent(event.key, event.ctrl, event.alt)
                     is MouseEvent -> InputMapper.mapMouseEvent(event, boardX = 2, boardY = 2)
                     else -> null
-                }
+                } ?: continue
 
-                if (action == null) continue
+                if (action is InputAction.Quit) break
 
-                val loopResult = gameLoop.handleAction(action)
-                if (loopResult is GameLoopResult.Quit) {
-                    running = false
+                // Cursor movement — always handled here regardless of phase
+                if (action is InputAction.MoveCursor) {
+                    val newCursor = moveCursor(appState.cursor, action.direction, appState.gameState.map)
+                    appState = appState.copy(cursor = newCursor)
+                    val phase = appState.phaseState
+                    if (phase is PhaseState.Movement) {
+                        val outcome = movementController.handle(action, phase, newCursor, appState.gameState)
+                        if (outcome is PhaseOutcome.Continue) {
+                            appState = appState.copy(phaseState = outcome.phaseState)
+                        }
+                    }
                     continue
                 }
 
-                when (action) {
-                    is InputAction.MoveCursor -> {
-                        cursor = cursor.moveCursor(action.direction, gameLoop.gameState.map)
-                        val currentPhaseState = phaseState
-                        if (currentPhaseState != null) {
-                            val controller = controllers[gameLoop.currentPhase]
-                            if (controller is MovementPhaseController) {
-                                phaseState = controller.updatePathForCursor(cursor.position, currentPhaseState)
-                            }
-                        }
-                    }
-                    is InputAction.ClickHex -> {
-                        cursor = CursorState(action.coords, cursor.selectedUnitId)
-                        val currentPhaseState = phaseState
-                        if (currentPhaseState != null) {
-                            val controller = controllers[gameLoop.currentPhase]!!
-                            val result = controller.handleAction(action, currentPhaseState, gameLoop.gameState)
-                            when (result) {
-                                is PhaseControllerResult.UpdateState -> phaseState = result.phaseState
-                                is PhaseControllerResult.Complete -> {
-                                    gameLoop.gameState = result.updatedGameState
-                                    gameLoop.advancePhase()
-                                    phaseState = null
-                                }
-                                is PhaseControllerResult.Cancelled -> phaseState = null
-                            }
-                        }
-                    }
-                    is InputAction.Confirm -> {
-                        val currentPhaseState = phaseState
-                        if (currentPhaseState != null) {
-                            val controller = controllers[gameLoop.currentPhase]!!
-                            val result = controller.handleAction(action, currentPhaseState, gameLoop.gameState)
-                            when (result) {
-                                is PhaseControllerResult.UpdateState -> phaseState = result.phaseState
-                                is PhaseControllerResult.Complete -> {
-                                    gameLoop.gameState = result.updatedGameState
-                                    gameLoop.advancePhase()
-                                    phaseState = null
-                                }
-                                is PhaseControllerResult.Cancelled -> phaseState = null
-                            }
-                        } else {
-                            // Select unit and enter phase
-                            val unit = gameLoop.gameState.units.find { it.position == cursor.position }
-                            if (unit != null) {
-                                val controller = controllers[gameLoop.currentPhase]!!
-                                phaseState = controller.enter(unit, gameLoop.gameState)
-                            }
-                        }
-                    }
-                    is InputAction.Cancel -> {
-                        val currentPhaseState = phaseState
-                        if (currentPhaseState != null) {
-                            val controller = controllers[gameLoop.currentPhase]!!
-                            val result = controller.handleAction(action, currentPhaseState, gameLoop.gameState)
-                            when (result) {
-                                is PhaseControllerResult.UpdateState -> phaseState = result.phaseState
-                                is PhaseControllerResult.Cancelled -> phaseState = null
-                                is PhaseControllerResult.Complete -> {
-                                    gameLoop.gameState = result.updatedGameState
-                                    gameLoop.advancePhase()
-                                    phaseState = null
-                                }
-                            }
-                        }
-                    }
-                    is InputAction.SelectAction -> {
-                        val currentPhaseState = phaseState
-                        if (currentPhaseState != null) {
-                            val controller = controllers[gameLoop.currentPhase]!!
-                            val result = controller.handleAction(action, currentPhaseState, gameLoop.gameState)
-                            when (result) {
-                                is PhaseControllerResult.UpdateState -> phaseState = result.phaseState
-                                is PhaseControllerResult.Complete -> {
-                                    gameLoop.gameState = result.updatedGameState
-                                    gameLoop.advancePhase()
-                                    phaseState = null
-                                }
-                                is PhaseControllerResult.Cancelled -> phaseState = null
-                            }
-                        }
-                    }
-                    is InputAction.CycleUnit -> {
-                        val currentPhaseState = phaseState
-                        val controller = controllers[gameLoop.currentPhase]
-                        if (currentPhaseState != null && controller is MovementPhaseController) {
-                            val unitName = gameLoop.gameState.units
-                                .find { it.id == currentPhaseState.selectedUnitId }?.name ?: ""
-                            phaseState = controller.cycleMode(currentPhaseState, unitName)
-                        } else {
-                            val units = gameLoop.gameState.units
-                            if (units.isNotEmpty()) {
-                                val currentIdx = units.indexOfFirst { it.position == cursor.position }
-                                val nextIdx = (currentIdx + 1) % units.size
-                                cursor = CursorState(units[nextIdx].position, units[nextIdx].id)
-                            }
-                        }
-                    }
-                    else -> {}
+                // Phase-specific dispatch
+                appState = when (val phase = appState.phaseState) {
+                    is PhaseState.Idle -> handleIdle(action, appState, movementController, attackController)
+                    is PhaseState.Movement -> handlePhaseOutcome(
+                        movementController.handle(action, phase, appState.cursor, appState.gameState),
+                        appState,
+                    )
+                    is PhaseState.Attack -> handlePhaseOutcome(
+                        attackController.handle(action, phase, appState.gameState),
+                        appState,
+                    )
                 }
             }
         }
     } finally {
         renderer.cleanup()
     }
+}
+
+private fun handleIdle(
+    action: InputAction,
+    appState: AppState,
+    movementController: MovementController,
+    attackController: AttackController,
+): AppState = when (action) {
+    is InputAction.Confirm -> {
+        val unit = appState.gameState.units.find { it.position == appState.cursor }
+        if (unit != null) {
+            val newPhase = when (appState.currentPhase) {
+                TurnPhase.MOVEMENT -> movementController.enter(unit, appState.gameState)
+                TurnPhase.WEAPON_ATTACK -> attackController.enter(unit, TurnPhase.WEAPON_ATTACK, appState.gameState)
+                TurnPhase.PHYSICAL_ATTACK -> attackController.enter(unit, TurnPhase.PHYSICAL_ATTACK, appState.gameState)
+                else -> null
+            }
+            if (newPhase != null) appState.copy(phaseState = newPhase) else appState
+        } else {
+            appState
+        }
+    }
+    is InputAction.CycleUnit -> {
+        val units = appState.gameState.units
+        if (units.isNotEmpty()) {
+            val currentIdx = units.indexOfFirst { it.position == appState.cursor }
+            val nextIdx = (currentIdx + 1) % units.size
+            appState.copy(cursor = units[nextIdx].position)
+        } else {
+            appState
+        }
+    }
+    else -> appState
+}
+
+private fun renderFrame(
+    terminal: Terminal,
+    renderer: ScreenRenderer,
+    appState: AppState,
+    flash: FlashMessage? = null,
+) {
+    val size = terminal.updateSize()
+    val width = if (size.width > 0) size.width else 80
+    val height = if (size.height > 0) size.height else 24
+    val sidebarWidth = 28
+    val statusBarHeight = 7
+    val boardWidth = width - sidebarWidth
+    val boardHeight = height - statusBarHeight
+
+    val buffer = ScreenBuffer(width, height)
+    val viewport = Viewport(0, 0, boardWidth - 4, boardHeight - 4)
+
+    val renderData = extractRenderData(appState.phaseState)
+
+    val selectedUnit = when (val phase = appState.phaseState) {
+        is PhaseState.Movement -> appState.gameState.units.find { it.id == phase.unitId }
+        is PhaseState.Attack -> appState.gameState.units.find { it.id == phase.unitId }
+        is PhaseState.Idle -> appState.gameState.units.find { it.position == appState.cursor }
+    }
+
+    val pathDestination = when (val phase = appState.phaseState) {
+        is PhaseState.Movement.Browsing -> phase.hoveredPath?.lastOrNull()
+        is PhaseState.Movement.SelectingFacing -> phase.path.lastOrNull()
+        else -> null
+    }
+
+    val movementMode = (appState.phaseState as? PhaseState.Movement)?.reachability?.mode
+
+    val boardView = BoardView(
+        appState.gameState, viewport,
+        cursorPosition = appState.cursor,
+        hexHighlights = renderData.hexHighlights,
+        reachableFacings = renderData.reachableFacings,
+        facingSelectionHex = renderData.facingSelection?.hex,
+        facingSelectionFacings = renderData.facingSelection?.facings,
+        pathDestination = pathDestination,
+        movementMode = movementMode,
+    )
+    boardView.render(buffer, 0, 0, boardWidth, boardHeight)
+
+    val sidebarView = SidebarView(selectedUnit)
+    sidebarView.render(buffer, boardWidth, 0, sidebarWidth, boardHeight)
+
+    val prompt = if (flash != null) flash.text else appState.phaseState.prompt
+    val statusBarView = StatusBarView(appState.currentPhase, prompt)
+    statusBarView.render(buffer, 0, boardHeight, width, statusBarHeight)
+
+    renderer.render(buffer)
 }
 
 private fun sampleGameState(): GameState {
