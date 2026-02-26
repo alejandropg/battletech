@@ -111,7 +111,7 @@ private fun handleIdle(
     attackController: AttackController,
 ): AppState = when (action) {
     is InputAction.Confirm -> {
-        val unit = appState.gameState.units.find { it.position == appState.cursor }
+        val unit = appState.gameState.unitAt(appState.cursor)
         if (unit != null) {
             val newPhase = when (appState.currentPhase) {
                 TurnPhase.MOVEMENT -> movementController.enter(unit, appState.gameState)
@@ -159,9 +159,9 @@ private fun renderFrame(
     val renderData = extractRenderData(appState.phaseState)
 
     val selectedUnit = when (val phase = appState.phaseState) {
-        is PhaseState.Movement -> appState.gameState.units.find { it.id == phase.unitId }
-        is PhaseState.Attack -> appState.gameState.units.find { it.id == phase.unitId }
-        is PhaseState.Idle -> appState.gameState.units.find { it.position == appState.cursor }
+        is PhaseState.Movement -> appState.gameState.unitById(phase.unitId)
+        is PhaseState.Attack -> appState.gameState.unitById(phase.unitId)
+        is PhaseState.Idle -> appState.gameState.unitAt(appState.cursor)
     }
 
     val pathDestination = when (val phase = appState.phaseState) {
@@ -217,5 +217,5 @@ private fun sampleGameState(): GameState {
         MechModels["WVR-6R"].createUnit(id = UnitId("wolverine-1"), pilotingSkill = 4, position = HexCoordinates(4, 7)),
     )
 
-    return GameState(units = units, map = GameMap(hexes))
+    return GameState(units, GameMap(hexes))
 }

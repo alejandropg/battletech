@@ -1,5 +1,9 @@
 package battletech.tui.view
 
+import battletech.tactical.model.GameState
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
 import battletech.tui.hex.HexGeometry
 import battletech.tui.hex.HexHighlight
 import battletech.tui.hex.HexLayout
@@ -7,10 +11,6 @@ import battletech.tui.hex.HexRenderer
 import battletech.tui.hex.UnitRenderer
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
-import battletech.tactical.model.GameState
-import battletech.tactical.model.HexCoordinates
-import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
 
 public class BoardView(
     private val gameState: GameState,
@@ -71,7 +71,7 @@ public class BoardView(
                     }
                 }
 
-                val unit = gameState.units.find { it.position == coords }
+                val unit = gameState.unitAt(coords)
                 if (unit != null) {
                     UnitRenderer.render(
                         buffer, drawX, drawY,
