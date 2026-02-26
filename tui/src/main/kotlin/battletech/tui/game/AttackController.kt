@@ -2,15 +2,15 @@ package battletech.tui.game
 
 import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.AvailableAction
+import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.Unit
 import battletech.tactical.model.GameState
 import battletech.tui.input.InputAction
 
 public class AttackController(
     private val actionQueryService: ActionQueryService,
 ) {
-    public fun enter(unit: Unit, phase: TurnPhase, gameState: GameState): PhaseState.Attack {
+    public fun enter(unit: CombatUnit, phase: TurnPhase, gameState: GameState): PhaseState.Attack {
         val report = actionQueryService.getAttackActions(unit, phase, gameState)
         val available = report.actions.filterIsInstance<AvailableAction>()
 

@@ -5,7 +5,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.Weapon
 
-public data class Unit(
+public data class CombatUnit(
     public val id: UnitId,
     public val owner: PlayerId,
     public val name: String,

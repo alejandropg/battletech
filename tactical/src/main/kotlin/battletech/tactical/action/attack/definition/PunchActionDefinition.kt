@@ -1,8 +1,8 @@
 package battletech.tactical.action.attack.definition
 
 import battletech.tactical.action.ActionPreview
+import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.Unit
 import battletech.tactical.action.attack.AttackDefinition
 import battletech.tactical.action.attack.AttackRule
 import battletech.tactical.action.attack.PhysicalAttackContext
@@ -22,7 +22,7 @@ public class PunchActionDefinition : AttackDefinition<PhysicalAttackContext> {
         HeatPenaltyRule(),
     )
 
-    override fun expand(actor: Unit, gameState: GameState): List<PhysicalAttackContext> {
+    override fun expand(actor: CombatUnit, gameState: GameState): List<PhysicalAttackContext> {
         val enemies = gameState.units.filter { it.id != actor.id }
         return enemies.map { target ->
             PhysicalAttackContext(

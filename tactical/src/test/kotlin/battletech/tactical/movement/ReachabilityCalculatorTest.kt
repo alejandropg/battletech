@@ -1,5 +1,6 @@
 package battletech.tactical.movement
 
+import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.aUnit
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.Hex
@@ -25,7 +26,7 @@ internal class ReachabilityCalculatorTest {
         return GameMap(hexes)
     }
 
-    private fun calculator(map: GameMap, units: List<battletech.tactical.action.Unit>) =
+    private fun calculator(map: GameMap, units: List<CombatUnit>) =
         ReachabilityCalculator(map, units)
 
     // --- Walk/Run Tests ---

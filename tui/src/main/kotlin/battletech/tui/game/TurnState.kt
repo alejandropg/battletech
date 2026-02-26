@@ -1,9 +1,9 @@
 package battletech.tui.game
 
+import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.InitiativeResult
 import battletech.tactical.action.MovementImpulse
 import battletech.tactical.action.PlayerId
-import battletech.tactical.action.Unit
 import battletech.tactical.action.UnitId
 import battletech.tactical.model.GameState
 
@@ -35,10 +35,10 @@ public fun advanceAfterUnitMoved(turnState: TurnState, unitId: UnitId): TurnStat
     }
 }
 
-public fun selectableUnits(gameState: GameState, turnState: TurnState): List<Unit> =
+public fun selectableUnits(gameState: GameState, turnState: TurnState): List<CombatUnit> =
     gameState.unitsOf(turnState.activePlayer).filter { it.id !in turnState.movedUnitIds }
 
-public fun validateUnitSelection(unit: Unit, turnState: TurnState): UnitSelectionResult = when {
+public fun validateUnitSelection(unit: CombatUnit, turnState: TurnState): UnitSelectionResult = when {
     unit.owner != turnState.activePlayer -> UnitSelectionResult.NOT_YOUR_UNIT
     unit.id in turnState.movedUnitIds -> UnitSelectionResult.ALREADY_MOVED
     else -> UnitSelectionResult.VALID

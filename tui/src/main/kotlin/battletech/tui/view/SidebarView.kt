@@ -1,11 +1,11 @@
 package battletech.tui.view
 
-import battletech.tactical.action.Unit
+import battletech.tactical.action.CombatUnit
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
 public class SidebarView(
-    private val unit: Unit?,
+    private val unit: CombatUnit?,
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -19,7 +19,7 @@ public class SidebarView(
             return
         }
 
-        // Unit name
+        // CombatUnit name
         buffer.writeString(cx, cy, unit.name, Color.BRIGHT_YELLOW)
         cy += 2
 

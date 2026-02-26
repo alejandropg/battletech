@@ -2,7 +2,7 @@ package battletech.tui.game
 
 import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.AvailableAction
-import battletech.tactical.action.Unit
+import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.UnitId
 import battletech.tactical.action.movement.MovementPreview
 import battletech.tactical.model.GameState
@@ -21,7 +21,7 @@ public class MovementController(
             listOf(HexDirection.N, HexDirection.NE, HexDirection.SE, HexDirection.S, HexDirection.SW, HexDirection.NW)
     }
 
-    public fun enter(unit: Unit, gameState: GameState): PhaseState.Movement.Browsing {
+    public fun enter(unit: CombatUnit, gameState: GameState): PhaseState.Movement.Browsing {
         val report = actionQueryService.getMovementActions(unit, gameState)
         val modes = report.actions
             .filterIsInstance<AvailableAction>()

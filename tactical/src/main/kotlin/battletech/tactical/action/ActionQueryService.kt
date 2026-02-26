@@ -2,7 +2,6 @@ package battletech.tactical.action
 
 import battletech.tactical.action.attack.AttackDefinition
 import battletech.tactical.action.movement.MovementDefinition
-import battletech.tactical.action.movement.MovementPreview
 import battletech.tactical.model.GameState
 
 public class ActionQueryService(
@@ -10,7 +9,7 @@ public class ActionQueryService(
     private val attackDefinitions: List<AttackDefinition<*>>,
 ) {
 
-    public fun getMovementActions(unit: Unit, gameState: GameState): PhaseActionReport {
+    public fun getMovementActions(unit: CombatUnit, gameState: GameState): PhaseActionReport {
         val actions = movementDefinitions.flatMap { definition ->
             definition.expand(unit, gameState).map { context ->
                 AvailableAction(
@@ -30,7 +29,7 @@ public class ActionQueryService(
         )
     }
 
-    public fun getAttackActions(unit: Unit, phase: TurnPhase, gameState: GameState): PhaseActionReport {
+    public fun getAttackActions(unit: CombatUnit, phase: TurnPhase, gameState: GameState): PhaseActionReport {
         val actions = attackDefinitions
             .filter { it.phase == phase }
             .flatMap { definition -> definition.evaluateAll(unit, gameState) }

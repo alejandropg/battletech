@@ -1,7 +1,6 @@
 package battletech.tactical.action.attack.rule
 
 import battletech.tactical.action.RuleResult
-import battletech.tactical.action.Unit
 import battletech.tactical.action.UnavailabilityReason
 import battletech.tactical.action.attack.AttackContext
 import battletech.tactical.action.attack.AttackRule

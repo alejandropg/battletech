@@ -1,8 +1,8 @@
 package battletech.tactical.action.attack.definition
 
 import battletech.tactical.action.ActionPreview
+import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.Unit
 import battletech.tactical.action.attack.AttackDefinition
 import battletech.tactical.action.attack.AttackRule
 import battletech.tactical.action.attack.WeaponAttackContext
@@ -27,7 +27,7 @@ public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> 
         HeatPenaltyRule(),
     )
 
-    override fun expand(actor: Unit, gameState: GameState): List<WeaponAttackContext> {
+    override fun expand(actor: CombatUnit, gameState: GameState): List<WeaponAttackContext> {
         val enemies = gameState.units.filter { it.id != actor.id }
         return actor.weapons.flatMap { weapon ->
             enemies.map { target ->
@@ -71,7 +71,7 @@ public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> 
     override fun actionName(context: WeaponAttackContext): String =
         "Fire ${context.weapon.name} at ${context.target.name}"
 
-    private fun heatPenaltyModifier(actor: Unit): Int {
+    private fun heatPenaltyModifier(actor: CombatUnit): Int {
         val excessHeat = actor.currentHeat - actor.heatSinkCapacity
         return if (excessHeat <= 0) 0 else ceil(excessHeat / 3.0).toInt()
     }

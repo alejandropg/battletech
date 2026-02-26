@@ -1,6 +1,6 @@
 package battletech.tactical.movement
 
-import battletech.tactical.action.Unit
+import battletech.tactical.action.CombatUnit
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -9,10 +9,10 @@ import java.util.PriorityQueue
 
 public class ReachabilityCalculator(
     private val gameMap: GameMap,
-    private val units: List<Unit>,
+    private val units: List<CombatUnit>,
 ) {
 
-    public fun calculate(actor: Unit, mode: MovementMode, startFacing: HexDirection): ReachabilityMap {
+    public fun calculate(actor: CombatUnit, mode: MovementMode, startFacing: HexDirection): ReachabilityMap {
         val maxMP = when (mode) {
             MovementMode.WALK -> actor.walkingMP
             MovementMode.RUN -> actor.runningMP
@@ -29,7 +29,7 @@ public class ReachabilityCalculator(
     }
 
     private fun calculateGroundMovement(
-        actor: Unit,
+        actor: CombatUnit,
         startFacing: HexDirection,
         maxMP: Int,
     ): List<ReachableHex> {
@@ -114,7 +114,7 @@ public class ReachabilityCalculator(
         return transitions
     }
 
-    private fun calculateJump(actor: Unit, maxMP: Int): List<ReachableHex> {
+    private fun calculateJump(actor: CombatUnit, maxMP: Int): List<ReachableHex> {
         val occupiedPositions = units.map { it.position }.toSet()
 
         return gameMap.hexes.keys

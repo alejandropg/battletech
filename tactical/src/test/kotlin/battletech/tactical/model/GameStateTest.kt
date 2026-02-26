@@ -1,5 +1,6 @@
 package battletech.tactical.model
 
+import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.aGameState
 import battletech.tactical.action.aUnit
@@ -23,7 +24,7 @@ internal class GameStateTest {
         val p1Unit = aUnit(id = "p1", owner = PlayerId.PLAYER_1)
         val state = aGameState(units = listOf(p1Unit))
 
-        assertEquals(emptyList<battletech.tactical.action.Unit>(), state.unitsOf(PlayerId.PLAYER_2))
+        assertEquals(emptyList<CombatUnit>(), state.unitsOf(PlayerId.PLAYER_2))
     }
 
     @Test

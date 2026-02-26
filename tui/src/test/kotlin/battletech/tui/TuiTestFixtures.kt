@@ -1,7 +1,7 @@
 package battletech.tui
 
+import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.PlayerId
-import battletech.tactical.action.Unit
 import battletech.tactical.action.UnitId
 import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.GameMap
@@ -47,7 +47,7 @@ internal fun aUnit(
     runningMP: Int = 0,
     jumpMP: Int = 0,
     armor: ArmorLayout = anArmorLayout(),
-): Unit = Unit(
+): CombatUnit = CombatUnit(
     id = UnitId(id),
     owner = owner,
     name = name,
@@ -80,7 +80,7 @@ internal fun anArmorLayout(
 )
 
 internal fun aGameState(
-    units: List<Unit> = emptyList(),
+    units: List<CombatUnit> = emptyList(),
     map: GameMap = aGameMap(),
 ): GameState = GameState(
     units = units,

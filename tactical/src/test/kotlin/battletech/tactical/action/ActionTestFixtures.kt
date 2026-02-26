@@ -76,7 +76,7 @@ internal fun aUnit(
     currentHeat: Int = 0,
     heatSinkCapacity: Int = 10,
     armor: ArmorLayout = anArmorLayout(),
-): Unit = Unit(
+): CombatUnit = CombatUnit(
     id = UnitId(id),
     owner = owner,
     name = name,
@@ -94,7 +94,7 @@ internal fun aUnit(
 )
 
 internal fun aGameState(
-    units: List<Unit> = emptyList(),
+    units: List<CombatUnit> = emptyList(),
     hexes: Map<HexCoordinates, Hex> = emptyMap(),
 ): GameState = GameState(
     units = units,

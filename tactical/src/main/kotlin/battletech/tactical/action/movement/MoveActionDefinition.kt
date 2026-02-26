@@ -1,6 +1,6 @@
 package battletech.tactical.action.movement
 
-import battletech.tactical.action.Unit
+import battletech.tactical.action.CombatUnit
 import battletech.tactical.model.GameState
 import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityCalculator
@@ -9,7 +9,7 @@ public class MoveActionDefinition : MovementDefinition {
 
     override val name: String = "Move"
 
-    override fun expand(actor: Unit, gameState: GameState): List<MovementContext> {
+    override fun expand(actor: CombatUnit, gameState: GameState): List<MovementContext> {
         val contexts = mutableListOf<MovementContext>()
         if (actor.walkingMP > 0) {
             contexts.add(MovementContext(actor = actor, movementMode = MovementMode.WALK, gameState = gameState))
