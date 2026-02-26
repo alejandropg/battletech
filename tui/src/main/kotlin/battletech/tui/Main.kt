@@ -335,7 +335,7 @@ private fun renderFrame(
         is PhaseState.Attack.WeaponSelection -> true  // always show (at least "No Attack")
         null -> false
     }
-    val targetsWidth = if (hasTargets) 22 else 0
+    val targetsWidth = if (hasTargets) 28 else 0
     val boardWidth = width - sidebarWidth - targetsWidth
     val boardHeight = height - statusBarHeight
 
@@ -395,26 +395,7 @@ private fun renderFrame(
         targetsView?.render(buffer, boardWidth, 0, targetsWidth, boardHeight)
     }
 
-    // Build sidebar weapon context from WeaponSelection state
-    val (assignedCurrent, assignedOthers) = when (attackPhase) {
-        is PhaseState.Attack.WeaponSelection -> {
-            val currentTarget = attackPhase.targets.getOrNull(attackPhase.cursorTargetIndex)
-            val assignedToCurrentTarget = attackPhase.weaponAssignments[currentTarget?.unitId] ?: emptySet()
-            val assignedToOthers = attackPhase.weaponAssignments.entries
-                .filter { (k, _) -> k != currentTarget?.unitId }
-                .flatMap { (_, v) -> v }
-                .toSet()
-            assignedToCurrentTarget to assignedToOthers
-        }
-        else -> emptySet<Int>() to emptySet<Int>()
-    }
-
-    val sidebarView = SidebarView(
-        unit = selectedUnit,
-        weaponCursorIndex = null,
-        assignedToCurrentTarget = assignedCurrent,
-        assignedToOtherTargets = assignedOthers,
-    )
+    val sidebarView = SidebarView(unit = selectedUnit)
     sidebarView.render(buffer, boardWidth + targetsWidth, 0, sidebarWidth, boardHeight)
 
     val prompt = if (flash != null) flash.text else appState.phaseState.prompt

@@ -14,4 +14,5 @@ public enum class Color {
     BRIGHT_YELLOW,
     ORANGE,
     MAGENTA,
+    GRAY,
 }

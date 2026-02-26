@@ -6,12 +6,6 @@ import battletech.tui.screen.ScreenBuffer
 
 public class SidebarView(
     private val unit: CombatUnit?,
-    /** Index into unit.weapons for the weapon cursor, or null when no cursor. */
-    private val weaponCursorIndex: Int? = null,
-    /** Weapon indices (into unit.weapons) assigned to the current target. */
-    private val assignedToCurrentTarget: Set<Int> = emptySet(),
-    /** Weapon indices (into unit.weapons) assigned to other targets (greyed out). */
-    private val assignedToOtherTargets: Set<Int> = emptySet(),
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -94,23 +88,10 @@ public class SidebarView(
         // WEAPONS
         buffer.writeString(cx, cy, sectionHeader("WEAPONS"), Color.CYAN)
         cy += 1
-        for ((idx, weapon) in unit.weapons.withIndex()) {
+        for (weapon in unit.weapons) {
             if (cy >= y + height - 1) break
-            val hasCursor = weaponCursorIndex == idx
-            val cursor = if (hasCursor) "\u25B6" else " "
-            val assignMark = when {
-                idx in assignedToCurrentTarget -> "[*]"
-                idx in assignedToOtherTargets -> "[-]"
-                else -> "   "
-            }
             val ammoStr = weapon.ammo?.let { " [$it]" } ?: ""
-            val line = "$cursor $assignMark ${weapon.name}$ammoStr"
-            val color = when {
-                idx in assignedToOtherTargets -> Color.DEFAULT
-                hasCursor -> Color.BRIGHT_YELLOW
-                else -> Color.WHITE
-            }
-            buffer.writeString(cx, cy, line.take(width - 4), color)
+            buffer.writeString(cx, cy, "  ${weapon.name}$ammoStr", Color.WHITE)
             cy += 1
         }
     }

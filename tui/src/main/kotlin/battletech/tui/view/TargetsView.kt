@@ -64,15 +64,19 @@ public class TargetsView(
                 val assignedElsewhereMarker = if (isAssignedElsewhere) "[-]" else "[$mark]"
 
                 val cursor = if (isCursorHere) "\u25B6" else " "
-                val weaponLine = "$cursor $assignedElsewhereMarker ${weapon.weaponName} ${weapon.successChance}%"
+                val availableWidth = width - 4
+                val left = "$cursor $assignedElsewhereMarker ${weapon.weaponName}"
+                val right = "${weapon.successChance}%"
+                val padding = (availableWidth - left.length - right.length).coerceAtLeast(1)
+                val weaponLine = "$left${" ".repeat(padding)}$right"
 
                 val color = when {
                     isCursorHere && isDisabled -> Color.BRIGHT_YELLOW
                     isCursorHere -> Color.BRIGHT_YELLOW
-                    isDisabled -> Color.DEFAULT
+                    isDisabled -> Color.GRAY
                     else -> Color.WHITE
                 }
-                buffer.writeString(cx, cy, weaponLine.take(width - 4), color)
+                buffer.writeString(cx, cy, weaponLine.take(availableWidth), color)
                 cy++
             }
 
