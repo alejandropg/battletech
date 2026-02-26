@@ -67,7 +67,7 @@ public fun main() {
 
                 val event = rawMode.readEvent()
                 val action = when (event) {
-                    is KeyboardEvent -> InputMapper.mapKeyboardEvent(event.key, event.ctrl, event.alt)
+                    is KeyboardEvent -> InputMapper.mapKeyboardEvent(event)
                     is MouseEvent -> InputMapper.mapMouseEvent(event, boardX = 2, boardY = 2)
                     else -> null
                 } ?: continue
@@ -84,12 +84,14 @@ public fun main() {
                 }
 
                 // Phase-specific dispatch
-                appState = when (val phase = appState.phaseState) {
+                val phase = appState.phaseState
+                appState = when (phase) {
                     is PhaseState.Idle -> handleIdle(action, appState, movementController, attackController)
                     is PhaseState.Movement -> handlePhaseOutcome(
                         movementController.handle(action, phase, appState.cursor, appState.gameState),
                         appState,
                     )
+
                     is PhaseState.Attack -> handlePhaseOutcome(
                         attackController.handle(action, phase, appState.gameState),
                         appState,
@@ -122,6 +124,7 @@ private fun handleIdle(
             appState
         }
     }
+
     is InputAction.CycleUnit -> {
         val units = appState.gameState.units
         if (units.isNotEmpty()) {
@@ -132,6 +135,7 @@ private fun handleIdle(
             appState
         }
     }
+
     else -> appState
 }
 

@@ -1,15 +1,16 @@
 package battletech.tui.input
 
-import battletech.tui.hex.HexLayout
 import battletech.tactical.model.HexDirection
+import battletech.tui.hex.HexLayout
+import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 
 public object InputMapper {
 
-    public fun mapKeyboardEvent(key: String, ctrl: Boolean, alt: Boolean): InputAction? {
-        if (ctrl && key == "c") return InputAction.Quit
+    public fun mapKeyboardEvent(event: KeyboardEvent): InputAction? {
+        if (event.ctrl && event.key == "c") return InputAction.Quit
 
-        return when (key) {
+        return when (event.key) {
             "ArrowUp" -> InputAction.MoveCursor(HexDirection.N)
             "ArrowDown" -> InputAction.MoveCursor(HexDirection.S)
             "ArrowRight" -> InputAction.MoveCursor(HexDirection.SE)
@@ -18,7 +19,7 @@ public object InputMapper {
             "Escape" -> InputAction.Cancel
             "Tab" -> InputAction.CycleUnit
             "q" -> InputAction.Quit
-            in "1".."9" -> InputAction.SelectAction(key.toInt())
+            in "1".."9" -> InputAction.SelectAction(event.key.toInt())
             else -> null
         }
     }
