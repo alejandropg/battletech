@@ -9,7 +9,9 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.InternalStructureLayout
 import battletech.tactical.model.Terrain
+import battletech.tactical.model.Weapon
 
 internal fun aHex(
     col: Int = 0,
@@ -37,6 +39,26 @@ internal fun aGameMap(
     return GameMap(hexes)
 }
 
+internal fun anInternalStructureLayout(
+    head: Int = 3,
+    centerTorso: Int = 31,
+    leftTorso: Int = 21,
+    rightTorso: Int = 21,
+    leftArm: Int = 17,
+    rightArm: Int = 17,
+    leftLeg: Int = 21,
+    rightLeg: Int = 21,
+): InternalStructureLayout = InternalStructureLayout(
+    head = head,
+    centerTorso = centerTorso,
+    leftTorso = leftTorso,
+    rightTorso = rightTorso,
+    leftArm = leftArm,
+    rightArm = rightArm,
+    leftLeg = leftLeg,
+    rightLeg = rightLeg,
+)
+
 internal fun aUnit(
     id: String = "unit-1",
     owner: PlayerId = PlayerId.PLAYER_1,
@@ -46,14 +68,16 @@ internal fun aUnit(
     walkingMP: Int = 0,
     runningMP: Int = 0,
     jumpMP: Int = 0,
+    weapons: List<Weapon> = emptyList(),
     armor: ArmorLayout = anArmorLayout(),
+    internalStructure: InternalStructureLayout = anInternalStructureLayout(),
 ): CombatUnit = CombatUnit(
     id = UnitId(id),
     owner = owner,
     name = name,
     gunnerySkill = 4,
     pilotingSkill = 5,
-    weapons = emptyList(),
+    weapons = weapons,
     position = position,
     facing = facing,
     walkingMP = walkingMP,
@@ -61,6 +85,7 @@ internal fun aUnit(
     jumpMP = jumpMP,
     armor = armor,
     heatSinkCapacity = 10,
+    internalStructure = internalStructure,
 )
 
 internal fun anArmorLayout(

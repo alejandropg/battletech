@@ -175,16 +175,39 @@ internal class RenderDataTest {
     @Nested
     inner class AttackTest {
         @Test
-        fun `Attack produces empty render data`() {
-            val state = PhaseState.Attack(
+        fun `Attack Browsing produces arc highlights`() {
+            val arcHexes = setOf(HexCoordinates(1, 0), HexCoordinates(2, 0))
+            val state = PhaseState.Attack.Browsing(
                 unitId = UnitId("u1"),
                 attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
+                torsoFacing = HexDirection.N,
+                arc = arcHexes,
+                validTargetIds = emptySet(),
+                targets = emptyList(),
                 prompt = "Select attack",
             )
 
             val result = extractRenderData(state)
 
-            assertEquals(RenderData.EMPTY, result)
+            assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(1, 0)])
+            assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(2, 0)])
+        }
+
+        @Test
+        fun `Attack Browsing with empty arc produces empty highlights`() {
+            val state = PhaseState.Attack.Browsing(
+                unitId = UnitId("u1"),
+                attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
+                torsoFacing = HexDirection.N,
+                arc = emptySet(),
+                validTargetIds = emptySet(),
+                targets = emptyList(),
+                prompt = "No attacks",
+            )
+
+            val result = extractRenderData(state)
+
+            assertEquals(emptyMap<HexCoordinates, HexHighlight>(), result.hexHighlights)
         }
     }
 }

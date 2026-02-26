@@ -1,5 +1,7 @@
 package battletech.tui.game
 
+import battletech.tactical.action.UnitId
+import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
@@ -10,6 +12,8 @@ public data class RenderData(
     val hexHighlights: Map<HexCoordinates, HexHighlight> = emptyMap(),
     val reachableFacings: Map<HexCoordinates, Set<HexDirection>> = emptyMap(),
     val facingSelection: FacingSelection? = null,
+    val torsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
+    val validTargetPositions: Set<HexCoordinates> = emptySet(),
 ) {
     public companion object {
         public val EMPTY: RenderData = RenderData()
@@ -21,7 +25,7 @@ public data class FacingSelection(
     val facings: Set<HexDirection>,
 )
 
-public fun extractRenderData(phaseState: PhaseState): RenderData {
+public fun extractRenderData(phaseState: PhaseState, gameState: GameState? = null): RenderData {
     return when (phaseState) {
         is PhaseState.Idle -> RenderData.EMPTY
         is PhaseState.Movement.Browsing -> RenderData(
@@ -38,8 +42,23 @@ public fun extractRenderData(phaseState: PhaseState): RenderData {
             ),
             reachableFacings = phaseState.modes[phaseState.currentModeIndex].facingsByPosition(),
         )
-        is PhaseState.Attack -> RenderData.EMPTY
+        is PhaseState.Attack -> {
+            val arcHighlights = phaseState.arc.associateWith { HexHighlight.ATTACK_RANGE }
+            val unitPos = gameState?.unitById(phaseState.unitId)?.position
+            val torsoFacings = if (unitPos != null) mapOf(unitPos to phaseState.torsoFacing) else emptyMap()
+            val targetPositions = resolveTargetPositions(phaseState.validTargetIds, gameState)
+            RenderData(
+                hexHighlights = arcHighlights,
+                torsoFacings = torsoFacings,
+                validTargetPositions = targetPositions,
+            )
+        }
     }
+}
+
+private fun resolveTargetPositions(targetIds: Set<UnitId>, gameState: GameState?): Set<HexCoordinates> {
+    if (gameState == null) return emptySet()
+    return targetIds.mapNotNull { gameState.unitById(it)?.position }.toSet()
 }
 
 private fun reachabilityHighlights(reachability: ReachabilityMap): Map<HexCoordinates, HexHighlight> {

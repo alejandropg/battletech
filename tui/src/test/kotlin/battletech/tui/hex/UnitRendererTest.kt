@@ -15,6 +15,9 @@ internal class UnitRendererTest {
     private val ICON_FACING_SW = String(Character.toChars(0xF09B7))
     private val ICON_FACING_NW = String(Character.toChars(0xF09C3))
 
+    private val ICON_TORSO_NE = String(Character.toChars(0xF005C))
+    private val ICON_TORSO_NW = String(Character.toChars(0xF005B))
+
     @Test
     fun `renders unit initial at hex center`() {
         val buffer = ScreenBuffer(10, 6)
@@ -80,5 +83,41 @@ internal class UnitRendererTest {
         UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.NW, Color.CYAN)
 
         assertEquals(ICON_FACING_NW, buffer.get(3, 2).char)
+    }
+
+    @Test
+    fun `no torso arrow when torso equals leg facing`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.N, Color.CYAN, torsoFacing = HexDirection.N)
+
+        // No extra arrow should be rendered - just the normal facing arrow at (4,2)
+        assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
+        // Position 5,2 should be empty (no torso arrow)
+        assertEquals(" ", buffer.get(5, 2).char)
+    }
+
+    @Test
+    fun `clockwise twist places torso arrow to the right`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        // Facing N, torso NE (clockwise twist)
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.N, Color.CYAN, torsoFacing = HexDirection.NE)
+
+        // Leg arrow at (4, 2), torso arrow at (5, 2) — one to the right
+        assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
+        assertEquals(ICON_TORSO_NE, buffer.get(5, 2).char)
+    }
+
+    @Test
+    fun `counterclockwise twist places torso arrow to the left`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        // Facing N, torso NW (counterclockwise twist)
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.N, Color.CYAN, torsoFacing = HexDirection.NW)
+
+        // Leg arrow at (4, 2), torso arrow at (3, 2) — one to the left
+        assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
+        assertEquals(ICON_TORSO_NW, buffer.get(3, 2).char)
     }
 }

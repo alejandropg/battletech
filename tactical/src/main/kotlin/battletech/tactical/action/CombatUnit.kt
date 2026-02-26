@@ -3,6 +3,7 @@ package battletech.tactical.action
 import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.InternalStructureLayout
 import battletech.tactical.model.Weapon
 
 public data class CombatUnit(
@@ -20,4 +21,5 @@ public data class CombatUnit(
     public val currentHeat: Int = 0,
     public val heatSinkCapacity: Int,
     public val armor: ArmorLayout,
+    public val internalStructure: InternalStructureLayout,
 )

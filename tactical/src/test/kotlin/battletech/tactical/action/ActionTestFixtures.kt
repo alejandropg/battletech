@@ -6,6 +6,7 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.InternalStructureLayout
 import battletech.tactical.model.Weapon
 import battletech.tactical.model.Weapons
 
@@ -61,6 +62,26 @@ internal fun anArmorLayout(
     leftLeg = leftLeg, rightLeg = rightLeg,
 )
 
+internal fun anInternalStructureLayout(
+    head: Int = 3,
+    centerTorso: Int = 31,
+    leftTorso: Int = 21,
+    rightTorso: Int = 21,
+    leftArm: Int = 17,
+    rightArm: Int = 17,
+    leftLeg: Int = 21,
+    rightLeg: Int = 21,
+): InternalStructureLayout = InternalStructureLayout(
+    head = head,
+    centerTorso = centerTorso,
+    leftTorso = leftTorso,
+    rightTorso = rightTorso,
+    leftArm = leftArm,
+    rightArm = rightArm,
+    leftLeg = leftLeg,
+    rightLeg = rightLeg,
+)
+
 internal fun aUnit(
     id: String = "unit-1",
     owner: PlayerId = PlayerId.PLAYER_1,
@@ -76,6 +97,7 @@ internal fun aUnit(
     currentHeat: Int = 0,
     heatSinkCapacity: Int = 10,
     armor: ArmorLayout = anArmorLayout(),
+    internalStructure: InternalStructureLayout = anInternalStructureLayout(),
 ): CombatUnit = CombatUnit(
     id = UnitId(id),
     owner = owner,
@@ -91,6 +113,7 @@ internal fun aUnit(
     currentHeat = currentHeat,
     heatSinkCapacity = heatSinkCapacity,
     armor = armor,
+    internalStructure = internalStructure,
 )
 
 internal fun aGameState(

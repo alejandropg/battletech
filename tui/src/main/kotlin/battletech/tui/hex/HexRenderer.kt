@@ -110,6 +110,7 @@ public object HexRenderer {
             HexHighlight.REACHABLE_WALK -> renderOverlayChar(buffer, x, y, ".", Color.WHITE)
             HexHighlight.REACHABLE_RUN -> renderOverlayChar(buffer, x, y, ".", Color.ORANGE)
             HexHighlight.REACHABLE_JUMP -> renderOverlayChar(buffer, x, y, ".", Color.CYAN)
+            HexHighlight.ATTACK_RANGE -> renderOverlayChar(buffer, x, y, ".", Color.RED)
             HexHighlight.PATH, HexHighlight.PATH_CURSOR -> {
                 val icon = if (movementMode != null) MOVEMENT_MODE_ICONS[movementMode]!! else "*"
                 renderOverlayChar(buffer, x, y, icon, Color.BRIGHT_YELLOW)
@@ -122,10 +123,7 @@ public object HexRenderer {
         buffer.set(x + 4, y + 2, Cell(char, color))
     }
 
-    private fun contentBackground(highlight: HexHighlight): Color = when (highlight) {
-        HexHighlight.ATTACK_RANGE -> Color.RED
-        else -> Color.DEFAULT
-    }
+    private fun contentBackground(highlight: HexHighlight): Color = Color.DEFAULT
 
     private fun renderTerrainIcon(buffer: ScreenBuffer, x: Int, y: Int, terrain: Terrain, bg: Color) {
         when (terrain) {

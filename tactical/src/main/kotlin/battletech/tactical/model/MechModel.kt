@@ -9,5 +9,6 @@ public data class MechModel(
     val jumpMP: Int = 0,
     val heatSinkCapacity: Int = 10,
     val armor: ArmorLayout,
+    val internalStructure: InternalStructureLayout = InternalStructureTables.forTonnage(tonnage),
     val weapons: List<() -> Weapon>,
 )
