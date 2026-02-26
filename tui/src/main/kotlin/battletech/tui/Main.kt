@@ -1,6 +1,7 @@
 package battletech.tui
 
 import battletech.tactical.action.ActionQueryService
+import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
 import battletech.tactical.action.movement.MoveActionDefinition
@@ -17,10 +18,13 @@ import battletech.tui.game.AttackController
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.MovementController
 import battletech.tui.game.PhaseState
+import battletech.tui.game.UnitSelectionResult
 import battletech.tui.game.autoAdvanceGlobalPhases
 import battletech.tui.game.extractRenderData
 import battletech.tui.game.handlePhaseOutcome
 import battletech.tui.game.moveCursor
+import battletech.tui.game.selectableUnits
+import battletech.tui.game.validateUnitSelection
 import battletech.tui.input.InputAction
 import battletech.tui.input.InputMapper
 import battletech.tui.screen.ScreenBuffer
@@ -45,7 +49,7 @@ public fun main() {
 
     var appState = AppState(
         gameState = sampleGameState(),
-        currentPhase = TurnPhase.MOVEMENT,
+        currentPhase = TurnPhase.INITIATIVE,
         cursor = HexCoordinates(0, 0),
         phaseState = PhaseState.Idle(),
     )
@@ -69,7 +73,6 @@ public fun main() {
                 val action = when (event) {
                     is KeyboardEvent -> InputMapper.mapKeyboardEvent(event)
                     is MouseEvent -> InputMapper.mapMouseEvent(event, boardX = 2, boardY = 2)
-                    else -> null
                 } ?: continue
 
                 if (action is InputAction.Quit) break
@@ -97,11 +100,51 @@ public fun main() {
                         appState,
                     )
                 }
+
+                // Show flash from unit selection enforcement
+                if (pendingFlash != null) {
+                    renderFrame(terminal, renderer, appState, pendingFlash)
+                    pendingFlash = null
+                    continue
+                }
             }
         }
     } finally {
         renderer.cleanup()
     }
+}
+
+private var pendingFlash: FlashMessage? = null
+
+private fun trySelectUnit(
+    appState: AppState,
+    movementController: MovementController,
+    attackController: AttackController,
+): AppState {
+    val unit = appState.gameState.unitAt(appState.cursor) ?: return appState
+    val turnState = appState.turnState
+
+    if (turnState != null && appState.currentPhase == TurnPhase.MOVEMENT) {
+        when (validateUnitSelection(unit, turnState)) {
+            UnitSelectionResult.NOT_YOUR_UNIT -> {
+                pendingFlash = FlashMessage("Not your unit")
+                return appState
+            }
+            UnitSelectionResult.ALREADY_MOVED -> {
+                pendingFlash = FlashMessage("Already moved")
+                return appState
+            }
+            UnitSelectionResult.VALID -> {}
+        }
+    }
+
+    val newPhase = when (appState.currentPhase) {
+        TurnPhase.MOVEMENT -> movementController.enter(unit, appState.gameState)
+        TurnPhase.WEAPON_ATTACK -> attackController.enter(unit, TurnPhase.WEAPON_ATTACK, appState.gameState)
+        TurnPhase.PHYSICAL_ATTACK -> attackController.enter(unit, TurnPhase.PHYSICAL_ATTACK, appState.gameState)
+        else -> null
+    }
+    return if (newPhase != null) appState.copy(phaseState = newPhase) else appState
 }
 
 private fun handleIdle(
@@ -110,23 +153,17 @@ private fun handleIdle(
     movementController: MovementController,
     attackController: AttackController,
 ): AppState = when (action) {
-    is InputAction.Confirm -> {
-        val unit = appState.gameState.unitAt(appState.cursor)
-        if (unit != null) {
-            val newPhase = when (appState.currentPhase) {
-                TurnPhase.MOVEMENT -> movementController.enter(unit, appState.gameState)
-                TurnPhase.WEAPON_ATTACK -> attackController.enter(unit, TurnPhase.WEAPON_ATTACK, appState.gameState)
-                TurnPhase.PHYSICAL_ATTACK -> attackController.enter(unit, TurnPhase.PHYSICAL_ATTACK, appState.gameState)
-                else -> null
-            }
-            if (newPhase != null) appState.copy(phaseState = newPhase) else appState
-        } else {
-            appState
-        }
-    }
+    is InputAction.Confirm -> trySelectUnit(appState, movementController, attackController)
+
+    is InputAction.ClickHex -> trySelectUnit(appState, movementController, attackController)
 
     is InputAction.CycleUnit -> {
-        val units = appState.gameState.units
+        val turnState = appState.turnState
+        val units = if (turnState != null && appState.currentPhase == TurnPhase.MOVEMENT) {
+            selectableUnits(appState.gameState, turnState)
+        } else {
+            appState.gameState.units
+        }
         if (units.isNotEmpty()) {
             val currentIdx = units.indexOfFirst { it.position == appState.cursor }
             val nextIdx = (currentIdx + 1) % units.size
@@ -189,7 +226,11 @@ private fun renderFrame(
     sidebarView.render(buffer, boardWidth, 0, sidebarWidth, boardHeight)
 
     val prompt = if (flash != null) flash.text else appState.phaseState.prompt
-    val statusBarView = StatusBarView(appState.currentPhase, prompt)
+    val activePlayerInfo = if (appState.turnState != null && !appState.turnState.allImpulsesComplete) {
+        val playerName = if (appState.turnState.activePlayer == battletech.tactical.action.PlayerId.PLAYER_1) "Player 1" else "Player 2"
+        playerName
+    } else null
+    val statusBarView = StatusBarView(appState.currentPhase, prompt, activePlayerInfo)
     statusBarView.render(buffer, 0, boardHeight, width, statusBarHeight)
 
     renderer.render(buffer)
@@ -212,9 +253,10 @@ private fun sampleGameState(): GameState {
     }
 
     val units = listOf(
-        MechModels["AS7-D"].createUnit(id = UnitId("atlas"), position = HexCoordinates(1, 1), facing = HexDirection.SE),
-        MechModels["HBK-4G"].createUnit(id = UnitId("hunchback"), position = HexCoordinates(7, 3)),
-        MechModels["WVR-6R"].createUnit(id = UnitId("wolverine-1"), pilotingSkill = 4, position = HexCoordinates(4, 7)),
+        MechModels["AS7-D"].createUnit(id = UnitId("atlas"), owner = PlayerId.PLAYER_1, position = HexCoordinates(1, 1), facing = HexDirection.SE),
+        MechModels["HBK-4G"].createUnit(id = UnitId("hunchback"), owner = PlayerId.PLAYER_1, position = HexCoordinates(2, 3)),
+        MechModels["WVR-6R"].createUnit(id = UnitId("wolverine-1"), owner = PlayerId.PLAYER_2, pilotingSkill = 4, position = HexCoordinates(7, 3)),
+        MechModels["WVR-6R"].createUnit(id = UnitId("wolverine-2"), owner = PlayerId.PLAYER_2, position = HexCoordinates(8, 5)),
     )
 
     return GameState(units, GameMap(hexes))

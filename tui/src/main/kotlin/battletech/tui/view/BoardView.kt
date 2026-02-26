@@ -1,5 +1,6 @@
 package battletech.tui.view
 
+import battletech.tactical.action.PlayerId
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -73,11 +74,15 @@ public class BoardView(
 
                 val unit = gameState.unitAt(coords)
                 if (unit != null) {
+                    val unitColor = when (unit.owner) {
+                        PlayerId.PLAYER_1 -> Color.BLUE
+                        PlayerId.PLAYER_2 -> Color.MAGENTA
+                    }
                     UnitRenderer.render(
                         buffer, drawX, drawY,
                         unit.name.first(),
                         unit.facing,
-                        Color.CYAN,
+                        unitColor,
                     )
                 }
             }

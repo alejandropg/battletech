@@ -63,6 +63,7 @@ internal fun anArmorLayout(
 
 internal fun aUnit(
     id: String = "unit-1",
+    owner: PlayerId = PlayerId.PLAYER_1,
     name: String = "Test Mech",
     gunnerySkill: Int = 4,
     pilotingSkill: Int = 5,
@@ -77,6 +78,7 @@ internal fun aUnit(
     armor: ArmorLayout = anArmorLayout(),
 ): Unit = Unit(
     id = UnitId(id),
+    owner = owner,
     name = name,
     gunnerySkill = gunnerySkill,
     pilotingSkill = pilotingSkill,

@@ -1,5 +1,6 @@
 package battletech.tui
 
+import battletech.tactical.action.PlayerId
 import battletech.tactical.action.Unit
 import battletech.tactical.action.UnitId
 import battletech.tactical.model.ArmorLayout
@@ -38,6 +39,7 @@ internal fun aGameMap(
 
 internal fun aUnit(
     id: String = "unit-1",
+    owner: PlayerId = PlayerId.PLAYER_1,
     name: String = "Atlas",
     position: HexCoordinates = HexCoordinates(0, 0),
     facing: HexDirection = HexDirection.N,
@@ -47,6 +49,7 @@ internal fun aUnit(
     armor: ArmorLayout = anArmorLayout(),
 ): Unit = Unit(
     id = UnitId(id),
+    owner = owner,
     name = name,
     gunnerySkill = 4,
     pilotingSkill = 5,
@@ -57,6 +60,7 @@ internal fun aUnit(
     runningMP = runningMP,
     jumpMP = jumpMP,
     armor = armor,
+    heatSinkCapacity = 10,
 )
 
 internal fun anArmorLayout(

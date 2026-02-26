@@ -1,16 +1,19 @@
 package battletech.tactical.model
 
+import battletech.tactical.action.PlayerId
 import battletech.tactical.action.Unit
 import battletech.tactical.action.UnitId
 
 public fun MechModel.createUnit(
     id: UnitId,
+    owner: PlayerId,
     gunnerySkill: Int = 4,
     pilotingSkill: Int = 5,
     position: HexCoordinates,
     facing: HexDirection = HexDirection.N,
 ): Unit = Unit(
     id = id,
+    owner = owner,
     name = name,
     gunnerySkill = gunnerySkill,
     pilotingSkill = pilotingSkill,

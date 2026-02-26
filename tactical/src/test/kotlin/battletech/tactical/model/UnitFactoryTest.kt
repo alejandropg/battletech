@@ -1,5 +1,6 @@
 package battletech.tactical.model
 
+import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotSame
@@ -12,6 +13,7 @@ internal class UnitFactoryTest {
     fun `createUnit sets instance-specific fields`() {
         val unit = MechModels["AS7-D"].createUnit(
             id = UnitId("test-atlas"),
+            owner = PlayerId.PLAYER_1,
             position = HexCoordinates(2, 3),
         )
 
@@ -23,6 +25,7 @@ internal class UnitFactoryTest {
     fun `createUnit uses chassis stats from model`() {
         val unit = MechModels["AS7-D"].createUnit(
             id = UnitId("atlas"),
+            owner = PlayerId.PLAYER_1,
             position = HexCoordinates(0, 0),
         )
 
@@ -37,6 +40,7 @@ internal class UnitFactoryTest {
     fun `createUnit uses default pilot skills`() {
         val unit = MechModels["HBK-4G"].createUnit(
             id = UnitId("hunchback"),
+            PlayerId.PLAYER_1,
             position = HexCoordinates(0, 0),
         )
 
@@ -48,6 +52,7 @@ internal class UnitFactoryTest {
     fun `createUnit accepts custom pilot skills`() {
         val unit = MechModels["WVR-6R"].createUnit(
             id = UnitId("wolverine"),
+            PlayerId.PLAYER_1,
             gunnerySkill = 3,
             pilotingSkill = 4,
             position = HexCoordinates(0, 0),
@@ -61,6 +66,7 @@ internal class UnitFactoryTest {
     fun `createUnit sets jump MP for jumping mechs`() {
         val unit = MechModels["WVR-6R"].createUnit(
             id = UnitId("wolverine"),
+            PlayerId.PLAYER_1,
             position = HexCoordinates(0, 0),
         )
 
@@ -69,8 +75,16 @@ internal class UnitFactoryTest {
 
     @Test
     fun `each createUnit call returns independent weapon instances`() {
-        val unit1 = MechModels["AS7-D"].createUnit(id = UnitId("a"), position = HexCoordinates(0, 0))
-        val unit2 = MechModels["AS7-D"].createUnit(id = UnitId("b"), position = HexCoordinates(1, 1))
+        val unit1 = MechModels["AS7-D"].createUnit(
+            id = UnitId("a"),
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0)
+        )
+        val unit2 = MechModels["AS7-D"].createUnit(
+            id = UnitId("b"),
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(1, 1)
+        )
 
         assertNotSame(unit1.weapons[0], unit2.weapons[0])
     }
@@ -81,6 +95,28 @@ internal class UnitFactoryTest {
 
         assertEquals("HBK-4G", model.variant)
         assertEquals("Hunchback HBK-4G", model.name)
+    }
+
+    @Test
+    fun `createUnit defaults to PLAYER_1`() {
+        val unit = MechModels["AS7-D"].createUnit(
+            id = UnitId("atlas"),
+            PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+        )
+
+        assertEquals(PlayerId.PLAYER_1, unit.owner)
+    }
+
+    @Test
+    fun `createUnit accepts custom owner`() {
+        val unit = MechModels["AS7-D"].createUnit(
+            id = UnitId("atlas"),
+            owner = PlayerId.PLAYER_2,
+            position = HexCoordinates(0, 0),
+        )
+
+        assertEquals(PlayerId.PLAYER_2, unit.owner)
     }
 
     @Test
