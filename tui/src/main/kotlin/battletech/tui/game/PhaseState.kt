@@ -58,32 +58,18 @@ public sealed interface PhaseState {
             override val prompt: String,
         ) : Attack
 
-        /** Torso locked; player selects a target or "No Attack". */
-        public data class TargetBrowsing(
+        /** Torso locked; player navigates weapons across all targets and toggles assignments. */
+        public data class WeaponSelection(
             override val unitId: UnitId,
             override val attackPhase: TurnPhase,
             override val torsoFacing: HexDirection,
             override val arc: Set<HexCoordinates>,
             override val validTargetIds: Set<UnitId>,
             val targets: List<TargetInfo>,
-            val selectedTargetIndex: Int,   // targets.size = "No Attack" entry
+            val cursorTargetIndex: Int,   // targets.size = "No Attack" entry
+            val cursorWeaponIndex: Int,   // weapon index within target (ignored on "No Attack")
             val weaponAssignments: Map<UnitId, Set<Int>>,
             val primaryTargetId: UnitId?,
-            override val prompt: String,
-        ) : Attack
-
-        /** Player assigns weapons to the selected target. */
-        public data class WeaponAssignment(
-            override val unitId: UnitId,
-            override val attackPhase: TurnPhase,
-            override val torsoFacing: HexDirection,
-            override val arc: Set<HexCoordinates>,
-            override val validTargetIds: Set<UnitId>,
-            val targets: List<TargetInfo>,
-            val selectedTargetIndex: Int,
-            val selectedWeaponIndex: Int,
-            val weaponAssignments: Map<UnitId, Set<Int>>,
-            val primaryTargetId: UnitId,
             override val prompt: String,
         ) : Attack
     }
@@ -92,7 +78,7 @@ public sealed interface PhaseState {
 public data class TargetInfo(
     val unitId: UnitId,
     val unitName: String,
-    val eligibleWeapons: List<WeaponTargetInfo>,
+    val weapons: List<WeaponTargetInfo>,
 )
 
 public data class WeaponTargetInfo(
@@ -101,4 +87,5 @@ public data class WeaponTargetInfo(
     val successChance: Int,
     val damage: Int,
     val modifiers: List<String>,
+    val available: Boolean = true,
 )

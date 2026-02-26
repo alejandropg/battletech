@@ -73,8 +73,7 @@ public class AttackController(
         gameState: GameState,
     ): PhaseOutcome = when (state) {
         is PhaseState.Attack.TorsoFacing -> handleTorsoFacing(action, state, gameState)
-        is PhaseState.Attack.TargetBrowsing -> handleTargetBrowsing(action, state, cursor, gameState)
-        is PhaseState.Attack.WeaponAssignment -> handleWeaponAssignment(action, state)
+        is PhaseState.Attack.WeaponSelection -> handleWeaponSelection(action, state, cursor, gameState)
     }
 
     private fun handleTorsoFacing(
@@ -105,18 +104,21 @@ public class AttackController(
                 ),
             )
 
+            val (firstTargetIdx, firstWeaponIdx) = firstCursorPosition(state.targets)
+
             PhaseOutcome.Continue(
-                PhaseState.Attack.TargetBrowsing(
+                PhaseState.Attack.WeaponSelection(
                     unitId = state.unitId,
                     attackPhase = state.attackPhase,
                     torsoFacing = state.torsoFacing,
                     arc = state.arc,
                     validTargetIds = state.validTargetIds,
                     targets = state.targets,
-                    selectedTargetIndex = 0,
+                    cursorTargetIndex = firstTargetIdx,
+                    cursorWeaponIndex = firstWeaponIdx,
                     weaponAssignments = weaponAssignments,
                     primaryTargetId = primaryTargetId,
-                    prompt = targetBrowsingPrompt(state.targets.size),
+                    prompt = weaponSelectionPrompt(state.targets.size),
                 ),
             )
         }
@@ -136,9 +138,9 @@ public class AttackController(
         else -> PhaseOutcome.Continue(state)
     }
 
-    private fun handleTargetBrowsing(
+    private fun handleWeaponSelection(
         action: InputAction,
-        state: PhaseState.Attack.TargetBrowsing,
+        state: PhaseState.Attack.WeaponSelection,
         cursor: HexCoordinates,
         gameState: GameState,
     ): PhaseOutcome = when (action) {
@@ -158,7 +160,7 @@ public class AttackController(
         }
 
         is InputAction.Confirm -> {
-            val isNoAttack = state.targets.isEmpty() || state.selectedTargetIndex >= state.targets.size
+            val isNoAttack = state.targets.isEmpty() || state.cursorTargetIndex >= state.targets.size
             if (isNoAttack) {
                 currentImpulse?.declarations?.put(
                     state.unitId,
@@ -170,138 +172,120 @@ public class AttackController(
                 )
                 PhaseOutcome.Cancelled
             } else {
-                val currentTarget = state.targets[state.selectedTargetIndex]
-                val attacker = gameState.unitById(state.unitId)!!
-                val primaryTargetId = state.primaryTargetId ?: currentTarget.unitId
+                val currentTarget = state.targets[state.cursorTargetIndex]
+                val weapons = currentTarget.weapons
+                if (weapons.isEmpty()) return PhaseOutcome.Continue(state)
 
-                val assignedToOthers = state.weaponAssignments.entries
-                    .filter { (k, _) -> k != currentTarget.unitId }
-                    .flatMap { (_, v) -> v }
-                    .toSet()
-                val firstAvailable = currentTarget.eligibleWeapons
-                    .indexOfFirst { w -> w.weaponIndex !in assignedToOthers }
-                    .coerceAtLeast(0)
+                val weapon = weapons[state.cursorWeaponIndex]
+                if (!weapon.available) return PhaseOutcome.Continue(state)
+
+                val targetId = currentTarget.unitId
+                val assignedElsewhere = state.weaponAssignments.any { (otherId, indices) ->
+                    otherId != targetId && weapon.weaponIndex in indices
+                }
+                if (assignedElsewhere) return PhaseOutcome.Continue(state)
+
+                val currentAssigned = state.weaponAssignments[targetId] ?: emptySet()
+                val newAssigned = if (weapon.weaponIndex in currentAssigned) {
+                    currentAssigned - weapon.weaponIndex
+                } else {
+                    currentAssigned + weapon.weaponIndex
+                }
+                val newAssignments = state.weaponAssignments + (targetId to newAssigned)
+                val newPrimaryTargetId = state.primaryTargetId ?: targetId
+
+                // Update declaration immediately
+                val hasAny = newAssignments.values.any { it.isNotEmpty() }
+                val status = if (hasAny) DeclarationStatus.WEAPONS_ASSIGNED else DeclarationStatus.PENDING
+                currentImpulse?.declarations?.put(
+                    state.unitId,
+                    UnitDeclaration(
+                        unitId = state.unitId,
+                        torsoFacing = state.torsoFacing,
+                        status = status,
+                        primaryTargetId = newPrimaryTargetId,
+                        weaponAssignments = newAssignments,
+                    ),
+                )
 
                 PhaseOutcome.Continue(
-                    PhaseState.Attack.WeaponAssignment(
-                        unitId = state.unitId,
-                        attackPhase = state.attackPhase,
-                        torsoFacing = state.torsoFacing,
-                        arc = state.arc,
-                        validTargetIds = state.validTargetIds,
-                        targets = state.targets,
-                        selectedTargetIndex = state.selectedTargetIndex,
-                        selectedWeaponIndex = firstAvailable,
-                        weaponAssignments = state.weaponAssignments,
-                        primaryTargetId = primaryTargetId,
-                        prompt = weaponAssignmentPrompt(attacker.weapons.size),
-                    ),
+                    state.copy(weaponAssignments = newAssignments, primaryTargetId = newPrimaryTargetId),
                 )
             }
         }
 
+        is InputAction.MoveCursor -> {
+            val dir = action.direction
+            if (dir != HexDirection.N && dir != HexDirection.S) return PhaseOutcome.Continue(state)
+            PhaseOutcome.Continue(navigateWeapons(state, if (dir == HexDirection.S) 1 else -1))
+        }
+
         is InputAction.CycleUnit -> {
-            // Tab cycles targets, wrapping through "No Attack" at index targets.size
+            // Tab: jump to first weapon of next target
             val total = state.targets.size + 1  // +1 for "No Attack"
-            val newIndex = if (total <= 1) 0 else (state.selectedTargetIndex + 1) % total
-            PhaseOutcome.Continue(state.copy(selectedTargetIndex = newIndex))
+            val nextTargetIdx = if (total <= 1) 0 else (state.cursorTargetIndex + 1) % total
+            val weaponIdx = if (nextTargetIdx < state.targets.size) 0 else 0
+            PhaseOutcome.Continue(state.copy(cursorTargetIndex = nextTargetIdx, cursorWeaponIndex = weaponIdx))
         }
 
         is InputAction.ClickHex -> {
             val targetUnit = gameState.unitAt(cursor)
             if (targetUnit != null && targetUnit.id in state.validTargetIds) {
                 val idx = state.targets.indexOfFirst { it.unitId == targetUnit.id }
-                if (idx >= 0) PhaseOutcome.Continue(state.copy(selectedTargetIndex = idx))
-                else PhaseOutcome.Continue(state)
+                if (idx >= 0) {
+                    PhaseOutcome.Continue(state.copy(cursorTargetIndex = idx, cursorWeaponIndex = 0))
+                } else {
+                    PhaseOutcome.Continue(state)
+                }
             } else {
                 PhaseOutcome.Continue(state)
             }
         }
 
-        is InputAction.MoveCursor -> PhaseOutcome.Continue(state)  // cursor moved externally
-
         else -> PhaseOutcome.Continue(state)
     }
 
-    private fun handleWeaponAssignment(
-        action: InputAction,
-        state: PhaseState.Attack.WeaponAssignment,
-    ): PhaseOutcome = when (action) {
-        is InputAction.Cancel -> {
-            PhaseOutcome.Continue(
-                PhaseState.Attack.TargetBrowsing(
-                    unitId = state.unitId,
-                    attackPhase = state.attackPhase,
-                    torsoFacing = state.torsoFacing,
-                    arc = state.arc,
-                    validTargetIds = state.validTargetIds,
-                    targets = state.targets,
-                    selectedTargetIndex = state.selectedTargetIndex,
-                    weaponAssignments = state.weaponAssignments,
-                    primaryTargetId = state.primaryTargetId,
-                    prompt = targetBrowsingPrompt(state.targets.size),
-                ),
-            )
-        }
+    /**
+     * Navigate the weapon cursor by [delta] steps (+1 = down, -1 = up) across the flat weapon list.
+     *
+     * Flat order: all weapons of target 0, all weapons of target 1, ..., "No Attack"
+     */
+    private fun navigateWeapons(state: PhaseState.Attack.WeaponSelection, delta: Int): PhaseState.Attack.WeaponSelection {
+        if (state.targets.isEmpty()) return state
 
-        is InputAction.Confirm -> {
-            val currentTarget = state.targets[state.selectedTargetIndex]
-            val weapons = currentTarget.eligibleWeapons
-            if (weapons.isEmpty()) return PhaseOutcome.Continue(state)
+        // Build flat index: (targetIdx, weaponIdx) entries + sentinel for "No Attack"
+        data class Entry(val targetIdx: Int, val weaponIdx: Int)
 
-            val weapon = weapons[state.selectedWeaponIndex]
-            val targetId = currentTarget.unitId
-            val currentAssigned = state.weaponAssignments[targetId] ?: emptySet()
-            val assignedElsewhere = state.weaponAssignments.any { (otherId, indices) ->
-                otherId != targetId && weapon.weaponIndex in indices
+        val flat = mutableListOf<Entry>()
+        for ((ti, target) in state.targets.withIndex()) {
+            for (wi in target.weapons.indices) {
+                flat.add(Entry(ti, wi))
             }
+        }
+        // "No Attack" is at the end — represented by Entry(targets.size, 0)
+        val noAttackEntry = Entry(state.targets.size, 0)
+        flat.add(noAttackEntry)
 
-            val newAssigned = when {
-                weapon.weaponIndex in currentAssigned -> currentAssigned - weapon.weaponIndex
-                assignedElsewhere -> currentAssigned  // can't assign
-                else -> currentAssigned + weapon.weaponIndex
-            }
-            val newAssignments = state.weaponAssignments + (targetId to newAssigned)
-
-            // Update declaration immediately
-            val hasAny = newAssignments.values.any { it.isNotEmpty() }
-            val status = if (hasAny) DeclarationStatus.WEAPONS_ASSIGNED else DeclarationStatus.PENDING
-            currentImpulse?.declarations?.put(
-                state.unitId,
-                UnitDeclaration(
-                    unitId = state.unitId,
-                    torsoFacing = state.torsoFacing,
-                    status = status,
-                    primaryTargetId = state.primaryTargetId,
-                    weaponAssignments = newAssignments,
-                ),
-            )
-
-            PhaseOutcome.Continue(state.copy(weaponAssignments = newAssignments))
+        val currentFlatIdx = if (state.cursorTargetIndex >= state.targets.size) {
+            flat.size - 1  // on "No Attack"
+        } else {
+            flat.indexOfFirst { it.targetIdx == state.cursorTargetIndex && it.weaponIdx == state.cursorWeaponIndex }
+                .let { if (it < 0) 0 else it }
         }
 
-        is InputAction.MoveCursor -> {
-            val dir = action.direction
-            if (dir != HexDirection.N && dir != HexDirection.S) return PhaseOutcome.Continue(state)
+        val newFlatIdx = (currentFlatIdx + delta + flat.size) % flat.size
+        val newEntry = flat[newFlatIdx]
+        return state.copy(cursorTargetIndex = newEntry.targetIdx, cursorWeaponIndex = newEntry.weaponIdx)
+    }
 
-            val currentTarget = state.targets[state.selectedTargetIndex]
-            val weapons = currentTarget.eligibleWeapons
-            if (weapons.size <= 1) return PhaseOutcome.Continue(state)
-
-            val assignedToOthers = state.weaponAssignments.entries
-                .filter { (k, _) -> k != currentTarget.unitId }
-                .flatMap { (_, v) -> v }
-                .toSet()
-            val navigable = weapons.indices.filter { i -> weapons[i].weaponIndex !in assignedToOthers }
-            if (navigable.isEmpty()) return PhaseOutcome.Continue(state)
-
-            val currentPos = navigable.indexOf(state.selectedWeaponIndex).let { if (it < 0) 0 else it }
-            val delta = if (dir == HexDirection.S) 1 else -1
-            val newPos = (currentPos + delta + navigable.size) % navigable.size
-            PhaseOutcome.Continue(state.copy(selectedWeaponIndex = navigable[newPos]))
+    /** Returns (targetIndex, weaponIndex) for the first available weapon of the first target, or (targets.size, 0) if none. */
+    private fun firstCursorPosition(targets: List<TargetInfo>): Pair<Int, Int> {
+        for ((ti, target) in targets.withIndex()) {
+            val wi = target.weapons.indexOfFirst { it.available }
+            if (wi >= 0) return ti to wi
+            if (target.weapons.isNotEmpty()) return ti to 0
         }
-
-        else -> PhaseOutcome.Continue(state)
+        return targets.size to 0  // "No Attack"
     }
 
     private fun twistTorso(
@@ -333,37 +317,52 @@ public class AttackController(
         validTargetIds.mapNotNull { targetId ->
             val target = gameState.unitById(targetId) ?: return@mapNotNull null
             val distance = attacker.position.distanceTo(target.position)
-            val weapons = attacker.weapons.mapIndexedNotNull { index, weapon ->
-                if (weapon.destroyed) return@mapIndexedNotNull null
-                if (weapon.ammo?.let { it <= 0 } == true) return@mapIndexedNotNull null
-                if (distance > weapon.longRange) return@mapIndexedNotNull null
 
-                val rangeModifier = when {
-                    distance <= weapon.shortRange -> 0
-                    distance <= weapon.mediumRange -> 2
-                    distance <= weapon.longRange -> 4
-                    else -> return@mapIndexedNotNull null
-                }
-                val heatPenalty = heatPenaltyModifier(attacker)
-                val modifiers = mutableListOf<String>()
-                when {
-                    distance <= weapon.shortRange -> {}
-                    distance <= weapon.mediumRange -> modifiers.add("+2 med")
-                    else -> modifiers.add("+4 long")
-                }
-                if (heatPenalty > 0) modifiers.add("+$heatPenalty heat")
+            val weapons = attacker.weapons.mapIndexed { index, weapon ->
+                val inRange = !weapon.destroyed &&
+                    (weapon.ammo?.let { it > 0 } != false) &&
+                    distance <= weapon.longRange
 
-                val chance = TWO_D6_PROBABILITY[attacker.gunnerySkill + rangeModifier + heatPenalty] ?: 0
-                WeaponTargetInfo(
-                    weaponIndex = index,
-                    weaponName = weapon.name,
-                    successChance = chance,
-                    damage = weapon.damage,
-                    modifiers = modifiers,
-                )
+                if (!inRange) {
+                    WeaponTargetInfo(
+                        weaponIndex = index,
+                        weaponName = weapon.name,
+                        successChance = 0,
+                        damage = weapon.damage,
+                        modifiers = emptyList(),
+                        available = false,
+                    )
+                } else {
+                    val rangeModifier = when {
+                        distance <= weapon.shortRange -> 0
+                        distance <= weapon.mediumRange -> 2
+                        else -> 4
+                    }
+                    val heatPenalty = heatPenaltyModifier(attacker)
+                    val modifiers = mutableListOf<String>()
+                    when {
+                        distance <= weapon.shortRange -> {}
+                        distance <= weapon.mediumRange -> modifiers.add("+2 med")
+                        else -> modifiers.add("+4 long")
+                    }
+                    if (heatPenalty > 0) modifiers.add("+$heatPenalty heat")
+
+                    val chance = TWO_D6_PROBABILITY[attacker.gunnerySkill + rangeModifier + heatPenalty] ?: 0
+                    WeaponTargetInfo(
+                        weaponIndex = index,
+                        weaponName = weapon.name,
+                        successChance = chance,
+                        damage = weapon.damage,
+                        modifiers = modifiers,
+                        available = true,
+                    )
+                }
             }
-            if (weapons.isEmpty()) return@mapNotNull null
-            TargetInfo(unitId = targetId, unitName = target.name, eligibleWeapons = weapons)
+
+            val hasAnyEligible = weapons.any { it.available }
+            if (!hasAnyEligible) return@mapNotNull null
+
+            TargetInfo(unitId = targetId, unitName = target.name, weapons = weapons)
         }
 
     private fun findValidTargets(attacker: CombatUnit, arc: Set<HexCoordinates>, gameState: GameState): Set<UnitId> {
@@ -384,12 +383,9 @@ public class AttackController(
         }
     }
 
-    private fun targetBrowsingPrompt(targetCount: Int): String =
+    private fun weaponSelectionPrompt(targetCount: Int): String =
         if (targetCount == 0) "No targets — Enter: No Attack | Esc: back"
-        else "Tab: cycle targets | Enter: select | Esc: back"
-
-    private fun weaponAssignmentPrompt(weaponCount: Int): String =
-        "↑/↓: navigate | Enter: toggle | Esc: back to targets"
+        else "↑/↓: navigate weapons | Enter: toggle | Tab: next target | Esc: back"
 
     private fun heatPenaltyModifier(actor: CombatUnit): Int {
         val excessHeat = actor.currentHeat - actor.heatSinkCapacity

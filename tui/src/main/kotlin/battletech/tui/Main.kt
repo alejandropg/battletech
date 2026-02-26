@@ -102,7 +102,7 @@ public fun main() {
                 // Cursor movement — controlled per-state
                 val shouldMoveCursorOnArrow = when (appState.phaseState) {
                     is PhaseState.Attack.TorsoFacing -> false     // arrows twist torso
-                    is PhaseState.Attack.WeaponAssignment -> false // arrows navigate weapons
+                    is PhaseState.Attack.WeaponSelection -> false // arrows navigate weapons
                     else -> true
                 }
                 if (action is InputAction.MoveCursor && shouldMoveCursorOnArrow) {
@@ -332,8 +332,7 @@ private fun renderFrame(
 
     val hasTargets = when (attackPhase) {
         is PhaseState.Attack.TorsoFacing -> attackPhase.targets.isNotEmpty()
-        is PhaseState.Attack.TargetBrowsing -> true  // always show (at least "No Attack")
-        is PhaseState.Attack.WeaponAssignment -> true
+        is PhaseState.Attack.WeaponSelection -> true  // always show (at least "No Attack")
         null -> false
     }
     val targetsWidth = if (hasTargets) 22 else 0
@@ -380,49 +379,39 @@ private fun renderFrame(
                 targets = attackPhase.targets,
                 weaponAssignments = emptyMap(),
                 primaryTargetId = null,
-                selectedTargetIndex = -1,
-                showWeapons = false,
+                cursorTargetIndex = -1,
                 showNoAttack = false,
             )
-            is PhaseState.Attack.TargetBrowsing -> TargetsView(
+            is PhaseState.Attack.WeaponSelection -> TargetsView(
                 targets = attackPhase.targets,
                 weaponAssignments = attackPhase.weaponAssignments,
                 primaryTargetId = attackPhase.primaryTargetId,
-                selectedTargetIndex = attackPhase.selectedTargetIndex,
-                showWeapons = false,
+                cursorTargetIndex = attackPhase.cursorTargetIndex,
+                cursorWeaponIndex = attackPhase.cursorWeaponIndex,
                 showNoAttack = true,
-            )
-            is PhaseState.Attack.WeaponAssignment -> TargetsView(
-                targets = attackPhase.targets,
-                weaponAssignments = attackPhase.weaponAssignments,
-                primaryTargetId = attackPhase.primaryTargetId,
-                selectedTargetIndex = attackPhase.selectedTargetIndex,
-                showWeapons = true,
-                showNoAttack = false,
             )
             else -> null
         }
         targetsView?.render(buffer, boardWidth, 0, targetsWidth, boardHeight)
     }
 
-    // Build sidebar weapon context from WeaponAssignment state
-    val (weaponCursor, assignedCurrent, assignedOthers) = when (attackPhase) {
-        is PhaseState.Attack.WeaponAssignment -> {
-            val currentTarget = attackPhase.targets.getOrNull(attackPhase.selectedTargetIndex)
-            val currentWeaponIdx = currentTarget?.eligibleWeapons?.getOrNull(attackPhase.selectedWeaponIndex)?.weaponIndex
+    // Build sidebar weapon context from WeaponSelection state
+    val (assignedCurrent, assignedOthers) = when (attackPhase) {
+        is PhaseState.Attack.WeaponSelection -> {
+            val currentTarget = attackPhase.targets.getOrNull(attackPhase.cursorTargetIndex)
             val assignedToCurrentTarget = attackPhase.weaponAssignments[currentTarget?.unitId] ?: emptySet()
             val assignedToOthers = attackPhase.weaponAssignments.entries
                 .filter { (k, _) -> k != currentTarget?.unitId }
                 .flatMap { (_, v) -> v }
                 .toSet()
-            Triple(currentWeaponIdx, assignedToCurrentTarget, assignedToOthers)
+            assignedToCurrentTarget to assignedToOthers
         }
-        else -> Triple(null, emptySet<Int>(), emptySet<Int>())
+        else -> emptySet<Int>() to emptySet<Int>()
     }
 
     val sidebarView = SidebarView(
         unit = selectedUnit,
-        weaponCursorIndex = weaponCursor,
+        weaponCursorIndex = null,
         assignedToCurrentTarget = assignedCurrent,
         assignedToOtherTargets = assignedOthers,
     )
