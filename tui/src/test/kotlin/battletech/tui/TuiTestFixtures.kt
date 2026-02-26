@@ -44,7 +44,7 @@ internal fun aUnit(
     walkingMP: Int = 0,
     runningMP: Int = 0,
     jumpMP: Int = 0,
-    armor: ArmorLayout? = null,
+    armor: ArmorLayout = anArmorLayout(),
 ): Unit = Unit(
     id = UnitId(id),
     name = name,

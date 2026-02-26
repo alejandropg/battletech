@@ -1,8 +1,8 @@
 package battletech.tui.view
 
+import battletech.tactical.action.Unit
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
-import battletech.tactical.action.Unit
 
 public class SidebarView(
     private val unit: Unit?,
@@ -67,42 +67,38 @@ public class SidebarView(
 
         // ARMOR
         val armor = unit.armor
-        if (armor != null) {
-            buffer.writeString(cx, cy, sectionHeader("ARMOR"), Color.CYAN)
-            cy += 1
-            //          col: 0    2         9         16
-            // Head               HD: 9
-            buffer.writeString(cx + 9, cy, "HD:%2d".format(armor.head), Color.CYAN)
-            cy += 1
-            // Torso front  LT:20     CT:47     RT:20
-            buffer.writeString(cx + 2, cy, "LT:%2d".format(armor.leftTorso), Color.GREEN)
-            buffer.writeString(cx + 9, cy, "CT:%2d".format(armor.centerTorso), Color.BRIGHT_YELLOW)
-            buffer.writeString(cx + 16, cy, "RT:%2d".format(armor.rightTorso), Color.GREEN)
-            cy += 1
-            // Torso rear    r: 2      r: 8      r: 2   (numbers align with front values above)
-            buffer.writeString(cx + 3, cy, "r:%2d".format(armor.leftTorsoRear), Color.DEFAULT)
-            buffer.writeString(cx + 10, cy, "r:%2d".format(armor.centerTorsoRear), Color.DEFAULT)
-            buffer.writeString(cx + 17, cy, "r:%2d".format(armor.rightTorsoRear), Color.DEFAULT)
-            cy += 1
-            // Arms     LA:34                 RA:34
-            buffer.writeString(cx + 0, cy, "LA:%2d".format(armor.leftArm), Color.GREEN)
-            buffer.writeString(cx + 17, cy, "RA:%2d".format(armor.rightArm), Color.GREEN)
-            cy += 1
-            // Legs        LL:41       RL:41
-            buffer.writeString(cx + 3, cy, "LL:%2d".format(armor.leftLeg), Color.GREEN)
-            buffer.writeString(cx + 14, cy, "RL:%2d".format(armor.rightLeg), Color.GREEN)
-            cy += 2
-        }
+        buffer.writeString(cx, cy, sectionHeader("ARMOR"), Color.CYAN)
+        cy += 1
+        //          col: 0    2         9         16
+        // Head               HD: 9
+        buffer.writeString(cx + 9, cy, "HD:%2d".format(armor.head), Color.CYAN)
+        cy += 1
+        // Torso front  LT:20     CT:47     RT:20
+        buffer.writeString(cx + 2, cy, "LT:%2d".format(armor.leftTorso), Color.GREEN)
+        buffer.writeString(cx + 9, cy, "CT:%2d".format(armor.centerTorso), Color.BRIGHT_YELLOW)
+        buffer.writeString(cx + 16, cy, "RT:%2d".format(armor.rightTorso), Color.GREEN)
+        cy += 1
+        // Torso rear    r: 2      r: 8      r: 2   (numbers align with front values above)
+        buffer.writeString(cx + 3, cy, "r:%2d".format(armor.leftTorsoRear), Color.DEFAULT)
+        buffer.writeString(cx + 10, cy, "r:%2d".format(armor.centerTorsoRear), Color.DEFAULT)
+        buffer.writeString(cx + 17, cy, "r:%2d".format(armor.rightTorsoRear), Color.DEFAULT)
+        cy += 1
+        // Arms     LA:34                 RA:34
+        buffer.writeString(cx + 0, cy, "LA:%2d".format(armor.leftArm), Color.GREEN)
+        buffer.writeString(cx + 17, cy, "RA:%2d".format(armor.rightArm), Color.GREEN)
+        cy += 1
+        // Legs        LL:41       RL:41
+        buffer.writeString(cx + 3, cy, "LL:%2d".format(armor.leftLeg), Color.GREEN)
+        buffer.writeString(cx + 14, cy, "RL:%2d".format(armor.rightLeg), Color.GREEN)
+        cy += 2
 
         // WEAPONS
-        if (unit.weapons.isNotEmpty()) {
-            buffer.writeString(cx, cy, sectionHeader("WEAPONS"), Color.CYAN)
+        buffer.writeString(cx, cy, sectionHeader("WEAPONS"), Color.CYAN)
+        cy += 1
+        for (weapon in unit.weapons) {
+            val ammoStr = weapon.ammo?.let { "  [$it]" } ?: ""
+            buffer.writeString(cx, cy, "${weapon.name}$ammoStr", Color.WHITE)
             cy += 1
-            for (weapon in unit.weapons) {
-                val ammoStr = weapon.ammo?.let { "  [$it]" } ?: ""
-                buffer.writeString(cx, cy, "${weapon.name}$ammoStr", Color.WHITE)
-                cy += 1
-            }
         }
     }
 }

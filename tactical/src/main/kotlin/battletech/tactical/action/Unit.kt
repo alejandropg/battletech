@@ -18,5 +18,5 @@ public data class Unit(
     public val jumpMP: Int = 0,
     public val currentHeat: Int = 0,
     public val heatSinkCapacity: Int = 10,
-    public val armor: ArmorLayout? = null,
+    public val armor: ArmorLayout,
 )

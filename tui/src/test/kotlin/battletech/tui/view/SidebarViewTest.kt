@@ -1,7 +1,7 @@
 package battletech.tui.view
 
-import battletech.tui.anArmorLayout
 import battletech.tui.aUnit
+import battletech.tui.anArmorLayout
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -111,19 +111,6 @@ internal class SidebarViewTest {
         view.render(buffer, 0, 0, 28, 14)
 
         assertEquals(Color.RED, buffer.get(2, 12).fg)
-    }
-
-    @Test
-    fun `does not render armor section when armor is null`() {
-        val unit = aUnit(armor = null)
-        val view = SidebarView(unit)
-        val buffer = ScreenBuffer(28, 30)
-
-        view.render(buffer, 0, 0, 28, 30)
-
-        // Row 14 is where ARMOR header would appear; it should be empty
-        val row14 = (2 until 26).map { buffer.get(it, 14).char }.joinToString("")
-        assertFalse(row14.contains("ARMOR"))
     }
 
     @Test

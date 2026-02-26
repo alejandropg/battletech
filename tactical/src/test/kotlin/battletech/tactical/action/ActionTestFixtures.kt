@@ -1,5 +1,6 @@
 package battletech.tactical.action
 
+import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
@@ -44,6 +45,22 @@ internal fun aWeapon(
     destroyed = destroyed,
 )
 
+internal fun anArmorLayout(
+    head: Int = 9,
+    centerTorso: Int = 47, centerTorsoRear: Int = 14,
+    leftTorso: Int = 32, leftTorsoRear: Int = 10,
+    rightTorso: Int = 32, rightTorsoRear: Int = 10,
+    leftArm: Int = 34, rightArm: Int = 34,
+    leftLeg: Int = 41, rightLeg: Int = 41,
+): ArmorLayout = ArmorLayout(
+    head = head,
+    centerTorso = centerTorso, centerTorsoRear = centerTorsoRear,
+    leftTorso = leftTorso, leftTorsoRear = leftTorsoRear,
+    rightTorso = rightTorso, rightTorsoRear = rightTorsoRear,
+    leftArm = leftArm, rightArm = rightArm,
+    leftLeg = leftLeg, rightLeg = rightLeg,
+)
+
 internal fun aUnit(
     id: String = "unit-1",
     name: String = "Test Mech",
@@ -57,6 +74,7 @@ internal fun aUnit(
     jumpMP: Int = 0,
     currentHeat: Int = 0,
     heatSinkCapacity: Int = 10,
+    armor: ArmorLayout = anArmorLayout(),
 ): Unit = Unit(
     id = UnitId(id),
     name = name,
@@ -70,6 +88,7 @@ internal fun aUnit(
     jumpMP = jumpMP,
     currentHeat = currentHeat,
     heatSinkCapacity = heatSinkCapacity,
+    armor = armor,
 )
 
 internal fun aGameState(
