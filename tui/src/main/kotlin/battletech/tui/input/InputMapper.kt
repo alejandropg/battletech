@@ -18,6 +18,7 @@ public object InputMapper {
             "Enter" -> InputAction.Confirm
             "Escape" -> InputAction.Cancel
             "Tab" -> InputAction.CycleUnit
+            "c" -> InputAction.CommitDeclarations
             "q" -> InputAction.Quit
             in "1".."9" -> InputAction.SelectAction(event.key.toInt())
             else -> null

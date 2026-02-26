@@ -19,11 +19,15 @@ import battletech.tui.game.AttackController
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.MovementController
 import battletech.tui.game.PhaseState
+import battletech.tui.game.TurnState
 import battletech.tui.game.UnitSelectionResult
+import battletech.tui.game.advanceAfterUnitAttacked
+import battletech.tui.game.attackPrompt
 import battletech.tui.game.autoAdvanceGlobalPhases
 import battletech.tui.game.extractRenderData
 import battletech.tui.game.handlePhaseOutcome
 import battletech.tui.game.moveCursor
+import battletech.tui.game.nextPhase
 import battletech.tui.game.selectableAttackUnits
 import battletech.tui.game.selectableUnits
 import battletech.tui.game.validateAttackUnitSelection
@@ -64,10 +68,23 @@ public fun main() {
     try {
         terminal.enterRawMode(mouseTracking = MouseTracking.Normal).use { rawMode ->
             while (true) {
-                // Auto-advance global phases (Initiative, Heat, End, and attack phase init)
+                // Auto-advance global phases (Initiative, Heat, End, attack phase init)
                 val (advancedState, flash) = autoAdvanceGlobalPhases(appState)
                 if (flash != null) {
                     appState = advancedState
+                    // Initialize attack impulse when first entering an attack phase
+                    val ts = advancedState.turnState
+                    if (ts != null && !ts.allAttackImpulsesComplete &&
+                        (advancedState.currentPhase == TurnPhase.WEAPON_ATTACK ||
+                            advancedState.currentPhase == TurnPhase.PHYSICAL_ATTACK)
+                    ) {
+                        attackController.initializeImpulse(
+                            ts.activeAttackPlayer,
+                            ts.currentAttackImpulse.unitCount,
+                        )
+                        // Update prompt with declaration progress
+                        appState = appState.copy(phaseState = PhaseState.Idle(buildAttackPrompt(ts, attackController)))
+                    }
                     renderFrame(terminal, renderer, appState, flash)
                     continue
                 }
@@ -82,22 +99,18 @@ public fun main() {
 
                 if (action is InputAction.Quit) break
 
-                // Cursor movement — only during non-attack phases (attack uses arrows for torso twist)
-                val isAttackBrowsing = appState.phaseState is PhaseState.Attack.Browsing
-                if (!isAttackBrowsing) {
-                    if (action is InputAction.MoveCursor) {
-                        val newCursor = moveCursor(appState.cursor, action.direction, appState.gameState.map)
-                        appState = appState.copy(cursor = newCursor)
-                    } else if (action is InputAction.ClickHex) {
-                        val newCursor = action.coords
-                        appState = appState.copy(cursor = newCursor)
-                    }
-                } else {
-                    // During attack browsing, only ClickHex moves cursor
-                    if (action is InputAction.ClickHex) {
-                        val newCursor = action.coords
-                        appState = appState.copy(cursor = newCursor)
-                    }
+                // Cursor movement — controlled per-state
+                val shouldMoveCursorOnArrow = when (appState.phaseState) {
+                    is PhaseState.Attack.TorsoFacing -> false     // arrows twist torso
+                    is PhaseState.Attack.WeaponAssignment -> false // arrows navigate weapons
+                    else -> true
+                }
+                if (action is InputAction.MoveCursor && shouldMoveCursorOnArrow) {
+                    val newCursor = moveCursor(appState.cursor, action.direction, appState.gameState.map)
+                    appState = appState.copy(cursor = newCursor)
+                }
+                if (action is InputAction.ClickHex) {
+                    appState = appState.copy(cursor = action.coords)
                 }
 
                 // Phase-specific dispatch
@@ -111,22 +124,12 @@ public fun main() {
                     is PhaseState.Attack -> {
                         val outcome = attackController.handle(action, phase, appState.cursor, appState.gameState)
                         val newState = handlePhaseOutcome(outcome, appState)
-
-                        // When all weapon attack impulses complete, resolve attacks
-                        if (outcome is battletech.tui.game.PhaseOutcome.Complete &&
-                            appState.currentPhase == TurnPhase.WEAPON_ATTACK &&
-                            newState.currentPhase == TurnPhase.PHYSICAL_ATTACK
-                        ) {
-                            val declarations = attackController.collectDeclarations()
-                            if (declarations.isNotEmpty()) {
-                                val (resolvedState, results) = resolveAttacks(declarations, newState.gameState, Random)
-                                val hitCount = results.count { it.hit }
-                                val totalDamage = results.sumOf { it.damageApplied }
-                                attackController.clearDeclarations()
-                                pendingFlash = FlashMessage("Attacks resolved: ${results.size} attacks, $hitCount hits, $totalDamage damage")
-                                newState.copy(gameState = resolvedState)
+                        // After returning to Idle from attack, refresh prompt with declaration progress
+                        if (newState.phaseState is PhaseState.Idle && isAttackPhase(newState.currentPhase)) {
+                            val ts = newState.turnState
+                            if (ts != null && !ts.allAttackImpulsesComplete) {
+                                newState.copy(phaseState = PhaseState.Idle(buildAttackPrompt(ts, attackController)))
                             } else {
-                                attackController.clearDeclarations()
                                 newState
                             }
                         } else {
@@ -135,7 +138,6 @@ public fun main() {
                     }
                 }
 
-                // Show flash from unit selection enforcement
                 if (pendingFlash != null) {
                     renderFrame(terminal, renderer, appState, pendingFlash)
                     pendingFlash = null
@@ -149,6 +151,75 @@ public fun main() {
 }
 
 private var pendingFlash: FlashMessage? = null
+
+private fun isAttackPhase(phase: TurnPhase) =
+    phase == TurnPhase.WEAPON_ATTACK || phase == TurnPhase.PHYSICAL_ATTACK
+
+private fun buildAttackPrompt(turnState: TurnState, attackController: AttackController): String =
+    attackPrompt(turnState, attackController.declaredCount(), attackController.currentImpulseUnitCount())
+
+private fun commitAttackImpulse(
+    appState: AppState,
+    attackController: AttackController,
+    random: Random = Random,
+): AppState {
+    val turnState = appState.turnState ?: return appState
+    val committedUnitIds = attackController.commitImpulse()
+
+    var newTurnState = turnState
+    for (unitId in committedUnitIds) {
+        newTurnState = advanceAfterUnitAttacked(newTurnState, unitId)
+    }
+
+    return if (newTurnState.allAttackImpulsesComplete) {
+        if (appState.currentPhase == TurnPhase.WEAPON_ATTACK) {
+            // Resolve all weapon attacks and transition to physical attack
+            val declarations = attackController.collectDeclarations()
+            val resolvedGameState = if (declarations.isNotEmpty()) {
+                val (resolved, results) = resolveAttacks(declarations, appState.gameState, random)
+                val hitCount = results.count { it.hit }
+                val totalDamage = results.sumOf { it.damageApplied }
+                pendingFlash = FlashMessage(
+                    "Attacks resolved: ${results.size} attacks, $hitCount hits, $totalDamage damage",
+                )
+                resolved
+            } else {
+                appState.gameState
+            }
+            attackController.clearDeclarations()
+
+            val physicalTurnState = newTurnState.copy(
+                attackedUnitIds = emptySet(),
+                currentAttackImpulseIndex = 0,
+                unitsAttackedInCurrentImpulse = 0,
+                attackOrder = emptyList(),  // will be re-initialized by autoAdvanceGlobalPhases
+            )
+            appState.copy(
+                gameState = resolvedGameState,
+                currentPhase = nextPhase(TurnPhase.WEAPON_ATTACK),
+                phaseState = PhaseState.Idle(),
+                turnState = physicalTurnState,
+            )
+        } else {
+            // Physical attack done — advance phase
+            appState.copy(
+                currentPhase = nextPhase(appState.currentPhase),
+                phaseState = PhaseState.Idle(),
+                turnState = newTurnState,
+            )
+        }
+    } else {
+        // More impulses remain — initialize the next one
+        attackController.initializeImpulse(
+            newTurnState.activeAttackPlayer,
+            newTurnState.currentAttackImpulse.unitCount,
+        )
+        appState.copy(
+            phaseState = PhaseState.Idle(buildAttackPrompt(newTurnState, attackController)),
+            turnState = newTurnState,
+        )
+    }
+}
 
 private fun trySelectUnit(
     appState: AppState,
@@ -172,14 +243,14 @@ private fun trySelectUnit(
         }
     }
 
-    if (turnState != null && (appState.currentPhase == TurnPhase.WEAPON_ATTACK || appState.currentPhase == TurnPhase.PHYSICAL_ATTACK)) {
+    if (turnState != null && isAttackPhase(appState.currentPhase)) {
         when (validateAttackUnitSelection(unit, turnState)) {
             UnitSelectionResult.NOT_YOUR_UNIT -> {
                 pendingFlash = FlashMessage("Not your unit")
                 return appState
             }
             UnitSelectionResult.ALREADY_ACTED -> {
-                pendingFlash = FlashMessage("Already declared attacks")
+                pendingFlash = FlashMessage("Already committed attacks")
                 return appState
             }
             UnitSelectionResult.ALREADY_MOVED, UnitSelectionResult.VALID -> {}
@@ -205,13 +276,33 @@ private fun handleIdle(
 
     is InputAction.ClickHex -> trySelectUnit(appState, movementController, attackController)
 
+    is InputAction.CommitDeclarations -> {
+        val turnState = appState.turnState
+        if (turnState != null && isAttackPhase(appState.currentPhase)) {
+            if (attackController.canCommit()) {
+                commitAttackImpulse(appState, attackController)
+            } else {
+                val declared = attackController.declaredCount()
+                val total = attackController.currentImpulseUnitCount()
+                pendingFlash = FlashMessage("Declare all units first ($declared/$total declared)")
+                appState
+            }
+        } else {
+            appState
+        }
+    }
+
     is InputAction.CycleUnit -> {
         val turnState = appState.turnState
         val units = when {
             turnState != null && appState.currentPhase == TurnPhase.MOVEMENT ->
                 selectableUnits(appState.gameState, turnState)
-            turnState != null && (appState.currentPhase == TurnPhase.WEAPON_ATTACK || appState.currentPhase == TurnPhase.PHYSICAL_ATTACK) ->
-                selectableAttackUnits(appState.gameState, turnState)
+            turnState != null && isAttackPhase(appState.currentPhase) -> {
+                // Tab cycles undeclared units first; all selectable units (not yet committed)
+                val all = selectableAttackUnits(appState.gameState, turnState)
+                val undeclared = all.filter { !attackController.isDeclared(it.id) }
+                undeclared.ifEmpty { all }
+            }
             else -> appState.gameState.units
         }
         if (units.isNotEmpty()) {
@@ -238,9 +329,11 @@ private fun renderFrame(
     val sidebarWidth = 28
     val statusBarHeight = 7
     val attackPhase = appState.phaseState as? PhaseState.Attack
+
     val hasTargets = when (attackPhase) {
-        is PhaseState.Attack.Browsing -> attackPhase.targets.isNotEmpty()
-        is PhaseState.Attack.AssigningWeapons -> true
+        is PhaseState.Attack.TorsoFacing -> attackPhase.targets.isNotEmpty()
+        is PhaseState.Attack.TargetBrowsing -> true  // always show (at least "No Attack")
+        is PhaseState.Attack.WeaponAssignment -> true
         null -> false
     }
     val targetsWidth = if (hasTargets) 22 else 0
@@ -283,30 +376,62 @@ private fun renderFrame(
 
     if (hasTargets) {
         val targetsView = when (attackPhase) {
-            is PhaseState.Attack.Browsing -> TargetsView(
+            is PhaseState.Attack.TorsoFacing -> TargetsView(
                 targets = attackPhase.targets,
                 weaponAssignments = emptyMap(),
                 primaryTargetId = null,
                 selectedTargetIndex = -1,
+                showWeapons = false,
+                showNoAttack = false,
             )
-            is PhaseState.Attack.AssigningWeapons -> TargetsView(
+            is PhaseState.Attack.TargetBrowsing -> TargetsView(
                 targets = attackPhase.targets,
                 weaponAssignments = attackPhase.weaponAssignments,
                 primaryTargetId = attackPhase.primaryTargetId,
                 selectedTargetIndex = attackPhase.selectedTargetIndex,
+                showWeapons = false,
+                showNoAttack = true,
+            )
+            is PhaseState.Attack.WeaponAssignment -> TargetsView(
+                targets = attackPhase.targets,
+                weaponAssignments = attackPhase.weaponAssignments,
+                primaryTargetId = attackPhase.primaryTargetId,
+                selectedTargetIndex = attackPhase.selectedTargetIndex,
+                showWeapons = true,
+                showNoAttack = false,
             )
             else -> null
         }
         targetsView?.render(buffer, boardWidth, 0, targetsWidth, boardHeight)
     }
 
-    val sidebarView = SidebarView(selectedUnit)
+    // Build sidebar weapon context from WeaponAssignment state
+    val (weaponCursor, assignedCurrent, assignedOthers) = when (attackPhase) {
+        is PhaseState.Attack.WeaponAssignment -> {
+            val currentTarget = attackPhase.targets.getOrNull(attackPhase.selectedTargetIndex)
+            val currentWeaponIdx = currentTarget?.eligibleWeapons?.getOrNull(attackPhase.selectedWeaponIndex)?.weaponIndex
+            val assignedToCurrentTarget = attackPhase.weaponAssignments[currentTarget?.unitId] ?: emptySet()
+            val assignedToOthers = attackPhase.weaponAssignments.entries
+                .filter { (k, _) -> k != currentTarget?.unitId }
+                .flatMap { (_, v) -> v }
+                .toSet()
+            Triple(currentWeaponIdx, assignedToCurrentTarget, assignedToOthers)
+        }
+        else -> Triple(null, emptySet<Int>(), emptySet<Int>())
+    }
+
+    val sidebarView = SidebarView(
+        unit = selectedUnit,
+        weaponCursorIndex = weaponCursor,
+        assignedToCurrentTarget = assignedCurrent,
+        assignedToOtherTargets = assignedOthers,
+    )
     sidebarView.render(buffer, boardWidth + targetsWidth, 0, sidebarWidth, boardHeight)
 
     val prompt = if (flash != null) flash.text else appState.phaseState.prompt
     val activePlayerInfo = if (appState.turnState != null) {
         val isMovement = appState.currentPhase == TurnPhase.MOVEMENT && !appState.turnState.allImpulsesComplete
-        val isAttack = (appState.currentPhase == TurnPhase.WEAPON_ATTACK || appState.currentPhase == TurnPhase.PHYSICAL_ATTACK) &&
+        val isAttack = isAttackPhase(appState.currentPhase) &&
             appState.turnState.attackOrder.isNotEmpty() && !appState.turnState.allAttackImpulsesComplete
         if (isMovement) {
             if (appState.turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"

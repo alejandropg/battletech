@@ -11,4 +11,5 @@ public sealed interface InputAction {
     public data class SelectAction(val index: Int) : InputAction
     public data object Quit : InputAction
     public data class ClickHex(val coords: HexCoordinates) : InputAction
+    public data object CommitDeclarations : InputAction
 }

@@ -175,9 +175,9 @@ internal class RenderDataTest {
     @Nested
     inner class AttackTest {
         @Test
-        fun `Attack Browsing produces arc highlights`() {
+        fun `Attack TorsoFacing produces arc highlights`() {
             val arcHexes = setOf(HexCoordinates(1, 0), HexCoordinates(2, 0))
-            val state = PhaseState.Attack.Browsing(
+            val state = PhaseState.Attack.TorsoFacing(
                 unitId = UnitId("u1"),
                 attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
                 torsoFacing = HexDirection.N,
@@ -194,8 +194,8 @@ internal class RenderDataTest {
         }
 
         @Test
-        fun `Attack Browsing with empty arc produces empty highlights`() {
-            val state = PhaseState.Attack.Browsing(
+        fun `Attack TorsoFacing with empty arc produces empty highlights`() {
+            val state = PhaseState.Attack.TorsoFacing(
                 unitId = UnitId("u1"),
                 attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
                 torsoFacing = HexDirection.N,

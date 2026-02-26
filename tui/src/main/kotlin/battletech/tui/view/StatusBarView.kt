@@ -22,6 +22,6 @@ public class StatusBarView(
         }
         buffer.writeString(cx, cy, phaseLabel, Color.BRIGHT_YELLOW)
         buffer.writeString(cx, cy + 1, prompt, Color.WHITE)
-        buffer.writeString(cx, cy + 2, "Arrow keys: move | Enter: confirm | Esc: back | Tab: cycle | q: quit", Color.WHITE)
+        buffer.writeString(cx, cy + 2, "Arrow keys: move/twist | Enter: confirm | Esc: back | Tab: cycle | c: commit | q: quit", Color.WHITE)
     }
 }

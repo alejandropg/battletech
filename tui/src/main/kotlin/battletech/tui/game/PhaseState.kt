@@ -47,7 +47,8 @@ public sealed interface PhaseState {
         public val arc: Set<HexCoordinates>
         public val validTargetIds: Set<UnitId>
 
-        public data class Browsing(
+        /** Initial state: player twists torso to aim, targets shown as read-only preview. */
+        public data class TorsoFacing(
             override val unitId: UnitId,
             override val attackPhase: TurnPhase,
             override val torsoFacing: HexDirection,
@@ -57,7 +58,22 @@ public sealed interface PhaseState {
             override val prompt: String,
         ) : Attack
 
-        public data class AssigningWeapons(
+        /** Torso locked; player selects a target or "No Attack". */
+        public data class TargetBrowsing(
+            override val unitId: UnitId,
+            override val attackPhase: TurnPhase,
+            override val torsoFacing: HexDirection,
+            override val arc: Set<HexCoordinates>,
+            override val validTargetIds: Set<UnitId>,
+            val targets: List<TargetInfo>,
+            val selectedTargetIndex: Int,   // targets.size = "No Attack" entry
+            val weaponAssignments: Map<UnitId, Set<Int>>,
+            val primaryTargetId: UnitId?,
+            override val prompt: String,
+        ) : Attack
+
+        /** Player assigns weapons to the selected target. */
+        public data class WeaponAssignment(
             override val unitId: UnitId,
             override val attackPhase: TurnPhase,
             override val torsoFacing: HexDirection,
@@ -65,6 +81,7 @@ public sealed interface PhaseState {
             override val validTargetIds: Set<UnitId>,
             val targets: List<TargetInfo>,
             val selectedTargetIndex: Int,
+            val selectedWeaponIndex: Int,
             val weaponAssignments: Map<UnitId, Set<Int>>,
             val primaryTargetId: UnitId,
             override val prompt: String,

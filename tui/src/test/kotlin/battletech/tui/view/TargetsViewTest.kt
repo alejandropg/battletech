@@ -41,12 +41,13 @@ internal class TargetsViewTest {
     }
 
     @Test
-    fun `renders target name with primary tag`() {
+    fun `renders target name with primary tag in WeaponAssignment mode`() {
         val view = TargetsView(
             targets = listOf(targetA),
             weaponAssignments = emptyMap(),
             primaryTargetId = UnitId("atlas"),
             selectedTargetIndex = 0,
+            showWeapons = true,
         )
 
         val output = renderToString(view)
@@ -62,6 +63,7 @@ internal class TargetsViewTest {
             weaponAssignments = emptyMap(),
             primaryTargetId = UnitId("atlas"),
             selectedTargetIndex = 0,
+            showWeapons = true,
         )
 
         val output = renderToString(view)
@@ -84,12 +86,13 @@ internal class TargetsViewTest {
     }
 
     @Test
-    fun `weapons show success percentage`() {
+    fun `weapons show success percentage when showWeapons is true`() {
         val view = TargetsView(
             targets = listOf(targetA),
             weaponAssignments = emptyMap(),
             primaryTargetId = UnitId("atlas"),
             selectedTargetIndex = 0,
+            showWeapons = true,
         )
 
         val output = renderToString(view)
@@ -99,12 +102,29 @@ internal class TargetsViewTest {
     }
 
     @Test
+    fun `weapons hidden when showWeapons is false`() {
+        val view = TargetsView(
+            targets = listOf(targetA),
+            weaponAssignments = emptyMap(),
+            primaryTargetId = null,
+            selectedTargetIndex = 0,
+            showWeapons = false,
+        )
+
+        val output = renderToString(view)
+
+        assertTrue(output.contains("Atlas"))
+        assertFalse(output.contains("58%"))
+    }
+
+    @Test
     fun `toggled weapons show asterisk`() {
         val view = TargetsView(
             targets = listOf(targetA),
             weaponAssignments = mapOf(UnitId("atlas") to setOf(0)),
             primaryTargetId = UnitId("atlas"),
             selectedTargetIndex = 0,
+            showWeapons = true,
         )
 
         val output = renderToString(view)
@@ -113,20 +133,73 @@ internal class TargetsViewTest {
     }
 
     @Test
-    fun `browsing mode omits primary and secondary tags`() {
+    fun `target browsing mode shows cursor without weapon details`() {
         val view = TargetsView(
             targets = listOf(targetA, targetB),
             weaponAssignments = emptyMap(),
             primaryTargetId = null,
-            selectedTargetIndex = -1,
+            selectedTargetIndex = 0,
+            showWeapons = false,
+            showNoAttack = true,
         )
 
         val output = renderToString(view)
 
         assertTrue(output.contains("Atlas"))
         assertTrue(output.contains("Hunchback"))
+        assertTrue(output.contains("\u25B6"))
         assertFalse(output.contains("[P]"))
         assertFalse(output.contains("[S]"))
+        assertFalse(output.contains("58%"))
+    }
+
+    @Test
+    fun `no attack entry shown when showNoAttack is true`() {
+        val view = TargetsView(
+            targets = listOf(targetA),
+            weaponAssignments = emptyMap(),
+            primaryTargetId = null,
+            selectedTargetIndex = 0,
+            showWeapons = false,
+            showNoAttack = true,
+        )
+
+        val output = renderToString(view)
+
+        assertTrue(output.contains("No Attack"))
+    }
+
+    @Test
+    fun `no attack entry selected when selectedTargetIndex equals targets size`() {
+        val view = TargetsView(
+            targets = listOf(targetA),
+            weaponAssignments = emptyMap(),
+            primaryTargetId = null,
+            selectedTargetIndex = 1,   // == targets.size → "No Attack" selected
+            showWeapons = false,
+            showNoAttack = true,
+        )
+
+        val output = renderToString(view)
+
+        assertTrue(output.contains("No Attack"))
+        assertTrue(output.contains("\u25B6"))
+    }
+
+    @Test
+    fun `no cursor when selectedTargetIndex is negative (TorsoFacing preview)`() {
+        val view = TargetsView(
+            targets = listOf(targetA),
+            weaponAssignments = emptyMap(),
+            primaryTargetId = null,
+            selectedTargetIndex = -1,
+            showWeapons = false,
+        )
+
+        val output = renderToString(view)
+
+        assertTrue(output.contains("Atlas"))
+        assertFalse(output.contains("\u25B6"))
     }
 
     @Test
@@ -136,6 +209,7 @@ internal class TargetsViewTest {
             weaponAssignments = emptyMap(),
             primaryTargetId = UnitId("atlas"),
             selectedTargetIndex = 1,
+            showWeapons = true,
         )
 
         val output = renderToString(view)
