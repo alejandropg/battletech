@@ -16,56 +16,57 @@ public object HexRenderer {
     private val ICON_WATER = String(Character.toChars(0xF078D))
 
     // Elevation icons (nf-md-numeric_N_box_multiple_outline)
-    private val ELEVATION_ICONS = mapOf(
-        1 to String(Character.toChars(0xF03A5)),
-        2 to String(Character.toChars(0xF03A8)),
-        3 to String(Character.toChars(0xF03AB)),
-        4 to String(Character.toChars(0xF03B2)),
-        5 to String(Character.toChars(0xF03AF)),
-        6 to String(Character.toChars(0xF03B4)),
-        7 to String(Character.toChars(0xF03B7)),
-        8 to String(Character.toChars(0xF03BA)),
-        9 to String(Character.toChars(0xF03BD)),
-    )
+    private fun elevationIcon(elevation: Int): String = when (elevation) {
+        1 -> String(Character.toChars(0xF03A5))
+        2 -> String(Character.toChars(0xF03A8))
+        3 -> String(Character.toChars(0xF03AB))
+        4 -> String(Character.toChars(0xF03B2))
+        5 -> String(Character.toChars(0xF03AF))
+        6 -> String(Character.toChars(0xF03B4))
+        7 -> String(Character.toChars(0xF03B7))
+        8 -> String(Character.toChars(0xF03BA))
+        9 -> String(Character.toChars(0xF03BD))
+        else -> error("No elevation icon for elevation: $elevation")
+    }
 
     // Movement mode icons (nf-md-walk, nf-md-run-fast, nf-md-rocket-launch)
-    private val MOVEMENT_MODE_ICONS: Map<MovementMode, String> = mapOf(
-        MovementMode.WALK to String(Character.toChars(0xF0583)),
-        MovementMode.RUN to String(Character.toChars(0xF046E)),
-        MovementMode.JUMP to String(Character.toChars(0xF14DE)),
-    )
+    private fun movementModeIcon(mode: MovementMode): String = when (mode) {
+        MovementMode.WALK -> String(Character.toChars(0xF0583))
+        MovementMode.RUN  -> String(Character.toChars(0xF046E))
+        MovementMode.JUMP -> String(Character.toChars(0xF14DE))
+    }
 
     // Facing arrow icons (same codepoints as UnitRenderer)
-    private val FACING_ICONS: Map<HexDirection, String> = mapOf(
-        HexDirection.N  to String(Character.toChars(0xF09C7)),
-        HexDirection.NE to String(Character.toChars(0xF09C5)),
-        HexDirection.SE to String(Character.toChars(0xF09B9)),
-        HexDirection.S  to String(Character.toChars(0xF09BF)),
-        HexDirection.SW to String(Character.toChars(0xF09B7)),
-        HexDirection.NW to String(Character.toChars(0xF09C3)),
-    )
+    private fun facingIcon(direction: HexDirection): String = when (direction) {
+        HexDirection.N  -> String(Character.toChars(0xF09C7))
+        HexDirection.NE -> String(Character.toChars(0xF09C5))
+        HexDirection.SE -> String(Character.toChars(0xF09B9))
+        HexDirection.S  -> String(Character.toChars(0xF09BF))
+        HexDirection.SW -> String(Character.toChars(0xF09B7))
+        HexDirection.NW -> String(Character.toChars(0xF09C3))
+    }
 
     // Arrow positions within hex: (col-offset, row-offset) relative to hex origin
     // Row 2: NW(+2), N(+4), NE(+6)
     // Row 3: SW(+2), S(+4), SE(+6)
-    private val FACING_POSITIONS: Map<HexDirection, Pair<Int, Int>> = mapOf(
-        HexDirection.N  to (4 to 2),
-        HexDirection.NE to (6 to 2),
-        HexDirection.SE to (6 to 3),
-        HexDirection.S  to (4 to 3),
-        HexDirection.SW to (2 to 3),
-        HexDirection.NW to (2 to 2),
-    )
+    private fun facingPosition(direction: HexDirection): Pair<Int, Int> = when (direction) {
+        HexDirection.N  -> 4 to 2
+        HexDirection.NE -> 6 to 2
+        HexDirection.SE -> 6 to 3
+        HexDirection.S  -> 4 to 3
+        HexDirection.SW -> 2 to 3
+        HexDirection.NW -> 2 to 2
+    }
 
     // Number mapping: 1=N, 2=NE, 3=SE, 4=S, 5=SW, 6=NW
-    private val FACING_NUMBERS: Map<HexDirection, String> = mapOf(
-        HexDirection.N  to "1",
-        HexDirection.NE to "2",
-        HexDirection.SE to "3",
-        HexDirection.S  to "4",
-        HexDirection.SW to "5",
-        HexDirection.NW to "6",
-    )
+    private fun facingNumber(direction: HexDirection): String = when (direction) {
+        HexDirection.N  -> "1"
+        HexDirection.NE -> "2"
+        HexDirection.SE -> "3"
+        HexDirection.S  -> "4"
+        HexDirection.SW -> "5"
+        HexDirection.NW -> "6"
+    }
 
     /**
      * Renders facing arrows for reachable facings at a hex.
@@ -74,13 +75,13 @@ public object HexRenderer {
      */
     public fun renderFacingArrows(buffer: ScreenBuffer, x: Int, y: Int, facings: Set<HexDirection>, color: Color, movementMode: MovementMode? = null) {
         if (facings.size == HexDirection.entries.size) {
-            val icon = if (movementMode != null) MOVEMENT_MODE_ICONS[movementMode]!! else "."
+            val icon = if (movementMode != null) movementModeIcon(movementMode) else "."
             renderOverlayChar(buffer, x, y, icon, color)
             return
         }
         for (direction in facings) {
-            val (dx, dy) = FACING_POSITIONS[direction]!!
-            buffer.set(x + dx, y + dy, Cell(FACING_ICONS[direction]!!, color))
+            val (dx, dy) = facingPosition(direction)
+            buffer.set(x + dx, y + dy, Cell(facingIcon(direction), color))
         }
     }
 
@@ -90,8 +91,8 @@ public object HexRenderer {
      */
     public fun renderFacingNumbers(buffer: ScreenBuffer, x: Int, y: Int, facings: Set<HexDirection>) {
         for (direction in facings) {
-            val (dx, dy) = FACING_POSITIONS[direction]!!
-            val number = FACING_NUMBERS[direction]!!
+            val (dx, dy) = facingPosition(direction)
+            val number = facingNumber(direction)
             buffer.set(x + dx, y + dy, Cell(number, Color.BRIGHT_YELLOW))
         }
     }
@@ -112,7 +113,7 @@ public object HexRenderer {
             HexHighlight.REACHABLE_JUMP -> renderOverlayChar(buffer, x, y, ".", Color.CYAN)
             HexHighlight.ATTACK_RANGE -> renderOverlayChar(buffer, x, y, ".", Color.WHITE)
             HexHighlight.PATH, HexHighlight.PATH_CURSOR -> {
-                val icon = if (movementMode != null) MOVEMENT_MODE_ICONS[movementMode]!! else "*"
+                val icon = if (movementMode != null) movementModeIcon(movementMode) else "*"
                 renderOverlayChar(buffer, x, y, icon, Color.BRIGHT_YELLOW)
             }
             else -> Unit
@@ -177,7 +178,8 @@ public object HexRenderer {
     }
 
     private fun renderElevation(buffer: ScreenBuffer, x: Int, y: Int, elevation: Int, bg: Color) {
-        val icon = ELEVATION_ICONS[elevation] ?: return
+        if (elevation == 0) return
+        val icon = elevationIcon(elevation)
         buffer.set(x + 6, y + 1, Cell(icon, Color.WHITE, bg))
     }
 
