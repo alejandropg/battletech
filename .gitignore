@@ -12,6 +12,7 @@ build/
 
 # AI agents
 .claude/settings.local.json
+.claude/worktrees/
 .bot_env/
 
 # OS
