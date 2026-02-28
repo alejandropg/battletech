@@ -66,3 +66,7 @@ The project uses a layered module architecture:
   - Entry point is `battletech.tui.MainKt`
 
 Dependencies flow: `bt` → `strategic` + `tactical`, `tui` → `tactical` (libraries are independent of each other)
+
+## Tool Preferences
+
+- **Always use the LSP tool** for code intelligence operations: finding references, go-to-definition, hover info, document/workspace symbols, call hierarchy, implementations. Never fall back to Grep/Glob for tasks the LSP can handle.

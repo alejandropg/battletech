@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.agent/**)",
+      "Grep(./.agent/**)",
+      "Glob(./.agent/**)",
+      "Bash(./.agent/**)",
+      "Edit(./.agent/**)",
+      "Write(./.agent/**)",
+      "LSP(./.agent/**)",
+      "Read(./.idea/**)",
+      "Grep(./.idea/**)",
+      "Glob(./.idea/**)",
+      "Bash(./.idea/**)",
+      "Edit(./.idea/**)",
+      "Write(./.idea/**)",
+      "LSP(./.idea/**)",
+      "Read(./.kotlin/**)",
+      "Grep(./.kotlin/**)",
+      "Glob(./.kotlin/**)",
+      "Bash(./.kotlin/**)",
+      "Edit(./.kotlin/**)",
+      "Write(./.kotlin/**)",
+      "LSP(./.kotlin/**)"
+    ]
+  },
+  "env": {
+    "ENABLE_LSP_TOOL": "true"
+  },
+  "enabledPlugins": {
+    "aca-kotlin-lsp@aca-plugins": true
+  }
+}
