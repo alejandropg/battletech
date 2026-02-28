@@ -18,6 +18,7 @@ public class AttackController(
 ) {
     private val allDeclarations: MutableList<AttackDeclaration> = mutableListOf()
     private var currentImpulse: ImpulseDeclarations? = null
+    private val committedTorsoFacings: MutableMap<UnitId, HexDirection> = mutableMapOf()
 
     public fun initializeImpulse(playerId: PlayerId, unitCount: Int) {
         currentImpulse = ImpulseDeclarations(playerId, unitCount)
@@ -38,6 +39,9 @@ public class AttackController(
         val impulse = currentImpulse ?: return emptySet()
         val unitIds = impulse.declarations.keys.toSet()
         allDeclarations.addAll(impulse.toAttackDeclarations())
+        impulse.declarations.values.forEach {
+            committedTorsoFacings[it.unitId] = it.torsoFacing
+        }
         currentImpulse = null
         return unitIds
     }
@@ -46,6 +50,27 @@ public class AttackController(
 
     public fun clearDeclarations() {
         allDeclarations.clear()
+    }
+
+    public fun clearTorsoFacings() {
+        committedTorsoFacings.clear()
+    }
+
+    public fun declaredTorsoFacings(gameState: GameState): Map<HexCoordinates, HexDirection> {
+        val facings = mutableMapOf<HexCoordinates, HexDirection>()
+        for ((unitId, torso) in committedTorsoFacings) {
+            val unit = gameState.unitById(unitId) ?: continue
+            if (torso != unit.facing) facings[unit.position] = torso
+        }
+        currentImpulse?.declarations?.values?.forEach { decl ->
+            val unit = gameState.unitById(decl.unitId) ?: return@forEach
+            if (decl.torsoFacing != unit.facing) {
+                facings[unit.position] = decl.torsoFacing
+            } else {
+                facings.remove(unit.position)
+            }
+        }
+        return facings
     }
 
     public fun enter(unit: CombatUnit, phase: TurnPhase, gameState: GameState): PhaseState.Attack {

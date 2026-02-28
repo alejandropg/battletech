@@ -71,6 +71,9 @@ public fun main() {
                 // Auto-advance global phases (Initiative, Heat, End, attack phase init)
                 val (advancedState, flash) = autoAdvanceGlobalPhases(appState)
                 if (flash != null) {
+                    if (appState.currentPhase == TurnPhase.END) {
+                        attackController.clearTorsoFacings()
+                    }
                     appState = advancedState
                     // Initialize attack impulse when first entering an attack phase
                     val ts = advancedState.turnState
@@ -85,11 +88,13 @@ public fun main() {
                         // Update prompt with declaration progress
                         appState = appState.copy(phaseState = PhaseState.Idle(buildAttackPrompt(ts, attackController)))
                     }
-                    renderFrame(terminal, renderer, appState, flash)
+                    val torso = attackController.declaredTorsoFacings(appState.gameState)
+                    renderFrame(terminal, renderer, appState, flash, torso)
                     continue
                 }
 
-                renderFrame(terminal, renderer, appState)
+                val torso = attackController.declaredTorsoFacings(appState.gameState)
+                renderFrame(terminal, renderer, appState, persistentTorsoFacings = torso)
 
                 val event = rawMode.readEvent()
                 val action = when (event) {
@@ -138,7 +143,8 @@ public fun main() {
                 }
 
                 if (pendingFlash != null) {
-                    renderFrame(terminal, renderer, appState, pendingFlash)
+                    val torsoForFlash = attackController.declaredTorsoFacings(appState.gameState)
+                    renderFrame(terminal, renderer, appState, pendingFlash, torsoForFlash)
                     pendingFlash = null
                     continue
                 }
@@ -321,6 +327,7 @@ private fun renderFrame(
     renderer: ScreenRenderer,
     appState: AppState,
     flash: FlashMessage? = null,
+    persistentTorsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
 ) {
     val size = terminal.updateSize()
     val width = if (size.width > 0) size.width else 80
@@ -337,7 +344,9 @@ private fun renderFrame(
     val buffer = ScreenBuffer(width, height)
     val viewport = Viewport(0, 0, boardWidth - 4, boardHeight - 4)
 
-    val renderData = extractRenderData(appState.phaseState, appState.gameState)
+    val renderData = extractRenderData(appState.phaseState, appState.gameState).let {
+        it.copy(torsoFacings = persistentTorsoFacings + it.torsoFacings)
+    }
 
     val selectedUnit = when (val phase = appState.phaseState) {
         is PhaseState.Movement -> appState.gameState.unitById(phase.unitId)

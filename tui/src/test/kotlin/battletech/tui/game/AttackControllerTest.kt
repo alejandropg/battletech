@@ -8,12 +8,15 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.Weapon
 import battletech.tui.aGameMap
+import battletech.tui.aGameState
 import battletech.tui.aUnit
 import battletech.tui.input.InputAction
 import io.mockk.mockk
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 internal class AttackControllerTest {
@@ -373,5 +376,180 @@ internal class AttackControllerTest {
         val navigatedState = (navigated as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertEquals(state.torsoFacing, navigatedState.torsoFacing) // torso unchanged
         assertEquals(1, navigatedState.cursorWeaponIndex) // cursor moved
+    }
+
+    @Nested
+    inner class DeclaredTorsoFacings {
+
+        @Test
+        fun `returns empty map when no declarations exist`() {
+            val controller = createController()
+            val gameState = aGameState(map = map5x5)
+
+            val result = controller.declaredTorsoFacings(gameState)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns torso facing for committed unit where torso differs from leg facing`() {
+            val controller = createController()
+            val unit = aUnit(
+                weapons = listOf(mediumLaser()),
+                position = HexCoordinates(2, 2),
+                facing = HexDirection.N,
+            )
+            val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
+            val gameState = GameState(listOf(unit, enemy), map5x5)
+
+            val state = enterDeclaring(controller, unit, gameState)
+            // Twist torso clockwise (N -> NE)
+            val twisted = controller.handle(InputAction.MoveCursor(HexDirection.NE), state, unit.position, gameState)
+            val twistedState = (twisted as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+            controller.handle(InputAction.Confirm, twistedState, unit.position, gameState)
+            controller.commitImpulse()
+
+            val result = controller.declaredTorsoFacings(gameState)
+
+            assertThat(result).containsEntry(unit.position, HexDirection.NE)
+        }
+
+        @Test
+        fun `excludes units where torso equals leg facing`() {
+            val controller = createController()
+            val unit = aUnit(
+                weapons = listOf(mediumLaser()),
+                position = HexCoordinates(2, 2),
+                facing = HexDirection.N,
+            )
+            val gameState = GameState(listOf(unit), map5x5)
+
+            // Confirm without twisting — torso == leg facing
+            val state = enterDeclaring(controller, unit, gameState)
+            controller.handle(InputAction.Confirm, state, unit.position, gameState)
+            controller.commitImpulse()
+
+            val result = controller.declaredTorsoFacings(gameState)
+
+            assertThat(result).doesNotContainKey(unit.position)
+        }
+
+        @Test
+        fun `current impulse declarations override committed ones`() {
+            val controller = createController()
+            val unit = aUnit(
+                weapons = listOf(mediumLaser()),
+                position = HexCoordinates(2, 2),
+                facing = HexDirection.N,
+            )
+            val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
+            val gameState = GameState(listOf(unit, enemy), map5x5)
+
+            // Commit with NE torso twist
+            val state = enterDeclaring(controller, unit, gameState)
+            val twisted = controller.handle(InputAction.MoveCursor(HexDirection.NE), state, unit.position, gameState)
+            val twistedState = (twisted as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+            controller.handle(InputAction.Confirm, twistedState, unit.position, gameState)
+            controller.commitImpulse()
+
+            // New impulse: declare same unit with NW torso twist
+            val state2 = enterDeclaring(controller, unit, gameState)
+            val twisted2 = controller.handle(InputAction.MoveCursor(HexDirection.NW), state2, unit.position, gameState)
+            val twistedState2 = (twisted2 as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+            controller.handle(InputAction.Confirm, twistedState2, unit.position, gameState)
+
+            val result = controller.declaredTorsoFacings(gameState)
+
+            assertThat(result).containsEntry(unit.position, HexDirection.NW)
+        }
+
+        @Test
+        fun `current impulse with matching leg facing removes committed twist`() {
+            val controller = createController()
+            val unit = aUnit(
+                weapons = listOf(mediumLaser()),
+                position = HexCoordinates(2, 2),
+                facing = HexDirection.N,
+            )
+            val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
+            val gameState = GameState(listOf(unit, enemy), map5x5)
+
+            // Commit with NE torso twist
+            val state = enterDeclaring(controller, unit, gameState)
+            val twisted = controller.handle(InputAction.MoveCursor(HexDirection.NE), state, unit.position, gameState)
+            val twistedState = (twisted as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+            controller.handle(InputAction.Confirm, twistedState, unit.position, gameState)
+            controller.commitImpulse()
+
+            // New impulse: declare same unit with no twist (torso == leg facing N)
+            val state2 = enterDeclaring(controller, unit, gameState)
+            controller.handle(InputAction.Confirm, state2, unit.position, gameState)
+
+            val result = controller.declaredTorsoFacings(gameState)
+
+            assertThat(result).doesNotContainKey(unit.position)
+        }
+
+        @Test
+        fun `clearTorsoFacings clears all accumulated facings`() {
+            val controller = createController()
+            val unit = aUnit(
+                weapons = listOf(mediumLaser()),
+                position = HexCoordinates(2, 2),
+                facing = HexDirection.N,
+            )
+            val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
+            val gameState = GameState(listOf(unit, enemy), map5x5)
+
+            val state = enterDeclaring(controller, unit, gameState)
+            val twisted = controller.handle(InputAction.MoveCursor(HexDirection.NE), state, unit.position, gameState)
+            val twistedState = (twisted as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+            controller.handle(InputAction.Confirm, twistedState, unit.position, gameState)
+            controller.commitImpulse()
+
+            controller.clearTorsoFacings()
+
+            val result = controller.declaredTorsoFacings(gameState)
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `torso facings accumulate across weapon and physical attack phases`() {
+            val controller = createController()
+            val unit1 = aUnit(
+                id = "unit-1",
+                weapons = listOf(mediumLaser()),
+                position = HexCoordinates(2, 2),
+                facing = HexDirection.N,
+            )
+            val unit2 = aUnit(
+                id = "unit-2",
+                weapons = listOf(mediumLaser()),
+                position = HexCoordinates(1, 2),
+                facing = HexDirection.N,
+            )
+            val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
+            val gameState = GameState(listOf(unit1, unit2, enemy), aGameMap(cols = 5, rows = 5))
+
+            // Weapon attack phase: unit1 twists NE
+            val state1 = enterDeclaring(controller, unit1, gameState)
+            val twisted1 = controller.handle(InputAction.MoveCursor(HexDirection.NE), state1, unit1.position, gameState)
+            val twistedState1 = (twisted1 as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+            controller.handle(InputAction.Confirm, twistedState1, unit1.position, gameState)
+            controller.commitImpulse()
+
+            // Physical attack phase: unit2 twists NW
+            controller.initializeImpulse(PlayerId.PLAYER_1, 1)
+            val state2 = controller.enter(unit2, TurnPhase.PHYSICAL_ATTACK, gameState)
+            val twisted2 = controller.handle(InputAction.MoveCursor(HexDirection.NW), state2, unit2.position, gameState)
+            val twistedState2 = (twisted2 as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+            controller.handle(InputAction.Confirm, twistedState2, unit2.position, gameState)
+            controller.commitImpulse()
+
+            val result = controller.declaredTorsoFacings(gameState)
+
+            assertThat(result).containsEntry(unit1.position, HexDirection.NE)
+            assertThat(result).containsEntry(unit2.position, HexDirection.NW)
+        }
     }
 }
