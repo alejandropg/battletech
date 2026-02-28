@@ -9,12 +9,8 @@ public class TargetsView(
     private val targets: List<TargetInfo>,
     private val weaponAssignments: Map<UnitId, Set<Int>>,
     private val primaryTargetId: UnitId?,
-    /** Target containing the cursor. -1 = no cursor. targets.size = "No Attack" entry. */
     private val cursorTargetIndex: Int,
-    /** Weapon index within cursorTargetIndex (ignored when on "No Attack"). */
     private val cursorWeaponIndex: Int = 0,
-    /** Show "No Attack" entry at the bottom of the list. */
-    private val showNoAttack: Boolean = false,
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -23,7 +19,7 @@ public class TargetsView(
         val cx = x + 2
         var cy = y + 2
 
-        if (targets.isEmpty() && !showNoAttack) {
+        if (targets.isEmpty()) {
             buffer.writeString(cx, cy, "No targets", Color.WHITE)
             return
         }
@@ -71,7 +67,6 @@ public class TargetsView(
                 val weaponLine = "$left${" ".repeat(padding)}$right"
 
                 val color = when {
-                    isCursorHere && isDisabled -> Color.BRIGHT_YELLOW
                     isCursorHere -> Color.BRIGHT_YELLOW
                     isDisabled -> Color.GRAY
                     else -> Color.WHITE
@@ -91,13 +86,6 @@ public class TargetsView(
             }
 
             cy++ // blank line between targets
-        }
-
-        if (showNoAttack && cy < y + height - 1) {
-            val isSelected = cursorTargetIndex >= targets.size
-            val cursor = if (isSelected) "\u25B6 " else "  "
-            val color = if (isSelected) Color.BRIGHT_YELLOW else Color.DEFAULT
-            buffer.writeString(cx, cy, "${cursor}No Attack", color)
         }
     }
 }

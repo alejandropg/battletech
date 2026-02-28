@@ -12,4 +12,5 @@ public sealed interface InputAction {
     public data object Quit : InputAction
     public data class ClickHex(val coords: HexCoordinates) : InputAction
     public data object CommitDeclarations : InputAction
+    public data object ToggleWeapon : InputAction
 }

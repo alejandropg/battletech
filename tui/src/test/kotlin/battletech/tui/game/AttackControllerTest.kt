@@ -30,29 +30,18 @@ internal class AttackControllerTest {
 
     private val map5x5 = aGameMap(cols = 5, rows = 5)
 
-    /** Helper: initialize impulse then enter TorsoFacing for the given unit. */
-    private fun enterTorsoFacing(
+    /** Helper: initialize impulse then enter Declaring for the given unit. */
+    private fun enterDeclaring(
         controller: AttackController,
         unit: battletech.tactical.action.CombatUnit,
         gameState: GameState,
-    ): PhaseState.Attack.TorsoFacing {
+    ): PhaseState.Attack {
         controller.initializeImpulse(unit.owner, 1)
-        return controller.enter(unit, TurnPhase.WEAPON_ATTACK, gameState) as PhaseState.Attack.TorsoFacing
-    }
-
-    /** Helper: enter TorsoFacing then confirm to get WeaponSelection. */
-    private fun enterWeaponSelection(
-        controller: AttackController,
-        unit: battletech.tactical.action.CombatUnit,
-        gameState: GameState,
-    ): PhaseState.Attack.WeaponSelection {
-        val tf = enterTorsoFacing(controller, unit, gameState)
-        return (controller.handle(InputAction.Confirm, tf, HexCoordinates(0, 0), gameState) as PhaseOutcome.Continue)
-            .phaseState as PhaseState.Attack.WeaponSelection
+        return controller.enter(unit, TurnPhase.WEAPON_ATTACK, gameState)
     }
 
     @Test
-    fun `enter produces Attack TorsoFacing state`() {
+    fun `enter produces Attack Declaring state`() {
         val controller = createController()
         val unit = aUnit(
             weapons = listOf(mediumLaser()),
@@ -62,7 +51,7 @@ internal class AttackControllerTest {
         val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
         val gameState = GameState(listOf(unit, enemy), map5x5)
 
-        val state = enterTorsoFacing(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
         assertEquals(unit.id, state.unitId)
         assertEquals(unit.facing, state.torsoFacing)
@@ -79,7 +68,7 @@ internal class AttackControllerTest {
         val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 4))
         val gameState = GameState(listOf(unit, enemy), map5x5)
 
-        val state = enterTorsoFacing(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
         assertTrue(state.validTargetIds.isEmpty())
     }
@@ -96,20 +85,20 @@ internal class AttackControllerTest {
         val outOfArc = aUnit(id = "out-of-arc", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, 4))
         val gameState = GameState(listOf(unit, inArc, outOfArc), aGameMap(cols = 6, rows = 6))
 
-        val state = enterTorsoFacing(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
         assertTrue(inArc.id in state.validTargetIds)
         assertFalse(outOfArc.id in state.validTargetIds)
     }
 
     @Test
-    fun `enter populates targets list on TorsoFacing state`() {
+    fun `enter populates targets list with weapons`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
         val gameState = GameState(listOf(unit, enemy), map5x5)
 
-        val state = enterTorsoFacing(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
         assertEquals(1, state.targets.size)
         assertEquals(enemy.id, state.targets[0].unitId)
@@ -122,35 +111,40 @@ internal class AttackControllerTest {
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val gameState = GameState(listOf(unit), map5x5)
 
-        val state = enterTorsoFacing(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
         assertTrue(state.targets.isEmpty())
     }
 
     @Test
-    fun `cancel from TorsoFacing returns Cancelled`() {
+    fun `cancel discards assignments and returns Cancelled`() {
         val controller = createController()
-        val unit = aUnit(position = HexCoordinates(2, 2))
-        val gameState = GameState(listOf(unit), map5x5)
-        val state = enterTorsoFacing(controller, unit, gameState)
+        val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
+        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
+        val gameState = GameState(listOf(unit, enemy), map5x5)
+        val state = enterDeclaring(controller, unit, gameState)
 
-        val result = controller.handle(InputAction.Cancel, state, HexCoordinates(2, 2), gameState)
+        // Toggle a weapon on, then cancel
+        val toggled = controller.handle(InputAction.ToggleWeapon, state, HexCoordinates(2, 2), gameState)
+        val toggledState = (toggled as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+        val result = controller.handle(InputAction.Cancel, toggledState, HexCoordinates(2, 2), gameState)
 
         assertTrue(result is PhaseOutcome.Cancelled)
+        // After cancel, unit should not be declared
+        assertFalse(controller.isDeclared(unit.id))
     }
 
     @Test
-    fun `confirm TorsoFacing with no targets transitions to WeaponSelection with No Attack cursor`() {
+    fun `confirm with no weapons assigned records NO_ATTACK`() {
         val controller = createController()
-        val unit = aUnit(position = HexCoordinates(2, 2))
+        val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val gameState = GameState(listOf(unit), map5x5)
-        val torsoFacing = enterTorsoFacing(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
-        val result = controller.handle(InputAction.Confirm, torsoFacing, HexCoordinates(2, 2), gameState)
+        val result = controller.handle(InputAction.Confirm, state, HexCoordinates(2, 2), gameState)
 
-        val ws = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack.WeaponSelection
-        assertTrue(ws.targets.isEmpty())
-        assertEquals(ws.targets.size, ws.cursorTargetIndex)  // cursor on "No Attack"
+        assertTrue(result is PhaseOutcome.Cancelled)
+        assertTrue(controller.canCommit())
     }
 
     @Test
@@ -158,11 +152,11 @@ internal class AttackControllerTest {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val gameState = GameState(listOf(unit), map5x5)
-        val state = enterTorsoFacing(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
         val result = controller.handle(InputAction.MoveCursor(HexDirection.NE), state, HexCoordinates(2, 2), gameState)
 
-        val newState = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack.TorsoFacing
+        val newState = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertEquals(HexDirection.NE, newState.torsoFacing)
     }
 
@@ -171,11 +165,11 @@ internal class AttackControllerTest {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val gameState = GameState(listOf(unit), map5x5)
-        val state = enterTorsoFacing(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
         val result = controller.handle(InputAction.MoveCursor(HexDirection.NW), state, HexCoordinates(2, 2), gameState)
 
-        val newState = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack.TorsoFacing
+        val newState = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertEquals(HexDirection.NW, newState.torsoFacing)
     }
 
@@ -184,91 +178,51 @@ internal class AttackControllerTest {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val gameState = GameState(listOf(unit), map5x5)
-        val state = enterTorsoFacing(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
         val result1 = controller.handle(InputAction.MoveCursor(HexDirection.NE), state, HexCoordinates(2, 2), gameState)
-        val twistedState = (result1 as PhaseOutcome.Continue).phaseState as PhaseState.Attack.TorsoFacing
+        val twistedState = (result1 as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertEquals(HexDirection.NE, twistedState.torsoFacing)
 
         val result2 = controller.handle(InputAction.MoveCursor(HexDirection.NE), twistedState, HexCoordinates(2, 2), gameState)
-        val stillSame = (result2 as PhaseOutcome.Continue).phaseState as PhaseState.Attack.TorsoFacing
+        val stillSame = (result2 as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertEquals(HexDirection.NE, stillSame.torsoFacing)
     }
 
     @Test
-    fun `confirm TorsoFacing on unit with target transitions to WeaponSelection`() {
+    fun `weapon toggle on and off works with Space`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
         val gameState = GameState(listOf(unit, enemy), map5x5)
-        val torsoFacing = enterTorsoFacing(controller, unit, gameState)
-
-        val result = controller.handle(InputAction.Confirm, torsoFacing, HexCoordinates(2, 2), gameState)
-
-        val ws = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack.WeaponSelection
-        assertEquals(1, ws.targets.size)
-        assertEquals(enemy.id, ws.targets[0].unitId)
-    }
-
-    @Test
-    fun `select No Attack in WeaponSelection marks unit as NO_ATTACK`() {
-        val controller = createController()
-        val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
-        val gameState = GameState(listOf(unit), map5x5)
-        val ws = enterWeaponSelection(controller, unit, gameState)
-
-        // targets is empty → cursor is on "No Attack" (cursorTargetIndex == targets.size)
-        assertEquals(ws.targets.size, ws.cursorTargetIndex)
-        val result = controller.handle(InputAction.Confirm, ws, HexCoordinates(2, 2), gameState)
-
-        assertTrue(result is PhaseOutcome.Cancelled)
-        assertTrue(controller.canCommit())
-    }
-
-    @Test
-    fun `weapon toggle on and off works in WeaponSelection`() {
-        val controller = createController()
-        val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
-        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
-        val gameState = GameState(listOf(unit, enemy), map5x5)
-        val ws = enterWeaponSelection(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
         // Toggle weapon on
-        val toggleOn = controller.handle(InputAction.Confirm, ws, enemy.position, gameState)
-        val onState = (toggleOn as PhaseOutcome.Continue).phaseState as PhaseState.Attack.WeaponSelection
+        val toggleOn = controller.handle(InputAction.ToggleWeapon, state, enemy.position, gameState)
+        val onState = (toggleOn as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertTrue(0 in (onState.weaponAssignments[enemy.id] ?: emptySet()))
 
         // Toggle weapon off
-        val toggleOff = controller.handle(InputAction.Confirm, onState, enemy.position, gameState)
-        val offState = (toggleOff as PhaseOutcome.Continue).phaseState as PhaseState.Attack.WeaponSelection
+        val toggleOff = controller.handle(InputAction.ToggleWeapon, onState, enemy.position, gameState)
+        val offState = (toggleOff as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertFalse(0 in (offState.weaponAssignments[enemy.id] ?: emptySet()))
     }
 
     @Test
-    fun `cancel from WeaponSelection saves assignments and returns Cancelled`() {
+    fun `confirm after weapon assignment saves declaration`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
         val gameState = GameState(listOf(unit, enemy), map5x5)
-        val ws = enterWeaponSelection(controller, unit, gameState)
-
-        val result = controller.handle(InputAction.Cancel, ws, enemy.position, gameState)
-
-        assertTrue(result is PhaseOutcome.Cancelled)
-    }
-
-    @Test
-    fun `commit after weapon assignment records declaration`() {
-        val controller = createController()
-        val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
-        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
-        val gameState = GameState(listOf(unit, enemy), map5x5)
-        val ws = enterWeaponSelection(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
         // Toggle weapon on
-        controller.handle(InputAction.Confirm, ws, enemy.position, gameState)
+        val toggleOn = controller.handle(InputAction.ToggleWeapon, state, enemy.position, gameState)
+        val onState = (toggleOn as PhaseOutcome.Continue).phaseState as PhaseState.Attack
 
-        // Declaration is saved immediately on toggle; can commit
+        // Confirm
+        val result = controller.handle(InputAction.Confirm, onState, enemy.position, gameState)
+        assertTrue(result is PhaseOutcome.Cancelled)
         assertTrue(controller.canCommit())
 
         val committedIds = controller.commitImpulse()
@@ -283,39 +237,34 @@ internal class AttackControllerTest {
     }
 
     @Test
-    fun `tab jumps to first weapon of next target in WeaponSelection`() {
+    fun `tab jumps to first weapon of next target`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val enemy1 = aUnit(id = "enemy1", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
         val enemy2 = aUnit(id = "enemy2", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 0))
         val gameState = GameState(listOf(unit, enemy1, enemy2), map5x5)
-        val ws = enterWeaponSelection(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
-        val initialIdx = ws.cursorTargetIndex
-        val tabResult = controller.handle(InputAction.CycleUnit, ws, HexCoordinates(0, 0), gameState)
-        val tabbed = (tabResult as PhaseOutcome.Continue).phaseState as PhaseState.Attack.WeaponSelection
+        val initialIdx = state.cursorTargetIndex
+        val tabResult = controller.handle(InputAction.CycleUnit, state, HexCoordinates(0, 0), gameState)
+        val tabbed = (tabResult as PhaseOutcome.Continue).phaseState as PhaseState.Attack
 
         // Index should have advanced
-        assertTrue(tabbed.cursorTargetIndex != initialIdx || ws.targets.size <= 1)
+        assertTrue(tabbed.cursorTargetIndex != initialIdx || state.targets.size <= 1)
     }
 
     @Test
-    fun `tab wraps through No Attack entry in WeaponSelection`() {
+    fun `tab wraps around targets`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
         val gameState = GameState(listOf(unit, enemy), map5x5)
-        val ws = enterWeaponSelection(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
-        // Tab past the single target → should land on No Attack (index = targets.size)
-        var state = ws
-        repeat(ws.targets.size + 1) {
-            val result = controller.handle(InputAction.CycleUnit, state, HexCoordinates(0, 0), gameState)
-            state = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack.WeaponSelection
-        }
-        // After targets.size + 1 tabs starting from 0, we've wrapped: 1 (No Attack) → 0 (first target)
-        // We just verify it completes without error
-        assertTrue(state.cursorTargetIndex in 0..ws.targets.size)
+        // Tab on a single target should wrap back to the same target
+        val result = controller.handle(InputAction.CycleUnit, state, HexCoordinates(0, 0), gameState)
+        val tabbed = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+        assertEquals(0, tabbed.cursorTargetIndex)
     }
 
     @Test
@@ -328,31 +277,32 @@ internal class AttackControllerTest {
         )
         val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
         val gameState = GameState(listOf(unit, enemy), map5x5)
-        val ws = enterWeaponSelection(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
 
-        val result = controller.handle(InputAction.MoveCursor(HexDirection.S), ws, HexCoordinates(0, 0), gameState)
-        val moved = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack.WeaponSelection
+        val result = controller.handle(InputAction.MoveCursor(HexDirection.S), state, HexCoordinates(0, 0), gameState)
+        val moved = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack
 
         // Should have moved to weapon index 1 (or wrapped if only 1 available)
-        assertTrue(moved.cursorWeaponIndex != ws.cursorWeaponIndex || ws.targets[0].weapons.size == 1)
+        assertTrue(moved.cursorWeaponIndex != state.cursorWeaponIndex || state.targets[0].weapons.size == 1)
     }
 
     @Test
-    fun `arrow down from last weapon of last target wraps to No Attack`() {
+    fun `arrow down from last weapon wraps to first weapon`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
         val gameState = GameState(listOf(unit, enemy), map5x5)
-        val ws = enterWeaponSelection(controller, unit, gameState)
+        val state = enterDeclaring(controller, unit, gameState)
         // Start at target 0, weapon 0 (only 1 weapon, 1 target)
-        assertEquals(0, ws.cursorTargetIndex)
-        assertEquals(0, ws.cursorWeaponIndex)
+        assertEquals(0, state.cursorTargetIndex)
+        assertEquals(0, state.cursorWeaponIndex)
 
-        val result = controller.handle(InputAction.MoveCursor(HexDirection.S), ws, HexCoordinates(0, 0), gameState)
-        val moved = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack.WeaponSelection
+        val result = controller.handle(InputAction.MoveCursor(HexDirection.S), state, HexCoordinates(0, 0), gameState)
+        val moved = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack
 
-        // Should wrap to "No Attack"
-        assertEquals(ws.targets.size, moved.cursorTargetIndex)
+        // Only 1 weapon total, wraps back to same position
+        assertEquals(0, moved.cursorTargetIndex)
+        assertEquals(0, moved.cursorWeaponIndex)
     }
 
     @Test
@@ -368,13 +318,60 @@ internal class AttackControllerTest {
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val gameState = GameState(listOf(unit), map5x5)
 
-        // Mark as no-attack in first impulse (enter WeaponSelection with empty targets → confirm = NO_ATTACK)
-        val ws = enterWeaponSelection(controller, unit, gameState)
-        controller.handle(InputAction.Confirm, ws, HexCoordinates(2, 2), gameState)
+        // Mark as no-attack by confirming with no assignments
+        val state = enterDeclaring(controller, unit, gameState)
+        controller.handle(InputAction.Confirm, state, HexCoordinates(2, 2), gameState)
         assertTrue(controller.canCommit())
 
         // Initialize a new impulse — canCommit should be false again
         controller.initializeImpulse(PlayerId.PLAYER_1, 1)
         assertFalse(controller.canCommit())
+    }
+
+    @Test
+    fun `torso twist clears assignments for targets that leave the arc`() {
+        val controller = createController()
+        val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
+        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
+        val gameState = GameState(listOf(unit, enemy), aGameMap(cols = 5, rows = 5))
+        val state = enterDeclaring(controller, unit, gameState)
+
+        // Toggle weapon on
+        val toggled = controller.handle(InputAction.ToggleWeapon, state, enemy.position, gameState)
+        val withWeapon = (toggled as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+        assertTrue(withWeapon.weaponAssignments.values.any { it.isNotEmpty() })
+
+        // Twist torso away — if enemy leaves the arc, assignments should be cleared
+        val twisted = controller.handle(InputAction.MoveCursor(HexDirection.NE), withWeapon, HexCoordinates(2, 2), gameState)
+        val twistedState = (twisted as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+
+        // If enemy is no longer in arc, assignments should be empty
+        if (enemy.id !in twistedState.validTargetIds) {
+            assertTrue(twistedState.weaponAssignments.values.all { it.isEmpty() })
+        }
+    }
+
+    @Test
+    fun `left and right arrows twist torso while up and down navigate weapons`() {
+        val controller = createController()
+        val unit = aUnit(
+            weapons = listOf(mediumLaser(), mediumLaser()),
+            position = HexCoordinates(2, 2),
+            facing = HexDirection.N,
+        )
+        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
+        val gameState = GameState(listOf(unit, enemy), map5x5)
+        val state = enterDeclaring(controller, unit, gameState)
+
+        // Right arrow (SE) twists torso clockwise
+        val twisted = controller.handle(InputAction.MoveCursor(HexDirection.SE), state, HexCoordinates(2, 2), gameState)
+        val twistedState = (twisted as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+        assertEquals(HexDirection.NE, twistedState.torsoFacing)
+
+        // Down arrow (S) navigates weapons
+        val navigated = controller.handle(InputAction.MoveCursor(HexDirection.S), state, HexCoordinates(0, 0), gameState)
+        val navigatedState = (navigated as PhaseOutcome.Continue).phaseState as PhaseState.Attack
+        assertEquals(state.torsoFacing, navigatedState.torsoFacing) // torso unchanged
+        assertEquals(1, navigatedState.cursorWeaponIndex) // cursor moved
     }
 }

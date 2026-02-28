@@ -16,6 +16,7 @@ public object InputMapper {
             "ArrowRight" -> InputAction.MoveCursor(HexDirection.SE)
             "ArrowLeft" -> InputAction.MoveCursor(HexDirection.NW)
             "Enter" -> InputAction.Confirm
+            " " -> InputAction.ToggleWeapon
             "Escape" -> InputAction.Cancel
             "Tab" -> InputAction.CycleUnit
             "c" -> InputAction.CommitDeclarations

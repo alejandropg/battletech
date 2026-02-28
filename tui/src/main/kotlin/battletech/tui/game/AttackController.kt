@@ -48,21 +48,33 @@ public class AttackController(
         allDeclarations.clear()
     }
 
-    public fun enter(unit: CombatUnit, phase: TurnPhase, gameState: GameState): PhaseState.Attack.TorsoFacing {
+    public fun enter(unit: CombatUnit, phase: TurnPhase, gameState: GameState): PhaseState.Attack {
         val existingDecl = currentImpulse?.declarations?.get(unit.id)
         val torsoFacing = existingDecl?.torsoFacing ?: unit.facing
         val arc = FiringArc.forwardArc(unit.position, torsoFacing, gameState.map)
         val validTargetIds = findValidTargets(unit, arc, gameState)
         val targets = buildTargetInfoList(unit, validTargetIds, gameState)
 
-        return PhaseState.Attack.TorsoFacing(
+        val (weaponAssignments, primaryTargetId) = if (existingDecl != null && existingDecl.torsoFacing == torsoFacing) {
+            existingDecl.weaponAssignments to existingDecl.primaryTargetId
+        } else {
+            emptyMap<UnitId, Set<Int>>() to null
+        }
+
+        val (firstTargetIdx, firstWeaponIdx) = firstCursorPosition(targets)
+
+        return PhaseState.Attack(
             unitId = unit.id,
             attackPhase = phase,
             torsoFacing = torsoFacing,
             arc = arc,
             validTargetIds = validTargetIds,
             targets = targets,
-            prompt = TORSO_FACING_PROMPT,
+            cursorTargetIndex = firstTargetIdx,
+            cursorWeaponIndex = firstWeaponIdx,
+            weaponAssignments = weaponAssignments,
+            primaryTargetId = primaryTargetId,
+            prompt = DECLARING_PROMPT,
         )
     }
 
@@ -71,81 +83,17 @@ public class AttackController(
         state: PhaseState.Attack,
         cursor: HexCoordinates,
         gameState: GameState,
-    ): PhaseOutcome = when (state) {
-        is PhaseState.Attack.TorsoFacing -> handleTorsoFacing(action, state, gameState)
-        is PhaseState.Attack.WeaponSelection -> handleWeaponSelection(action, state, cursor, gameState)
-    }
-
-    private fun handleTorsoFacing(
-        action: InputAction,
-        state: PhaseState.Attack.TorsoFacing,
-        gameState: GameState,
-    ): PhaseOutcome = when (action) {
-        is InputAction.Cancel -> PhaseOutcome.Cancelled
-
-        is InputAction.Confirm -> {
-            val existingDecl = currentImpulse?.declarations?.get(state.unitId)
-            val (weaponAssignments, primaryTargetId) = if (existingDecl != null && existingDecl.torsoFacing == state.torsoFacing) {
-                existingDecl.weaponAssignments to existingDecl.primaryTargetId
-            } else {
-                emptyMap<UnitId, Set<Int>>() to null
-            }
-
-            // Create/update declaration with current torso
-            val status = if (weaponAssignments.isNotEmpty()) DeclarationStatus.WEAPONS_ASSIGNED else DeclarationStatus.PENDING
-            currentImpulse?.declarations?.put(
-                state.unitId,
-                UnitDeclaration(
-                    unitId = state.unitId,
-                    torsoFacing = state.torsoFacing,
-                    status = status,
-                    primaryTargetId = primaryTargetId,
-                    weaponAssignments = weaponAssignments,
-                ),
-            )
-
-            val (firstTargetIdx, firstWeaponIdx) = firstCursorPosition(state.targets)
-
-            PhaseOutcome.Continue(
-                PhaseState.Attack.WeaponSelection(
-                    unitId = state.unitId,
-                    attackPhase = state.attackPhase,
-                    torsoFacing = state.torsoFacing,
-                    arc = state.arc,
-                    validTargetIds = state.validTargetIds,
-                    targets = state.targets,
-                    cursorTargetIndex = firstTargetIdx,
-                    cursorWeaponIndex = firstWeaponIdx,
-                    weaponAssignments = weaponAssignments,
-                    primaryTargetId = primaryTargetId,
-                    prompt = weaponSelectionPrompt(state.targets.size),
-                ),
-            )
-        }
-
-        is InputAction.MoveCursor -> {
-            val dir = action.direction
-            val attacker = gameState.unitById(state.unitId) ?: return PhaseOutcome.Continue(state)
-            when {
-                dir == HexDirection.NE || dir == HexDirection.SE ->
-                    PhaseOutcome.Continue(twistTorso(state, attacker, clockwise = true, gameState))
-                dir == HexDirection.NW || dir == HexDirection.SW ->
-                    PhaseOutcome.Continue(twistTorso(state, attacker, clockwise = false, gameState))
-                else -> PhaseOutcome.Continue(state)
-            }
-        }
-
-        else -> PhaseOutcome.Continue(state)
-    }
-
-    private fun handleWeaponSelection(
-        action: InputAction,
-        state: PhaseState.Attack.WeaponSelection,
-        cursor: HexCoordinates,
-        gameState: GameState,
     ): PhaseOutcome = when (action) {
         is InputAction.Cancel -> {
-            val status = if (state.weaponAssignments.isNotEmpty()) DeclarationStatus.WEAPONS_ASSIGNED else DeclarationStatus.PENDING
+            // Discard assignments — remove any pending declaration for this unit
+            currentImpulse?.declarations?.remove(state.unitId)
+            PhaseOutcome.Cancelled
+        }
+
+        is InputAction.Confirm -> {
+            // Save assignments and return to Idle
+            val hasAssignments = state.weaponAssignments.values.any { it.isNotEmpty() }
+            val status = if (hasAssignments) DeclarationStatus.WEAPONS_ASSIGNED else DeclarationStatus.NO_ATTACK
             currentImpulse?.declarations?.put(
                 state.unitId,
                 UnitDeclaration(
@@ -159,73 +107,29 @@ public class AttackController(
             PhaseOutcome.Cancelled
         }
 
-        is InputAction.Confirm -> {
-            val isNoAttack = state.targets.isEmpty() || state.cursorTargetIndex >= state.targets.size
-            if (isNoAttack) {
-                currentImpulse?.declarations?.put(
-                    state.unitId,
-                    UnitDeclaration(
-                        unitId = state.unitId,
-                        torsoFacing = state.torsoFacing,
-                        status = DeclarationStatus.NO_ATTACK,
-                    ),
-                )
-                PhaseOutcome.Cancelled
-            } else {
-                val currentTarget = state.targets[state.cursorTargetIndex]
-                val weapons = currentTarget.weapons
-                if (weapons.isEmpty()) return PhaseOutcome.Continue(state)
-
-                val weapon = weapons[state.cursorWeaponIndex]
-                if (!weapon.available) return PhaseOutcome.Continue(state)
-
-                val targetId = currentTarget.unitId
-                val assignedElsewhere = state.weaponAssignments.any { (otherId, indices) ->
-                    otherId != targetId && weapon.weaponIndex in indices
-                }
-                if (assignedElsewhere) return PhaseOutcome.Continue(state)
-
-                val currentAssigned = state.weaponAssignments[targetId] ?: emptySet()
-                val newAssigned = if (weapon.weaponIndex in currentAssigned) {
-                    currentAssigned - weapon.weaponIndex
-                } else {
-                    currentAssigned + weapon.weaponIndex
-                }
-                val newAssignments = state.weaponAssignments + (targetId to newAssigned)
-                val newPrimaryTargetId = state.primaryTargetId ?: targetId
-
-                // Update declaration immediately
-                val hasAny = newAssignments.values.any { it.isNotEmpty() }
-                val status = if (hasAny) DeclarationStatus.WEAPONS_ASSIGNED else DeclarationStatus.PENDING
-                currentImpulse?.declarations?.put(
-                    state.unitId,
-                    UnitDeclaration(
-                        unitId = state.unitId,
-                        torsoFacing = state.torsoFacing,
-                        status = status,
-                        primaryTargetId = newPrimaryTargetId,
-                        weaponAssignments = newAssignments,
-                    ),
-                )
-
-                PhaseOutcome.Continue(
-                    state.copy(weaponAssignments = newAssignments, primaryTargetId = newPrimaryTargetId),
-                )
-            }
-        }
+        is InputAction.ToggleWeapon -> toggleWeapon(state)
 
         is InputAction.MoveCursor -> {
             val dir = action.direction
-            if (dir != HexDirection.N && dir != HexDirection.S) return PhaseOutcome.Continue(state)
-            PhaseOutcome.Continue(navigateWeapons(state, if (dir == HexDirection.S) 1 else -1))
+            val attacker = gameState.unitById(state.unitId) ?: return PhaseOutcome.Continue(state)
+            when {
+                // Left/Right: twist torso
+                dir == HexDirection.NE || dir == HexDirection.SE ->
+                    PhaseOutcome.Continue(twistTorso(state, attacker, clockwise = true, gameState))
+                dir == HexDirection.NW || dir == HexDirection.SW ->
+                    PhaseOutcome.Continue(twistTorso(state, attacker, clockwise = false, gameState))
+                // Up/Down: navigate weapons
+                dir == HexDirection.N || dir == HexDirection.S ->
+                    PhaseOutcome.Continue(navigateWeapons(state, if (dir == HexDirection.S) 1 else -1))
+                else -> PhaseOutcome.Continue(state)
+            }
         }
 
         is InputAction.CycleUnit -> {
-            // Tab: jump to first weapon of next target
-            val total = state.targets.size + 1  // +1 for "No Attack"
-            val nextTargetIdx = if (total <= 1) 0 else (state.cursorTargetIndex + 1) % total
-            val weaponIdx = if (nextTargetIdx < state.targets.size) 0 else 0
-            PhaseOutcome.Continue(state.copy(cursorTargetIndex = nextTargetIdx, cursorWeaponIndex = weaponIdx))
+            // Tab: jump to first weapon of next target (round-robin, no "No Attack" sentinel)
+            if (state.targets.isEmpty()) return PhaseOutcome.Continue(state)
+            val nextTargetIdx = (state.cursorTargetIndex + 1) % state.targets.size
+            PhaseOutcome.Continue(state.copy(cursorTargetIndex = nextTargetIdx, cursorWeaponIndex = 0))
         }
 
         is InputAction.ClickHex -> {
@@ -245,15 +149,60 @@ public class AttackController(
         else -> PhaseOutcome.Continue(state)
     }
 
+    private fun toggleWeapon(state: PhaseState.Attack): PhaseOutcome {
+        if (state.targets.isEmpty() || state.cursorTargetIndex >= state.targets.size) {
+            return PhaseOutcome.Continue(state)
+        }
+
+        val currentTarget = state.targets[state.cursorTargetIndex]
+        val weapons = currentTarget.weapons
+        if (weapons.isEmpty()) return PhaseOutcome.Continue(state)
+
+        val weapon = weapons[state.cursorWeaponIndex]
+        if (!weapon.available) return PhaseOutcome.Continue(state)
+
+        val targetId = currentTarget.unitId
+        val assignedElsewhere = state.weaponAssignments.any { (otherId, indices) ->
+            otherId != targetId && weapon.weaponIndex in indices
+        }
+        if (assignedElsewhere) return PhaseOutcome.Continue(state)
+
+        val currentAssigned = state.weaponAssignments[targetId] ?: emptySet()
+        val newAssigned = if (weapon.weaponIndex in currentAssigned) {
+            currentAssigned - weapon.weaponIndex
+        } else {
+            currentAssigned + weapon.weaponIndex
+        }
+        val newAssignments = state.weaponAssignments + (targetId to newAssigned)
+        val newPrimaryTargetId = state.primaryTargetId ?: targetId
+
+        // Update declaration immediately
+        val hasAny = newAssignments.values.any { it.isNotEmpty() }
+        val status = if (hasAny) DeclarationStatus.WEAPONS_ASSIGNED else DeclarationStatus.PENDING
+        currentImpulse?.declarations?.put(
+            state.unitId,
+            UnitDeclaration(
+                unitId = state.unitId,
+                torsoFacing = state.torsoFacing,
+                status = status,
+                primaryTargetId = newPrimaryTargetId,
+                weaponAssignments = newAssignments,
+            ),
+        )
+
+        return PhaseOutcome.Continue(
+            state.copy(weaponAssignments = newAssignments, primaryTargetId = newPrimaryTargetId),
+        )
+    }
+
     /**
      * Navigate the weapon cursor by [delta] steps (+1 = down, -1 = up) across the flat weapon list.
      *
-     * Flat order: all weapons of target 0, all weapons of target 1, ..., "No Attack"
+     * Flat order: all weapons of target 0, all weapons of target 1, ...
      */
-    private fun navigateWeapons(state: PhaseState.Attack.WeaponSelection, delta: Int): PhaseState.Attack.WeaponSelection {
+    private fun navigateWeapons(state: PhaseState.Attack, delta: Int): PhaseState.Attack {
         if (state.targets.isEmpty()) return state
 
-        // Build flat index: (targetIdx, weaponIdx) entries + sentinel for "No Attack"
         data class Entry(val targetIdx: Int, val weaponIdx: Int)
 
         val flat = mutableListOf<Entry>()
@@ -262,38 +211,33 @@ public class AttackController(
                 flat.add(Entry(ti, wi))
             }
         }
-        // "No Attack" is at the end — represented by Entry(targets.size, 0)
-        val noAttackEntry = Entry(state.targets.size, 0)
-        flat.add(noAttackEntry)
+        if (flat.isEmpty()) return state
 
-        val currentFlatIdx = if (state.cursorTargetIndex >= state.targets.size) {
-            flat.size - 1  // on "No Attack"
-        } else {
-            flat.indexOfFirst { it.targetIdx == state.cursorTargetIndex && it.weaponIdx == state.cursorWeaponIndex }
-                .let { if (it < 0) 0 else it }
-        }
+        val currentFlatIdx = flat.indexOfFirst {
+            it.targetIdx == state.cursorTargetIndex && it.weaponIdx == state.cursorWeaponIndex
+        }.let { if (it < 0) 0 else it }
 
         val newFlatIdx = (currentFlatIdx + delta + flat.size) % flat.size
         val newEntry = flat[newFlatIdx]
         return state.copy(cursorTargetIndex = newEntry.targetIdx, cursorWeaponIndex = newEntry.weaponIdx)
     }
 
-    /** Returns (targetIndex, weaponIndex) for the first available weapon of the first target, or (targets.size, 0) if none. */
+    /** Returns (targetIndex, weaponIndex) for the first available weapon of the first target, or (0, 0) if none. */
     private fun firstCursorPosition(targets: List<TargetInfo>): Pair<Int, Int> {
         for ((ti, target) in targets.withIndex()) {
             val wi = target.weapons.indexOfFirst { it.available }
             if (wi >= 0) return ti to wi
             if (target.weapons.isNotEmpty()) return ti to 0
         }
-        return targets.size to 0  // "No Attack"
+        return 0 to 0
     }
 
     private fun twistTorso(
-        state: PhaseState.Attack.TorsoFacing,
+        state: PhaseState.Attack,
         attacker: CombatUnit,
         clockwise: Boolean,
         gameState: GameState,
-    ): PhaseState.Attack.TorsoFacing {
+    ): PhaseState.Attack {
         val legFacing = attacker.facing
         val newTorso = if (clockwise) state.torsoFacing.rotateClockwise() else state.torsoFacing.rotateCounterClockwise()
         if (legFacing.turnCostTo(newTorso) > 1) return state
@@ -301,11 +245,29 @@ public class AttackController(
         val newArc = FiringArc.forwardArc(attacker.position, newTorso, gameState.map)
         val newTargetIds = findValidTargets(attacker, newArc, gameState)
         val newTargets = buildTargetInfoList(attacker, newTargetIds, gameState)
+
+        // Clear assignments for targets that left the arc
+        val newAssignments = state.weaponAssignments.filterKeys { it in newTargetIds }
+        val newPrimary = if (state.primaryTargetId in newTargetIds) state.primaryTargetId else null
+
+        // Clamp cursor if targets shrunk
+        val newCursorTargetIdx = if (newTargets.isEmpty()) 0
+        else state.cursorTargetIndex.coerceIn(0, newTargets.size - 1)
+        val newCursorWeaponIdx = if (newTargets.isEmpty()) 0
+        else {
+            val maxWeapon = (newTargets[newCursorTargetIdx].weapons.size - 1).coerceAtLeast(0)
+            state.cursorWeaponIndex.coerceIn(0, maxWeapon)
+        }
+
         return state.copy(
             torsoFacing = newTorso,
             arc = newArc,
             validTargetIds = newTargetIds,
             targets = newTargets,
+            cursorTargetIndex = newCursorTargetIdx,
+            cursorWeaponIndex = newCursorWeaponIdx,
+            weaponAssignments = newAssignments,
+            primaryTargetId = newPrimary,
         )
     }
 
@@ -383,17 +345,13 @@ public class AttackController(
         }
     }
 
-    private fun weaponSelectionPrompt(targetCount: Int): String =
-        if (targetCount == 0) "No targets — Enter: No Attack | Esc: back"
-        else "↑/↓: navigate weapons | Enter: toggle | Tab: next target | Esc: back"
-
     private fun heatPenaltyModifier(actor: CombatUnit): Int {
         val excessHeat = actor.currentHeat - actor.heatSinkCapacity
         return if (excessHeat <= 0) 0 else ceil(excessHeat / 3.0).toInt()
     }
 
     private companion object {
-        const val TORSO_FACING_PROMPT = "←/→ twist torso | Enter: confirm | Esc: cancel"
+        const val DECLARING_PROMPT = "←/→ twist torso | ↑/↓ navigate weapons | Space: toggle | Enter: confirm | Esc: cancel"
 
         val TWO_D6_PROBABILITY: Map<Int, Int> = mapOf(
             2 to 100, 3 to 97, 4 to 92, 5 to 83, 6 to 72,

@@ -40,39 +40,20 @@ public sealed interface PhaseState {
         ) : Movement
     }
 
-    public sealed interface Attack : PhaseState {
-        public val unitId: UnitId
-        public val attackPhase: TurnPhase
-        public val torsoFacing: HexDirection
-        public val arc: Set<HexCoordinates>
-        public val validTargetIds: Set<UnitId>
-
-        /** Initial state: player twists torso to aim, targets shown as read-only preview. */
-        public data class TorsoFacing(
-            override val unitId: UnitId,
-            override val attackPhase: TurnPhase,
-            override val torsoFacing: HexDirection,
-            override val arc: Set<HexCoordinates>,
-            override val validTargetIds: Set<UnitId>,
-            val targets: List<TargetInfo>,
-            override val prompt: String,
-        ) : Attack
-
-        /** Torso locked; player navigates weapons across all targets and toggles assignments. */
-        public data class WeaponSelection(
-            override val unitId: UnitId,
-            override val attackPhase: TurnPhase,
-            override val torsoFacing: HexDirection,
-            override val arc: Set<HexCoordinates>,
-            override val validTargetIds: Set<UnitId>,
-            val targets: List<TargetInfo>,
-            val cursorTargetIndex: Int,   // targets.size = "No Attack" entry
-            val cursorWeaponIndex: Int,   // weapon index within target (ignored on "No Attack")
-            val weaponAssignments: Map<UnitId, Set<Int>>,
-            val primaryTargetId: UnitId?,
-            override val prompt: String,
-        ) : Attack
-    }
+    /** Player twists torso and assigns weapons simultaneously. */
+    public data class Attack(
+        val unitId: UnitId,
+        val attackPhase: TurnPhase,
+        val torsoFacing: HexDirection,
+        val arc: Set<HexCoordinates>,
+        val validTargetIds: Set<UnitId>,
+        val targets: List<TargetInfo>,
+        val cursorTargetIndex: Int,
+        val cursorWeaponIndex: Int,
+        val weaponAssignments: Map<UnitId, Set<Int>>,
+        val primaryTargetId: UnitId?,
+        override val prompt: String,
+    ) : PhaseState
 }
 
 public data class TargetInfo(

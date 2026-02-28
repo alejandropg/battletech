@@ -101,8 +101,7 @@ public fun main() {
 
                 // Cursor movement — controlled per-state
                 val shouldMoveCursorOnArrow = when (appState.phaseState) {
-                    is PhaseState.Attack.TorsoFacing -> false     // arrows twist torso
-                    is PhaseState.Attack.WeaponSelection -> false // arrows navigate weapons
+                    is PhaseState.Attack -> false  // arrows twist torso and navigate weapons
                     else -> true
                 }
                 if (action is InputAction.MoveCursor && shouldMoveCursorOnArrow) {
@@ -330,11 +329,7 @@ private fun renderFrame(
     val statusBarHeight = 7
     val attackPhase = appState.phaseState as? PhaseState.Attack
 
-    val hasTargets = when (attackPhase) {
-        is PhaseState.Attack.TorsoFacing -> attackPhase.targets.isNotEmpty()
-        is PhaseState.Attack.WeaponSelection -> true  // always show (at least "No Attack")
-        null -> false
-    }
+    val hasTargets = attackPhase?.targets?.isNotEmpty() == true
     val targetsWidth = if (hasTargets) 28 else 0
     val boardWidth = width - sidebarWidth - targetsWidth
     val boardHeight = height - statusBarHeight
@@ -373,26 +368,15 @@ private fun renderFrame(
     )
     boardView.render(buffer, 0, 0, boardWidth, boardHeight)
 
-    if (hasTargets) {
-        val targetsView = when (attackPhase) {
-            is PhaseState.Attack.TorsoFacing -> TargetsView(
-                targets = attackPhase.targets,
-                weaponAssignments = emptyMap(),
-                primaryTargetId = null,
-                cursorTargetIndex = -1,
-                showNoAttack = false,
-            )
-            is PhaseState.Attack.WeaponSelection -> TargetsView(
-                targets = attackPhase.targets,
-                weaponAssignments = attackPhase.weaponAssignments,
-                primaryTargetId = attackPhase.primaryTargetId,
-                cursorTargetIndex = attackPhase.cursorTargetIndex,
-                cursorWeaponIndex = attackPhase.cursorWeaponIndex,
-                showNoAttack = true,
-            )
-            else -> null
-        }
-        targetsView?.render(buffer, boardWidth, 0, targetsWidth, boardHeight)
+    if (attackPhase != null && attackPhase.targets.isNotEmpty()) {
+        val targetsView = TargetsView(
+            targets = attackPhase.targets,
+            weaponAssignments = attackPhase.weaponAssignments,
+            primaryTargetId = attackPhase.primaryTargetId,
+            cursorTargetIndex = attackPhase.cursorTargetIndex,
+            cursorWeaponIndex = attackPhase.cursorWeaponIndex,
+        )
+        targetsView.render(buffer, boardWidth, 0, targetsWidth, boardHeight)
     }
 
     val sidebarView = SidebarView(unit = selectedUnit)

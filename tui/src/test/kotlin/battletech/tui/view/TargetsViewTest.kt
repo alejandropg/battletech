@@ -5,7 +5,6 @@ import battletech.tui.game.TargetInfo
 import battletech.tui.game.WeaponTargetInfo
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -117,49 +116,17 @@ internal class TargetsViewTest {
     }
 
     @Test
-    fun `no attack entry shown when showNoAttack is true`() {
+    fun `empty targets shows No targets message`() {
         val view = TargetsView(
-            targets = listOf(targetA),
+            targets = emptyList(),
             weaponAssignments = emptyMap(),
             primaryTargetId = null,
             cursorTargetIndex = 0,
-            showNoAttack = true,
         )
 
         val output = renderToString(view)
 
-        assertTrue(output.contains("No Attack"))
-    }
-
-    @Test
-    fun `no attack entry selected when cursorTargetIndex equals targets size`() {
-        val view = TargetsView(
-            targets = listOf(targetA),
-            weaponAssignments = emptyMap(),
-            primaryTargetId = null,
-            cursorTargetIndex = 1,   // == targets.size → "No Attack" selected
-            showNoAttack = true,
-        )
-
-        val output = renderToString(view)
-
-        assertTrue(output.contains("No Attack"))
-        assertTrue(output.contains("\u25B6"))
-    }
-
-    @Test
-    fun `no cursor when cursorTargetIndex is negative (TorsoFacing preview)`() {
-        val view = TargetsView(
-            targets = listOf(targetA),
-            weaponAssignments = emptyMap(),
-            primaryTargetId = null,
-            cursorTargetIndex = -1,
-        )
-
-        val output = renderToString(view)
-
-        assertTrue(output.contains("Atlas"))
-        assertFalse(output.contains("\u25B6"))
+        assertTrue(output.contains("No targets"))
     }
 
     @Test
@@ -227,7 +194,6 @@ internal class TargetsViewTest {
             primaryTargetId = null,
             cursorTargetIndex = 1,
             cursorWeaponIndex = 0,
-            showNoAttack = true,
         )
 
         val output = renderToString(view)
