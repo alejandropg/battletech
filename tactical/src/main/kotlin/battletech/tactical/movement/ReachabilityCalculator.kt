@@ -12,7 +12,7 @@ public class ReachabilityCalculator(
     private val units: List<CombatUnit>,
 ) {
 
-    public fun calculate(actor: CombatUnit, mode: MovementMode, startFacing: HexDirection): ReachabilityMap {
+    public fun calculate(actor: CombatUnit, mode: MovementMode): ReachabilityMap {
         val maxMP = when (mode) {
             MovementMode.WALK -> actor.walkingMP
             MovementMode.RUN -> actor.runningMP
@@ -22,24 +22,20 @@ public class ReachabilityCalculator(
         val destinations = if (mode == MovementMode.JUMP) {
             calculateJump(actor, maxMP)
         } else {
-            calculateGroundMovement(actor, startFacing, maxMP)
+            calculateGroundMovement(actor, maxMP)
         }
 
         return ReachabilityMap(mode = mode, maxMP = maxMP, destinations = destinations)
     }
 
-    private fun calculateGroundMovement(
-        actor: CombatUnit,
-        startFacing: HexDirection,
-        maxMP: Int,
-    ): List<ReachableHex> {
+    private fun calculateGroundMovement(actor: CombatUnit, maxMP: Int): List<ReachableHex> {
         val enemyPositions = units.filter { it.id != actor.id }.map { it.position }.toSet()
         val friendlyPositions = units.filter { it.id != actor.id }.map { it.position }.toSet()
 
         val best = mutableMapOf<MovementState, Pair<Int, List<MovementStep>>>()
         val queue = PriorityQueue<Node>(compareBy { it.cost })
 
-        val startState = MovementState(actor.position, startFacing)
+        val startState = MovementState(actor.position, actor.facing)
         queue.add(Node(state = startState, cost = 0, path = emptyList()))
 
         while (queue.isNotEmpty()) {

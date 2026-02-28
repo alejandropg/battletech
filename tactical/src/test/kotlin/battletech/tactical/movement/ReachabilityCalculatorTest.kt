@@ -37,7 +37,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 1)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         val positions = result.destinations.map { it.position }.toSet()
         assertThat(positions).containsExactlyInAnyOrder(
@@ -57,7 +57,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 2)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         val positions = result.destinations.map { it.position }.toSet()
         // 1 MP turn + 1 MP move forward in new direction
@@ -83,7 +83,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = origin, walkingMP = 2)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         // Heavy woods costs 3 MP, actor only has 2 — cannot reach
         val positions = result.destinations.map { it.position }.toSet()
@@ -102,7 +102,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = origin, walkingMP = 2)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         // Clear (1) + climb 2 levels (2) = 3 MP, actor has 2 — cannot reach
         val positions = result.destinations.map { it.position }.toSet()
@@ -121,7 +121,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = origin, walkingMP = 1)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         val positions = result.destinations.map { it.position }.toSet()
         assertThat(positions).contains(northHex)
@@ -136,7 +136,7 @@ internal class ReachabilityCalculatorTest {
         val enemy = aUnit(id = "enemy", position = enemyPos)
         val calc = calculator(map, listOf(actor, enemy))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         val positions = result.destinations.map { it.position }.toSet()
         assertThat(positions).doesNotContain(enemyPos)
@@ -158,7 +158,7 @@ internal class ReachabilityCalculatorTest {
         val enemy = aUnit(id = "enemy", position = enemyPos)
         val calc = calculator(map, listOf(actor, enemy))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         val positions = result.destinations.map { it.position }.toSet()
         assertThat(positions).doesNotContain(beyondEnemy)
@@ -170,7 +170,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 0)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         assertThat(result.destinations).isEmpty()
     }
@@ -181,7 +181,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 4)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         val atOrigin = result.destinations.filter { it.position == HexCoordinates(0, 0) }
         assertThat(atOrigin).isNotEmpty
@@ -194,7 +194,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 4)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         val sameState = result.destinations.find {
             it.position == HexCoordinates(0, 0) && it.facing == HexDirection.N
@@ -208,7 +208,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 2)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         // Moving 2 hexes north: (0,0) → (0,-1) → (0,-2)
         val twoNorth = result.destinations.find {
@@ -226,7 +226,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 2)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         // Turn NE (1 MP) then move NE (1 MP)
         val neNeighbor = HexCoordinates(0, 0).neighbor(HexDirection.NE)
@@ -247,8 +247,8 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 2, runningMP = 4)
         val calc = calculator(map, listOf(actor))
 
-        val walkResult = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
-        val runResult = calc.calculate(actor, MovementMode.RUN, HexDirection.N)
+        val walkResult = calc.calculate(actor, MovementMode.WALK)
+        val runResult = calc.calculate(actor, MovementMode.RUN)
 
         val walkPositions = walkResult.destinations.map { it.position }.toSet()
         val runPositions = runResult.destinations.map { it.position }.toSet()
@@ -268,7 +268,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(id = "actor", position = origin, walkingMP = 4)
         val calc = calculator(map, listOf(actor) + enemies)
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         val positions = result.destinations.map { it.position }.toSet()
         assertThat(positions).containsExactly(origin)
@@ -284,7 +284,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = origin, jumpMP = 2)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.JUMP, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.JUMP)
 
         val positions = result.destinations.map { it.position }.toSet()
         val expectedPositions = map.hexes.keys
@@ -301,7 +301,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = origin, jumpMP = 1)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.JUMP, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.JUMP)
 
         val northHex = HexCoordinates(0, -1)
         val facingsAtNorth = result.destinations
@@ -323,7 +323,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = origin, jumpMP = 1)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.JUMP, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.JUMP)
 
         val positions = result.destinations.map { it.position }.toSet()
         assertThat(positions).contains(target)
@@ -338,7 +338,7 @@ internal class ReachabilityCalculatorTest {
         val other = aUnit(id = "other", position = occupiedPos)
         val calc = calculator(map, listOf(actor, other))
 
-        val result = calc.calculate(actor, MovementMode.JUMP, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.JUMP)
 
         val positions = result.destinations.map { it.position }.toSet()
         assertThat(positions).doesNotContain(occupiedPos)
@@ -350,7 +350,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = HexCoordinates(0, 0), jumpMP = 0)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.JUMP, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.JUMP)
 
         assertThat(result.destinations).isEmpty()
     }
@@ -362,7 +362,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = origin, jumpMP = 3)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.JUMP, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.JUMP)
 
         result.destinations.forEach { dest ->
             assertEquals(origin.distanceTo(dest.position), dest.mpSpent)
@@ -377,7 +377,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 2)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.WALK, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.WALK)
 
         assertEquals(MovementMode.WALK, result.mode)
     }
@@ -388,7 +388,7 @@ internal class ReachabilityCalculatorTest {
         val actor = aUnit(position = HexCoordinates(0, 0), runningMP = 6)
         val calc = calculator(map, listOf(actor))
 
-        val result = calc.calculate(actor, MovementMode.RUN, HexDirection.N)
+        val result = calc.calculate(actor, MovementMode.RUN)
 
         assertEquals(6, result.maxMP)
     }

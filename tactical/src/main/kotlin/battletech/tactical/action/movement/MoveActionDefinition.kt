@@ -25,7 +25,7 @@ public class MoveActionDefinition : MovementDefinition {
 
     override fun preview(context: MovementContext): MovementPreview {
         val calculator = ReachabilityCalculator(context.gameState.map, context.gameState.units)
-        val reachability = calculator.calculate(context.actor, context.movementMode, context.actor.facing)
+        val reachability = calculator.calculate(context.actor, context.movementMode)
         return MovementPreview(reachability = reachability)
     }
 
