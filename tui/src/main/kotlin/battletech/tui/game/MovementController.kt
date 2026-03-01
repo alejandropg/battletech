@@ -196,7 +196,7 @@ public class MovementController(
     ): GameState {
         val updatedUnits = gameState.units.map { unit ->
             if (unit.id == unitId) {
-                unit.copy(position = destination.position, facing = destination.facing)
+                unit.copy(position = destination.position, facing = destination.facing, torsoFacing = destination.facing)
             } else {
                 unit
             }

@@ -15,6 +15,7 @@ public data class CombatUnit(
     public val weapons: List<Weapon>,
     public val position: HexCoordinates,
     public val facing: HexDirection = HexDirection.N,
+    public val torsoFacing: HexDirection = facing,
     public val walkingMP: Int = 0,
     public val runningMP: Int = 0,
     public val jumpMP: Int = 0,

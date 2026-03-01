@@ -169,12 +169,29 @@ public fun autoAdvanceGlobalPhases(appState: AppState, random: Random = Random):
         }
 
         TurnPhase.END -> {
-            val state = appState.copy(currentPhase = nextPhase(TurnPhase.END))
+            val resetGameState = resetTorsoFacings(appState.gameState)
+            val state = appState.copy(gameState = resetGameState, currentPhase = nextPhase(TurnPhase.END))
             state to FlashMessage("Turn complete")
         }
 
         else -> appState to null
     }
+}
+
+public fun applyTorsoFacings(gameState: GameState, facings: Map<UnitId, HexDirection>): GameState {
+    if (facings.isEmpty()) return gameState
+    val updatedUnits = gameState.units.map { unit ->
+        val torso = facings[unit.id]
+        if (torso != null) unit.copy(torsoFacing = torso) else unit
+    }
+    return gameState.copy(units = updatedUnits)
+}
+
+public fun resetTorsoFacings(gameState: GameState): GameState {
+    val updatedUnits = gameState.units.map { unit ->
+        if (unit.torsoFacing != unit.facing) unit.copy(torsoFacing = unit.facing) else unit
+    }
+    return gameState.copy(units = updatedUnits)
 }
 
 public fun applyHeatDissipation(gameState: GameState): GameState {

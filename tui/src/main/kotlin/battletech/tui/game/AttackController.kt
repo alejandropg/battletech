@@ -1,6 +1,5 @@
 package battletech.tui.game
 
-import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
@@ -13,12 +12,14 @@ import battletech.tactical.model.HexDirection
 import battletech.tui.input.InputAction
 import kotlin.math.ceil
 
-public class AttackController(
-    private val actionQueryService: ActionQueryService,
-) {
+public data class CommitResult(
+    val unitIds: Set<UnitId>,
+    val torsoFacings: Map<UnitId, HexDirection>,
+)
+
+public class AttackController {
     private val allDeclarations: MutableList<AttackDeclaration> = mutableListOf()
     private var currentImpulse: ImpulseDeclarations? = null
-    private val committedTorsoFacings: MutableMap<UnitId, HexDirection> = mutableMapOf()
 
     public fun initializeImpulse(playerId: PlayerId, unitCount: Int) {
         currentImpulse = ImpulseDeclarations(playerId, unitCount)
@@ -34,16 +35,14 @@ public class AttackController(
 
     public fun canCommit(): Boolean = currentImpulse?.allDeclared() == true
 
-    /** Commits the current impulse's declarations into the accumulated list and returns committed unit IDs. */
-    public fun commitImpulse(): Set<UnitId> {
-        val impulse = currentImpulse ?: return emptySet()
+    /** Commits the current impulse's declarations into the accumulated list and returns committed unit IDs and torso facings. */
+    public fun commitImpulse(): CommitResult {
+        val impulse = currentImpulse ?: return CommitResult(emptySet(), emptyMap())
         val unitIds = impulse.declarations.keys.toSet()
         allDeclarations.addAll(impulse.toAttackDeclarations())
-        impulse.declarations.values.forEach {
-            committedTorsoFacings[it.unitId] = it.torsoFacing
-        }
+        val torsoFacings = impulse.declarations.values.associate { it.unitId to it.torsoFacing }
         currentImpulse = null
-        return unitIds
+        return CommitResult(unitIds, torsoFacings)
     }
 
     public fun collectDeclarations(): List<AttackDeclaration> = allDeclarations.toList()
@@ -52,30 +51,9 @@ public class AttackController(
         allDeclarations.clear()
     }
 
-    public fun clearTorsoFacings() {
-        committedTorsoFacings.clear()
-    }
-
-    public fun declaredTorsoFacings(gameState: GameState): Map<HexCoordinates, HexDirection> {
-        val facings = mutableMapOf<HexCoordinates, HexDirection>()
-        for ((unitId, torso) in committedTorsoFacings) {
-            val unit = gameState.unitById(unitId) ?: continue
-            if (torso != unit.facing) facings[unit.position] = torso
-        }
-        currentImpulse?.declarations?.values?.forEach { decl ->
-            val unit = gameState.unitById(decl.unitId) ?: return@forEach
-            if (decl.torsoFacing != unit.facing) {
-                facings[unit.position] = decl.torsoFacing
-            } else {
-                facings.remove(unit.position)
-            }
-        }
-        return facings
-    }
-
     public fun enter(unit: CombatUnit, phase: TurnPhase, gameState: GameState): PhaseState.Attack {
         val existingDecl = currentImpulse?.declarations?.get(unit.id)
-        val torsoFacing = existingDecl?.torsoFacing ?: unit.facing
+        val torsoFacing = existingDecl?.torsoFacing ?: unit.torsoFacing
         val arc = FiringArc.forwardArc(unit.position, torsoFacing, gameState.map)
         val validTargetIds = findValidTargets(unit, arc, gameState)
         val targets = buildTargetInfoList(unit, validTargetIds, gameState)

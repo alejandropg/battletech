@@ -87,7 +87,8 @@ public class BoardView(
                             PlayerId.PLAYER_2 -> Color.MAGENTA
                         }
                     }
-                    val torsoFacing = torsoFacings[coords]
+                    val effectiveTorso = torsoFacings[coords] ?: unit.torsoFacing
+                    val torsoFacing = if (effectiveTorso != unit.facing) effectiveTorso else null
                     UnitRenderer.render(
                         buffer, drawX, drawY,
                         unit.name.first(),

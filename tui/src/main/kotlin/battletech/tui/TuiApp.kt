@@ -23,6 +23,7 @@ import battletech.tui.game.PhaseState
 import battletech.tui.game.TurnState
 import battletech.tui.game.UnitSelectionResult
 import battletech.tui.game.advanceAfterUnitAttacked
+import battletech.tui.game.applyTorsoFacings
 import battletech.tui.game.attackPrompt
 import battletech.tui.game.autoAdvanceGlobalPhases
 import battletech.tui.game.extractRenderData
@@ -63,7 +64,7 @@ public class TuiApp {
         )
 
         val movementController = MovementController(actionQueryService)
-        val attackController = AttackController(actionQueryService)
+        val attackController = AttackController()
 
         var appState = AppState(
             gameState = sampleGameState(),
@@ -82,9 +83,6 @@ public class TuiApp {
                     // Auto-advance global phases (Initiative, Heat, End, attack phase init)
                     val (advancedState, flash) = autoAdvanceGlobalPhases(appState)
                     if (flash != null) {
-                        if (appState.currentPhase == TurnPhase.END) {
-                            attackController.clearTorsoFacings()
-                        }
                         appState = advancedState
                         // Initialize attack impulse when first entering an attack phase
                         val ts = advancedState.turnState
@@ -100,13 +98,11 @@ public class TuiApp {
                             appState =
                                 appState.copy(phaseState = PhaseState.Idle(buildAttackPrompt(ts, attackController)))
                         }
-                        val torso = attackController.declaredTorsoFacings(appState.gameState)
-                        renderFrame(currentSize, renderer, appState, flash, torso)
+                        renderFrame(currentSize, renderer, appState, flash)
                         continue
                     }
 
-                    val torso = attackController.declaredTorsoFacings(appState.gameState)
-                    renderFrame(currentSize, renderer, appState, persistentTorsoFacings = torso)
+                    renderFrame(currentSize, renderer, appState)
 
                     val event = rawMode.readEvent()
                     val action = when (event) {
@@ -157,8 +153,7 @@ public class TuiApp {
                     }
 
                     if (pendingFlash != null) {
-                        val torsoForFlash = attackController.declaredTorsoFacings(appState.gameState)
-                        renderFrame(currentSize, renderer, appState, pendingFlash, torsoForFlash)
+                        renderFrame(currentSize, renderer, appState, pendingFlash)
                         pendingFlash = null
                         continue
                     }
@@ -180,10 +175,11 @@ public class TuiApp {
         attackController: AttackController,
     ): AppState {
         val turnState = appState.turnState ?: return appState
-        val committedUnitIds = attackController.commitImpulse()
+        val commitResult = attackController.commitImpulse()
+        val gameStateWithTorso = applyTorsoFacings(appState.gameState, commitResult.torsoFacings)
 
         var newTurnState = turnState
-        for (unitId in committedUnitIds) {
+        for (unitId in commitResult.unitIds) {
             newTurnState = advanceAfterUnitAttacked(newTurnState, unitId)
         }
 
@@ -192,7 +188,7 @@ public class TuiApp {
                 // Resolve all weapon attacks and transition to physical attack
                 val declarations = attackController.collectDeclarations()
                 val resolvedGameState = if (declarations.isNotEmpty()) {
-                    val (resolved, results) = resolveAttacks(declarations, appState.gameState, random)
+                    val (resolved, results) = resolveAttacks(declarations, gameStateWithTorso, random)
                     val hitCount = results.count { it.hit }
                     val totalDamage = results.sumOf { it.damageApplied }
                     pendingFlash = FlashMessage(
@@ -200,7 +196,7 @@ public class TuiApp {
                     )
                     resolved
                 } else {
-                    appState.gameState
+                    gameStateWithTorso
                 }
                 attackController.clearDeclarations()
 
@@ -219,6 +215,7 @@ public class TuiApp {
             } else {
                 // Physical attack done — advance phase
                 appState.copy(
+                    gameState = gameStateWithTorso,
                     currentPhase = nextPhase(appState.currentPhase),
                     phaseState = PhaseState.Idle(),
                     turnState = newTurnState,
@@ -231,6 +228,7 @@ public class TuiApp {
                 newTurnState.currentAttackImpulse.unitCount,
             )
             appState.copy(
+                gameState = gameStateWithTorso,
                 phaseState = PhaseState.Idle(buildAttackPrompt(newTurnState, attackController)),
                 turnState = newTurnState,
             )
@@ -351,7 +349,6 @@ public class TuiApp {
         renderer: ScreenRenderer,
         appState: AppState,
         flash: FlashMessage? = null,
-        persistentTorsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
     ) {
         val sidebarWidth = 28
         val statusBarHeight = 7
@@ -365,9 +362,7 @@ public class TuiApp {
         val buffer = ScreenBuffer(size.width, size.height)
         val viewport = Viewport(0, 0, boardWidth - 4, boardHeight - 4)
 
-        val renderData = extractRenderData(appState.phaseState, appState.gameState).let {
-            it.copy(torsoFacings = persistentTorsoFacings + it.torsoFacings)
-        }
+        val renderData = extractRenderData(appState.phaseState, appState.gameState)
 
         val selectedUnit = when (val phase = appState.phaseState) {
             is PhaseState.Movement -> appState.gameState.unitById(phase.unitId)
