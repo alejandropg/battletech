@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
 internal class ActionQueryServiceTest {
 
     private val service = ActionQueryService(
-        movementDefinitions = listOf(MoveActionDefinition()),
+        movementDefinition = MoveActionDefinition(),
         attackDefinitions = listOf(FireWeaponActionDefinition(), PunchActionDefinition()),
     )
 

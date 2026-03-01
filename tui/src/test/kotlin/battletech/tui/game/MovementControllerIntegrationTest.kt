@@ -28,7 +28,7 @@ internal class MovementControllerIntegrationTest {
 
     @Test
     fun `enter produces reachable hexes with real action query service`() {
-        val actionQueryService = ActionQueryService(listOf(MoveActionDefinition()), emptyList())
+        val actionQueryService = ActionQueryService(MoveActionDefinition(), emptyList())
         val controller = MovementController(actionQueryService)
 
         val state = controller.enter(unit, gameState)
@@ -37,13 +37,4 @@ internal class MovementControllerIntegrationTest {
         assertThat(state.reachability.destinations).isNotEmpty()
     }
 
-    @Test
-    fun `enter with empty movement definitions produces empty modes`() {
-        val actionQueryService = ActionQueryService(emptyList(), emptyList())
-        val controller = MovementController(actionQueryService)
-
-        val state = controller.enter(unit, gameState)
-
-        assertTrue(state.modes.isEmpty())
-    }
 }

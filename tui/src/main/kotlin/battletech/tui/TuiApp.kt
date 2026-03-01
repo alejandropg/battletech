@@ -4,6 +4,8 @@ import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
+import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
+import battletech.tactical.action.attack.definition.PunchActionDefinition
 import battletech.tactical.action.attack.resolveAttacks
 import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.model.GameMap
@@ -55,7 +57,10 @@ public class TuiApp {
     public fun run() {
         val terminal = Terminal()
         val renderer = ScreenRenderer(terminal)
-        val actionQueryService = ActionQueryService(listOf(MoveActionDefinition()), emptyList())
+        val actionQueryService = ActionQueryService(
+            MoveActionDefinition(),
+            listOf(FireWeaponActionDefinition(), PunchActionDefinition()),
+        )
 
         val movementController = MovementController(actionQueryService)
         val attackController = AttackController(actionQueryService)

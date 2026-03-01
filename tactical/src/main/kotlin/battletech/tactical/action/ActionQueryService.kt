@@ -5,21 +5,19 @@ import battletech.tactical.action.movement.MovementDefinition
 import battletech.tactical.model.GameState
 
 public class ActionQueryService(
-    private val movementDefinitions: List<MovementDefinition>,
+    private val movementDefinition: MovementDefinition,
     private val attackDefinitions: List<AttackDefinition<*>>,
 ) {
 
     public fun getMovementActions(unit: CombatUnit, gameState: GameState): PhaseActionReport {
-        val actions = movementDefinitions.flatMap { definition ->
-            definition.expand(unit, gameState).map { context ->
-                AvailableAction(
-                    id = ActionId(definition.actionName(context)),
-                    name = definition.actionName(context),
-                    successChance = 100,
-                    warnings = emptyList(),
-                    preview = definition.preview(context),
-                )
-            }
+        val actions = movementDefinition.expand(unit, gameState).map { context ->
+            AvailableAction(
+                id = ActionId(movementDefinition.actionName(context)),
+                name = movementDefinition.actionName(context),
+                successChance = 100,
+                warnings = emptyList(),
+                preview = movementDefinition.preview(context),
+            )
         }
 
         return PhaseActionReport(
