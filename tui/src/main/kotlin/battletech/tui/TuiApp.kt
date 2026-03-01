@@ -133,6 +133,7 @@ public class TuiApp {
                     val phase = appState.phaseState
                     appState = when (phase) {
                         is PhaseState.Idle -> handleIdle(action, appState, movementController, attackController)
+
                         is PhaseState.Movement -> handlePhaseOutcome(
                             movementController.handle(action, phase, appState.cursor, appState.gameState),
                             appState,

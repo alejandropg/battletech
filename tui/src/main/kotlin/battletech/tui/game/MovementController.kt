@@ -25,7 +25,7 @@ public class MovementController(
         val report = actionQueryService.getMovementActions(unit, gameState)
         val modes = report.actions
             .filterIsInstance<AvailableAction>()
-            .mapNotNull { (it.preview as? MovementPreview)?.reachability }
+            .map { (it.preview as MovementPreview).reachability }
 
         return PhaseState.Movement.Browsing(
             unitId = unit.id,

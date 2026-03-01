@@ -77,6 +77,7 @@ private fun handleComplete(outcome: PhaseOutcome.Complete, appState: AppState): 
             currentPhase = nextPhase(appState.currentPhase),
             phaseState = PhaseState.Idle(),
         )
+
         else -> appState.copy(
             gameState = outcome.gameState,
             currentPhase = nextPhase(appState.currentPhase),
@@ -85,7 +86,11 @@ private fun handleComplete(outcome: PhaseOutcome.Complete, appState: AppState): 
     }
 }
 
-public fun moveCursor(cursor: HexCoordinates, direction: HexDirection, map: battletech.tactical.model.GameMap): HexCoordinates {
+public fun moveCursor(
+    cursor: HexCoordinates,
+    direction: HexDirection,
+    map: battletech.tactical.model.GameMap
+): HexCoordinates {
     val neighbor = cursor.neighbor(direction)
     return if (neighbor in map.hexes) neighbor else cursor
 }
@@ -118,6 +123,7 @@ public fun autoAdvanceGlobalPhases(appState: AppState, random: Random = Random):
             )
             state to FlashMessage("Initiative: P1 rolled $p1Roll, P2 rolled $p2Roll — $loserName moves first")
         }
+
         TurnPhase.WEAPON_ATTACK -> {
             val turnState = appState.turnState
             if (turnState != null && turnState.attackOrder.isEmpty()) {
@@ -131,6 +137,7 @@ public fun autoAdvanceGlobalPhases(appState: AppState, random: Random = Random):
                 appState to null
             }
         }
+
         TurnPhase.PHYSICAL_ATTACK -> {
             val turnState = appState.turnState
             if (turnState != null && turnState.attackOrder.isEmpty()) {
@@ -144,6 +151,7 @@ public fun autoAdvanceGlobalPhases(appState: AppState, random: Random = Random):
                 appState to null
             }
         }
+
         TurnPhase.HEAT -> {
             val oldUnits = appState.gameState.units
             val newGameState = applyHeatDissipation(appState.gameState)
@@ -159,10 +167,12 @@ public fun autoAdvanceGlobalPhases(appState: AppState, random: Random = Random):
             )
             state to FlashMessage("Heat: $details")
         }
+
         TurnPhase.END -> {
             val state = appState.copy(currentPhase = nextPhase(TurnPhase.END))
             state to FlashMessage("Turn complete")
         }
+
         else -> appState to null
     }
 }
