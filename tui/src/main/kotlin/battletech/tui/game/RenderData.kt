@@ -20,28 +20,26 @@ public data class RenderData(
     }
 }
 
-public data class FacingSelection(
-    val hex: HexCoordinates,
-    val facings: Set<HexDirection>,
-)
-
 public fun extractRenderData(phaseState: PhaseState, gameState: GameState? = null): RenderData {
     return when (phaseState) {
         is PhaseState.Idle -> RenderData.EMPTY
+
         is PhaseState.Movement.Browsing -> RenderData(
             hexHighlights = reachabilityHighlights(phaseState.reachability)
-                + pathHighlights(phaseState.hoveredPath),
+                    + pathHighlights(phaseState.hoveredPath),
             reachableFacings = phaseState.reachability.facingsByPosition(),
         )
+
         is PhaseState.Movement.SelectingFacing -> RenderData(
             hexHighlights = reachabilityHighlights(phaseState.modes[phaseState.currentModeIndex])
-                + pathHighlights(phaseState.path),
+                    + pathHighlights(phaseState.path),
             facingSelection = FacingSelection(
                 phaseState.hex,
                 phaseState.options.map { it.facing }.toSet(),
             ),
             reachableFacings = phaseState.modes[phaseState.currentModeIndex].facingsByPosition(),
         )
+
         is PhaseState.Attack -> {
             val arcHighlights = phaseState.arc.associateWith { HexHighlight.ATTACK_RANGE }
             val unitPos = gameState?.unitById(phaseState.unitId)?.position
