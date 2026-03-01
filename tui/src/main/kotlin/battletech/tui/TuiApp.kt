@@ -5,7 +5,6 @@ import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
 import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
-import battletech.tactical.action.attack.definition.PunchActionDefinition
 import battletech.tactical.action.attack.resolveAttacks
 import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.model.GameMap
@@ -47,6 +46,7 @@ import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.input.MouseTracking
 import com.github.ajalt.mordant.input.enterRawMode
+import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
 import kotlin.random.Random
 
@@ -59,7 +59,7 @@ public class TuiApp {
         val renderer = ScreenRenderer(terminal)
         val actionQueryService = ActionQueryService(
             MoveActionDefinition(),
-            listOf(FireWeaponActionDefinition(), PunchActionDefinition()),
+            listOf(FireWeaponActionDefinition()),
         )
 
         val movementController = MovementController(actionQueryService)
@@ -77,6 +77,8 @@ public class TuiApp {
         try {
             terminal.enterRawMode(mouseTracking = MouseTracking.Normal).use { rawMode ->
                 while (true) {
+                    val currentSize = currentSize(terminal)
+
                     // Auto-advance global phases (Initiative, Heat, End, attack phase init)
                     val (advancedState, flash) = autoAdvanceGlobalPhases(appState)
                     if (flash != null) {
@@ -88,22 +90,23 @@ public class TuiApp {
                         val ts = advancedState.turnState
                         if (ts != null && !ts.allAttackImpulsesComplete &&
                             (advancedState.currentPhase == TurnPhase.WEAPON_ATTACK ||
-                                advancedState.currentPhase == TurnPhase.PHYSICAL_ATTACK)
+                                    advancedState.currentPhase == TurnPhase.PHYSICAL_ATTACK)
                         ) {
                             attackController.initializeImpulse(
                                 ts.activeAttackPlayer,
                                 ts.currentAttackImpulse.unitCount,
                             )
                             // Update prompt with declaration progress
-                            appState = appState.copy(phaseState = PhaseState.Idle(buildAttackPrompt(ts, attackController)))
+                            appState =
+                                appState.copy(phaseState = PhaseState.Idle(buildAttackPrompt(ts, attackController)))
                         }
                         val torso = attackController.declaredTorsoFacings(appState.gameState)
-                        renderFrame(terminal, renderer, appState, flash, torso)
+                        renderFrame(currentSize, renderer, appState, flash, torso)
                         continue
                     }
 
                     val torso = attackController.declaredTorsoFacings(appState.gameState)
-                    renderFrame(terminal, renderer, appState, persistentTorsoFacings = torso)
+                    renderFrame(currentSize, renderer, appState, persistentTorsoFacings = torso)
 
                     val event = rawMode.readEvent()
                     val action = when (event) {
@@ -134,6 +137,7 @@ public class TuiApp {
                             movementController.handle(action, phase, appState.cursor, appState.gameState),
                             appState,
                         )
+
                         is PhaseState.Attack -> {
                             val outcome = attackController.handle(action, phase, appState.cursor, appState.gameState)
                             val newState = handlePhaseOutcome(outcome, appState)
@@ -153,7 +157,7 @@ public class TuiApp {
 
                     if (pendingFlash != null) {
                         val torsoForFlash = attackController.declaredTorsoFacings(appState.gameState)
-                        renderFrame(terminal, renderer, appState, pendingFlash, torsoForFlash)
+                        renderFrame(currentSize, renderer, appState, pendingFlash, torsoForFlash)
                         pendingFlash = null
                         continue
                     }
@@ -246,10 +250,12 @@ public class TuiApp {
                     pendingFlash = FlashMessage("Not your unit")
                     return appState
                 }
+
                 UnitSelectionResult.ALREADY_MOVED, UnitSelectionResult.ALREADY_ACTED -> {
                     pendingFlash = FlashMessage("Already moved")
                     return appState
                 }
+
                 UnitSelectionResult.VALID -> {}
             }
         }
@@ -260,10 +266,12 @@ public class TuiApp {
                     pendingFlash = FlashMessage("Not your unit")
                     return appState
                 }
+
                 UnitSelectionResult.ALREADY_ACTED -> {
                     pendingFlash = FlashMessage("Already committed attacks")
                     return appState
                 }
+
                 UnitSelectionResult.ALREADY_MOVED, UnitSelectionResult.VALID -> {}
             }
         }
@@ -308,12 +316,14 @@ public class TuiApp {
             val units = when {
                 turnState != null && appState.currentPhase == TurnPhase.MOVEMENT ->
                     selectableUnits(appState.gameState, turnState)
+
                 turnState != null && isAttackPhase(appState.currentPhase) -> {
                     // Tab cycles undeclared units first; all selectable units (not yet committed)
                     val all = selectableAttackUnits(appState.gameState, turnState)
                     val undeclared = all.filter { !attackController.isDeclared(it.id) }
                     undeclared.ifEmpty { all }
                 }
+
                 else -> appState.gameState.units
             }
             if (units.isNotEmpty()) {
@@ -328,26 +338,30 @@ public class TuiApp {
         else -> appState
     }
 
+    private fun currentSize(terminal: Terminal): Size {
+        val size = terminal.updateSize()
+        val width = if (size.width > 0) size.width else 80
+        val height = if (size.height > 0) size.height else 24
+        return Size(width, height)
+    }
+
     private fun renderFrame(
-        terminal: Terminal,
+        size: Size,
         renderer: ScreenRenderer,
         appState: AppState,
         flash: FlashMessage? = null,
         persistentTorsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
     ) {
-        val size = terminal.updateSize()
-        val width = if (size.width > 0) size.width else 80
-        val height = if (size.height > 0) size.height else 24
         val sidebarWidth = 28
         val statusBarHeight = 7
         val attackPhase = appState.phaseState as? PhaseState.Attack
 
         val hasTargets = attackPhase?.targets?.isNotEmpty() == true
         val targetsWidth = if (hasTargets) 28 else 0
-        val boardWidth = width - sidebarWidth - targetsWidth
-        val boardHeight = height - statusBarHeight
+        val boardWidth = size.width - sidebarWidth - targetsWidth
+        val boardHeight = size.height - statusBarHeight
 
-        val buffer = ScreenBuffer(width, height)
+        val buffer = ScreenBuffer(size.width, size.height)
         val viewport = Viewport(0, 0, boardWidth - 4, boardHeight - 4)
 
         val renderData = extractRenderData(appState.phaseState, appState.gameState).let {
@@ -401,7 +415,7 @@ public class TuiApp {
         val activePlayerInfo = if (appState.turnState != null) {
             val isMovement = appState.currentPhase == TurnPhase.MOVEMENT && !appState.turnState.allImpulsesComplete
             val isAttack = isAttackPhase(appState.currentPhase) &&
-                appState.turnState.attackOrder.isNotEmpty() && !appState.turnState.allAttackImpulsesComplete
+                    appState.turnState.attackOrder.isNotEmpty() && !appState.turnState.allAttackImpulsesComplete
             if (isMovement) {
                 if (appState.turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
             } else if (isAttack) {
@@ -409,7 +423,7 @@ public class TuiApp {
             } else null
         } else null
         val statusBarView = StatusBarView(appState.currentPhase, prompt, activePlayerInfo)
-        statusBarView.render(buffer, 0, boardHeight, width, statusBarHeight)
+        statusBarView.render(buffer, 0, boardHeight, size.width, statusBarHeight)
 
         renderer.render(buffer)
     }
@@ -431,10 +445,28 @@ public class TuiApp {
         }
 
         val units = listOf(
-            MechModels["AS7-D"].createUnit(id = UnitId("atlas"), owner = PlayerId.PLAYER_1, position = HexCoordinates(1, 1), facing = HexDirection.SE),
-            MechModels["HBK-4G"].createUnit(id = UnitId("hunchback"), owner = PlayerId.PLAYER_1, position = HexCoordinates(2, 3)),
-            MechModels["WVR-6R"].createUnit(id = UnitId("wolverine-1"), owner = PlayerId.PLAYER_2, pilotingSkill = 4, position = HexCoordinates(7, 3)),
-            MechModels["WVR-6R"].createUnit(id = UnitId("wolverine-2"), owner = PlayerId.PLAYER_2, position = HexCoordinates(8, 5)),
+            MechModels["AS7-D"].createUnit(
+                id = UnitId("atlas"),
+                owner = PlayerId.PLAYER_1,
+                position = HexCoordinates(1, 1),
+                facing = HexDirection.SE
+            ),
+            MechModels["HBK-4G"].createUnit(
+                id = UnitId("hunchback"),
+                owner = PlayerId.PLAYER_1,
+                position = HexCoordinates(2, 3)
+            ),
+            MechModels["WVR-6R"].createUnit(
+                id = UnitId("wolverine-1"),
+                owner = PlayerId.PLAYER_2,
+                pilotingSkill = 4,
+                position = HexCoordinates(7, 3)
+            ),
+            MechModels["WVR-6R"].createUnit(
+                id = UnitId("wolverine-2"),
+                owner = PlayerId.PLAYER_2,
+                position = HexCoordinates(8, 5)
+            ),
         )
 
         return GameState(units, GameMap(hexes))
