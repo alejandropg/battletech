@@ -1,6 +1,5 @@
 package battletech.tui.game
 
-import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.model.GameState
@@ -9,8 +8,7 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.Weapon
 import battletech.tui.aGameMap
 import battletech.tui.aUnit
-import battletech.tui.input.InputAction
-import io.mockk.mockk
+import battletech.tui.input.AttackAction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -19,10 +17,7 @@ import org.junit.jupiter.api.Test
 
 internal class AttackControllerTest {
 
-    private fun createController(): AttackController {
-        val actionQueryService = mockk<ActionQueryService>()
-        return AttackController()
-    }
+    private fun createController(): AttackController = AttackController()
 
     private fun mediumLaser(): Weapon = Weapon(
         name = "Medium Laser", damage = 5, heat = 3,
@@ -126,9 +121,9 @@ internal class AttackControllerTest {
         val state = enterDeclaring(controller, unit, gameState)
 
         // Toggle a weapon on, then cancel
-        val toggled = controller.handle(InputAction.ToggleWeapon, state, HexCoordinates(2, 2), gameState)
+        val toggled = controller.handle(AttackAction.ToggleWeapon, state, HexCoordinates(2, 2), gameState)
         val toggledState = (toggled as PhaseOutcome.Continue).phaseState as PhaseState.Attack
-        val result = controller.handle(InputAction.Cancel, toggledState, HexCoordinates(2, 2), gameState)
+        val result = controller.handle(AttackAction.Cancel, toggledState, HexCoordinates(2, 2), gameState)
 
         assertTrue(result is PhaseOutcome.Cancelled)
         // After cancel, unit should not be declared
@@ -142,7 +137,7 @@ internal class AttackControllerTest {
         val gameState = GameState(listOf(unit), map5x5)
         val state = enterDeclaring(controller, unit, gameState)
 
-        val result = controller.handle(InputAction.Confirm, state, HexCoordinates(2, 2), gameState)
+        val result = controller.handle(AttackAction.Confirm, state, HexCoordinates(2, 2), gameState)
 
         assertTrue(result is PhaseOutcome.Cancelled)
         assertTrue(controller.canCommit())
@@ -155,7 +150,7 @@ internal class AttackControllerTest {
         val gameState = GameState(listOf(unit), map5x5)
         val state = enterDeclaring(controller, unit, gameState)
 
-        val result = controller.handle(InputAction.MoveCursor(HexDirection.NE), state, HexCoordinates(2, 2), gameState)
+        val result = controller.handle(AttackAction.TwistTorso(clockwise = true), state, HexCoordinates(2, 2), gameState)
 
         val newState = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertEquals(HexDirection.NE, newState.torsoFacing)
@@ -168,7 +163,7 @@ internal class AttackControllerTest {
         val gameState = GameState(listOf(unit), map5x5)
         val state = enterDeclaring(controller, unit, gameState)
 
-        val result = controller.handle(InputAction.MoveCursor(HexDirection.NW), state, HexCoordinates(2, 2), gameState)
+        val result = controller.handle(AttackAction.TwistTorso(clockwise = false), state, HexCoordinates(2, 2), gameState)
 
         val newState = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertEquals(HexDirection.NW, newState.torsoFacing)
@@ -181,17 +176,17 @@ internal class AttackControllerTest {
         val gameState = GameState(listOf(unit), map5x5)
         val state = enterDeclaring(controller, unit, gameState)
 
-        val result1 = controller.handle(InputAction.MoveCursor(HexDirection.NE), state, HexCoordinates(2, 2), gameState)
+        val result1 = controller.handle(AttackAction.TwistTorso(clockwise = true), state, HexCoordinates(2, 2), gameState)
         val twistedState = (result1 as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertEquals(HexDirection.NE, twistedState.torsoFacing)
 
-        val result2 = controller.handle(InputAction.MoveCursor(HexDirection.NE), twistedState, HexCoordinates(2, 2), gameState)
+        val result2 = controller.handle(AttackAction.TwistTorso(clockwise = true), twistedState, HexCoordinates(2, 2), gameState)
         val stillSame = (result2 as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertEquals(HexDirection.NE, stillSame.torsoFacing)
     }
 
     @Test
-    fun `weapon toggle on and off works with Space`() {
+    fun `weapon toggle on and off works with ToggleWeapon`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
@@ -199,12 +194,12 @@ internal class AttackControllerTest {
         val state = enterDeclaring(controller, unit, gameState)
 
         // Toggle weapon on
-        val toggleOn = controller.handle(InputAction.ToggleWeapon, state, enemy.position, gameState)
+        val toggleOn = controller.handle(AttackAction.ToggleWeapon, state, enemy.position, gameState)
         val onState = (toggleOn as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertTrue(0 in (onState.weaponAssignments[enemy.id] ?: emptySet()))
 
         // Toggle weapon off
-        val toggleOff = controller.handle(InputAction.ToggleWeapon, onState, enemy.position, gameState)
+        val toggleOff = controller.handle(AttackAction.ToggleWeapon, onState, enemy.position, gameState)
         val offState = (toggleOff as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertFalse(0 in (offState.weaponAssignments[enemy.id] ?: emptySet()))
     }
@@ -218,11 +213,11 @@ internal class AttackControllerTest {
         val state = enterDeclaring(controller, unit, gameState)
 
         // Toggle weapon on
-        val toggleOn = controller.handle(InputAction.ToggleWeapon, state, enemy.position, gameState)
+        val toggleOn = controller.handle(AttackAction.ToggleWeapon, state, enemy.position, gameState)
         val onState = (toggleOn as PhaseOutcome.Continue).phaseState as PhaseState.Attack
 
         // Confirm
-        val result = controller.handle(InputAction.Confirm, onState, enemy.position, gameState)
+        val result = controller.handle(AttackAction.Confirm, onState, enemy.position, gameState)
         assertTrue(result is PhaseOutcome.Cancelled)
         assertTrue(controller.canCommit())
 
@@ -238,7 +233,7 @@ internal class AttackControllerTest {
     }
 
     @Test
-    fun `tab jumps to first weapon of next target`() {
+    fun `NextTarget jumps to first weapon of next target`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val enemy1 = aUnit(id = "enemy1", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
@@ -247,7 +242,7 @@ internal class AttackControllerTest {
         val state = enterDeclaring(controller, unit, gameState)
 
         val initialIdx = state.cursorTargetIndex
-        val tabResult = controller.handle(InputAction.CycleUnit, state, HexCoordinates(0, 0), gameState)
+        val tabResult = controller.handle(AttackAction.NextTarget, state, HexCoordinates(0, 0), gameState)
         val tabbed = (tabResult as PhaseOutcome.Continue).phaseState as PhaseState.Attack
 
         // Index should have advanced
@@ -255,7 +250,7 @@ internal class AttackControllerTest {
     }
 
     @Test
-    fun `tab wraps around targets`() {
+    fun `NextTarget wraps around targets`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
@@ -263,13 +258,13 @@ internal class AttackControllerTest {
         val state = enterDeclaring(controller, unit, gameState)
 
         // Tab on a single target should wrap back to the same target
-        val result = controller.handle(InputAction.CycleUnit, state, HexCoordinates(0, 0), gameState)
+        val result = controller.handle(AttackAction.NextTarget, state, HexCoordinates(0, 0), gameState)
         val tabbed = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertEquals(0, tabbed.cursorTargetIndex)
     }
 
     @Test
-    fun `arrow down navigates to next weapon within target`() {
+    fun `NavigateWeapons down moves to next weapon within target`() {
         val controller = createController()
         val unit = aUnit(
             weapons = listOf(mediumLaser(), mediumLaser()),
@@ -280,7 +275,7 @@ internal class AttackControllerTest {
         val gameState = GameState(listOf(unit, enemy), map5x5)
         val state = enterDeclaring(controller, unit, gameState)
 
-        val result = controller.handle(InputAction.MoveCursor(HexDirection.S), state, HexCoordinates(0, 0), gameState)
+        val result = controller.handle(AttackAction.NavigateWeapons(delta = 1), state, HexCoordinates(0, 0), gameState)
         val moved = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack
 
         // Should have moved to weapon index 1 (or wrapped if only 1 available)
@@ -288,7 +283,7 @@ internal class AttackControllerTest {
     }
 
     @Test
-    fun `arrow down from last weapon wraps to first weapon`() {
+    fun `NavigateWeapons from last weapon wraps to first weapon`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
@@ -298,7 +293,7 @@ internal class AttackControllerTest {
         assertEquals(0, state.cursorTargetIndex)
         assertEquals(0, state.cursorWeaponIndex)
 
-        val result = controller.handle(InputAction.MoveCursor(HexDirection.S), state, HexCoordinates(0, 0), gameState)
+        val result = controller.handle(AttackAction.NavigateWeapons(delta = 1), state, HexCoordinates(0, 0), gameState)
         val moved = (result as PhaseOutcome.Continue).phaseState as PhaseState.Attack
 
         // Only 1 weapon total, wraps back to same position
@@ -321,7 +316,7 @@ internal class AttackControllerTest {
 
         // Mark as no-attack by confirming with no assignments
         val state = enterDeclaring(controller, unit, gameState)
-        controller.handle(InputAction.Confirm, state, HexCoordinates(2, 2), gameState)
+        controller.handle(AttackAction.Confirm, state, HexCoordinates(2, 2), gameState)
         assertTrue(controller.canCommit())
 
         // Initialize a new impulse — canCommit should be false again
@@ -338,12 +333,12 @@ internal class AttackControllerTest {
         val state = enterDeclaring(controller, unit, gameState)
 
         // Toggle weapon on
-        val toggled = controller.handle(InputAction.ToggleWeapon, state, enemy.position, gameState)
+        val toggled = controller.handle(AttackAction.ToggleWeapon, state, enemy.position, gameState)
         val withWeapon = (toggled as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertTrue(withWeapon.weaponAssignments.values.any { it.isNotEmpty() })
 
         // Twist torso away — if enemy leaves the arc, assignments should be cleared
-        val twisted = controller.handle(InputAction.MoveCursor(HexDirection.NE), withWeapon, HexCoordinates(2, 2), gameState)
+        val twisted = controller.handle(AttackAction.TwistTorso(clockwise = true), withWeapon, HexCoordinates(2, 2), gameState)
         val twistedState = (twisted as PhaseOutcome.Continue).phaseState as PhaseState.Attack
 
         // If enemy is no longer in arc, assignments should be empty
@@ -353,7 +348,7 @@ internal class AttackControllerTest {
     }
 
     @Test
-    fun `left and right arrows twist torso while up and down navigate weapons`() {
+    fun `TwistTorso and NavigateWeapons work independently`() {
         val controller = createController()
         val unit = aUnit(
             weapons = listOf(mediumLaser(), mediumLaser()),
@@ -364,13 +359,13 @@ internal class AttackControllerTest {
         val gameState = GameState(listOf(unit, enemy), map5x5)
         val state = enterDeclaring(controller, unit, gameState)
 
-        // Right arrow (SE) twists torso clockwise
-        val twisted = controller.handle(InputAction.MoveCursor(HexDirection.SE), state, HexCoordinates(2, 2), gameState)
+        // TwistTorso clockwise
+        val twisted = controller.handle(AttackAction.TwistTorso(clockwise = true), state, HexCoordinates(2, 2), gameState)
         val twistedState = (twisted as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertEquals(HexDirection.NE, twistedState.torsoFacing)
 
-        // Down arrow (S) navigates weapons
-        val navigated = controller.handle(InputAction.MoveCursor(HexDirection.S), state, HexCoordinates(0, 0), gameState)
+        // NavigateWeapons down
+        val navigated = controller.handle(AttackAction.NavigateWeapons(delta = 1), state, HexCoordinates(0, 0), gameState)
         val navigatedState = (navigated as PhaseOutcome.Continue).phaseState as PhaseState.Attack
         assertEquals(state.torsoFacing, navigatedState.torsoFacing) // torso unchanged
         assertEquals(1, navigatedState.cursorWeaponIndex) // cursor moved
@@ -389,9 +384,9 @@ internal class AttackControllerTest {
 
         val state = enterDeclaring(controller, unit, gameState)
         // Twist torso clockwise (N -> NE)
-        val twisted = controller.handle(InputAction.MoveCursor(HexDirection.NE), state, unit.position, gameState)
+        val twisted = controller.handle(AttackAction.TwistTorso(clockwise = true), state, unit.position, gameState)
         val twistedState = (twisted as PhaseOutcome.Continue).phaseState as PhaseState.Attack
-        controller.handle(InputAction.Confirm, twistedState, unit.position, gameState)
+        controller.handle(AttackAction.Confirm, twistedState, unit.position, gameState)
 
         val result = controller.commitImpulse()
 

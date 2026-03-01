@@ -11,7 +11,8 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
-import battletech.tui.input.InputAction
+import battletech.tui.input.BrowsingAction
+import battletech.tui.input.FacingAction
 
 public class MovementController(
     private val actionQueryService: ActionQueryService,
@@ -38,39 +39,28 @@ public class MovementController(
     }
 
     public fun handle(
-        action: InputAction,
-        state: PhaseState.Movement,
-        cursor: HexCoordinates,
-        gameState: GameState,
-    ): PhaseOutcome = when (state) {
-        is PhaseState.Movement.Browsing -> handleBrowsing(action, state, cursor, gameState)
-        is PhaseState.Movement.SelectingFacing -> handleFacing(action, state, gameState)
-    }
-
-    private fun handleBrowsing(
-        action: InputAction,
+        action: BrowsingAction,
         state: PhaseState.Movement.Browsing,
         cursor: HexCoordinates,
         gameState: GameState,
     ): PhaseOutcome = when (action) {
-        is InputAction.Cancel -> PhaseOutcome.Cancelled
-        is InputAction.Confirm -> handleBrowsingConfirm(state, gameState)
-        is InputAction.SelectAction -> handleBrowsingSelectAction(action.index, state, gameState)
-        is InputAction.MoveCursor, is InputAction.ClickHex -> {
+        is BrowsingAction.Cancel -> PhaseOutcome.Cancelled
+        is BrowsingAction.ConfirmPath -> handleBrowsingConfirm(state, gameState)
+        is BrowsingAction.SelectFacing -> handleBrowsingSelectAction(action.index, state, gameState)
+        is BrowsingAction.MoveCursor, is BrowsingAction.ClickHex -> {
             val updated = updatePathForCursor(cursor, state)
             PhaseOutcome.Continue(updated)
         }
-
-        is InputAction.CycleUnit -> PhaseOutcome.Continue(cycleMode(state))
-        else -> PhaseOutcome.Continue(state)
+        is BrowsingAction.CycleMode -> PhaseOutcome.Continue(cycleMode(state))
     }
 
-    private fun handleFacing(
-        action: InputAction,
+    public fun handle(
+        action: FacingAction,
         state: PhaseState.Movement.SelectingFacing,
+        cursor: HexCoordinates,
         gameState: GameState,
     ): PhaseOutcome = when (action) {
-        is InputAction.Cancel -> {
+        is FacingAction.Cancel -> {
             PhaseOutcome.Continue(
                 PhaseState.Movement.Browsing(
                     unitId = state.unitId,
@@ -82,7 +72,7 @@ public class MovementController(
                 ),
             )
         }
-        is InputAction.SelectAction -> {
+        is FacingAction.SelectFacing -> {
             val directionIndex = action.index - 1
             if (directionIndex !in FACING_ORDER.indices) return PhaseOutcome.Continue(state)
             val direction = FACING_ORDER[directionIndex]
@@ -90,8 +80,6 @@ public class MovementController(
                 ?: return PhaseOutcome.Continue(state)
             PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination))
         }
-        is InputAction.Confirm -> PhaseOutcome.Continue(state)
-        else -> PhaseOutcome.Continue(state)
     }
 
     private fun handleBrowsingConfirm(

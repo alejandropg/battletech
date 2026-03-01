@@ -11,50 +11,48 @@ internal class MouseInputTest {
     @Test
     fun `left click at hex origin maps to hex 0,0`() {
         val event = MouseEvent(x = 5, y = 3, left = true)
-        val action = InputMapper.mapMouseEvent(event, boardX = 2, boardY = 2)
 
-        assertEquals(InputAction.ClickHex(HexCoordinates(0, 0)), action)
+        val result = InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
+
+        assertEquals(HexCoordinates(0, 0), result)
     }
 
     @Test
     fun `left click at hex 1,0 position maps correctly`() {
-        // Hex (1,0): charX=8, charY=2 (odd col offset) -> event coords = charX+2, charY+2
         val event = MouseEvent(x = 13, y = 5, left = true)
-        val action = InputMapper.mapMouseEvent(event, boardX = 2, boardY = 2)
 
-        assertEquals(InputAction.ClickHex(HexCoordinates(1, 0)), action)
+        val result = InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
+
+        assertEquals(HexCoordinates(1, 0), result)
     }
 
     @Test
     fun `left click at hex 2,1 position maps correctly`() {
-        // Hex (2,1): charX=16, charY=4, content around (19, 5) -> event coords = 19+2, 5+2
         val event = MouseEvent(x = 21, y = 7, left = true)
-        val action = InputMapper.mapMouseEvent(event, boardX = 2, boardY = 2)
 
-        assertEquals(InputAction.ClickHex(HexCoordinates(2, 1)), action)
+        val result = InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
+
+        assertEquals(HexCoordinates(2, 1), result)
     }
 
     @Test
     fun `release event returns null`() {
         val event = MouseEvent(x = 5, y = 3)
-        val action = InputMapper.mapMouseEvent(event, boardX = 2, boardY = 2)
 
-        assertNull(action)
+        assertNull(InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2))
     }
 
     @Test
     fun `right click returns null`() {
         val event = MouseEvent(x = 5, y = 3, right = true)
-        val action = InputMapper.mapMouseEvent(event, boardX = 2, boardY = 2)
 
-        assertNull(action)
+        assertNull(InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2))
     }
 
     @Test
     fun `click in board margin returns null`() {
         val event = MouseEvent(x = 1, y = 1, left = true)
-        val action = InputMapper.mapMouseEvent(event, boardX = 2, boardY = 2)
 
-        assertNull(action)
+        assertNull(InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2))
     }
 }

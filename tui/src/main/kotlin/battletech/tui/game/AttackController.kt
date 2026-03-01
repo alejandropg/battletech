@@ -9,7 +9,7 @@ import battletech.tactical.model.FiringArc
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tui.input.InputAction
+import battletech.tui.input.AttackAction
 import kotlin.math.ceil
 
 public data class CommitResult(
@@ -82,18 +82,18 @@ public class AttackController {
     }
 
     public fun handle(
-        action: InputAction,
+        action: AttackAction,
         state: PhaseState.Attack,
         cursor: HexCoordinates,
         gameState: GameState,
     ): PhaseOutcome = when (action) {
-        is InputAction.Cancel -> {
+        is AttackAction.Cancel -> {
             // Discard assignments — remove any pending declaration for this unit
             currentImpulse?.declarations?.remove(state.unitId)
             PhaseOutcome.Cancelled
         }
 
-        is InputAction.Confirm -> {
+        is AttackAction.Confirm -> {
             // Save assignments and return to Idle
             val hasAssignments = state.weaponAssignments.values.any { it.isNotEmpty() }
             val status = if (hasAssignments) DeclarationStatus.WEAPONS_ASSIGNED else DeclarationStatus.NO_ATTACK
@@ -110,32 +110,23 @@ public class AttackController {
             PhaseOutcome.Cancelled
         }
 
-        is InputAction.ToggleWeapon -> toggleWeapon(state)
+        is AttackAction.ToggleWeapon -> toggleWeapon(state)
 
-        is InputAction.MoveCursor -> {
-            val dir = action.direction
+        is AttackAction.TwistTorso -> {
             val attacker = gameState.unitById(state.unitId) ?: return PhaseOutcome.Continue(state)
-            when {
-                // Left/Right: twist torso
-                dir == HexDirection.NE || dir == HexDirection.SE ->
-                    PhaseOutcome.Continue(twistTorso(state, attacker, clockwise = true, gameState))
-                dir == HexDirection.NW || dir == HexDirection.SW ->
-                    PhaseOutcome.Continue(twistTorso(state, attacker, clockwise = false, gameState))
-                // Up/Down: navigate weapons
-                dir == HexDirection.N || dir == HexDirection.S ->
-                    PhaseOutcome.Continue(navigateWeapons(state, if (dir == HexDirection.S) 1 else -1))
-                else -> PhaseOutcome.Continue(state)
-            }
+            PhaseOutcome.Continue(twistTorso(state, attacker, action.clockwise, gameState))
         }
 
-        is InputAction.CycleUnit -> {
+        is AttackAction.NavigateWeapons -> PhaseOutcome.Continue(navigateWeapons(state, action.delta))
+
+        is AttackAction.NextTarget -> {
             // Tab: jump to first weapon of next target (round-robin, no "No Attack" sentinel)
             if (state.targets.isEmpty()) return PhaseOutcome.Continue(state)
             val nextTargetIdx = (state.cursorTargetIndex + 1) % state.targets.size
             PhaseOutcome.Continue(state.copy(cursorTargetIndex = nextTargetIdx, cursorWeaponIndex = 0))
         }
 
-        is InputAction.ClickHex -> {
+        is AttackAction.ClickTarget -> {
             val targetUnit = gameState.unitAt(cursor)
             if (targetUnit != null && targetUnit.id in state.validTargetIds) {
                 val idx = state.targets.indexOfFirst { it.unitId == targetUnit.id }
@@ -148,8 +139,6 @@ public class AttackController {
                 PhaseOutcome.Continue(state)
             }
         }
-
-        else -> PhaseOutcome.Continue(state)
     }
 
     private fun toggleWeapon(state: PhaseState.Attack): PhaseOutcome {

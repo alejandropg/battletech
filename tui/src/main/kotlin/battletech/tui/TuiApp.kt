@@ -34,7 +34,9 @@ import battletech.tui.game.selectableAttackUnits
 import battletech.tui.game.selectableUnits
 import battletech.tui.game.validateAttackUnitSelection
 import battletech.tui.game.validateUnitSelection
-import battletech.tui.input.InputAction
+import battletech.tui.input.AttackAction
+import battletech.tui.input.BrowsingAction
+import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
@@ -105,38 +107,56 @@ public class TuiApp {
                     renderFrame(currentSize, renderer, appState)
 
                     val event = rawMode.readEvent()
-                    val action = when (event) {
-                        is KeyboardEvent -> InputMapper.mapKeyboardEvent(event)
-                        is MouseEvent -> InputMapper.mapMouseEvent(event, boardX = 2, boardY = 2)
-                    } ?: continue
-
-                    if (action is InputAction.Quit) break
-
-                    // Cursor movement — controlled per-state
-                    val shouldMoveCursorOnArrow = when (appState.phaseState) {
-                        is PhaseState.Attack -> false  // arrows twist torso and navigate weapons
-                        else -> true
-                    }
-                    if (action is InputAction.MoveCursor && shouldMoveCursorOnArrow) {
-                        val newCursor = moveCursor(appState.cursor, action.direction, appState.gameState.map)
-                        appState = appState.copy(cursor = newCursor)
-                    }
-                    if (action is InputAction.ClickHex) {
-                        appState = appState.copy(cursor = action.coords)
-                    }
+                    if (event is KeyboardEvent && InputMapper.isQuit(event)) break
 
                     // Phase-specific dispatch
                     val phase = appState.phaseState
                     appState = when (phase) {
-                        is PhaseState.Idle -> handleIdle(action, appState, movementController, attackController)
+                        is PhaseState.Idle -> {
+                            val idleAction = when (event) {
+                                is KeyboardEvent -> InputMapper.mapIdleEvent(event)
+                                is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
+                                    ?.let { IdleAction.ClickHex(it) }
+                            } ?: continue
+                            handleIdle(idleAction, appState, movementController, attackController)
+                        }
 
-                        is PhaseState.Movement -> handlePhaseOutcome(
-                            movementController.handle(action, phase, appState.cursor, appState.gameState),
-                            appState,
-                        )
+                        is PhaseState.Movement.Browsing -> {
+                            val browsingAction = when (event) {
+                                is KeyboardEvent -> InputMapper.mapBrowsingEvent(event)
+                                is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
+                                    ?.let { BrowsingAction.ClickHex(it) }
+                            } ?: continue
+                            val newCursor = when (browsingAction) {
+                                is BrowsingAction.MoveCursor -> moveCursor(appState.cursor, browsingAction.direction, appState.gameState.map)
+                                is BrowsingAction.ClickHex -> browsingAction.coords
+                                else -> appState.cursor
+                            }
+                            val updated = appState.copy(cursor = newCursor)
+                            handlePhaseOutcome(
+                                movementController.handle(browsingAction, phase, newCursor, updated.gameState),
+                                updated,
+                            )
+                        }
+
+                        is PhaseState.Movement.SelectingFacing -> {
+                            val facingAction = when (event) {
+                                is KeyboardEvent -> InputMapper.mapFacingEvent(event)
+                                is MouseEvent -> null
+                            } ?: continue
+                            handlePhaseOutcome(
+                                movementController.handle(facingAction, phase, appState.cursor, appState.gameState),
+                                appState,
+                            )
+                        }
 
                         is PhaseState.Attack -> {
-                            val outcome = attackController.handle(action, phase, appState.cursor, appState.gameState)
+                            val attackAction = when (event) {
+                                is KeyboardEvent -> InputMapper.mapAttackEvent(event)
+                                is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
+                                    ?.let { AttackAction.ClickTarget(it) }
+                            } ?: continue
+                            val outcome = attackController.handle(attackAction, phase, appState.cursor, appState.gameState)
                             val newState = handlePhaseOutcome(outcome, appState)
                             // After returning to Idle from attack, refresh prompt with declaration progress
                             if (newState.phaseState is PhaseState.Idle && isAttackPhase(newState.currentPhase)) {
@@ -285,16 +305,24 @@ public class TuiApp {
     }
 
     private fun handleIdle(
-        action: InputAction,
+        action: IdleAction,
         appState: AppState,
         movementController: MovementController,
         attackController: AttackController,
     ): AppState = when (action) {
-        is InputAction.Confirm -> trySelectUnit(appState, movementController, attackController)
+        is IdleAction.MoveCursor -> {
+            val newCursor = moveCursor(appState.cursor, action.direction, appState.gameState.map)
+            appState.copy(cursor = newCursor)
+        }
 
-        is InputAction.ClickHex -> trySelectUnit(appState, movementController, attackController)
+        is IdleAction.ClickHex -> {
+            val updated = appState.copy(cursor = action.coords)
+            trySelectUnit(updated, movementController, attackController)
+        }
 
-        is InputAction.CommitDeclarations -> {
+        is IdleAction.SelectUnit -> trySelectUnit(appState, movementController, attackController)
+
+        is IdleAction.CommitDeclarations -> {
             val turnState = appState.turnState
             if (turnState != null && isAttackPhase(appState.currentPhase)) {
                 if (attackController.canCommit()) {
@@ -310,14 +338,13 @@ public class TuiApp {
             }
         }
 
-        is InputAction.CycleUnit -> {
+        is IdleAction.CycleUnit -> {
             val turnState = appState.turnState
             val units = when {
                 turnState != null && appState.currentPhase == TurnPhase.MOVEMENT ->
                     selectableUnits(appState.gameState, turnState)
 
                 turnState != null && isAttackPhase(appState.currentPhase) -> {
-                    // Tab cycles undeclared units first; all selectable units (not yet committed)
                     val all = selectableAttackUnits(appState.gameState, turnState)
                     val undeclared = all.filter { !attackController.isDeclared(it.id) }
                     undeclared.ifEmpty { all }
@@ -333,8 +360,6 @@ public class TuiApp {
                 appState
             }
         }
-
-        else -> appState
     }
 
     private fun currentSize(terminal: Terminal): Size {

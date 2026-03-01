@@ -1,126 +1,262 @@
 package battletech.tui.input
 
+import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 internal class InputMapperTest {
 
-    @Test
-    fun `arrow up maps to move cursor north`() {
-        val event = KeyboardEvent("ArrowUp", ctrl = false, alt = false)
+    private fun key(key: String, ctrl: Boolean = false): KeyboardEvent =
+        KeyboardEvent(key, ctrl = ctrl, alt = false)
 
-        val action = InputMapper.mapKeyboardEvent(event)
+    @Nested
+    inner class IsQuitTest {
+        @Test
+        fun `q is quit`() {
+            assertTrue(InputMapper.isQuit(key("q")))
+        }
 
-        assertEquals(InputAction.MoveCursor(HexDirection.N), action)
+        @Test
+        fun `ctrl+c is quit`() {
+            assertTrue(InputMapper.isQuit(key("c", ctrl = true)))
+        }
+
+        @Test
+        fun `other keys are not quit`() {
+            assertFalse(InputMapper.isQuit(key("ArrowUp")))
+            assertFalse(InputMapper.isQuit(key("Enter")))
+        }
     }
 
-    @Test
-    fun `arrow down maps to move cursor south`() {
-        val event = KeyboardEvent("ArrowDown", ctrl = false, alt = false)
+    @Nested
+    inner class MapIdleEventTest {
+        @Test
+        fun `arrow up maps to MoveCursor north`() {
+            assertEquals(IdleAction.MoveCursor(HexDirection.N), InputMapper.mapIdleEvent(key("ArrowUp")))
+        }
 
-        val action = InputMapper.mapKeyboardEvent(event)
+        @Test
+        fun `arrow down maps to MoveCursor south`() {
+            assertEquals(IdleAction.MoveCursor(HexDirection.S), InputMapper.mapIdleEvent(key("ArrowDown")))
+        }
 
-        assertEquals(InputAction.MoveCursor(HexDirection.S), action)
+        @Test
+        fun `arrow right maps to MoveCursor southeast`() {
+            assertEquals(IdleAction.MoveCursor(HexDirection.SE), InputMapper.mapIdleEvent(key("ArrowRight")))
+        }
+
+        @Test
+        fun `arrow left maps to MoveCursor northwest`() {
+            assertEquals(IdleAction.MoveCursor(HexDirection.NW), InputMapper.mapIdleEvent(key("ArrowLeft")))
+        }
+
+        @Test
+        fun `enter maps to SelectUnit`() {
+            assertEquals(IdleAction.SelectUnit, InputMapper.mapIdleEvent(key("Enter")))
+        }
+
+        @Test
+        fun `tab maps to CycleUnit`() {
+            assertEquals(IdleAction.CycleUnit, InputMapper.mapIdleEvent(key("Tab")))
+        }
+
+        @Test
+        fun `c maps to CommitDeclarations`() {
+            assertEquals(IdleAction.CommitDeclarations, InputMapper.mapIdleEvent(key("c")))
+        }
+
+        @Test
+        fun `unknown key returns null`() {
+            assertNull(InputMapper.mapIdleEvent(key("F12")))
+        }
     }
 
-    @Test
-    fun `arrow right maps to move cursor southeast`() {
-        val event = KeyboardEvent("ArrowRight", ctrl = false, alt = false)
+    @Nested
+    inner class MapBrowsingEventTest {
+        @Test
+        fun `arrow up maps to MoveCursor north`() {
+            assertEquals(BrowsingAction.MoveCursor(HexDirection.N), InputMapper.mapBrowsingEvent(key("ArrowUp")))
+        }
 
-        val action = InputMapper.mapKeyboardEvent(event)
+        @Test
+        fun `arrow down maps to MoveCursor south`() {
+            assertEquals(BrowsingAction.MoveCursor(HexDirection.S), InputMapper.mapBrowsingEvent(key("ArrowDown")))
+        }
 
-        assertEquals(InputAction.MoveCursor(HexDirection.SE), action)
+        @Test
+        fun `arrow right maps to MoveCursor southeast`() {
+            assertEquals(BrowsingAction.MoveCursor(HexDirection.SE), InputMapper.mapBrowsingEvent(key("ArrowRight")))
+        }
+
+        @Test
+        fun `arrow left maps to MoveCursor northwest`() {
+            assertEquals(BrowsingAction.MoveCursor(HexDirection.NW), InputMapper.mapBrowsingEvent(key("ArrowLeft")))
+        }
+
+        @Test
+        fun `enter maps to ConfirmPath`() {
+            assertEquals(BrowsingAction.ConfirmPath, InputMapper.mapBrowsingEvent(key("Enter")))
+        }
+
+        @Test
+        fun `escape maps to Cancel`() {
+            assertEquals(BrowsingAction.Cancel, InputMapper.mapBrowsingEvent(key("Escape")))
+        }
+
+        @Test
+        fun `tab maps to CycleMode`() {
+            assertEquals(BrowsingAction.CycleMode, InputMapper.mapBrowsingEvent(key("Tab")))
+        }
+
+        @Test
+        fun `number keys 1-6 map to SelectFacing`() {
+            for (n in 1..6) {
+                assertEquals(BrowsingAction.SelectFacing(n), InputMapper.mapBrowsingEvent(key("$n")))
+            }
+        }
+
+        @Test
+        fun `number keys 7-9 return null`() {
+            for (n in 7..9) {
+                assertNull(InputMapper.mapBrowsingEvent(key("$n")))
+            }
+        }
+
+        @Test
+        fun `unknown key returns null`() {
+            assertNull(InputMapper.mapBrowsingEvent(key("F12")))
+        }
     }
 
-    @Test
-    fun `arrow left maps to move cursor northwest`() {
-        val event = KeyboardEvent("ArrowLeft", ctrl = false, alt = false)
+    @Nested
+    inner class MapFacingEventTest {
+        @Test
+        fun `number keys 1-6 map to SelectFacing`() {
+            for (n in 1..6) {
+                assertEquals(FacingAction.SelectFacing(n), InputMapper.mapFacingEvent(key("$n")))
+            }
+        }
 
-        val action = InputMapper.mapKeyboardEvent(event)
+        @Test
+        fun `escape maps to Cancel`() {
+            assertEquals(FacingAction.Cancel, InputMapper.mapFacingEvent(key("Escape")))
+        }
 
-        assertEquals(InputAction.MoveCursor(HexDirection.NW), action)
+        @Test
+        fun `arrow keys return null`() {
+            assertNull(InputMapper.mapFacingEvent(key("ArrowUp")))
+            assertNull(InputMapper.mapFacingEvent(key("ArrowDown")))
+        }
+
+        @Test
+        fun `unknown key returns null`() {
+            assertNull(InputMapper.mapFacingEvent(key("Enter")))
+        }
     }
 
-    @Test
-    fun `enter maps to confirm`() {
-        val event = KeyboardEvent("Enter", ctrl = false, alt = false)
+    @Nested
+    inner class MapAttackEventTest {
+        @Test
+        fun `arrow right maps to TwistTorso clockwise`() {
+            assertEquals(AttackAction.TwistTorso(clockwise = true), InputMapper.mapAttackEvent(key("ArrowRight")))
+        }
 
-        val action = InputMapper.mapKeyboardEvent(event)
+        @Test
+        fun `arrow left maps to TwistTorso counterclockwise`() {
+            assertEquals(AttackAction.TwistTorso(clockwise = false), InputMapper.mapAttackEvent(key("ArrowLeft")))
+        }
 
-        assertEquals(InputAction.Confirm, action)
+        @Test
+        fun `arrow up maps to NavigateWeapons -1`() {
+            assertEquals(AttackAction.NavigateWeapons(delta = -1), InputMapper.mapAttackEvent(key("ArrowUp")))
+        }
+
+        @Test
+        fun `arrow down maps to NavigateWeapons +1`() {
+            assertEquals(AttackAction.NavigateWeapons(delta = 1), InputMapper.mapAttackEvent(key("ArrowDown")))
+        }
+
+        @Test
+        fun `space maps to ToggleWeapon`() {
+            assertEquals(AttackAction.ToggleWeapon, InputMapper.mapAttackEvent(key(" ")))
+        }
+
+        @Test
+        fun `tab maps to NextTarget`() {
+            assertEquals(AttackAction.NextTarget, InputMapper.mapAttackEvent(key("Tab")))
+        }
+
+        @Test
+        fun `enter maps to Confirm`() {
+            assertEquals(AttackAction.Confirm, InputMapper.mapAttackEvent(key("Enter")))
+        }
+
+        @Test
+        fun `escape maps to Cancel`() {
+            assertEquals(AttackAction.Cancel, InputMapper.mapAttackEvent(key("Escape")))
+        }
+
+        @Test
+        fun `unknown key returns null`() {
+            assertNull(InputMapper.mapAttackEvent(key("q")))
+        }
     }
 
-    @Test
-    fun `escape maps to cancel`() {
-        val event = KeyboardEvent("Escape", ctrl = false, alt = false)
+    @Nested
+    inner class MapMouseToHexTest {
+        @Test
+        fun `left click maps to hex coordinates`() {
+            val event = MouseEvent(x = 5, y = 3, left = true)
 
-        val action = InputMapper.mapKeyboardEvent(event)
+            val result = InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
 
-        assertEquals(InputAction.Cancel, action)
-    }
+            assertEquals(HexCoordinates(0, 0), result)
+        }
 
-    @Test
-    fun `q maps to quit`() {
-        val event = KeyboardEvent("q", ctrl = false, alt = false)
+        @Test
+        fun `non-left click returns null`() {
+            val event = MouseEvent(x = 5, y = 3)
 
-        val action = InputMapper.mapKeyboardEvent(event)
+            assertNull(InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2))
+        }
 
-        assertEquals(InputAction.Quit, action)
-    }
+        @Test
+        fun `right click returns null`() {
+            val event = MouseEvent(x = 5, y = 3, right = true)
 
-    @Test
-    fun `tab maps to cycle unit`() {
-        val event = KeyboardEvent("Tab", ctrl = false, alt = false)
+            assertNull(InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2))
+        }
 
-        val action = InputMapper.mapKeyboardEvent(event)
+        @Test
+        fun `click in margin returns null`() {
+            val event = MouseEvent(x = 1, y = 1, left = true)
 
-        assertEquals(InputAction.CycleUnit, action)
-    }
+            assertNull(InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2))
+        }
 
-    @Test
-    fun `number keys map to select action`() {
-        assertEquals(
-            InputAction.SelectAction(1),
-            InputMapper.mapKeyboardEvent(KeyboardEvent("1", ctrl = false, alt = false))
-        )
-        assertEquals(
-            InputAction.SelectAction(2),
-            InputMapper.mapKeyboardEvent(KeyboardEvent("2", ctrl = false, alt = false))
-        )
-        assertEquals(
-            InputAction.SelectAction(9),
-            InputMapper.mapKeyboardEvent(KeyboardEvent("9", ctrl = false, alt = false))
-        )
-    }
+        @Test
+        fun `left click at hex 1,0 maps correctly`() {
+            val event = MouseEvent(x = 13, y = 5, left = true)
 
-    @Test
-    fun `unknown key returns null`() {
-        val event = KeyboardEvent("F12", ctrl = false, alt = false)
+            val result = InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
 
-        val action = InputMapper.mapKeyboardEvent(event)
+            assertEquals(HexCoordinates(1, 0), result)
+        }
 
-        assertNull(action)
-    }
+        @Test
+        fun `left click at hex 2,1 maps correctly`() {
+            val event = MouseEvent(x = 21, y = 7, left = true)
 
-    @Test
-    fun `ctrl+c maps to quit`() {
-        val event = KeyboardEvent("c", ctrl = true, alt = false)
+            val result = InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
 
-        val action = InputMapper.mapKeyboardEvent(event)
-
-        assertEquals(InputAction.Quit, action)
-    }
-
-    @Test
-    fun `mouse left click maps to click hex`() {
-        val event = MouseEvent(x = 10, y = 5, left = true)
-
-        val action = InputMapper.mapMouseEvent(event, boardX = 0, boardY = 0)
-
-        assertEquals(InputAction.ClickHex((action as InputAction.ClickHex).coords), action)
+            assertEquals(HexCoordinates(2, 1), result)
+        }
     }
 }

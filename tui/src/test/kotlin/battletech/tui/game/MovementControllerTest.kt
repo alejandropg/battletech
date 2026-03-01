@@ -14,7 +14,8 @@ import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
 import battletech.tui.aGameState
 import battletech.tui.aUnit
-import battletech.tui.input.InputAction
+import battletech.tui.input.BrowsingAction
+import battletech.tui.input.FacingAction
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -168,9 +169,8 @@ internal class MovementControllerTest {
             val gameState = aGameState(units = listOf(unit))
             val state = controller.enter(unit, gameState)
 
-            // Main loop moves cursor to clicked hex before dispatching
             val result = controller.handle(
-                InputAction.ClickHex(HexCoordinates(2, 0)),
+                BrowsingAction.ClickHex(HexCoordinates(2, 0)),
                 state,
                 HexCoordinates(2, 0),
                 gameState,
@@ -189,7 +189,7 @@ internal class MovementControllerTest {
             val state = controller.enter(unit, gameState)
 
             val result = controller.handle(
-                InputAction.ClickHex(HexCoordinates(5, 5)),
+                BrowsingAction.ClickHex(HexCoordinates(5, 5)),
                 state,
                 HexCoordinates(5, 5),
                 gameState,
@@ -212,7 +212,7 @@ internal class MovementControllerTest {
                 hoveredDestination = reachableHexes[1], // (2,0) N — single facing
             )
 
-            val result = controller.handle(InputAction.Confirm, state, HexCoordinates(2, 0), gameState)
+            val result = controller.handle(BrowsingAction.ConfirmPath, state, HexCoordinates(2, 0), gameState)
 
             assertTrue(result is PhaseOutcome.Complete)
         }
@@ -225,7 +225,7 @@ internal class MovementControllerTest {
             val destination = reachableHexes[1] // (2,0) facing N
             val state = controller.enter(unit, gameState).copy(hoveredDestination = destination)
 
-            val result = controller.handle(InputAction.Confirm, state, HexCoordinates(2, 0), gameState)
+            val result = controller.handle(BrowsingAction.ConfirmPath, state, HexCoordinates(2, 0), gameState)
 
             val movedUnit = (result as PhaseOutcome.Complete).gameState.units.first { it.id == unit.id }
             assertEquals(HexDirection.N, movedUnit.facing)
@@ -240,40 +240,18 @@ internal class MovementControllerTest {
                 hoveredDestination = reachableHexes[0], // (1,0) has 2 facings
             )
 
-            val result = controller.handle(InputAction.Confirm, state, HexCoordinates(1, 0), gameState)
+            val result = controller.handle(BrowsingAction.ConfirmPath, state, HexCoordinates(1, 0), gameState)
 
             assertTrue(result is PhaseOutcome.Continue)
             val newState = (result as PhaseOutcome.Continue).phaseState
             assertTrue(newState is PhaseState.Movement.SelectingFacing)
         }
-
-        @Test
-        fun `confirm during facing selection is no-op`() {
-            val controller = createController()
-            val unit = aUnit()
-            val gameState = aGameState(units = listOf(unit))
-            val browsing = controller.enter(unit, gameState)
-            val facingState = PhaseState.Movement.SelectingFacing(
-                unitId = browsing.unitId,
-                modes = browsing.modes,
-                currentModeIndex = browsing.currentModeIndex,
-                hex = HexCoordinates(1, 0),
-                options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
-                path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
-                prompt = "Select facing",
-            )
-
-            val result = controller.handle(InputAction.Confirm, facingState, HexCoordinates(1, 0), gameState)
-
-            assertTrue(result is PhaseOutcome.Continue)
-            assertEquals(facingState, (result as PhaseOutcome.Continue).phaseState)
-        }
     }
 
     @Nested
-    inner class SelectActionTest {
+    inner class SelectFacingTest {
         @Test
-        fun `SelectAction during facing selection applies movement`() {
+        fun `SelectFacing during facing selection applies movement`() {
             val controller = createController()
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
@@ -289,7 +267,7 @@ internal class MovementControllerTest {
             )
 
             // Press "1" → N direction
-            val result = controller.handle(InputAction.SelectAction(1), facingState, HexCoordinates(1, 0), gameState)
+            val result = controller.handle(FacingAction.SelectFacing(1), facingState, HexCoordinates(1, 0), gameState)
 
             assertTrue(result is PhaseOutcome.Complete)
             val movedUnit = (result as PhaseOutcome.Complete).gameState.units.first { it.id == unit.id }
@@ -298,7 +276,7 @@ internal class MovementControllerTest {
         }
 
         @Test
-        fun `SelectAction picks correct facing by number`() {
+        fun `SelectFacing picks correct facing by number`() {
             val controller = createController()
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
@@ -314,14 +292,14 @@ internal class MovementControllerTest {
             )
 
             // FACING_ORDER: [N, NE, SE, S, SW, NW] → index 3 = SE
-            val result = controller.handle(InputAction.SelectAction(3), facingState, HexCoordinates(1, 0), gameState)
+            val result = controller.handle(FacingAction.SelectFacing(3), facingState, HexCoordinates(1, 0), gameState)
 
             val movedUnit = (result as PhaseOutcome.Complete).gameState.units.first { it.id == unit.id }
             assertEquals(HexDirection.SE, movedUnit.facing)
         }
 
         @Test
-        fun `SelectAction for unavailable facing stays in current state`() {
+        fun `SelectFacing for unavailable facing stays in current state`() {
             val controller = createController()
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
@@ -337,19 +315,19 @@ internal class MovementControllerTest {
             )
 
             // Press "4" → S direction, not available at (1,0)
-            val result = controller.handle(InputAction.SelectAction(4), facingState, HexCoordinates(1, 0), gameState)
+            val result = controller.handle(FacingAction.SelectFacing(4), facingState, HexCoordinates(1, 0), gameState)
 
             assertTrue(result is PhaseOutcome.Continue)
         }
 
         @Test
-        fun `SelectAction outside facing selection does nothing`() {
+        fun `SelectFacing in browsing state does nothing without hovered destination`() {
             val controller = createController()
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
-            val state = controller.enter(unit, gameState) // browsing, not facing selection
+            val state = controller.enter(unit, gameState) // browsing, no hovered destination
 
-            val result = controller.handle(InputAction.SelectAction(1), state, HexCoordinates(0, 0), gameState)
+            val result = controller.handle(BrowsingAction.SelectFacing(1), state, HexCoordinates(0, 0), gameState)
 
             assertTrue(result is PhaseOutcome.Continue)
         }
@@ -364,7 +342,7 @@ internal class MovementControllerTest {
             )
 
             // Press "1" → N direction
-            val result = controller.handle(InputAction.SelectAction(1), state, HexCoordinates(1, 0), gameState)
+            val result = controller.handle(BrowsingAction.SelectFacing(1), state, HexCoordinates(1, 0), gameState)
 
             assertTrue(result is PhaseOutcome.Complete)
             val movedUnit = (result as PhaseOutcome.Complete).gameState.units.first { it.id == unit.id }
@@ -381,7 +359,7 @@ internal class MovementControllerTest {
             val gameState = aGameState(units = listOf(unit))
             val state = controller.enter(unit, gameState)
 
-            val result = controller.handle(InputAction.Cancel, state, HexCoordinates(0, 0), gameState)
+            val result = controller.handle(BrowsingAction.Cancel, state, HexCoordinates(0, 0), gameState)
 
             assertTrue(result is PhaseOutcome.Cancelled)
         }
@@ -402,7 +380,7 @@ internal class MovementControllerTest {
                 prompt = "Select facing",
             )
 
-            val result = controller.handle(InputAction.Cancel, facingState, HexCoordinates(1, 0), gameState)
+            val result = controller.handle(FacingAction.Cancel, facingState, HexCoordinates(1, 0), gameState)
 
             assertTrue(result is PhaseOutcome.Continue)
             val newState = (result as PhaseOutcome.Continue).phaseState
@@ -413,13 +391,13 @@ internal class MovementControllerTest {
     @Nested
     inner class CycleModeTest {
         @Test
-        fun `CycleUnit advances to next mode`() {
+        fun `CycleMode advances to next mode`() {
             val controller = createController(includeRun = true)
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
             val state = controller.enter(unit, gameState)
 
-            val result = controller.handle(InputAction.CycleUnit, state, HexCoordinates(0, 0), gameState)
+            val result = controller.handle(BrowsingAction.CycleMode, state, HexCoordinates(0, 0), gameState)
 
             val browsing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
             assertEquals(1, browsing.currentModeIndex)
@@ -427,16 +405,16 @@ internal class MovementControllerTest {
         }
 
         @Test
-        fun `CycleUnit wraps around`() {
+        fun `CycleMode wraps around`() {
             val controller = createController(includeRun = true)
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
             val state = controller.enter(unit, gameState)
 
             // Cycle twice: WALK → RUN → WALK
-            val cycled1 = (controller.handle(InputAction.CycleUnit, state, HexCoordinates(0, 0), gameState)
-                as PhaseOutcome.Continue).phaseState as PhaseState.Movement
-            val result = controller.handle(InputAction.CycleUnit, cycled1, HexCoordinates(0, 0), gameState)
+            val cycled1 = (controller.handle(BrowsingAction.CycleMode, state, HexCoordinates(0, 0), gameState)
+                as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
+            val result = controller.handle(BrowsingAction.CycleMode, cycled1, HexCoordinates(0, 0), gameState)
 
             val browsing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
             assertEquals(0, browsing.currentModeIndex)
@@ -444,7 +422,7 @@ internal class MovementControllerTest {
         }
 
         @Test
-        fun `CycleUnit clears hover state`() {
+        fun `CycleMode clears hover state`() {
             val controller = createController(includeRun = true)
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
@@ -453,7 +431,7 @@ internal class MovementControllerTest {
                 hoveredDestination = reachableHexes[0],
             )
 
-            val result = controller.handle(InputAction.CycleUnit, state, HexCoordinates(0, 0), gameState)
+            val result = controller.handle(BrowsingAction.CycleMode, state, HexCoordinates(0, 0), gameState)
 
             val browsing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
             assertNull(browsing.hoveredPath)
@@ -467,7 +445,7 @@ internal class MovementControllerTest {
             val gameState = aGameState(units = listOf(unit))
             val state = controller.enter(unit, gameState)
 
-            val result = controller.handle(InputAction.CycleUnit, state, HexCoordinates(0, 0), gameState)
+            val result = controller.handle(BrowsingAction.CycleMode, state, HexCoordinates(0, 0), gameState)
 
             val browsing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
             assertTrue(browsing.prompt.contains("Run"))
@@ -486,7 +464,7 @@ internal class MovementControllerTest {
             val state = controller.enter(unit, gameState)
 
             val result = controller.handle(
-                InputAction.MoveCursor(HexDirection.N),
+                BrowsingAction.MoveCursor(HexDirection.N),
                 state,
                 HexCoordinates(2, 0), // cursor is at (2,0) which is reachable
                 gameState,
