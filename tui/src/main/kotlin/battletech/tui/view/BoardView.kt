@@ -44,16 +44,18 @@ public class BoardView(
                 val drawY = contentY + screenY - viewport.scrollRow * HexGeometry.ROW_STRIDE
 
                 val baseHighlight = when {
-                    coords == cursorPosition && hexHighlights[coords] == HexHighlight.PATH -> HexHighlight.PATH_CURSOR
                     coords == cursorPosition -> HexHighlight.CURSOR
                     coords in hexHighlights -> hexHighlights.getValue(coords)
                     else -> HexHighlight.NONE
                 }
 
                 val hasFacingOverlay = coords in reachableFacings || coords == facingSelectionHex
-                val highlight = if (hasFacingOverlay && baseHighlight in setOf(
-                    HexHighlight.REACHABLE_WALK, HexHighlight.REACHABLE_RUN, HexHighlight.REACHABLE_JUMP,
-                )) HexHighlight.NONE else baseHighlight
+                val highlight =
+                    if (hasFacingOverlay && baseHighlight in setOf(
+                            HexHighlight.REACHABLE_WALK, HexHighlight.REACHABLE_RUN, HexHighlight.REACHABLE_JUMP,
+                        )
+                    ) HexHighlight.NONE
+                    else baseHighlight
 
                 HexRenderer.render(buffer, drawX, drawY, hex, highlight, movementMode)
 
@@ -61,7 +63,8 @@ public class BoardView(
                 when {
                     coords == facingSelectionHex && facingSelectionFacings != null ->
                         HexRenderer.renderFacingNumbers(buffer, drawX, drawY, facingSelectionFacings)
-                    coords in reachableFacings && highlight !in setOf(HexHighlight.PATH, HexHighlight.PATH_CURSOR) -> {
+
+                    coords in reachableFacings && highlight != HexHighlight.PATH -> {
                         val facings = reachableFacings.getValue(coords)
                         val color = when {
                             coords == pathDestination -> Color.BRIGHT_YELLOW

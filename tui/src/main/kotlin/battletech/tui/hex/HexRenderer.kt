@@ -100,19 +100,19 @@ public object HexRenderer {
     public fun render(buffer: ScreenBuffer, x: Int, y: Int, hex: Hex, highlight: HexHighlight, movementMode: MovementMode? = null) {
         val bg = contentBackground(highlight)
         val borderFg =
-            if (highlight == HexHighlight.CURSOR || highlight == HexHighlight.PATH_CURSOR) Color.BRIGHT_YELLOW
+            if (highlight == HexHighlight.CURSOR) Color.BRIGHT_YELLOW
             else Color.DEFAULT
 
         renderBorder(buffer, x, y, borderFg)
         renderContent(buffer, x, y, bg)
-        renderTerrainIcon(buffer, x, y, hex.terrain, bg)
+        renderTerrain(buffer, x, y, hex.terrain, bg)
         renderElevation(buffer, x, y, hex.elevation, bg)
         when (highlight) {
             HexHighlight.REACHABLE_WALK -> renderOverlayChar(buffer, x, y, ".", Color.WHITE)
             HexHighlight.REACHABLE_RUN -> renderOverlayChar(buffer, x, y, ".", Color.ORANGE)
             HexHighlight.REACHABLE_JUMP -> renderOverlayChar(buffer, x, y, ".", Color.CYAN)
             HexHighlight.ATTACK_RANGE -> renderOverlayChar(buffer, x, y, ".", Color.WHITE)
-            HexHighlight.PATH, HexHighlight.PATH_CURSOR -> {
+            HexHighlight.PATH -> {
                 val icon = if (movementMode != null) movementModeIcon(movementMode) else "*"
                 renderOverlayChar(buffer, x, y, icon, Color.BRIGHT_YELLOW)
             }
@@ -126,7 +126,7 @@ public object HexRenderer {
 
     private fun contentBackground(highlight: HexHighlight): Color = Color.DEFAULT
 
-    private fun renderTerrainIcon(buffer: ScreenBuffer, x: Int, y: Int, terrain: Terrain, bg: Color) {
+    private fun renderTerrain(buffer: ScreenBuffer, x: Int, y: Int, terrain: Terrain, bg: Color) {
         when (terrain) {
             Terrain.CLEAR -> Unit
             Terrain.LIGHT_WOODS ->
