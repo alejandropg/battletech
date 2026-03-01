@@ -388,7 +388,6 @@ public class TuiApp {
             cursorPosition = appState.cursor,
             hexHighlights = renderData.hexHighlights,
             reachableFacings = renderData.reachableFacings,
-            facingSelectionHex = renderData.facingSelection?.hex,
             facingSelectionFacings = renderData.facingSelection?.facings,
             pathDestination = pathDestination,
             movementMode = movementMode,

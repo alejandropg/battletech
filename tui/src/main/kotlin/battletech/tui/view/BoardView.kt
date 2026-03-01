@@ -19,7 +19,6 @@ public class BoardView(
     private val cursorPosition: HexCoordinates? = null,
     private val hexHighlights: Map<HexCoordinates, HexHighlight> = emptyMap(),
     private val reachableFacings: Map<HexCoordinates, Set<HexDirection>> = emptyMap(),
-    private val facingSelectionHex: HexCoordinates? = null,
     private val facingSelectionFacings: Set<HexDirection>? = null,
     private val pathDestination: HexCoordinates? = null,
     private val movementMode: MovementMode? = null,
@@ -49,7 +48,7 @@ public class BoardView(
                     else -> HexHighlight.NONE
                 }
 
-                val hasFacingOverlay = coords in reachableFacings || coords == facingSelectionHex
+                val hasFacingOverlay = coords in reachableFacings || coords == cursorPosition
                 val highlight =
                     if (hasFacingOverlay && baseHighlight in setOf(
                             HexHighlight.REACHABLE_WALK, HexHighlight.REACHABLE_RUN, HexHighlight.REACHABLE_JUMP,
@@ -61,7 +60,7 @@ public class BoardView(
 
                 // Facing overlays (drawn after base render, over the reachability dot)
                 when {
-                    coords == facingSelectionHex && facingSelectionFacings != null ->
+                    coords == cursorPosition && facingSelectionFacings != null ->
                         HexRenderer.renderFacingNumbers(buffer, drawX, drawY, facingSelectionFacings)
 
                     coords in reachableFacings && highlight != HexHighlight.PATH -> {
