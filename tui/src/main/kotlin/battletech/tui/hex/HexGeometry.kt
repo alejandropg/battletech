@@ -1,5 +1,18 @@
 package battletech.tui.hex
 
+/*
+ * ```
+ *        |---9---|
+ *        123456789
+ *  - 1     _____         _____
+ *  | 2    /+    \S      /     \       /
+ *  5 3   /       \_____/       \_____/
+ *  | 4   \       /     \       /     \
+ *  - 5    \_____/       \_____/       \
+ *         /S    \       /     \       /
+ *  ```
+ */
+
 public object HexGeometry {
     public const val HEX_WIDTH: Int = 9
     public const val HEX_HEIGHT: Int = 5
