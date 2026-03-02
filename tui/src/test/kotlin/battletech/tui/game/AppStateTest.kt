@@ -1,10 +1,13 @@
 package battletech.tui.game
 
+import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.InitiativeResult
 import battletech.tactical.action.MovementImpulse
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
+import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
+import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tui.aGameMap
@@ -19,6 +22,15 @@ import org.junit.jupiter.api.Test
 import kotlin.random.Random
 
 internal class AppStateTest {
+
+    private val actionQueryService = ActionQueryService(
+        MoveActionDefinition(),
+        listOf(FireWeaponActionDefinition()),
+    )
+    private val phaseManager = PhaseManager(
+        movementController = MovementController(actionQueryService),
+        attackController = AttackController(),
+    )
 
     private fun aTurnState(
         movementOrder: List<MovementImpulse> = listOf(
@@ -42,7 +54,7 @@ internal class AppStateTest {
 
     private fun anAppState(
         currentPhase: TurnPhase = TurnPhase.MOVEMENT,
-        phaseState: PhaseState = PhaseState.Idle(),
+        phase: ActivePhase = phaseManager.idle(),
         cursor: HexCoordinates = HexCoordinates(0, 0),
         gameState: battletech.tactical.model.GameState = aGameState(),
         turnState: TurnState? = null,
@@ -50,7 +62,7 @@ internal class AppStateTest {
         gameState = gameState,
         currentPhase = currentPhase,
         cursor = cursor,
-        phaseState = phaseState,
+        phase = phase,
         turnState = turnState,
     )
 
@@ -92,94 +104,6 @@ internal class AppStateTest {
     }
 
     @Nested
-    inner class HandlePhaseOutcomeTest {
-        @Test
-        fun `Continue updates phase state`() {
-            val newPhase = PhaseState.Idle("new prompt")
-            val state = anAppState()
-
-            val result = handlePhaseOutcome(PhaseOutcome.Continue(newPhase), state)
-
-            assertEquals(newPhase, result.phaseState)
-            assertEquals(state.gameState, result.gameState)
-            assertEquals(state.currentPhase, result.currentPhase)
-        }
-
-        @Test
-        fun `Complete during movement with turnState advances impulse`() {
-            val unit = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
-            val gameState = aGameState(units = listOf(unit))
-            val newGameState = aGameState(units = listOf(unit.copy(position = HexCoordinates(1, 1))))
-            val turnState = aTurnState(
-                movementOrder = listOf(
-                    MovementImpulse(PlayerId.PLAYER_1, 1),
-                    MovementImpulse(PlayerId.PLAYER_2, 1),
-                ),
-            )
-            val state = anAppState(
-                currentPhase = TurnPhase.MOVEMENT,
-                gameState = gameState,
-                turnState = turnState,
-            )
-
-            val result = handlePhaseOutcome(PhaseOutcome.Complete(newGameState), state)
-
-            // Should stay in MOVEMENT since P2 still needs to move
-            assertEquals(TurnPhase.MOVEMENT, result.currentPhase)
-            assertTrue(UnitId("u1") in result.turnState!!.movedUnitIds)
-            assertEquals(PlayerId.PLAYER_2, result.turnState!!.activePlayer)
-        }
-
-        @Test
-        fun `Complete during movement advances to weapon attack when all impulses done`() {
-            val unit = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
-            val gameState = aGameState(units = listOf(unit))
-            val newGameState = aGameState(units = listOf(unit.copy(position = HexCoordinates(1, 1))))
-            val turnState = aTurnState(
-                movementOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 1)),
-            )
-            val state = anAppState(
-                currentPhase = TurnPhase.MOVEMENT,
-                gameState = gameState,
-                turnState = turnState,
-            )
-
-            val result = handlePhaseOutcome(PhaseOutcome.Complete(newGameState), state)
-
-            assertEquals(TurnPhase.WEAPON_ATTACK, result.currentPhase)
-        }
-
-        @Test
-        fun `Complete without turnState advances phase directly`() {
-            val newGameState = aGameState(units = listOf(aUnit(position = HexCoordinates(5, 5))))
-            val state = anAppState(currentPhase = TurnPhase.WEAPON_ATTACK)
-
-            val result = handlePhaseOutcome(PhaseOutcome.Complete(newGameState), state)
-
-            assertEquals(TurnPhase.PHYSICAL_ATTACK, result.currentPhase)
-            assertEquals(PhaseState.Idle(), result.phaseState)
-        }
-
-        @Test
-        fun `Cancelled resets to Idle`() {
-            val browsing = PhaseState.Movement.Browsing(
-                unitId = UnitId("u1"),
-                modes = emptyList(),
-                currentModeIndex = 0,
-                hoveredPath = null,
-                hoveredDestination = null,
-                prompt = "test",
-            )
-            val state = anAppState(phaseState = browsing)
-
-            val result = handlePhaseOutcome(PhaseOutcome.Cancelled, state)
-
-            assertEquals(PhaseState.Idle(), result.phaseState)
-            assertEquals(state.gameState, result.gameState)
-        }
-    }
-
-    @Nested
     inner class MoveCursorTest {
         @Test
         fun `moves to neighbor within bounds`() {
@@ -205,7 +129,7 @@ internal class AppStateTest {
             val gameState = aGameState(units = listOf(p1, p2))
             val state = anAppState(currentPhase = TurnPhase.INITIATIVE, gameState = gameState)
 
-            val (result, flash) = autoAdvanceGlobalPhases(state, Random(42))
+            val (result, flash) = autoAdvanceGlobalPhases(state, phaseManager, Random(42))
 
             assertEquals(TurnPhase.MOVEMENT, result.currentPhase)
             assertNotNull(result.turnState)
@@ -220,7 +144,7 @@ internal class AppStateTest {
             val gameState = aGameState(units = listOf(unit1, unit2))
             val state = anAppState(currentPhase = TurnPhase.HEAT, gameState = gameState)
 
-            val (result, flash) = autoAdvanceGlobalPhases(state)
+            val (result, flash) = autoAdvanceGlobalPhases(state, phaseManager)
 
             assertEquals(TurnPhase.END, result.currentPhase)
             assertEquals(9, result.gameState.units[0].currentHeat)
@@ -236,7 +160,7 @@ internal class AppStateTest {
             val gameState = aGameState(units = listOf(unit))
             val state = anAppState(currentPhase = TurnPhase.HEAT, gameState = gameState)
 
-            val (_, flash) = autoAdvanceGlobalPhases(state)
+            val (_, flash) = autoAdvanceGlobalPhases(state, phaseManager)
 
             assertEquals("Heat: No heat to dissipate", flash!!.text)
         }
@@ -245,7 +169,7 @@ internal class AppStateTest {
         fun `end phase advances to initiative`() {
             val state = anAppState(currentPhase = TurnPhase.END)
 
-            val (result, flash) = autoAdvanceGlobalPhases(state)
+            val (result, flash) = autoAdvanceGlobalPhases(state, phaseManager)
 
             assertEquals(TurnPhase.INITIATIVE, result.currentPhase)
             assertEquals("Turn complete", flash!!.text)
@@ -255,7 +179,7 @@ internal class AppStateTest {
         fun `interactive phases return null flash`() {
             val state = anAppState(currentPhase = TurnPhase.MOVEMENT)
 
-            val (result, flash) = autoAdvanceGlobalPhases(state)
+            val (result, flash) = autoAdvanceGlobalPhases(state, phaseManager)
 
             assertNull(flash)
             assertEquals(state, result)

@@ -14,7 +14,7 @@ public data class AppState(
     val gameState: GameState,
     val currentPhase: TurnPhase,
     val cursor: HexCoordinates,
-    val phaseState: PhaseState,
+    val phase: ActivePhase,
     val turnState: TurnState? = null,
 )
 
@@ -29,63 +29,6 @@ public fun nextPhase(phase: TurnPhase): TurnPhase = when (phase) {
     TurnPhase.END -> TurnPhase.INITIATIVE
 }
 
-public fun handlePhaseOutcome(outcome: PhaseOutcome, appState: AppState): AppState = when (outcome) {
-    is PhaseOutcome.Continue -> appState.copy(phaseState = outcome.phaseState)
-    is PhaseOutcome.Complete -> handleComplete(outcome, appState)
-    is PhaseOutcome.Cancelled -> {
-        val prompt = when (appState.currentPhase) {
-            TurnPhase.WEAPON_ATTACK -> appState.turnState?.let { attackPrompt(it) }
-            TurnPhase.PHYSICAL_ATTACK -> appState.turnState?.let { attackPrompt(it) }
-            TurnPhase.MOVEMENT -> appState.turnState?.let { movementPrompt(it) }
-            else -> null
-        }
-        appState.copy(phaseState = PhaseState.Idle(prompt ?: "Move cursor to select a unit"))
-    }
-}
-
-private fun handleComplete(outcome: PhaseOutcome.Complete, appState: AppState): AppState {
-    val turnState = appState.turnState ?: return appState.copy(
-        gameState = outcome.gameState,
-        currentPhase = nextPhase(appState.currentPhase),
-        phaseState = PhaseState.Idle(),
-    )
-
-    return when (appState.currentPhase) {
-        TurnPhase.MOVEMENT -> {
-            val movedUnitId = findMovedUnit(appState.gameState, outcome.gameState)
-            val newTurnState = advanceAfterUnitMoved(turnState, movedUnitId)
-            if (newTurnState.allImpulsesComplete) {
-                val attackOrder = newTurnState.movementOrder
-                val withAttack = newTurnState.copy(attackOrder = attackOrder)
-                appState.copy(
-                    gameState = outcome.gameState,
-                    currentPhase = nextPhase(appState.currentPhase),
-                    phaseState = PhaseState.Idle(attackPrompt(withAttack)),
-                    turnState = withAttack,
-                )
-            } else {
-                appState.copy(
-                    gameState = outcome.gameState,
-                    phaseState = PhaseState.Idle(movementPrompt(newTurnState)),
-                    turnState = newTurnState,
-                )
-            }
-        }
-        // Attack phase advancement now happens via 'c' key commit in Main.kt
-        TurnPhase.WEAPON_ATTACK, TurnPhase.PHYSICAL_ATTACK -> appState.copy(
-            gameState = outcome.gameState,
-            currentPhase = nextPhase(appState.currentPhase),
-            phaseState = PhaseState.Idle(),
-        )
-
-        else -> appState.copy(
-            gameState = outcome.gameState,
-            currentPhase = nextPhase(appState.currentPhase),
-            phaseState = PhaseState.Idle(),
-        )
-    }
-}
-
 public fun moveCursor(
     cursor: HexCoordinates,
     direction: HexDirection,
@@ -95,7 +38,11 @@ public fun moveCursor(
     return if (neighbor in map.hexes) neighbor else cursor
 }
 
-public fun autoAdvanceGlobalPhases(appState: AppState, random: Random = Random): Pair<AppState, FlashMessage?> {
+public fun autoAdvanceGlobalPhases(
+    appState: AppState,
+    phaseManager: PhaseManager,
+    random: Random = Random,
+): Pair<AppState, FlashMessage?> {
     return when (appState.currentPhase) {
         TurnPhase.INITIATIVE -> {
             val result = rollInitiative(random)
@@ -119,7 +66,7 @@ public fun autoAdvanceGlobalPhases(appState: AppState, random: Random = Random):
             val state = appState.copy(
                 currentPhase = nextPhase(TurnPhase.INITIATIVE),
                 turnState = turnState,
-                phaseState = PhaseState.Idle(prompt),
+                phase = phaseManager.idle(prompt),
             )
             state to FlashMessage("Initiative: P1 rolled $p1Roll, P2 rolled $p2Roll — $loserName moves first")
         }
@@ -128,9 +75,18 @@ public fun autoAdvanceGlobalPhases(appState: AppState, random: Random = Random):
             val turnState = appState.turnState
             if (turnState != null && turnState.attackOrder.isEmpty()) {
                 val newTurnState = turnState.copy(attackOrder = turnState.movementOrder)
+                phaseManager.attackController.initializeImpulse(
+                    newTurnState.activeAttackPlayer,
+                    newTurnState.currentAttackImpulse.unitCount,
+                )
+                val prompt = attackPrompt(
+                    newTurnState,
+                    phaseManager.attackController.declaredCount(),
+                    phaseManager.attackController.currentImpulseUnitCount(),
+                )
                 val state = appState.copy(
                     turnState = newTurnState,
-                    phaseState = PhaseState.Idle(attackPrompt(newTurnState)),
+                    phase = phaseManager.idle(prompt),
                 )
                 state to FlashMessage("Weapon Attack Phase")
             } else {
@@ -142,9 +98,18 @@ public fun autoAdvanceGlobalPhases(appState: AppState, random: Random = Random):
             val turnState = appState.turnState
             if (turnState != null && turnState.attackOrder.isEmpty()) {
                 val newTurnState = turnState.copy(attackOrder = turnState.movementOrder)
+                phaseManager.attackController.initializeImpulse(
+                    newTurnState.activeAttackPlayer,
+                    newTurnState.currentAttackImpulse.unitCount,
+                )
+                val prompt = attackPrompt(
+                    newTurnState,
+                    phaseManager.attackController.declaredCount(),
+                    phaseManager.attackController.currentImpulseUnitCount(),
+                )
                 val state = appState.copy(
                     turnState = newTurnState,
-                    phaseState = PhaseState.Idle(attackPrompt(newTurnState)),
+                    phase = phaseManager.idle(prompt),
                 )
                 state to FlashMessage("Physical Attack Phase")
             } else {
@@ -218,7 +183,7 @@ public fun attackPrompt(turnState: TurnState, declared: Int = 0, total: Int = 0)
     }
 }
 
-private fun findMovedUnit(oldState: GameState, newState: GameState): UnitId {
+internal fun findMovedUnit(oldState: GameState, newState: GameState): UnitId {
     for ((old, new) in oldState.units.zip(newState.units)) {
         if (old.position != new.position || old.facing != new.facing) {
             return old.id
