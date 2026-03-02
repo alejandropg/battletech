@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-internal class IdlePhaseTest {
+internal class IdlePhaseStatePhaseTest {
 
     private val actionQueryService = ActionQueryService(
         MoveActionDefinition(),
@@ -69,13 +69,13 @@ internal class IdlePhaseTest {
             gameState = gameState,
             currentPhase = currentPhase,
             cursor = cursor,
-            phase = PhaseState.Idle(),
+            phase = IdlePhaseState(),
             turnState = turnState,
         )
     }
 
-    private fun idlePhase(prompt: String = "Move cursor to select a unit"): PhaseState.Idle =
-        PhaseState.Idle(prompt)
+    private fun idlePhase(prompt: String = "Move cursor to select a unit"): IdlePhaseState =
+        IdlePhaseState(prompt)
 
     private fun enterKey(): KeyboardEvent = KeyboardEvent("Enter")
     private fun tabKey(): KeyboardEvent = KeyboardEvent("Tab")
@@ -119,7 +119,7 @@ internal class IdlePhaseTest {
 
             assertNotNull(result)
             // Should enter movement phase (Browsing)
-            assertInstanceOf(PhaseState.Movement.Browsing::class.java, result!!.appState.phase)
+            assertInstanceOf(MovementPhaseState.Browsing::class.java, result!!.appState.phase)
         }
     }
 
@@ -180,7 +180,7 @@ internal class IdlePhaseTest {
             val result = phase.processEvent(enterKey(), state, manager)
 
             assertNotNull(result)
-            assertInstanceOf(PhaseState.Movement.Browsing::class.java, result!!.appState.phase)
+            assertInstanceOf(MovementPhaseState.Browsing::class.java, result!!.appState.phase)
             assertNull(result.flash)
         }
 
@@ -205,7 +205,7 @@ internal class IdlePhaseTest {
             val result = phase.processEvent(enterKey(), state, manager)
 
             assertNotNull(result)
-            assertInstanceOf(PhaseState.Attack::class.java, result!!.appState.phase)
+            assertInstanceOf(AttackPhaseState::class.java, result!!.appState.phase)
         }
 
         @Test

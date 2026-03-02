@@ -12,7 +12,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-internal class MovementControllerIntegrationTest {
+internal class MovementPhaseStateControllerIntegrationTest {
 
     private val map = GameMap(
         (0..4).flatMap { col ->
@@ -33,7 +33,7 @@ internal class MovementControllerIntegrationTest {
 
         val state = controller.enter(unit, gameState)
 
-        assertTrue(state is PhaseState.Movement.Browsing)
+        assertTrue(state is MovementPhaseState.Browsing)
         assertThat(state.reachability.destinations).isNotEmpty()
     }
 

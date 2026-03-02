@@ -16,10 +16,12 @@ import battletech.tactical.model.Terrain
 import battletech.tactical.model.createUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.AttackController
+import battletech.tui.game.AttackPhaseState
 import battletech.tui.game.FlashMessage
+import battletech.tui.game.IdlePhaseState
 import battletech.tui.game.MovementController
+import battletech.tui.game.MovementPhaseState
 import battletech.tui.game.PhaseManager
-import battletech.tui.game.PhaseState
 import battletech.tui.game.autoAdvanceGlobalPhases
 import battletech.tui.game.extractRenderData
 import battletech.tui.input.InputMapper
@@ -55,7 +57,7 @@ public class TuiApp {
             gameState = sampleGameState(),
             currentPhase = TurnPhase.INITIATIVE,
             cursor = HexCoordinates(0, 0),
-            phase = PhaseState.Idle(),
+            phase = IdlePhaseState(),
         )
 
         renderer.clear()
@@ -111,7 +113,7 @@ public class TuiApp {
     ) {
         val sidebarWidth = 28
         val statusBarHeight = 7
-        val attackPhase = appState.phase as? PhaseState.Attack
+        val attackPhase = appState.phase as? AttackPhaseState
 
         val hasTargets = attackPhase?.targets?.isNotEmpty() == true
         val targetsWidth = if (hasTargets) 28 else 0
@@ -124,18 +126,18 @@ public class TuiApp {
         val renderData = extractRenderData(appState.phase, appState.gameState)
 
         val selectedUnit = when (val phase = appState.phase) {
-            is PhaseState.Movement -> appState.gameState.unitById(phase.unitId)
-            is PhaseState.Attack -> appState.gameState.unitById(phase.unitId)
-            is PhaseState.Idle -> appState.gameState.unitAt(appState.cursor)
+            is MovementPhaseState -> appState.gameState.unitById(phase.unitId)
+            is AttackPhaseState -> appState.gameState.unitById(phase.unitId)
+            is IdlePhaseState -> appState.gameState.unitAt(appState.cursor)
         }
 
         val pathDestination = when (val phase = appState.phase) {
-            is PhaseState.Movement.Browsing -> phase.hoveredPath?.lastOrNull()
-            is PhaseState.Movement.SelectingFacing -> phase.path.lastOrNull()
+            is MovementPhaseState.Browsing -> phase.hoveredPath?.lastOrNull()
+            is MovementPhaseState.SelectingFacing -> phase.path.lastOrNull()
             else -> null
         }
 
-        val movementMode = (appState.phase as? PhaseState.Movement)?.reachability?.mode
+        val movementMode = (appState.phase as? MovementPhaseState)?.reachability?.mode
 
         val boardView = BoardView(
             appState.gameState,

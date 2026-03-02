@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-internal class MovementControllerTest {
+internal class MovementPhaseStateControllerTest {
 
     // (1,0) has two facings: N (cheap) and SE (expensive)
     // (2,0) has one facing: N
@@ -128,7 +128,7 @@ internal class MovementControllerTest {
 
             val state = controller.enter(unit, gameState)
 
-            assertTrue(state is PhaseState.Movement.Browsing)
+            assertTrue(state is MovementPhaseState.Browsing)
             assertEquals(3, state.reachability.destinations.size)
             assertEquals(unit.id, state.unitId)
         }
@@ -176,7 +176,7 @@ internal class MovementControllerTest {
                 gameState,
             )
 
-            val browsing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
+            val browsing = (result as PhaseOutcome.Continue).phaseState as MovementPhaseState.Browsing
             assertNotNull(browsing.hoveredDestination)
             assertEquals(HexCoordinates(2, 0), browsing.hoveredDestination!!.position)
         }
@@ -195,7 +195,7 @@ internal class MovementControllerTest {
                 gameState,
             )
 
-            val browsing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
+            val browsing = (result as PhaseOutcome.Continue).phaseState as MovementPhaseState.Browsing
             assertNull(browsing.hoveredPath)
             assertNull(browsing.hoveredDestination)
         }
@@ -244,7 +244,7 @@ internal class MovementControllerTest {
 
             assertTrue(result is PhaseOutcome.Continue)
             val newState = (result as PhaseOutcome.Continue).phaseState
-            assertTrue(newState is PhaseState.Movement.SelectingFacing)
+            assertTrue(newState is MovementPhaseState.SelectingFacing)
         }
     }
 
@@ -256,7 +256,7 @@ internal class MovementControllerTest {
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
             val browsing = controller.enter(unit, gameState)
-            val facingState = PhaseState.Movement.SelectingFacing(
+            val facingState = MovementPhaseState.SelectingFacing(
                 unitId = browsing.unitId,
                 modes = browsing.modes,
                 currentModeIndex = browsing.currentModeIndex,
@@ -281,7 +281,7 @@ internal class MovementControllerTest {
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
             val browsing = controller.enter(unit, gameState)
-            val facingState = PhaseState.Movement.SelectingFacing(
+            val facingState = MovementPhaseState.SelectingFacing(
                 unitId = browsing.unitId,
                 modes = browsing.modes,
                 currentModeIndex = browsing.currentModeIndex,
@@ -304,7 +304,7 @@ internal class MovementControllerTest {
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
             val browsing = controller.enter(unit, gameState)
-            val facingState = PhaseState.Movement.SelectingFacing(
+            val facingState = MovementPhaseState.SelectingFacing(
                 unitId = browsing.unitId,
                 modes = browsing.modes,
                 currentModeIndex = browsing.currentModeIndex,
@@ -370,7 +370,7 @@ internal class MovementControllerTest {
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
             val browsing = controller.enter(unit, gameState)
-            val facingState = PhaseState.Movement.SelectingFacing(
+            val facingState = MovementPhaseState.SelectingFacing(
                 unitId = browsing.unitId,
                 modes = browsing.modes,
                 currentModeIndex = browsing.currentModeIndex,
@@ -384,7 +384,7 @@ internal class MovementControllerTest {
 
             assertTrue(result is PhaseOutcome.Continue)
             val newState = (result as PhaseOutcome.Continue).phaseState
-            assertTrue(newState is PhaseState.Movement.Browsing)
+            assertTrue(newState is MovementPhaseState.Browsing)
         }
     }
 
@@ -399,7 +399,7 @@ internal class MovementControllerTest {
 
             val result = controller.handle(BrowsingAction.CycleMode, state, HexCoordinates(0, 0), gameState)
 
-            val browsing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
+            val browsing = (result as PhaseOutcome.Continue).phaseState as MovementPhaseState.Browsing
             assertEquals(1, browsing.currentModeIndex)
             assertEquals(MovementMode.RUN, browsing.reachability.mode)
         }
@@ -413,10 +413,10 @@ internal class MovementControllerTest {
 
             // Cycle twice: WALK → RUN → WALK
             val cycled1 = (controller.handle(BrowsingAction.CycleMode, state, HexCoordinates(0, 0), gameState)
-                as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
+                as PhaseOutcome.Continue).phaseState as MovementPhaseState.Browsing
             val result = controller.handle(BrowsingAction.CycleMode, cycled1, HexCoordinates(0, 0), gameState)
 
-            val browsing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
+            val browsing = (result as PhaseOutcome.Continue).phaseState as MovementPhaseState.Browsing
             assertEquals(0, browsing.currentModeIndex)
             assertEquals(MovementMode.WALK, browsing.reachability.mode)
         }
@@ -433,7 +433,7 @@ internal class MovementControllerTest {
 
             val result = controller.handle(BrowsingAction.CycleMode, state, HexCoordinates(0, 0), gameState)
 
-            val browsing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
+            val browsing = (result as PhaseOutcome.Continue).phaseState as MovementPhaseState.Browsing
             assertNull(browsing.hoveredPath)
             assertNull(browsing.hoveredDestination)
         }
@@ -447,7 +447,7 @@ internal class MovementControllerTest {
 
             val result = controller.handle(BrowsingAction.CycleMode, state, HexCoordinates(0, 0), gameState)
 
-            val browsing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
+            val browsing = (result as PhaseOutcome.Continue).phaseState as MovementPhaseState.Browsing
             assertTrue(browsing.prompt.contains("Run"))
             assertTrue(browsing.prompt.contains("6 MP"))
             assertTrue(browsing.prompt.contains("+2 to-hit"))
@@ -470,7 +470,7 @@ internal class MovementControllerTest {
                 gameState,
             )
 
-            val browsing = (result as PhaseOutcome.Continue).phaseState as PhaseState.Movement.Browsing
+            val browsing = (result as PhaseOutcome.Continue).phaseState as MovementPhaseState.Browsing
             assertNotNull(browsing.hoveredPath)
             assertNotNull(browsing.hoveredDestination)
             assertEquals(HexCoordinates(2, 0), browsing.hoveredDestination!!.position)

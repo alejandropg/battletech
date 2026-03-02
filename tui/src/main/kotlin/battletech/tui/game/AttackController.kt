@@ -51,7 +51,7 @@ public class AttackController {
         allDeclarations.clear()
     }
 
-    public fun enter(unit: CombatUnit, phase: TurnPhase, gameState: GameState): PhaseState.Attack {
+    public fun enter(unit: CombatUnit, phase: TurnPhase, gameState: GameState): AttackPhaseState {
         val existingDecl = currentImpulse?.declarations?.get(unit.id)
         val torsoFacing = existingDecl?.torsoFacing ?: unit.torsoFacing
         val arc = FiringArc.forwardArc(unit.position, torsoFacing, gameState.map)
@@ -66,7 +66,7 @@ public class AttackController {
 
         val (firstTargetIdx, firstWeaponIdx) = firstCursorPosition(targets)
 
-        return PhaseState.Attack(
+        return AttackPhaseState(
             unitId = unit.id,
             attackPhase = phase,
             torsoFacing = torsoFacing,
@@ -83,7 +83,7 @@ public class AttackController {
 
     public fun handle(
         action: AttackAction,
-        state: PhaseState.Attack,
+        state: AttackPhaseState,
         cursor: HexCoordinates,
         gameState: GameState,
     ): PhaseOutcome = when (action) {
@@ -141,7 +141,7 @@ public class AttackController {
         }
     }
 
-    private fun toggleWeapon(state: PhaseState.Attack): PhaseOutcome {
+    private fun toggleWeapon(state: AttackPhaseState): PhaseOutcome {
         if (state.targets.isEmpty() || state.cursorTargetIndex >= state.targets.size) {
             return PhaseOutcome.Continue(state)
         }
@@ -192,7 +192,7 @@ public class AttackController {
      *
      * Flat order: all weapons of target 0, all weapons of target 1, ...
      */
-    private fun navigateWeapons(state: PhaseState.Attack, delta: Int): PhaseState.Attack {
+    private fun navigateWeapons(state: AttackPhaseState, delta: Int): AttackPhaseState {
         if (state.targets.isEmpty()) return state
 
         data class Entry(val targetIdx: Int, val weaponIdx: Int)
@@ -225,11 +225,11 @@ public class AttackController {
     }
 
     private fun twistTorso(
-        state: PhaseState.Attack,
+        state: AttackPhaseState,
         attacker: CombatUnit,
         clockwise: Boolean,
         gameState: GameState,
-    ): PhaseState.Attack {
+    ): AttackPhaseState {
         val legFacing = attacker.facing
         val newTorso = if (clockwise) state.torsoFacing.rotateClockwise() else state.torsoFacing.rotateCounterClockwise()
         if (legFacing.turnCostTo(newTorso) > 1) return state

@@ -54,7 +54,7 @@ internal class AppStateTest {
 
     private fun anAppState(
         currentPhase: TurnPhase = TurnPhase.MOVEMENT,
-        phase: PhaseState = PhaseState.Idle(),
+        phase: PhaseState = IdlePhaseState(),
         cursor: HexCoordinates = HexCoordinates(0, 0),
         gameState: battletech.tactical.model.GameState = aGameState(),
         turnState: TurnState? = null,

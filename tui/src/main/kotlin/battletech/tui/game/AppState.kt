@@ -66,7 +66,7 @@ public fun autoAdvanceGlobalPhases(
             val state = appState.copy(
                 currentPhase = nextPhase(TurnPhase.INITIATIVE),
                 turnState = turnState,
-                phase = PhaseState.Idle(prompt),
+                phase = IdlePhaseState(prompt),
             )
             state to FlashMessage("Initiative: P1 rolled $p1Roll, P2 rolled $p2Roll — $loserName moves first")
         }
@@ -86,7 +86,7 @@ public fun autoAdvanceGlobalPhases(
                 )
                 val state = appState.copy(
                     turnState = newTurnState,
-                    phase = PhaseState.Idle(prompt),
+                    phase = IdlePhaseState(prompt),
                 )
                 state to FlashMessage("Weapon Attack Phase")
             } else {
@@ -109,7 +109,7 @@ public fun autoAdvanceGlobalPhases(
                 )
                 val state = appState.copy(
                     turnState = newTurnState,
-                    phase = PhaseState.Idle(prompt),
+                    phase = IdlePhaseState(prompt),
                 )
                 state to FlashMessage("Physical Attack Phase")
             } else {

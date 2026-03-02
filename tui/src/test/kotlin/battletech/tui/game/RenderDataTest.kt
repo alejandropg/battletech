@@ -51,10 +51,10 @@ internal class RenderDataTest {
     )
 
     @Nested
-    inner class IdleTest {
+    inner class IdlePhaseStateTest {
         @Test
         fun `Idle produces empty render data`() {
-            val result = extractRenderData(PhaseState.Idle())
+            val result = extractRenderData(IdlePhaseState())
             assertEquals(RenderData.EMPTY, result)
         }
     }
@@ -63,7 +63,7 @@ internal class RenderDataTest {
     inner class BrowsingTest {
         @Test
         fun `Browsing shows reachability highlights`() {
-            val state = PhaseState.Movement.Browsing(
+            val state = MovementPhaseState.Browsing(
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
@@ -81,7 +81,7 @@ internal class RenderDataTest {
         @Test
         fun `Browsing with hovered path shows path highlights`() {
             val path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0), HexCoordinates(2, 0))
-            val state = PhaseState.Movement.Browsing(
+            val state = MovementPhaseState.Browsing(
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
@@ -100,7 +100,7 @@ internal class RenderDataTest {
 
         @Test
         fun `Browsing with run mode shows run highlights`() {
-            val state = PhaseState.Movement.Browsing(
+            val state = MovementPhaseState.Browsing(
                 unitId = UnitId("u1"),
                 modes = listOf(runReachability),
                 currentModeIndex = 0,
@@ -116,7 +116,7 @@ internal class RenderDataTest {
 
         @Test
         fun `Browsing provides reachable facings`() {
-            val state = PhaseState.Movement.Browsing(
+            val state = MovementPhaseState.Browsing(
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
@@ -137,7 +137,7 @@ internal class RenderDataTest {
         @Test
         fun `SelectingFacing includes facing selection data`() {
             val options = reachableHexes.filter { it.position == HexCoordinates(1, 0) }
-            val state = PhaseState.Movement.SelectingFacing(
+            val state = MovementPhaseState.SelectingFacing(
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
@@ -156,7 +156,7 @@ internal class RenderDataTest {
 
         @Test
         fun `SelectingFacing shows path highlights`() {
-            val state = PhaseState.Movement.SelectingFacing(
+            val state = MovementPhaseState.SelectingFacing(
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
@@ -173,11 +173,11 @@ internal class RenderDataTest {
     }
 
     @Nested
-    inner class AttackTest {
+    inner class AttackPhaseStateTest {
         @Test
         fun `Attack produces arc highlights`() {
             val arcHexes = setOf(HexCoordinates(1, 0), HexCoordinates(2, 0))
-            val state = PhaseState.Attack(
+            val state = AttackPhaseState(
                 unitId = UnitId("u1"),
                 attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
                 torsoFacing = HexDirection.N,
@@ -199,7 +199,7 @@ internal class RenderDataTest {
 
         @Test
         fun `Attack with empty arc produces empty highlights`() {
-            val state = PhaseState.Attack(
+            val state = AttackPhaseState(
                 unitId = UnitId("u1"),
                 attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
                 torsoFacing = HexDirection.N,

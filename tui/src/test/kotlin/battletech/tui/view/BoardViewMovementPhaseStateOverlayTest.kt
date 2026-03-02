@@ -1,17 +1,17 @@
 package battletech.tui.view
 
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.hex.HexHighlight
 import battletech.tui.screen.ScreenBuffer
-import battletech.tactical.model.HexCoordinates
-import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 
-internal class BoardViewMovementOverlayTest {
+internal class BoardViewMovementPhaseStateOverlayTest {
 
     @Test
     fun `reachable hexes show dot marker at center`() {

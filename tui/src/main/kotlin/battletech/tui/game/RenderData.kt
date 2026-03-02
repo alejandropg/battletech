@@ -22,15 +22,15 @@ public data class RenderData(
 
 public fun extractRenderData(phaseState: PhaseState, gameState: GameState? = null): RenderData {
     return when (phaseState) {
-        is PhaseState.Idle -> RenderData.EMPTY
+        is IdlePhaseState -> RenderData.EMPTY
 
-        is PhaseState.Movement.Browsing -> RenderData(
+        is MovementPhaseState.Browsing -> RenderData(
             hexHighlights = reachabilityHighlights(phaseState.reachability)
                     + pathHighlights(phaseState.hoveredPath),
             reachableFacings = phaseState.reachability.facingsByPosition(),
         )
 
-        is PhaseState.Movement.SelectingFacing -> RenderData(
+        is MovementPhaseState.SelectingFacing -> RenderData(
             hexHighlights = reachabilityHighlights(phaseState.modes[phaseState.currentModeIndex])
                     + pathHighlights(phaseState.path),
             facingSelection = FacingSelection(
@@ -40,7 +40,7 @@ public fun extractRenderData(phaseState: PhaseState, gameState: GameState? = nul
             reachableFacings = phaseState.modes[phaseState.currentModeIndex].facingsByPosition(),
         )
 
-        is PhaseState.Attack -> {
+        is AttackPhaseState -> {
             val arcHighlights = phaseState.arc.associateWith { HexHighlight.ATTACK_RANGE }
             val unitPos = gameState?.unitById(phaseState.unitId)?.position
             val torsoFacings = if (unitPos != null) mapOf(unitPos to phaseState.torsoFacing) else emptyMap()

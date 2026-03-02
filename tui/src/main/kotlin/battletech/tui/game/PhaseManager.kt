@@ -19,7 +19,7 @@ public class PhaseManager(
 
             is PhaseOutcome.Cancelled -> {
                 val prompt = contextualIdlePrompt(appState)
-                HandleResult(appState.copy(phase = PhaseState.Idle(prompt)))
+                HandleResult(appState.copy(phase = IdlePhaseState(prompt)))
             }
         }
 
@@ -38,7 +38,7 @@ public class PhaseManager(
             appState.copy(
                 gameState = outcome.gameState,
                 currentPhase = nextPhase(appState.currentPhase),
-                phase = PhaseState.Idle(),
+                phase = IdlePhaseState(),
             )
         )
 
@@ -53,7 +53,7 @@ public class PhaseManager(
                         appState.copy(
                             gameState = outcome.gameState,
                             currentPhase = nextPhase(appState.currentPhase),
-                            phase = PhaseState.Idle(attackPrompt(withAttack)),
+                            phase = IdlePhaseState(attackPrompt(withAttack)),
                             turnState = withAttack,
                         )
                     )
@@ -61,7 +61,7 @@ public class PhaseManager(
                     HandleResult(
                         appState.copy(
                             gameState = outcome.gameState,
-                            phase = PhaseState.Idle(movementPrompt(newTurnState)),
+                            phase = IdlePhaseState(movementPrompt(newTurnState)),
                             turnState = newTurnState,
                         )
                     )
@@ -72,7 +72,7 @@ public class PhaseManager(
                 appState.copy(
                     gameState = outcome.gameState,
                     currentPhase = nextPhase(appState.currentPhase),
-                    phase = PhaseState.Idle(),
+                    phase = IdlePhaseState(),
                 )
             )
 
@@ -80,7 +80,7 @@ public class PhaseManager(
                 appState.copy(
                     gameState = outcome.gameState,
                     currentPhase = nextPhase(appState.currentPhase),
-                    phase = PhaseState.Idle(),
+                    phase = IdlePhaseState(),
                 )
             )
         }

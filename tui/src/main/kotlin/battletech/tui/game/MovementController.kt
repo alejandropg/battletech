@@ -22,13 +22,13 @@ public class MovementController(
             listOf(HexDirection.N, HexDirection.NE, HexDirection.SE, HexDirection.S, HexDirection.SW, HexDirection.NW)
     }
 
-    public fun enter(unit: CombatUnit, gameState: GameState): PhaseState.Movement.Browsing {
+    public fun enter(unit: CombatUnit, gameState: GameState): MovementPhaseState.Browsing {
         val report = actionQueryService.getMovementActions(unit, gameState)
         val modes = report.actions
             .filterIsInstance<AvailableAction>()
             .map { (it.preview as MovementPreview).reachability }
 
-        return PhaseState.Movement.Browsing(
+        return MovementPhaseState.Browsing(
             unitId = unit.id,
             modes = modes,
             currentModeIndex = 0,
@@ -40,7 +40,7 @@ public class MovementController(
 
     public fun handle(
         action: BrowsingAction,
-        state: PhaseState.Movement.Browsing,
+        state: MovementPhaseState.Browsing,
         cursor: HexCoordinates,
         gameState: GameState,
     ): PhaseOutcome = when (action) {
@@ -56,13 +56,13 @@ public class MovementController(
 
     public fun handle(
         action: FacingAction,
-        state: PhaseState.Movement.SelectingFacing,
+        state: MovementPhaseState.SelectingFacing,
         cursor: HexCoordinates,
         gameState: GameState,
     ): PhaseOutcome = when (action) {
         is FacingAction.Cancel -> {
             PhaseOutcome.Continue(
-                PhaseState.Movement.Browsing(
+                MovementPhaseState.Browsing(
                     unitId = state.unitId,
                     modes = state.modes,
                     currentModeIndex = state.currentModeIndex,
@@ -83,7 +83,7 @@ public class MovementController(
     }
 
     private fun handleBrowsingConfirm(
-        state: PhaseState.Movement.Browsing,
+        state: MovementPhaseState.Browsing,
         gameState: GameState,
     ): PhaseOutcome {
         val destination = state.hoveredDestination ?: return PhaseOutcome.Continue(state)
@@ -97,7 +97,7 @@ public class MovementController(
 
     private fun handleBrowsingSelectAction(
         index: Int,
-        state: PhaseState.Movement.Browsing,
+        state: MovementPhaseState.Browsing,
         gameState: GameState,
     ): PhaseOutcome {
         val directionIndex = index - 1
@@ -115,13 +115,13 @@ public class MovementController(
     }
 
     private fun enterFacingSelection(
-        state: PhaseState.Movement.Browsing,
+        state: MovementPhaseState.Browsing,
         hex: HexCoordinates,
         facingsAtHex: List<ReachableHex>,
-    ): PhaseState.Movement.SelectingFacing {
+    ): MovementPhaseState.SelectingFacing {
         val cheapest = facingsAtHex.minByOrNull { it.mpSpent }
         val path = cheapest?.path?.map { it.position } ?: emptyList()
-        return PhaseState.Movement.SelectingFacing(
+        return MovementPhaseState.SelectingFacing(
             unitId = state.unitId,
             modes = state.modes,
             currentModeIndex = state.currentModeIndex,
@@ -134,8 +134,8 @@ public class MovementController(
 
     private fun updatePathForCursor(
         cursorPosition: HexCoordinates,
-        state: PhaseState.Movement.Browsing,
-    ): PhaseState.Movement.Browsing {
+        state: MovementPhaseState.Browsing,
+    ): MovementPhaseState.Browsing {
         if (state.modes.isEmpty()) return state
         val reachability = state.reachability
         val cheapest = reachability.destinations
@@ -148,10 +148,10 @@ public class MovementController(
         )
     }
 
-    private fun cycleMode(state: PhaseState.Movement.Browsing): PhaseState.Movement.Browsing {
+    private fun cycleMode(state: MovementPhaseState.Browsing): MovementPhaseState.Browsing {
         if (state.modes.isEmpty()) return state
         val nextIndex = (state.currentModeIndex + 1) % state.modes.size
-        return PhaseState.Movement.Browsing(
+        return MovementPhaseState.Browsing(
             unitId = state.unitId,
             modes = state.modes,
             currentModeIndex = nextIndex,

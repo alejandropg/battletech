@@ -36,7 +36,7 @@ internal class InputMapperTest {
     }
 
     @Nested
-    inner class MapIdleEventTest {
+    inner class MapIdlePhaseStateEventTest {
         @Test
         fun `arrow up maps to MoveCursor north`() {
             assertEquals(IdleAction.MoveCursor(HexDirection.N), InputMapper.mapIdleEvent(key("ArrowUp")))
@@ -162,7 +162,7 @@ internal class InputMapperTest {
     }
 
     @Nested
-    inner class MapAttackEventTest {
+    inner class MapAttackPhaseStateEventTest {
         @Test
         fun `arrow right maps to TwistTorso clockwise`() {
             assertEquals(AttackAction.TwistTorso(clockwise = true), InputMapper.mapAttackEvent(key("ArrowRight")))
