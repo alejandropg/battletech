@@ -55,7 +55,7 @@ public class TuiApp {
             gameState = sampleGameState(),
             currentPhase = TurnPhase.INITIATIVE,
             cursor = HexCoordinates(0, 0),
-            phase = phaseManager.idle(),
+            phase = PhaseState.Idle(),
         )
 
         renderer.clear()
@@ -79,7 +79,7 @@ public class TuiApp {
                     if (event is KeyboardEvent && InputMapper.isQuit(event)) break
 
                     // Polymorphic dispatch — no when by phase type
-                    val result = appState.phase.processEvent(event, appState) ?: continue
+                    val result = appState.phase.processEvent(event, appState, phaseManager) ?: continue
 
                     appState = result.appState
                     if (result.flash != null) {
@@ -111,7 +111,7 @@ public class TuiApp {
     ) {
         val sidebarWidth = 28
         val statusBarHeight = 7
-        val attackPhase = appState.phase.state as? PhaseState.Attack
+        val attackPhase = appState.phase as? PhaseState.Attack
 
         val hasTargets = attackPhase?.targets?.isNotEmpty() == true
         val targetsWidth = if (hasTargets) 28 else 0
@@ -121,21 +121,21 @@ public class TuiApp {
         val buffer = ScreenBuffer(size.width, size.height)
         val viewport = Viewport(0, 0, boardWidth - 4, boardHeight - 4)
 
-        val renderData = extractRenderData(appState.phase.state, appState.gameState)
+        val renderData = extractRenderData(appState.phase, appState.gameState)
 
-        val selectedUnit = when (val phase = appState.phase.state) {
+        val selectedUnit = when (val phase = appState.phase) {
             is PhaseState.Movement -> appState.gameState.unitById(phase.unitId)
             is PhaseState.Attack -> appState.gameState.unitById(phase.unitId)
             is PhaseState.Idle -> appState.gameState.unitAt(appState.cursor)
         }
 
-        val pathDestination = when (val phase = appState.phase.state) {
+        val pathDestination = when (val phase = appState.phase) {
             is PhaseState.Movement.Browsing -> phase.hoveredPath?.lastOrNull()
             is PhaseState.Movement.SelectingFacing -> phase.path.lastOrNull()
             else -> null
         }
 
-        val movementMode = (appState.phase.state as? PhaseState.Movement)?.reachability?.mode
+        val movementMode = (appState.phase as? PhaseState.Movement)?.reachability?.mode
 
         val boardView = BoardView(
             appState.gameState,
@@ -165,7 +165,7 @@ public class TuiApp {
         val sidebarView = SidebarView(unit = selectedUnit)
         sidebarView.render(buffer, boardWidth + targetsWidth, 0, sidebarWidth, boardHeight)
 
-        val prompt = if (flash != null) flash.text else appState.phase.state.prompt
+        val prompt = if (flash != null) flash.text else appState.phase.prompt
         val activePlayerInfo = if (appState.turnState != null) {
             val isMovement = appState.currentPhase == TurnPhase.MOVEMENT && !appState.turnState.allImpulsesComplete
             val isAttack = isAttackPhase(appState.currentPhase) &&

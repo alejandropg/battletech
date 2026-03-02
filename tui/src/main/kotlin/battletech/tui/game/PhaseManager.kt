@@ -1,41 +1,25 @@
 package battletech.tui.game
 
 import battletech.tactical.action.TurnPhase
+import kotlin.random.Random
 
 public class PhaseManager(
     public val movementController: MovementController,
     public val attackController: AttackController,
+    public val random: Random = Random,
 ) {
-    public fun idle(prompt: String = "Move cursor to select a unit"): ActivePhase =
-        IdlePhase(this, PhaseState.Idle(prompt))
-
-    public fun browsing(state: PhaseState.Movement.Browsing): ActivePhase =
-        BrowsingPhase(this, state)
-
-    public fun facing(state: PhaseState.Movement.SelectingFacing): ActivePhase =
-        FacingPhase(this, state)
-
-    public fun attack(state: PhaseState.Attack): ActivePhase =
-        AttackPhase(this, state)
-
-    public fun wrap(phaseState: PhaseState): ActivePhase = when (phaseState) {
-        is PhaseState.Idle -> idle(phaseState.prompt)
-        is PhaseState.Movement.Browsing -> browsing(phaseState)
-        is PhaseState.Movement.SelectingFacing -> facing(phaseState)
-        is PhaseState.Attack -> attack(phaseState)
-    }
 
     public fun fromOutcome(outcome: PhaseOutcome, appState: AppState): HandleResult =
         when (outcome) {
             is PhaseOutcome.Continue ->
-                HandleResult(appState.copy(phase = wrap(outcome.phaseState)))
+                HandleResult(appState.copy(phase = outcome.phaseState))
 
             is PhaseOutcome.Complete ->
                 handleComplete(outcome, appState)
 
             is PhaseOutcome.Cancelled -> {
                 val prompt = contextualIdlePrompt(appState)
-                HandleResult(appState.copy(phase = idle(prompt)))
+                HandleResult(appState.copy(phase = PhaseState.Idle(prompt)))
             }
         }
 
@@ -54,7 +38,7 @@ public class PhaseManager(
             appState.copy(
                 gameState = outcome.gameState,
                 currentPhase = nextPhase(appState.currentPhase),
-                phase = idle(),
+                phase = PhaseState.Idle(),
             )
         )
 
@@ -69,7 +53,7 @@ public class PhaseManager(
                         appState.copy(
                             gameState = outcome.gameState,
                             currentPhase = nextPhase(appState.currentPhase),
-                            phase = idle(attackPrompt(withAttack)),
+                            phase = PhaseState.Idle(attackPrompt(withAttack)),
                             turnState = withAttack,
                         )
                     )
@@ -77,7 +61,7 @@ public class PhaseManager(
                     HandleResult(
                         appState.copy(
                             gameState = outcome.gameState,
-                            phase = idle(movementPrompt(newTurnState)),
+                            phase = PhaseState.Idle(movementPrompt(newTurnState)),
                             turnState = newTurnState,
                         )
                     )
@@ -88,7 +72,7 @@ public class PhaseManager(
                 appState.copy(
                     gameState = outcome.gameState,
                     currentPhase = nextPhase(appState.currentPhase),
-                    phase = idle(),
+                    phase = PhaseState.Idle(),
                 )
             )
 
@@ -96,7 +80,7 @@ public class PhaseManager(
                 appState.copy(
                     gameState = outcome.gameState,
                     currentPhase = nextPhase(appState.currentPhase),
-                    phase = idle(),
+                    phase = PhaseState.Idle(),
                 )
             )
         }

@@ -69,13 +69,13 @@ internal class IdlePhaseTest {
             gameState = gameState,
             currentPhase = currentPhase,
             cursor = cursor,
-            phase = manager.idle(),
+            phase = PhaseState.Idle(),
             turnState = turnState,
         )
     }
 
-    private fun idlePhase(prompt: String = "Move cursor to select a unit"): IdlePhase =
-        IdlePhase(manager, PhaseState.Idle(prompt))
+    private fun idlePhase(prompt: String = "Move cursor to select a unit"): PhaseState.Idle =
+        PhaseState.Idle(prompt)
 
     private fun enterKey(): KeyboardEvent = KeyboardEvent("Enter")
     private fun tabKey(): KeyboardEvent = KeyboardEvent("Tab")
@@ -90,7 +90,7 @@ internal class IdlePhaseTest {
             val state = anAppState(cursor = HexCoordinates(2, 2), gameState = aGameState(map = map))
             val phase = idlePhase()
 
-            val result = phase.processEvent(arrowUp(), state)
+            val result = phase.processEvent(arrowUp(), state, manager)
 
             assertNotNull(result)
             assertEquals(HexCoordinates(2, 1), result!!.appState.cursor)
@@ -115,11 +115,11 @@ internal class IdlePhaseTest {
 
             // Simulate a click on hex (1,1) where unit is — use Enter on cursor at unit position
             val stateAtUnit = state.copy(cursor = HexCoordinates(1, 1))
-            val result = phase.processEvent(enterKey(), stateAtUnit)
+            val result = phase.processEvent(enterKey(), stateAtUnit, manager)
 
             assertNotNull(result)
             // Should enter movement phase (Browsing)
-            assertInstanceOf(PhaseState.Movement.Browsing::class.java, result!!.appState.phase.state)
+            assertInstanceOf(PhaseState.Movement.Browsing::class.java, result!!.appState.phase)
         }
     }
 
@@ -137,7 +137,7 @@ internal class IdlePhaseTest {
             )
             val phase = idlePhase()
 
-            val result = phase.processEvent(enterKey(), state)
+            val result = phase.processEvent(enterKey(), state, manager)
 
             assertNotNull(result)
             assertEquals("Not your unit", result!!.flash?.text)
@@ -155,7 +155,7 @@ internal class IdlePhaseTest {
             )
             val phase = idlePhase()
 
-            val result = phase.processEvent(enterKey(), state)
+            val result = phase.processEvent(enterKey(), state, manager)
 
             assertNotNull(result)
             assertEquals("Already moved", result!!.flash?.text)
@@ -177,10 +177,10 @@ internal class IdlePhaseTest {
             )
             val phase = idlePhase()
 
-            val result = phase.processEvent(enterKey(), state)
+            val result = phase.processEvent(enterKey(), state, manager)
 
             assertNotNull(result)
-            assertInstanceOf(PhaseState.Movement.Browsing::class.java, result!!.appState.phase.state)
+            assertInstanceOf(PhaseState.Movement.Browsing::class.java, result!!.appState.phase)
             assertNull(result.flash)
         }
 
@@ -202,10 +202,10 @@ internal class IdlePhaseTest {
             )
             val phase = idlePhase()
 
-            val result = phase.processEvent(enterKey(), state)
+            val result = phase.processEvent(enterKey(), state, manager)
 
             assertNotNull(result)
-            assertInstanceOf(PhaseState.Attack::class.java, result!!.appState.phase.state)
+            assertInstanceOf(PhaseState.Attack::class.java, result!!.appState.phase)
         }
 
         @Test
@@ -226,7 +226,7 @@ internal class IdlePhaseTest {
             )
             val phase = idlePhase()
 
-            val result = phase.processEvent(enterKey(), state)
+            val result = phase.processEvent(enterKey(), state, manager)
 
             assertNotNull(result)
             assertEquals("Already committed attacks", result!!.flash?.text)
@@ -242,7 +242,7 @@ internal class IdlePhaseTest {
             )
             val phase = idlePhase()
 
-            val result = phase.processEvent(enterKey(), state)
+            val result = phase.processEvent(enterKey(), state, manager)
 
             assertNotNull(result)
             assertEquals(state, result!!.appState)
@@ -265,7 +265,7 @@ internal class IdlePhaseTest {
             )
             val phase = idlePhase()
 
-            val result = phase.processEvent(tabKey(), state)
+            val result = phase.processEvent(tabKey(), state, manager)
 
             assertNotNull(result)
             assertEquals(HexCoordinates(2, 2), result!!.appState.cursor)
@@ -284,7 +284,7 @@ internal class IdlePhaseTest {
             )
             val phase = idlePhase()
 
-            val result = phase.processEvent(tabKey(), state)
+            val result = phase.processEvent(tabKey(), state, manager)
 
             assertNotNull(result)
             assertEquals(HexCoordinates(0, 0), result!!.appState.cursor)
@@ -298,7 +298,7 @@ internal class IdlePhaseTest {
             val state = anAppState(currentPhase = TurnPhase.MOVEMENT, turnState = aTurnState())
             val phase = idlePhase()
 
-            val result = phase.processEvent(cKey(), state)
+            val result = phase.processEvent(cKey(), state, manager)
 
             assertNotNull(result)
             assertEquals(state, result!!.appState)
@@ -317,7 +317,7 @@ internal class IdlePhaseTest {
             )
             val phase = idlePhase()
 
-            val result = phase.processEvent(cKey(), state)
+            val result = phase.processEvent(cKey(), state, manager)
 
             assertNotNull(result)
             assertNotNull(result!!.flash)

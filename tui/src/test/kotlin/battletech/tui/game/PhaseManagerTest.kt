@@ -50,7 +50,7 @@ internal class PhaseManagerTest {
 
     private fun anAppState(
         currentPhase: TurnPhase = TurnPhase.MOVEMENT,
-        phase: ActivePhase = manager.idle(),
+        phase: PhaseState = PhaseState.Idle(),
         cursor: HexCoordinates = HexCoordinates(0, 0),
         turnState: TurnState? = null,
     ) = AppState(
@@ -62,85 +62,15 @@ internal class PhaseManagerTest {
     )
 
     @Nested
-    inner class WrapTest {
-        @Test
-        fun `wraps Idle into IdlePhase`() {
-            val idle = PhaseState.Idle("test prompt")
-
-            val result = manager.wrap(idle)
-
-            assertInstanceOf(IdlePhase::class.java, result)
-            assertEquals(idle, result.state)
-        }
-
-        @Test
-        fun `wraps Browsing into BrowsingPhase`() {
-            val browsing = PhaseState.Movement.Browsing(
-                unitId = UnitId("u1"),
-                modes = emptyList(),
-                currentModeIndex = 0,
-                hoveredPath = null,
-                hoveredDestination = null,
-                prompt = "test",
-            )
-
-            val result = manager.wrap(browsing)
-
-            assertInstanceOf(BrowsingPhase::class.java, result)
-            assertEquals(browsing, result.state)
-        }
-
-        @Test
-        fun `wraps SelectingFacing into FacingPhase`() {
-            val facing = PhaseState.Movement.SelectingFacing(
-                unitId = UnitId("u1"),
-                modes = emptyList(),
-                currentModeIndex = 0,
-                hex = HexCoordinates(1, 1),
-                options = emptyList(),
-                path = emptyList(),
-                prompt = "Select facing",
-            )
-
-            val result = manager.wrap(facing)
-
-            assertInstanceOf(FacingPhase::class.java, result)
-            assertEquals(facing, result.state)
-        }
-
-        @Test
-        fun `wraps Attack into AttackPhase`() {
-            val attack = PhaseState.Attack(
-                unitId = UnitId("u1"),
-                attackPhase = TurnPhase.WEAPON_ATTACK,
-                torsoFacing = battletech.tactical.model.HexDirection.N,
-                arc = emptySet(),
-                validTargetIds = emptySet(),
-                targets = emptyList(),
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
-                weaponAssignments = emptyMap(),
-                primaryTargetId = null,
-                prompt = "test",
-            )
-
-            val result = manager.wrap(attack)
-
-            assertInstanceOf(AttackPhase::class.java, result)
-            assertEquals(attack, result.state)
-        }
-    }
-
-    @Nested
     inner class FromOutcomeTest {
         @Test
-        fun `Continue wraps PhaseState into ActivePhase`() {
+        fun `Continue returns new PhaseState`() {
             val newPhase = PhaseState.Idle("new prompt")
             val state = anAppState()
 
             val result = manager.fromOutcome(PhaseOutcome.Continue(newPhase), state)
 
-            assertEquals(newPhase, result.appState.phase.state)
+            assertEquals(newPhase, result.appState.phase)
             assertNull(result.flash)
         }
 
@@ -154,7 +84,7 @@ internal class PhaseManagerTest {
 
             val result = manager.fromOutcome(PhaseOutcome.Cancelled, state)
 
-            val idle = result.appState.phase.state as PhaseState.Idle
+            val idle = result.appState.phase as PhaseState.Idle
             assertEquals(movementPrompt(turnState), idle.prompt)
         }
 
@@ -173,7 +103,7 @@ internal class PhaseManagerTest {
 
             val result = manager.fromOutcome(PhaseOutcome.Cancelled, state)
 
-            val idle = result.appState.phase.state as PhaseState.Idle
+            val idle = result.appState.phase as PhaseState.Idle
             assertEquals(attackPrompt(turnState), idle.prompt)
         }
 
@@ -207,7 +137,7 @@ internal class PhaseManagerTest {
             val result = manager.fromOutcome(PhaseOutcome.Complete(newGameState), state)
 
             assertEquals(TurnPhase.PHYSICAL_ATTACK, result.appState.currentPhase)
-            assertInstanceOf(PhaseState.Idle::class.java, result.appState.phase.state)
+            assertInstanceOf(PhaseState.Idle::class.java, result.appState.phase)
         }
     }
 }
