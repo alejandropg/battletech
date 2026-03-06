@@ -6,25 +6,29 @@ description: Apply patterns and conventions when writing or editing JUnit tests 
 ## Naming
 
 - **Test classes**: Use descriptive names and never use `@DisplayName`
-- **Test names**: Describe behavior, not implementation (e.g., "throw exception when id is empty")
+- **Test names**: Describe behavior, not implementation (e.g., `fun \`throw exception when id is empty\`()`")
 
 ## Structure
 
-- Arrange-Act-Assert with blank lines separating sections (no comments needed)
-- Extract repeated fixtures as class properties initialized in declaration
-  - Use `@BeforeEach` only when setup logic is required
-- Group related tests using nested classes if beneficial for clarity and readability
+- Arrange-Act-Assert with blank lines separating sections (no `// Arrange` comments)
+- Extract shared fixtures as class-level properties initialized in declaration
+  - Use `@BeforeEach` only when setup logic cannot be expressed as a property initializer
+- Group related tests using nested classes blocks when it aids clarity
 
 ## Assertions
 
 - Do not assert nullability of non-nullable Kotlin types
-- Prefer JUnit over third-party libraries
-- If availabe use specific JUnit Kotlin fun assertions from `Assertions.kt` (e.g., `import org.junit.jupiter.api.assertNotNull`) 
-- Use AssertJ if more expressive than JUnit when asserts are about the elements of collections/iterables, strings/charsecuences (e.g., prefer AssertJ `assertThat(list).contains(foo, bar)` over JUnit `assertTrue(list.contains(foo, bar))`)
+- Prefer JUnit to third-party libraries for simple value equality
+- Use JUnit Kotlin extension functions where available (e.g., `import org.junit.jupiter.api.assertThrows`)
+- Use AssertJ when it is more expressive — especially for:
+  - Collections elements: `assertThat(list).contains(...)`, `assertThat(list).allSatisfy {...}`
+  - Type checking: `assertThat(result).isInstanceOf(X::class.java)`
+  - Strings: `assertThat(str).contains("foo")`
+
 
 ## Mocking
 
 - Use real classes within the same domain
-- Mock only external dependencies or other domains/layers (databases, APIs, file systems, other modules)
+- Mock only external dependencies or other modules/layers (databases, APIs, file systems...)
 - Use Mockk
-- Prefer state-based testing over interaction verification
+- Prefer state-based testing to interaction verification
