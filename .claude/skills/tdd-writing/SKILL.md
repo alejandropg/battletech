@@ -1,6 +1,6 @@
 ---
 name: tdd-writing
-description: Use TDD (Test-Driven Development) when implementing features or bugfixes
+description: Apply TDD when implementing any feature, bugfix, or behavior change. Use this whenever the user asks to implement something, write tests, or add functionality — it orchestrates the testing-style and programming-style skills.
 ---
 
 ## Core Principles

@@ -1,6 +1,6 @@
 ---
 name: brainstorming-to-design
-description: Use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation.
+description: Use before implementing anything — creating features, building components, adding functionality, or modifying behavior. Always trigger this when the user wants to design, plan, or brainstorm before writing code.
 disable-model-invocation: true
 ---
 
@@ -51,9 +51,8 @@ Write the validated design to `requirements/YYYY-MM-DD - design - <Topic name>.m
 
 ## Key Principles
 
-- **One question at a time**: Don't overwhelm with multiple questions
-- **Multiple choice preferred**: Easier to answer than open-ended when possible
-- **YAGNI ruthlessly**: Remove unnecessary features from all designs
-- **Explore alternatives**: Always propose 2-3 approaches before settling
-- **Incremental validation**: Present design in sections, validate each
 - **Be flexible**: Go back and clarify when something doesn't make sense
+- **IMPERATIVE! Use design good practices**
+  - SOLID
+  - KISS
+  - YAGNI ruthlessly**: Remove unnecessary features from all designs

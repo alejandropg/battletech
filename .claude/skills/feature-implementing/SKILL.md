@@ -1,6 +1,6 @@
 ---
 name: feature-implementing
-description: Use to implement features from feature_list.json
+description: Use when implementing features from `requirements/feature_list.json`. Trigger whenever the user asks to implement features, continue feature development, or process the feature list.
 disable-model-invocation: true
 context: fork
 model: opus
@@ -59,38 +59,3 @@ After ALL tests pass for a feature, update `requirements/feature_list.json`:
 - Ask the user for clarification
 - Do NOT make assumptions about expected behavior
 
-## Example Feature Update
-
-Before:
-```json
-{
-  "id": "0001",
-  "description": "Validate user count is positive",
-  "tests": [],
-  "passes": false,
-  "updated_at": "2026-02-04T10:00:00Z"
-}
-```
-After implementation and tests pass:
-```json
-{
-  "id": "0001",
-  "description": "Validate user count is positive",
-  "tests": [
-    "tactical/src/test/kotlin/com/example/user/F0001_ValidateUserCountTest::return count when positive",
-    "tactical/src/test/kotlin/com/example/user/F0001_ValidateUserCountTest::throw exception when count is zero",
-    "tactical/src/test/kotlin/com/example/user/F0001_ValidateUserCountTest::throw exception when count is negative"
-  ],
-  "passes": true,
-  "updated_at": "2026-02-04T14:30:00Z"
-}
-```
-
-## Verification Checklist
-
-- [ ] All features have `passes` set to `true`
-- [ ] All features have populated `tests` arrays
-- [ ] Test references follow the correct format
-- [ ] Test class names follow `F<id>_<Name>Test` pattern
-- [ ] The `updated_at` timestamp is current for all processed features
-- [ ] No assumptions were made about unclear requirements
