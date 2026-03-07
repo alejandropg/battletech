@@ -55,4 +55,5 @@ Write the validated design to `requirements/YYYY-MM-DD - design - <Topic name>.m
 - **IMPERATIVE! Use design good practices**
   - SOLID
   - KISS
-  - YAGNI ruthlessly**: Remove unnecessary features from all designs
+  - DRY
+  - YAGNI ruthlessly: Remove unnecessary features from all designs
