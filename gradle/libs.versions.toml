@@ -5,7 +5,7 @@ junit = "6.0.2"
 mockk = "1.14.9"
 assertj = "3.27.7"
 mordant = "3.0.2"
-shadow = "8.3.6"
+shadow = "9.4.0"
 
 [libraries]
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }

@@ -35,6 +35,14 @@ tasks.shadowJar {
     mergeServiceFiles()
 }
 
+tasks.named("startScripts") {
+    dependsOn(tasks.shadowJar)
+}
+
+tasks.named("startShadowScripts") {
+    dependsOn(tasks.named("jar"))
+}
+
 val createExecutable by tasks.registering {
     group = "distribution"
     description = "Creates a self-executing tui binary (Unix/macOS)"
