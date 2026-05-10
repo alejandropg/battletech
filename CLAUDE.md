@@ -10,7 +10,7 @@ BattleTech Rules Engine is a multi-module project implementing BattleTech, hexag
   - Kotlin DSL
   - modular architecture and convention plugins for build configuration in `buildSrc/`
 - **Kotlin**: 2.3.0
-- **JVM**: 25 (LTS) with aligned Kotlin JVM target (JVM Toolchain)
+- **JVM**: 25
 - **JUnit**: 6.0.2 with Jupiter API/Engine for testing
 
 ## Essential Commands
@@ -32,14 +32,10 @@ BattleTech Rules Engine is a multi-module project implementing BattleTech, hexag
 # Run a single test class
 ./gradlew :strategic:test --tests "battletech.strategic.StrategicRulesTest"
 
-# Clean and rebuild
-./gradlew clean build
-
 # Run the application
 ./gradlew :bt:run
 
-# Build TUI fat JAR (single-file distributable, ~7 MB)
-./gradlew :tui:shadowJar     # → tui/build/libs/tui.jar
+# Build TUI fat JAR (single-file distributable)
 ./gradlew :tui:createExecutable  # → tui/build/tui (self-executing, Unix/macOS)
 
 # Run the TUI application
@@ -58,7 +54,6 @@ The project uses a layered module architecture:
 - **`tactical/`**
   - Library module for tactical-level game rules (combat, to-hit calculations, etc.)
 - **`bt/`**
-  - Application module that integrates strategic and tactical libraries
   - Application entry point is `battletech.MainKt`
 - **`tui/`**
   - Terminal UI application using [Mordant](https://github.com/ajalt/mordant)
