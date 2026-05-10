@@ -1,4 +1,8 @@
 {
+  "env": {
+    "ENABLE_LSP_TOOL": "true"
+  },
+  "includeGitInstructions": false,
   "permissions": {
     "deny": [
       "Read(./.agent/**)",
@@ -24,10 +28,9 @@
       "LSP(./.kotlin/**)"
     ]
   },
-  "env": {
-    "ENABLE_LSP_TOOL": "true"
-  },
   "enabledPlugins": {
-    "aca-kotlin-lsp@aca-plugins": true
+    "aca-kotlin-lsp@aca": true,
+    "aca-kotlin@aca": true,
+    "aca-kotlin-junit@aca": true
   }
 }
