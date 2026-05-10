@@ -101,7 +101,7 @@ public object HexRenderer {
         val bg = contentBackground(highlight)
         val borderFg =
             if (highlight == HexHighlight.CURSOR) Color.BRIGHT_YELLOW
-            else Color.DEFAULT
+            else Color.GRAY
 
         renderBorder(buffer, x, y, borderFg)
         renderContent(buffer, x, y, bg)
