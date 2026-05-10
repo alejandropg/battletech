@@ -26,10 +26,11 @@ public object UnitRenderer {
         buffer.set(arrowX, y + arrowRow, Cell(arrowChar, color, buffer.get(arrowX, y + arrowRow).bg))
 
         if (torsoFacing != null && torsoFacing != facing) {
-            val (torsoChar, _) = torsoArrow(torsoFacing)
-            val isClockwise = facing.rotateClockwise() == torsoFacing
-            val torsoX = if (isClockwise) arrowX + 1 else arrowX - 1
-            buffer.set(torsoX, y + arrowRow, Cell(torsoChar, color, buffer.get(torsoX, y + arrowRow).bg))
+            val (torsoChar, torsoOffset) = torsoArrow(torsoFacing)
+            val torsoSouth = torsoFacing == HexDirection.SE || torsoFacing == HexDirection.S || torsoFacing == HexDirection.SW
+            val torsoX = x + torsoOffset
+            val torsoRow = if (torsoSouth) 3 else 2
+            buffer.set(torsoX, y + torsoRow, Cell(torsoChar, color, buffer.get(torsoX, y + torsoRow).bg))
         }
     }
 
