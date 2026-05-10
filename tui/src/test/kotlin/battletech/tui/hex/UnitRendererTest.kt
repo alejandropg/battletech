@@ -15,7 +15,11 @@ internal class UnitRendererTest {
     private val ICON_FACING_SW = String(Character.toChars(0xF09B7))
     private val ICON_FACING_NW = String(Character.toChars(0xF09C3))
 
+    private val ICON_TORSO_N  = String(Character.toChars(0xF005D))
     private val ICON_TORSO_NE = String(Character.toChars(0xF005C))
+    private val ICON_TORSO_SE = String(Character.toChars(0xF0043))
+    private val ICON_TORSO_S  = String(Character.toChars(0xF0045))
+    private val ICON_TORSO_SW = String(Character.toChars(0xF0042))
     private val ICON_TORSO_NW = String(Character.toChars(0xF005B))
 
     @Test
@@ -98,26 +102,122 @@ internal class UnitRendererTest {
     }
 
     @Test
-    fun `clockwise twist places torso arrow to the right`() {
+    fun `clockwise twist with N legs places torso arrow at NE slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        // Facing N, torso NE (clockwise twist)
         UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.N, Color.CYAN, torsoFacing = HexDirection.NE)
 
-        // Leg arrow at (4, 2), torso arrow at (5, 2) — one to the right
         assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
         assertEquals(ICON_TORSO_NE, buffer.get(5, 2).char)
     }
 
     @Test
-    fun `counterclockwise twist places torso arrow to the left`() {
+    fun `counterclockwise twist with N legs places torso arrow at NW slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        // Facing N, torso NW (counterclockwise twist)
         UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.N, Color.CYAN, torsoFacing = HexDirection.NW)
 
-        // Leg arrow at (4, 2), torso arrow at (3, 2) — one to the left
         assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
         assertEquals(ICON_TORSO_NW, buffer.get(3, 2).char)
+    }
+
+    @Test
+    fun `clockwise twist with NE legs places torso arrow at SE slot`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.NE, Color.CYAN, torsoFacing = HexDirection.SE)
+
+        assertEquals(ICON_FACING_NE, buffer.get(5, 2).char)
+        assertEquals(ICON_TORSO_SE, buffer.get(5, 3).char)
+    }
+
+    @Test
+    fun `counterclockwise twist with NE legs places torso arrow at N slot`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.NE, Color.CYAN, torsoFacing = HexDirection.N)
+
+        assertEquals(ICON_FACING_NE, buffer.get(5, 2).char)
+        assertEquals(ICON_TORSO_N, buffer.get(4, 2).char)
+    }
+
+    @Test
+    fun `clockwise twist with SE legs places torso arrow at S slot`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.SE, Color.CYAN, torsoFacing = HexDirection.S)
+
+        assertEquals(ICON_FACING_SE, buffer.get(5, 3).char)
+        assertEquals(ICON_TORSO_S, buffer.get(4, 3).char)
+    }
+
+    @Test
+    fun `counterclockwise twist with SE legs places torso arrow at NE slot`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.SE, Color.CYAN, torsoFacing = HexDirection.NE)
+
+        assertEquals(ICON_FACING_SE, buffer.get(5, 3).char)
+        assertEquals(ICON_TORSO_NE, buffer.get(5, 2).char)
+    }
+
+    @Test
+    fun `clockwise twist with S legs places torso arrow at SW slot`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.S, Color.CYAN, torsoFacing = HexDirection.SW)
+
+        assertEquals(ICON_FACING_S, buffer.get(4, 3).char)
+        assertEquals(ICON_TORSO_SW, buffer.get(3, 3).char)
+    }
+
+    @Test
+    fun `counterclockwise twist with S legs places torso arrow at SE slot`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.S, Color.CYAN, torsoFacing = HexDirection.SE)
+
+        assertEquals(ICON_FACING_S, buffer.get(4, 3).char)
+        assertEquals(ICON_TORSO_SE, buffer.get(5, 3).char)
+    }
+
+    @Test
+    fun `clockwise twist with SW legs places torso arrow at NW slot`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.SW, Color.CYAN, torsoFacing = HexDirection.NW)
+
+        assertEquals(ICON_FACING_SW, buffer.get(3, 3).char)
+        assertEquals(ICON_TORSO_NW, buffer.get(3, 2).char)
+    }
+
+    @Test
+    fun `counterclockwise twist with SW legs places torso arrow at S slot`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.SW, Color.CYAN, torsoFacing = HexDirection.S)
+
+        assertEquals(ICON_FACING_SW, buffer.get(3, 3).char)
+        assertEquals(ICON_TORSO_S, buffer.get(4, 3).char)
+    }
+
+    @Test
+    fun `clockwise twist with NW legs places torso arrow at N slot`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.NW, Color.CYAN, torsoFacing = HexDirection.N)
+
+        assertEquals(ICON_FACING_NW, buffer.get(3, 2).char)
+        assertEquals(ICON_TORSO_N, buffer.get(4, 2).char)
+    }
+
+    @Test
+    fun `counterclockwise twist with NW legs places torso arrow at SW slot`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.NW, Color.CYAN, torsoFacing = HexDirection.SW)
+
+        assertEquals(ICON_FACING_NW, buffer.get(3, 2).char)
+        assertEquals(ICON_TORSO_SW, buffer.get(3, 3).char)
     }
 }
