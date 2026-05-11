@@ -294,37 +294,6 @@ internal class AttackPhaseStateControllerTest {
     }
 
     @Test
-    fun `NextTarget jumps to first weapon of next target`() {
-        val controller = createController()
-        val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
-        val enemy1 = aUnit(id = "enemy1", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
-        val enemy2 = aUnit(id = "enemy2", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 0))
-        val gameState = GameState(listOf(unit, enemy1, enemy2), map5x5)
-        val state = enterDeclaring(controller, unit, gameState)
-
-        val initialIdx = state.cursorTargetIndex
-        val tabResult = controller.handle(AttackAction.NextTarget, state, HexCoordinates(0, 0), gameState)
-        val tabbed = (tabResult as PhaseOutcome.Continue).phaseState as AttackPhaseState
-
-        // Index should have advanced
-        assertTrue(tabbed.cursorTargetIndex != initialIdx || state.targets.size <= 1)
-    }
-
-    @Test
-    fun `NextTarget wraps around targets`() {
-        val controller = createController()
-        val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
-        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
-        val gameState = GameState(listOf(unit, enemy), map5x5)
-        val state = enterDeclaring(controller, unit, gameState)
-
-        // Tab on a single target should wrap back to the same target
-        val result = controller.handle(AttackAction.NextTarget, state, HexCoordinates(0, 0), gameState)
-        val tabbed = (result as PhaseOutcome.Continue).phaseState as AttackPhaseState
-        assertEquals(0, tabbed.cursorTargetIndex)
-    }
-
-    @Test
     fun `NavigateWeapons down moves to next weapon within target`() {
         val controller = createController()
         val unit = aUnit(

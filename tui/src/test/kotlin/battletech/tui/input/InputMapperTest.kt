@@ -189,8 +189,8 @@ internal class InputMapperTest {
         }
 
         @Test
-        fun `tab maps to NextTarget`() {
-            assertEquals(AttackAction.NextTarget, InputMapper.mapAttackEvent(key("Tab")))
+        fun `tab maps to NextAttacker`() {
+            assertEquals(AttackAction.NextAttacker, InputMapper.mapAttackEvent(key("Tab")))
         }
 
         @Test

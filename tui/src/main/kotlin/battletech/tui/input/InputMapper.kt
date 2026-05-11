@@ -46,7 +46,7 @@ public object InputMapper {
         "ArrowUp" -> AttackAction.NavigateWeapons(delta = -1)
         "ArrowDown" -> AttackAction.NavigateWeapons(delta = 1)
         " " -> AttackAction.ToggleWeapon
-        "Tab" -> AttackAction.NextTarget
+        "Tab" -> AttackAction.NextAttacker
         "Enter" -> AttackAction.Confirm
         "Escape" -> AttackAction.Cancel
         else -> null
