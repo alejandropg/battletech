@@ -9,4 +9,5 @@ public enum class HexHighlight {
     PATH,
     ATTACK_RANGE,
     LINE_OF_SIGHT,
+    LINE_OF_SIGHT_SELECTED,
 }

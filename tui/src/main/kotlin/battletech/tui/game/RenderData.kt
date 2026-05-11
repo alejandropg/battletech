@@ -1,5 +1,6 @@
 package battletech.tui.game
 
+import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.RuleResult
 import battletech.tactical.action.UnitId
 import battletech.tactical.action.attack.PhysicalAttackContext
@@ -49,8 +50,9 @@ public fun extractRenderData(phaseState: PhaseState, gameState: GameState? = nul
             val torsoFacings = if (unitPos != null) mapOf(unitPos to phaseState.torsoFacing) else emptyMap()
             val targetPositions = resolveTargetPositions(phaseState.validTargetIds, gameState)
             val los = if (gameState != null) losHighlights(phaseState, gameState) else emptyMap()
+            val selectedLos = if (gameState != null) selectedLosHighlights(phaseState, gameState) else emptyMap()
             RenderData(
-                hexHighlights = arcHighlights + los,
+                hexHighlights = arcHighlights + los + selectedLos,
                 torsoFacings = torsoFacings,
                 validTargetPositions = targetPositions,
             )
@@ -65,16 +67,25 @@ private fun resolveTargetPositions(targetIds: Set<UnitId>, gameState: GameState?
 
 private fun losHighlights(phaseState: AttackPhaseState, gameState: GameState): Map<HexCoordinates, HexHighlight> {
     val attacker = gameState.unitById(phaseState.unitId) ?: return emptyMap()
-    val rule = LineOfSightRule()
     return phaseState.validTargetIds.flatMap { targetId ->
         val target = gameState.unitById(targetId) ?: return@flatMap emptyList()
-        val context = PhysicalAttackContext(actor = attacker, gameState = gameState, target = target)
-        if (rule.evaluate(context) == RuleResult.Satisfied) {
-            attacker.position.lineTo(target.position).drop(1).dropLast(1)
-        } else {
-            emptyList()
-        }
+        losLine(attacker, target, gameState)
     }.associateWith { HexHighlight.LINE_OF_SIGHT }
+}
+
+private fun selectedLosHighlights(phaseState: AttackPhaseState, gameState: GameState): Map<HexCoordinates, HexHighlight> {
+    val targets = phaseState.targets
+    val idx = phaseState.cursorTargetIndex
+    if (idx !in targets.indices) return emptyMap()
+    val attacker = gameState.unitById(phaseState.unitId) ?: return emptyMap()
+    val target = gameState.unitById(targets[idx].unitId) ?: return emptyMap()
+    return losLine(attacker, target, gameState).associateWith { HexHighlight.LINE_OF_SIGHT_SELECTED }
+}
+
+private fun losLine(attacker: CombatUnit, target: CombatUnit, gameState: GameState): List<HexCoordinates> {
+    val context = PhysicalAttackContext(actor = attacker, gameState = gameState, target = target)
+    if (LineOfSightRule().evaluate(context) != RuleResult.Satisfied) return emptyList()
+    return attacker.position.lineTo(target.position).drop(1).dropLast(1)
 }
 
 private fun reachabilityHighlights(reachability: ReachabilityMap): Map<HexCoordinates, HexHighlight> {
