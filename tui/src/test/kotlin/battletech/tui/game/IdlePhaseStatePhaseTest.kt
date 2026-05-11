@@ -326,5 +326,30 @@ internal class IdlePhaseStatePhaseTest {
             assertNull(result!!.flash)
             assertEquals(1, result.appState.turnState!!.currentAttackImpulseIndex)
         }
+
+        @Test
+        fun `commit hands control from loser to winner, then resolves on second commit`() {
+            val turnState = aTurnState(
+                attackOrder = listOf(
+                    MovementImpulse(PlayerId.PLAYER_1, 2),
+                    MovementImpulse(PlayerId.PLAYER_2, 3),
+                ),
+            )
+            manager.attackController.initializeImpulse(PlayerId.PLAYER_1)
+            val state = anAppState(
+                currentPhase = TurnPhase.WEAPON_ATTACK,
+                turnState = turnState,
+            )
+            val phase = idlePhase()
+
+            // First 'c' — loser commits, control passes to winner
+            val afterLoser = phase.processEvent(cKey(), state, manager)!!
+            assertEquals(PlayerId.PLAYER_2, afterLoser.appState.turnState!!.activeAttackPlayer)
+            assertEquals(TurnPhase.WEAPON_ATTACK, afterLoser.appState.currentPhase)
+
+            // Second 'c' — winner commits, phase advances past WEAPON_ATTACK (attacks resolve)
+            val afterWinner = phase.processEvent(cKey(), afterLoser.appState, manager)!!
+            assertEquals(TurnPhase.PHYSICAL_ATTACK, afterWinner.appState.currentPhase)
+        }
     }
 }

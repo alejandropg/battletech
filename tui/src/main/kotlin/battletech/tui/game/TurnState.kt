@@ -29,6 +29,20 @@ public data class TurnState(
     val allAttackImpulsesComplete: Boolean get() = currentAttackImpulseIndex >= attackOrder.size
 }
 
+/**
+ * Returns the attack-phase order: one block per player, loser first.
+ * Players with zero units are skipped so pressing 'c' doesn't stall on an empty side.
+ */
+public fun calculateAttackOrder(
+    loser: PlayerId,
+    loserUnitCount: Int,
+    winner: PlayerId,
+    winnerUnitCount: Int,
+): List<MovementImpulse> = listOfNotNull(
+    if (loserUnitCount > 0) MovementImpulse(loser, loserUnitCount) else null,
+    if (winnerUnitCount > 0) MovementImpulse(winner, winnerUnitCount) else null,
+)
+
 public fun advanceAfterUnitMoved(turnState: TurnState, unitId: UnitId): TurnState {
     val updated = turnState.copy(
         movedUnitIds = turnState.movedUnitIds + unitId,

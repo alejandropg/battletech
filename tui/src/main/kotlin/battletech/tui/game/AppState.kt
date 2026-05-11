@@ -74,7 +74,7 @@ public fun autoAdvanceGlobalPhases(
         TurnPhase.WEAPON_ATTACK -> {
             val turnState = appState.turnState
             if (turnState != null && turnState.attackOrder.isEmpty()) {
-                val newTurnState = turnState.copy(attackOrder = turnState.movementOrder)
+                val newTurnState = turnState.copy(attackOrder = attackOrderFor(turnState, appState.gameState))
                 phaseManager.attackController.initializeImpulse(newTurnState.activeAttackPlayer)
                 val state = appState.copy(
                     turnState = newTurnState,
@@ -89,7 +89,7 @@ public fun autoAdvanceGlobalPhases(
         TurnPhase.PHYSICAL_ATTACK -> {
             val turnState = appState.turnState
             if (turnState != null && turnState.attackOrder.isEmpty()) {
-                val newTurnState = turnState.copy(attackOrder = turnState.movementOrder)
+                val newTurnState = turnState.copy(attackOrder = attackOrderFor(turnState, appState.gameState))
                 phaseManager.attackController.initializeImpulse(newTurnState.activeAttackPlayer)
                 val state = appState.copy(
                     turnState = newTurnState,
@@ -161,6 +161,17 @@ public fun attackPrompt(turnState: TurnState): String {
     if (turnState.allAttackImpulsesComplete) return "All attacks declared"
     val playerName = if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
     return "$playerName: select units, toggle weapons | 'c' to commit"
+}
+
+internal fun attackOrderFor(turnState: TurnState, gameState: GameState): List<battletech.tactical.action.MovementImpulse> {
+    val loser = turnState.initiativeResult.loser
+    val winner = turnState.initiativeResult.winner
+    return calculateAttackOrder(
+        loser = loser,
+        loserUnitCount = gameState.unitsOf(loser).size,
+        winner = winner,
+        winnerUnitCount = gameState.unitsOf(winner).size,
+    )
 }
 
 internal fun findMovedUnit(oldState: GameState, newState: GameState): UnitId {
