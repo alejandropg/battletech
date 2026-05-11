@@ -447,4 +447,77 @@ internal class AttackPhaseStateControllerTest {
         assertThat(result.unitIds).containsExactly(unit.id)
         assertThat(result.torsoFacings).containsEntry(unit.id, HexDirection.NE)
     }
+
+    @Test
+    fun `toggle off last weapon on primary with no secondary clears primaryTargetId`() {
+        val controller = createController()
+        val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
+        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
+        val gameState = GameState(listOf(unit, enemy), map5x5)
+        val state = enterDeclaring(controller, unit, gameState)
+
+        val onState = (controller.handle(AttackAction.ToggleWeapon, state, enemy.position, gameState) as PhaseOutcome.Continue).phaseState as AttackPhaseState
+        assertEquals(enemy.id, onState.primaryTargetId)
+
+        val offState = (controller.handle(AttackAction.ToggleWeapon, onState, enemy.position, gameState) as PhaseOutcome.Continue).phaseState as AttackPhaseState
+        assertThat(offState.primaryTargetId).isNull()
+    }
+
+    @Test
+    fun `toggle off last weapon on primary promotes secondary to primary`() {
+        val controller = createController()
+        val unit = aUnit(
+            weapons = listOf(mediumLaser(), mediumLaser()),
+            position = HexCoordinates(2, 2),
+            facing = HexDirection.N,
+        )
+        val enemy1 = aUnit(id = "enemy1", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
+        val enemy2 = aUnit(id = "enemy2", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 0))
+        val gameState = GameState(listOf(unit, enemy1, enemy2), map5x5)
+        val state = enterDeclaring(controller, unit, gameState)
+
+        val enemy1Idx = state.targets.indexOfFirst { it.unitId == enemy1.id }
+        assertTrue(enemy1Idx >= 0, "enemy1 must be a valid target")
+
+        // Directly set up: weapon 0 → enemy1 (primary), weapon 1 → enemy2 (secondary)
+        val setup = state.copy(
+            weaponAssignments = mapOf(enemy1.id to setOf(0), enemy2.id to setOf(1)),
+            primaryTargetId = enemy1.id,
+            cursorTargetIndex = enemy1Idx,
+            cursorWeaponIndex = 0,
+        )
+
+        // Toggle off weapon 0 from enemy1 → enemy2 should become primary
+        val result = (controller.handle(AttackAction.ToggleWeapon, setup, enemy1.position, gameState) as PhaseOutcome.Continue).phaseState as AttackPhaseState
+        assertEquals(enemy2.id, result.primaryTargetId)
+    }
+
+    @Test
+    fun `toggle off last weapon on secondary leaves primary unchanged`() {
+        val controller = createController()
+        val unit = aUnit(
+            weapons = listOf(mediumLaser(), mediumLaser()),
+            position = HexCoordinates(2, 2),
+            facing = HexDirection.N,
+        )
+        val enemy1 = aUnit(id = "enemy1", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
+        val enemy2 = aUnit(id = "enemy2", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 0))
+        val gameState = GameState(listOf(unit, enemy1, enemy2), map5x5)
+        val state = enterDeclaring(controller, unit, gameState)
+
+        val enemy2Idx = state.targets.indexOfFirst { it.unitId == enemy2.id }
+        assertTrue(enemy2Idx >= 0, "enemy2 must be a valid target")
+
+        // Directly set up: weapon 0 → enemy1 (primary), weapon 1 → enemy2 (secondary)
+        val setup = state.copy(
+            weaponAssignments = mapOf(enemy1.id to setOf(0), enemy2.id to setOf(1)),
+            primaryTargetId = enemy1.id,
+            cursorTargetIndex = enemy2Idx,
+            cursorWeaponIndex = 1,
+        )
+
+        // Toggle off weapon 1 from enemy2 → enemy1 remains primary
+        val result = (controller.handle(AttackAction.ToggleWeapon, setup, enemy2.position, gameState) as PhaseOutcome.Continue).phaseState as AttackPhaseState
+        assertEquals(enemy1.id, result.primaryTargetId)
+    }
 }

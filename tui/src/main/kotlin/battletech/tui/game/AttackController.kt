@@ -136,7 +136,14 @@ public class AttackController {
             currentAssigned + weapon.weaponIndex
         }
         val newAssignments = state.weaponAssignments + (targetId to newAssigned)
-        val newPrimaryTargetId = state.primaryTargetId ?: targetId
+        val newPrimaryTargetId = when {
+            newAssigned.isEmpty() && targetId == state.primaryTargetId ->
+                newAssignments.entries
+                    .firstOrNull { (id, indices) -> id != targetId && indices.isNotEmpty() }
+                    ?.key
+            state.primaryTargetId == null -> targetId
+            else -> state.primaryTargetId
+        }
 
         val newState = state.copy(weaponAssignments = newAssignments, primaryTargetId = newPrimaryTargetId)
         persistDeclaration(newState)
