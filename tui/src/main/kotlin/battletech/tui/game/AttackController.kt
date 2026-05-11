@@ -21,19 +21,9 @@ public class AttackController {
     private val allDeclarations: MutableList<AttackDeclaration> = mutableListOf()
     private var currentImpulse: ImpulseDeclarations? = null
 
-    public fun initializeImpulse(playerId: PlayerId, unitCount: Int) {
-        currentImpulse = ImpulseDeclarations(playerId, unitCount)
+    public fun initializeImpulse(playerId: PlayerId) {
+        currentImpulse = ImpulseDeclarations(playerId)
     }
-
-    public fun isDeclared(unitId: UnitId): Boolean =
-        currentImpulse?.isDeclared(unitId) == true
-
-    public fun declaredCount(): Int =
-        currentImpulse?.declarations?.values?.count { it.status != DeclarationStatus.PENDING } ?: 0
-
-    public fun currentImpulseUnitCount(): Int = currentImpulse?.unitCount ?: 0
-
-    public fun canCommit(): Boolean = currentImpulse?.allDeclared() == true
 
     /** Commits the current impulse's declarations into the accumulated list and returns committed unit IDs and torso facings. */
     public fun commitImpulse(): CommitResult {
@@ -87,28 +77,8 @@ public class AttackController {
         cursor: HexCoordinates,
         gameState: GameState,
     ): PhaseOutcome = when (action) {
-        is AttackAction.Cancel -> {
-            // Discard assignments — remove any pending declaration for this unit
-            currentImpulse?.declarations?.remove(state.unitId)
-            PhaseOutcome.Cancelled
-        }
-
-        is AttackAction.Confirm -> {
-            // Save assignments and return to Idle
-            val hasAssignments = state.weaponAssignments.values.any { it.isNotEmpty() }
-            val status = if (hasAssignments) DeclarationStatus.WEAPONS_ASSIGNED else DeclarationStatus.NO_ATTACK
-            currentImpulse?.declarations?.put(
-                state.unitId,
-                UnitDeclaration(
-                    unitId = state.unitId,
-                    torsoFacing = state.torsoFacing,
-                    status = status,
-                    primaryTargetId = state.primaryTargetId,
-                    weaponAssignments = state.weaponAssignments,
-                ),
-            )
-            PhaseOutcome.Cancelled
-        }
+        is AttackAction.Cancel -> PhaseOutcome.Cancelled
+        is AttackAction.Confirm -> PhaseOutcome.Cancelled
 
         is AttackAction.ToggleWeapon -> toggleWeapon(state)
 
@@ -168,22 +138,20 @@ public class AttackController {
         val newAssignments = state.weaponAssignments + (targetId to newAssigned)
         val newPrimaryTargetId = state.primaryTargetId ?: targetId
 
-        // Update declaration immediately
-        val hasAny = newAssignments.values.any { it.isNotEmpty() }
-        val status = if (hasAny) DeclarationStatus.WEAPONS_ASSIGNED else DeclarationStatus.PENDING
+        val newState = state.copy(weaponAssignments = newAssignments, primaryTargetId = newPrimaryTargetId)
+        persistDeclaration(newState)
+        return PhaseOutcome.Continue(newState)
+    }
+
+    private fun persistDeclaration(state: AttackPhaseState) {
         currentImpulse?.declarations?.put(
             state.unitId,
             UnitDeclaration(
                 unitId = state.unitId,
                 torsoFacing = state.torsoFacing,
-                status = status,
-                primaryTargetId = newPrimaryTargetId,
-                weaponAssignments = newAssignments,
+                primaryTargetId = state.primaryTargetId,
+                weaponAssignments = state.weaponAssignments,
             ),
-        )
-
-        return PhaseOutcome.Continue(
-            state.copy(weaponAssignments = newAssignments, primaryTargetId = newPrimaryTargetId),
         )
     }
 
@@ -251,7 +219,7 @@ public class AttackController {
             state.cursorWeaponIndex.coerceIn(0, maxWeapon)
         }
 
-        return state.copy(
+        val newState = state.copy(
             torsoFacing = newTorso,
             arc = newArc,
             validTargetIds = newTargetIds,
@@ -261,6 +229,8 @@ public class AttackController {
             weaponAssignments = newAssignments,
             primaryTargetId = newPrimary,
         )
+        persistDeclaration(newState)
+        return newState
     }
 
     private fun buildTargetInfoList(

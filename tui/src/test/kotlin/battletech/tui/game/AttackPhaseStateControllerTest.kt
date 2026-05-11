@@ -32,7 +32,7 @@ internal class AttackPhaseStateControllerTest {
         unit: battletech.tactical.action.CombatUnit,
         gameState: GameState,
     ): AttackPhaseState {
-        controller.initializeImpulse(unit.owner, 1)
+        controller.initializeImpulse(unit.owner)
         return controller.enter(unit, TurnPhase.WEAPON_ATTACK, gameState)
     }
 
@@ -113,7 +113,7 @@ internal class AttackPhaseStateControllerTest {
     }
 
     @Test
-    fun `cancel discards assignments and returns Cancelled`() {
+    fun `cancel saves assignments and returns Cancelled`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
@@ -126,12 +126,73 @@ internal class AttackPhaseStateControllerTest {
         val result = controller.handle(AttackAction.Cancel, toggledState, HexCoordinates(2, 2), gameState)
 
         assertTrue(result is PhaseOutcome.Cancelled)
-        // After cancel, unit should not be declared
-        assertFalse(controller.isDeclared(unit.id))
+        // After cancel, the toggled weapon should still be recorded for commit
+        assertEquals(1, controller.commitImpulse().unitIds.size)
     }
 
     @Test
-    fun `confirm with no weapons assigned records NO_ATTACK`() {
+    fun `weapon assignments preserved when cancelling and re-entering the same unit`() {
+        val controller = createController()
+        val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
+        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
+        val gameState = GameState(listOf(unit, enemy), map5x5)
+        val state = enterDeclaring(controller, unit, gameState)
+
+        // Toggle weapon on, then cancel
+        val toggled = controller.handle(AttackAction.ToggleWeapon, state, HexCoordinates(2, 2), gameState)
+        val toggledState = (toggled as PhaseOutcome.Continue).phaseState as AttackPhaseState
+        controller.handle(AttackAction.Cancel, toggledState, HexCoordinates(2, 2), gameState)
+
+        // Re-enter the same unit — assignments should be restored
+        val reEntered = controller.enter(unit, TurnPhase.WEAPON_ATTACK, gameState)
+        assertTrue(reEntered.weaponAssignments.values.any { it.isNotEmpty() },
+            "Expected weapon assignments to survive cancel+re-enter, but got: ${reEntered.weaponAssignments}")
+    }
+
+    @Test
+    fun `weapon assignments preserved when switching to another unit and back`() {
+        val controller = createController()
+        val unitA = aUnit(id = "A", weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
+        val unitB = aUnit(id = "B", weapons = listOf(mediumLaser()), position = HexCoordinates(3, 2), facing = HexDirection.N)
+        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
+        val gameState = GameState(listOf(unitA, unitB, enemy), map5x5)
+
+        controller.initializeImpulse(PlayerId.PLAYER_1)
+
+        // Enter A, toggle weapon, exit via Cancel (Esc)
+        val stateA = controller.enter(unitA, TurnPhase.WEAPON_ATTACK, gameState)
+        val toggledA = (controller.handle(AttackAction.ToggleWeapon, stateA, enemy.position, gameState) as PhaseOutcome.Continue).phaseState as AttackPhaseState
+        controller.handle(AttackAction.Cancel, toggledA, enemy.position, gameState)
+
+        // Enter B, exit via Cancel
+        val stateB = controller.enter(unitB, TurnPhase.WEAPON_ATTACK, gameState)
+        controller.handle(AttackAction.Cancel, stateB, enemy.position, gameState)
+
+        // Re-enter A — weapon assignments must survive the trip through B
+        val reEnteredA = controller.enter(unitA, TurnPhase.WEAPON_ATTACK, gameState)
+        assertTrue(reEnteredA.weaponAssignments.values.any { it.isNotEmpty() },
+            "Expected A's assignments to survive switching to B and back, but got: ${reEnteredA.weaponAssignments}")
+    }
+
+    @Test
+    fun `torso twist persists after leaving and re-entering`() {
+        val controller = createController()
+        val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
+        val gameState = GameState(listOf(unit), map5x5)
+        val state = enterDeclaring(controller, unit, gameState)
+
+        // Twist torso, then exit without toggling any weapon
+        val twisted = (controller.handle(AttackAction.TwistTorso(clockwise = true), state, unit.position, gameState) as PhaseOutcome.Continue).phaseState as AttackPhaseState
+        assertEquals(HexDirection.NE, twisted.torsoFacing)
+        controller.handle(AttackAction.Cancel, twisted, unit.position, gameState)
+
+        // Re-enter — torso facing should still be NE
+        val reEntered = controller.enter(unit, TurnPhase.WEAPON_ATTACK, gameState)
+        assertEquals(HexDirection.NE, reEntered.torsoFacing)
+    }
+
+    @Test
+    fun `confirm with no weapons assigned records nothing`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
         val gameState = GameState(listOf(unit), map5x5)
@@ -140,7 +201,8 @@ internal class AttackPhaseStateControllerTest {
         val result = controller.handle(AttackAction.Confirm, state, HexCoordinates(2, 2), gameState)
 
         assertTrue(result is PhaseOutcome.Cancelled)
-        assertTrue(controller.canCommit())
+        // Confirm without toggling weapons leaves the declarations map empty
+        assertTrue(controller.commitImpulse().unitIds.isEmpty())
     }
 
     @Test
@@ -219,7 +281,6 @@ internal class AttackPhaseStateControllerTest {
         // Confirm
         val result = controller.handle(AttackAction.Confirm, onState, enemy.position, gameState)
         assertTrue(result is PhaseOutcome.Cancelled)
-        assertTrue(controller.canCommit())
 
         val commitResult = controller.commitImpulse()
         assertTrue(unit.id in commitResult.unitIds)
@@ -302,26 +363,19 @@ internal class AttackPhaseStateControllerTest {
     }
 
     @Test
-    fun `canCommit returns false before any declarations`() {
-        val controller = createController()
-        controller.initializeImpulse(PlayerId.PLAYER_1, 1)
-        assertFalse(controller.canCommit())
-    }
-
-    @Test
     fun `initializeImpulse resets declaration state`() {
         val controller = createController()
         val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
-        val gameState = GameState(listOf(unit), map5x5)
+        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
+        val gameState = GameState(listOf(unit, enemy), map5x5)
 
-        // Mark as no-attack by confirming with no assignments
+        // Toggle a weapon to record a declaration
         val state = enterDeclaring(controller, unit, gameState)
-        controller.handle(AttackAction.Confirm, state, HexCoordinates(2, 2), gameState)
-        assertTrue(controller.canCommit())
+        controller.handle(AttackAction.ToggleWeapon, state, enemy.position, gameState)
 
-        // Initialize a new impulse — canCommit should be false again
-        controller.initializeImpulse(PlayerId.PLAYER_1, 1)
-        assertFalse(controller.canCommit())
+        // Re-initializing wipes pending declarations for the new impulse
+        controller.initializeImpulse(PlayerId.PLAYER_1)
+        assertTrue(controller.commitImpulse().unitIds.isEmpty())
     }
 
     @Test

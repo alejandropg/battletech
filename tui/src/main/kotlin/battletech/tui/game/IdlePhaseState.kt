@@ -89,19 +89,15 @@ public data class IdlePhaseState(
             return HandleResult(appState)
         }
 
-        if (!phaseManager.attackController.canCommit()) {
-            val declared = phaseManager.attackController.declaredCount()
-            val total = phaseManager.attackController.currentImpulseUnitCount()
-            return HandleResult(appState, FlashMessage("Declare all units first ($declared/$total declared)"))
-        }
-
         val commitResult = phaseManager.attackController.commitImpulse()
         val gameStateWithTorso = applyTorsoFacings(appState.gameState, commitResult.torsoFacings)
 
-        var newTurnState: TurnState = turnState
-        for (unitId in commitResult.unitIds) {
-            newTurnState = advanceAfterUnitAttacked(newTurnState, unitId)
-        }
+        // Always advance one impulse forward. Units the player didn't visit simply don't fire.
+        val newTurnState = turnState.copy(
+            attackedUnitIds = turnState.attackedUnitIds + commitResult.unitIds,
+            currentAttackImpulseIndex = turnState.currentAttackImpulseIndex + 1,
+            unitsAttackedInCurrentImpulse = 0,
+        )
 
         return if (newTurnState.allAttackImpulsesComplete) {
             if (appState.currentPhase == TurnPhase.WEAPON_ATTACK) {
@@ -117,14 +113,11 @@ public data class IdlePhaseState(
                 )
             }
         } else {
-            phaseManager.attackController.initializeImpulse(
-                newTurnState.activeAttackPlayer,
-                newTurnState.currentAttackImpulse.unitCount,
-            )
+            phaseManager.attackController.initializeImpulse(newTurnState.activeAttackPlayer)
             HandleResult(
                 appState.copy(
                     gameState = gameStateWithTorso,
-                    phase = IdlePhaseState(buildAttackPrompt(newTurnState, phaseManager)),
+                    phase = IdlePhaseState(attackPrompt(newTurnState)),
                     turnState = newTurnState,
                 )
             )
@@ -171,11 +164,8 @@ public data class IdlePhaseState(
             turnState != null && appState.currentPhase == TurnPhase.MOVEMENT ->
                 selectableUnits(appState.gameState, turnState)
 
-            turnState != null && isAttackPhase(appState.currentPhase) -> {
-                val all = selectableAttackUnits(appState.gameState, turnState)
-                val undeclared = all.filter { !phaseManager.attackController.isDeclared(it.id) }
-                undeclared.ifEmpty { all }
-            }
+            turnState != null && isAttackPhase(appState.currentPhase) ->
+                selectableAttackUnits(appState.gameState, turnState)
 
             else -> appState.gameState.units
         }
