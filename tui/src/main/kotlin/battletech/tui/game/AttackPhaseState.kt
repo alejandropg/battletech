@@ -37,19 +37,6 @@ public data class AttackPhaseState(
         } ?: return null
 
         val outcome = phaseManager.attackController.handle(action, this, appState.cursor, appState.gameState)
-        val result = phaseManager.fromOutcome(outcome, appState)
-
-        // After returning to Idle from attack, refresh prompt with declaration progress
-        val newPhaseState = result.appState.phase
-        if (newPhaseState is IdlePhaseState && isAttackPhase(result.appState.currentPhase)) {
-            val ts = result.appState.turnState
-            if (ts != null && !ts.allAttackImpulsesComplete) {
-                return HandleResult(
-                    result.appState.copy(phase = IdlePhaseState(buildAttackPrompt(ts, phaseManager))),
-                    result.flash,
-                )
-            }
-        }
-        return result
+        return phaseManager.fromOutcome(outcome, appState)
     }
 }

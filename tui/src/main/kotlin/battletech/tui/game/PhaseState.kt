@@ -16,10 +16,3 @@ public sealed interface PhaseState {
 
 internal fun isAttackPhase(phase: TurnPhase): Boolean =
     phase == TurnPhase.WEAPON_ATTACK || phase == TurnPhase.PHYSICAL_ATTACK
-
-internal fun buildAttackPrompt(turnState: TurnState, phaseManager: PhaseManager): String =
-    attackPrompt(
-        turnState,
-        phaseManager.attackController.declaredCount(),
-        phaseManager.attackController.currentImpulseUnitCount(),
-    )

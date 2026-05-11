@@ -306,11 +306,14 @@ internal class IdlePhaseStatePhaseTest {
         }
 
         @Test
-        fun `commit returns flash when not all declared`() {
+        fun `commit advances impulse even when no weapons were toggled`() {
             val turnState = aTurnState(
-                attackOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 1)),
+                attackOrder = listOf(
+                    MovementImpulse(PlayerId.PLAYER_1, 1),
+                    MovementImpulse(PlayerId.PLAYER_2, 1),
+                ),
             )
-            manager.attackController.initializeImpulse(PlayerId.PLAYER_1, 1)
+            manager.attackController.initializeImpulse(PlayerId.PLAYER_1)
             val state = anAppState(
                 currentPhase = TurnPhase.WEAPON_ATTACK,
                 turnState = turnState,
@@ -320,8 +323,8 @@ internal class IdlePhaseStatePhaseTest {
             val result = phase.processEvent(cKey(), state, manager)
 
             assertNotNull(result)
-            assertNotNull(result!!.flash)
-            assert(result.flash!!.text.contains("Declare all units first"))
+            assertNull(result!!.flash)
+            assertEquals(1, result.appState.turnState!!.currentAttackImpulseIndex)
         }
     }
 }

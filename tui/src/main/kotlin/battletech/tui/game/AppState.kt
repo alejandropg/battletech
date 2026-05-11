@@ -75,18 +75,10 @@ public fun autoAdvanceGlobalPhases(
             val turnState = appState.turnState
             if (turnState != null && turnState.attackOrder.isEmpty()) {
                 val newTurnState = turnState.copy(attackOrder = turnState.movementOrder)
-                phaseManager.attackController.initializeImpulse(
-                    newTurnState.activeAttackPlayer,
-                    newTurnState.currentAttackImpulse.unitCount,
-                )
-                val prompt = attackPrompt(
-                    newTurnState,
-                    phaseManager.attackController.declaredCount(),
-                    phaseManager.attackController.currentImpulseUnitCount(),
-                )
+                phaseManager.attackController.initializeImpulse(newTurnState.activeAttackPlayer)
                 val state = appState.copy(
                     turnState = newTurnState,
-                    phase = IdlePhaseState(prompt),
+                    phase = IdlePhaseState(attackPrompt(newTurnState)),
                 )
                 state to FlashMessage("Weapon Attack Phase")
             } else {
@@ -98,18 +90,10 @@ public fun autoAdvanceGlobalPhases(
             val turnState = appState.turnState
             if (turnState != null && turnState.attackOrder.isEmpty()) {
                 val newTurnState = turnState.copy(attackOrder = turnState.movementOrder)
-                phaseManager.attackController.initializeImpulse(
-                    newTurnState.activeAttackPlayer,
-                    newTurnState.currentAttackImpulse.unitCount,
-                )
-                val prompt = attackPrompt(
-                    newTurnState,
-                    phaseManager.attackController.declaredCount(),
-                    phaseManager.attackController.currentImpulseUnitCount(),
-                )
+                phaseManager.attackController.initializeImpulse(newTurnState.activeAttackPlayer)
                 val state = appState.copy(
                     turnState = newTurnState,
-                    phase = IdlePhaseState(prompt),
+                    phase = IdlePhaseState(attackPrompt(newTurnState)),
                 )
                 state to FlashMessage("Physical Attack Phase")
             } else {
@@ -173,14 +157,10 @@ public fun movementPrompt(turnState: TurnState): String {
     return "$playerName: select a unit to move ($remaining remaining)"
 }
 
-public fun attackPrompt(turnState: TurnState, declared: Int = 0, total: Int = 0): String {
+public fun attackPrompt(turnState: TurnState): String {
     if (turnState.allAttackImpulsesComplete) return "All attacks declared"
     val playerName = if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
-    return if (total > 0) {
-        "$playerName: $declared/$total declared | 'c' to commit"
-    } else {
-        "$playerName: select a unit to attack"
-    }
+    return "$playerName: select units, toggle weapons | 'c' to commit"
 }
 
 internal fun findMovedUnit(oldState: GameState, newState: GameState): UnitId {
