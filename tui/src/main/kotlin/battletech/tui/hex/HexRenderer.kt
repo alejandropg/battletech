@@ -111,7 +111,8 @@ public object HexRenderer {
             HexHighlight.REACHABLE_WALK -> renderOverlayChar(buffer, x, y, ".", Color.WHITE)
             HexHighlight.REACHABLE_RUN -> renderOverlayChar(buffer, x, y, ".", Color.ORANGE)
             HexHighlight.REACHABLE_JUMP -> renderOverlayChar(buffer, x, y, ".", Color.CYAN)
-            HexHighlight.ATTACK_RANGE -> renderOverlayChar(buffer, x, y, ".", Color.WHITE)
+            HexHighlight.ATTACK_RANGE -> renderOverlayChar(buffer, x, y, ".", Color.GRAY)
+            HexHighlight.LINE_OF_SIGHT -> renderOverlayChar(buffer, x, y, ".", Color.WHITE)
             HexHighlight.PATH -> {
                 val icon = if (movementMode != null) movementModeIcon(movementMode) else "*"
                 renderOverlayChar(buffer, x, y, icon, Color.BRIGHT_YELLOW)
