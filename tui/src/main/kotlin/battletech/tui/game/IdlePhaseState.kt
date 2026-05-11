@@ -1,8 +1,6 @@
 package battletech.tui.game
 
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.attack.resolveAttacks
-import battletech.tactical.model.GameState
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
 import com.github.ajalt.mordant.input.InputEvent
@@ -80,76 +78,8 @@ public data class IdlePhaseState(
         }
     }
 
-    private fun commitDeclarations(appState: AppState, phaseManager: PhaseManager): HandleResult {
-        val turnState = appState.turnState
-        if (turnState == null || !isAttackPhase(appState.currentPhase)) {
-            return HandleResult(appState)
-        }
-
-        val commitResult = phaseManager.attackController.commitImpulse()
-        val gameStateWithTorso = applyTorsoFacings(appState.gameState, commitResult.torsoFacings)
-
-        // Always advance one impulse forward. Units the player didn't visit simply don't fire.
-        val newTurnState = turnState.copy(
-            currentAttackImpulseIndex = turnState.currentAttackImpulseIndex + 1,
-        )
-
-        return if (newTurnState.allAttackImpulsesComplete) {
-            if (appState.currentPhase == TurnPhase.WEAPON_ATTACK) {
-                resolveWeaponAttacks(appState, gameStateWithTorso, newTurnState, phaseManager)
-            } else {
-                HandleResult(
-                    appState.copy(
-                        gameState = gameStateWithTorso,
-                        currentPhase = nextPhase(appState.currentPhase),
-                        phase = IdlePhaseState(),
-                        turnState = newTurnState,
-                    )
-                )
-            }
-        } else {
-            phaseManager.attackController.initializeImpulse(newTurnState.activeAttackPlayer)
-            HandleResult(
-                appState.copy(
-                    gameState = gameStateWithTorso,
-                    phase = IdlePhaseState(attackPrompt(newTurnState)),
-                    turnState = newTurnState,
-                )
-            )
-        }
-    }
-
-    private fun resolveWeaponAttacks(
-        appState: AppState,
-        gameStateWithTorso: GameState,
-        newTurnState: TurnState,
-        phaseManager: PhaseManager,
-    ): HandleResult {
-        val declarations = phaseManager.attackController.collectDeclarations()
-        val (resolvedGameState, flash) = if (declarations.isNotEmpty()) {
-            val (resolved, results) = resolveAttacks(declarations, gameStateWithTorso, phaseManager.random)
-            val hitCount = results.count { it.hit }
-            val totalDamage = results.sumOf { it.damageApplied }
-            resolved to FlashMessage("Attacks resolved: ${results.size} attacks, $hitCount hits, $totalDamage damage")
-        } else {
-            gameStateWithTorso to null
-        }
-        phaseManager.attackController.clearDeclarations()
-
-        val physicalTurnState = newTurnState.copy(
-            currentAttackImpulseIndex = 0,
-            attackOrder = emptyList(),
-        )
-        return HandleResult(
-            appState.copy(
-                gameState = resolvedGameState,
-                currentPhase = nextPhase(TurnPhase.WEAPON_ATTACK),
-                phase = IdlePhaseState(),
-                turnState = physicalTurnState,
-            ),
-            flash,
-        )
-    }
+    private fun commitDeclarations(appState: AppState, phaseManager: PhaseManager): HandleResult =
+        phaseManager.commitAttackImpulse(appState)
 
     private fun cycleUnit(appState: AppState, phaseManager: PhaseManager): HandleResult {
         val turnState = appState.turnState

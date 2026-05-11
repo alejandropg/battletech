@@ -90,6 +90,9 @@ public class AttackController {
         is AttackAction.NextAttacker ->
             error("NextAttacker is intercepted in AttackPhaseState.processEvent and must not reach the controller")
 
+        is AttackAction.Commit ->
+            error("Commit is intercepted in AttackPhaseState.processEvent and must not reach the controller")
+
         is AttackAction.ClickTarget -> {
             val targetUnit = gameState.unitAt(cursor)
             if (targetUnit != null && targetUnit.id in state.validTargetIds) {
@@ -314,7 +317,7 @@ public class AttackController {
     }
 
     private companion object {
-        const val DECLARING_PROMPT = "←/→ twist torso | ↑/↓ navigate weapons | Space: toggle | Tab: next attacker | Enter: confirm | Esc: cancel"
+        const val DECLARING_PROMPT = "←/→ twist torso | ↑/↓ navigate weapons | Space: toggle | Tab: next attacker | 'c': commit"
 
         val TWO_D6_PROBABILITY: Map<Int, Int> = mapOf(
             2 to 100, 3 to 97, 4 to 92, 5 to 83, 6 to 72,
