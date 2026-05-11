@@ -135,4 +135,46 @@ internal class TurnStateTest {
             assertTrue(after3.allImpulsesComplete)
         }
     }
+
+    @Nested
+    inner class CalculateAttackOrderTest {
+        @Test
+        fun `produces loser block then winner block`() {
+            val order = calculateAttackOrder(
+                loser = PlayerId.PLAYER_1, loserUnitCount = 3,
+                winner = PlayerId.PLAYER_2, winnerUnitCount = 2,
+            )
+            assertEquals(
+                listOf(
+                    MovementImpulse(PlayerId.PLAYER_1, 3),
+                    MovementImpulse(PlayerId.PLAYER_2, 2),
+                ),
+                order,
+            )
+        }
+
+        @Test
+        fun `skips a side with zero units`() {
+            val noWinnerUnits = calculateAttackOrder(
+                loser = PlayerId.PLAYER_1, loserUnitCount = 2,
+                winner = PlayerId.PLAYER_2, winnerUnitCount = 0,
+            )
+            assertEquals(listOf(MovementImpulse(PlayerId.PLAYER_1, 2)), noWinnerUnits)
+
+            val noLoserUnits = calculateAttackOrder(
+                loser = PlayerId.PLAYER_1, loserUnitCount = 0,
+                winner = PlayerId.PLAYER_2, winnerUnitCount = 3,
+            )
+            assertEquals(listOf(MovementImpulse(PlayerId.PLAYER_2, 3)), noLoserUnits)
+        }
+
+        @Test
+        fun `returns empty when both sides have zero units`() {
+            val order = calculateAttackOrder(
+                loser = PlayerId.PLAYER_1, loserUnitCount = 0,
+                winner = PlayerId.PLAYER_2, winnerUnitCount = 0,
+            )
+            assertTrue(order.isEmpty())
+        }
+    }
 }

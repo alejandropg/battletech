@@ -47,8 +47,9 @@ public class PhaseManager(
                 val movedUnitId = findMovedUnit(appState.gameState, outcome.gameState)
                 val newTurnState = advanceAfterUnitMoved(turnState, movedUnitId)
                 if (newTurnState.allImpulsesComplete) {
-                    val attackOrder = newTurnState.movementOrder
-                    val withAttack = newTurnState.copy(attackOrder = attackOrder)
+                    val withAttack = newTurnState.copy(
+                        attackOrder = attackOrderFor(newTurnState, outcome.gameState),
+                    )
                     HandleResult(
                         appState.copy(
                             gameState = outcome.gameState,
