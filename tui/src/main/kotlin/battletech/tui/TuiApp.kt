@@ -3,17 +3,10 @@ package battletech.tui
 import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.UnitId
 import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
 import battletech.tactical.action.movement.MoveActionDefinition
-import battletech.tactical.model.GameMap
-import battletech.tactical.model.GameState
-import battletech.tactical.model.Hex
+import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
-import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MechModels
-import battletech.tactical.model.Terrain
-import battletech.tactical.model.createUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.AttackController
 import battletech.tui.game.AttackPhaseState
@@ -54,7 +47,7 @@ public class TuiApp {
         )
 
         var appState = AppState(
-            gameState = sampleGameState(),
+            gameState = GameStateFactory().sampleGameState(),
             currentPhase = TurnPhase.INITIATIVE,
             cursor = HexCoordinates(0, 0),
             phase = IdlePhaseState(),
@@ -184,47 +177,4 @@ public class TuiApp {
         renderer.render(buffer)
     }
 
-    private fun sampleGameState(): GameState {
-        val hexes = mutableMapOf<HexCoordinates, Hex>()
-        for (col in 0..9) {
-            for (row in 0..9) {
-                val coords = HexCoordinates(col, row)
-                val terrain = when {
-                    col == 3 && row in 2..5 -> Terrain.LIGHT_WOODS
-                    col == 4 && row in 3..4 -> Terrain.HEAVY_WOODS
-                    col == 6 && row in 1..3 -> Terrain.WATER
-                    else -> Terrain.CLEAR
-                }
-                val elevation = if (col == 5 && row in 2..4) 2 else 0
-                hexes[coords] = Hex(coords, terrain, elevation)
-            }
-        }
-
-        val units = listOf(
-            MechModels["AS7-D"].createUnit(
-                id = UnitId("atlas"),
-                owner = PlayerId.PLAYER_1,
-                position = HexCoordinates(1, 1),
-                facing = HexDirection.SE
-            ),
-            MechModels["HBK-4G"].createUnit(
-                id = UnitId("hunchback"),
-                owner = PlayerId.PLAYER_1,
-                position = HexCoordinates(2, 3)
-            ),
-            MechModels["WVR-6R"].createUnit(
-                id = UnitId("wolverine-1"),
-                owner = PlayerId.PLAYER_2,
-                pilotingSkill = 4,
-                position = HexCoordinates(7, 3)
-            ),
-            MechModels["WVR-6R"].createUnit(
-                id = UnitId("wolverine-2"),
-                owner = PlayerId.PLAYER_2,
-                position = HexCoordinates(8, 5)
-            ),
-        )
-
-        return GameState(units, GameMap(hexes))
-    }
 }
