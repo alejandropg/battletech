@@ -36,7 +36,25 @@ public data class AttackPhaseState(
                 ?.let { AttackAction.ClickTarget(it) }
         } ?: return null
 
+        if (action is AttackAction.NextAttacker) {
+            return cycleToNextAttacker(appState, phaseManager)
+        }
+
         val outcome = phaseManager.attackController.handle(action, this, appState.cursor, appState.gameState)
         return phaseManager.fromOutcome(outcome, appState)
+    }
+
+    private fun cycleToNextAttacker(appState: AppState, phaseManager: PhaseManager): HandleResult {
+        val turn = appState.turnState
+            ?: return phaseManager.fromOutcome(PhaseOutcome.Cancelled, appState)
+        val attackers = selectableAttackUnits(appState.gameState, turn)
+        if (attackers.isEmpty()) {
+            return phaseManager.fromOutcome(PhaseOutcome.Cancelled, appState)
+        }
+        val currentIdx = attackers.indexOfFirst { it.id == this.unitId }.coerceAtLeast(0)
+        val nextIdx = (currentIdx + 1) % attackers.size
+        val nextUnit = attackers[nextIdx]
+        val newPhase = phaseManager.attackController.enter(nextUnit, this.attackPhase, appState.gameState)
+        return HandleResult(appState.copy(phase = newPhase, cursor = nextUnit.position))
     }
 }

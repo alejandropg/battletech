@@ -89,12 +89,8 @@ public class AttackController {
 
         is AttackAction.NavigateWeapons -> PhaseOutcome.Continue(navigateWeapons(state, action.delta))
 
-        is AttackAction.NextTarget -> {
-            // Tab: jump to first weapon of next target (round-robin, no "No Attack" sentinel)
-            if (state.targets.isEmpty()) return PhaseOutcome.Continue(state)
-            val nextTargetIdx = (state.cursorTargetIndex + 1) % state.targets.size
-            PhaseOutcome.Continue(state.copy(cursorTargetIndex = nextTargetIdx, cursorWeaponIndex = 0))
-        }
+        is AttackAction.NextAttacker ->
+            error("NextAttacker is intercepted in AttackPhaseState.processEvent and must not reach the controller")
 
         is AttackAction.ClickTarget -> {
             val targetUnit = gameState.unitAt(cursor)
@@ -320,7 +316,7 @@ public class AttackController {
     }
 
     private companion object {
-        const val DECLARING_PROMPT = "←/→ twist torso | ↑/↓ navigate weapons | Space: toggle | Enter: confirm | Esc: cancel"
+        const val DECLARING_PROMPT = "←/→ twist torso | ↑/↓ navigate weapons | Space: toggle | Tab: next attacker | Enter: confirm | Esc: cancel"
 
         val TWO_D6_PROBABILITY: Map<Int, Int> = mapOf(
             2 to 100, 3 to 97, 4 to 92, 5 to 83, 6 to 72,
