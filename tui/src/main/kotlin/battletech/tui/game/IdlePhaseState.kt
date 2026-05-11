@@ -51,7 +51,7 @@ public data class IdlePhaseState(
                 UnitSelectionResult.NOT_YOUR_UNIT ->
                     return HandleResult(appState, FlashMessage("Not your unit"))
 
-                UnitSelectionResult.ALREADY_MOVED, UnitSelectionResult.ALREADY_ACTED ->
+                UnitSelectionResult.ALREADY_MOVED ->
                     return HandleResult(appState, FlashMessage("Already moved"))
 
                 UnitSelectionResult.VALID -> {}
@@ -62,9 +62,6 @@ public data class IdlePhaseState(
             when (validateAttackUnitSelection(unit, turnState)) {
                 UnitSelectionResult.NOT_YOUR_UNIT ->
                     return HandleResult(appState, FlashMessage("Not your unit"))
-
-                UnitSelectionResult.ALREADY_ACTED ->
-                    return HandleResult(appState, FlashMessage("Already committed attacks"))
 
                 UnitSelectionResult.ALREADY_MOVED, UnitSelectionResult.VALID -> {}
             }
@@ -94,9 +91,7 @@ public data class IdlePhaseState(
 
         // Always advance one impulse forward. Units the player didn't visit simply don't fire.
         val newTurnState = turnState.copy(
-            attackedUnitIds = turnState.attackedUnitIds + commitResult.unitIds,
             currentAttackImpulseIndex = turnState.currentAttackImpulseIndex + 1,
-            unitsAttackedInCurrentImpulse = 0,
         )
 
         return if (newTurnState.allAttackImpulsesComplete) {
@@ -142,9 +137,7 @@ public data class IdlePhaseState(
         phaseManager.attackController.clearDeclarations()
 
         val physicalTurnState = newTurnState.copy(
-            attackedUnitIds = emptySet(),
             currentAttackImpulseIndex = 0,
-            unitsAttackedInCurrentImpulse = 0,
             attackOrder = emptyList(),
         )
         return HandleResult(

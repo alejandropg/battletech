@@ -40,9 +40,7 @@ internal class IdlePhaseStatePhaseTest {
         movedUnitIds: Set<UnitId> = emptySet(),
         unitsMovedInCurrentImpulse: Int = 0,
         attackOrder: List<MovementImpulse> = emptyList(),
-        attackedUnitIds: Set<UnitId> = emptySet(),
         currentAttackImpulseIndex: Int = 0,
-        unitsAttackedInCurrentImpulse: Int = 0,
     ) = TurnState(
         initiativeResult = InitiativeResult(
             rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
@@ -54,9 +52,7 @@ internal class IdlePhaseStatePhaseTest {
         movedUnitIds = movedUnitIds,
         unitsMovedInCurrentImpulse = unitsMovedInCurrentImpulse,
         attackOrder = attackOrder,
-        attackedUnitIds = attackedUnitIds,
         currentAttackImpulseIndex = currentAttackImpulseIndex,
-        unitsAttackedInCurrentImpulse = unitsAttackedInCurrentImpulse,
     )
 
     private fun anAppState(
@@ -206,30 +202,6 @@ internal class IdlePhaseStatePhaseTest {
 
             assertNotNull(result)
             assertInstanceOf(AttackPhaseState::class.java, result!!.appState.phase)
-        }
-
-        @Test
-        fun `returns flash for already committed unit during attack`() {
-            val p1Unit = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
-            val gameState = aGameState(units = listOf(p1Unit))
-            val turnState = aTurnState(
-                attackOrder = listOf(
-                    MovementImpulse(PlayerId.PLAYER_1, 1),
-                ),
-                attackedUnitIds = setOf(UnitId("u1")),
-            )
-            val state = anAppState(
-                currentPhase = TurnPhase.WEAPON_ATTACK,
-                cursor = HexCoordinates(0, 0),
-                gameState = gameState,
-                turnState = turnState,
-            )
-            val phase = idlePhase()
-
-            val result = phase.processEvent(enterKey(), state, manager)
-
-            assertNotNull(result)
-            assertEquals("Already committed attacks", result!!.flash?.text)
         }
 
         @Test
