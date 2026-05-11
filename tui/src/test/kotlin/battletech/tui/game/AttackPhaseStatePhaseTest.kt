@@ -5,7 +5,6 @@ import battletech.tactical.action.InitiativeResult
 import battletech.tactical.action.MovementImpulse
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.UnitId
 import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
 import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.model.GameState
@@ -40,7 +39,7 @@ internal class AttackPhaseStatePhaseTest {
 
     private val map7x7 = aGameMap(cols = 7, rows = 7)
 
-    private fun attackTurnState(attackedUnitIds: Set<UnitId> = emptySet()): TurnState = TurnState(
+    private fun attackTurnState(): TurnState = TurnState(
         initiativeResult = InitiativeResult(
             rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
             loser = PlayerId.PLAYER_1,
@@ -48,7 +47,6 @@ internal class AttackPhaseStatePhaseTest {
         ),
         movementOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 1)),
         attackOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 3)),
-        attackedUnitIds = attackedUnitIds,
     )
 
     private fun tabKey(): KeyboardEvent = KeyboardEvent("Tab")
@@ -145,29 +143,24 @@ internal class AttackPhaseStatePhaseTest {
     }
 
     @Test
-    fun `Tab wraps to self when only one selectable attacker remains`() {
+    fun `Tab wraps to self when player has only one attacker`() {
         val manager = newManager()
         val unitA = aUnit(
             id = "a", weapons = listOf(mediumLaser()),
             position = HexCoordinates(2, 3), facing = HexDirection.N,
         )
-        val unitB = aUnit(
-            id = "b", weapons = listOf(mediumLaser()),
-            position = HexCoordinates(4, 3), facing = HexDirection.N,
-        )
         val enemy = aUnit(
             id = "enemy", owner = PlayerId.PLAYER_2,
             position = HexCoordinates(3, 1),
         )
-        val gameState = GameState(listOf(unitA, unitB, enemy), map7x7)
+        val gameState = GameState(listOf(unitA, enemy), map7x7)
         val phaseA = enterAttackOn(manager, unitA, gameState)
-        // Pretend B already attacked, so A is the only selectable attacker.
         val appState = AppState(
             gameState = gameState,
             currentPhase = TurnPhase.WEAPON_ATTACK,
             cursor = unitA.position,
             phase = phaseA,
-            turnState = attackTurnState(attackedUnitIds = setOf(unitB.id)),
+            turnState = attackTurnState(),
         )
 
         val result = phaseA.processEvent(tabKey(), appState, manager)
@@ -245,9 +238,7 @@ internal class AttackPhaseStatePhaseTest {
         val result = phaseA.processEvent(tabKey(), appState, manager)
         assertNotNull(result)
 
-        // attackedUnitIds is only mutated by `c` (CommitDeclarations); Tab must not touch it.
-        assertEquals(emptySet<UnitId>(), result!!.appState.turnState!!.attackedUnitIds)
-        // No declarations have been committed to the persistent list either.
+        // No declarations have been committed to the persistent list.
         assertTrue(manager.attackController.collectDeclarations().isEmpty())
     }
 }

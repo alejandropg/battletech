@@ -127,7 +127,8 @@ internal class AttackPhaseStateControllerTest {
 
         assertTrue(result is PhaseOutcome.Cancelled)
         // After cancel, the toggled weapon should still be recorded for commit
-        assertEquals(1, controller.commitImpulse().unitIds.size)
+        controller.commitImpulse()
+        assertEquals(1, controller.collectDeclarations().size)
     }
 
     @Test
@@ -202,7 +203,8 @@ internal class AttackPhaseStateControllerTest {
 
         assertTrue(result is PhaseOutcome.Cancelled)
         // Confirm without toggling weapons leaves the declarations map empty
-        assertTrue(controller.commitImpulse().unitIds.isEmpty())
+        controller.commitImpulse()
+        assertTrue(controller.collectDeclarations().isEmpty())
     }
 
     @Test
@@ -282,8 +284,7 @@ internal class AttackPhaseStateControllerTest {
         val result = controller.handle(AttackAction.Confirm, onState, enemy.position, gameState)
         assertTrue(result is PhaseOutcome.Cancelled)
 
-        val commitResult = controller.commitImpulse()
-        assertTrue(unit.id in commitResult.unitIds)
+        controller.commitImpulse()
 
         val declarations = controller.collectDeclarations()
         assertEquals(1, declarations.size)
@@ -344,7 +345,8 @@ internal class AttackPhaseStateControllerTest {
 
         // Re-initializing wipes pending declarations for the new impulse
         controller.initializeImpulse(PlayerId.PLAYER_1)
-        assertTrue(controller.commitImpulse().unitIds.isEmpty())
+        controller.commitImpulse()
+        assertTrue(controller.collectDeclarations().isEmpty())
     }
 
     @Test
@@ -413,7 +415,6 @@ internal class AttackPhaseStateControllerTest {
 
         val result = controller.commitImpulse()
 
-        assertThat(result.unitIds).containsExactly(unit.id)
         assertThat(result.torsoFacings).containsEntry(unit.id, HexDirection.NE)
     }
 

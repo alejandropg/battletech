@@ -13,7 +13,6 @@ import battletech.tui.input.AttackAction
 import kotlin.math.ceil
 
 public data class CommitResult(
-    val unitIds: Set<UnitId>,
     val torsoFacings: Map<UnitId, HexDirection>,
 )
 
@@ -25,14 +24,13 @@ public class AttackController {
         currentImpulse = ImpulseDeclarations(playerId)
     }
 
-    /** Commits the current impulse's declarations into the accumulated list and returns committed unit IDs and torso facings. */
+    /** Commits the current impulse's declarations into the accumulated list and returns committed torso facings. */
     public fun commitImpulse(): CommitResult {
-        val impulse = currentImpulse ?: return CommitResult(emptySet(), emptyMap())
-        val unitIds = impulse.declarations.keys.toSet()
+        val impulse = currentImpulse ?: return CommitResult(emptyMap())
         allDeclarations.addAll(impulse.toAttackDeclarations())
         val torsoFacings = impulse.declarations.values.associate { it.unitId to it.torsoFacing }
         currentImpulse = null
-        return CommitResult(unitIds, torsoFacings)
+        return CommitResult(torsoFacings)
     }
 
     public fun collectDeclarations(): List<AttackDeclaration> = allDeclarations.toList()
