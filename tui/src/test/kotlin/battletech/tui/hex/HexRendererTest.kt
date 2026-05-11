@@ -160,4 +160,15 @@ internal class HexRendererTest {
         assertEquals(".", buffer.get(4, 2).char)
         assertEquals(Color.WHITE, buffer.get(4, 2).fg)
     }
+
+    @Test
+    fun `line of sight selected highlight shows bright yellow dot at center`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0))
+
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.LINE_OF_SIGHT_SELECTED)
+
+        assertEquals(".", buffer.get(4, 2).char)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(4, 2).fg)
+    }
 }
