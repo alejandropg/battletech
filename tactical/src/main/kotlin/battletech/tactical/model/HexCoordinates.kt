@@ -40,6 +40,34 @@ public data class HexCoordinates(
         )
     }
 
+    public fun lineTo(other: HexCoordinates): List<HexCoordinates> {
+        val n = distanceTo(other)
+        if (n == 0) return listOf(this)
+        val (ax, ay, az) = toCube()
+        val (bx, by, bz) = other.toCube()
+        return (0..n).map { i ->
+            val t = i.toDouble() / n
+            cubeRoundToOffset(ax + (bx - ax) * t, ay + (by - ay) * t, az + (bz - az) * t)
+        }
+    }
+
+    private fun cubeRoundToOffset(fx: Double, fy: Double, fz: Double): HexCoordinates {
+        var rx = Math.round(fx).toInt()
+        var ry = Math.round(fy).toInt()
+        var rz = Math.round(fz).toInt()
+        val xDiff = Math.abs(rx - fx)
+        val yDiff = Math.abs(ry - fy)
+        val zDiff = Math.abs(rz - fz)
+        if (xDiff > yDiff && xDiff > zDiff) {
+            rx = -ry - rz
+        } else if (yDiff > zDiff) {
+            ry = -rx - rz
+        } else {
+            rz = -rx - ry
+        }
+        return HexCoordinates(rx, rz + (rx - (rx and 1)) / 2)
+    }
+
     private fun toCube(): Triple<Int, Int, Int> {
         val x = col
         val z = row - (col - (col and 1)) / 2

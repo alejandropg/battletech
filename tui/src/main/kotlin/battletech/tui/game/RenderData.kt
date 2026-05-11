@@ -1,6 +1,9 @@
 package battletech.tui.game
 
+import battletech.tactical.action.RuleResult
 import battletech.tactical.action.UnitId
+import battletech.tactical.action.attack.PhysicalAttackContext
+import battletech.tactical.action.attack.rule.LineOfSightRule
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -45,8 +48,9 @@ public fun extractRenderData(phaseState: PhaseState, gameState: GameState? = nul
             val unitPos = gameState?.unitById(phaseState.unitId)?.position
             val torsoFacings = if (unitPos != null) mapOf(unitPos to phaseState.torsoFacing) else emptyMap()
             val targetPositions = resolveTargetPositions(phaseState.validTargetIds, gameState)
+            val los = if (gameState != null) losHighlights(phaseState, gameState) else emptyMap()
             RenderData(
-                hexHighlights = arcHighlights,
+                hexHighlights = arcHighlights + los,
                 torsoFacings = torsoFacings,
                 validTargetPositions = targetPositions,
             )
@@ -57,6 +61,20 @@ public fun extractRenderData(phaseState: PhaseState, gameState: GameState? = nul
 private fun resolveTargetPositions(targetIds: Set<UnitId>, gameState: GameState?): Set<HexCoordinates> {
     if (gameState == null) return emptySet()
     return targetIds.mapNotNull { gameState.unitById(it)?.position }.toSet()
+}
+
+private fun losHighlights(phaseState: AttackPhaseState, gameState: GameState): Map<HexCoordinates, HexHighlight> {
+    val attacker = gameState.unitById(phaseState.unitId) ?: return emptyMap()
+    val rule = LineOfSightRule()
+    return phaseState.validTargetIds.flatMap { targetId ->
+        val target = gameState.unitById(targetId) ?: return@flatMap emptyList()
+        val context = PhysicalAttackContext(actor = attacker, gameState = gameState, target = target)
+        if (rule.evaluate(context) == RuleResult.Satisfied) {
+            attacker.position.lineTo(target.position).drop(1).dropLast(1)
+        } else {
+            emptyList()
+        }
+    }.associateWith { HexHighlight.LINE_OF_SIGHT }
 }
 
 private fun reachabilityHighlights(reachability: ReachabilityMap): Map<HexCoordinates, HexHighlight> {

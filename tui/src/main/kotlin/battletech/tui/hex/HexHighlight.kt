@@ -8,4 +8,5 @@ public enum class HexHighlight {
     REACHABLE_JUMP,
     PATH,
     ATTACK_RANGE,
+    LINE_OF_SIGHT,
 }

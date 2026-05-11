@@ -138,4 +138,26 @@ internal class HexRendererTest {
 
         assertEquals(String(Character.toChars(0xF14DE)), buffer.get(4, 2).char)
     }
+
+    @Test
+    fun `attack range highlight shows gray dot at center`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0))
+
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.ATTACK_RANGE)
+
+        assertEquals(".", buffer.get(4, 2).char)
+        assertEquals(Color.GRAY, buffer.get(4, 2).fg)
+    }
+
+    @Test
+    fun `line of sight highlight shows white dot at center`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0))
+
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.LINE_OF_SIGHT)
+
+        assertEquals(".", buffer.get(4, 2).char)
+        assertEquals(Color.WHITE, buffer.get(4, 2).fg)
+    }
 }
