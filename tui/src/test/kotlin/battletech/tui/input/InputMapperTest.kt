@@ -194,13 +194,18 @@ internal class InputMapperTest {
         }
 
         @Test
-        fun `enter maps to Confirm`() {
-            assertEquals(AttackAction.Confirm, InputMapper.mapAttackEvent(key("Enter")))
+        fun `c maps to Commit`() {
+            assertEquals(AttackAction.Commit, InputMapper.mapAttackEvent(key("c")))
         }
 
         @Test
-        fun `escape maps to Cancel`() {
-            assertEquals(AttackAction.Cancel, InputMapper.mapAttackEvent(key("Escape")))
+        fun `enter returns null`() {
+            assertNull(InputMapper.mapAttackEvent(key("Enter")))
+        }
+
+        @Test
+        fun `escape returns null`() {
+            assertNull(InputMapper.mapAttackEvent(key("Escape")))
         }
 
         @Test

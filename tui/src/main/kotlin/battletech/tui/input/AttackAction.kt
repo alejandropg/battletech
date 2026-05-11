@@ -9,5 +9,6 @@ public sealed interface AttackAction {
     public data object NextAttacker : AttackAction
     public data object Confirm : AttackAction
     public data object Cancel : AttackAction
+    public data object Commit : AttackAction
     public data class ClickTarget(val coords: HexCoordinates) : AttackAction
 }

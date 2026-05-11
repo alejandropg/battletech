@@ -40,6 +40,10 @@ public data class AttackPhaseState(
             return cycleToNextAttacker(appState, phaseManager)
         }
 
+        if (action is AttackAction.Commit) {
+            return phaseManager.commitAttackImpulse(appState)
+        }
+
         val outcome = phaseManager.attackController.handle(action, this, appState.cursor, appState.gameState)
         return phaseManager.fromOutcome(outcome, appState)
     }

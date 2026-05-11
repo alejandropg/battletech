@@ -76,11 +76,9 @@ public fun autoAdvanceGlobalPhases(
             if (turnState != null && turnState.attackOrder.isEmpty()) {
                 val newTurnState = turnState.copy(attackOrder = attackOrderFor(turnState, appState.gameState))
                 phaseManager.attackController.initializeImpulse(newTurnState.activeAttackPlayer)
-                val state = appState.copy(
-                    turnState = newTurnState,
-                    phase = IdlePhaseState(attackPrompt(newTurnState)),
-                )
-                state to FlashMessage("Weapon Attack Phase")
+                val updatedAppState = appState.copy(turnState = newTurnState)
+                val result = phaseManager.enterFirstAttacker(updatedAppState, newTurnState, appState.gameState)
+                result.appState to FlashMessage("Weapon Attack Phase")
             } else {
                 appState to null
             }
@@ -91,11 +89,9 @@ public fun autoAdvanceGlobalPhases(
             if (turnState != null && turnState.attackOrder.isEmpty()) {
                 val newTurnState = turnState.copy(attackOrder = attackOrderFor(turnState, appState.gameState))
                 phaseManager.attackController.initializeImpulse(newTurnState.activeAttackPlayer)
-                val state = appState.copy(
-                    turnState = newTurnState,
-                    phase = IdlePhaseState(attackPrompt(newTurnState)),
-                )
-                state to FlashMessage("Physical Attack Phase")
+                val updatedAppState = appState.copy(turnState = newTurnState)
+                val result = phaseManager.enterFirstAttacker(updatedAppState, newTurnState, appState.gameState)
+                result.appState to FlashMessage("Physical Attack Phase")
             } else {
                 appState to null
             }
