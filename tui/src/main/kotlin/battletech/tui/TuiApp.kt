@@ -92,9 +92,9 @@ public class TuiApp {
 
     private fun currentSize(terminal: Terminal): Size {
         val size = terminal.updateSize()
-        val width = if (size.width > 0) size.width else 80
-        val height = if (size.height > 0) size.height else 24
-        return Size(width, height)
+        check(size.width > 0) { "Terminal width must be positive, got: $size" }
+        check(size.height > 0) { "Terminal height must be positive, got: $size" }
+        return Size(size.width, size.height)
     }
 
     private fun renderFrame(
