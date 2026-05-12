@@ -45,39 +45,49 @@ public fun extractRenderData(phaseState: PhaseState, gameState: GameState? = nul
         )
 
         is AttackPhaseState -> {
-            val arcHighlights = phaseState.arc.associateWith { HexHighlight.ATTACK_RANGE }
-            val unitPos = gameState?.unitById(phaseState.unitId)?.position
-            val torsoFacings = if (unitPos != null) mapOf(unitPos to phaseState.torsoFacing) else emptyMap()
-            val targetPositions = resolveTargetPositions(phaseState.validTargetIds, gameState)
-            val los = if (gameState != null) losHighlights(phaseState, gameState) else emptyMap()
-            val selectedLos = if (gameState != null) selectedLosHighlights(phaseState, gameState) else emptyMap()
-            RenderData(
-                hexHighlights = arcHighlights + los + selectedLos,
-                torsoFacings = torsoFacings,
-                validTargetPositions = targetPositions,
-            )
+            val attacker = gameState?.unitById(phaseState.unitId)
+            if (gameState == null || attacker == null) {
+                RenderData.EMPTY
+            } else {
+                val arc = fireArc(attacker, phaseState.torsoFacing, gameState)
+                val validIds = validTargets(attacker, phaseState.torsoFacing, gameState)
+                val targets = targetInfos(attacker, phaseState.torsoFacing, gameState)
+                val arcHighlights = arc.associateWith { HexHighlight.ATTACK_RANGE }
+                val torsoFacings = mapOf(attacker.position to phaseState.torsoFacing)
+                val targetPositions = resolveTargetPositions(validIds, gameState)
+                val los = losHighlights(attacker, validIds, gameState)
+                val selectedLos = selectedLosHighlights(attacker, phaseState, targets, gameState)
+                RenderData(
+                    hexHighlights = arcHighlights + los + selectedLos,
+                    torsoFacings = torsoFacings,
+                    validTargetPositions = targetPositions,
+                )
+            }
         }
     }
 }
 
-private fun resolveTargetPositions(targetIds: Set<UnitId>, gameState: GameState?): Set<HexCoordinates> {
-    if (gameState == null) return emptySet()
-    return targetIds.mapNotNull { gameState.unitById(it)?.position }.toSet()
-}
+private fun resolveTargetPositions(targetIds: Set<UnitId>, gameState: GameState): Set<HexCoordinates> =
+    targetIds.mapNotNull { gameState.unitById(it)?.position }.toSet()
 
-private fun losHighlights(phaseState: AttackPhaseState, gameState: GameState): Map<HexCoordinates, HexHighlight> {
-    val attacker = gameState.unitById(phaseState.unitId) ?: return emptyMap()
-    return phaseState.validTargetIds.flatMap { targetId ->
+private fun losHighlights(
+    attacker: CombatUnit,
+    validTargetIds: Set<UnitId>,
+    gameState: GameState,
+): Map<HexCoordinates, HexHighlight> =
+    validTargetIds.flatMap { targetId ->
         val target = gameState.unitById(targetId) ?: return@flatMap emptyList()
         losLine(attacker, target, gameState)
     }.associateWith { HexHighlight.LINE_OF_SIGHT }
-}
 
-private fun selectedLosHighlights(phaseState: AttackPhaseState, gameState: GameState): Map<HexCoordinates, HexHighlight> {
-    val targets = phaseState.targets
+private fun selectedLosHighlights(
+    attacker: CombatUnit,
+    phaseState: AttackPhaseState,
+    targets: List<TargetInfo>,
+    gameState: GameState,
+): Map<HexCoordinates, HexHighlight> {
     val idx = phaseState.cursorTargetIndex
     if (idx !in targets.indices) return emptyMap()
-    val attacker = gameState.unitById(phaseState.unitId) ?: return emptyMap()
     val target = gameState.unitById(targets[idx].unitId) ?: return emptyMap()
     return losLine(attacker, target, gameState).associateWith { HexHighlight.LINE_OF_SIGHT_SELECTED }
 }

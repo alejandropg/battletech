@@ -1,6 +1,7 @@
 package battletech.tui.game
 
 import battletech.tactical.action.PlayerId
+import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.Hex
@@ -8,15 +9,18 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.Terrain
+import battletech.tactical.model.Weapon
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
+import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit
 import battletech.tui.hex.HexHighlight
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
@@ -56,11 +60,16 @@ internal class RenderDataTest {
         destinations = reachableHexes,
     )
 
+    private fun mediumLaser(): Weapon = Weapon(
+        name = "Medium Laser", damage = 5, heat = 3,
+        shortRange = 3, mediumRange = 6, longRange = 9,
+    )
+
     @Nested
     inner class IdlePhaseStateTest {
         @Test
         fun `Idle produces empty render data`() {
-            val result = extractRenderData(IdlePhaseState())
+            val result = extractRenderData(IdlePhaseState)
             assertEquals(RenderData.EMPTY, result)
         }
     }
@@ -75,7 +84,6 @@ internal class RenderDataTest {
                 currentModeIndex = 0,
                 hoveredPath = null,
                 hoveredDestination = null,
-                prompt = "Walk",
             )
 
             val result = extractRenderData(state)
@@ -93,7 +101,6 @@ internal class RenderDataTest {
                 currentModeIndex = 0,
                 hoveredPath = path,
                 hoveredDestination = reachableHexes[1],
-                prompt = "Walk",
             )
 
             val result = extractRenderData(state)
@@ -112,7 +119,6 @@ internal class RenderDataTest {
                 currentModeIndex = 0,
                 hoveredPath = null,
                 hoveredDestination = null,
-                prompt = "Run",
             )
 
             val result = extractRenderData(state)
@@ -128,7 +134,6 @@ internal class RenderDataTest {
                 currentModeIndex = 0,
                 hoveredPath = null,
                 hoveredDestination = null,
-                prompt = "Walk",
             )
 
             val result = extractRenderData(state)
@@ -150,7 +155,6 @@ internal class RenderDataTest {
                 hex = HexCoordinates(1, 0),
                 options = options,
                 path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
-                prompt = "Select facing",
             )
 
             val result = extractRenderData(state)
@@ -169,7 +173,6 @@ internal class RenderDataTest {
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes,
                 path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
-                prompt = "Select facing",
             )
 
             val result = extractRenderData(state)
@@ -180,72 +183,72 @@ internal class RenderDataTest {
 
     @Nested
     inner class AttackPhaseStateTest {
+
+        private fun attackState(
+            attacker: UnitId,
+            torsoFacing: HexDirection = HexDirection.S,
+            cursorTargetIndex: Int = 0,
+        ): AttackPhaseState = AttackPhaseState(
+            unitId = attacker,
+            attackPhase = TurnPhase.WEAPON_ATTACK,
+            torsoFacing = torsoFacing,
+            cursorTargetIndex = cursorTargetIndex,
+            cursorWeaponIndex = 0,
+            weaponAssignments = emptyMap(),
+            primaryTargetId = null,
+        )
+
         @Test
         fun `attack produces arc highlights`() {
-            val arcHexes = setOf(HexCoordinates(1, 0), HexCoordinates(2, 0))
-            val state = AttackPhaseState(
-                unitId = UnitId("u1"),
-                attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
-                torsoFacing = HexDirection.N,
-                arc = arcHexes,
-                validTargetIds = emptySet(),
-                targets = emptyList(),
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
-                weaponAssignments = emptyMap(),
-                primaryTargetId = null,
-                prompt = "Select attack",
+            val attacker = aUnit(
+                id = "u1", owner = PlayerId.PLAYER_1,
+                position = HexCoordinates(0, 0), facing = HexDirection.N,
+                weapons = listOf(mediumLaser()),
             )
+            val gameState = aGameState(units = listOf(attacker), map = aGameMap(cols = 3, rows = 3))
+            val arc = fireArc(attacker, HexDirection.N, gameState)
+            assertTrue(arc.isNotEmpty())
 
-            val result = extractRenderData(state)
+            val state = attackState(attacker.id, torsoFacing = HexDirection.N)
+            val result = extractRenderData(state, gameState)
 
-            assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(1, 0)])
-            assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(2, 0)])
+            for (coord in arc) {
+                assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[coord])
+            }
         }
 
         @Test
         fun `attack with empty arc produces empty highlights`() {
-            val state = AttackPhaseState(
-                unitId = UnitId("u1"),
-                attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
-                torsoFacing = HexDirection.N,
-                arc = emptySet(),
-                validTargetIds = emptySet(),
-                targets = emptyList(),
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
-                weaponAssignments = emptyMap(),
-                primaryTargetId = null,
-                prompt = "No attacks",
+            // Single-hex map: attacker is the only hex; arc is empty (forwardArc excludes origin)
+            val attacker = aUnit(
+                id = "u1", owner = PlayerId.PLAYER_1,
+                position = HexCoordinates(0, 0), facing = HexDirection.N,
+                weapons = listOf(mediumLaser()),
             )
+            val gameState = aGameState(
+                units = listOf(attacker),
+                map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0), Terrain.CLEAR))),
+            )
+            assertTrue(fireArc(attacker, HexDirection.N, gameState).isEmpty())
 
-            val result = extractRenderData(state)
+            val state = attackState(attacker.id, torsoFacing = HexDirection.N)
+            val result = extractRenderData(state, gameState)
 
             assertEquals(emptyMap<HexCoordinates, HexHighlight>(), result.hexHighlights)
         }
 
         @Test
         fun `attack with valid target produces LINE_OF_SIGHT on intervening hexes`() {
-            val attacker = aUnit(id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1)
+            val attacker = aUnit(
+                id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
+                facing = HexDirection.S, weapons = listOf(mediumLaser()),
+            )
             val target = aUnit(id = "target", position = HexCoordinates(0, 3), owner = PlayerId.PLAYER_2)
             val hexes = (0..3).associate { row ->
                 HexCoordinates(0, row) to Hex(HexCoordinates(0, row), Terrain.CLEAR)
             }
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val arcHexes = setOf(HexCoordinates(0, 1), HexCoordinates(0, 2), HexCoordinates(0, 3))
-            val state = AttackPhaseState(
-                unitId = UnitId("attacker"),
-                attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
-                torsoFacing = HexDirection.S,
-                arc = arcHexes,
-                validTargetIds = setOf(UnitId("target")),
-                targets = emptyList(),
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
-                weaponAssignments = emptyMap(),
-                primaryTargetId = null,
-                prompt = "Attack",
-            )
+            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = -1)
 
             val result = extractRenderData(state, gameState)
 
@@ -258,26 +261,16 @@ internal class RenderDataTest {
 
         @Test
         fun `attack with target in heavy woods produces no LINE_OF_SIGHT`() {
-            val attacker = aUnit(id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1)
+            val attacker = aUnit(
+                id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
+                facing = HexDirection.S, weapons = listOf(mediumLaser()),
+            )
             val target = aUnit(id = "target", position = HexCoordinates(0, 3), owner = PlayerId.PLAYER_2)
             val hexes = (0..3).associate { row ->
                 HexCoordinates(0, row) to Hex(HexCoordinates(0, row), if (row == 3) Terrain.HEAVY_WOODS else Terrain.CLEAR)
             }
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val arcHexes = setOf(HexCoordinates(0, 1), HexCoordinates(0, 2), HexCoordinates(0, 3))
-            val state = AttackPhaseState(
-                unitId = UnitId("attacker"),
-                attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
-                torsoFacing = HexDirection.S,
-                arc = arcHexes,
-                validTargetIds = setOf(UnitId("target")),
-                targets = emptyList(),
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
-                weaponAssignments = emptyMap(),
-                primaryTargetId = null,
-                prompt = "Attack",
-            )
+            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = -1)
 
             val result = extractRenderData(state, gameState)
 
@@ -289,26 +282,17 @@ internal class RenderDataTest {
 
         @Test
         fun `attack with adjacent target produces no LINE_OF_SIGHT intervening hexes`() {
-            val attacker = aUnit(id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1)
+            val attacker = aUnit(
+                id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
+                facing = HexDirection.S, weapons = listOf(mediumLaser()),
+            )
             val target = aUnit(id = "target", position = HexCoordinates(0, 1), owner = PlayerId.PLAYER_2)
             val hexes = mapOf(
                 HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0), Terrain.CLEAR),
                 HexCoordinates(0, 1) to Hex(HexCoordinates(0, 1), Terrain.CLEAR),
             )
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val state = AttackPhaseState(
-                unitId = UnitId("attacker"),
-                attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
-                torsoFacing = HexDirection.S,
-                arc = setOf(HexCoordinates(0, 1)),
-                validTargetIds = setOf(UnitId("target")),
-                targets = emptyList(),
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
-                weaponAssignments = emptyMap(),
-                primaryTargetId = null,
-                prompt = "Attack",
-            )
+            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = -1)
 
             val result = extractRenderData(state, gameState)
 
@@ -318,25 +302,16 @@ internal class RenderDataTest {
 
         @Test
         fun `attack with selected target produces LINE_OF_SIGHT_SELECTED on intervening hexes`() {
-            val attacker = aUnit(id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1)
+            val attacker = aUnit(
+                id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
+                facing = HexDirection.S, weapons = listOf(mediumLaser()),
+            )
             val target = aUnit(id = "target", position = HexCoordinates(0, 3), owner = PlayerId.PLAYER_2)
             val hexes = (0..3).associate { row ->
                 HexCoordinates(0, row) to Hex(HexCoordinates(0, row), Terrain.CLEAR)
             }
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val state = AttackPhaseState(
-                unitId = UnitId("attacker"),
-                attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
-                torsoFacing = HexDirection.S,
-                arc = setOf(HexCoordinates(0, 1), HexCoordinates(0, 2), HexCoordinates(0, 3)),
-                validTargetIds = setOf(UnitId("target")),
-                targets = listOf(TargetInfo(UnitId("target"), "Target", emptyList())),
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
-                weaponAssignments = emptyMap(),
-                primaryTargetId = null,
-                prompt = "Attack",
-            )
+            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = 0)
 
             val result = extractRenderData(state, gameState)
 
@@ -346,36 +321,23 @@ internal class RenderDataTest {
 
         @Test
         fun `attack with multiple targets only highlights selected target's line in yellow`() {
-            val attacker = aUnit(id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1)
+            val attacker = aUnit(
+                id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
+                facing = HexDirection.S, weapons = listOf(mediumLaser()),
+            )
             val selected = aUnit(id = "selected", position = HexCoordinates(0, 3), owner = PlayerId.PLAYER_2)
-            val other = aUnit(id = "other", position = HexCoordinates(0, 2), owner = PlayerId.PLAYER_2)
-            // Place 'other' on a different straight line so its line doesn't share hexes with 'selected'
             val otherFar = aUnit(id = "otherFar", position = HexCoordinates(2, 1), owner = PlayerId.PLAYER_2)
             val hexes = listOf(
                 HexCoordinates(0, 0), HexCoordinates(0, 1), HexCoordinates(0, 2), HexCoordinates(0, 3),
                 HexCoordinates(1, 0), HexCoordinates(2, 1),
             ).associateWith { Hex(it, Terrain.CLEAR) }
             val gameState = aGameState(units = listOf(attacker, selected, otherFar), map = GameMap(hexes))
-            val state = AttackPhaseState(
-                unitId = UnitId("attacker"),
-                attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
-                torsoFacing = HexDirection.S,
-                arc = setOf(
-                    HexCoordinates(0, 1), HexCoordinates(0, 2), HexCoordinates(0, 3),
-                    HexCoordinates(1, 0), HexCoordinates(2, 1),
-                ),
-                validTargetIds = setOf(UnitId("selected"), UnitId("otherFar")),
-                targets = listOf(
-                    TargetInfo(UnitId("selected"), "Selected", emptyList()),
-                    TargetInfo(UnitId("otherFar"), "OtherFar", emptyList()),
-                ),
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
-                weaponAssignments = emptyMap(),
-                primaryTargetId = null,
-                prompt = "Attack",
-            )
 
+            val targets = targetInfos(attacker, HexDirection.S, gameState)
+            val selectedIdx = targets.indexOfFirst { it.unitId == selected.id }
+            assertTrue(selectedIdx >= 0)
+
+            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = selectedIdx)
             val result = extractRenderData(state, gameState)
 
             // Selected's line: (0,1), (0,2) → YELLOW
@@ -387,25 +349,16 @@ internal class RenderDataTest {
 
         @Test
         fun `attack with selected target in heavy woods produces no yellow line`() {
-            val attacker = aUnit(id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1)
+            val attacker = aUnit(
+                id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
+                facing = HexDirection.S, weapons = listOf(mediumLaser()),
+            )
             val target = aUnit(id = "target", position = HexCoordinates(0, 3), owner = PlayerId.PLAYER_2)
             val hexes = (0..3).associate { row ->
                 HexCoordinates(0, row) to Hex(HexCoordinates(0, row), if (row == 3) Terrain.HEAVY_WOODS else Terrain.CLEAR)
             }
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val state = AttackPhaseState(
-                unitId = UnitId("attacker"),
-                attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
-                torsoFacing = HexDirection.S,
-                arc = setOf(HexCoordinates(0, 1), HexCoordinates(0, 2), HexCoordinates(0, 3)),
-                validTargetIds = setOf(UnitId("target")),
-                targets = listOf(TargetInfo(UnitId("target"), "Target", emptyList())),
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
-                weaponAssignments = emptyMap(),
-                primaryTargetId = null,
-                prompt = "Attack",
-            )
+            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = 0)
 
             val result = extractRenderData(state, gameState)
 
@@ -415,30 +368,22 @@ internal class RenderDataTest {
         }
 
         @Test
-        fun `attack with empty targets list produces no LINE_OF_SIGHT_SELECTED`() {
-            val attacker = aUnit(id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1)
+        fun `attack with cursor on no target produces no LINE_OF_SIGHT_SELECTED`() {
+            val attacker = aUnit(
+                id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
+                facing = HexDirection.S, weapons = listOf(mediumLaser()),
+            )
             val target = aUnit(id = "target", position = HexCoordinates(0, 3), owner = PlayerId.PLAYER_2)
             val hexes = (0..3).associate { row ->
                 HexCoordinates(0, row) to Hex(HexCoordinates(0, row), Terrain.CLEAR)
             }
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val state = AttackPhaseState(
-                unitId = UnitId("attacker"),
-                attackPhase = battletech.tactical.action.TurnPhase.WEAPON_ATTACK,
-                torsoFacing = HexDirection.S,
-                arc = setOf(HexCoordinates(0, 1), HexCoordinates(0, 2), HexCoordinates(0, 3)),
-                validTargetIds = setOf(UnitId("target")),
-                targets = emptyList(),
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
-                weaponAssignments = emptyMap(),
-                primaryTargetId = null,
-                prompt = "Attack",
-            )
+            // cursorTargetIndex = -1 → no target selected
+            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = -1)
 
             val result = extractRenderData(state, gameState)
 
-            // No targets means no selected — white LoS still drawn, but no yellow
+            // No selected — white LoS drawn, but no yellow
             assertEquals(HexHighlight.LINE_OF_SIGHT, result.hexHighlights[HexCoordinates(0, 1)])
             assertEquals(HexHighlight.LINE_OF_SIGHT, result.hexHighlights[HexCoordinates(0, 2)])
         }

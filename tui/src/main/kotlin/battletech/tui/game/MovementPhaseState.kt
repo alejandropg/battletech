@@ -22,7 +22,6 @@ public sealed interface MovementPhaseState : PhaseState {
         override val currentModeIndex: Int,
         val hoveredPath: List<HexCoordinates>?,
         val hoveredDestination: ReachableHex?,
-        override val prompt: String,
     ) : MovementPhaseState {
 
         override fun processEvent(
@@ -54,7 +53,6 @@ public sealed interface MovementPhaseState : PhaseState {
         val hex: HexCoordinates,
         val options: List<ReachableHex>,
         val path: List<HexCoordinates>,
-        override val prompt: String,
     ) : MovementPhaseState {
 
         override fun processEvent(

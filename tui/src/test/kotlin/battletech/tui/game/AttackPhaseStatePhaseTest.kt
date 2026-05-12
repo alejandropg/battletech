@@ -51,14 +51,17 @@ internal class AttackPhaseStatePhaseTest {
 
     private fun tabKey(): KeyboardEvent = KeyboardEvent("Tab")
 
+    /** Seed the impulse on a turn state for the given player. */
+    private fun seeded(manager: PhaseManager, turnState: TurnState = attackTurnState()): TurnState =
+        manager.attackController.initializeImpulse(turnState, PlayerId.PLAYER_1)
+
     private fun enterAttackOn(
         manager: PhaseManager,
         unit: battletech.tactical.action.CombatUnit,
         gameState: GameState,
-    ): AttackPhaseState {
-        manager.attackController.initializeImpulse(PlayerId.PLAYER_1)
-        return manager.attackController.enter(unit, TurnPhase.WEAPON_ATTACK, gameState)
-    }
+        turnState: TurnState,
+    ): AttackPhaseState =
+        manager.attackController.enter(unit, TurnPhase.WEAPON_ATTACK, gameState, turnState)
 
     @Test
     fun `Tab with multiple selectable attackers advances to next attacker and moves cursor`() {
@@ -76,13 +79,14 @@ internal class AttackPhaseStatePhaseTest {
             position = HexCoordinates(3, 1),
         )
         val gameState = GameState(listOf(unitA, unitB, enemy), map7x7)
-        val phaseA = enterAttackOn(manager, unitA, gameState)
+        val turnState = seeded(manager)
+        val phaseA = enterAttackOn(manager, unitA, gameState, turnState)
         val appState = AppState(
             gameState = gameState,
             currentPhase = TurnPhase.WEAPON_ATTACK,
             cursor = unitA.position,
             phase = phaseA,
-            turnState = attackTurnState(),
+            turnState = turnState,
         )
 
         val result = phaseA.processEvent(tabKey(), appState, manager)
@@ -110,16 +114,17 @@ internal class AttackPhaseStatePhaseTest {
             position = HexCoordinates(3, 1),
         )
         val gameState = GameState(listOf(unitA, unitB, enemy), map7x7)
-        val phaseA = enterAttackOn(manager, unitA, gameState)
+        val turnState = seeded(manager)
+        val phaseA = enterAttackOn(manager, unitA, gameState, turnState)
         val appStateA = AppState(
             gameState = gameState,
             currentPhase = TurnPhase.WEAPON_ATTACK,
             cursor = unitA.position,
             phase = phaseA,
-            turnState = attackTurnState(),
+            turnState = turnState,
         )
 
-        // Toggle a weapon on A (Space), so the declaration is persisted in currentImpulse.
+        // Toggle a weapon on A (Space), so the declaration is persisted in attackImpulse.
         val toggleResult = phaseA.processEvent(KeyboardEvent(" "), appStateA, manager)
         assertNotNull(toggleResult)
         val phaseAAfterToggle = toggleResult!!.appState.phase as AttackPhaseState
@@ -138,7 +143,7 @@ internal class AttackPhaseStatePhaseTest {
         val phaseAAgain = tabBackToA!!.appState.phase as AttackPhaseState
         assertEquals(unitA.id, phaseAAgain.unitId)
 
-        // A's weapon assignment should be restored from currentImpulse.
+        // A's weapon assignment should be restored from attackImpulse.
         assertTrue(phaseAAgain.weaponAssignments[enemy.id]?.contains(0) == true)
     }
 
@@ -154,13 +159,14 @@ internal class AttackPhaseStatePhaseTest {
             position = HexCoordinates(3, 1),
         )
         val gameState = GameState(listOf(unitA, enemy), map7x7)
-        val phaseA = enterAttackOn(manager, unitA, gameState)
+        val turnState = seeded(manager)
+        val phaseA = enterAttackOn(manager, unitA, gameState, turnState)
         val appState = AppState(
             gameState = gameState,
             currentPhase = TurnPhase.WEAPON_ATTACK,
             cursor = unitA.position,
             phase = phaseA,
-            turnState = attackTurnState(),
+            turnState = turnState,
         )
 
         val result = phaseA.processEvent(tabKey(), appState, manager)
@@ -191,13 +197,14 @@ internal class AttackPhaseStatePhaseTest {
             position = HexCoordinates(3, 1),
         )
         val gameState = GameState(listOf(unitA, unitB, unitC, enemy), map7x7)
-        val phaseA = enterAttackOn(manager, unitA, gameState)
+        val turnState = seeded(manager)
+        val phaseA = enterAttackOn(manager, unitA, gameState, turnState)
         val appStateA = AppState(
             gameState = gameState,
             currentPhase = TurnPhase.WEAPON_ATTACK,
             cursor = unitA.position,
             phase = phaseA,
-            turnState = attackTurnState(),
+            turnState = turnState,
         )
 
         val toB = phaseA.processEvent(tabKey(), appStateA, manager)!!
@@ -226,19 +233,20 @@ internal class AttackPhaseStatePhaseTest {
             position = HexCoordinates(3, 1),
         )
         val gameState = GameState(listOf(unitA, unitB, enemy), map7x7)
-        val phaseA = enterAttackOn(manager, unitA, gameState)
+        val turnState = seeded(manager)
+        val phaseA = enterAttackOn(manager, unitA, gameState, turnState)
         val appState = AppState(
             gameState = gameState,
             currentPhase = TurnPhase.WEAPON_ATTACK,
             cursor = unitA.position,
             phase = phaseA,
-            turnState = attackTurnState(),
+            turnState = turnState,
         )
 
         val result = phaseA.processEvent(tabKey(), appState, manager)
         assertNotNull(result)
 
         // No declarations have been committed to the persistent list.
-        assertTrue(manager.attackController.collectDeclarations().isEmpty())
+        assertTrue(manager.attackController.collectDeclarations(result!!.appState.turnState!!).isEmpty())
     }
 }

@@ -5,6 +5,7 @@ import battletech.tactical.action.InitiativeResult
 import battletech.tactical.action.MovementImpulse
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
+import battletech.tactical.action.attack.AttackDeclaration
 import battletech.tactical.model.GameState
 
 public data class TurnState(
@@ -15,6 +16,8 @@ public data class TurnState(
     val unitsMovedInCurrentImpulse: Int = 0,
     val attackOrder: List<MovementImpulse> = emptyList(),
     val currentAttackImpulseIndex: Int = 0,
+    val attackDeclarations: List<AttackDeclaration> = emptyList(),
+    val attackImpulse: ImpulseDeclarations? = null,
 ) {
     val currentImpulse: MovementImpulse get() = movementOrder[currentImpulseIndex]
     val activePlayer: PlayerId get() = currentImpulse.player

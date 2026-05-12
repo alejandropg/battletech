@@ -4,10 +4,12 @@ import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
 import battletech.tactical.action.attack.AttackDeclaration
 
-public class ImpulseDeclarations(
-    public val playerId: PlayerId,
+public data class ImpulseDeclarations(
+    val playerId: PlayerId,
+    val declarations: Map<UnitId, UnitDeclaration> = emptyMap(),
 ) {
-    public val declarations: MutableMap<UnitId, UnitDeclaration> = mutableMapOf()
+    public fun withDeclaration(decl: UnitDeclaration): ImpulseDeclarations =
+        copy(declarations = declarations + (decl.unitId to decl))
 
     public fun toAttackDeclarations(): List<AttackDeclaration> =
         declarations.values.flatMap { decl ->

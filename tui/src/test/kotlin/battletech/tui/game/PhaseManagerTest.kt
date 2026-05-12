@@ -50,7 +50,7 @@ internal class PhaseManagerTest {
 
     private fun anAppState(
         currentPhase: TurnPhase = TurnPhase.MOVEMENT,
-        phase: PhaseState = IdlePhaseState(),
+        phase: PhaseState = IdlePhaseState,
         cursor: HexCoordinates = HexCoordinates(0, 0),
         turnState: TurnState? = null,
     ) = AppState(
@@ -65,7 +65,7 @@ internal class PhaseManagerTest {
     inner class FromOutcomeTest {
         @Test
         fun `Continue returns new PhaseState`() {
-            val newPhase = IdlePhaseState("new prompt")
+            val newPhase = IdlePhaseState
             val state = anAppState()
 
             val result = manager.fromOutcome(PhaseOutcome.Continue(newPhase), state)
@@ -75,7 +75,7 @@ internal class PhaseManagerTest {
         }
 
         @Test
-        fun `Cancelled returns idle with movement prompt during movement`() {
+        fun `Cancelled returns idle during movement`() {
             val turnState = aTurnState()
             val state = anAppState(
                 currentPhase = TurnPhase.MOVEMENT,
@@ -84,12 +84,12 @@ internal class PhaseManagerTest {
 
             val result = manager.fromOutcome(PhaseOutcome.Cancelled, state)
 
-            val idle = result.appState.phase as IdlePhaseState
-            assertEquals(movementPrompt(turnState), idle.prompt)
+            assertInstanceOf(IdlePhaseState::class.java, result.appState.phase)
+            assertEquals(movementPrompt(turnState), phasePrompt(result.appState))
         }
 
         @Test
-        fun `Cancelled returns idle with attack prompt during weapon attack`() {
+        fun `Cancelled returns idle during weapon attack`() {
             val turnState = aTurnState().copy(
                 attackOrder = listOf(
                     MovementImpulse(PlayerId.PLAYER_1, 1),
@@ -103,8 +103,8 @@ internal class PhaseManagerTest {
 
             val result = manager.fromOutcome(PhaseOutcome.Cancelled, state)
 
-            val idle = result.appState.phase as IdlePhaseState
-            assertEquals(attackPrompt(turnState), idle.prompt)
+            assertInstanceOf(IdlePhaseState::class.java, result.appState.phase)
+            assertEquals(attackPrompt(turnState), phasePrompt(result.appState))
         }
 
         @Test
@@ -123,7 +123,7 @@ internal class PhaseManagerTest {
                 turnState = turnState,
             ).copy(gameState = gameState)
 
-            val result = manager.fromOutcome(PhaseOutcome.Complete(newGameState), state)
+            val result = manager.fromOutcome(PhaseOutcome.Complete(newGameState, unit.id), state)
 
             assertEquals(TurnPhase.MOVEMENT, result.appState.currentPhase)
             assertEquals(PlayerId.PLAYER_2, result.appState.turnState!!.activePlayer)
