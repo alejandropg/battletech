@@ -8,8 +8,6 @@ import battletech.tactical.action.movement.MovementPreview
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
-import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
 import battletech.tui.input.BrowsingAction
 import battletech.tui.input.FacingAction
@@ -34,7 +32,6 @@ public class MovementController(
             currentModeIndex = 0,
             hoveredPath = null,
             hoveredDestination = null,
-            prompt = modePrompt(unit.name, modes.firstOrNull()),
         )
     }
 
@@ -68,7 +65,6 @@ public class MovementController(
                     currentModeIndex = state.currentModeIndex,
                     hoveredPath = null,
                     hoveredDestination = null,
-                    prompt = modePrompt(null, state.reachability),
                 ),
             )
         }
@@ -78,7 +74,7 @@ public class MovementController(
             val direction = FACING_ORDER[directionIndex]
             val destination = state.options.find { it.facing == direction }
                 ?: return PhaseOutcome.Continue(state)
-            PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination))
+            PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination), state.unitId)
         }
     }
 
@@ -92,7 +88,7 @@ public class MovementController(
         if (facingsAtHex.size > 1) {
             return PhaseOutcome.Continue(enterFacingSelection(state, destination.position, facingsAtHex))
         }
-        return PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination))
+        return PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination), state.unitId)
     }
 
     private fun handleBrowsingSelectAction(
@@ -111,7 +107,7 @@ public class MovementController(
         val destination = facingsAtHex.find { it.facing == direction }
             ?: return PhaseOutcome.Continue(state)
 
-        return PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination))
+        return PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination), state.unitId)
     }
 
     private fun enterFacingSelection(
@@ -128,7 +124,6 @@ public class MovementController(
             hex = hex,
             options = facingsAtHex,
             path = path,
-            prompt = "Select facing (1-6)",
         )
     }
 
@@ -157,24 +152,7 @@ public class MovementController(
             currentModeIndex = nextIndex,
             hoveredPath = null,
             hoveredDestination = null,
-            prompt = modePrompt(null, state.modes[nextIndex]),
         )
-    }
-
-    private fun modePrompt(unitName: String?, reachability: ReachabilityMap?): String {
-        if (reachability == null) return "No movement available"
-        val modeName = when (reachability.mode) {
-            MovementMode.WALK -> "Walk"
-            MovementMode.RUN -> "Run"
-            MovementMode.JUMP -> "Jump"
-        }
-        val suffix = when (reachability.mode) {
-            MovementMode.RUN -> " (+2 to-hit)"
-            MovementMode.JUMP -> " (+3 to-hit)"
-            else -> ""
-        }
-        val name = if (unitName != null) " $unitName" else ""
-        return "$modeName$name (${reachability.maxMP} MP)$suffix"
     }
 
     private fun applyMovement(

@@ -15,8 +15,10 @@ import battletech.tui.game.IdlePhaseState
 import battletech.tui.game.MovementController
 import battletech.tui.game.MovementPhaseState
 import battletech.tui.game.PhaseManager
-import battletech.tui.game.autoAdvanceGlobalPhases
 import battletech.tui.game.extractRenderData
+import battletech.tui.game.isAttack
+import battletech.tui.game.phasePrompt
+import battletech.tui.game.targetInfos
 import battletech.tui.input.InputMapper
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
@@ -50,7 +52,7 @@ public class TuiApp {
             gameState = GameStateFactory().sampleGameState(),
             currentPhase = TurnPhase.INITIATIVE,
             cursor = HexCoordinates(0, 0),
-            phase = IdlePhaseState(),
+            phase = IdlePhaseState,
         )
 
         renderer.clear()
@@ -61,7 +63,7 @@ public class TuiApp {
                     val currentSize = currentSize(terminal)
 
                     // Auto-advance global phases (Initiative, Heat, End, attack phase init)
-                    val (advancedState, flash) = autoAdvanceGlobalPhases(appState, phaseManager)
+                    val (advancedState, flash) = phaseManager.advanceAutomaticPhases(appState)
                     if (flash != null) {
                         appState = advancedState
                         renderFrame(currentSize, renderer, appState, flash)
@@ -95,9 +97,6 @@ public class TuiApp {
         return Size(width, height)
     }
 
-    private fun isAttackPhase(phase: TurnPhase): Boolean =
-        phase == TurnPhase.WEAPON_ATTACK || phase == TurnPhase.PHYSICAL_ATTACK
-
     private fun renderFrame(
         size: Size,
         renderer: ScreenRenderer,
@@ -107,8 +106,12 @@ public class TuiApp {
         val sidebarWidth = 28
         val statusBarHeight = 7
         val attackPhase = appState.phase as? AttackPhaseState
+        val attackTargets = attackPhase?.let { phase ->
+            val unit = appState.gameState.unitById(phase.unitId) ?: return@let emptyList()
+            targetInfos(unit, phase.torsoFacing, appState.gameState)
+        }.orEmpty()
 
-        val hasTargets = attackPhase?.targets?.isNotEmpty() == true
+        val hasTargets = attackTargets.isNotEmpty()
         val targetsWidth = if (hasTargets) 28 else 0
         val boardWidth = size.width - sidebarWidth - targetsWidth
         val boardHeight = size.height - statusBarHeight
@@ -146,9 +149,9 @@ public class TuiApp {
         )
         boardView.render(buffer, 0, 0, boardWidth, boardHeight)
 
-        if (attackPhase != null && attackPhase.targets.isNotEmpty()) {
+        if (attackPhase != null && attackTargets.isNotEmpty()) {
             val targetsView = TargetsView(
-                targets = attackPhase.targets,
+                targets = attackTargets,
                 weaponAssignments = attackPhase.weaponAssignments,
                 primaryTargetId = attackPhase.primaryTargetId,
                 cursorTargetIndex = attackPhase.cursorTargetIndex,
@@ -160,10 +163,10 @@ public class TuiApp {
         val sidebarView = SidebarView(unit = selectedUnit)
         sidebarView.render(buffer, boardWidth + targetsWidth, 0, sidebarWidth, boardHeight)
 
-        val prompt = if (flash != null) flash.text else appState.phase.prompt
+        val prompt = if (flash != null) flash.text else phasePrompt(appState)
         val activePlayerInfo = if (appState.turnState != null) {
             val isMovement = appState.currentPhase == TurnPhase.MOVEMENT && !appState.turnState.allImpulsesComplete
-            val isAttack = isAttackPhase(appState.currentPhase) &&
+            val isAttack = appState.currentPhase.isAttack &&
                     appState.turnState.attackOrder.isNotEmpty() && !appState.turnState.allAttackImpulsesComplete
             if (isMovement) {
                 if (appState.turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"

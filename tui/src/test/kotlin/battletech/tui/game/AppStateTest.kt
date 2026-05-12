@@ -30,6 +30,7 @@ internal class AppStateTest {
     private val phaseManager = PhaseManager(
         movementController = MovementController(actionQueryService),
         attackController = AttackController(),
+        random = Random(42),
     )
 
     private fun aTurnState(
@@ -54,7 +55,7 @@ internal class AppStateTest {
 
     private fun anAppState(
         currentPhase: TurnPhase = TurnPhase.MOVEMENT,
-        phase: PhaseState = IdlePhaseState(),
+        phase: PhaseState = IdlePhaseState,
         cursor: HexCoordinates = HexCoordinates(0, 0),
         gameState: battletech.tactical.model.GameState = aGameState(),
         turnState: TurnState? = null,
@@ -70,17 +71,17 @@ internal class AppStateTest {
     inner class NextPhaseTest {
         @Test
         fun `movement advances to weapon attack`() {
-            assertEquals(TurnPhase.WEAPON_ATTACK, nextPhase(TurnPhase.MOVEMENT))
+            assertEquals(TurnPhase.WEAPON_ATTACK, TurnPhase.MOVEMENT.next)
         }
 
         @Test
         fun `weapon attack advances to physical attack`() {
-            assertEquals(TurnPhase.PHYSICAL_ATTACK, nextPhase(TurnPhase.WEAPON_ATTACK))
+            assertEquals(TurnPhase.PHYSICAL_ATTACK, TurnPhase.WEAPON_ATTACK.next)
         }
 
         @Test
         fun `end advances to initiative`() {
-            assertEquals(TurnPhase.INITIATIVE, nextPhase(TurnPhase.END))
+            assertEquals(TurnPhase.INITIATIVE, TurnPhase.END.next)
         }
 
         @Test
@@ -96,7 +97,7 @@ internal class AppStateTest {
             var current = TurnPhase.INITIATIVE
             val visited = mutableListOf(current)
             repeat(6) {
-                current = nextPhase(current)
+                current = current.next
                 visited.add(current)
             }
             assertEquals(phases + TurnPhase.INITIATIVE, visited)
@@ -129,7 +130,7 @@ internal class AppStateTest {
             val gameState = aGameState(units = listOf(p1, p2))
             val state = anAppState(currentPhase = TurnPhase.INITIATIVE, gameState = gameState)
 
-            val (result, flash) = autoAdvanceGlobalPhases(state, phaseManager, Random(42))
+            val (result, flash) = phaseManager.advanceAutomaticPhases(state)
 
             assertEquals(TurnPhase.MOVEMENT, result.currentPhase)
             assertNotNull(result.turnState)
@@ -144,7 +145,7 @@ internal class AppStateTest {
             val gameState = aGameState(units = listOf(unit1, unit2))
             val state = anAppState(currentPhase = TurnPhase.HEAT, gameState = gameState)
 
-            val (result, flash) = autoAdvanceGlobalPhases(state, phaseManager)
+            val (result, flash) = phaseManager.advanceAutomaticPhases(state)
 
             assertEquals(TurnPhase.END, result.currentPhase)
             assertEquals(9, result.gameState.units[0].currentHeat)
@@ -160,7 +161,7 @@ internal class AppStateTest {
             val gameState = aGameState(units = listOf(unit))
             val state = anAppState(currentPhase = TurnPhase.HEAT, gameState = gameState)
 
-            val (_, flash) = autoAdvanceGlobalPhases(state, phaseManager)
+            val (_, flash) = phaseManager.advanceAutomaticPhases(state)
 
             assertEquals("Heat: No heat to dissipate", flash!!.text)
         }
@@ -169,7 +170,7 @@ internal class AppStateTest {
         fun `end phase advances to initiative`() {
             val state = anAppState(currentPhase = TurnPhase.END)
 
-            val (result, flash) = autoAdvanceGlobalPhases(state, phaseManager)
+            val (result, flash) = phaseManager.advanceAutomaticPhases(state)
 
             assertEquals(TurnPhase.INITIATIVE, result.currentPhase)
             assertEquals("Turn complete", flash!!.text)
@@ -179,7 +180,7 @@ internal class AppStateTest {
         fun `interactive phases return null flash`() {
             val state = anAppState(currentPhase = TurnPhase.MOVEMENT)
 
-            val (result, flash) = autoAdvanceGlobalPhases(state, phaseManager)
+            val (result, flash) = phaseManager.advanceAutomaticPhases(state)
 
             assertNull(flash)
             assertEquals(state, result)

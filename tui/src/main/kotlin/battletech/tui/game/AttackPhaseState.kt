@@ -2,7 +2,6 @@ package battletech.tui.game
 
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
-import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tui.input.AttackAction
 import battletech.tui.input.InputMapper
@@ -15,14 +14,10 @@ public data class AttackPhaseState(
     val unitId: UnitId,
     val attackPhase: TurnPhase,
     val torsoFacing: HexDirection,
-    val arc: Set<HexCoordinates>,
-    val validTargetIds: Set<UnitId>,
-    val targets: List<TargetInfo>,
     val cursorTargetIndex: Int,
     val cursorWeaponIndex: Int,
     val weaponAssignments: Map<UnitId, Set<Int>>,
     val primaryTargetId: UnitId?,
-    override val prompt: String,
 ) : PhaseState {
 
     override fun processEvent(
@@ -44,8 +39,12 @@ public data class AttackPhaseState(
             return phaseManager.commitAttackImpulse(appState)
         }
 
-        val outcome = phaseManager.attackController.handle(action, this, appState.cursor, appState.gameState)
-        return phaseManager.fromOutcome(outcome, appState)
+        val turnState = appState.turnState
+            ?: return phaseManager.fromOutcome(PhaseOutcome.Cancelled, appState)
+        val (outcome, newTurnState) = phaseManager.attackController.handle(
+            action, this, appState.cursor, appState.gameState, turnState,
+        )
+        return phaseManager.fromOutcome(outcome, appState.copy(turnState = newTurnState))
     }
 
     private fun cycleToNextAttacker(appState: AppState, phaseManager: PhaseManager): HandleResult {
@@ -58,7 +57,7 @@ public data class AttackPhaseState(
         val currentIdx = attackers.indexOfFirst { it.id == this.unitId }.coerceAtLeast(0)
         val nextIdx = (currentIdx + 1) % attackers.size
         val nextUnit = attackers[nextIdx]
-        val newPhase = phaseManager.attackController.enter(nextUnit, this.attackPhase, appState.gameState)
+        val newPhase = phaseManager.attackController.enter(nextUnit, this.attackPhase, appState.gameState, turn)
         return HandleResult(appState.copy(phase = newPhase, cursor = nextUnit.position))
     }
 }

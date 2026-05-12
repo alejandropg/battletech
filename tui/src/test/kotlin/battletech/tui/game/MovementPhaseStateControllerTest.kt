@@ -154,9 +154,10 @@ internal class MovementPhaseStateControllerTest {
             val gameState = aGameState(units = listOf(unit))
 
             val state = controller.enter(unit, gameState)
+            val prompt = modePrompt(state.reachability)
 
-            assertTrue(state.prompt.contains("Walk"))
-            assertTrue(state.prompt.contains("4 MP"))
+            assertTrue(prompt.contains("Walk"))
+            assertTrue(prompt.contains("4 MP"))
         }
     }
 
@@ -263,7 +264,6 @@ internal class MovementPhaseStateControllerTest {
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
                 path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
-                prompt = "Select facing",
             )
 
             // Press "1" → N direction
@@ -288,7 +288,6 @@ internal class MovementPhaseStateControllerTest {
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
                 path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
-                prompt = "Select facing",
             )
 
             // FACING_ORDER: [N, NE, SE, S, SW, NW] → index 3 = SE
@@ -311,7 +310,6 @@ internal class MovementPhaseStateControllerTest {
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
                 path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
-                prompt = "Select facing",
             )
 
             // Press "4" → S direction, not available at (1,0)
@@ -377,7 +375,6 @@ internal class MovementPhaseStateControllerTest {
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
                 path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
-                prompt = "Select facing",
             )
 
             val result = controller.handle(FacingAction.Cancel, facingState, HexCoordinates(1, 0), gameState)
@@ -448,9 +445,10 @@ internal class MovementPhaseStateControllerTest {
             val result = controller.handle(BrowsingAction.CycleMode, state, HexCoordinates(0, 0), gameState)
 
             val browsing = (result as PhaseOutcome.Continue).phaseState as MovementPhaseState.Browsing
-            assertTrue(browsing.prompt.contains("Run"))
-            assertTrue(browsing.prompt.contains("6 MP"))
-            assertTrue(browsing.prompt.contains("+2 to-hit"))
+            val prompt = modePrompt(browsing.reachability)
+            assertTrue(prompt.contains("Run"))
+            assertTrue(prompt.contains("6 MP"))
+            assertTrue(prompt.contains("+2 to-hit"))
         }
     }
 

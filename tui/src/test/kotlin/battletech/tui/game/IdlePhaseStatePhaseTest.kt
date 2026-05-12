@@ -65,13 +65,12 @@ internal class IdlePhaseStatePhaseTest {
             gameState = gameState,
             currentPhase = currentPhase,
             cursor = cursor,
-            phase = IdlePhaseState(),
+            phase = IdlePhaseState,
             turnState = turnState,
         )
     }
 
-    private fun idlePhase(prompt: String = "Move cursor to select a unit"): IdlePhaseState =
-        IdlePhaseState(prompt)
+    private fun idlePhase(): IdlePhaseState = IdlePhaseState
 
     private fun enterKey(): KeyboardEvent = KeyboardEvent("Enter")
     private fun tabKey(): KeyboardEvent = KeyboardEvent("Tab")
@@ -279,13 +278,15 @@ internal class IdlePhaseStatePhaseTest {
 
         @Test
         fun `commit advances impulse even when no weapons were toggled`() {
-            val turnState = aTurnState(
-                attackOrder = listOf(
-                    MovementImpulse(PlayerId.PLAYER_1, 1),
-                    MovementImpulse(PlayerId.PLAYER_2, 1),
+            val turnState = manager.attackController.initializeImpulse(
+                aTurnState(
+                    attackOrder = listOf(
+                        MovementImpulse(PlayerId.PLAYER_1, 1),
+                        MovementImpulse(PlayerId.PLAYER_2, 1),
+                    ),
                 ),
+                PlayerId.PLAYER_1,
             )
-            manager.attackController.initializeImpulse(PlayerId.PLAYER_1)
             val state = anAppState(
                 currentPhase = TurnPhase.WEAPON_ATTACK,
                 turnState = turnState,
@@ -301,13 +302,15 @@ internal class IdlePhaseStatePhaseTest {
 
         @Test
         fun `commit hands control from loser to winner, then resolves on second commit`() {
-            val turnState = aTurnState(
-                attackOrder = listOf(
-                    MovementImpulse(PlayerId.PLAYER_1, 2),
-                    MovementImpulse(PlayerId.PLAYER_2, 3),
+            val turnState = manager.attackController.initializeImpulse(
+                aTurnState(
+                    attackOrder = listOf(
+                        MovementImpulse(PlayerId.PLAYER_1, 2),
+                        MovementImpulse(PlayerId.PLAYER_2, 3),
+                    ),
                 ),
+                PlayerId.PLAYER_1,
             )
-            manager.attackController.initializeImpulse(PlayerId.PLAYER_1)
             val state = anAppState(
                 currentPhase = TurnPhase.WEAPON_ATTACK,
                 turnState = turnState,

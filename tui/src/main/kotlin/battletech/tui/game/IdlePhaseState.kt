@@ -7,9 +7,7 @@ import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 
-public data class IdlePhaseState(
-    override val prompt: String = "Move cursor to select a unit",
-) : PhaseState {
+public data object IdlePhaseState : PhaseState {
 
     override fun processEvent(
         event: InputEvent,
@@ -56,7 +54,7 @@ public data class IdlePhaseState(
             }
         }
 
-        if (turnState != null && isAttackPhase(appState.currentPhase)) {
+        if (turnState != null && appState.currentPhase.isAttack) {
             when (validateAttackUnitSelection(unit, turnState)) {
                 UnitSelectionResult.NOT_YOUR_UNIT ->
                     return HandleResult(appState, FlashMessage("Not your unit"))
@@ -67,8 +65,12 @@ public data class IdlePhaseState(
 
         val newPhase = when (appState.currentPhase) {
             TurnPhase.MOVEMENT -> phaseManager.movementController.enter(unit, appState.gameState)
-            TurnPhase.WEAPON_ATTACK -> phaseManager.attackController.enter(unit, TurnPhase.WEAPON_ATTACK, appState.gameState)
-            TurnPhase.PHYSICAL_ATTACK -> phaseManager.attackController.enter(unit, TurnPhase.PHYSICAL_ATTACK, appState.gameState)
+            TurnPhase.WEAPON_ATTACK -> turnState?.let {
+                phaseManager.attackController.enter(unit, TurnPhase.WEAPON_ATTACK, appState.gameState, it)
+            }
+            TurnPhase.PHYSICAL_ATTACK -> turnState?.let {
+                phaseManager.attackController.enter(unit, TurnPhase.PHYSICAL_ATTACK, appState.gameState, it)
+            }
             else -> null
         }
         return if (newPhase != null) {
@@ -87,7 +89,7 @@ public data class IdlePhaseState(
             turnState != null && appState.currentPhase == TurnPhase.MOVEMENT ->
                 selectableUnits(appState.gameState, turnState)
 
-            turnState != null && isAttackPhase(appState.currentPhase) ->
+            turnState != null && appState.currentPhase.isAttack ->
                 selectableAttackUnits(appState.gameState, turnState)
 
             else -> appState.gameState.units
