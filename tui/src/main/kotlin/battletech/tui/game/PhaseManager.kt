@@ -86,9 +86,6 @@ public class PhaseManager(
 
     private fun onInitiative(appState: AppState): Pair<AppState, FlashMessage?> {
         val result = rollInitiative(random)
-        val p1Roll = result.rolls[PlayerId.PLAYER_1]!!
-        val p2Roll = result.rolls[PlayerId.PLAYER_2]!!
-        val loserName = if (result.loser == PlayerId.PLAYER_1) "P1" else "P2"
 
         val loserCount = appState.gameState.unitsOf(result.loser).size
         val winnerCount = appState.gameState.unitsOf(result.winner).size
@@ -107,7 +104,13 @@ public class PhaseManager(
             turnState = turnState,
             phase = IdlePhaseState,
         )
-        return state to FlashMessage("Initiative: P1 rolled $p1Roll, P2 rolled $p2Roll — $loserName moves first")
+
+        val p1Roll = result.rolls[PlayerId.PLAYER_1]!!
+        val p2Roll = result.rolls[PlayerId.PLAYER_2]!!
+        val loserName = if (result.loser == PlayerId.PLAYER_1) "P1" else "P2"
+        val flashMessage = FlashMessage("Initiative: P1 rolled $p1Roll, P2 rolled $p2Roll — $loserName moves first")
+
+        return state to flashMessage
     }
 
     private fun seedAttackPhase(appState: AppState, flashText: String): Pair<AppState, FlashMessage?> {
