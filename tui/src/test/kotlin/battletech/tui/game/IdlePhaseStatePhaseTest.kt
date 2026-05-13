@@ -47,12 +47,10 @@ internal class IdlePhaseStatePhaseTest {
             loser = PlayerId.PLAYER_1,
             winner = PlayerId.PLAYER_2,
         ),
-        movementOrder = movementOrder,
-        currentImpulseIndex = currentImpulseIndex,
+        movementSequence = ImpulseSequence(movementOrder, currentImpulseIndex),
         movedUnitIds = movedUnitIds,
         unitsMovedInCurrentImpulse = unitsMovedInCurrentImpulse,
-        attackOrder = attackOrder,
-        currentAttackImpulseIndex = currentAttackImpulseIndex,
+        attackSequence = ImpulseSequence(attackOrder, currentAttackImpulseIndex),
     )
 
     private fun anAppState(
@@ -201,6 +199,7 @@ internal class IdlePhaseStatePhaseTest {
 
             assertNotNull(result)
             assertInstanceOf(AttackPhaseState::class.java, result!!.appState.phase)
+
         }
 
         @Test
@@ -297,7 +296,7 @@ internal class IdlePhaseStatePhaseTest {
 
             assertNotNull(result)
             assertNull(result!!.flash)
-            assertEquals(1, result.appState.turnState!!.currentAttackImpulseIndex)
+            assertEquals(1, result.appState.turnState!!.attackSequence.currentIndex)
         }
 
         @Test

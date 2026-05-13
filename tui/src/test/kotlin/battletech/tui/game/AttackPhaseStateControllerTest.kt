@@ -35,8 +35,8 @@ internal class AttackPhaseStateControllerTest {
             loser = PlayerId.PLAYER_1,
             winner = PlayerId.PLAYER_2,
         ),
-        movementOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 1)),
-        attackOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 1)),
+        movementSequence = ImpulseSequence(listOf(MovementImpulse(PlayerId.PLAYER_1, 1))),
+        attackSequence = ImpulseSequence(listOf(MovementImpulse(PlayerId.PLAYER_1, 1))),
     )
 
     /** Initialize a turn state's impulse for the given player. */
