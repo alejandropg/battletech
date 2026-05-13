@@ -1,7 +1,7 @@
 package battletech.tui.game
 
+import battletech.tactical.action.Impulse
 import battletech.tactical.action.InitiativeResult
-import battletech.tactical.action.MovementImpulse
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -13,9 +13,9 @@ import org.junit.jupiter.api.Test
 internal class TurnStateTest {
 
     private fun aTurnState(
-        movementOrder: List<MovementImpulse> = listOf(
-            MovementImpulse(PlayerId.PLAYER_1, 1),
-            MovementImpulse(PlayerId.PLAYER_2, 1),
+        movementOrder: List<Impulse> = listOf(
+            Impulse(PlayerId.PLAYER_1, 1),
+            Impulse(PlayerId.PLAYER_2, 1),
         ),
         currentImpulseIndex: Int = 0,
         movedUnitIds: Set<UnitId> = emptySet(),
@@ -40,7 +40,7 @@ internal class TurnStateTest {
     @Test
     fun `remainingInImpulse returns units left to move`() {
         val state = aTurnState(
-            movementOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 3)),
+            movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 3)),
             unitsMovedInCurrentImpulse = 1,
         )
         assertEquals(2, state.remainingInImpulse)
@@ -49,7 +49,7 @@ internal class TurnStateTest {
     @Test
     fun `allImpulsesComplete when index past end`() {
         val state = aTurnState(
-            movementOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 1)),
+            movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 1)),
             currentImpulseIndex = 1,
         )
         assertTrue(state.allImpulsesComplete)
@@ -67,7 +67,7 @@ internal class TurnStateTest {
         @Test
         fun `adds unit to movedUnitIds`() {
             val state = aTurnState(
-                movementOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 2)),
+                movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 2)),
             )
 
             val result = advanceAfterUnitMoved(state, UnitId("u1"))
@@ -79,8 +79,8 @@ internal class TurnStateTest {
         fun `advances impulse when current impulse is full`() {
             val state = aTurnState(
                 movementOrder = listOf(
-                    MovementImpulse(PlayerId.PLAYER_1, 1),
-                    MovementImpulse(PlayerId.PLAYER_2, 1),
+                    Impulse(PlayerId.PLAYER_1, 1),
+                    Impulse(PlayerId.PLAYER_2, 1),
                 ),
             )
 
@@ -93,7 +93,7 @@ internal class TurnStateTest {
         @Test
         fun `stays in current impulse when more units remain`() {
             val state = aTurnState(
-                movementOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 3)),
+                movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 3)),
             )
 
             val result = advanceAfterUnitMoved(state, UnitId("u1"))
@@ -105,7 +105,7 @@ internal class TurnStateTest {
         @Test
         fun `all impulses complete after last unit moves`() {
             val state = aTurnState(
-                movementOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 1)),
+                movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 1)),
             )
 
             val result = advanceAfterUnitMoved(state, UnitId("u1"))
@@ -117,8 +117,8 @@ internal class TurnStateTest {
         fun `multi-impulse progression`() {
             val state = aTurnState(
                 movementOrder = listOf(
-                    MovementImpulse(PlayerId.PLAYER_1, 1),
-                    MovementImpulse(PlayerId.PLAYER_2, 2),
+                    Impulse(PlayerId.PLAYER_1, 1),
+                    Impulse(PlayerId.PLAYER_2, 2),
                 ),
             )
 
@@ -145,8 +145,8 @@ internal class TurnStateTest {
             )
             assertEquals(
                 listOf(
-                    MovementImpulse(PlayerId.PLAYER_1, 3),
-                    MovementImpulse(PlayerId.PLAYER_2, 2),
+                    Impulse(PlayerId.PLAYER_1, 3),
+                    Impulse(PlayerId.PLAYER_2, 2),
                 ),
                 order,
             )
@@ -158,13 +158,13 @@ internal class TurnStateTest {
                 loser = PlayerId.PLAYER_1, loserUnitCount = 2,
                 winner = PlayerId.PLAYER_2, winnerUnitCount = 0,
             )
-            assertEquals(listOf(MovementImpulse(PlayerId.PLAYER_1, 2)), noWinnerUnits)
+            assertEquals(listOf(Impulse(PlayerId.PLAYER_1, 2)), noWinnerUnits)
 
             val noLoserUnits = calculateAttackOrder(
                 loser = PlayerId.PLAYER_1, loserUnitCount = 0,
                 winner = PlayerId.PLAYER_2, winnerUnitCount = 3,
             )
-            assertEquals(listOf(MovementImpulse(PlayerId.PLAYER_2, 3)), noLoserUnits)
+            assertEquals(listOf(Impulse(PlayerId.PLAYER_2, 3)), noLoserUnits)
         }
 
         @Test

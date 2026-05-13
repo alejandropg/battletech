@@ -1,8 +1,8 @@
 package battletech.tui.game
 
 import battletech.tactical.action.ActionQueryService
+import battletech.tactical.action.Impulse
 import battletech.tactical.action.InitiativeResult
-import battletech.tactical.action.MovementImpulse
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
@@ -29,9 +29,9 @@ internal class PhaseManagerTest {
     )
 
     private fun aTurnState(
-        movementOrder: List<MovementImpulse> = listOf(
-            MovementImpulse(PlayerId.PLAYER_1, 1),
-            MovementImpulse(PlayerId.PLAYER_2, 1),
+        movementOrder: List<Impulse> = listOf(
+            Impulse(PlayerId.PLAYER_1, 1),
+            Impulse(PlayerId.PLAYER_2, 1),
         ),
         currentImpulseIndex: Int = 0,
         movedUnitIds: Set<UnitId> = emptySet(),
@@ -91,8 +91,8 @@ internal class PhaseManagerTest {
         fun `Cancelled returns idle during weapon attack`() {
             val turnState = aTurnState().copy(
                 attackSequence = ImpulseSequence(listOf(
-                    MovementImpulse(PlayerId.PLAYER_1, 1),
-                    MovementImpulse(PlayerId.PLAYER_2, 1),
+                    Impulse(PlayerId.PLAYER_1, 1),
+                    Impulse(PlayerId.PLAYER_2, 1),
                 )),
             )
             val state = anAppState(
@@ -113,8 +113,8 @@ internal class PhaseManagerTest {
             val newGameState = aGameState(units = listOf(unit.copy(position = HexCoordinates(1, 1))))
             val turnState = aTurnState(
                 movementOrder = listOf(
-                    MovementImpulse(PlayerId.PLAYER_1, 1),
-                    MovementImpulse(PlayerId.PLAYER_2, 1),
+                    Impulse(PlayerId.PLAYER_1, 1),
+                    Impulse(PlayerId.PLAYER_2, 1),
                 ),
             )
             val state = anAppState(

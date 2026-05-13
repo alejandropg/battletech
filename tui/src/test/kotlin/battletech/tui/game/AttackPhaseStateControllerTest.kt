@@ -1,8 +1,8 @@
 package battletech.tui.game
 
 import battletech.tactical.action.CombatUnit
+import battletech.tactical.action.Impulse
 import battletech.tactical.action.InitiativeResult
-import battletech.tactical.action.MovementImpulse
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.model.GameState
@@ -35,8 +35,8 @@ internal class AttackPhaseStateControllerTest {
             loser = PlayerId.PLAYER_1,
             winner = PlayerId.PLAYER_2,
         ),
-        movementSequence = ImpulseSequence(listOf(MovementImpulse(PlayerId.PLAYER_1, 1))),
-        attackSequence = ImpulseSequence(listOf(MovementImpulse(PlayerId.PLAYER_1, 1))),
+        movementSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+        attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
     )
 
     /** Initialize a turn state's impulse for the given player. */
