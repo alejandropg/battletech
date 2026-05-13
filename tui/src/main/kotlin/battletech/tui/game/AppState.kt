@@ -1,7 +1,9 @@
 package battletech.tui.game
 
 import battletech.tactical.action.Impulse
+import battletech.tactical.action.InitiativeResult
 import battletech.tactical.action.TurnPhase
+import battletech.tactical.action.calculateAttackOrder
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -25,13 +27,13 @@ public fun moveCursor(
     return if (neighbor in map.hexes) neighbor else cursor
 }
 
-internal fun attackOrderFor(turnState: TurnState, gameState: GameState): List<Impulse> {
-    val loser = turnState.initiativeResult.loser
-    val winner = turnState.initiativeResult.winner
+internal fun attackOrderFor(initiative: InitiativeResult, gameState: GameState): List<Impulse> {
+    val loser = initiative.loser
+    val winner = initiative.winner
     return calculateAttackOrder(
         loser = loser,
         loserUnitCount = gameState.unitsOf(loser).size,
         winner = winner,
-        winnerUnitCount = gameState.unitsOf(winner).size,
+        winnerUnitCount = gameState.unitsOf(winner).size
     )
 }

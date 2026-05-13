@@ -27,3 +27,13 @@ public fun calculateMovementOrder(
         }
     }
 }
+
+public fun calculateAttackOrder(
+    loser: PlayerId,
+    loserUnitCount: Int,
+    winner: PlayerId,
+    winnerUnitCount: Int,
+): List<Impulse> = listOfNotNull(
+    if (loserUnitCount > 0) Impulse(loser, loserUnitCount) else null,
+    if (winnerUnitCount > 0) Impulse(winner, winnerUnitCount) else null,
+)
