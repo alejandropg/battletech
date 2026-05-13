@@ -30,11 +30,11 @@ public class PhaseManager(
     public fun advanceAutomaticPhases(appState: AppState): Pair<AppState, FlashMessage?> =
         when (appState.currentPhase) {
             TurnPhase.INITIATIVE -> onInitiative(appState)
+            TurnPhase.MOVEMENT -> appState to null
             TurnPhase.WEAPON_ATTACK -> seedAttackPhase(appState, "Weapon Attack Phase")
             TurnPhase.PHYSICAL_ATTACK -> seedAttackPhase(appState, "Physical Attack Phase")
             TurnPhase.HEAT -> onHeat(appState)
             TurnPhase.END -> onEndTurn(appState)
-            TurnPhase.MOVEMENT -> appState to null
         }
 
     public fun commitAttackImpulse(appState: AppState): HandleResult {
