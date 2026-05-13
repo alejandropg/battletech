@@ -16,8 +16,6 @@ public data class AppState(
     val turnState: TurnState? = null,
 )
 
-public data class FlashMessage(val text: String)
-
 public fun moveCursor(
     cursor: HexCoordinates,
     direction: HexDirection,
