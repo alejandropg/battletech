@@ -1,7 +1,7 @@
 package battletech.tui.game
 
+import battletech.tactical.action.Impulse
 import battletech.tactical.action.InitiativeResult
-import battletech.tactical.action.MovementImpulse
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
 import battletech.tactical.model.HexCoordinates
@@ -16,8 +16,8 @@ internal class UnitSelectionTest {
 
     private fun aTurnState(
         activePlayer: PlayerId = PlayerId.PLAYER_1,
-        movementOrder: List<MovementImpulse> = listOf(
-            MovementImpulse(activePlayer, 2),
+        movementOrder: List<Impulse> = listOf(
+            Impulse(activePlayer, 2),
         ),
         movedUnitIds: Set<UnitId> = emptySet(),
     ) = TurnState(

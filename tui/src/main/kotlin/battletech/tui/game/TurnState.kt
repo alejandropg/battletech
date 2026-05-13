@@ -1,8 +1,8 @@
 package battletech.tui.game
 
 import battletech.tactical.action.CombatUnit
+import battletech.tactical.action.Impulse
 import battletech.tactical.action.InitiativeResult
-import battletech.tactical.action.MovementImpulse
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
 import battletech.tactical.action.attack.AttackDeclaration
@@ -17,12 +17,12 @@ public data class TurnState(
     val attackDeclarations: List<AttackDeclaration> = emptyList(),
     val attackImpulse: ImpulseDeclarations? = null,
 ) {
-    val currentImpulse: MovementImpulse get() = movementSequence.current
+    val currentImpulse: Impulse get() = movementSequence.current
     val activePlayer: PlayerId get() = movementSequence.activePlayer
     val remainingInImpulse: Int get() = currentImpulse.unitCount - unitsMovedInCurrentImpulse
     val allImpulsesComplete: Boolean get() = movementSequence.isComplete
 
-    val currentAttackImpulse: MovementImpulse get() = attackSequence.current
+    val currentAttackImpulse: Impulse get() = attackSequence.current
     val activeAttackPlayer: PlayerId get() = attackSequence.activePlayer
     val allAttackImpulsesComplete: Boolean get() = attackSequence.isComplete
 }
@@ -36,9 +36,9 @@ public fun calculateAttackOrder(
     loserUnitCount: Int,
     winner: PlayerId,
     winnerUnitCount: Int,
-): List<MovementImpulse> = listOfNotNull(
-    if (loserUnitCount > 0) MovementImpulse(loser, loserUnitCount) else null,
-    if (winnerUnitCount > 0) MovementImpulse(winner, winnerUnitCount) else null,
+): List<Impulse> = listOfNotNull(
+    if (loserUnitCount > 0) Impulse(loser, loserUnitCount) else null,
+    if (winnerUnitCount > 0) Impulse(winner, winnerUnitCount) else null,
 )
 
 public fun advanceAfterUnitMoved(turnState: TurnState, unitId: UnitId): TurnState {

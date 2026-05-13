@@ -1,8 +1,8 @@
 package battletech.tui.game
 
 import battletech.tactical.action.ActionQueryService
+import battletech.tactical.action.Impulse
 import battletech.tactical.action.InitiativeResult
-import battletech.tactical.action.MovementImpulse
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
@@ -32,14 +32,14 @@ internal class IdlePhaseStatePhaseTest {
     )
 
     private fun aTurnState(
-        movementOrder: List<MovementImpulse> = listOf(
-            MovementImpulse(PlayerId.PLAYER_1, 1),
-            MovementImpulse(PlayerId.PLAYER_2, 1),
+        movementOrder: List<Impulse> = listOf(
+            Impulse(PlayerId.PLAYER_1, 1),
+            Impulse(PlayerId.PLAYER_2, 1),
         ),
         currentImpulseIndex: Int = 0,
         movedUnitIds: Set<UnitId> = emptySet(),
         unitsMovedInCurrentImpulse: Int = 0,
-        attackOrder: List<MovementImpulse> = emptyList(),
+        attackOrder: List<Impulse> = emptyList(),
         currentAttackImpulseIndex: Int = 0,
     ) = TurnState(
         initiativeResult = InitiativeResult(
@@ -183,8 +183,8 @@ internal class IdlePhaseStatePhaseTest {
             val gameState = aGameState(units = listOf(p1Unit))
             val turnState = aTurnState(
                 attackOrder = listOf(
-                    MovementImpulse(PlayerId.PLAYER_1, 1),
-                    MovementImpulse(PlayerId.PLAYER_2, 1),
+                    Impulse(PlayerId.PLAYER_1, 1),
+                    Impulse(PlayerId.PLAYER_2, 1),
                 ),
             )
             val state = anAppState(
@@ -280,8 +280,8 @@ internal class IdlePhaseStatePhaseTest {
             val turnState = manager.attackController.initializeImpulse(
                 aTurnState(
                     attackOrder = listOf(
-                        MovementImpulse(PlayerId.PLAYER_1, 1),
-                        MovementImpulse(PlayerId.PLAYER_2, 1),
+                        Impulse(PlayerId.PLAYER_1, 1),
+                        Impulse(PlayerId.PLAYER_2, 1),
                     ),
                 ),
                 PlayerId.PLAYER_1,
@@ -304,8 +304,8 @@ internal class IdlePhaseStatePhaseTest {
             val turnState = manager.attackController.initializeImpulse(
                 aTurnState(
                     attackOrder = listOf(
-                        MovementImpulse(PlayerId.PLAYER_1, 2),
-                        MovementImpulse(PlayerId.PLAYER_2, 3),
+                        Impulse(PlayerId.PLAYER_1, 2),
+                        Impulse(PlayerId.PLAYER_2, 3),
                     ),
                 ),
                 PlayerId.PLAYER_1,

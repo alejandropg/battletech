@@ -14,14 +14,14 @@ internal class MovementOrderTest {
 
         assertEquals(
             listOf(
-                MovementImpulse(PlayerId.PLAYER_1, 1),
-                MovementImpulse(PlayerId.PLAYER_2, 1),
-                MovementImpulse(PlayerId.PLAYER_1, 1),
-                MovementImpulse(PlayerId.PLAYER_2, 1),
-                MovementImpulse(PlayerId.PLAYER_1, 1),
-                MovementImpulse(PlayerId.PLAYER_2, 1),
-                MovementImpulse(PlayerId.PLAYER_1, 1),
-                MovementImpulse(PlayerId.PLAYER_2, 1),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 1),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 1),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 1),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 1),
             ),
             order,
         )
@@ -36,12 +36,12 @@ internal class MovementOrderTest {
 
         assertEquals(
             listOf(
-                MovementImpulse(PlayerId.PLAYER_1, 1),
-                MovementImpulse(PlayerId.PLAYER_2, 2),
-                MovementImpulse(PlayerId.PLAYER_1, 1),
-                MovementImpulse(PlayerId.PLAYER_2, 2),
-                MovementImpulse(PlayerId.PLAYER_1, 1),
-                MovementImpulse(PlayerId.PLAYER_2, 1),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 2),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 2),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 1),
             ),
             order,
         )
@@ -57,10 +57,10 @@ internal class MovementOrderTest {
         // 5 / 2 = 2 base, 5 % 2 = 1 extra in first round
         assertEquals(
             listOf(
-                MovementImpulse(PlayerId.PLAYER_1, 1),
-                MovementImpulse(PlayerId.PLAYER_2, 3),
-                MovementImpulse(PlayerId.PLAYER_1, 1),
-                MovementImpulse(PlayerId.PLAYER_2, 2),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 3),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 2),
             ),
             order,
         )
@@ -75,8 +75,8 @@ internal class MovementOrderTest {
 
         assertEquals(
             listOf(
-                MovementImpulse(PlayerId.PLAYER_1, 1),
-                MovementImpulse(PlayerId.PLAYER_2, 4),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 4),
             ),
             order,
         )
@@ -89,7 +89,7 @@ internal class MovementOrderTest {
             winner = PlayerId.PLAYER_2, winnerUnitCount = 0,
         )
 
-        assertEquals(emptyList<MovementImpulse>(), order)
+        assertEquals(emptyList<Impulse>(), order)
     }
 
     @Test
@@ -100,7 +100,7 @@ internal class MovementOrderTest {
         )
 
         assertEquals(
-            listOf(MovementImpulse(PlayerId.PLAYER_2, 3)),
+            listOf(Impulse(PlayerId.PLAYER_2, 3)),
             order,
         )
     }
