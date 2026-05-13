@@ -42,8 +42,7 @@ internal class PhaseManagerTest {
             loser = PlayerId.PLAYER_1,
             winner = PlayerId.PLAYER_2,
         ),
-        movementOrder = movementOrder,
-        currentImpulseIndex = currentImpulseIndex,
+        movementSequence = ImpulseSequence(movementOrder, currentImpulseIndex),
         movedUnitIds = movedUnitIds,
         unitsMovedInCurrentImpulse = unitsMovedInCurrentImpulse,
     )
@@ -91,10 +90,10 @@ internal class PhaseManagerTest {
         @Test
         fun `Cancelled returns idle during weapon attack`() {
             val turnState = aTurnState().copy(
-                attackOrder = listOf(
+                attackSequence = ImpulseSequence(listOf(
                     MovementImpulse(PlayerId.PLAYER_1, 1),
                     MovementImpulse(PlayerId.PLAYER_2, 1),
-                ),
+                )),
             )
             val state = anAppState(
                 currentPhase = TurnPhase.WEAPON_ATTACK,

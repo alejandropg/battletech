@@ -47,7 +47,7 @@ public class PhaseManager(
         val gameStateWithTorso = applyTorsoFacings(appState.gameState, commitResult.torsoFacings)
 
         val newTurnState = afterCommit.copy(
-            currentAttackImpulseIndex = afterCommit.currentAttackImpulseIndex + 1,
+            attackSequence = afterCommit.attackSequence.advance(),
         )
 
         return if (newTurnState.allAttackImpulsesComplete) {
@@ -96,7 +96,7 @@ public class PhaseManager(
 
         val turnState = TurnState(
             initiativeResult = initiative,
-            movementOrder = movementOrder,
+            movementSequence = ImpulseSequence(movementOrder),
         )
 
         val state = appState.copy(
@@ -115,9 +115,9 @@ public class PhaseManager(
 
     private fun seedAttackPhase(appState: AppState, flashText: String): Pair<AppState, FlashMessage?> {
         val turnState = appState.turnState ?: return appState to null
-        if (turnState.attackOrder.isNotEmpty()) return appState to null
+        if (turnState.attackSequence.order.isNotEmpty()) return appState to null
 
-        val seeded = turnState.copy(attackOrder = attackOrderFor(turnState, appState.gameState))
+        val seeded = turnState.copy(attackSequence = ImpulseSequence(attackOrderFor(turnState, appState.gameState)))
         val withImpulse = attackController.initializeImpulse(seeded, seeded.activeAttackPlayer)
         val updatedAppState = appState.copy(turnState = withImpulse)
         val result = enterFirstAttacker(updatedAppState, withImpulse, appState.gameState)
@@ -163,8 +163,7 @@ public class PhaseManager(
         val cleared = attackController.clearAttackDeclarations(newTurnState)
 
         val physicalTurnState = cleared.copy(
-            currentAttackImpulseIndex = 0,
-            attackOrder = emptyList(),
+            attackSequence = ImpulseSequence(emptyList()),
         )
         return HandleResult(
             appState.copy(
@@ -209,7 +208,7 @@ public class PhaseManager(
         val newTurnState = advanceAfterUnitMoved(turnState, movedUnitId)
         return if (newTurnState.allImpulsesComplete) {
             val withAttack = newTurnState.copy(
-                attackOrder = attackOrderFor(newTurnState, outcome.gameState),
+                attackSequence = ImpulseSequence(attackOrderFor(newTurnState, outcome.gameState)),
             )
             HandleResult(
                 appState.copy(

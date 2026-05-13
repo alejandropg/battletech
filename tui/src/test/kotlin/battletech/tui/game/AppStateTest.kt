@@ -1,11 +1,8 @@
 package battletech.tui.game
 
 import battletech.tactical.action.ActionQueryService
-import battletech.tactical.action.InitiativeResult
-import battletech.tactical.action.MovementImpulse
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.UnitId
 import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
 import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.model.HexCoordinates
@@ -31,26 +28,6 @@ internal class AppStateTest {
         movementController = MovementController(actionQueryService),
         attackController = AttackController(),
         random = Random(42),
-    )
-
-    private fun aTurnState(
-        movementOrder: List<MovementImpulse> = listOf(
-            MovementImpulse(PlayerId.PLAYER_1, 1),
-            MovementImpulse(PlayerId.PLAYER_2, 1),
-        ),
-        currentImpulseIndex: Int = 0,
-        movedUnitIds: Set<UnitId> = emptySet(),
-        unitsMovedInCurrentImpulse: Int = 0,
-    ) = TurnState(
-        initiativeResult = InitiativeResult(
-            rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
-            loser = PlayerId.PLAYER_1,
-            winner = PlayerId.PLAYER_2,
-        ),
-        movementOrder = movementOrder,
-        currentImpulseIndex = currentImpulseIndex,
-        movedUnitIds = movedUnitIds,
-        unitsMovedInCurrentImpulse = unitsMovedInCurrentImpulse,
     )
 
     private fun anAppState(

@@ -45,8 +45,8 @@ internal class AttackPhaseStatePhaseTest {
             loser = PlayerId.PLAYER_1,
             winner = PlayerId.PLAYER_2,
         ),
-        movementOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 1)),
-        attackOrder = listOf(MovementImpulse(PlayerId.PLAYER_1, 3)),
+        movementSequence = ImpulseSequence(listOf(MovementImpulse(PlayerId.PLAYER_1, 1))),
+        attackSequence = ImpulseSequence(listOf(MovementImpulse(PlayerId.PLAYER_1, 3))),
     )
 
     private fun tabKey(): KeyboardEvent = KeyboardEvent("Tab")

@@ -10,23 +10,21 @@ import battletech.tactical.model.GameState
 
 public data class TurnState(
     val initiativeResult: InitiativeResult,
-    val movementOrder: List<MovementImpulse>,
-    val currentImpulseIndex: Int = 0,
+    val movementSequence: ImpulseSequence,
     val movedUnitIds: Set<UnitId> = emptySet(),
     val unitsMovedInCurrentImpulse: Int = 0,
-    val attackOrder: List<MovementImpulse> = emptyList(),
-    val currentAttackImpulseIndex: Int = 0,
+    val attackSequence: ImpulseSequence = ImpulseSequence(emptyList()),
     val attackDeclarations: List<AttackDeclaration> = emptyList(),
     val attackImpulse: ImpulseDeclarations? = null,
 ) {
-    val currentImpulse: MovementImpulse get() = movementOrder[currentImpulseIndex]
-    val activePlayer: PlayerId get() = currentImpulse.player
+    val currentImpulse: MovementImpulse get() = movementSequence.current
+    val activePlayer: PlayerId get() = movementSequence.activePlayer
     val remainingInImpulse: Int get() = currentImpulse.unitCount - unitsMovedInCurrentImpulse
-    val allImpulsesComplete: Boolean get() = currentImpulseIndex >= movementOrder.size
+    val allImpulsesComplete: Boolean get() = movementSequence.isComplete
 
-    val currentAttackImpulse: MovementImpulse get() = attackOrder[currentAttackImpulseIndex]
-    val activeAttackPlayer: PlayerId get() = currentAttackImpulse.player
-    val allAttackImpulsesComplete: Boolean get() = currentAttackImpulseIndex >= attackOrder.size
+    val currentAttackImpulse: MovementImpulse get() = attackSequence.current
+    val activeAttackPlayer: PlayerId get() = attackSequence.activePlayer
+    val allAttackImpulsesComplete: Boolean get() = attackSequence.isComplete
 }
 
 /**
@@ -50,7 +48,7 @@ public fun advanceAfterUnitMoved(turnState: TurnState, unitId: UnitId): TurnStat
     )
     return if (updated.remainingInImpulse == 0) {
         updated.copy(
-            currentImpulseIndex = updated.currentImpulseIndex + 1,
+            movementSequence = updated.movementSequence.advance(),
             unitsMovedInCurrentImpulse = 0,
         )
     } else {

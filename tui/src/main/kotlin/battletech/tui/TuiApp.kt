@@ -167,7 +167,7 @@ public class TuiApp {
         val activePlayerInfo = if (appState.turnState != null) {
             val isMovement = appState.currentPhase == TurnPhase.MOVEMENT && !appState.turnState.allImpulsesComplete
             val isAttack = appState.currentPhase.isAttack &&
-                    appState.turnState.attackOrder.isNotEmpty() && !appState.turnState.allAttackImpulsesComplete
+                    appState.turnState.attackSequence.order.isNotEmpty() && !appState.turnState.allAttackImpulsesComplete
             if (isMovement) {
                 if (appState.turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
             } else if (isAttack) {

@@ -26,7 +26,7 @@ internal class UnitSelectionTest {
             loser = PlayerId.PLAYER_1,
             winner = PlayerId.PLAYER_2,
         ),
-        movementOrder = movementOrder,
+        movementSequence = ImpulseSequence(movementOrder),
         movedUnitIds = movedUnitIds,
     )
 

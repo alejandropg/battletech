@@ -26,8 +26,7 @@ internal class TurnStateTest {
             loser = PlayerId.PLAYER_1,
             winner = PlayerId.PLAYER_2,
         ),
-        movementOrder = movementOrder,
-        currentImpulseIndex = currentImpulseIndex,
+        movementSequence = ImpulseSequence(movementOrder, currentImpulseIndex),
         movedUnitIds = movedUnitIds,
         unitsMovedInCurrentImpulse = unitsMovedInCurrentImpulse,
     )
@@ -87,7 +86,7 @@ internal class TurnStateTest {
 
             val result = advanceAfterUnitMoved(state, UnitId("u1"))
 
-            assertEquals(1, result.currentImpulseIndex)
+            assertEquals(1, result.movementSequence.currentIndex)
             assertEquals(0, result.unitsMovedInCurrentImpulse)
         }
 
@@ -99,7 +98,7 @@ internal class TurnStateTest {
 
             val result = advanceAfterUnitMoved(state, UnitId("u1"))
 
-            assertEquals(0, result.currentImpulseIndex)
+            assertEquals(0, result.movementSequence.currentIndex)
             assertEquals(1, result.unitsMovedInCurrentImpulse)
         }
 
@@ -124,11 +123,11 @@ internal class TurnStateTest {
             )
 
             val after1 = advanceAfterUnitMoved(state, UnitId("p1-u1"))
-            assertEquals(1, after1.currentImpulseIndex)
+            assertEquals(1, after1.movementSequence.currentIndex)
             assertEquals(PlayerId.PLAYER_2, after1.activePlayer)
 
             val after2 = advanceAfterUnitMoved(after1, UnitId("p2-u1"))
-            assertEquals(1, after2.currentImpulseIndex)
+            assertEquals(1, after2.movementSequence.currentIndex)
             assertEquals(1, after2.unitsMovedInCurrentImpulse)
 
             val after3 = advanceAfterUnitMoved(after2, UnitId("p2-u2"))
