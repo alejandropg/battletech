@@ -85,17 +85,17 @@ public class PhaseManager(
     }
 
     private fun onInitiative(appState: AppState): Pair<AppState, FlashMessage?> {
-        val result = rollInitiative(random)
+        val initiative = rollInitiative(random)
 
-        val loserCount = appState.gameState.unitsOf(result.loser).size
-        val winnerCount = appState.gameState.unitsOf(result.winner).size
+        val loserCount = appState.gameState.unitsOf(initiative.loser).size
+        val winnerCount = appState.gameState.unitsOf(initiative.winner).size
         val movementOrder = calculateMovementOrder(
-            loser = result.loser, loserUnitCount = loserCount,
-            winner = result.winner, winnerUnitCount = winnerCount,
+            loser = initiative.loser, loserUnitCount = loserCount,
+            winner = initiative.winner, winnerUnitCount = winnerCount,
         )
 
         val turnState = TurnState(
-            initiativeResult = result,
+            initiativeResult = initiative,
             movementOrder = movementOrder,
         )
 
@@ -105,9 +105,9 @@ public class PhaseManager(
             phase = IdlePhaseState,
         )
 
-        val p1Roll = result.rolls[PlayerId.PLAYER_1]!!
-        val p2Roll = result.rolls[PlayerId.PLAYER_2]!!
-        val loserName = if (result.loser == PlayerId.PLAYER_1) "P1" else "P2"
+        val p1Roll = initiative.rolls[PlayerId.PLAYER_1]!!
+        val p2Roll = initiative.rolls[PlayerId.PLAYER_2]!!
+        val loserName = if (initiative.loser == PlayerId.PLAYER_1) "P1" else "P2"
         val flashMessage = FlashMessage("Initiative: P1 rolled $p1Roll, P2 rolled $p2Roll — $loserName moves first")
 
         return state to flashMessage
