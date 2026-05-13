@@ -93,10 +93,11 @@ public class PhaseManager(
             loser = initiative.loser, loserUnitCount = loserCount,
             winner = initiative.winner, winnerUnitCount = winnerCount,
         )
+        val impulseSequence = ImpulseSequence(movementOrder)
 
         val turnState = TurnState(
             initiativeResult = initiative,
-            movementSequence = ImpulseSequence(movementOrder),
+            movementSequence = impulseSequence,
         )
 
         val state = appState.copy(
