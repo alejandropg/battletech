@@ -117,7 +117,12 @@ public class PhaseManager(
         val turnState = appState.turnState ?: return appState to null
         if (turnState.attackSequence.order.isNotEmpty()) return appState to null
 
-        val seeded = turnState.copy(attackSequence = ImpulseSequence(attackOrderFor(turnState, appState.gameState)))
+        val seeded = turnState.copy(attackSequence = ImpulseSequence(
+            attackOrderFor(
+                turnState.initiativeResult,
+                appState.gameState
+            )
+        ))
         val withImpulse = attackController.initializeImpulse(seeded, seeded.activeAttackPlayer)
         val updatedAppState = appState.copy(turnState = withImpulse)
         val result = enterFirstAttacker(updatedAppState, withImpulse, appState.gameState)
@@ -208,7 +213,7 @@ public class PhaseManager(
         val newTurnState = advanceAfterUnitMoved(turnState, movedUnitId)
         return if (newTurnState.allImpulsesComplete) {
             val withAttack = newTurnState.copy(
-                attackSequence = ImpulseSequence(attackOrderFor(newTurnState, outcome.gameState)),
+                attackSequence = ImpulseSequence(attackOrderFor(newTurnState.initiativeResult, outcome.gameState)),
             )
             HandleResult(
                 appState.copy(
