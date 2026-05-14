@@ -3,7 +3,6 @@ package battletech.tui.game
 import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.AvailableAction
 import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.UnitId
 import battletech.tactical.action.movement.MovementPreview
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
@@ -74,7 +73,8 @@ public class MovementController(
             val direction = FACING_ORDER[directionIndex]
             val destination = state.options.find { it.facing == direction }
                 ?: return PhaseOutcome.Continue(state)
-            PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination), state.unitId)
+            val newGameState = gameState.moveUnit(state.unitId, destination)
+            PhaseOutcome.Complete(newGameState, state.unitId)
         }
     }
 
@@ -88,7 +88,8 @@ public class MovementController(
         if (facingsAtHex.size > 1) {
             return PhaseOutcome.Continue(enterFacingSelection(state, destination.position, facingsAtHex))
         }
-        return PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination), state.unitId)
+        val newGameState = gameState.moveUnit(state.unitId, destination)
+        return PhaseOutcome.Complete(newGameState, state.unitId)
     }
 
     private fun handleBrowsingSelectAction(
@@ -107,7 +108,8 @@ public class MovementController(
         val destination = facingsAtHex.find { it.facing == direction }
             ?: return PhaseOutcome.Continue(state)
 
-        return PhaseOutcome.Complete(applyMovement(gameState, state.unitId, destination), state.unitId)
+        val newGameState = gameState.moveUnit(state.unitId, destination)
+        return PhaseOutcome.Complete(newGameState, state.unitId)
     }
 
     private fun enterFacingSelection(
@@ -155,18 +157,4 @@ public class MovementController(
         )
     }
 
-    private fun applyMovement(
-        gameState: GameState,
-        unitId: UnitId,
-        destination: ReachableHex,
-    ): GameState {
-        val updatedUnits = gameState.units.map { unit ->
-            if (unit.id == unitId) {
-                unit.copy(position = destination.position, facing = destination.facing, torsoFacing = destination.facing)
-            } else {
-                unit
-            }
-        }
-        return gameState.copy(units = updatedUnits)
-    }
 }
