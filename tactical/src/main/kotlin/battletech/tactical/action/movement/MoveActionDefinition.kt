@@ -12,13 +12,13 @@ public class MoveActionDefinition {
     public fun expand(actor: CombatUnit, gameState: GameState): List<MovementContext> {
         val contexts = mutableListOf<MovementContext>()
         if (actor.walkingMP > 0) {
-            contexts.add(MovementContext(actor = actor, movementMode = MovementMode.WALK, gameState = gameState))
+            contexts.add(MovementContext(actor, gameState, MovementMode.WALK))
         }
         if (actor.runningMP > 0) {
-            contexts.add(MovementContext(actor = actor, movementMode = MovementMode.RUN, gameState = gameState))
+            contexts.add(MovementContext(actor, gameState, MovementMode.RUN))
         }
         if (actor.jumpMP > 0) {
-            contexts.add(MovementContext(actor = actor, movementMode = MovementMode.JUMP, gameState = gameState))
+            contexts.add(MovementContext(actor, gameState, MovementMode.JUMP))
         }
         return contexts
     }
