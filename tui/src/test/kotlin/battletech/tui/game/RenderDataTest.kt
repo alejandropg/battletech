@@ -82,7 +82,6 @@ internal class RenderDataTest {
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
-                hoveredPath = null,
                 hoveredDestination = null,
             )
 
@@ -94,12 +93,10 @@ internal class RenderDataTest {
 
         @Test
         fun `browsing with hovered path shows path highlights`() {
-            val path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0), HexCoordinates(2, 0))
             val state = MovementPhaseState.Browsing(
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
-                hoveredPath = path,
                 hoveredDestination = reachableHexes[1],
             )
 
@@ -117,7 +114,6 @@ internal class RenderDataTest {
                 unitId = UnitId("u1"),
                 modes = listOf(runReachability),
                 currentModeIndex = 0,
-                hoveredPath = null,
                 hoveredDestination = null,
             )
 
@@ -132,7 +128,6 @@ internal class RenderDataTest {
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
-                hoveredPath = null,
                 hoveredDestination = null,
             )
 
@@ -154,7 +149,6 @@ internal class RenderDataTest {
                 currentModeIndex = 0,
                 hex = HexCoordinates(1, 0),
                 options = options,
-                path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
             )
 
             val result = extractRenderData(state)
@@ -172,7 +166,6 @@ internal class RenderDataTest {
                 currentModeIndex = 0,
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes,
-                path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
             )
 
             val result = extractRenderData(state)

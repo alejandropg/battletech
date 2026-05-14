@@ -263,7 +263,6 @@ internal class MovementPhaseStateControllerTest {
                 currentModeIndex = browsing.currentModeIndex,
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
-                path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
             )
 
             // Press "1" → N direction
@@ -287,7 +286,6 @@ internal class MovementPhaseStateControllerTest {
                 currentModeIndex = browsing.currentModeIndex,
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
-                path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
             )
 
             // FACING_ORDER: [N, NE, SE, S, SW, NW] → index 3 = SE
@@ -309,7 +307,6 @@ internal class MovementPhaseStateControllerTest {
                 currentModeIndex = browsing.currentModeIndex,
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
-                path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
             )
 
             // Press "4" → S direction, not available at (1,0)
@@ -374,7 +371,6 @@ internal class MovementPhaseStateControllerTest {
                 currentModeIndex = browsing.currentModeIndex,
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
-                path = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
             )
 
             val result = controller.handle(FacingAction.Cancel, facingState, HexCoordinates(1, 0), gameState)
@@ -424,7 +420,6 @@ internal class MovementPhaseStateControllerTest {
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
             val state = controller.enter(unit, gameState).copy(
-                hoveredPath = listOf(HexCoordinates(0, 0), HexCoordinates(1, 0)),
                 hoveredDestination = reachableHexes[0],
             )
 

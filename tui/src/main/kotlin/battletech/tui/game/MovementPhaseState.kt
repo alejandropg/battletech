@@ -20,9 +20,27 @@ public sealed interface MovementPhaseState : PhaseState {
         override val unitId: UnitId,
         override val modes: List<ReachabilityMap>,
         override val currentModeIndex: Int,
-        val hoveredPath: List<HexCoordinates>?,
         val hoveredDestination: ReachableHex?,
     ) : MovementPhaseState {
+
+        val hoveredPath: List<HexCoordinates>?
+            get() = hoveredDestination?.path?.map { it.position }
+
+        public fun withCursorAt(cursor: HexCoordinates): Browsing {
+            if (modes.isEmpty()) return this
+            val cheapest = reachability.destinations
+                .filter { it.position == cursor }
+                .minByOrNull { it.mpSpent }
+            return copy(hoveredDestination = cheapest)
+        }
+
+        public fun cycleMode(): Browsing {
+            if (modes.isEmpty()) return this
+            return copy(
+                currentModeIndex = (currentModeIndex + 1) % modes.size,
+                hoveredDestination = null,
+            )
+        }
 
         override fun processEvent(
             event: InputEvent,
@@ -52,8 +70,20 @@ public sealed interface MovementPhaseState : PhaseState {
         override val currentModeIndex: Int,
         val hex: HexCoordinates,
         val options: List<ReachableHex>,
-        val path: List<HexCoordinates>,
     ) : MovementPhaseState {
+
+        val path: List<HexCoordinates>
+            get() = options.minByOrNull { it.mpSpent }
+                ?.path
+                ?.map { it.position }
+                ?: emptyList()
+
+        public fun toBrowsing(): Browsing = Browsing(
+            unitId = unitId,
+            modes = modes,
+            currentModeIndex = currentModeIndex,
+            hoveredDestination = null,
+        )
 
         override fun processEvent(
             event: InputEvent,

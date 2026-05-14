@@ -3,6 +3,7 @@ package battletech.tui.game
 import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.AvailableAction
 import battletech.tactical.action.CombatUnit
+import battletech.tactical.action.UnitId
 import battletech.tactical.action.movement.MovementPreview
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
@@ -29,7 +30,6 @@ public class MovementController(
             unitId = unit.id,
             modes = modes,
             currentModeIndex = 0,
-            hoveredPath = null,
             hoveredDestination = null,
         )
     }
@@ -41,13 +41,11 @@ public class MovementController(
         gameState: GameState,
     ): PhaseOutcome = when (action) {
         is BrowsingAction.Cancel -> PhaseOutcome.Cancelled
-        is BrowsingAction.ConfirmPath -> handleBrowsingConfirm(state, gameState)
-        is BrowsingAction.SelectFacing -> handleBrowsingSelectAction(action.index, state, gameState)
-        is BrowsingAction.MoveCursor, is BrowsingAction.ClickHex -> {
-            val updated = updatePathForCursor(cursor, state)
-            PhaseOutcome.Continue(updated)
-        }
-        is BrowsingAction.CycleMode -> PhaseOutcome.Continue(cycleMode(state))
+        is BrowsingAction.ConfirmPath -> confirm(state, gameState)
+        is BrowsingAction.SelectFacing -> selectFacing(state, action.index, gameState)
+        is BrowsingAction.MoveCursor, is BrowsingAction.ClickHex ->
+            PhaseOutcome.Continue(state.withCursorAt(cursor))
+        is BrowsingAction.CycleMode -> PhaseOutcome.Continue(state.cycleMode())
     }
 
     public fun handle(
@@ -56,104 +54,54 @@ public class MovementController(
         cursor: HexCoordinates,
         gameState: GameState,
     ): PhaseOutcome = when (action) {
-        is FacingAction.Cancel -> {
+        is FacingAction.Cancel -> PhaseOutcome.Continue(state.toBrowsing())
+        is FacingAction.SelectFacing ->
+            commitByFacing(state.options, action.index, state.unitId, gameState)
+                ?: PhaseOutcome.Continue(state)
+    }
+
+    private fun confirm(state: MovementPhaseState.Browsing, gameState: GameState): PhaseOutcome {
+        val destination = state.hoveredDestination ?: return PhaseOutcome.Continue(state)
+        val facingsAtHex = state.reachability.destinations.filter { it.position == destination.position }
+        return if (facingsAtHex.size > 1) {
             PhaseOutcome.Continue(
-                MovementPhaseState.Browsing(
+                MovementPhaseState.SelectingFacing(
                     unitId = state.unitId,
                     modes = state.modes,
                     currentModeIndex = state.currentModeIndex,
-                    hoveredPath = null,
-                    hoveredDestination = null,
+                    hex = destination.position,
+                    options = facingsAtHex,
                 ),
             )
-        }
-        is FacingAction.SelectFacing -> {
-            val directionIndex = action.index - 1
-            if (directionIndex !in FACING_ORDER.indices) return PhaseOutcome.Continue(state)
-            val direction = FACING_ORDER[directionIndex]
-            val destination = state.options.find { it.facing == direction }
-                ?: return PhaseOutcome.Continue(state)
-            val newGameState = gameState.moveUnit(state.unitId, destination)
-            PhaseOutcome.Complete(newGameState, state.unitId)
+        } else {
+            commit(destination, state.unitId, gameState)
         }
     }
 
-    private fun handleBrowsingConfirm(
+    private fun selectFacing(
         state: MovementPhaseState.Browsing,
+        index: Int,
         gameState: GameState,
     ): PhaseOutcome {
         val destination = state.hoveredDestination ?: return PhaseOutcome.Continue(state)
-        val facingsAtHex = state.reachability.destinations
-            .filter { it.position == destination.position }
-        if (facingsAtHex.size > 1) {
-            return PhaseOutcome.Continue(enterFacingSelection(state, destination.position, facingsAtHex))
-        }
-        val newGameState = gameState.moveUnit(state.unitId, destination)
-        return PhaseOutcome.Complete(newGameState, state.unitId)
+        val facingsAtHex = state.reachability.destinations.filter { it.position == destination.position }
+        return commitByFacing(facingsAtHex, index, state.unitId, gameState) ?: PhaseOutcome.Continue(state)
     }
 
-    private fun handleBrowsingSelectAction(
+    private fun commitByFacing(
+        options: List<ReachableHex>,
         index: Int,
-        state: MovementPhaseState.Browsing,
+        unitId: UnitId,
         gameState: GameState,
-    ): PhaseOutcome {
-        val facingIndex = index - 1
-        if (facingIndex !in FACING_ORDER.indices) return PhaseOutcome.Continue(state)
-        val direction = FACING_ORDER[facingIndex]
-
-        val selected = state.hoveredDestination ?: return PhaseOutcome.Continue(state)
-        val facingsAtHex = state.reachability.destinations
-            .filter { it.position == selected.position }
-        val destination = facingsAtHex.find { it.facing == direction }
-            ?: return PhaseOutcome.Continue(state)
-
-        val newGameState = gameState.moveUnit(state.unitId, destination)
-        return PhaseOutcome.Complete(newGameState, state.unitId)
+    ): PhaseOutcome? {
+        val direction = FACING_ORDER.getOrNull(index - 1) ?: return null
+        val destination = options.find { it.facing == direction } ?: return null
+        return commit(destination, unitId, gameState)
     }
 
-    private fun enterFacingSelection(
-        state: MovementPhaseState.Browsing,
-        hex: HexCoordinates,
-        facingsAtHex: List<ReachableHex>,
-    ): MovementPhaseState.SelectingFacing {
-        val cheapest = facingsAtHex.minByOrNull { it.mpSpent }
-        val path = cheapest?.path?.map { it.position } ?: emptyList()
-        return MovementPhaseState.SelectingFacing(
-            unitId = state.unitId,
-            modes = state.modes,
-            currentModeIndex = state.currentModeIndex,
-            hex = hex,
-            options = facingsAtHex,
-            path = path,
-        )
-    }
-
-    private fun updatePathForCursor(
-        cursorPosition: HexCoordinates,
-        state: MovementPhaseState.Browsing,
-    ): MovementPhaseState.Browsing {
-        if (state.modes.isEmpty()) return state
-        val reachability = state.reachability
-        val cheapest = reachability.destinations
-            .filter { it.position == cursorPosition }
-            .minByOrNull { it.mpSpent }
-        val path = cheapest?.path?.map { it.position }
-        return state.copy(
-            hoveredPath = path,
-            hoveredDestination = cheapest,
-        )
-    }
-
-    private fun cycleMode(state: MovementPhaseState.Browsing): MovementPhaseState.Browsing {
-        if (state.modes.isEmpty()) return state
-        val nextIndex = (state.currentModeIndex + 1) % state.modes.size
-        return MovementPhaseState.Browsing(
-            unitId = state.unitId,
-            modes = state.modes,
-            currentModeIndex = nextIndex,
-            hoveredPath = null,
-            hoveredDestination = null,
-        )
-    }
-
+    private fun commit(
+        destination: ReachableHex,
+        unitId: UnitId,
+        gameState: GameState,
+    ): PhaseOutcome = PhaseOutcome.Complete(gameState.moveUnit(unitId, destination), unitId)
 }
