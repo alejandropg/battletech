@@ -1,11 +1,11 @@
 package battletech.tactical.action
 
 import battletech.tactical.action.attack.AttackDefinition
-import battletech.tactical.action.movement.MovementDefinition
+import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.model.GameState
 
 public class ActionQueryService(
-    private val movementDefinition: MovementDefinition,
+    private val movementDefinition: MoveActionDefinition,
     private val attackDefinitions: List<AttackDefinition<*>>,
 ) {
 

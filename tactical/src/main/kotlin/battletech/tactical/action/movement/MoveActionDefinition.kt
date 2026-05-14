@@ -5,11 +5,11 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityCalculator
 
-public class MoveActionDefinition : MovementDefinition {
+public class MoveActionDefinition {
 
-    override val name: String = "Move"
+    public val name: String = "Move"
 
-    override fun expand(actor: CombatUnit, gameState: GameState): List<MovementContext> {
+    public fun expand(actor: CombatUnit, gameState: GameState): List<MovementContext> {
         val contexts = mutableListOf<MovementContext>()
         if (actor.walkingMP > 0) {
             contexts.add(MovementContext(actor = actor, movementMode = MovementMode.WALK, gameState = gameState))
@@ -23,13 +23,13 @@ public class MoveActionDefinition : MovementDefinition {
         return contexts
     }
 
-    override fun preview(context: MovementContext): MovementPreview {
+    public fun preview(context: MovementContext): MovementPreview {
         val calculator = ReachabilityCalculator(context.gameState.map, context.gameState.units)
         val reachability = calculator.calculate(context.actor, context.movementMode)
         return MovementPreview(reachability = reachability)
     }
 
-    override fun actionName(context: MovementContext): String {
+    public fun actionName(context: MovementContext): String {
         val modeName = when (context.movementMode) {
             MovementMode.WALK -> "Walk"
             MovementMode.RUN -> "Run"
