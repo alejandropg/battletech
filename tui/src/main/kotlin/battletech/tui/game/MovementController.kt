@@ -97,12 +97,11 @@ public class MovementController(
         state: MovementPhaseState.Browsing,
         gameState: GameState,
     ): PhaseOutcome {
-        val directionIndex = index - 1
-        if (directionIndex !in FACING_ORDER.indices) return PhaseOutcome.Continue(state)
-        val direction = FACING_ORDER[directionIndex]
+        val facingIndex = index - 1
+        if (facingIndex !in FACING_ORDER.indices) return PhaseOutcome.Continue(state)
+        val direction = FACING_ORDER[facingIndex]
 
-        val selected = state.hoveredDestination
-            ?: return PhaseOutcome.Continue(state)
+        val selected = state.hoveredDestination ?: return PhaseOutcome.Continue(state)
         val facingsAtHex = state.reachability.destinations
             .filter { it.position == selected.position }
         val destination = facingsAtHex.find { it.facing == direction }
