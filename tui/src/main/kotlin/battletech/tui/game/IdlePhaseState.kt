@@ -32,7 +32,7 @@ public data object IdlePhaseState : PhaseState {
             }
 
             is IdleAction.SelectUnit -> trySelectUnit(appState, phaseManager)
-            is IdleAction.CycleUnit -> cycleUnit(appState, phaseManager)
+            is IdleAction.CycleUnit -> cycleUnit(appState)
             is IdleAction.CommitDeclarations -> commitDeclarations(appState, phaseManager)
         }
     }
@@ -83,7 +83,7 @@ public data object IdlePhaseState : PhaseState {
     private fun commitDeclarations(appState: AppState, phaseManager: PhaseManager): HandleResult =
         phaseManager.commitAttackImpulse(appState)
 
-    private fun cycleUnit(appState: AppState, phaseManager: PhaseManager): HandleResult {
+    private fun cycleUnit(appState: AppState): HandleResult {
         val turnState = appState.turnState
         val units = when {
             turnState != null && appState.currentPhase == TurnPhase.MOVEMENT ->
