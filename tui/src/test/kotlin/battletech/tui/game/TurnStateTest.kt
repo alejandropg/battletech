@@ -70,7 +70,7 @@ internal class TurnStateTest {
                 movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 2)),
             )
 
-            val result = advanceAfterUnitMoved(state, UnitId("u1"))
+            val result = state.advanceAfterUnitMoved(UnitId("u1"))
 
             assertTrue(UnitId("u1") in result.movedUnitIds)
         }
@@ -84,7 +84,7 @@ internal class TurnStateTest {
                 ),
             )
 
-            val result = advanceAfterUnitMoved(state, UnitId("u1"))
+            val result = state.advanceAfterUnitMoved(UnitId("u1"))
 
             assertEquals(1, result.movementSequence.currentIndex)
             assertEquals(0, result.unitsMovedInCurrentImpulse)
@@ -96,7 +96,7 @@ internal class TurnStateTest {
                 movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 3)),
             )
 
-            val result = advanceAfterUnitMoved(state, UnitId("u1"))
+            val result = state.advanceAfterUnitMoved(UnitId("u1"))
 
             assertEquals(0, result.movementSequence.currentIndex)
             assertEquals(1, result.unitsMovedInCurrentImpulse)
@@ -108,7 +108,7 @@ internal class TurnStateTest {
                 movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 1)),
             )
 
-            val result = advanceAfterUnitMoved(state, UnitId("u1"))
+            val result = state.advanceAfterUnitMoved(UnitId("u1"))
 
             assertTrue(result.allImpulsesComplete)
         }
@@ -122,15 +122,15 @@ internal class TurnStateTest {
                 ),
             )
 
-            val after1 = advanceAfterUnitMoved(state, UnitId("p1-u1"))
+            val after1 = state.advanceAfterUnitMoved(UnitId("p1-u1"))
             assertEquals(1, after1.movementSequence.currentIndex)
             assertEquals(PlayerId.PLAYER_2, after1.activePlayer)
 
-            val after2 = advanceAfterUnitMoved(after1, UnitId("p2-u1"))
+            val after2 = after1.advanceAfterUnitMoved(UnitId("p2-u1"))
             assertEquals(1, after2.movementSequence.currentIndex)
             assertEquals(1, after2.unitsMovedInCurrentImpulse)
 
-            val after3 = advanceAfterUnitMoved(after2, UnitId("p2-u2"))
+            val after3 = after2.advanceAfterUnitMoved(UnitId("p2-u2"))
             assertTrue(after3.allImpulsesComplete)
         }
     }

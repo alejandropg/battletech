@@ -1,37 +1,26 @@
 package battletech.tui.game
 
-import battletech.tactical.action.Impulse
-import battletech.tactical.action.InitiativeResult
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.calculateAttackOrder
+import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tui.game.phase.Phase
 
 public data class AppState(
     val gameState: GameState,
-    val currentPhase: TurnPhase,
     val cursor: HexCoordinates,
-    val phase: PhaseState,
+    val phase: Phase,
     val turnState: TurnState? = null,
-)
+) {
+    public val currentPhase: TurnPhase get() = phase.turnPhase
+}
 
 public fun moveCursor(
     cursor: HexCoordinates,
     direction: HexDirection,
-    map: battletech.tactical.model.GameMap
+    map: GameMap,
 ): HexCoordinates {
     val neighbor = cursor.neighbor(direction)
     return if (neighbor in map.hexes) neighbor else cursor
-}
-
-internal fun attackOrderFor(initiative: InitiativeResult, gameState: GameState): List<Impulse> {
-    val loser = initiative.loser
-    val winner = initiative.winner
-    return calculateAttackOrder(
-        loser = loser,
-        loserUnitCount = gameState.unitsOf(loser).size,
-        winner = winner,
-        winnerUnitCount = gameState.unitsOf(winner).size
-    )
 }

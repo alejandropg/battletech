@@ -8,11 +8,14 @@ import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Terrain
 import battletech.tui.aUnit
+import battletech.tui.game.phase.MovementPhase
+import battletech.tui.game.phase.PhaseServices
+import battletech.tui.game.phase.enterBrowsing
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test
 
-internal class MovementPhaseStateControllerIntegrationTest {
+internal class MovementPhaseIntegrationTest {
 
     private val map = GameMap(
         (0..4).flatMap { col ->
@@ -28,13 +31,11 @@ internal class MovementPhaseStateControllerIntegrationTest {
 
     @Test
     fun `enter produces reachable hexes with real action query service`() {
-        val actionQueryService = ActionQueryService(MoveActionDefinition(), emptyList())
-        val controller = MovementController(actionQueryService)
+        val services = PhaseServices(ActionQueryService(MoveActionDefinition(), emptyList()))
 
-        val state = controller.enter(unit, gameState)
+        val phase = enterBrowsing(unit, gameState, services)
 
-        assertTrue(state is MovementPhaseState.Browsing)
-        assertThat(state.reachability.destinations).isNotEmpty()
+        assertInstanceOf(MovementPhase.Browsing::class.java, phase)
+        assertThat(phase.reachability.destinations).isNotEmpty()
     }
-
 }

@@ -1,48 +1,40 @@
 package battletech.tui.game
 
-import battletech.tactical.action.ActionQueryService
-import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
-import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tui.aGameMap
-import battletech.tui.aGameState
-import battletech.tui.aUnit
+import battletech.tui.game.phase.InitiativePhase
+import battletech.tui.game.phase.MovementPhase
+import battletech.tui.game.phase.next
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import kotlin.random.Random
 
 internal class AppStateTest {
 
-    private val actionQueryService = ActionQueryService(
-        MoveActionDefinition(),
-        listOf(FireWeaponActionDefinition()),
-    )
-    private val phaseManager = PhaseManager(
-        movementController = MovementController(actionQueryService),
-        attackController = AttackController(),
-        random = Random(42),
-    )
+    @Nested
+    inner class CurrentPhaseTest {
+        @Test
+        fun `currentPhase is derived from phase turnPhase`() {
+            val app = AppState(
+                gameState = battletech.tui.aGameState(),
+                cursor = HexCoordinates(0, 0),
+                phase = InitiativePhase,
+            )
+            assertEquals(TurnPhase.INITIATIVE, app.currentPhase)
+        }
 
-    private fun anAppState(
-        currentPhase: TurnPhase = TurnPhase.MOVEMENT,
-        phase: PhaseState = IdlePhaseState,
-        cursor: HexCoordinates = HexCoordinates(0, 0),
-        gameState: battletech.tactical.model.GameState = aGameState(),
-        turnState: TurnState? = null,
-    ) = AppState(
-        gameState = gameState,
-        currentPhase = currentPhase,
-        cursor = cursor,
-        phase = phase,
-        turnState = turnState,
-    )
+        @Test
+        fun `currentPhase reflects movement when in MovementPhase`() {
+            val app = AppState(
+                gameState = battletech.tui.aGameState(),
+                cursor = HexCoordinates(0, 0),
+                phase = MovementPhase.SelectingUnit,
+            )
+            assertEquals(TurnPhase.MOVEMENT, app.currentPhase)
+        }
+    }
 
     @Nested
     inner class NextPhaseTest {
@@ -95,107 +87,6 @@ internal class AppStateTest {
             val map = aGameMap(cols = 3, rows = 3)
             val result = moveCursor(HexCoordinates(0, 0), HexDirection.N, map)
             assertEquals(HexCoordinates(0, 0), result)
-        }
-    }
-
-    @Nested
-    inner class AutoAdvanceGlobalPhasesTest {
-        @Test
-        fun `initiative rolls dice and builds turn state`() {
-            val p1 = aUnit(id = "p1", owner = PlayerId.PLAYER_1)
-            val p2 = aUnit(id = "p2", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 0))
-            val gameState = aGameState(units = listOf(p1, p2))
-            val state = anAppState(currentPhase = TurnPhase.INITIATIVE, gameState = gameState)
-
-            val (result, flash) = phaseManager.advanceAutomaticPhases(state)
-
-            assertEquals(TurnPhase.MOVEMENT, result.currentPhase)
-            assertNotNull(result.turnState)
-            assertNotNull(flash)
-            assertTrue(flash!!.text.startsWith("Initiative:"))
-        }
-
-        @Test
-        fun `heat phase applies dissipation to all units`() {
-            val unit1 = aUnit(id = "u1", name = "Atlas").copy(currentHeat = 12, heatSinkCapacity = 3)
-            val unit2 = aUnit(id = "u2", name = "Hunchback").copy(currentHeat = 5, heatSinkCapacity = 5)
-            val gameState = aGameState(units = listOf(unit1, unit2))
-            val state = anAppState(currentPhase = TurnPhase.HEAT, gameState = gameState)
-
-            val (result, flash) = phaseManager.advanceAutomaticPhases(state)
-
-            assertEquals(TurnPhase.END, result.currentPhase)
-            assertEquals(9, result.gameState.units[0].currentHeat)
-            assertEquals(0, result.gameState.units[1].currentHeat)
-            assertNotNull(flash)
-            assert(flash!!.text.contains("Atlas: 12→9"))
-            assert(flash.text.contains("Hunchback: 5→0"))
-        }
-
-        @Test
-        fun `heat phase with no heat shows no heat message`() {
-            val unit = aUnit(id = "u1").copy(currentHeat = 0, heatSinkCapacity = 3)
-            val gameState = aGameState(units = listOf(unit))
-            val state = anAppState(currentPhase = TurnPhase.HEAT, gameState = gameState)
-
-            val (_, flash) = phaseManager.advanceAutomaticPhases(state)
-
-            assertEquals("Heat: No heat to dissipate", flash!!.text)
-        }
-
-        @Test
-        fun `end phase advances to initiative`() {
-            val state = anAppState(currentPhase = TurnPhase.END)
-
-            val (result, flash) = phaseManager.advanceAutomaticPhases(state)
-
-            assertEquals(TurnPhase.INITIATIVE, result.currentPhase)
-            assertEquals("Turn complete", flash!!.text)
-        }
-
-        @Test
-        fun `interactive phases return null flash`() {
-            val state = anAppState(currentPhase = TurnPhase.MOVEMENT)
-
-            val (result, flash) = phaseManager.advanceAutomaticPhases(state)
-
-            assertNull(flash)
-            assertEquals(state, result)
-        }
-    }
-
-    @Nested
-    inner class ApplyHeatDissipationTest {
-        @Test
-        fun `reduces heat by sink capacity`() {
-            val unit = aUnit().copy(currentHeat = 10, heatSinkCapacity = 4)
-            val gameState = aGameState(units = listOf(unit))
-
-            val result = applyHeatDissipation(gameState)
-
-            assertEquals(6, result.units[0].currentHeat)
-        }
-
-        @Test
-        fun `heat does not go below zero`() {
-            val unit = aUnit().copy(currentHeat = 2, heatSinkCapacity = 10)
-            val gameState = aGameState(units = listOf(unit))
-
-            val result = applyHeatDissipation(gameState)
-
-            assertEquals(0, result.units[0].currentHeat)
-        }
-
-        @Test
-        fun `applies to all units`() {
-            val u1 = aUnit(id = "u1").copy(currentHeat = 8, heatSinkCapacity = 3)
-            val u2 = aUnit(id = "u2").copy(currentHeat = 4, heatSinkCapacity = 4)
-            val gameState = aGameState(units = listOf(u1, u2))
-
-            val result = applyHeatDissipation(gameState)
-
-            assertEquals(5, result.units[0].currentHeat)
-            assertEquals(0, result.units[1].currentHeat)
         }
     }
 }

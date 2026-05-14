@@ -10,6 +10,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityMap
+import battletech.tui.game.phase.AttackPhase
 import battletech.tui.hex.HexHighlight
 
 public data class RenderData(
@@ -24,53 +25,10 @@ public data class RenderData(
     }
 }
 
-public fun extractRenderData(phaseState: PhaseState, gameState: GameState? = null): RenderData {
-    return when (phaseState) {
-        is IdlePhaseState -> RenderData.EMPTY
-
-        is MovementPhaseState.Browsing -> RenderData(
-            hexHighlights = reachabilityHighlights(phaseState.reachability)
-                    + pathHighlights(phaseState.hoveredPath),
-            reachableFacings = phaseState.reachability.facingsByPosition(),
-        )
-
-        is MovementPhaseState.SelectingFacing -> RenderData(
-            hexHighlights = reachabilityHighlights(phaseState.modes[phaseState.currentModeIndex])
-                    + pathHighlights(phaseState.path),
-            facingSelection = FacingSelection(
-                phaseState.hex,
-                phaseState.options.map { it.facing }.toSet(),
-            ),
-            reachableFacings = phaseState.modes[phaseState.currentModeIndex].facingsByPosition(),
-        )
-
-        is AttackPhaseState -> {
-            val attacker = gameState?.unitById(phaseState.unitId)
-            if (gameState == null || attacker == null) {
-                RenderData.EMPTY
-            } else {
-                val arc = fireArc(attacker, phaseState.torsoFacing, gameState)
-                val validIds = validTargets(attacker, phaseState.torsoFacing, gameState)
-                val targets = targetInfos(attacker, phaseState.torsoFacing, gameState)
-                val arcHighlights = arc.associateWith { HexHighlight.ATTACK_RANGE }
-                val torsoFacings = mapOf(attacker.position to phaseState.torsoFacing)
-                val targetPositions = resolveTargetPositions(validIds, gameState)
-                val los = losHighlights(attacker, validIds, gameState)
-                val selectedLos = selectedLosHighlights(attacker, phaseState, targets, gameState)
-                RenderData(
-                    hexHighlights = arcHighlights + los + selectedLos,
-                    torsoFacings = torsoFacings,
-                    validTargetPositions = targetPositions,
-                )
-            }
-        }
-    }
-}
-
-private fun resolveTargetPositions(targetIds: Set<UnitId>, gameState: GameState): Set<HexCoordinates> =
+internal fun resolveTargetPositions(targetIds: Set<UnitId>, gameState: GameState): Set<HexCoordinates> =
     targetIds.mapNotNull { gameState.unitById(it)?.position }.toSet()
 
-private fun losHighlights(
+internal fun losHighlights(
     attacker: CombatUnit,
     validTargetIds: Set<UnitId>,
     gameState: GameState,
@@ -80,13 +38,13 @@ private fun losHighlights(
         losLine(attacker, target, gameState)
     }.associateWith { HexHighlight.LINE_OF_SIGHT }
 
-private fun selectedLosHighlights(
+internal fun selectedLosHighlights(
     attacker: CombatUnit,
-    phaseState: AttackPhaseState,
+    declaring: AttackPhase.Declaring,
     targets: List<TargetInfo>,
     gameState: GameState,
 ): Map<HexCoordinates, HexHighlight> {
-    val idx = phaseState.cursorTargetIndex
+    val idx = declaring.cursorTargetIndex
     if (idx !in targets.indices) return emptyMap()
     val target = gameState.unitById(targets[idx].unitId) ?: return emptyMap()
     return losLine(attacker, target, gameState).associateWith { HexHighlight.LINE_OF_SIGHT_SELECTED }
@@ -98,7 +56,7 @@ private fun losLine(attacker: CombatUnit, target: CombatUnit, gameState: GameSta
     return attacker.position.lineTo(target.position).drop(1).dropLast(1)
 }
 
-private fun reachabilityHighlights(reachability: ReachabilityMap): Map<HexCoordinates, HexHighlight> {
+internal fun reachabilityHighlights(reachability: ReachabilityMap): Map<HexCoordinates, HexHighlight> {
     val highlight = when (reachability.mode) {
         MovementMode.WALK -> HexHighlight.REACHABLE_WALK
         MovementMode.RUN -> HexHighlight.REACHABLE_RUN
@@ -107,7 +65,7 @@ private fun reachabilityHighlights(reachability: ReachabilityMap): Map<HexCoordi
     return reachability.destinations.associate { it.position to highlight }
 }
 
-private fun pathHighlights(path: List<HexCoordinates>?): Map<HexCoordinates, HexHighlight> {
+internal fun pathHighlights(path: List<HexCoordinates>?): Map<HexCoordinates, HexHighlight> {
     if (path == null) return emptyMap()
     return path.dropLast(1).associateWith { HexHighlight.PATH }
 }

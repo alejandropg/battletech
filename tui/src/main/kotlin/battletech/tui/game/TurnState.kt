@@ -25,36 +25,25 @@ public data class TurnState(
     val currentAttackImpulse: Impulse get() = attackSequence.current
     val activeAttackPlayer: PlayerId get() = attackSequence.activePlayer
     val allAttackImpulsesComplete: Boolean get() = attackSequence.isComplete
-}
 
-public fun advanceAfterUnitMoved(turnState: TurnState, unitId: UnitId): TurnState {
-    val updated = turnState.copy(
-        movedUnitIds = turnState.movedUnitIds + unitId,
-        unitsMovedInCurrentImpulse = turnState.unitsMovedInCurrentImpulse + 1,
-    )
-    return if (updated.remainingInImpulse == 0) {
-        updated.copy(
-            movementSequence = updated.movementSequence.advance(),
-            unitsMovedInCurrentImpulse = 0,
+    public fun advanceAfterUnitMoved(unitId: UnitId): TurnState {
+        val updated = copy(
+            movedUnitIds = movedUnitIds + unitId,
+            unitsMovedInCurrentImpulse = unitsMovedInCurrentImpulse + 1,
         )
-    } else {
-        updated
+        return if (updated.remainingInImpulse == 0) {
+            updated.copy(
+                movementSequence = updated.movementSequence.advance(),
+                unitsMovedInCurrentImpulse = 0,
+            )
+        } else {
+            updated
+        }
     }
-}
 
-public fun selectableUnits(gameState: GameState, turnState: TurnState): List<CombatUnit> =
-    gameState.unitsOf(turnState.activePlayer).filter { it.id !in turnState.movedUnitIds }
+    public fun selectableUnits(gameState: GameState): List<CombatUnit> =
+        gameState.unitsOf(activePlayer).filter { it.id !in movedUnitIds }
 
-public fun selectableAttackUnits(gameState: GameState, turnState: TurnState): List<CombatUnit> =
-    gameState.unitsOf(turnState.activeAttackPlayer)
-
-public fun validateUnitSelection(unit: CombatUnit, turnState: TurnState): UnitSelectionResult = when {
-    unit.owner != turnState.activePlayer -> UnitSelectionResult.NOT_YOUR_UNIT
-    unit.id in turnState.movedUnitIds -> UnitSelectionResult.ALREADY_MOVED
-    else -> UnitSelectionResult.VALID
-}
-
-public fun validateAttackUnitSelection(unit: CombatUnit, turnState: TurnState): UnitSelectionResult = when {
-    unit.owner != turnState.activeAttackPlayer -> UnitSelectionResult.NOT_YOUR_UNIT
-    else -> UnitSelectionResult.VALID
+    public fun selectableAttackUnits(gameState: GameState): List<CombatUnit> =
+        gameState.unitsOf(activeAttackPlayer)
 }

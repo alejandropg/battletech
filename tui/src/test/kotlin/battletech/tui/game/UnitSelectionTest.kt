@@ -9,7 +9,6 @@ import battletech.tui.aGameState
 import battletech.tui.aUnit
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 internal class UnitSelectionTest {
@@ -30,81 +29,42 @@ internal class UnitSelectionTest {
         movedUnitIds = movedUnitIds,
     )
 
-    @Nested
-    inner class SelectableUnitsTest {
-        @Test
-        fun `returns active player unmoved units`() {
-            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
-            val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(1, 0))
-            val u3 = aUnit(id = "u3", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 0))
-            val gameState = aGameState(units = listOf(u1, u2, u3))
-            val turnState = aTurnState(activePlayer = PlayerId.PLAYER_1)
+    @Test
+    fun `returns active player unmoved units`() {
+        val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+        val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(1, 0))
+        val u3 = aUnit(id = "u3", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 0))
+        val gameState = aGameState(units = listOf(u1, u2, u3))
+        val turnState = aTurnState(activePlayer = PlayerId.PLAYER_1)
 
-            val result = selectableUnits(gameState, turnState)
+        val result = turnState.selectableUnits(gameState)
 
-            assertEquals(listOf(u1, u2), result)
-        }
-
-        @Test
-        fun `excludes already moved units`() {
-            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
-            val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(1, 0))
-            val gameState = aGameState(units = listOf(u1, u2))
-            val turnState = aTurnState(
-                activePlayer = PlayerId.PLAYER_1,
-                movedUnitIds = setOf(UnitId("u1")),
-            )
-
-            val result = selectableUnits(gameState, turnState)
-
-            assertEquals(listOf(u2), result)
-        }
-
-        @Test
-        fun `returns empty when no selectable units`() {
-            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, 0))
-            val gameState = aGameState(units = listOf(u1))
-            val turnState = aTurnState(activePlayer = PlayerId.PLAYER_1)
-
-            val result = selectableUnits(gameState, turnState)
-
-            assertTrue(result.isEmpty())
-        }
+        assertEquals(listOf(u1, u2), result)
     }
 
-    @Nested
-    inner class ValidateUnitSelectionTest {
-        @Test
-        fun `own unmoved unit is valid`() {
-            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
-            val turnState = aTurnState(activePlayer = PlayerId.PLAYER_1)
+    @Test
+    fun `excludes already moved units`() {
+        val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+        val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(1, 0))
+        val gameState = aGameState(units = listOf(u1, u2))
+        val turnState = aTurnState(
+            activePlayer = PlayerId.PLAYER_1,
+            movedUnitIds = setOf(UnitId("u1")),
+        )
 
-            val result = validateUnitSelection(u1, turnState)
+        val result = turnState.selectableUnits(gameState)
 
-            assertEquals(UnitSelectionResult.VALID, result)
-        }
+        assertEquals(listOf(u2), result)
+    }
 
-        @Test
-        fun `opponent unit is rejected`() {
-            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, 0))
-            val turnState = aTurnState(activePlayer = PlayerId.PLAYER_1)
+    @Test
+    fun `returns empty when no selectable units`() {
+        val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, 0))
+        val gameState = aGameState(units = listOf(u1))
+        val turnState = aTurnState(activePlayer = PlayerId.PLAYER_1)
 
-            val result = validateUnitSelection(u1, turnState)
+        val result = turnState.selectableUnits(gameState)
 
-            assertEquals(UnitSelectionResult.NOT_YOUR_UNIT, result)
-        }
-
-        @Test
-        fun `already moved unit is rejected`() {
-            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
-            val turnState = aTurnState(
-                activePlayer = PlayerId.PLAYER_1,
-                movedUnitIds = setOf(UnitId("u1")),
-            )
-
-            val result = validateUnitSelection(u1, turnState)
-
-            assertEquals(UnitSelectionResult.ALREADY_MOVED, result)
-        }
+        assertTrue(result.isEmpty())
     }
 }

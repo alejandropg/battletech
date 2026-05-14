@@ -10,5 +10,6 @@ public data class ImpulseSequence(
     val isComplete: Boolean get() = currentIndex >= order.size
     val current: Impulse get() = order[currentIndex]
     val activePlayer: PlayerId get() = current.player
+
     public fun advance(): ImpulseSequence = copy(currentIndex = currentIndex + 1)
 }

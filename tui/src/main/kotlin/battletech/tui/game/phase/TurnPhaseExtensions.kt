@@ -1,15 +1,6 @@
-package battletech.tui.game
+package battletech.tui.game.phase
 
 import battletech.tactical.action.TurnPhase
-import com.github.ajalt.mordant.input.InputEvent
-
-public sealed interface PhaseState {
-    public fun processEvent(
-        event: InputEvent,
-        appState: AppState,
-        phaseManager: PhaseManager,
-    ): HandleResult?
-}
 
 public val TurnPhase.isAttack: Boolean
     get() = this == TurnPhase.WEAPON_ATTACK || this == TurnPhase.PHYSICAL_ATTACK

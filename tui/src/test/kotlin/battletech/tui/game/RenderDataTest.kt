@@ -16,6 +16,8 @@ import battletech.tactical.movement.ReachableHex
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit
+import battletech.tui.game.phase.AttackPhase
+import battletech.tui.game.phase.MovementPhase
 import battletech.tui.hex.HexHighlight
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -66,10 +68,10 @@ internal class RenderDataTest {
     )
 
     @Nested
-    inner class IdlePhaseStateTest {
+    inner class SelectingUnitTest {
         @Test
-        fun `Idle produces empty render data`() {
-            val result = extractRenderData(IdlePhaseState)
+        fun `produces empty render data`() {
+            val result = MovementPhase.SelectingUnit.render(aGameState())
             assertEquals(RenderData.EMPTY, result)
         }
     }
@@ -78,14 +80,14 @@ internal class RenderDataTest {
     inner class BrowsingTest {
         @Test
         fun `browsing shows reachability highlights`() {
-            val state = MovementPhaseState.Browsing(
+            val phase = MovementPhase.Browsing(
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
                 hoveredDestination = null,
             )
 
-            val result = extractRenderData(state)
+            val result = phase.render(aGameState())
 
             assertEquals(HexHighlight.REACHABLE_WALK, result.hexHighlights[HexCoordinates(1, 0)])
             assertEquals(HexHighlight.REACHABLE_WALK, result.hexHighlights[HexCoordinates(2, 0)])
@@ -93,45 +95,44 @@ internal class RenderDataTest {
 
         @Test
         fun `browsing with hovered path shows path highlights`() {
-            val state = MovementPhaseState.Browsing(
+            val phase = MovementPhase.Browsing(
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
                 hoveredDestination = reachableHexes[1],
             )
 
-            val result = extractRenderData(state)
+            val result = phase.render(aGameState())
 
             assertEquals(HexHighlight.PATH, result.hexHighlights[HexCoordinates(0, 0)])
             assertEquals(HexHighlight.PATH, result.hexHighlights[HexCoordinates(1, 0)])
-            // Destination is NOT path-highlighted (reachability highlight instead)
             assertEquals(HexHighlight.REACHABLE_WALK, result.hexHighlights[HexCoordinates(2, 0)])
         }
 
         @Test
         fun `browsing with run mode shows run highlights`() {
-            val state = MovementPhaseState.Browsing(
+            val phase = MovementPhase.Browsing(
                 unitId = UnitId("u1"),
                 modes = listOf(runReachability),
                 currentModeIndex = 0,
                 hoveredDestination = null,
             )
 
-            val result = extractRenderData(state)
+            val result = phase.render(aGameState())
 
             assertEquals(HexHighlight.REACHABLE_RUN, result.hexHighlights[HexCoordinates(1, 0)])
         }
 
         @Test
         fun `browsing provides reachable facings`() {
-            val state = MovementPhaseState.Browsing(
+            val phase = MovementPhase.Browsing(
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
                 hoveredDestination = null,
             )
 
-            val result = extractRenderData(state)
+            val result = phase.render(aGameState())
 
             assertNotNull(result.reachableFacings[HexCoordinates(1, 0)])
             assertNull(result.facingSelection)
@@ -143,7 +144,7 @@ internal class RenderDataTest {
         @Test
         fun `selectingFacing includes facing selection data`() {
             val options = reachableHexes.filter { it.position == HexCoordinates(1, 0) }
-            val state = MovementPhaseState.SelectingFacing(
+            val phase = MovementPhase.SelectingFacing(
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
@@ -151,16 +152,17 @@ internal class RenderDataTest {
                 options = options,
             )
 
-            val result = extractRenderData(state)
+            val result = phase.render(aGameState())
 
-            assertNotNull(result.facingSelection)
-            assertEquals(HexCoordinates(1, 0), result.facingSelection!!.hex)
-            assertEquals(setOf(HexDirection.N), result.facingSelection!!.facings)
+            val fs = result.facingSelection
+            assertNotNull(fs)
+            assertEquals(HexCoordinates(1, 0), fs!!.hex)
+            assertEquals(setOf(HexDirection.N), fs.facings)
         }
 
         @Test
         fun `selectingFacing shows path highlights`() {
-            val state = MovementPhaseState.SelectingFacing(
+            val phase = MovementPhase.SelectingFacing(
                 unitId = UnitId("u1"),
                 modes = listOf(walkReachability),
                 currentModeIndex = 0,
@@ -168,22 +170,22 @@ internal class RenderDataTest {
                 options = reachableHexes,
             )
 
-            val result = extractRenderData(state)
+            val result = phase.render(aGameState())
 
             assertEquals(HexHighlight.PATH, result.hexHighlights[HexCoordinates(0, 0)])
         }
     }
 
     @Nested
-    inner class AttackPhaseStateTest {
+    inner class DeclaringTest {
 
-        private fun attackState(
+        private fun declaring(
             attacker: UnitId,
             torsoFacing: HexDirection = HexDirection.S,
             cursorTargetIndex: Int = 0,
-        ): AttackPhaseState = AttackPhaseState(
+        ): AttackPhase.Declaring = AttackPhase.Declaring(
+            attackTurnPhase = TurnPhase.WEAPON_ATTACK,
             unitId = attacker,
-            attackPhase = TurnPhase.WEAPON_ATTACK,
             torsoFacing = torsoFacing,
             cursorTargetIndex = cursorTargetIndex,
             cursorWeaponIndex = 0,
@@ -202,8 +204,8 @@ internal class RenderDataTest {
             val arc = fireArc(attacker, HexDirection.N, gameState)
             assertTrue(arc.isNotEmpty())
 
-            val state = attackState(attacker.id, torsoFacing = HexDirection.N)
-            val result = extractRenderData(state, gameState)
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.N)
+            val result = phase.render(gameState)
 
             for (coord in arc) {
                 assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[coord])
@@ -212,7 +214,6 @@ internal class RenderDataTest {
 
         @Test
         fun `attack with empty arc produces empty highlights`() {
-            // Single-hex map: attacker is the only hex; arc is empty (forwardArc excludes origin)
             val attacker = aUnit(
                 id = "u1", owner = PlayerId.PLAYER_1,
                 position = HexCoordinates(0, 0), facing = HexDirection.N,
@@ -224,8 +225,8 @@ internal class RenderDataTest {
             )
             assertTrue(fireArc(attacker, HexDirection.N, gameState).isEmpty())
 
-            val state = attackState(attacker.id, torsoFacing = HexDirection.N)
-            val result = extractRenderData(state, gameState)
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.N)
+            val result = phase.render(gameState)
 
             assertEquals(emptyMap<HexCoordinates, HexHighlight>(), result.hexHighlights)
         }
@@ -241,14 +242,12 @@ internal class RenderDataTest {
                 HexCoordinates(0, row) to Hex(HexCoordinates(0, row), Terrain.CLEAR)
             }
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = -1)
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = -1)
 
-            val result = extractRenderData(state, gameState)
+            val result = phase.render(gameState)
 
-            // Intervening hexes get LINE_OF_SIGHT (white)
             assertEquals(HexHighlight.LINE_OF_SIGHT, result.hexHighlights[HexCoordinates(0, 1)])
             assertEquals(HexHighlight.LINE_OF_SIGHT, result.hexHighlights[HexCoordinates(0, 2)])
-            // Target hex stays ATTACK_RANGE (gray)
             assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(0, 3)])
         }
 
@@ -263,11 +262,10 @@ internal class RenderDataTest {
                 HexCoordinates(0, row) to Hex(HexCoordinates(0, row), if (row == 3) Terrain.HEAVY_WOODS else Terrain.CLEAR)
             }
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = -1)
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = -1)
 
-            val result = extractRenderData(state, gameState)
+            val result = phase.render(gameState)
 
-            // No LoS — all arc hexes remain ATTACK_RANGE
             assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(0, 1)])
             assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(0, 2)])
             assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(0, 3)])
@@ -285,11 +283,10 @@ internal class RenderDataTest {
                 HexCoordinates(0, 1) to Hex(HexCoordinates(0, 1), Terrain.CLEAR),
             )
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = -1)
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = -1)
 
-            val result = extractRenderData(state, gameState)
+            val result = phase.render(gameState)
 
-            // No intervening hexes — target hex stays ATTACK_RANGE
             assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(0, 1)])
         }
 
@@ -304,9 +301,9 @@ internal class RenderDataTest {
                 HexCoordinates(0, row) to Hex(HexCoordinates(0, row), Terrain.CLEAR)
             }
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = 0)
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = 0)
 
-            val result = extractRenderData(state, gameState)
+            val result = phase.render(gameState)
 
             assertEquals(HexHighlight.LINE_OF_SIGHT_SELECTED, result.hexHighlights[HexCoordinates(0, 1)])
             assertEquals(HexHighlight.LINE_OF_SIGHT_SELECTED, result.hexHighlights[HexCoordinates(0, 2)])
@@ -330,13 +327,11 @@ internal class RenderDataTest {
             val selectedIdx = targets.indexOfFirst { it.unitId == selected.id }
             assertTrue(selectedIdx >= 0)
 
-            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = selectedIdx)
-            val result = extractRenderData(state, gameState)
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = selectedIdx)
+            val result = phase.render(gameState)
 
-            // Selected's line: (0,1), (0,2) → YELLOW
             assertEquals(HexHighlight.LINE_OF_SIGHT_SELECTED, result.hexHighlights[HexCoordinates(0, 1)])
             assertEquals(HexHighlight.LINE_OF_SIGHT_SELECTED, result.hexHighlights[HexCoordinates(0, 2)])
-            // otherFar's line: (1,0) → WHITE (intervening between (0,0) and (2,1))
             assertEquals(HexHighlight.LINE_OF_SIGHT, result.hexHighlights[HexCoordinates(1, 0)])
         }
 
@@ -351,11 +346,10 @@ internal class RenderDataTest {
                 HexCoordinates(0, row) to Hex(HexCoordinates(0, row), if (row == 3) Terrain.HEAVY_WOODS else Terrain.CLEAR)
             }
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = 0)
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = 0)
 
-            val result = extractRenderData(state, gameState)
+            val result = phase.render(gameState)
 
-            // No yellow — heavy woods blocks LoS
             assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(0, 1)])
             assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(0, 2)])
         }
@@ -371,12 +365,10 @@ internal class RenderDataTest {
                 HexCoordinates(0, row) to Hex(HexCoordinates(0, row), Terrain.CLEAR)
             }
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            // cursorTargetIndex = -1 → no target selected
-            val state = attackState(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = -1)
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = -1)
 
-            val result = extractRenderData(state, gameState)
+            val result = phase.render(gameState)
 
-            // No selected — white LoS drawn, but no yellow
             assertEquals(HexHighlight.LINE_OF_SIGHT, result.hexHighlights[HexCoordinates(0, 1)])
             assertEquals(HexHighlight.LINE_OF_SIGHT, result.hexHighlights[HexCoordinates(0, 2)])
         }
