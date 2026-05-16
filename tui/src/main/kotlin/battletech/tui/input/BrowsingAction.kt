@@ -9,5 +9,6 @@ public sealed interface BrowsingAction {
     public data object ConfirmPath : BrowsingAction
     public data class SelectFacing(val index: Int) : BrowsingAction
     public data object CycleMode : BrowsingAction
+    public data object CycleUnit : BrowsingAction
     public data object Cancel : BrowsingAction
 }

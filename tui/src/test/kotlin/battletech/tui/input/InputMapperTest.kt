@@ -116,6 +116,11 @@ internal class InputMapperTest {
         }
 
         @Test
+        fun `tab maps to CycleUnit`() {
+            assertEquals(BrowsingAction.CycleUnit, InputMapper.mapBrowsingEvent(key("Tab")))
+        }
+
+        @Test
         fun `number keys 1-6 map to SelectFacing`() {
             for (n in 1..6) {
                 assertEquals(BrowsingAction.SelectFacing(n), InputMapper.mapBrowsingEvent(key("$n")))
@@ -147,6 +152,11 @@ internal class InputMapperTest {
         @Test
         fun `escape maps to Cancel`() {
             assertEquals(FacingAction.Cancel, InputMapper.mapFacingEvent(key("Escape")))
+        }
+
+        @Test
+        fun `tab maps to CycleUnit`() {
+            assertEquals(FacingAction.CycleUnit, InputMapper.mapFacingEvent(key("Tab")))
         }
 
         @Test

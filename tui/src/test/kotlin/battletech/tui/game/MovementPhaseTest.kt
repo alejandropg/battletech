@@ -15,6 +15,7 @@ import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
+import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackPhase
@@ -385,6 +386,117 @@ internal class MovementPhaseTest {
             val browsing = result!!.app.phase as MovementPhase.Browsing
             assertNull(browsing.hoveredPath)
             assertNull(browsing.hoveredDestination)
+        }
+    }
+
+    @Nested
+    inner class CycleUnitFromBrowsingTest {
+        @Test
+        fun `Tab from Browsing advances to next selectable unit`() {
+            val services = createServices()
+            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0))
+            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2))
+            val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
+            val phase = enterBrowsing(u1, gameState, services)
+            val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
+
+            val result = phase.handle(KeyboardEvent("Tab"), state, services)
+
+            assertNotNull(result)
+            val browsing = result!!.app.phase as MovementPhase.Browsing
+            assertEquals(u2.id, browsing.unitId)
+        }
+
+        @Test
+        fun `Tab from Browsing moves cursor to next unit position`() {
+            val services = createServices()
+            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0))
+            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2))
+            val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
+            val phase = enterBrowsing(u1, gameState, services)
+            val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
+
+            val result = phase.handle(KeyboardEvent("Tab"), state, services)
+
+            assertEquals(HexCoordinates(2, 2), result!!.app.cursor)
+        }
+
+        @Test
+        fun `Tab from Browsing wraps from last unit back to first`() {
+            val services = createServices()
+            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0))
+            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2))
+            val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
+            val phase = enterBrowsing(u2, gameState, services)
+            val state = anAppState(phase = phase, cursor = HexCoordinates(2, 2), gameState = gameState)
+
+            val result = phase.handle(KeyboardEvent("Tab"), state, services)
+
+            assertNotNull(result)
+            val browsing = result!!.app.phase as MovementPhase.Browsing
+            assertEquals(u1.id, browsing.unitId)
+            assertEquals(HexCoordinates(0, 0), result.app.cursor)
+        }
+
+        @Test
+        fun `Tab from Browsing with one selectable unit re-enters fresh Browsing`() {
+            val services = createServices(includeRun = true)
+            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0))
+            val gameState = aGameState(units = listOf(u1))
+            val phase = enterBrowsing(u1, gameState, services).copy(
+                currentModeIndex = 1,
+                hoveredDestination = reachableHexes[0],
+            )
+            val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
+
+            val result = phase.handle(KeyboardEvent("Tab"), state, services)
+
+            assertNotNull(result)
+            val browsing = result!!.app.phase as MovementPhase.Browsing
+            assertEquals(u1.id, browsing.unitId)
+            assertEquals(0, browsing.currentModeIndex)
+            assertNull(browsing.hoveredDestination)
+        }
+
+        @Test
+        fun `Tab from Browsing does not commit any movement`() {
+            val services = createServices()
+            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0))
+            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2))
+            val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
+            val turnState = aTurnState()
+            val phase = enterBrowsing(u1, gameState, services)
+            val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState, turnState = turnState)
+
+            val result = phase.handle(KeyboardEvent("Tab"), state, services)
+
+            assertNotNull(result)
+            assertEquals(gameState, result!!.app.gameState)
+            assertEquals(turnState.movedUnitIds, result.app.turnState.movedUnitIds)
+        }
+
+        @Test
+        fun `Tab from SelectingFacing cycles to next unit and enters Browsing`() {
+            val services = createServices()
+            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0))
+            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2))
+            val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
+            val browsing = enterBrowsing(u1, gameState, services)
+            val facingPhase = MovementPhase.SelectingFacing(
+                unitId = browsing.unitId,
+                modes = browsing.modes,
+                currentModeIndex = browsing.currentModeIndex,
+                hex = HexCoordinates(1, 0),
+                options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
+            )
+            val state = anAppState(phase = facingPhase, cursor = HexCoordinates(1, 0), gameState = gameState)
+
+            val result = facingPhase.handle(KeyboardEvent("Tab"), state, services)
+
+            assertNotNull(result)
+            val nextBrowsing = result!!.app.phase as MovementPhase.Browsing
+            assertEquals(u2.id, nextBrowsing.unitId)
+            assertEquals(HexCoordinates(2, 2), result.app.cursor)
         }
     }
 

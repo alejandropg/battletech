@@ -29,6 +29,7 @@ public object InputMapper {
         "ArrowLeft" -> BrowsingAction.MoveCursor(HexDirection.NW)
         "Enter" -> BrowsingAction.ConfirmPath
         "Escape" -> BrowsingAction.Cancel
+        "Tab" -> BrowsingAction.CycleUnit
         "x" -> BrowsingAction.CycleMode
         in "1".."6" -> BrowsingAction.SelectFacing(event.key.toInt())
         else -> null
@@ -37,6 +38,7 @@ public object InputMapper {
     public fun mapFacingEvent(event: KeyboardEvent): FacingAction? = when (event.key) {
         in "1".."6" -> FacingAction.SelectFacing(event.key.toInt())
         "Escape" -> FacingAction.Cancel
+        "Tab" -> FacingAction.CycleUnit
         else -> null
     }
 

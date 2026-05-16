@@ -153,6 +153,8 @@ public sealed interface MovementPhase : Phase {
 
                 is BrowsingAction.CycleMode ->
                     Transition(updated.copy(phase = cycleMode()))
+
+                is BrowsingAction.CycleUnit -> cycleToNextUnit(app, unitId, svc)
             }
         }
 
@@ -241,6 +243,7 @@ public sealed interface MovementPhase : Phase {
             return when (action) {
                 is FacingAction.Cancel -> Transition(app.copy(phase = toBrowsing()))
                 is FacingAction.SelectFacing -> commitByFacing(app, action.index)
+                is FacingAction.CycleUnit -> cycleToNextUnit(app, unitId, svc)
             }
         }
 
@@ -289,6 +292,20 @@ internal fun enterBrowsing(
         currentModeIndex = 0,
         hoveredDestination = null,
     )
+}
+
+internal fun cycleToNextUnit(
+    app: AppState,
+    currentUnitId: UnitId,
+    svc: PhaseServices,
+): Transition {
+    val units = app.turnState.selectableUnits(app.gameState)
+    if (units.isEmpty()) return Transition(app)
+    val currentIdx = units.indexOfFirst { it.id == currentUnitId }
+    val nextIdx = if (currentIdx == -1) 0 else (currentIdx + 1) % units.size
+    val nextUnit = units[nextIdx]
+    val nextPhase = enterBrowsing(nextUnit, app.gameState, svc)
+    return Transition(app.copy(cursor = nextUnit.position, phase = nextPhase))
 }
 
 internal fun advanceAfterMove(app: AppState, newGameState: GameState, movedUnitId: UnitId): AppState {
