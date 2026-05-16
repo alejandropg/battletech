@@ -1,7 +1,7 @@
 package battletech.tui.game
 
 import battletech.tactical.action.Impulse
-import battletech.tactical.action.InitiativeResult
+import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
 import battletech.tactical.model.HexCoordinates
@@ -20,7 +20,7 @@ internal class UnitSelectionTest {
         ),
         movedUnitIds: Set<UnitId> = emptySet(),
     ) = TurnState(
-        initiativeResult = InitiativeResult(
+        initiative = Initiative(
             rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
             loser = PlayerId.PLAYER_1,
             winner = PlayerId.PLAYER_2,

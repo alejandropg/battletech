@@ -23,7 +23,7 @@ public data object InitiativePhase : Phase {
         )
 
         val turnState = TurnState(
-            initiativeResult = initiative,
+            initiative = initiative,
             movementSequence = ImpulseSequence(movementOrder),
         )
 

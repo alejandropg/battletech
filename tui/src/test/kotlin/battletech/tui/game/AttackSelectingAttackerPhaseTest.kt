@@ -2,7 +2,7 @@ package battletech.tui.game
 
 import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.Impulse
-import battletech.tactical.action.InitiativeResult
+import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
@@ -36,7 +36,7 @@ internal class AttackSelectingAttackerPhaseTest {
         ),
         currentAttackImpulseIndex: Int = 0,
     ) = TurnState(
-        initiativeResult = InitiativeResult(
+        initiative = Initiative(
             rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
             loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
         ),

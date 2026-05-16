@@ -2,14 +2,14 @@ package battletech.tui.game
 
 import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.Impulse
-import battletech.tactical.action.InitiativeResult
+import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
 import battletech.tactical.action.attack.AttackDeclaration
 import battletech.tactical.model.GameState
 
 public data class TurnState(
-    val initiativeResult: InitiativeResult,
+    val initiative: Initiative,
     val movementSequence: ImpulseSequence,
     val movedUnitIds: Set<UnitId> = emptySet(),
     val unitsMovedInCurrentImpulse: Int = 0,

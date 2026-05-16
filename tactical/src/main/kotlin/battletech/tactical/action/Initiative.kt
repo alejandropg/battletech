@@ -2,13 +2,13 @@ package battletech.tactical.action
 
 import kotlin.random.Random
 
-public data class InitiativeResult(
+public data class Initiative(
     val rolls: Map<PlayerId, Int>,
     val loser: PlayerId,
     val winner: PlayerId,
 )
 
-public fun rollInitiative(random: Random = Random): InitiativeResult {
+public fun rollInitiative(random: Random = Random): Initiative {
     while (true) {
         val roll1 = random.nextInt(1, 7) + random.nextInt(1, 7)
         val roll2 = random.nextInt(1, 7) + random.nextInt(1, 7)
@@ -18,7 +18,7 @@ public fun rollInitiative(random: Random = Random): InitiativeResult {
             } else {
                 PlayerId.PLAYER_2 to PlayerId.PLAYER_1
             }
-            return InitiativeResult(
+            return Initiative(
                 rolls = mapOf(PlayerId.PLAYER_1 to roll1, PlayerId.PLAYER_2 to roll2),
                 loser = loser,
                 winner = winner,

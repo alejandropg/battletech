@@ -301,7 +301,7 @@ internal fun advanceAfterMove(app: AppState, newGameState: GameState, movedUnitI
     return if (newTurnState.allImpulsesComplete) {
         val withAttack = newTurnState.copy(
             attackSequence = ImpulseSequence(
-                attackOrderFor(newTurnState.initiativeResult, newGameState),
+                attackOrderFor(newTurnState.initiative, newGameState),
             ),
         )
         app.copy(

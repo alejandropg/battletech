@@ -2,7 +2,7 @@ package battletech.tui.game.phase
 
 import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.Impulse
-import battletech.tactical.action.InitiativeResult
+import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
@@ -67,7 +67,7 @@ public sealed interface AttackPhase : Phase {
             val turnState = app.turnState ?: return null
             if (turnState.attackSequence.order.isNotEmpty()) return null
 
-            val seededSequence = ImpulseSequence(attackOrderFor(turnState.initiativeResult, app.gameState))
+            val seededSequence = ImpulseSequence(attackOrderFor(turnState.initiative, app.gameState))
             val seededTurnState = turnState.copy(
                 attackSequence = seededSequence,
                 attackImpulse = if (seededSequence.order.isNotEmpty()) {
@@ -317,7 +317,7 @@ public sealed interface AttackPhase : Phase {
     }
 }
 
-internal fun attackOrderFor(initiative: InitiativeResult, gameState: GameState): List<Impulse> {
+internal fun attackOrderFor(initiative: Initiative, gameState: GameState): List<Impulse> {
     val loser = initiative.loser
     val winner = initiative.winner
     return calculateAttackOrder(

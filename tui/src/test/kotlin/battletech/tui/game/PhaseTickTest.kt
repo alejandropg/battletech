@@ -156,7 +156,7 @@ internal class PhaseTickTest {
             val p2 = aUnit(id = "p2", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 0))
             val gameState = aGameState(units = listOf(p1, p2))
             val turnState = TurnState(
-                initiativeResult = battletech.tactical.action.InitiativeResult(
+                initiative = battletech.tactical.action.Initiative(
                     rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
                     loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
                 ),
@@ -181,7 +181,7 @@ internal class PhaseTickTest {
             val p1 = aUnit(id = "p1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
             val gameState = aGameState(units = listOf(p1))
             val turnState = TurnState(
-                initiativeResult = battletech.tactical.action.InitiativeResult(
+                initiative = battletech.tactical.action.Initiative(
                     rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
                     loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
                 ),
@@ -203,7 +203,7 @@ internal class PhaseTickTest {
             val p1 = aUnit(id = "p1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
             val gameState = aGameState(units = listOf(p1))
             val turnState = TurnState(
-                initiativeResult = battletech.tactical.action.InitiativeResult(
+                initiative = battletech.tactical.action.Initiative(
                     rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
                     loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
                 ),
@@ -228,7 +228,7 @@ internal class PhaseTickTest {
             val p1u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
             val gameState = aGameState(units = listOf(p1u1))
             val turnState = TurnState(
-                initiativeResult = battletech.tactical.action.InitiativeResult(
+                initiative = battletech.tactical.action.Initiative(
                     rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
                     loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
                 ),
@@ -254,7 +254,7 @@ internal class PhaseTickTest {
             val p1u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
             val gameState = aGameState(units = listOf(p1u1))
             val turnState = TurnState(
-                initiativeResult = battletech.tactical.action.InitiativeResult(
+                initiative = battletech.tactical.action.Initiative(
                     rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
                     loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
                 ),
