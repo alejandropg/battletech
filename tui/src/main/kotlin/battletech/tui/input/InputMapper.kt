@@ -11,35 +11,45 @@ public object InputMapper {
     public fun isQuit(event: KeyboardEvent): Boolean =
         event.key == "q" || (event.ctrl && event.key == "c")
 
-    public fun mapIdleEvent(event: KeyboardEvent): IdleAction? = when (event.key) {
-        "ArrowUp" -> IdleAction.MoveCursor(HexDirection.N)
-        "ArrowDown" -> IdleAction.MoveCursor(HexDirection.S)
-        "ArrowRight" -> IdleAction.MoveCursor(HexDirection.SE)
-        "ArrowLeft" -> IdleAction.MoveCursor(HexDirection.NW)
-        "Enter" -> IdleAction.SelectUnit
-        "Tab" -> IdleAction.CycleUnit
-        "c" -> IdleAction.CommitDeclarations
+    private fun arrowToDirection(key: String): HexDirection? = when (key) {
+        "ArrowUp" -> HexDirection.N
+        "ArrowDown" -> HexDirection.S
+        "ArrowRight" -> HexDirection.SE
+        "ArrowLeft" -> HexDirection.NW
         else -> null
     }
 
-    public fun mapBrowsingEvent(event: KeyboardEvent): BrowsingAction? = when (event.key) {
-        "ArrowUp" -> BrowsingAction.MoveCursor(HexDirection.N)
-        "ArrowDown" -> BrowsingAction.MoveCursor(HexDirection.S)
-        "ArrowRight" -> BrowsingAction.MoveCursor(HexDirection.SE)
-        "ArrowLeft" -> BrowsingAction.MoveCursor(HexDirection.NW)
-        "Enter" -> BrowsingAction.ConfirmPath
-        "Escape" -> BrowsingAction.Cancel
-        "Tab" -> BrowsingAction.CycleUnit
-        "x" -> BrowsingAction.CycleMode
-        in "1".."6" -> BrowsingAction.SelectFacing(event.key.toInt())
-        else -> null
+    private fun facingNumber(key: String): Int? =
+        key.singleOrNull()?.takeIf { it in '1'..'6' }?.digitToInt()
+
+    public fun mapIdleEvent(event: KeyboardEvent): IdleAction? =
+        arrowToDirection(event.key)?.let(IdleAction::MoveCursor)
+            ?: when (event.key) {
+                "Enter" -> IdleAction.SelectUnit
+                "Tab" -> IdleAction.CycleUnit
+                "c" -> IdleAction.CommitDeclarations
+                else -> null
+            }
+
+    public fun mapBrowsingEvent(event: KeyboardEvent): BrowsingAction? {
+        arrowToDirection(event.key)?.let { return BrowsingAction.MoveCursor(it) }
+        facingNumber(event.key)?.let { return BrowsingAction.SelectFacing(it) }
+        return when (event.key) {
+            "Enter" -> BrowsingAction.ConfirmPath
+            "Escape" -> BrowsingAction.Cancel
+            "Tab" -> BrowsingAction.CycleUnit
+            "x" -> BrowsingAction.CycleMode
+            else -> null
+        }
     }
 
-    public fun mapFacingEvent(event: KeyboardEvent): FacingAction? = when (event.key) {
-        in "1".."6" -> FacingAction.SelectFacing(event.key.toInt())
-        "Escape" -> FacingAction.Cancel
-        "Tab" -> FacingAction.CycleUnit
-        else -> null
+    public fun mapFacingEvent(event: KeyboardEvent): FacingAction? {
+        facingNumber(event.key)?.let { return FacingAction.SelectFacing(it) }
+        return when (event.key) {
+            "Escape" -> FacingAction.Cancel
+            "Tab" -> FacingAction.CycleUnit
+            else -> null
+        }
     }
 
     public fun mapAttackEvent(event: KeyboardEvent): AttackAction? = when (event.key) {
