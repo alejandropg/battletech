@@ -56,7 +56,7 @@ public sealed interface MovementPhase : Phase {
 
                 is IdleAction.ClickHex -> trySelect(app.copy(cursor = action.coords), svc)
                 is IdleAction.SelectUnit -> trySelect(app, svc)
-                is IdleAction.CycleUnit -> cycleUnit(app)
+                is IdleAction.CycleUnit -> cycleToNextUnit(app, app.gameState.unitAt(app.cursor)?.id, svc)
                 is IdleAction.CommitDeclarations -> Transition(app)
             }
         }
@@ -91,15 +91,6 @@ public sealed interface MovementPhase : Phase {
             return Transition(app.copy(phase = newPhase))
         }
 
-        private fun cycleUnit(app: AppState): Transition {
-            val turnState = app.turnState
-            val units = turnState.selectableUnits(app.gameState)
-            if (units.isEmpty()) return Transition(app)
-
-            val currentIdx = units.indexOfFirst { it.position == app.cursor }
-            val nextIdx = (currentIdx + 1) % units.size
-            return Transition(app.copy(cursor = units[nextIdx].position))
-        }
     }
 
     public data class Browsing(
@@ -296,7 +287,7 @@ internal fun enterBrowsing(
 
 internal fun cycleToNextUnit(
     app: AppState,
-    currentUnitId: UnitId,
+    currentUnitId: UnitId?,
     svc: PhaseServices,
 ): Transition {
     val units = app.turnState.selectableUnits(app.gameState)

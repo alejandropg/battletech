@@ -152,39 +152,58 @@ internal class MovementSelectingUnitPhaseTest {
     @Nested
     inner class CycleUnitTest {
         @Test
-        fun `cycles to next selectable unit`() {
-            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
-            val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(2, 2))
+        fun `cycles to next selectable unit and enters Browsing`() {
+            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0), walkingMP = 4)
+            val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(2, 2), walkingMP = 4)
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
-            val turnState = aTurnState()
-            val state = anAppState(
-                cursor = HexCoordinates(0, 0),
-                gameState = gameState,
-                turnState = turnState,
-            )
+            val state = anAppState(cursor = HexCoordinates(0, 0), gameState = gameState, turnState = aTurnState())
 
             val result = MovementPhase.SelectingUnit.handle(tabKey(), state, services)
 
             assertNotNull(result)
             assertEquals(HexCoordinates(2, 2), result!!.app.cursor)
+            val browsing = result.app.phase as MovementPhase.Browsing
+            assertEquals(u2.id, browsing.unitId)
         }
 
         @Test
-        fun `cycles back to first unit when at last`() {
-            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
-            val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(2, 2))
+        fun `cycles back to first unit when at last and enters Browsing`() {
+            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0), walkingMP = 4)
+            val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(2, 2), walkingMP = 4)
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
-            val turnState = aTurnState()
-            val state = anAppState(
-                cursor = HexCoordinates(2, 2),
-                gameState = gameState,
-                turnState = turnState,
-            )
+            val state = anAppState(cursor = HexCoordinates(2, 2), gameState = gameState, turnState = aTurnState())
 
             val result = MovementPhase.SelectingUnit.handle(tabKey(), state, services)
 
             assertNotNull(result)
             assertEquals(HexCoordinates(0, 0), result!!.app.cursor)
+            val browsing = result.app.phase as MovementPhase.Browsing
+            assertEquals(u1.id, browsing.unitId)
+        }
+
+        @Test
+        fun `Tab with cursor on empty hex auto-selects first selectable unit`() {
+            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(2, 2), walkingMP = 4)
+            val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(4, 4), walkingMP = 4)
+            val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 6, rows = 6))
+            val state = anAppState(cursor = HexCoordinates(0, 0), gameState = gameState, turnState = aTurnState())
+
+            val result = MovementPhase.SelectingUnit.handle(tabKey(), state, services)
+
+            assertNotNull(result)
+            assertEquals(HexCoordinates(2, 2), result!!.app.cursor)
+            val browsing = result.app.phase as MovementPhase.Browsing
+            assertEquals(u1.id, browsing.unitId)
+        }
+
+        @Test
+        fun `Tab with no selectable units is a no-op`() {
+            val state = anAppState(cursor = HexCoordinates(0, 0), gameState = aGameState(), turnState = aTurnState())
+
+            val result = MovementPhase.SelectingUnit.handle(tabKey(), state, services)
+
+            assertNotNull(result)
+            assertEquals(state, result!!.app)
         }
     }
 }
