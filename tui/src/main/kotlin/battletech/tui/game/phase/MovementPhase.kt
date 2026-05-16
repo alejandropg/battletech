@@ -116,7 +116,7 @@ public sealed interface MovementPhase : Phase {
         val hoveredPath: List<HexCoordinates>?
             get() = hoveredDestination?.path?.map { it.position }
 
-        public fun withCursorAt(cursor: HexCoordinates): Browsing {
+        private fun withCursorAt(cursor: HexCoordinates): Browsing {
             if (modes.isEmpty()) return this
             val cheapest = reachability.destinations
                 .filter { it.position == cursor }
@@ -124,7 +124,7 @@ public sealed interface MovementPhase : Phase {
             return copy(hoveredDestination = cheapest)
         }
 
-        public fun cycleMode(): Browsing {
+        private fun cycleMode(): Browsing {
             if (modes.isEmpty()) return this
             return copy(
                 currentModeIndex = (currentModeIndex + 1) % modes.size,
