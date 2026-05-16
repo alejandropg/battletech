@@ -50,7 +50,7 @@ internal class AttackSelectingAttackerPhaseTest {
     private fun anAppState(
         cursor: HexCoordinates = HexCoordinates(0, 0),
         gameState: battletech.tactical.model.GameState = aGameState(),
-        turnState: TurnState? = null,
+        turnState: TurnState = TurnState.NULL,
         attackTurnPhase: TurnPhase = TurnPhase.WEAPON_ATTACK,
     ) = AppState(
         gameState = gameState,
@@ -109,7 +109,7 @@ internal class AttackSelectingAttackerPhaseTest {
             val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), state, services)
 
             assertNotNull(result)
-            assertEquals(1, result!!.app.turnState!!.attackSequence.currentIndex)
+            assertEquals(1, result!!.app.turnState.attackSequence.currentIndex)
         }
 
         @Test
@@ -123,7 +123,7 @@ internal class AttackSelectingAttackerPhaseTest {
             val state = anAppState(turnState = turnState)
 
             val afterLoser = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), state, services)!!
-            assertEquals(PlayerId.PLAYER_2, afterLoser.app.turnState!!.activeAttackPlayer)
+            assertEquals(PlayerId.PLAYER_2, afterLoser.app.turnState.activeAttackPlayer)
             assertEquals(TurnPhase.WEAPON_ATTACK, afterLoser.app.currentPhase)
 
             val nextPhase = afterLoser.app.phase
@@ -133,7 +133,7 @@ internal class AttackSelectingAttackerPhaseTest {
 
         @Test
         fun `commit when no turn state does nothing`() {
-            val state = anAppState(turnState = null)
+            val state = anAppState()
             // No turn state — commit returns unchanged state
             val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), state, services)
             assertNotNull(result)

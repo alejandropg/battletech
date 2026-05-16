@@ -7,6 +7,7 @@ import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
+import battletech.tui.game.TurnState
 import battletech.tui.game.phase.InitiativePhase
 import battletech.tui.game.phase.PhaseServices
 import battletech.tui.input.InputMapper
@@ -39,6 +40,7 @@ public class TuiApp {
             gameState = GameStateFactory().sampleGameState(),
             cursor = HexCoordinates(0, 0),
             phase = InitiativePhase,
+            turnState = TurnState.NULL,
         )
 
         renderer.clear()

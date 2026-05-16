@@ -122,7 +122,7 @@ internal class AttackPhaseTest {
             val toB = toggled.handle(KeyboardEvent("Tab"), afterToggle.app, services)!!
 
             // Re-enter A
-            val reEntered = enterDeclaring(unitA, TurnPhase.WEAPON_ATTACK, toB.app.gameState, toB.app.turnState!!)
+            val reEntered = enterDeclaring(unitA, TurnPhase.WEAPON_ATTACK, toB.app.gameState, toB.app.turnState)
             assertTrue(reEntered.weaponAssignments.values.any { it.isNotEmpty() })
         }
 

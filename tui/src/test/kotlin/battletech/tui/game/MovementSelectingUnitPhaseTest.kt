@@ -52,7 +52,7 @@ internal class MovementSelectingUnitPhaseTest {
     private fun anAppState(
         cursor: HexCoordinates = HexCoordinates(0, 0),
         gameState: battletech.tactical.model.GameState = aGameState(),
-        turnState: TurnState? = null,
+        turnState: TurnState = TurnState.NULL,
     ): AppState {
         return AppState(
             gameState = gameState,

@@ -64,7 +64,7 @@ public sealed interface AttackPhase : Phase {
         }
 
         override fun tick(app: AppState, svc: PhaseServices): Transition? {
-            val turnState = app.turnState ?: return null
+            val turnState = app.turnState
             if (turnState.attackSequence.order.isNotEmpty()) return null
 
             val seededSequence = ImpulseSequence(attackOrderFor(turnState.initiative, app.gameState))
@@ -85,7 +85,7 @@ public sealed interface AttackPhase : Phase {
         }
 
         override fun prompt(app: AppState): String {
-            val turnState = app.turnState ?: return DEFAULT_IDLE_PROMPT
+            val turnState = app.turnState
             if (turnState.allAttackImpulsesComplete) return "All attacks declared"
             val playerName = if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
             return "$playerName: select units, toggle weapons | 'c' to commit"
@@ -94,14 +94,14 @@ public sealed interface AttackPhase : Phase {
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitAt(app.cursor)
 
         override fun activePlayerLabel(app: AppState): String? {
-            val turnState = app.turnState ?: return null
+            val turnState = app.turnState
             if (turnState.attackSequence.order.isEmpty() || turnState.allAttackImpulsesComplete) return null
             return if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
         }
 
         private fun trySelect(app: AppState): Transition {
             val unit = app.gameState.unitAt(app.cursor) ?: return Transition(app)
-            val turnState = app.turnState ?: return Transition(app)
+            val turnState = app.turnState
 
             if (unit.owner != turnState.activeAttackPlayer) {
                 return Transition(app, FlashMessage("Not your unit"))
@@ -113,7 +113,7 @@ public sealed interface AttackPhase : Phase {
 
         private fun cycleUnit(app: AppState): Transition {
             val turnState = app.turnState
-            val units = turnState?.selectableAttackUnits(app.gameState) ?: app.gameState.units
+            val units = turnState.selectableAttackUnits(app.gameState)
             if (units.isEmpty()) return Transition(app)
 
             val currentIdx = units.indexOfFirst { it.position == app.cursor }
@@ -186,13 +186,13 @@ public sealed interface AttackPhase : Phase {
         }
 
         override fun activePlayerLabel(app: AppState): String? {
-            val turnState = app.turnState ?: return null
+            val turnState = app.turnState
             if (turnState.allAttackImpulsesComplete) return null
             return if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
         }
 
         private fun nextAttacker(app: AppState): Transition {
-            val turn = app.turnState ?: return Transition(app.copy(phase = SelectingAttacker(attackTurnPhase)))
+            val turn = app.turnState
             val attackers = turn.selectableAttackUnits(app.gameState)
             if (attackers.isEmpty()) {
                 return Transition(app.copy(phase = SelectingAttacker(attackTurnPhase)))
@@ -205,7 +205,7 @@ public sealed interface AttackPhase : Phase {
         }
 
         private fun toggleWeapon(app: AppState): Transition {
-            val turnState = app.turnState ?: return Transition(app)
+            val turnState = app.turnState
             val attacker = app.gameState.unitById(unitId) ?: return Transition(app)
             val targets = targetInfos(attacker, torsoFacing, app.gameState)
             if (targets.isEmpty() || cursorTargetIndex >= targets.size) return Transition(app)
@@ -246,7 +246,7 @@ public sealed interface AttackPhase : Phase {
         }
 
         private fun twistTorso(app: AppState, clockwise: Boolean): Transition {
-            val turnState = app.turnState ?: return Transition(app)
+            val turnState = app.turnState
             val attacker = app.gameState.unitById(unitId) ?: return Transition(app)
             val legFacing = attacker.facing
             val newTorso = if (clockwise) torsoFacing.rotateClockwise() else torsoFacing.rotateCounterClockwise()
@@ -383,7 +383,7 @@ internal fun enterFirstAttacker(
     attackTurnPhase: TurnPhase,
     flash: FlashMessage? = null,
 ): Transition {
-    val turnState = app.turnState ?: return Transition(app, flash)
+    val turnState = app.turnState
     val units = turnState.selectableAttackUnits(app.gameState)
     return if (units.isEmpty()) {
         Transition(app.copy(phase = AttackPhase.SelectingAttacker(attackTurnPhase)), flash)
@@ -395,7 +395,7 @@ internal fun enterFirstAttacker(
 }
 
 internal fun commitAttackImpulse(app: AppState, attackTurnPhase: TurnPhase, svc: PhaseServices): Transition {
-    val turnState = app.turnState ?: return Transition(app)
+    val turnState = app.turnState
 
     val impulse = turnState.attackImpulse
     val torsoFacings: Map<UnitId, HexDirection> = impulse?.declarations?.values

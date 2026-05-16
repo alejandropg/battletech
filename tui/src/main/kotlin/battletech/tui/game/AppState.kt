@@ -11,7 +11,7 @@ public data class AppState(
     val gameState: GameState,
     val cursor: HexCoordinates,
     val phase: Phase,
-    val turnState: TurnState? = null,
+    val turnState: TurnState,
 ) {
     public val currentPhase: TurnPhase get() = phase.turnPhase
 }

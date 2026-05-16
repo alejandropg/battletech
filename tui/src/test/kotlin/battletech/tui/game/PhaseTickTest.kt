@@ -35,7 +35,7 @@ internal class PhaseTickTest {
         phase: battletech.tui.game.phase.Phase = InitiativePhase,
         cursor: HexCoordinates = HexCoordinates(0, 0),
         gameState: battletech.tactical.model.GameState = aGameState(),
-        turnState: TurnState? = null,
+        turnState: TurnState = TurnState.NULL,
     ) = AppState(
         gameState = gameState,
         cursor = cursor,
@@ -114,7 +114,7 @@ internal class PhaseTickTest {
             val p2 = aUnit(id = "p2", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 0))
             val gameState = aGameState(units = listOf(p1, p2))
             val initial = InitiativePhase.tick(anAppState(phase = InitiativePhase, gameState = gameState), services)
-            val movementTurnState = initial.app.turnState!!
+            val movementTurnState = initial.app.turnState
             val state = anAppState(
                 phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK),
                 gameState = gameState,
@@ -124,7 +124,7 @@ internal class PhaseTickTest {
             val transition = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).tick(state, services)
 
             assertNotNull(transition)
-            assert(transition!!.app.turnState!!.attackSequence.order.isNotEmpty())
+            assert(transition!!.app.turnState.attackSequence.order.isNotEmpty())
             assertEquals("Weapon Attack Phase", transition.flash!!.text)
         }
 
@@ -133,7 +133,7 @@ internal class PhaseTickTest {
             val p1 = aUnit(id = "p1", owner = PlayerId.PLAYER_1)
             val gameState = aGameState(units = listOf(p1))
             val initial = InitiativePhase.tick(anAppState(phase = InitiativePhase, gameState = gameState), services)
-            val turnState = initial.app.turnState!!.copy(
+            val turnState = initial.app.turnState.copy(
                 attackSequence = ImpulseSequence(
                     listOf(battletech.tactical.action.Impulse(PlayerId.PLAYER_1, 1)),
                 ),
@@ -172,7 +172,7 @@ internal class PhaseTickTest {
 
             val transition = battletech.tui.game.phase.commitAttackImpulse(state, TurnPhase.WEAPON_ATTACK, services)
 
-            assertEquals(PlayerId.PLAYER_2, transition.app.turnState!!.activeAttackPlayer)
+            assertEquals(PlayerId.PLAYER_2, transition.app.turnState.activeAttackPlayer)
             assertEquals(TurnPhase.WEAPON_ATTACK, transition.app.currentPhase)
         }
 
@@ -246,7 +246,7 @@ internal class PhaseTickTest {
             val newApp = battletech.tui.game.phase.advanceAfterMove(state, gameState, p1u1.id)
 
             assertEquals(TurnPhase.MOVEMENT, newApp.currentPhase)
-            assertEquals(PlayerId.PLAYER_2, newApp.turnState!!.activePlayer)
+            assertEquals(PlayerId.PLAYER_2, newApp.turnState.activePlayer)
         }
 
         @Test

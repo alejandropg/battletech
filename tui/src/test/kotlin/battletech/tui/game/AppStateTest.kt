@@ -21,6 +21,7 @@ internal class AppStateTest {
                 gameState = battletech.tui.aGameState(),
                 cursor = HexCoordinates(0, 0),
                 phase = InitiativePhase,
+                turnState = TurnState.NULL,
             )
             assertEquals(TurnPhase.INITIATIVE, app.currentPhase)
         }
@@ -31,6 +32,7 @@ internal class AppStateTest {
                 gameState = battletech.tui.aGameState(),
                 cursor = HexCoordinates(0, 0),
                 phase = MovementPhase.SelectingUnit,
+                turnState = TurnState.NULL,
             )
             assertEquals(TurnPhase.MOVEMENT, app.currentPhase)
         }

@@ -62,7 +62,7 @@ public sealed interface MovementPhase : Phase {
         }
 
         override fun prompt(app: AppState): String {
-            val turnState = app.turnState ?: return DEFAULT_IDLE_PROMPT
+            val turnState = app.turnState
             val playerName = if (turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
             val remaining = turnState.remainingInImpulse
             return "$playerName: select a unit to move ($remaining remaining)"
@@ -71,7 +71,7 @@ public sealed interface MovementPhase : Phase {
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitAt(app.cursor)
 
         override fun activePlayerLabel(app: AppState): String? {
-            val turnState = app.turnState ?: return null
+            val turnState = app.turnState
             if (turnState.allImpulsesComplete) return null
             return if (turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
         }
@@ -80,13 +80,11 @@ public sealed interface MovementPhase : Phase {
             val unit = app.gameState.unitAt(app.cursor) ?: return Transition(app)
             val turnState = app.turnState
 
-            if (turnState != null) {
-                if (unit.owner != turnState.activePlayer) {
-                    return Transition(app, FlashMessage("Not your unit"))
-                }
-                if (unit.id in turnState.movedUnitIds) {
-                    return Transition(app, FlashMessage("Already moved"))
-                }
+            if (unit.owner != turnState.activePlayer) {
+                return Transition(app, FlashMessage("Not your unit"))
+            }
+            if (unit.id in turnState.movedUnitIds) {
+                return Transition(app, FlashMessage("Already moved"))
             }
 
             val newPhase = enterBrowsing(unit, app.gameState, svc)
@@ -95,7 +93,7 @@ public sealed interface MovementPhase : Phase {
 
         private fun cycleUnit(app: AppState): Transition {
             val turnState = app.turnState
-            val units = turnState?.selectableUnits(app.gameState) ?: app.gameState.units
+            val units = turnState.selectableUnits(app.gameState)
             if (units.isEmpty()) return Transition(app)
 
             val currentIdx = units.indexOfFirst { it.position == app.cursor }
@@ -152,6 +150,7 @@ public sealed interface MovementPhase : Phase {
                 is BrowsingAction.SelectFacing -> selectFacing(updated, action.index)
                 is BrowsingAction.MoveCursor, is BrowsingAction.ClickHex ->
                     Transition(updated.copy(phase = withCursorAt(newCursor)))
+
                 is BrowsingAction.CycleMode ->
                     Transition(updated.copy(phase = cycleMode()))
             }
@@ -168,10 +167,10 @@ public sealed interface MovementPhase : Phase {
 
         override fun pathDestination(): HexCoordinates? = hoveredPath?.lastOrNull()
 
-        override fun movementMode(): MovementMode? = reachability.mode
+        override fun movementMode(): MovementMode = reachability.mode
 
         override fun activePlayerLabel(app: AppState): String? {
-            val turnState = app.turnState ?: return null
+            val turnState = app.turnState
             return if (turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
         }
 
@@ -257,10 +256,10 @@ public sealed interface MovementPhase : Phase {
 
         override fun pathDestination(): HexCoordinates? = path.lastOrNull()
 
-        override fun movementMode(): MovementMode? = reachability.mode
+        override fun movementMode(): MovementMode = reachability.mode
 
         override fun activePlayerLabel(app: AppState): String? {
-            val turnState = app.turnState ?: return null
+            val turnState = app.turnState
             return if (turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
         }
 
@@ -293,10 +292,7 @@ internal fun enterBrowsing(
 }
 
 internal fun advanceAfterMove(app: AppState, newGameState: GameState, movedUnitId: UnitId): AppState {
-    val turnState = app.turnState ?: return app.copy(
-        gameState = newGameState,
-        phase = MovementPhase.SelectingUnit,
-    )
+    val turnState = app.turnState
     val newTurnState = turnState.advanceAfterUnitMoved(movedUnitId)
     return if (newTurnState.allImpulsesComplete) {
         val withAttack = newTurnState.copy(

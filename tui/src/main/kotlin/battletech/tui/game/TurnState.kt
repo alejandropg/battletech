@@ -46,4 +46,11 @@ public data class TurnState(
 
     public fun selectableAttackUnits(gameState: GameState): List<CombatUnit> =
         gameState.unitsOf(activeAttackPlayer)
+
+    public companion object {
+        public val NULL: TurnState = TurnState(
+            Initiative(emptyMap(), PlayerId.PLAYER_1, PlayerId.PLAYER_2),
+            ImpulseSequence(emptyList()),
+        )
+    }
 }

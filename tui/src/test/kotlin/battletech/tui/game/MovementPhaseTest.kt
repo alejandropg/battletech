@@ -134,7 +134,7 @@ internal class MovementPhaseTest {
         phase: battletech.tui.game.phase.Phase,
         cursor: HexCoordinates = HexCoordinates(0, 0),
         gameState: battletech.tactical.model.GameState = aGameState(),
-        turnState: TurnState? = aTurnState(),
+        turnState: TurnState = aTurnState(),
     ) = AppState(gameState = gameState, cursor = cursor, phase = phase, turnState = turnState)
 
     @Nested
