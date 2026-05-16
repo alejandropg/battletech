@@ -58,7 +58,7 @@ internal class AttackPhaseTest {
         gameState: GameState,
         turnState: TurnState,
         cursor: HexCoordinates = HexCoordinates(0, 0),
-    ) = AppState(gameState = gameState, cursor = cursor, phase = phase, turnState = turnState)
+    ) = AppState(gameState, turnState, phase, cursor)
 
     @Nested
     inner class EnterDeclaringTest {

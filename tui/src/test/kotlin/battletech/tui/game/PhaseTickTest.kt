@@ -36,12 +36,7 @@ internal class PhaseTickTest {
         cursor: HexCoordinates = HexCoordinates(0, 0),
         gameState: battletech.tactical.model.GameState = aGameState(),
         turnState: TurnState = TurnState.NULL,
-    ) = AppState(
-        gameState = gameState,
-        cursor = cursor,
-        phase = phase,
-        turnState = turnState,
-    )
+    ) = AppState(gameState, turnState, phase, cursor)
 
     @Nested
     inner class InitiativePhaseTickTest {

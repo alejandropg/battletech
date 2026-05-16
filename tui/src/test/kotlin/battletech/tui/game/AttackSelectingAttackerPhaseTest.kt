@@ -52,12 +52,7 @@ internal class AttackSelectingAttackerPhaseTest {
         gameState: battletech.tactical.model.GameState = aGameState(),
         turnState: TurnState = TurnState.NULL,
         attackTurnPhase: TurnPhase = TurnPhase.WEAPON_ATTACK,
-    ) = AppState(
-        gameState = gameState,
-        cursor = cursor,
-        phase = AttackPhase.SelectingAttacker(attackTurnPhase),
-        turnState = turnState,
-    )
+    ) = AppState(gameState, turnState, AttackPhase.SelectingAttacker(attackTurnPhase), cursor)
 
     private fun enterKey(): KeyboardEvent = KeyboardEvent("Enter")
     private fun cKey(): KeyboardEvent = KeyboardEvent("c")

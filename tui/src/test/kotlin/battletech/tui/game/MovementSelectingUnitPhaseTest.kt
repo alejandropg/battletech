@@ -53,14 +53,7 @@ internal class MovementSelectingUnitPhaseTest {
         cursor: HexCoordinates = HexCoordinates(0, 0),
         gameState: battletech.tactical.model.GameState = aGameState(),
         turnState: TurnState = TurnState.NULL,
-    ): AppState {
-        return AppState(
-            gameState = gameState,
-            cursor = cursor,
-            phase = MovementPhase.SelectingUnit,
-            turnState = turnState,
-        )
-    }
+    ): AppState = AppState(gameState, turnState, MovementPhase.SelectingUnit, cursor)
 
     private fun enterKey(): KeyboardEvent = KeyboardEvent("Enter")
     private fun tabKey(): KeyboardEvent = KeyboardEvent("Tab")

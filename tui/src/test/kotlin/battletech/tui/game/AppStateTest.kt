@@ -18,10 +18,10 @@ internal class AppStateTest {
         @Test
         fun `currentPhase is derived from phase turnPhase`() {
             val app = AppState(
-                gameState = battletech.tui.aGameState(),
-                cursor = HexCoordinates(0, 0),
-                phase = InitiativePhase,
-                turnState = TurnState.NULL,
+                battletech.tui.aGameState(),
+                TurnState.NULL,
+                InitiativePhase,
+                HexCoordinates(0, 0)
             )
             assertEquals(TurnPhase.INITIATIVE, app.currentPhase)
         }
@@ -29,10 +29,10 @@ internal class AppStateTest {
         @Test
         fun `currentPhase reflects movement when in MovementPhase`() {
             val app = AppState(
-                gameState = battletech.tui.aGameState(),
-                cursor = HexCoordinates(0, 0),
-                phase = MovementPhase.SelectingUnit,
-                turnState = TurnState.NULL,
+                battletech.tui.aGameState(),
+                TurnState.NULL,
+                MovementPhase.SelectingUnit,
+                HexCoordinates(0, 0)
             )
             assertEquals(TurnPhase.MOVEMENT, app.currentPhase)
         }

@@ -37,10 +37,10 @@ public class TuiApp {
         )
 
         var appState = AppState(
-            gameState = GameStateFactory().sampleGameState(),
-            cursor = HexCoordinates(0, 0),
-            phase = InitiativePhase,
-            turnState = TurnState.NULL,
+            GameStateFactory().sampleGameState(),
+            TurnState.NULL,
+            InitiativePhase,
+            HexCoordinates(0, 0)
         )
 
         renderer.clear()

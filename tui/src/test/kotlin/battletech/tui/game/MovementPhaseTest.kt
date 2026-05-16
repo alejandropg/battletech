@@ -135,7 +135,7 @@ internal class MovementPhaseTest {
         cursor: HexCoordinates = HexCoordinates(0, 0),
         gameState: battletech.tactical.model.GameState = aGameState(),
         turnState: TurnState = aTurnState(),
-    ) = AppState(gameState = gameState, cursor = cursor, phase = phase, turnState = turnState)
+    ) = AppState(gameState, turnState, phase, cursor)
 
     @Nested
     inner class EnterBrowsingTest {
