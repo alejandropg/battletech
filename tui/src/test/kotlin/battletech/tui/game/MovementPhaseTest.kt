@@ -363,7 +363,7 @@ internal class MovementPhaseTest {
             val phase = enterBrowsing(unit, gameState, services)
             val state = anAppState(phase = phase, gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Tab"), state, services)
+            val result = phase.handle(KeyboardEvent("x"), state, services)
 
             val browsing = result!!.app.phase as MovementPhase.Browsing
             assertEquals(1, browsing.currentModeIndex)
@@ -380,7 +380,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Tab"), state, services)
+            val result = phase.handle(KeyboardEvent("x"), state, services)
 
             val browsing = result!!.app.phase as MovementPhase.Browsing
             assertNull(browsing.hoveredPath)

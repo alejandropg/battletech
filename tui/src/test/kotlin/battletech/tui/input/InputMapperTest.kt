@@ -111,8 +111,8 @@ internal class InputMapperTest {
         }
 
         @Test
-        fun `tab maps to CycleMode`() {
-            assertEquals(BrowsingAction.CycleMode, InputMapper.mapBrowsingEvent(key("Tab")))
+        fun `x maps to CycleMode`() {
+            assertEquals(BrowsingAction.CycleMode, InputMapper.mapBrowsingEvent(key("x")))
         }
 
         @Test
