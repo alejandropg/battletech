@@ -10,6 +10,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityMap
+import battletech.tactical.view.TargetInfo
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.hex.HexHighlight
 
@@ -24,9 +25,6 @@ public data class RenderData(
         public val EMPTY: RenderData = RenderData()
     }
 }
-
-internal fun resolveTargetPositions(targetIds: Set<UnitId>, gameState: GameState): Set<HexCoordinates> =
-    targetIds.mapNotNull { gameState.unitById(it)?.position }.toSet()
 
 internal fun losHighlights(
     attacker: CombatUnit,

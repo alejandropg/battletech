@@ -13,6 +13,7 @@ import battletech.tactical.model.Weapon
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
+import battletech.tactical.view.DefaultPlayerView
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit
@@ -201,7 +202,7 @@ internal class RenderDataTest {
                 weapons = listOf(mediumLaser()),
             )
             val gameState = aGameState(units = listOf(attacker), map = aGameMap(cols = 3, rows = 3))
-            val arc = fireArc(attacker, HexDirection.N, gameState)
+            val arc = DefaultPlayerView(attacker.owner, gameState).fireArc(attacker.id, HexDirection.N)
             assertTrue(arc.isNotEmpty())
 
             val phase = declaring(attacker.id, torsoFacing = HexDirection.N)
@@ -223,7 +224,7 @@ internal class RenderDataTest {
                 units = listOf(attacker),
                 map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0), Terrain.CLEAR))),
             )
-            assertTrue(fireArc(attacker, HexDirection.N, gameState).isEmpty())
+            assertTrue(DefaultPlayerView(attacker.owner, gameState).fireArc(attacker.id, HexDirection.N).isEmpty())
 
             val phase = declaring(attacker.id, torsoFacing = HexDirection.N)
             val result = phase.render(gameState)
@@ -323,7 +324,7 @@ internal class RenderDataTest {
             ).associateWith { Hex(it, Terrain.CLEAR) }
             val gameState = aGameState(units = listOf(attacker, selected, otherFar), map = GameMap(hexes))
 
-            val targets = targetInfos(attacker, HexDirection.S, gameState)
+            val targets = DefaultPlayerView(attacker.owner, gameState).targetInfos(attacker.id, HexDirection.S)
             val selectedIdx = targets.indexOfFirst { it.unitId == selected.id }
             assertTrue(selectedIdx >= 0)
 

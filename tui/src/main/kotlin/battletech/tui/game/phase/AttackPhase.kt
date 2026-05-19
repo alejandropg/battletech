@@ -11,21 +11,19 @@ import battletech.tactical.action.calculateAttackOrder
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.applyTorsoFacings
-import battletech.tui.game.AppState
-import battletech.tui.game.FlashMessage
 import battletech.tactical.session.ImpulseDeclarations
 import battletech.tactical.session.ImpulseSequence
-import battletech.tui.game.RenderData
-import battletech.tui.game.TargetInfo
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
-import battletech.tui.game.fireArc
+import battletech.tactical.view.DefaultPlayerView
+import battletech.tactical.view.PlayerView
+import battletech.tactical.view.TargetInfo
+import battletech.tui.game.AppState
+import battletech.tui.game.FlashMessage
+import battletech.tui.game.RenderData
 import battletech.tui.game.losHighlights
 import battletech.tui.game.moveCursor
-import battletech.tui.game.resolveTargetPositions
 import battletech.tui.game.selectedLosHighlights
-import battletech.tui.game.targetInfos
-import battletech.tui.game.validTargets
 import battletech.tui.hex.HexHighlight
 import battletech.tui.input.AttackAction
 import battletech.tui.input.IdleAction
@@ -156,12 +154,13 @@ public sealed interface AttackPhase : Phase {
 
         override fun render(gameState: GameState): RenderData {
             val attacker = gameState.unitById(unitId) ?: return RenderData.EMPTY
-            val arc = fireArc(attacker, torsoFacing, gameState)
-            val validIds = validTargets(attacker, torsoFacing, gameState)
-            val targets = targetInfos(attacker, torsoFacing, gameState)
+            val view: PlayerView = DefaultPlayerView(attacker.owner, gameState)
+            val arc = view.fireArc(unitId, torsoFacing)
+            val validIds = view.validTargets(unitId, torsoFacing)
+            val targets = view.targetInfos(unitId, torsoFacing)
             val arcHighlights = arc.associateWith { HexHighlight.ATTACK_RANGE }
             val torsoFacings = mapOf(attacker.position to torsoFacing)
-            val targetPositions = resolveTargetPositions(validIds, gameState)
+            val targetPositions = view.resolveTargetPositions(validIds)
             val los = losHighlights(attacker, validIds, gameState)
             val selectedLos = selectedLosHighlights(attacker, this, targets, gameState)
             return RenderData(
@@ -176,8 +175,9 @@ public sealed interface AttackPhase : Phase {
         override fun attackRender(gameState: GameState): AttackRender {
             val attacker = gameState.unitById(unitId)
                 ?: return AttackRender(emptyList(), weaponAssignments, primaryTargetId, cursorTargetIndex, cursorWeaponIndex)
+            val view = DefaultPlayerView(attacker.owner, gameState)
             return AttackRender(
-                targets = targetInfos(attacker, torsoFacing, gameState),
+                targets = view.targetInfos(unitId, torsoFacing),
                 weaponAssignments = weaponAssignments,
                 primaryTargetId = primaryTargetId,
                 cursorTargetIndex = cursorTargetIndex,
@@ -207,7 +207,8 @@ public sealed interface AttackPhase : Phase {
         private fun toggleWeapon(app: AppState): Transition {
             val turnState = app.turnState
             val attacker = app.gameState.unitById(unitId) ?: return Transition(app)
-            val targets = targetInfos(attacker, torsoFacing, app.gameState)
+            val view = DefaultPlayerView(attacker.owner, app.gameState)
+            val targets = view.targetInfos(unitId, torsoFacing)
             if (targets.isEmpty() || cursorTargetIndex >= targets.size) return Transition(app)
 
             val currentTarget = targets[cursorTargetIndex]
@@ -252,8 +253,9 @@ public sealed interface AttackPhase : Phase {
             val newTorso = if (clockwise) torsoFacing.rotateClockwise() else torsoFacing.rotateCounterClockwise()
             if (legFacing.turnCostTo(newTorso) > 1) return Transition(app)
 
-            val newTargetIds = validTargets(attacker, newTorso, app.gameState)
-            val newTargets = targetInfos(attacker, newTorso, app.gameState)
+            val view = DefaultPlayerView(attacker.owner, app.gameState)
+            val newTargetIds = view.validTargets(unitId, newTorso)
+            val newTargets = view.targetInfos(unitId, newTorso)
 
             val newAssignments = weaponAssignments.filterKeys { it in newTargetIds }
             val newPrimary = if (primaryTargetId in newTargetIds) primaryTargetId else null
@@ -279,7 +281,8 @@ public sealed interface AttackPhase : Phase {
 
         private fun navigateWeapons(delta: Int, gameState: GameState): Declaring {
             val attacker = gameState.unitById(unitId) ?: return this
-            val targets = targetInfos(attacker, torsoFacing, gameState)
+            val view = DefaultPlayerView(attacker.owner, gameState)
+            val targets = view.targetInfos(unitId, torsoFacing)
             if (targets.isEmpty()) return this
 
             data class Entry(val targetIdx: Int, val weaponIdx: Int)
@@ -304,9 +307,10 @@ public sealed interface AttackPhase : Phase {
         private fun clickTarget(app: AppState): Transition {
             val attacker = app.gameState.unitById(unitId) ?: return Transition(app)
             val targetUnit = app.gameState.unitAt(app.cursor)
-            val validIds = validTargets(attacker, torsoFacing, app.gameState)
+            val view = DefaultPlayerView(attacker.owner, app.gameState)
+            val validIds = view.validTargets(unitId, torsoFacing)
             if (targetUnit == null || targetUnit.id !in validIds) return Transition(app)
-            val targets = targetInfos(attacker, torsoFacing, app.gameState)
+            val targets = view.targetInfos(unitId, torsoFacing)
             val idx = targets.indexOfFirst { it.unitId == targetUnit.id }
             return if (idx >= 0) {
                 Transition(app.copy(phase = copy(cursorTargetIndex = idx, cursorWeaponIndex = 0)))
@@ -336,7 +340,8 @@ internal fun enterDeclaring(
 ): AttackPhase.Declaring {
     val existingDecl = turnState.attackImpulse?.declarations?.get(unit.id)
     val torsoFacing = existingDecl?.torsoFacing ?: unit.torsoFacing
-    val targets = targetInfos(unit, torsoFacing, gameState)
+    val view = DefaultPlayerView(unit.owner, gameState)
+    val targets = view.targetInfos(unit.id, torsoFacing)
 
     val (weaponAssignments, primaryTargetId) = if (existingDecl != null && existingDecl.torsoFacing == torsoFacing) {
         existingDecl.weaponAssignments to existingDecl.primaryTargetId

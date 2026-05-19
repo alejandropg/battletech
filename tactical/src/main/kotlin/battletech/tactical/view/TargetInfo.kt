@@ -1,4 +1,4 @@
-package battletech.tui.game
+package battletech.tactical.view
 
 import battletech.tactical.action.UnitId
 

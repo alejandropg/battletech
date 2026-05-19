@@ -1,4 +1,4 @@
-package battletech.tui.game
+package battletech.tactical.view
 
 public data class WeaponTargetInfo(
     val weaponIndex: Int,

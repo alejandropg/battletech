@@ -14,6 +14,7 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.Weapon
+import battletech.tactical.view.DefaultPlayerView
 import battletech.tui.aGameMap
 import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackPhase
@@ -93,7 +94,7 @@ internal class AttackPhaseTest {
 
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, gameState, baseTurnState())
 
-            assertTrue(validTargets(unit, phase.torsoFacing, gameState).isEmpty())
+            assertTrue(DefaultPlayerView(unit.owner, gameState).validTargets(unit.id, phase.torsoFacing).isEmpty())
         }
     }
 
@@ -273,7 +274,7 @@ internal class AttackPhaseTest {
             val gameState = GameState(listOf(unit, enemy1, enemy2), map5x5)
             val turnState = baseTurnState()
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, gameState, turnState)
-            val targets = targetInfos(unit, phase.torsoFacing, gameState)
+            val targets = DefaultPlayerView(unit.owner, gameState).targetInfos(unit.id, phase.torsoFacing)
             val enemy1Idx = targets.indexOfFirst { it.unitId == enemy1.id }
             assertTrue(enemy1Idx >= 0)
 

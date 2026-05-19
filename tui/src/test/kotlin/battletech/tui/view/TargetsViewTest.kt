@@ -1,8 +1,8 @@
 package battletech.tui.view
 
 import battletech.tactical.action.UnitId
-import battletech.tui.game.TargetInfo
-import battletech.tui.game.WeaponTargetInfo
+import battletech.tactical.view.TargetInfo
+import battletech.tactical.view.WeaponTargetInfo
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertTrue

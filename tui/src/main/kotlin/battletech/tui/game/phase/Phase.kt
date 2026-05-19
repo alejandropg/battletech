@@ -9,7 +9,7 @@ import battletech.tactical.model.MovementMode
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.RenderData
-import battletech.tui.game.TargetInfo
+import battletech.tactical.view.TargetInfo
 import com.github.ajalt.mordant.input.InputEvent
 
 public sealed interface Phase {

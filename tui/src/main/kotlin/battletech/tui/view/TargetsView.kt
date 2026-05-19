@@ -1,7 +1,7 @@
 package battletech.tui.view
 
 import battletech.tactical.action.UnitId
-import battletech.tui.game.TargetInfo
+import battletech.tactical.view.TargetInfo
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
