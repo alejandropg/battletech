@@ -4,10 +4,10 @@ import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.calculateMovementOrder
 import battletech.tactical.action.rollInitiative
-import battletech.tui.game.AppState
-import battletech.tui.game.FlashMessage
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.TurnState
+import battletech.tui.game.AppState
+import battletech.tui.game.FlashMessage
 
 public data object InitiativePhase : Phase {
     override val turnPhase: TurnPhase = TurnPhase.INITIATIVE
@@ -22,10 +22,12 @@ public data object InitiativePhase : Phase {
             winner = initiative.winner, winnerUnitCount = winnerCount,
         )
 
-        val turnState = TurnState(
+        val newTurnState = TurnState(
             initiative = initiative,
             movementSequence = ImpulseSequence(movementOrder),
         )
+        @Suppress("DEPRECATION")
+        app.session.applyMutation { g, _ -> g to newTurnState }
 
         val p1Roll = initiative.rolls[PlayerId.PLAYER_1]!!
         val p2Roll = initiative.rolls[PlayerId.PLAYER_2]!!
@@ -33,7 +35,7 @@ public data object InitiativePhase : Phase {
         val flash = FlashMessage("Initiative: P1 rolled $p1Roll, P2 rolled $p2Roll — $loserName moves first")
 
         return Transition(
-            app = app.copy(turnState = turnState, phase = MovementPhase.SelectingUnit),
+            app = app.copy(phase = MovementPhase.SelectingUnit),
             flash = flash,
         )
     }

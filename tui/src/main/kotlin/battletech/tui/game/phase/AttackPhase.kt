@@ -6,11 +6,12 @@ import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
-import battletech.tactical.action.attack.resolveAttacks
 import battletech.tactical.action.calculateAttackOrder
+import battletech.tactical.command.CommandResult
+import battletech.tactical.command.CommitAttackImpulse
+import battletech.tactical.event.AttacksResolved
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.applyTorsoFacings
 import battletech.tactical.session.ImpulseDeclarations
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.TurnState
@@ -66,20 +67,19 @@ public sealed interface AttackPhase : Phase {
             if (turnState.attackSequence.order.isNotEmpty()) return null
 
             val seededSequence = ImpulseSequence(attackOrderFor(turnState.initiative, app.gameState))
-            val seededTurnState = turnState.copy(
-                attackSequence = seededSequence,
-                attackImpulse = if (seededSequence.order.isNotEmpty()) {
-                    ImpulseDeclarations(seededSequence.activePlayer)
-                } else null,
-            )
+            @Suppress("DEPRECATION")
+            app.session.applyMutation { g, t ->
+                g to t.copy(
+                    attackSequence = seededSequence,
+                    attackImpulse = if (seededSequence.order.isNotEmpty()) {
+                        ImpulseDeclarations(seededSequence.activePlayer)
+                    } else null,
+                )
+            }
             val flashText =
                 if (attackTurnPhase == TurnPhase.WEAPON_ATTACK) "Weapon Attack Phase" else "Physical Attack Phase"
 
-            return enterFirstAttacker(
-                app.copy(turnState = seededTurnState),
-                attackTurnPhase,
-                FlashMessage(flashText),
-            )
+            return enterFirstAttacker(app, attackTurnPhase, FlashMessage(flashText))
         }
 
         override fun prompt(app: AppState): String {
@@ -242,8 +242,8 @@ public sealed interface AttackPhase : Phase {
             }
 
             val newState = copy(weaponAssignments = newAssignments, primaryTargetId = newPrimaryTargetId)
-            val newTurnState = persistDeclaration(newState, turnState)
-            return Transition(app.copy(phase = newState, turnState = newTurnState))
+            persistDeclaration(newState, app)
+            return Transition(app.copy(phase = newState))
         }
 
         private fun twistTorso(app: AppState, clockwise: Boolean): Transition {
@@ -275,8 +275,8 @@ public sealed interface AttackPhase : Phase {
                 weaponAssignments = newAssignments,
                 primaryTargetId = newPrimary,
             )
-            val newTurnState = persistDeclaration(newState, turnState)
-            return Transition(app.copy(phase = newState, turnState = newTurnState))
+            persistDeclaration(newState, app)
+            return Transition(app.copy(phase = newState))
         }
 
         private fun navigateWeapons(delta: Int, gameState: GameState): Declaring {
@@ -371,15 +371,16 @@ private fun firstCursorPosition(targets: List<TargetInfo>): Pair<Int, Int> {
     return 0 to 0
 }
 
-private fun persistDeclaration(declaring: AttackPhase.Declaring, turnState: TurnState): TurnState {
-    val impulse = turnState.attackImpulse ?: return turnState
+private fun persistDeclaration(declaring: AttackPhase.Declaring, app: AppState) {
+    val impulse = app.turnState.attackImpulse ?: return
     val decl = UnitDeclaration(
         unitId = declaring.unitId,
         torsoFacing = declaring.torsoFacing,
         primaryTargetId = declaring.primaryTargetId,
         weaponAssignments = declaring.weaponAssignments,
     )
-    return turnState.copy(attackImpulse = impulse.withDeclaration(decl))
+    @Suppress("DEPRECATION")
+    app.session.applyMutation { g, t -> g to t.copy(attackImpulse = impulse.withDeclaration(decl)) }
 }
 
 /** Enter Declaring on the first available attacker, or stay in SelectingAttacker if none. */
@@ -401,70 +402,54 @@ internal fun enterFirstAttacker(
 
 internal fun commitAttackImpulse(app: AppState, attackTurnPhase: TurnPhase, svc: PhaseServices): Transition {
     val turnState = app.turnState
+    // Guard: commit pressed before the attack sequence has been seeded (e.g.
+    // empty TurnState.NULL). Treat as a no-op so the keypress isn't an error.
+    if (turnState.attackSequence.order.isEmpty()) return Transition(app)
 
     val impulse = turnState.attackImpulse
     val torsoFacings: Map<UnitId, HexDirection> = impulse?.declarations?.values
         ?.associate { it.unitId to it.torsoFacing }
         ?: emptyMap()
     val newDeclarations = impulse?.toAttackDeclarations().orEmpty()
-    val afterCommit = turnState.copy(
-        attackDeclarations = turnState.attackDeclarations + newDeclarations,
-        attackImpulse = null,
-        attackSequence = turnState.attackSequence.advance(),
+    val activePlayer = turnState.activeAttackPlayer
+    val isWeapon = attackTurnPhase == TurnPhase.WEAPON_ATTACK
+
+    val result = app.session.submitCommand(
+        CommitAttackImpulse(
+            playerId = activePlayer,
+            isWeaponPhase = isWeapon,
+            declarations = newDeclarations,
+            torsoFacings = torsoFacings,
+        ),
     )
-    val gameStateWithTorso = app.gameState.applyTorsoFacings(torsoFacings)
+    val events = (result as? CommandResult.Accepted)?.events.orEmpty()
+
+    // After the command, session.turnState reflects: declarations accumulated
+    // (or cleared on final-weapon resolution), attackImpulse=null, sequence advanced.
+    val afterCommit = app.turnState
 
     return if (afterCommit.allAttackImpulsesComplete) {
-        if (attackTurnPhase == TurnPhase.WEAPON_ATTACK) {
-            resolveWeaponAttacksAndAdvance(app, gameStateWithTorso, afterCommit, svc)
+        if (isWeapon) {
+            val resolved = events.filterIsInstance<AttacksResolved>().firstOrNull()
+            val flash = resolved?.let {
+                val hitCount = it.results.count { r -> r.hit }
+                val totalDamage = it.results.sumOf { r -> r.damageApplied }
+                FlashMessage("Attacks resolved: ${it.results.size} attacks, $hitCount hits, $totalDamage damage")
+            }
+            // Clear the now-complete weapon sequence so the PHYSICAL tick re-seeds.
+            @Suppress("DEPRECATION")
+            app.session.applyMutation { g, t ->
+                g to t.copy(attackSequence = ImpulseSequence(emptyList()), attackImpulse = null)
+            }
+            Transition(app.copy(phase = AttackPhase.SelectingAttacker(TurnPhase.PHYSICAL_ATTACK)), flash)
         } else {
-            val nextTurnState = afterCommit.copy(attackDeclarations = emptyList())
-            Transition(
-                app.copy(
-                    gameState = gameStateWithTorso,
-                    phase = HeatPhase,
-                    turnState = nextTurnState,
-                ),
-            )
+            Transition(app.copy(phase = HeatPhase))
         }
     } else {
-        val withNewImpulse = afterCommit.copy(
-            attackImpulse = ImpulseDeclarations(afterCommit.activeAttackPlayer),
-        )
-        enterFirstAttacker(
-            app.copy(gameState = gameStateWithTorso, turnState = withNewImpulse),
-            attackTurnPhase,
-        )
+        @Suppress("DEPRECATION")
+        app.session.applyMutation { g, t ->
+            g to t.copy(attackImpulse = ImpulseDeclarations(t.activeAttackPlayer))
+        }
+        enterFirstAttacker(app, attackTurnPhase)
     }
-}
-
-private fun resolveWeaponAttacksAndAdvance(
-    app: AppState,
-    gameStateWithTorso: GameState,
-    afterCommit: TurnState,
-    svc: PhaseServices,
-): Transition {
-    val declarations = afterCommit.attackDeclarations
-    val (resolvedGameState, flash) = if (declarations.isNotEmpty()) {
-        val (resolved, results) = resolveAttacks(declarations, gameStateWithTorso, svc.roller)
-        val hitCount = results.count { it.hit }
-        val totalDamage = results.sumOf { it.damageApplied }
-        resolved to FlashMessage("Attacks resolved: ${results.size} attacks, $hitCount hits, $totalDamage damage")
-    } else {
-        gameStateWithTorso to null
-    }
-
-    val physicalTurnState = afterCommit.copy(
-        attackDeclarations = emptyList(),
-        attackSequence = ImpulseSequence(emptyList()),
-        attackImpulse = null,
-    )
-    return Transition(
-        app.copy(
-            gameState = resolvedGameState,
-            phase = AttackPhase.SelectingAttacker(TurnPhase.PHYSICAL_ATTACK),
-            turnState = physicalTurnState,
-        ),
-        flash,
-    )
 }

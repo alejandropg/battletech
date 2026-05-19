@@ -13,13 +13,15 @@ public data object HeatPhase : Phase {
 
     override fun tick(app: AppState, svc: PhaseServices): Transition {
         val oldUnits = app.gameState.units
-        val newGameState = app.gameState.applyHeatDissipation()
-        val details = oldUnits.zip(newGameState.units)
+        @Suppress("DEPRECATION")
+        app.session.applyMutation { g, t -> g.applyHeatDissipation() to t }
+        val newUnits = app.gameState.units
+        val details = oldUnits.zip(newUnits)
             .filter { (old, _) -> old.currentHeat > 0 }
             .joinToString(", ") { (old, new) -> "${old.name}: ${old.currentHeat}→${new.currentHeat}" }
             .ifEmpty { "No heat to dissipate" }
         return Transition(
-            app.copy(gameState = newGameState, phase = EndPhase),
+            app.copy(phase = EndPhase),
             FlashMessage("Heat: $details"),
         )
     }

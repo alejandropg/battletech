@@ -197,8 +197,16 @@ public sealed interface MovementPhase : Phase {
         }
 
         private fun commitMove(app: AppState, destination: ReachableHex): Transition {
-            val newGameState = app.gameState.moveUnit(unitId, destination)
-            return Transition(advanceAfterMove(app, newGameState, unitId))
+            val unit = app.gameState.unitById(unitId) ?: return Transition(app)
+            app.session.submitCommand(
+                battletech.tactical.command.MoveUnit(
+                    playerId = unit.owner,
+                    unitId = unitId,
+                    destination = destination,
+                    mode = reachability.mode,
+                ),
+            )
+            return Transition(advanceAfterMove(app))
         }
     }
 
@@ -261,8 +269,16 @@ public sealed interface MovementPhase : Phase {
             val direction = FACING_ORDER.getOrNull(index - 1) ?: return Transition(app.copy(phase = this))
             val destination = options.find { it.facing == direction }
                 ?: return Transition(app.copy(phase = this))
-            val newGameState = app.gameState.moveUnit(unitId, destination)
-            return Transition(advanceAfterMove(app, newGameState, unitId))
+            val unit = app.gameState.unitById(unitId) ?: return Transition(app)
+            app.session.submitCommand(
+                battletech.tactical.command.MoveUnit(
+                    playerId = unit.owner,
+                    unitId = unitId,
+                    destination = destination,
+                    mode = reachability.mode,
+                ),
+            )
+            return Transition(advanceAfterMove(app))
         }
     }
 }
@@ -299,26 +315,20 @@ internal fun cycleToNextUnit(
     return Transition(app.copy(cursor = nextUnit.position, phase = nextPhase))
 }
 
-internal fun advanceAfterMove(app: AppState, newGameState: GameState, movedUnitId: UnitId): AppState {
+internal fun advanceAfterMove(app: AppState): AppState {
+    // The MoveUnit command has already mutated session.gameState / session.turnState
+    // (including advanceAfterUnitMoved). The TUI only decides the next phase.
     val turnState = app.turnState
-    val newTurnState = turnState.advanceAfterUnitMoved(movedUnitId)
-    return if (newTurnState.allImpulsesComplete) {
-        val withAttack = newTurnState.copy(
-            attackSequence = ImpulseSequence(
-                attackOrderFor(newTurnState.initiative, newGameState),
-            ),
-        )
-        app.copy(
-            gameState = newGameState,
-            phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK),
-            turnState = withAttack,
-        )
+    return if (turnState.allImpulsesComplete) {
+        @Suppress("DEPRECATION")
+        app.session.applyMutation { g, t ->
+            g to t.copy(
+                attackSequence = ImpulseSequence(attackOrderFor(t.initiative, g)),
+            )
+        }
+        app.copy(phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK))
     } else {
-        app.copy(
-            gameState = newGameState,
-            phase = MovementPhase.SelectingUnit,
-            turnState = newTurnState,
-        )
+        app.copy(phase = MovementPhase.SelectingUnit)
     }
 }
 

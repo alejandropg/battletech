@@ -240,8 +240,12 @@ internal class PhaseTickTest {
                 gameState = gameState,
                 turnState = turnState,
             )
+            // Simulate the MoveUnit command having applied: advance the turn
+            // state for the moved unit before invoking advanceAfterMove.
+            @Suppress("DEPRECATION")
+            state.session.applyMutation { g, t -> g to t.advanceAfterUnitMoved(p1u1.id) }
 
-            val newApp = battletech.tui.game.phase.advanceAfterMove(state, gameState, p1u1.id)
+            val newApp = battletech.tui.game.phase.advanceAfterMove(state)
 
             assertEquals(TurnPhase.MOVEMENT, newApp.currentPhase)
             assertEquals(PlayerId.PLAYER_2, newApp.turnState.activePlayer)
@@ -265,8 +269,10 @@ internal class PhaseTickTest {
                 gameState = gameState,
                 turnState = turnState,
             )
+            @Suppress("DEPRECATION")
+            state.session.applyMutation { g, t -> g to t.advanceAfterUnitMoved(p1u1.id) }
 
-            val newApp = battletech.tui.game.phase.advanceAfterMove(state, gameState, p1u1.id)
+            val newApp = battletech.tui.game.phase.advanceAfterMove(state)
 
             assertInstanceOf(AttackPhase.SelectingAttacker::class.java, newApp.phase)
             assertEquals(TurnPhase.WEAPON_ATTACK, newApp.currentPhase)

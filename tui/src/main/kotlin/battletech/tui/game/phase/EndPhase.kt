@@ -12,9 +12,10 @@ public data object EndPhase : Phase {
     override fun handle(event: InputEvent, app: AppState, svc: PhaseServices): Transition? = null
 
     override fun tick(app: AppState, svc: PhaseServices): Transition {
-        val resetGameState = app.gameState.resetTorsoFacings()
+        @Suppress("DEPRECATION")
+        app.session.applyMutation { g, t -> g.resetTorsoFacings() to t }
         return Transition(
-            app.copy(gameState = resetGameState, phase = InitiativePhase),
+            app.copy(phase = InitiativePhase),
             FlashMessage("Turn complete"),
         )
     }
