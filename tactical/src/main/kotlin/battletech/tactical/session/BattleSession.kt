@@ -51,6 +51,8 @@ public class BattleSession(
     private var _needsOnEntry: Boolean = initialNeedsOnEntry
     private var _matchOver: Boolean = false
 
+    private val listeners: MutableMap<PlayerId, MutableList<(GameEvent) -> Unit>> = mutableMapOf()
+
     public val gameState: GameState get() = _gameState
     public val turnState: TurnState get() = _turnState
     public val currentPhase: battletech.tactical.action.TurnPhase
@@ -60,6 +62,27 @@ public class BattleSession(
     public val isMatchOver: Boolean get() = _matchOver
 
     public fun viewFor(playerId: PlayerId): PlayerView = DefaultPlayerView(playerId, _gameState)
+
+    /**
+     * Register [listener] to receive events emitted by this session,
+     * scoped to [playerId]'s view. Each event is run through
+     * [EventVisibility.filterFor] before delivery; the listener never
+     * sees a raw event the player isn't entitled to.
+     *
+     * Returns a [Subscription] whose [Subscription.unsubscribe] detaches
+     * the listener. Listeners are invoked synchronously on the thread
+     * that called [submitCommand] / [advance]; long-running work should
+     * be deferred to another thread by the listener.
+     */
+    public fun subscribe(playerId: PlayerId, listener: (GameEvent) -> Unit): Subscription {
+        val perPlayer = listeners.getOrPut(playerId) { mutableListOf() }
+        perPlayer += listener
+        return object : Subscription {
+            override fun unsubscribe() {
+                perPlayer.remove(listener)
+            }
+        }
+    }
 
     public fun submitCommand(command: GameCommand): CommandResult {
         if (_matchOver) return CommandResult.Rejected(CommandRejection.MatchOver)
@@ -75,6 +98,7 @@ public class BattleSession(
         _turnState = outcome.turn
         val events = outcome.events.toMutableList()
         events.addAll(cascade())
+        dispatch(events)
         return CommandResult.Accepted(events)
     }
 
@@ -92,7 +116,21 @@ public class BattleSession(
             events.addAll(fireOnEntry())
         }
         events.addAll(cascade())
+        dispatch(events)
         return events
+    }
+
+    private fun dispatch(events: List<GameEvent>) {
+        if (listeners.isEmpty() || events.isEmpty()) return
+        // Iterate over a snapshot so listeners that unsubscribe themselves
+        // mid-dispatch don't trip a ConcurrentModificationException.
+        val snapshot = listeners.mapValues { (_, list) -> list.toList() }
+        for ((playerId, perPlayer) in snapshot) {
+            for (event in events) {
+                val visible = EventVisibility.filterFor(playerId, event) ?: continue
+                for (listener in perPlayer) listener(visible)
+            }
+        }
     }
 
     private fun cascade(): List<GameEvent> {

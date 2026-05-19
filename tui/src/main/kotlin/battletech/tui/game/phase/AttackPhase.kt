@@ -394,28 +394,17 @@ internal fun commitAttackImpulse(
         }
     }
 
-    val result = app.session.submitCommand(
+    app.session.submitCommand(
         CommitAttackImpulse(
             playerId = activePlayer,
             declarations = declarations,
             torsoFacings = torsoFacings,
         ),
     )
-    val events = (result as? battletech.tactical.command.CommandResult.Accepted)?.events.orEmpty()
-
-    val flash = events
-        .filterIsInstance<battletech.tactical.event.AttacksResolved>()
-        .firstOrNull()
-        ?.let { resolved ->
-            val hitCount = resolved.results.count { r -> r.hit }
-            val totalDamage = resolved.results.sumOf { r -> r.damageApplied }
-            FlashMessage("Attacks resolved: ${resolved.results.size} attacks, $hitCount hits, $totalDamage damage")
-        }
-
-    return Transition(
-        app.copy(phase = mapToTuiPhase(app.session.currentPhase)),
-        flash,
-    )
+    // Flashes for domain events (AttacksResolved, PhaseChanged, etc.)
+    // are produced by the subscription channel in TuiApp; we only re-sync
+    // the TUI phase to whatever phase the cascade settled at.
+    return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)))
 }
 
 private fun playerView(player: PlayerId, gameState: GameState): PlayerView =

@@ -1,6 +1,7 @@
 package battletech.tui
 
 import battletech.tactical.action.PlayerId
+import battletech.tactical.action.TurnPhase
 import battletech.tactical.event.AttacksResolved
 import battletech.tactical.event.GameEvent
 import battletech.tactical.event.HeatDissipated
@@ -9,7 +10,6 @@ import battletech.tactical.event.PhaseChanged
 import battletech.tactical.event.TurnEnded
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
-import battletech.tactical.action.TurnPhase
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.TurnState
 import battletech.tui.game.AppState
@@ -39,14 +39,24 @@ public class TuiApp {
             initialGameState = GameStateFactory().sampleGameState(),
             initialTurnState = TurnState.NULL,
         )
-        // Kickstart: cascades INITIATIVE → MOVEMENT (and through any other
-        // system phases) so the first frame already shows a player phase.
-        val initialFlashes = session.advance().mapNotNull(::eventToFlash)
+
+        // Domain events flow through the subscription seam. In hot-seat
+        // play we subscribe the active player's listener to a flash queue;
+        // the other player's subscription is wired but inert so the
+        // multi-subscriber path is exercised at runtime. A future remote
+        // client uses the exact same seam.
+        val capturedEvents = mutableListOf<GameEvent>()
+        session.subscribe(PlayerId.PLAYER_1) { capturedEvents += it }
+        session.subscribe(PlayerId.PLAYER_2) { /* second hot-seat view: presently no-op */ }
+
+        // Kickstart cascades INITIATIVE → MOVEMENT; the subscription
+        // captures the cascade events.
+        session.advance()
         var appState = AppState(
             session = session,
             phase = mapToTuiPhase(session.currentPhase),
             cursor = HexCoordinates(0, 0),
-            pendingFlashes = initialFlashes,
+            pendingFlashes = drainFlashes(capturedEvents),
         )
 
         renderer.clear()
@@ -62,7 +72,6 @@ public class TuiApp {
                         val head = appState.pendingFlashes.first()
                         appState = appState.copy(pendingFlashes = appState.pendingFlashes.drop(1))
                         renderFrame(currentSize, renderer, appState, head)
-                        // Block on input briefly so the user sees the flash.
                         val event = rawMode.readEvent()
                         if (event is KeyboardEvent && InputMapper.isQuit(event)) break
                         continue
@@ -75,16 +84,26 @@ public class TuiApp {
 
                     val transition = appState.phase.handle(event, appState) ?: continue
 
-                    appState = transition.app
-                    if (transition.flash != null) {
-                        renderFrame(currentSize, renderer, appState, transition.flash)
-                        continue
-                    }
+                    // Append domain flashes (from subscription) and the
+                    // UI-internal flash (from Transition) to the queue,
+                    // in that order — domain first so phase rejections
+                    // ("Not your unit") show last.
+                    val newFlashes = drainFlashes(capturedEvents) +
+                        listOfNotNull(transition.flash)
+                    appState = transition.app.copy(
+                        pendingFlashes = transition.app.pendingFlashes + newFlashes,
+                    )
                 }
             }
         } finally {
             renderer.cleanup()
         }
+    }
+
+    private fun drainFlashes(events: MutableList<GameEvent>): List<FlashMessage> {
+        val flashes = events.mapNotNull(::eventToFlash)
+        events.clear()
+        return flashes
     }
 
     private fun currentSize(terminal: Terminal): Size {
