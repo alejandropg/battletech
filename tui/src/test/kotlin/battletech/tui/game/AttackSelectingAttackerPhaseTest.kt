@@ -1,20 +1,15 @@
 package battletech.tui.game
 
-import battletech.tactical.session.ImpulseDeclarations
-import battletech.tactical.session.ImpulseSequence
-import battletech.tactical.session.TurnState
-import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.Impulse
 import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
-import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.session.ImpulseSequence
+import battletech.tactical.session.TurnState
 import battletech.tui.aGameState
 import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackPhase
-import battletech.tui.game.phase.PhaseServices
 import com.github.ajalt.mordant.input.KeyboardEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -24,13 +19,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 internal class AttackSelectingAttackerPhaseTest {
-
-    private val services = PhaseServices(
-        actionQueryService = ActionQueryService(
-            MoveActionDefinition(),
-            listOf(FireWeaponActionDefinition()),
-        ),
-    )
 
     private fun aTurnState(
         attackOrder: List<Impulse> = listOf(
@@ -45,9 +33,6 @@ internal class AttackSelectingAttackerPhaseTest {
         ),
         movementSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
         attackSequence = ImpulseSequence(attackOrder, currentAttackImpulseIndex),
-        attackImpulse = ImpulseDeclarations(
-            attackOrder.getOrNull(currentAttackImpulseIndex)?.player ?: PlayerId.PLAYER_1,
-        ),
     )
 
     private fun anAppState(
@@ -73,7 +58,7 @@ internal class AttackSelectingAttackerPhaseTest {
                 turnState = turnState,
             )
 
-            val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(enterKey(), state, services)
+            val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(enterKey(), state)
 
             assertNotNull(result)
             assertInstanceOf(AttackPhase.Declaring::class.java, result!!.app.phase)
@@ -90,7 +75,7 @@ internal class AttackSelectingAttackerPhaseTest {
                 turnState = turnState,
             )
 
-            val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(enterKey(), state, services)
+            val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(enterKey(), state)
 
             assertNotNull(result)
             assertEquals("Not your unit", result!!.flash?.text)
@@ -104,7 +89,7 @@ internal class AttackSelectingAttackerPhaseTest {
             val turnState = aTurnState()
             val state = anAppState(turnState = turnState)
 
-            val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), state, services)
+            val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), state)
 
             assertNotNull(result)
             assertEquals(1, result!!.app.turnState.attackSequence.currentIndex)
@@ -120,12 +105,12 @@ internal class AttackSelectingAttackerPhaseTest {
             )
             val state = anAppState(turnState = turnState)
 
-            val afterLoser = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), state, services)!!
+            val afterLoser = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), state)!!
             assertEquals(PlayerId.PLAYER_2, afterLoser.app.turnState.activeAttackPlayer)
             assertEquals(TurnPhase.WEAPON_ATTACK, afterLoser.app.currentPhase)
 
             val nextPhase = afterLoser.app.phase
-            val afterWinner = nextPhase.handle(cKey(), afterLoser.app, services)!!
+            val afterWinner = nextPhase.handle(cKey(), afterLoser.app)!!
             assertEquals(TurnPhase.PHYSICAL_ATTACK, afterWinner.app.currentPhase)
         }
 
@@ -133,7 +118,7 @@ internal class AttackSelectingAttackerPhaseTest {
         fun `commit when no turn state does nothing`() {
             val state = anAppState()
             // No turn state — commit returns unchanged state
-            val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), state, services)
+            val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), state)
             assertNotNull(result)
             assertNull(result!!.flash)
         }

@@ -1,20 +1,16 @@
 package battletech.tui.game
 
-import battletech.tactical.session.ImpulseSequence
-import battletech.tactical.session.TurnState
-import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.Impulse
 import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
-import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
-import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.session.ImpulseSequence
+import battletech.tactical.session.TurnState
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit
 import battletech.tui.game.phase.MovementPhase
-import battletech.tui.game.phase.PhaseServices
 import com.github.ajalt.mordant.input.KeyboardEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -24,13 +20,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 internal class MovementSelectingUnitPhaseTest {
-
-    private val services = PhaseServices(
-        actionQueryService = ActionQueryService(
-            MoveActionDefinition(),
-            listOf(FireWeaponActionDefinition()),
-        ),
-    )
 
     private fun aTurnState(
         movementOrder: List<Impulse> = listOf(
@@ -68,7 +57,7 @@ internal class MovementSelectingUnitPhaseTest {
             val map = aGameMap(cols = 5, rows = 5)
             val state = anAppState(cursor = HexCoordinates(2, 2), gameState = aGameState(map = map))
 
-            val result = MovementPhase.SelectingUnit.handle(arrowUp(), state, services)
+            val result = MovementPhase.SelectingUnit.handle(arrowUp(), state)
 
             assertNotNull(result)
             assertEquals(HexCoordinates(2, 1), result!!.app.cursor)
@@ -89,7 +78,7 @@ internal class MovementSelectingUnitPhaseTest {
                 turnState = turnState,
             )
 
-            val result = MovementPhase.SelectingUnit.handle(enterKey(), state, services)
+            val result = MovementPhase.SelectingUnit.handle(enterKey(), state)
 
             assertNotNull(result)
             assertEquals("Not your unit", result!!.flash?.text)
@@ -106,7 +95,7 @@ internal class MovementSelectingUnitPhaseTest {
                 turnState = turnState,
             )
 
-            val result = MovementPhase.SelectingUnit.handle(enterKey(), state, services)
+            val result = MovementPhase.SelectingUnit.handle(enterKey(), state)
 
             assertNotNull(result)
             assertEquals("Already moved", result!!.flash?.text)
@@ -127,7 +116,7 @@ internal class MovementSelectingUnitPhaseTest {
                 turnState = turnState,
             )
 
-            val result = MovementPhase.SelectingUnit.handle(enterKey(), state, services)
+            val result = MovementPhase.SelectingUnit.handle(enterKey(), state)
 
             assertNotNull(result)
             assertInstanceOf(MovementPhase.Browsing::class.java, result!!.app.phase)
@@ -143,7 +132,7 @@ internal class MovementSelectingUnitPhaseTest {
                 turnState = aTurnState(),
             )
 
-            val result = MovementPhase.SelectingUnit.handle(enterKey(), state, services)
+            val result = MovementPhase.SelectingUnit.handle(enterKey(), state)
 
             assertNotNull(result)
             assertEquals(state, result!!.app)
@@ -160,7 +149,7 @@ internal class MovementSelectingUnitPhaseTest {
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
             val state = anAppState(cursor = HexCoordinates(0, 0), gameState = gameState, turnState = aTurnState())
 
-            val result = MovementPhase.SelectingUnit.handle(tabKey(), state, services)
+            val result = MovementPhase.SelectingUnit.handle(tabKey(), state)
 
             assertNotNull(result)
             assertEquals(HexCoordinates(2, 2), result!!.app.cursor)
@@ -175,7 +164,7 @@ internal class MovementSelectingUnitPhaseTest {
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
             val state = anAppState(cursor = HexCoordinates(2, 2), gameState = gameState, turnState = aTurnState())
 
-            val result = MovementPhase.SelectingUnit.handle(tabKey(), state, services)
+            val result = MovementPhase.SelectingUnit.handle(tabKey(), state)
 
             assertNotNull(result)
             assertEquals(HexCoordinates(0, 0), result!!.app.cursor)
@@ -190,7 +179,7 @@ internal class MovementSelectingUnitPhaseTest {
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 6, rows = 6))
             val state = anAppState(cursor = HexCoordinates(0, 0), gameState = gameState, turnState = aTurnState())
 
-            val result = MovementPhase.SelectingUnit.handle(tabKey(), state, services)
+            val result = MovementPhase.SelectingUnit.handle(tabKey(), state)
 
             assertNotNull(result)
             assertEquals(HexCoordinates(2, 2), result!!.app.cursor)
@@ -202,7 +191,7 @@ internal class MovementSelectingUnitPhaseTest {
         fun `Tab with no selectable units is a no-op`() {
             val state = anAppState(cursor = HexCoordinates(0, 0), gameState = aGameState(), turnState = aTurnState())
 
-            val result = MovementPhase.SelectingUnit.handle(tabKey(), state, services)
+            val result = MovementPhase.SelectingUnit.handle(tabKey(), state)
 
             assertNotNull(result)
             assertEquals(state, result!!.app)

@@ -1,28 +1,21 @@
 package battletech.tui.game.phase
 
 import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.Impulse
-import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
-import battletech.tactical.action.calculateAttackOrder
-import battletech.tactical.command.CommandResult
+import battletech.tactical.action.attack.AttackDeclaration
 import battletech.tactical.command.CommitAttackImpulse
-import battletech.tactical.event.AttacksResolved
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexDirection
-import battletech.tactical.session.ImpulseDeclarations
-import battletech.tactical.session.ImpulseSequence
-import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
-import battletech.tactical.view.DefaultPlayerView
 import battletech.tactical.view.PlayerView
 import battletech.tactical.view.TargetInfo
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.RenderData
 import battletech.tui.game.losHighlights
+import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.moveCursor
 import battletech.tui.game.selectedLosHighlights
 import battletech.tui.hex.HexHighlight
@@ -38,11 +31,21 @@ internal const val DECLARING_PROMPT =
 
 public sealed interface AttackPhase : Phase {
     public val attackTurnPhase: TurnPhase
+
+    /**
+     * In-progress declarations for units other than the one currently being
+     * edited (if any). On Tab/Cancel/Commit we fold the current Declaring's
+     * state into [drafts] and read it back when re-entering the same unit.
+     */
+    public val drafts: Map<UnitId, UnitDeclaration>
     override val turnPhase: TurnPhase get() = attackTurnPhase
 
-    public data class SelectingAttacker(override val attackTurnPhase: TurnPhase) : AttackPhase {
+    public data class SelectingAttacker(
+        override val attackTurnPhase: TurnPhase,
+        override val drafts: Map<UnitId, UnitDeclaration> = emptyMap(),
+    ) : AttackPhase {
 
-        override fun handle(event: InputEvent, app: AppState, svc: PhaseServices): Transition? {
+        override fun handle(event: InputEvent, app: AppState): Transition? {
             val action = when (event) {
                 is KeyboardEvent -> InputMapper.mapIdleEvent(event)
                 is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
@@ -58,22 +61,8 @@ public sealed interface AttackPhase : Phase {
                 is IdleAction.ClickHex -> trySelect(app.copy(cursor = action.coords))
                 is IdleAction.SelectUnit -> trySelect(app)
                 is IdleAction.CycleUnit -> cycleUnit(app)
-                is IdleAction.CommitDeclarations -> commitAttackImpulse(app, attackTurnPhase, svc)
+                is IdleAction.CommitDeclarations -> commitAttackImpulse(app, attackTurnPhase, drafts)
             }
-        }
-
-        override fun tick(app: AppState, svc: PhaseServices): Transition? {
-            // If the attack sequence is already seeded, nothing to do.
-            if (app.turnState.attackSequence.order.isNotEmpty()) return null
-
-            // Drive one phase step: the attack handler's onEntry seeds the
-            // sequence and the first impulse holder.
-            app.session.advance()
-            if (app.turnState.attackSequence.order.isEmpty()) return null
-
-            val flashText =
-                if (attackTurnPhase == TurnPhase.WEAPON_ATTACK) "Weapon Attack Phase" else "Physical Attack Phase"
-            return enterFirstAttacker(app, attackTurnPhase, FlashMessage(flashText))
         }
 
         override fun prompt(app: AppState): String {
@@ -99,7 +88,7 @@ public sealed interface AttackPhase : Phase {
                 return Transition(app, FlashMessage("Not your unit"))
             }
 
-            val newPhase = enterDeclaring(unit, attackTurnPhase, app.gameState, turnState)
+            val newPhase = enterDeclaring(unit, attackTurnPhase, app.viewFor(unit.owner), drafts)
             return Transition(app.copy(phase = newPhase))
         }
 
@@ -122,9 +111,22 @@ public sealed interface AttackPhase : Phase {
         val cursorWeaponIndex: Int,
         val weaponAssignments: Map<UnitId, Set<Int>>,
         val primaryTargetId: UnitId?,
+        override val drafts: Map<UnitId, UnitDeclaration> = emptyMap(),
     ) : AttackPhase {
 
-        override fun handle(event: InputEvent, app: AppState, svc: PhaseServices): Transition? {
+        /** Snapshot of this unit's current draft as a [UnitDeclaration]. */
+        public fun currentDeclaration(): UnitDeclaration = UnitDeclaration(
+            unitId = unitId,
+            torsoFacing = torsoFacing,
+            primaryTargetId = primaryTargetId,
+            weaponAssignments = weaponAssignments,
+        )
+
+        /** Drafts for ALL units including the one currently being edited. */
+        public fun allDrafts(): Map<UnitId, UnitDeclaration> =
+            drafts + (unitId to currentDeclaration())
+
+        override fun handle(event: InputEvent, app: AppState): Transition? {
             val action = when (event) {
                 is KeyboardEvent -> InputMapper.mapAttackEvent(event)
                 is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
@@ -133,8 +135,10 @@ public sealed interface AttackPhase : Phase {
 
             return when (action) {
                 is AttackAction.NextAttacker -> nextAttacker(app)
-                is AttackAction.Commit -> commitAttackImpulse(app, attackTurnPhase, svc)
-                is AttackAction.Cancel -> Transition(app.copy(phase = SelectingAttacker(attackTurnPhase)))
+                is AttackAction.Commit -> commitAttackImpulse(app, attackTurnPhase, allDrafts())
+                is AttackAction.Cancel -> Transition(
+                    app.copy(phase = SelectingAttacker(attackTurnPhase, allDrafts())),
+                )
                 is AttackAction.ToggleWeapon -> toggleWeapon(app)
                 is AttackAction.TwistTorso -> twistTorso(app, action.clockwise)
                 is AttackAction.NavigateWeapons ->
@@ -148,7 +152,7 @@ public sealed interface AttackPhase : Phase {
 
         override fun render(gameState: GameState): RenderData {
             val attacker = gameState.unitById(unitId) ?: return RenderData.EMPTY
-            val view: PlayerView = DefaultPlayerView(attacker.owner, gameState)
+            val view: PlayerView = playerView(attacker.owner, gameState)
             val arc = view.fireArc(unitId, torsoFacing)
             val validIds = view.validTargets(unitId, torsoFacing)
             val targets = view.targetInfos(unitId, torsoFacing)
@@ -169,7 +173,7 @@ public sealed interface AttackPhase : Phase {
         override fun attackRender(gameState: GameState): AttackRender {
             val attacker = gameState.unitById(unitId)
                 ?: return AttackRender(emptyList(), weaponAssignments, primaryTargetId, cursorTargetIndex, cursorWeaponIndex)
-            val view = DefaultPlayerView(attacker.owner, gameState)
+            val view = playerView(attacker.owner, gameState)
             return AttackRender(
                 targets = view.targetInfos(unitId, torsoFacing),
                 weaponAssignments = weaponAssignments,
@@ -188,20 +192,20 @@ public sealed interface AttackPhase : Phase {
         private fun nextAttacker(app: AppState): Transition {
             val turn = app.turnState
             val attackers = turn.selectableAttackUnits(app.gameState)
+            val savedDrafts = allDrafts()
             if (attackers.isEmpty()) {
-                return Transition(app.copy(phase = SelectingAttacker(attackTurnPhase)))
+                return Transition(app.copy(phase = SelectingAttacker(attackTurnPhase, savedDrafts)))
             }
             val currentIdx = attackers.indexOfFirst { it.id == unitId }.coerceAtLeast(0)
             val nextIdx = (currentIdx + 1) % attackers.size
             val nextUnit = attackers[nextIdx]
-            val newPhase = enterDeclaring(nextUnit, attackTurnPhase, app.gameState, turn)
+            val newPhase = enterDeclaring(nextUnit, attackTurnPhase, app.viewFor(nextUnit.owner), savedDrafts)
             return Transition(app.copy(phase = newPhase, cursor = nextUnit.position))
         }
 
         private fun toggleWeapon(app: AppState): Transition {
-            val turnState = app.turnState
             val attacker = app.gameState.unitById(unitId) ?: return Transition(app)
-            val view = DefaultPlayerView(attacker.owner, app.gameState)
+            val view = playerView(attacker.owner, app.gameState)
             val targets = view.targetInfos(unitId, torsoFacing)
             if (targets.isEmpty() || cursorTargetIndex >= targets.size) return Transition(app)
 
@@ -235,19 +239,20 @@ public sealed interface AttackPhase : Phase {
                 else -> primaryTargetId
             }
 
-            val newState = copy(weaponAssignments = newAssignments, primaryTargetId = newPrimaryTargetId)
-            persistDeclaration(newState, app)
-            return Transition(app.copy(phase = newState))
+            return Transition(
+                app.copy(
+                    phase = copy(weaponAssignments = newAssignments, primaryTargetId = newPrimaryTargetId),
+                ),
+            )
         }
 
         private fun twistTorso(app: AppState, clockwise: Boolean): Transition {
-            val turnState = app.turnState
             val attacker = app.gameState.unitById(unitId) ?: return Transition(app)
             val legFacing = attacker.facing
             val newTorso = if (clockwise) torsoFacing.rotateClockwise() else torsoFacing.rotateCounterClockwise()
             if (legFacing.turnCostTo(newTorso) > 1) return Transition(app)
 
-            val view = DefaultPlayerView(attacker.owner, app.gameState)
+            val view = playerView(attacker.owner, app.gameState)
             val newTargetIds = view.validTargets(unitId, newTorso)
             val newTargets = view.targetInfos(unitId, newTorso)
 
@@ -262,20 +267,22 @@ public sealed interface AttackPhase : Phase {
                 cursorWeaponIndex.coerceIn(0, maxWeapon)
             }
 
-            val newState = copy(
-                torsoFacing = newTorso,
-                cursorTargetIndex = newCursorTargetIdx,
-                cursorWeaponIndex = newCursorWeaponIdx,
-                weaponAssignments = newAssignments,
-                primaryTargetId = newPrimary,
+            return Transition(
+                app.copy(
+                    phase = copy(
+                        torsoFacing = newTorso,
+                        cursorTargetIndex = newCursorTargetIdx,
+                        cursorWeaponIndex = newCursorWeaponIdx,
+                        weaponAssignments = newAssignments,
+                        primaryTargetId = newPrimary,
+                    ),
+                ),
             )
-            persistDeclaration(newState, app)
-            return Transition(app.copy(phase = newState))
         }
 
         private fun navigateWeapons(delta: Int, gameState: GameState): Declaring {
             val attacker = gameState.unitById(unitId) ?: return this
-            val view = DefaultPlayerView(attacker.owner, gameState)
+            val view = playerView(attacker.owner, gameState)
             val targets = view.targetInfos(unitId, torsoFacing)
             if (targets.isEmpty()) return this
 
@@ -301,7 +308,7 @@ public sealed interface AttackPhase : Phase {
         private fun clickTarget(app: AppState): Transition {
             val attacker = app.gameState.unitById(unitId) ?: return Transition(app)
             val targetUnit = app.gameState.unitAt(app.cursor)
-            val view = DefaultPlayerView(attacker.owner, app.gameState)
+            val view = playerView(attacker.owner, app.gameState)
             val validIds = view.validTargets(unitId, torsoFacing)
             if (targetUnit == null || targetUnit.id !in validIds) return Transition(app)
             val targets = view.targetInfos(unitId, torsoFacing)
@@ -315,26 +322,14 @@ public sealed interface AttackPhase : Phase {
     }
 }
 
-internal fun attackOrderFor(initiative: Initiative, gameState: GameState): List<Impulse> {
-    val loser = initiative.loser
-    val winner = initiative.winner
-    return calculateAttackOrder(
-        loser = loser,
-        loserUnitCount = gameState.unitsOf(loser).size,
-        winner = winner,
-        winnerUnitCount = gameState.unitsOf(winner).size,
-    )
-}
-
 internal fun enterDeclaring(
     unit: CombatUnit,
     attackTurnPhase: TurnPhase,
-    gameState: GameState,
-    turnState: TurnState,
+    view: PlayerView,
+    drafts: Map<UnitId, UnitDeclaration> = emptyMap(),
 ): AttackPhase.Declaring {
-    val existingDecl = turnState.attackImpulse?.declarations?.get(unit.id)
+    val existingDecl = drafts[unit.id]
     val torsoFacing = existingDecl?.torsoFacing ?: unit.torsoFacing
-    val view = DefaultPlayerView(unit.owner, gameState)
     val targets = view.targetInfos(unit.id, torsoFacing)
 
     val (weaponAssignments, primaryTargetId) = if (existingDecl != null && existingDecl.torsoFacing == torsoFacing) {
@@ -345,6 +340,10 @@ internal fun enterDeclaring(
 
     val (firstTargetIdx, firstWeaponIdx) = firstCursorPosition(targets)
 
+    // Drop this unit's slot from the carried-over drafts so it's not
+    // duplicated alongside the live editing state.
+    val carriedDrafts = drafts - unit.id
+
     return AttackPhase.Declaring(
         attackTurnPhase = attackTurnPhase,
         unitId = unit.id,
@@ -353,6 +352,7 @@ internal fun enterDeclaring(
         cursorWeaponIndex = firstWeaponIdx,
         weaponAssignments = weaponAssignments,
         primaryTargetId = primaryTargetId,
+        drafts = carriedDrafts,
     )
 }
 
@@ -365,70 +365,58 @@ private fun firstCursorPosition(targets: List<TargetInfo>): Pair<Int, Int> {
     return 0 to 0
 }
 
-private fun persistDeclaration(declaring: AttackPhase.Declaring, app: AppState) {
-    val impulse = app.turnState.attackImpulse ?: return
-    val decl = UnitDeclaration(
-        unitId = declaring.unitId,
-        torsoFacing = declaring.torsoFacing,
-        primaryTargetId = declaring.primaryTargetId,
-        weaponAssignments = declaring.weaponAssignments,
-    )
-    @Suppress("DEPRECATION")
-    app.session.applyMutation { g, t -> g to t.copy(attackImpulse = impulse.withDeclaration(decl)) }
-}
-
-/** Enter Declaring on the first available attacker, or stay in SelectingAttacker if none. */
-internal fun enterFirstAttacker(
+/**
+ * Submit the impulse to the session and re-sync the TUI phase to whatever
+ * phase the session settled at after the cascade. Surfaces an
+ * [AttacksResolved] flash when the final weapon-phase impulse resolves.
+ */
+internal fun commitAttackImpulse(
     app: AppState,
     attackTurnPhase: TurnPhase,
-    flash: FlashMessage? = null,
+    drafts: Map<UnitId, UnitDeclaration>,
 ): Transition {
     val turnState = app.turnState
-    val units = turnState.selectableAttackUnits(app.gameState)
-    return if (units.isEmpty()) {
-        Transition(app.copy(phase = AttackPhase.SelectingAttacker(attackTurnPhase)), flash)
-    } else {
-        val first = units.first()
-        val newPhase = enterDeclaring(first, attackTurnPhase, app.gameState, turnState)
-        Transition(app.copy(phase = newPhase, cursor = first.position), flash)
-    }
-}
-
-internal fun commitAttackImpulse(app: AppState, attackTurnPhase: TurnPhase, svc: PhaseServices): Transition {
-    val turnState = app.turnState
-    // Guard: commit pressed before the attack sequence has been seeded
-    // (e.g. immediately on phase entry before tick fires).
+    // Guard: nothing to commit if the sequence hasn't been seeded.
     if (turnState.attackSequence.order.isEmpty()) return Transition(app)
 
-    val impulse = turnState.attackImpulse
-    val torsoFacings: Map<UnitId, HexDirection> = impulse?.declarations?.values
-        ?.associate { it.unitId to it.torsoFacing }
-        ?: emptyMap()
-    val newDeclarations = impulse?.toAttackDeclarations().orEmpty()
     val activePlayer = turnState.activeAttackPlayer
+    val torsoFacings: Map<UnitId, HexDirection> = drafts.values.associate { it.unitId to it.torsoFacing }
+    val declarations = drafts.values.flatMap { decl ->
+        decl.weaponAssignments.flatMap { (targetId, weaponIndices) ->
+            weaponIndices.map { weaponIndex ->
+                AttackDeclaration(
+                    attackerId = decl.unitId,
+                    targetId = targetId,
+                    weaponIndex = weaponIndex,
+                    isPrimary = targetId == decl.primaryTargetId,
+                )
+            }
+        }
+    }
 
     val result = app.session.submitCommand(
         CommitAttackImpulse(
             playerId = activePlayer,
-            declarations = newDeclarations,
+            declarations = declarations,
             torsoFacings = torsoFacings,
         ),
     )
-    val events = (result as? CommandResult.Accepted)?.events.orEmpty()
-    val phaseChanged = events.any { it is battletech.tactical.event.PhaseChanged }
+    val events = (result as? battletech.tactical.command.CommandResult.Accepted)?.events.orEmpty()
 
-    return if (phaseChanged) {
-        // Session auto-advanced (and fired onEntry of the new phase). Sync
-        // the TUI phase and surface any resolution flash.
-        val flash = events.filterIsInstance<AttacksResolved>().firstOrNull()?.let {
-            val hitCount = it.results.count { r -> r.hit }
-            val totalDamage = it.results.sumOf { r -> r.damageApplied }
-            FlashMessage("Attacks resolved: ${it.results.size} attacks, $hitCount hits, $totalDamage damage")
+    val flash = events
+        .filterIsInstance<battletech.tactical.event.AttacksResolved>()
+        .firstOrNull()
+        ?.let { resolved ->
+            val hitCount = resolved.results.count { r -> r.hit }
+            val totalDamage = resolved.results.sumOf { r -> r.damageApplied }
+            FlashMessage("Attacks resolved: ${resolved.results.size} attacks, $hitCount hits, $totalDamage damage")
         }
-        Transition(app.copy(phase = battletech.tui.game.mapToTuiPhase(app.session.currentPhase)), flash)
-    } else {
-        // Same domain phase — the handler has seeded the next impulse;
-        // enter its first attacker.
-        enterFirstAttacker(app, attackTurnPhase)
-    }
+
+    return Transition(
+        app.copy(phase = mapToTuiPhase(app.session.currentPhase)),
+        flash,
+    )
 }
+
+private fun playerView(player: PlayerId, gameState: GameState): PlayerView =
+    battletech.tactical.view.DefaultPlayerView(player, gameState)

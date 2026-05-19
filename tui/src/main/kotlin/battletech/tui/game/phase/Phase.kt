@@ -6,18 +6,23 @@ import battletech.tactical.action.UnitId
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MovementMode
+import battletech.tactical.view.TargetInfo
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.RenderData
-import battletech.tactical.view.TargetInfo
 import com.github.ajalt.mordant.input.InputEvent
 
+/**
+ * UI sub-state machine for the active player phase. Phases are pure
+ * UI-workflow objects: they hold cursor / hover / draft state, map input
+ * events to [battletech.tactical.command.GameCommand]s, and produce render
+ * data. They never mutate game state directly — all writes flow through
+ * [AppState.session].
+ */
 public sealed interface Phase {
     public val turnPhase: TurnPhase
 
-    public fun tick(app: AppState, svc: PhaseServices): Transition? = null
-
-    public fun handle(event: InputEvent, app: AppState, svc: PhaseServices): Transition? = null
+    public fun handle(event: InputEvent, app: AppState): Transition? = null
 
     public fun render(gameState: GameState): RenderData = RenderData.EMPTY
 
@@ -36,7 +41,7 @@ public sealed interface Phase {
 
 public data class Transition(
     val app: AppState,
-    val flash: FlashMessage? = null
+    val flash: FlashMessage? = null,
 )
 
 public data class AttackRender(

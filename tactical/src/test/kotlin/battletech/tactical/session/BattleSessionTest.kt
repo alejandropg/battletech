@@ -166,7 +166,6 @@ internal class BattleSessionTest {
         assertThat(accepted.events.filterIsInstance<PhaseChanged>()).isEmpty()
 
         assertThat(session.turnState.attackDeclarations).containsExactlyElementsOf(decls)
-        assertThat(session.turnState.attackImpulse).isNotNull
         assertThat(session.gameState.unitById(mech1.id)!!.torsoFacing).isEqualTo(HexDirection.NE)
     }
 

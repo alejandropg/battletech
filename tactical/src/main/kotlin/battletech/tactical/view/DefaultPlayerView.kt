@@ -6,12 +6,25 @@ import battletech.tactical.action.UnitId
 import battletech.tactical.model.FiringArc
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
+import battletech.tactical.movement.ReachabilityCalculator
+import battletech.tactical.movement.ReachabilityMap
 import kotlin.math.ceil
 
 public class DefaultPlayerView(
     override val playerId: PlayerId,
     override val state: PublicGameState,
 ) : PlayerView {
+
+    override fun legalMovementsFor(unitId: UnitId): List<ReachabilityMap> {
+        val unit = state.unitById(unitId) ?: return emptyList()
+        val calculator = ReachabilityCalculator(state.map, state.units)
+        return buildList {
+            if (unit.walkingMP > 0) add(calculator.calculate(unit, MovementMode.WALK))
+            if (unit.runningMP > 0) add(calculator.calculate(unit, MovementMode.RUN))
+            if (unit.jumpMP > 0) add(calculator.calculate(unit, MovementMode.JUMP))
+        }
+    }
 
     override fun fireArc(attackerId: UnitId, torsoFacing: HexDirection): Set<HexCoordinates> {
         val attacker = state.unitById(attackerId) ?: return emptySet()

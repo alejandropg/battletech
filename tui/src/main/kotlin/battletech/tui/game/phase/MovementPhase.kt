@@ -1,21 +1,20 @@
 package battletech.tui.game.phase
 
-import battletech.tactical.action.AvailableAction
 import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
-import battletech.tactical.action.movement.MovementPreview
+import battletech.tactical.command.MoveUnit
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
+import battletech.tactical.view.PlayerView
 import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
 import battletech.tui.game.FlashMessage
-import battletech.tactical.session.ImpulseSequence
 import battletech.tui.game.RenderData
 import battletech.tui.game.moveCursor
 import battletech.tui.game.pathHighlights
@@ -34,14 +33,13 @@ internal val FACING_ORDER: List<HexDirection> = listOf(
 )
 
 internal const val SELECT_FACING_PROMPT = "Select facing (1-6)"
-internal const val DEFAULT_IDLE_PROMPT = "Move cursor to select a unit"
 
 public sealed interface MovementPhase : Phase {
     override val turnPhase: TurnPhase get() = TurnPhase.MOVEMENT
 
     public data object SelectingUnit : MovementPhase {
 
-        override fun handle(event: InputEvent, app: AppState, svc: PhaseServices): Transition? {
+        override fun handle(event: InputEvent, app: AppState): Transition? {
             val action = when (event) {
                 is KeyboardEvent -> InputMapper.mapIdleEvent(event)
                 is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
@@ -54,9 +52,9 @@ public sealed interface MovementPhase : Phase {
                     Transition(app.copy(cursor = newCursor))
                 }
 
-                is IdleAction.ClickHex -> trySelect(app.copy(cursor = action.coords), svc)
-                is IdleAction.SelectUnit -> trySelect(app, svc)
-                is IdleAction.CycleUnit -> cycleToNextUnit(app, app.gameState.unitAt(app.cursor)?.id, svc)
+                is IdleAction.ClickHex -> trySelect(app.copy(cursor = action.coords))
+                is IdleAction.SelectUnit -> trySelect(app)
+                is IdleAction.CycleUnit -> cycleToNextUnit(app, app.gameState.unitAt(app.cursor)?.id)
                 is IdleAction.CommitDeclarations -> Transition(app)
             }
         }
@@ -76,7 +74,7 @@ public sealed interface MovementPhase : Phase {
             return if (turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
         }
 
-        private fun trySelect(app: AppState, svc: PhaseServices): Transition {
+        private fun trySelect(app: AppState): Transition {
             val unit = app.gameState.unitAt(app.cursor) ?: return Transition(app)
             val turnState = app.turnState
 
@@ -87,7 +85,7 @@ public sealed interface MovementPhase : Phase {
                 return Transition(app, FlashMessage("Already moved"))
             }
 
-            val newPhase = enterBrowsing(unit, app.gameState, svc)
+            val newPhase = enterBrowsing(unit, app.viewFor(unit.owner))
             return Transition(app.copy(phase = newPhase))
         }
 
@@ -121,7 +119,7 @@ public sealed interface MovementPhase : Phase {
             )
         }
 
-        override fun handle(event: InputEvent, app: AppState, svc: PhaseServices): Transition? {
+        override fun handle(event: InputEvent, app: AppState): Transition? {
             val action = when (event) {
                 is KeyboardEvent -> InputMapper.mapBrowsingEvent(event)
                 is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
@@ -145,7 +143,7 @@ public sealed interface MovementPhase : Phase {
                 is BrowsingAction.CycleMode ->
                     Transition(updated.copy(phase = cycleMode()))
 
-                is BrowsingAction.CycleUnit -> cycleToNextUnit(app, unitId, svc)
+                is BrowsingAction.CycleUnit -> cycleToNextUnit(app, unitId)
             }
         }
 
@@ -196,18 +194,8 @@ public sealed interface MovementPhase : Phase {
             return commitMove(app, choice)
         }
 
-        private fun commitMove(app: AppState, destination: ReachableHex): Transition {
-            val unit = app.gameState.unitById(unitId) ?: return Transition(app)
-            app.session.submitCommand(
-                battletech.tactical.command.MoveUnit(
-                    playerId = unit.owner,
-                    unitId = unitId,
-                    destination = destination,
-                    mode = reachability.mode,
-                ),
-            )
-            return Transition(advanceAfterMove(app))
-        }
+        private fun commitMove(app: AppState, destination: ReachableHex): Transition =
+            submitMove(app, unitId, destination, reachability.mode)
     }
 
     public data class SelectingFacing(
@@ -233,7 +221,7 @@ public sealed interface MovementPhase : Phase {
             hoveredDestination = null,
         )
 
-        override fun handle(event: InputEvent, app: AppState, svc: PhaseServices): Transition? {
+        override fun handle(event: InputEvent, app: AppState): Transition? {
             val action = when (event) {
                 is KeyboardEvent -> InputMapper.mapFacingEvent(event)
                 is MouseEvent -> return null
@@ -242,7 +230,7 @@ public sealed interface MovementPhase : Phase {
             return when (action) {
                 is FacingAction.Cancel -> Transition(app.copy(phase = toBrowsing()))
                 is FacingAction.SelectFacing -> commitByFacing(app, action.index)
-                is FacingAction.CycleUnit -> cycleToNextUnit(app, unitId, svc)
+                is FacingAction.CycleUnit -> cycleToNextUnit(app, unitId)
             }
         }
 
@@ -269,30 +257,13 @@ public sealed interface MovementPhase : Phase {
             val direction = FACING_ORDER.getOrNull(index - 1) ?: return Transition(app.copy(phase = this))
             val destination = options.find { it.facing == direction }
                 ?: return Transition(app.copy(phase = this))
-            val unit = app.gameState.unitById(unitId) ?: return Transition(app)
-            app.session.submitCommand(
-                battletech.tactical.command.MoveUnit(
-                    playerId = unit.owner,
-                    unitId = unitId,
-                    destination = destination,
-                    mode = reachability.mode,
-                ),
-            )
-            return Transition(advanceAfterMove(app))
+            return submitMove(app, unitId, destination, reachability.mode)
         }
     }
 }
 
-internal fun enterBrowsing(
-    unit: CombatUnit,
-    gameState: GameState,
-    svc: PhaseServices,
-): MovementPhase.Browsing {
-    val report = svc.actionQueryService.getMovementActions(unit, gameState)
-    val modes = report.actions
-        .filterIsInstance<AvailableAction>()
-        .map { (it.preview as MovementPreview).reachability }
-
+internal fun enterBrowsing(unit: CombatUnit, view: PlayerView): MovementPhase.Browsing {
+    val modes = view.legalMovementsFor(unit.id)
     return MovementPhase.Browsing(
         unitId = unit.id,
         modes = modes,
@@ -301,25 +272,38 @@ internal fun enterBrowsing(
     )
 }
 
-internal fun cycleToNextUnit(
-    app: AppState,
-    currentUnitId: UnitId?,
-    svc: PhaseServices,
-): Transition {
+internal fun cycleToNextUnit(app: AppState, currentUnitId: UnitId?): Transition {
     val units = app.turnState.selectableUnits(app.gameState)
     if (units.isEmpty()) return Transition(app)
     val currentIdx = units.indexOfFirst { it.id == currentUnitId }
     val nextIdx = if (currentIdx == -1) 0 else (currentIdx + 1) % units.size
     val nextUnit = units[nextIdx]
-    val nextPhase = enterBrowsing(nextUnit, app.gameState, svc)
+    val nextPhase = enterBrowsing(nextUnit, app.viewFor(nextUnit.owner))
     return Transition(app.copy(cursor = nextUnit.position, phase = nextPhase))
 }
 
-internal fun advanceAfterMove(app: AppState): AppState {
-    // The MoveUnit command auto-advances the session into WEAPON_ATTACK when
-    // movement is complete, and the handler's onEntry has already seeded the
-    // attack sequence. The TUI just re-syncs its phase to match the session.
-    return app.copy(phase = battletech.tui.game.mapToTuiPhase(app.session.currentPhase))
+/**
+ * Submit the MoveUnit command to the session and re-sync the TUI phase to
+ * whatever phase the session settles in after the cascade. After the last
+ * movement impulse the session ends up in WEAPON_ATTACK (or, in tests with
+ * no enemies, may cascade further).
+ */
+private fun submitMove(
+    app: AppState,
+    unitId: UnitId,
+    destination: ReachableHex,
+    mode: MovementMode,
+): Transition {
+    val unit = app.gameState.unitById(unitId) ?: return Transition(app)
+    app.session.submitCommand(
+        MoveUnit(
+            playerId = unit.owner,
+            unitId = unitId,
+            destination = destination,
+            mode = mode,
+        ),
+    )
+    return Transition(app.copy(phase = battletech.tui.game.mapToTuiPhase(app.session.currentPhase)))
 }
 
 internal fun modePrompt(reachability: ReachabilityMap?): String {

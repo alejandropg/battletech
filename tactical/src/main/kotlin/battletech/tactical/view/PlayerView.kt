@@ -4,6 +4,7 @@ import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.movement.ReachabilityMap
 
 /**
  * Read-side surface scoped to one [PlayerId]. Deliveries (TUI, web, remote
@@ -16,6 +17,10 @@ import battletech.tactical.model.HexDirection
 public interface PlayerView {
     public val playerId: PlayerId
     public val state: PublicGameState
+
+    /** Reachability map for each available movement mode, in WALK→RUN→JUMP
+     *  order, skipping modes the unit cannot perform. */
+    public fun legalMovementsFor(unitId: UnitId): List<ReachabilityMap>
 
     /** Hexes in the attacker's forward firing arc given a torso facing. */
     public fun fireArc(attackerId: UnitId, torsoFacing: HexDirection): Set<HexCoordinates>

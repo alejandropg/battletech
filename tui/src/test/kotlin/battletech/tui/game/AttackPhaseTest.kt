@@ -1,24 +1,20 @@
 package battletech.tui.game
 
-import battletech.tactical.session.ImpulseDeclarations
-import battletech.tactical.session.ImpulseSequence
-import battletech.tactical.session.TurnState
-import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.Impulse
 import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
-import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.Weapon
+import battletech.tactical.session.ImpulseSequence
+import battletech.tactical.session.TurnState
+import battletech.tactical.session.UnitDeclaration
 import battletech.tactical.view.DefaultPlayerView
 import battletech.tui.aGameMap
 import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackPhase
-import battletech.tui.game.phase.PhaseServices
 import battletech.tui.game.phase.commitAttackImpulse
 import battletech.tui.game.phase.enterDeclaring
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -31,13 +27,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 internal class AttackPhaseTest {
-
-    private val services = PhaseServices(
-        actionQueryService = ActionQueryService(
-            MoveActionDefinition(),
-            listOf(FireWeaponActionDefinition()),
-        ),
-    )
 
     private fun mediumLaser(): Weapon = Weapon(
         name = "Medium Laser", damage = 5, heat = 3,
@@ -54,7 +43,6 @@ internal class AttackPhaseTest {
         ),
         movementSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
         attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 3))),
-        attackImpulse = ImpulseDeclarations(PlayerId.PLAYER_1),
     )
 
     private fun anAppState(
@@ -63,6 +51,9 @@ internal class AttackPhaseTest {
         turnState: TurnState,
         cursor: HexCoordinates = HexCoordinates(0, 0),
     ) = AppState(gameState, turnState, phase, cursor)
+
+    private fun viewFor(unit: battletech.tactical.action.CombatUnit, gameState: GameState): DefaultPlayerView =
+        DefaultPlayerView(unit.owner, gameState)
 
     @Nested
     inner class EnterDeclaringTest {
@@ -76,7 +67,7 @@ internal class AttackPhaseTest {
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
             val gameState = GameState(listOf(unit, enemy), map5x5)
 
-            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, gameState, baseTurnState())
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
 
             assertEquals(unit.id, phase.unitId)
             assertEquals(unit.facing, phase.torsoFacing)
@@ -92,9 +83,9 @@ internal class AttackPhaseTest {
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 4))
             val gameState = GameState(listOf(unit, enemy), map5x5)
 
-            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, gameState, baseTurnState())
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
 
-            assertTrue(DefaultPlayerView(unit.owner, gameState).validTargets(unit.id, phase.torsoFacing).isEmpty())
+            assertTrue(viewFor(unit, gameState).validTargets(unit.id, phase.torsoFacing).isEmpty())
         }
     }
 
@@ -114,20 +105,24 @@ internal class AttackPhaseTest {
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
             val gameState = GameState(listOf(unitA, unitB, enemy), map7x7)
             val turnState = baseTurnState()
-            val phaseA = enterDeclaring(unitA, TurnPhase.WEAPON_ATTACK, gameState, turnState)
+            val phaseA = enterDeclaring(unitA, TurnPhase.WEAPON_ATTACK, viewFor(unitA, gameState))
             val state = anAppState(phaseA, gameState, turnState, cursor = unitA.position)
 
             // Toggle weapon on A
-            val afterToggle = phaseA.handle(KeyboardEvent(" "), state, services)!!
+            val afterToggle = phaseA.handle(KeyboardEvent(" "), state)!!
             val toggled = afterToggle.app.phase as AttackPhase.Declaring
             assertTrue(toggled.weaponAssignments[enemy.id]?.contains(0) == true)
 
             // Tab to B
-            val toB = toggled.handle(KeyboardEvent("Tab"), afterToggle.app, services)!!
+            val toB = toggled.handle(KeyboardEvent("Tab"), afterToggle.app)!!
+            val phaseB = toB.app.phase as AttackPhase.Declaring
 
-            // Re-enter A
-            val reEntered = enterDeclaring(unitA, TurnPhase.WEAPON_ATTACK, toB.app.gameState, toB.app.turnState)
-            assertTrue(reEntered.weaponAssignments.values.any { it.isNotEmpty() })
+            // Tab back to A
+            val backToA = phaseB.handle(KeyboardEvent("Tab"), toB.app)!!
+            val phaseAAgain = backToA.app.phase as AttackPhase.Declaring
+
+            assertEquals(unitA.id, phaseAAgain.unitId)
+            assertTrue(phaseAAgain.weaponAssignments[enemy.id]?.contains(0) == true)
         }
 
         @Test
@@ -135,10 +130,10 @@ internal class AttackPhaseTest {
             val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
             val gameState = GameState(listOf(unit), map5x5)
             val turnState = baseTurnState()
-            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, gameState, turnState)
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = unit.position)
 
-            val result = phase.handle(KeyboardEvent("ArrowRight"), state, services)
+            val result = phase.handle(KeyboardEvent("ArrowRight"), state)
 
             val newPhase = result!!.app.phase as AttackPhase.Declaring
             assertEquals(HexDirection.NE, newPhase.torsoFacing)
@@ -149,10 +144,10 @@ internal class AttackPhaseTest {
             val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
             val gameState = GameState(listOf(unit), map5x5)
             val turnState = baseTurnState()
-            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, gameState, turnState)
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = unit.position)
 
-            val result = phase.handle(KeyboardEvent("ArrowLeft"), state, services)
+            val result = phase.handle(KeyboardEvent("ArrowLeft"), state)
 
             val newPhase = result!!.app.phase as AttackPhase.Declaring
             assertEquals(HexDirection.NW, newPhase.torsoFacing)
@@ -163,14 +158,14 @@ internal class AttackPhaseTest {
             val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
             val gameState = GameState(listOf(unit), map5x5)
             val turnState = baseTurnState()
-            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, gameState, turnState)
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = unit.position)
 
-            val once = phase.handle(KeyboardEvent("ArrowRight"), state, services)!!
+            val once = phase.handle(KeyboardEvent("ArrowRight"), state)!!
             val twisted = once.app.phase as AttackPhase.Declaring
             assertEquals(HexDirection.NE, twisted.torsoFacing)
 
-            val twice = twisted.handle(KeyboardEvent("ArrowRight"), once.app, services)!!
+            val twice = twisted.handle(KeyboardEvent("ArrowRight"), once.app)!!
             val stillSame = twice.app.phase as AttackPhase.Declaring
             assertEquals(HexDirection.NE, stillSame.torsoFacing)
         }
@@ -181,14 +176,14 @@ internal class AttackPhaseTest {
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
             val gameState = GameState(listOf(unit, enemy), map5x5)
             val turnState = baseTurnState()
-            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, gameState, turnState)
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = enemy.position)
 
-            val on = phase.handle(KeyboardEvent(" "), state, services)!!
+            val on = phase.handle(KeyboardEvent(" "), state)!!
             val onPhase = on.app.phase as AttackPhase.Declaring
             assertTrue(0 in (onPhase.weaponAssignments[enemy.id] ?: emptySet()))
 
-            val off = onPhase.handle(KeyboardEvent(" "), on.app, services)!!
+            val off = onPhase.handle(KeyboardEvent(" "), on.app)!!
             val offPhase = off.app.phase as AttackPhase.Declaring
             assertFalse(0 in (offPhase.weaponAssignments[enemy.id] ?: emptySet()))
         }
@@ -205,17 +200,16 @@ internal class AttackPhaseTest {
                 ),
                 movementSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
                 attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
-                attackImpulse = ImpulseDeclarations(PlayerId.PLAYER_1),
             )
-            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, gameState, turnState)
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = enemy.position)
 
-            val toggled = phase.handle(KeyboardEvent(" "), state, services)!!
+            val toggled = phase.handle(KeyboardEvent(" "), state)!!
             val togglePhase = toggled.app.phase as AttackPhase.Declaring
             assertTrue(togglePhase.weaponAssignments[enemy.id]?.contains(0) == true)
 
             // Commit — last impulse so resolve and advance to physical attack
-            val committed = togglePhase.handle(KeyboardEvent("c"), toggled.app, services)!!
+            val committed = togglePhase.handle(KeyboardEvent("c"), toggled.app)!!
             assertEquals(TurnPhase.PHYSICAL_ATTACK, committed.app.currentPhase)
         }
 
@@ -229,16 +223,16 @@ internal class AttackPhaseTest {
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
             val gameState = GameState(listOf(unit, enemy), map5x5)
             val turnState = baseTurnState()
-            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, gameState, turnState)
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = unit.position)
 
             // Twist torso clockwise (N -> NE)
-            val twisted = phase.handle(KeyboardEvent("ArrowRight"), state, services)!!
+            val twisted = phase.handle(KeyboardEvent("ArrowRight"), state)!!
             val twistedPhase = twisted.app.phase as AttackPhase.Declaring
             assertEquals(HexDirection.NE, twistedPhase.torsoFacing)
 
-            // Commit the impulse
-            val committed = commitAttackImpulse(twisted.app, TurnPhase.WEAPON_ATTACK, services)
+            // Commit the impulse via the helper
+            val committed = commitAttackImpulse(twisted.app, TurnPhase.WEAPON_ATTACK, twistedPhase.allDrafts())
 
             val updatedUnit = committed.app.gameState.units.first { it.id == unit.id }
             assertThat(updatedUnit.torsoFacing).isEqualTo(HexDirection.NE)
@@ -250,14 +244,14 @@ internal class AttackPhaseTest {
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
             val gameState = GameState(listOf(unit, enemy), map5x5)
             val turnState = baseTurnState()
-            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, gameState, turnState)
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = enemy.position)
 
-            val on = phase.handle(KeyboardEvent(" "), state, services)!!
+            val on = phase.handle(KeyboardEvent(" "), state)!!
             val onPhase = on.app.phase as AttackPhase.Declaring
             assertEquals(enemy.id, onPhase.primaryTargetId)
 
-            val off = onPhase.handle(KeyboardEvent(" "), on.app, services)!!
+            val off = onPhase.handle(KeyboardEvent(" "), on.app)!!
             val offPhase = off.app.phase as AttackPhase.Declaring
             assertThat(offPhase.primaryTargetId).isNull()
         }
@@ -273,8 +267,8 @@ internal class AttackPhaseTest {
             val enemy2 = aUnit(id = "enemy2", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 0))
             val gameState = GameState(listOf(unit, enemy1, enemy2), map5x5)
             val turnState = baseTurnState()
-            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, gameState, turnState)
-            val targets = DefaultPlayerView(unit.owner, gameState).targetInfos(unit.id, phase.torsoFacing)
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
+            val targets = viewFor(unit, gameState).targetInfos(unit.id, phase.torsoFacing)
             val enemy1Idx = targets.indexOfFirst { it.unitId == enemy1.id }
             assertTrue(enemy1Idx >= 0)
 
@@ -286,7 +280,7 @@ internal class AttackPhaseTest {
             )
             val state = anAppState(setup, gameState, turnState, cursor = enemy1.position)
 
-            val result = setup.handle(KeyboardEvent(" "), state, services)!!
+            val result = setup.handle(KeyboardEvent(" "), state)!!
             val resultPhase = result.app.phase as AttackPhase.Declaring
             assertEquals(enemy2.id, resultPhase.primaryTargetId)
         }
@@ -294,16 +288,6 @@ internal class AttackPhaseTest {
 
     @Nested
     inner class TabAcrossAttackersTest {
-
-        private fun seeded(turnState: TurnState = TurnState(
-            initiative = Initiative(
-                rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
-                loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
-            ),
-            movementSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
-            attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 3))),
-            attackImpulse = ImpulseDeclarations(PlayerId.PLAYER_1),
-        )): TurnState = turnState
 
         @Test
         fun `Tab cycles to next attacker`() {
@@ -320,11 +304,11 @@ internal class AttackPhaseTest {
                 position = HexCoordinates(3, 1),
             )
             val gameState = GameState(listOf(unitA, unitB, enemy), map7x7)
-            val turnState = seeded()
-            val phaseA = enterDeclaring(unitA, TurnPhase.WEAPON_ATTACK, gameState, turnState)
+            val turnState = baseTurnState()
+            val phaseA = enterDeclaring(unitA, TurnPhase.WEAPON_ATTACK, viewFor(unitA, gameState))
             val state = anAppState(phaseA, gameState, turnState, cursor = unitA.position)
 
-            val result = phaseA.handle(KeyboardEvent("Tab"), state, services)
+            val result = phaseA.handle(KeyboardEvent("Tab"), state)
 
             assertNotNull(result)
             val newPhase = result!!.app.phase as AttackPhase.Declaring
@@ -347,22 +331,22 @@ internal class AttackPhaseTest {
                 position = HexCoordinates(3, 1),
             )
             val gameState = GameState(listOf(unitA, unitB, enemy), map7x7)
-            val turnState = seeded()
-            val phaseA = enterDeclaring(unitA, TurnPhase.WEAPON_ATTACK, gameState, turnState)
+            val turnState = baseTurnState()
+            val phaseA = enterDeclaring(unitA, TurnPhase.WEAPON_ATTACK, viewFor(unitA, gameState))
             val state = anAppState(phaseA, gameState, turnState, cursor = unitA.position)
 
             // Toggle a weapon on A
-            val toggleResult = phaseA.handle(KeyboardEvent(" "), state, services)!!
+            val toggleResult = phaseA.handle(KeyboardEvent(" "), state)!!
             val afterToggle = toggleResult.app.phase as AttackPhase.Declaring
             assertTrue(afterToggle.weaponAssignments[enemy.id]?.contains(0) == true)
 
             // Tab to B
-            val toB = afterToggle.handle(KeyboardEvent("Tab"), toggleResult.app, services)!!
+            val toB = afterToggle.handle(KeyboardEvent("Tab"), toggleResult.app)!!
             val phaseB = toB.app.phase as AttackPhase.Declaring
             assertEquals(unitB.id, phaseB.unitId)
 
             // Tab back to A
-            val backToA = phaseB.handle(KeyboardEvent("Tab"), toB.app, services)!!
+            val backToA = phaseB.handle(KeyboardEvent("Tab"), toB.app)!!
             val phaseAAgain = backToA.app.phase as AttackPhase.Declaring
             assertEquals(unitA.id, phaseAAgain.unitId)
 

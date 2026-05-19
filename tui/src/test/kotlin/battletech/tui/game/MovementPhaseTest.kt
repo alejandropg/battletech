@@ -1,36 +1,29 @@
 package battletech.tui.game
 
-import battletech.tactical.session.ImpulseSequence
-import battletech.tactical.session.TurnState
-import battletech.tactical.action.ActionId
-import battletech.tactical.action.ActionQueryService
-import battletech.tactical.action.AvailableAction
 import battletech.tactical.action.Impulse
 import battletech.tactical.action.Initiative
-import battletech.tactical.action.PhaseActionReport
 import battletech.tactical.action.PlayerId
-import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.movement.MovementPreview
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
+import battletech.tactical.session.ImpulseSequence
+import battletech.tactical.session.TurnState
+import battletech.tactical.view.DefaultPlayerView
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
-import battletech.tui.game.phase.PhaseServices
 import battletech.tui.game.phase.enterBrowsing
 import com.github.ajalt.mordant.input.KeyboardEvent
-import io.mockk.every
-import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
@@ -91,38 +84,6 @@ internal class MovementPhaseTest {
         ),
     )
 
-    private fun createServices(includeRun: Boolean = false): PhaseServices {
-        val actions = buildList {
-            add(
-                AvailableAction(
-                    id = ActionId("walk"),
-                    name = "Walk",
-                    successChance = 100,
-                    warnings = emptyList(),
-                    preview = MovementPreview(walkReachabilityMap),
-                ),
-            )
-            if (includeRun) {
-                add(
-                    AvailableAction(
-                        id = ActionId("run"),
-                        name = "Run",
-                        successChance = 100,
-                        warnings = emptyList(),
-                        preview = MovementPreview(runReachabilityMap),
-                    ),
-                )
-            }
-        }
-        val actionQueryService = mockk<ActionQueryService>()
-        every { actionQueryService.getMovementActions(any(), any()) } returns PhaseActionReport(
-            phase = TurnPhase.MOVEMENT,
-            unitId = aUnit().id,
-            actions = actions,
-        )
-        return PhaseServices(actionQueryService)
-    }
-
     private fun aTurnState(
         movementOrder: List<Impulse> = listOf(Impulse(PlayerId.PLAYER_1, 1)),
     ) = TurnState(
@@ -144,24 +105,24 @@ internal class MovementPhaseTest {
     inner class EnterBrowsingTest {
         @Test
         fun `enter produces Browsing state with reachability`() {
-            val services = createServices()
-            val unit = aUnit()
+            val unit = aUnit(walkingMP = 3)
             val gameState = aGameState(units = listOf(unit))
+            val view = DefaultPlayerView(unit.owner, gameState)
 
-            val state = enterBrowsing(unit, gameState, services)
+            val state = enterBrowsing(unit, view)
 
             assertInstanceOf(MovementPhase.Browsing::class.java, state)
-            assertEquals(3, state.reachability.destinations.size)
+            assertTrue(state.reachability.destinations.isNotEmpty())
             assertEquals(unit.id, state.unitId)
         }
 
         @Test
         fun `enter populates modes with all movement modes`() {
-            val services = createServices(includeRun = true)
-            val unit = aUnit()
+            val unit = aUnit(walkingMP = 3, runningMP = 5)
             val gameState = aGameState(units = listOf(unit))
+            val view = DefaultPlayerView(unit.owner, gameState)
 
-            val state = enterBrowsing(unit, gameState, services)
+            val state = enterBrowsing(unit, view)
 
             assertEquals(2, state.modes.size)
             assertEquals(MovementMode.WALK, state.modes[0].mode)
@@ -171,45 +132,21 @@ internal class MovementPhaseTest {
     }
 
     @Nested
-    inner class ClickHexTest {
-        @Test
-        fun `click hex updates hover to clicked position`() {
-            val services = createServices()
-            val unit = aUnit()
-            val gameState = aGameState(units = listOf(unit))
-            val phase = enterBrowsing(unit, gameState, services)
-            val state = anAppState(phase = phase, gameState = gameState)
-
-            val newPhase = phase.handle(KeyboardEvent("ArrowRight"), state, services)?.app?.phase
-            // No direct ClickHex via keyboard, simulate via cursor move
-            val result = phase.handle(
-                KeyboardEvent("ArrowDown"),
-                state.copy(cursor = HexCoordinates(2, 0)),
-                services,
-            )
-            // Movement test is essentially via cursor move + path
-            val resultPhase = result!!.app.phase as MovementPhase.Browsing
-            // unused: just confirm types resolve
-            assertNotNull(resultPhase)
-            assertNotNull(newPhase)
-        }
-    }
-
-    @Nested
     inner class ConfirmTest {
         @Test
         fun `confirm on single-facing destination completes movement`() {
-            val services = createServices()
             val unit = aUnit(walkingMP = 4)
             val gameState = aGameState(units = listOf(unit))
-            val phase = enterBrowsing(unit, gameState, services).copy(
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap),
+                currentModeIndex = 0,
                 hoveredDestination = reachableHexes[1],
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(2, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Enter"), state, services)
+            val result = phase.handle(KeyboardEvent("Enter"), state)
 
-            // Should advance state: phase changes to SelectingUnit or further
             assertNotNull(result)
             val movedUnit = result!!.app.gameState.units.first { it.id == unit.id }
             assertEquals(HexCoordinates(2, 0), movedUnit.position)
@@ -217,15 +154,17 @@ internal class MovementPhaseTest {
 
         @Test
         fun `confirm on multi-facing hex enters facing selection`() {
-            val services = createServices()
             val unit = aUnit(walkingMP = 4)
             val gameState = aGameState(units = listOf(unit))
-            val phase = enterBrowsing(unit, gameState, services).copy(
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap),
+                currentModeIndex = 0,
                 hoveredDestination = reachableHexes[0],
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Enter"), state, services)
+            val result = phase.handle(KeyboardEvent("Enter"), state)
 
             assertNotNull(result)
             assertInstanceOf(MovementPhase.SelectingFacing::class.java, result!!.app.phase)
@@ -236,20 +175,18 @@ internal class MovementPhaseTest {
     inner class SelectFacingTest {
         @Test
         fun `SelectFacing during facing selection applies movement`() {
-            val services = createServices()
             val unit = aUnit(walkingMP = 4)
             val gameState = aGameState(units = listOf(unit))
-            val browsing = enterBrowsing(unit, gameState, services)
             val facingPhase = MovementPhase.SelectingFacing(
-                unitId = browsing.unitId,
-                modes = browsing.modes,
-                currentModeIndex = browsing.currentModeIndex,
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap),
+                currentModeIndex = 0,
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = facingPhase.handle(KeyboardEvent("1"), state, services)
+            val result = facingPhase.handle(KeyboardEvent("1"), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.gameState.units.first { it.id == unit.id }
@@ -259,20 +196,18 @@ internal class MovementPhaseTest {
 
         @Test
         fun `SelectFacing picks correct facing by number`() {
-            val services = createServices()
             val unit = aUnit(walkingMP = 4)
             val gameState = aGameState(units = listOf(unit))
-            val browsing = enterBrowsing(unit, gameState, services)
             val facingPhase = MovementPhase.SelectingFacing(
-                unitId = browsing.unitId,
-                modes = browsing.modes,
-                currentModeIndex = browsing.currentModeIndex,
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap),
+                currentModeIndex = 0,
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = facingPhase.handle(KeyboardEvent("3"), state, services)
+            val result = facingPhase.handle(KeyboardEvent("3"), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.gameState.units.first { it.id == unit.id }
@@ -281,20 +216,18 @@ internal class MovementPhaseTest {
 
         @Test
         fun `SelectFacing for unavailable facing stays in current state`() {
-            val services = createServices()
             val unit = aUnit(walkingMP = 4)
             val gameState = aGameState(units = listOf(unit))
-            val browsing = enterBrowsing(unit, gameState, services)
             val facingPhase = MovementPhase.SelectingFacing(
-                unitId = browsing.unitId,
-                modes = browsing.modes,
-                currentModeIndex = browsing.currentModeIndex,
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap),
+                currentModeIndex = 0,
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = facingPhase.handle(KeyboardEvent("4"), state, services)
+            val result = facingPhase.handle(KeyboardEvent("4"), state)
 
             assertNotNull(result)
             assertInstanceOf(MovementPhase.SelectingFacing::class.java, result!!.app.phase)
@@ -302,15 +235,17 @@ internal class MovementPhaseTest {
 
         @Test
         fun `direct facing selection from browsing with hovered destination`() {
-            val services = createServices()
             val unit = aUnit(walkingMP = 4)
             val gameState = aGameState(units = listOf(unit))
-            val phase = enterBrowsing(unit, gameState, services).copy(
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap),
+                currentModeIndex = 0,
                 hoveredDestination = reachableHexes[0],
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("1"), state, services)
+            val result = phase.handle(KeyboardEvent("1"), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.gameState.units.first { it.id == unit.id }
@@ -322,13 +257,17 @@ internal class MovementPhaseTest {
     inner class CancelTest {
         @Test
         fun `cancel during browsing returns to selecting unit`() {
-            val services = createServices()
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
-            val phase = enterBrowsing(unit, gameState, services)
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap),
+                currentModeIndex = 0,
+                hoveredDestination = null,
+            )
             val state = anAppState(phase = phase, gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Escape"), state, services)
+            val result = phase.handle(KeyboardEvent("Escape"), state)
 
             assertNotNull(result)
             assertInstanceOf(MovementPhase.SelectingUnit::class.java, result!!.app.phase)
@@ -336,20 +275,18 @@ internal class MovementPhaseTest {
 
         @Test
         fun `cancel during facing selection returns to browsing`() {
-            val services = createServices()
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
-            val browsing = enterBrowsing(unit, gameState, services)
             val facingPhase = MovementPhase.SelectingFacing(
-                unitId = browsing.unitId,
-                modes = browsing.modes,
-                currentModeIndex = browsing.currentModeIndex,
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap),
+                currentModeIndex = 0,
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = facingPhase.handle(KeyboardEvent("Escape"), state, services)
+            val result = facingPhase.handle(KeyboardEvent("Escape"), state)
 
             assertNotNull(result)
             assertInstanceOf(MovementPhase.Browsing::class.java, result!!.app.phase)
@@ -360,13 +297,17 @@ internal class MovementPhaseTest {
     inner class CycleModeTest {
         @Test
         fun `CycleMode advances to next mode`() {
-            val services = createServices(includeRun = true)
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
-            val phase = enterBrowsing(unit, gameState, services)
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap, runReachabilityMap),
+                currentModeIndex = 0,
+                hoveredDestination = null,
+            )
             val state = anAppState(phase = phase, gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("x"), state, services)
+            val result = phase.handle(KeyboardEvent("x"), state)
 
             val browsing = result!!.app.phase as MovementPhase.Browsing
             assertEquals(1, browsing.currentModeIndex)
@@ -375,15 +316,17 @@ internal class MovementPhaseTest {
 
         @Test
         fun `CycleMode clears hover state`() {
-            val services = createServices(includeRun = true)
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
-            val phase = enterBrowsing(unit, gameState, services).copy(
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap, runReachabilityMap),
+                currentModeIndex = 0,
                 hoveredDestination = reachableHexes[0],
             )
             val state = anAppState(phase = phase, gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("x"), state, services)
+            val result = phase.handle(KeyboardEvent("x"), state)
 
             val browsing = result!!.app.phase as MovementPhase.Browsing
             assertNull(browsing.hoveredPath)
@@ -395,14 +338,14 @@ internal class MovementPhaseTest {
     inner class CycleUnitFromBrowsingTest {
         @Test
         fun `Tab from Browsing advances to next selectable unit`() {
-            val services = createServices()
-            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0))
-            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2))
+            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0), walkingMP = 3)
+            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2), walkingMP = 3)
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
-            val phase = enterBrowsing(u1, gameState, services)
+            val view = DefaultPlayerView(u1.owner, gameState)
+            val phase = enterBrowsing(u1, view)
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Tab"), state, services)
+            val result = phase.handle(KeyboardEvent("Tab"), state)
 
             assertNotNull(result)
             val browsing = result!!.app.phase as MovementPhase.Browsing
@@ -411,28 +354,28 @@ internal class MovementPhaseTest {
 
         @Test
         fun `Tab from Browsing moves cursor to next unit position`() {
-            val services = createServices()
-            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0))
-            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2))
+            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0), walkingMP = 3)
+            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2), walkingMP = 3)
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
-            val phase = enterBrowsing(u1, gameState, services)
+            val view = DefaultPlayerView(u1.owner, gameState)
+            val phase = enterBrowsing(u1, view)
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Tab"), state, services)
+            val result = phase.handle(KeyboardEvent("Tab"), state)
 
             assertEquals(HexCoordinates(2, 2), result!!.app.cursor)
         }
 
         @Test
         fun `Tab from Browsing wraps from last unit back to first`() {
-            val services = createServices()
-            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0))
-            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2))
+            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0), walkingMP = 3)
+            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2), walkingMP = 3)
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
-            val phase = enterBrowsing(u2, gameState, services)
+            val view = DefaultPlayerView(u2.owner, gameState)
+            val phase = enterBrowsing(u2, view)
             val state = anAppState(phase = phase, cursor = HexCoordinates(2, 2), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Tab"), state, services)
+            val result = phase.handle(KeyboardEvent("Tab"), state)
 
             assertNotNull(result)
             val browsing = result!!.app.phase as MovementPhase.Browsing
@@ -442,16 +385,16 @@ internal class MovementPhaseTest {
 
         @Test
         fun `Tab from Browsing with one selectable unit re-enters fresh Browsing`() {
-            val services = createServices(includeRun = true)
-            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0))
+            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0), walkingMP = 3, runningMP = 5)
             val gameState = aGameState(units = listOf(u1))
-            val phase = enterBrowsing(u1, gameState, services).copy(
+            val view = DefaultPlayerView(u1.owner, gameState)
+            val phase = enterBrowsing(u1, view).copy(
                 currentModeIndex = 1,
                 hoveredDestination = reachableHexes[0],
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Tab"), state, services)
+            val result = phase.handle(KeyboardEvent("Tab"), state)
 
             assertNotNull(result)
             val browsing = result!!.app.phase as MovementPhase.Browsing
@@ -462,15 +405,15 @@ internal class MovementPhaseTest {
 
         @Test
         fun `Tab from Browsing does not commit any movement`() {
-            val services = createServices()
-            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0))
-            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2))
+            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0), walkingMP = 3)
+            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2), walkingMP = 3)
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
             val turnState = aTurnState()
-            val phase = enterBrowsing(u1, gameState, services)
+            val view = DefaultPlayerView(u1.owner, gameState)
+            val phase = enterBrowsing(u1, view)
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState, turnState = turnState)
 
-            val result = phase.handle(KeyboardEvent("Tab"), state, services)
+            val result = phase.handle(KeyboardEvent("Tab"), state)
 
             assertNotNull(result)
             assertEquals(gameState, result!!.app.gameState)
@@ -479,21 +422,19 @@ internal class MovementPhaseTest {
 
         @Test
         fun `Tab from SelectingFacing cycles to next unit and enters Browsing`() {
-            val services = createServices()
-            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0))
-            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2))
+            val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0), walkingMP = 3)
+            val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2), walkingMP = 3)
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
-            val browsing = enterBrowsing(u1, gameState, services)
             val facingPhase = MovementPhase.SelectingFacing(
-                unitId = browsing.unitId,
-                modes = browsing.modes,
-                currentModeIndex = browsing.currentModeIndex,
+                unitId = u1.id,
+                modes = listOf(walkReachabilityMap),
+                currentModeIndex = 0,
                 hex = HexCoordinates(1, 0),
                 options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = facingPhase.handle(KeyboardEvent("Tab"), state, services)
+            val result = facingPhase.handle(KeyboardEvent("Tab"), state)
 
             assertNotNull(result)
             val nextBrowsing = result!!.app.phase as MovementPhase.Browsing
@@ -506,10 +447,12 @@ internal class MovementPhaseTest {
     inner class CompleteMovementTest {
         @Test
         fun `completing movement of last unit transitions to attack phase`() {
-            val services = createServices()
             val unit = aUnit(walkingMP = 4)
             val gameState = aGameState(units = listOf(unit))
-            val phase = enterBrowsing(unit, gameState, services).copy(
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap),
+                currentModeIndex = 0,
                 hoveredDestination = reachableHexes[1],
             )
             val state = anAppState(
@@ -519,17 +462,19 @@ internal class MovementPhaseTest {
                 turnState = aTurnState(movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 1))),
             )
 
-            val result = phase.handle(KeyboardEvent("Enter"), state, services)
+            val result = phase.handle(KeyboardEvent("Enter"), state)
 
             assertInstanceOf(AttackPhase.SelectingAttacker::class.java, result!!.app.phase)
         }
 
         @Test
         fun `completing movement with impulses remaining returns to selecting unit`() {
-            val services = createServices()
             val unit = aUnit(walkingMP = 4)
             val gameState = aGameState(units = listOf(unit))
-            val phase = enterBrowsing(unit, gameState, services).copy(
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap),
+                currentModeIndex = 0,
                 hoveredDestination = reachableHexes[1],
             )
             val state = anAppState(
@@ -544,7 +489,7 @@ internal class MovementPhaseTest {
                 ),
             )
 
-            val result = phase.handle(KeyboardEvent("Enter"), state, services)
+            val result = phase.handle(KeyboardEvent("Enter"), state)
 
             assertInstanceOf(MovementPhase.SelectingUnit::class.java, result!!.app.phase)
         }

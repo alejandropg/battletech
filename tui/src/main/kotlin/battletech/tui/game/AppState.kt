@@ -1,5 +1,6 @@
 package battletech.tui.game
 
+import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.dice.RandomDiceRoller
@@ -9,42 +10,43 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.TurnState
+import battletech.tactical.view.PlayerView
 import battletech.tui.game.phase.AttackPhase
-import battletech.tui.game.phase.EndPhase
-import battletech.tui.game.phase.HeatPhase
-import battletech.tui.game.phase.InitiativePhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.Phase
 
 /**
  * The TUI's UI-shell state. Holds a reference to the authoritative
  * [BattleSession] (the source of truth for gameState and turnState) plus
- * pure UI state: which [Phase] sub-state machine is active and where the
- * cursor sits on the board.
+ * pure UI state: which [Phase] sub-state machine is active, where the
+ * cursor sits, and any flashes left over from a multi-step cascade.
  *
  * The [gameState] and [turnState] accessors read through the session;
- * mutations flow via `session.submitCommand(...)` or `session.advance()`.
+ * mutations flow via `session.submitCommand(...)`.
+ *
+ * [pendingFlashes] queues flashes produced by an auto-advance cascade
+ * across system phases (Heat → End → Initiative). The main loop drains
+ * one per render frame so each event the player should see lands as a
+ * discrete on-screen message.
  */
 public data class AppState(
     public val session: BattleSession,
     public val phase: Phase,
     public val cursor: HexCoordinates,
+    public val pendingFlashes: List<FlashMessage> = emptyList(),
 ) {
     public val gameState: GameState get() = session.gameState
     public val turnState: TurnState get() = session.turnState
     public val currentPhase: TurnPhase get() = phase.turnPhase
+
+    public fun viewFor(player: PlayerId): PlayerView = session.viewFor(player)
 }
 
 /**
  * Back-compat factory matching the pre-PR5 positional signature. Constructs
  * a [BattleSession] positioned at the supplied [phase]'s domain phase so
- * the session and TUI agree on where in the turn we are.
- *
- * - If [turnState] is [TurnState.NULL] (the fresh-game default), the
- *   session is set up so its first [BattleSession.advance] call fires
- *   the starting phase's on-entry work (e.g. roll initiative).
- * - Otherwise the test/caller has pre-seeded a turnState that already
- *   reflects the chosen phase; on-entry is treated as already done.
+ * the session and TUI agree on where in the turn we are. Used primarily by
+ * tests that pre-seed a known [turnState].
  */
 public fun AppState(
     gameState: GameState,
@@ -69,8 +71,8 @@ public fun AppState(
  *
  * Player phases drive on-entry from state markers (e.g., attackSequence
  * empty ⇒ WeaponAttack hasn't seeded yet ⇒ on-entry pending). System
- * phases (Heat / End) have no neutral marker; assume on-entry is pending
- * if the caller hasn't pre-supplied a turnState.
+ * phases have no neutral marker; assume on-entry is pending if the caller
+ * hasn't pre-supplied a turnState.
  */
 private fun inferNeedsOnEntry(phase: TurnPhase, turn: TurnState): Boolean = when (phase) {
     TurnPhase.INITIATIVE -> turn.initiative.rolls.isEmpty()
@@ -91,15 +93,18 @@ public fun moveCursor(
 }
 
 /**
- * Map the current domain [TurnPhase] to the TUI [Phase] sub-state machine
- * we should be in. Used by the tick/transition path to re-sync app.phase
- * with session.currentPhase after the session's auto-advance cascade.
+ * Map the current domain [TurnPhase] to the TUI [Phase] sub-state machine.
+ * Only player phases (Movement, Weapon/Physical Attack) have TUI phase
+ * objects; if the session is somehow observed in a system phase, the TUI
+ * presents a generic SelectingUnit/SelectingAttacker placeholder — the
+ * cascade should drive past system phases before the next render.
  */
 public fun mapToTuiPhase(domainPhase: TurnPhase): Phase = when (domainPhase) {
-    TurnPhase.INITIATIVE -> InitiativePhase
-    TurnPhase.MOVEMENT -> MovementPhase.SelectingUnit
+    TurnPhase.MOVEMENT,
+    TurnPhase.INITIATIVE,
+    TurnPhase.HEAT,
+    TurnPhase.END,
+    -> MovementPhase.SelectingUnit
     TurnPhase.WEAPON_ATTACK -> AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
     TurnPhase.PHYSICAL_ATTACK -> AttackPhase.SelectingAttacker(TurnPhase.PHYSICAL_ATTACK)
-    TurnPhase.HEAT -> HeatPhase
-    TurnPhase.END -> EndPhase
 }

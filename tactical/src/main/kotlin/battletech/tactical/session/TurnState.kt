@@ -15,7 +15,6 @@ public data class TurnState(
     val unitsMovedInCurrentImpulse: Int = 0,
     val attackSequence: ImpulseSequence = ImpulseSequence(emptyList()),
     val attackDeclarations: List<AttackDeclaration> = emptyList(),
-    val attackImpulse: ImpulseDeclarations? = null,
 ) {
     val currentImpulse: Impulse get() = movementSequence.current
     val activePlayer: PlayerId get() = movementSequence.activePlayer

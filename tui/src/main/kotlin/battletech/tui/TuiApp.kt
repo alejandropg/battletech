@@ -1,15 +1,20 @@
 package battletech.tui
 
-import battletech.tactical.action.ActionQueryService
-import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
-import battletech.tactical.action.movement.MoveActionDefinition
+import battletech.tactical.action.PlayerId
+import battletech.tactical.event.AttacksResolved
+import battletech.tactical.event.GameEvent
+import battletech.tactical.event.HeatDissipated
+import battletech.tactical.event.InitiativeRolled
+import battletech.tactical.event.PhaseChanged
+import battletech.tactical.event.TurnEnded
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.action.TurnPhase
+import battletech.tactical.session.BattleSession
+import battletech.tactical.session.TurnState
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
-import battletech.tactical.session.TurnState
-import battletech.tui.game.phase.InitiativePhase
-import battletech.tui.game.phase.PhaseServices
+import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
@@ -29,18 +34,19 @@ public class TuiApp {
     public fun run() {
         val terminal = Terminal()
         val renderer = ScreenRenderer(terminal)
-        val services = PhaseServices(
-            actionQueryService = ActionQueryService(
-                MoveActionDefinition(),
-                listOf(FireWeaponActionDefinition()),
-            ),
-        )
 
+        val session = BattleSession(
+            initialGameState = GameStateFactory().sampleGameState(),
+            initialTurnState = TurnState.NULL,
+        )
+        // Kickstart: cascades INITIATIVE → MOVEMENT (and through any other
+        // system phases) so the first frame already shows a player phase.
+        val initialFlashes = session.advance().mapNotNull(::eventToFlash)
         var appState = AppState(
-            GameStateFactory().sampleGameState(),
-            TurnState.NULL,
-            InitiativePhase,
-            HexCoordinates(0, 0)
+            session = session,
+            phase = mapToTuiPhase(session.currentPhase),
+            cursor = HexCoordinates(0, 0),
+            pendingFlashes = initialFlashes,
         )
 
         renderer.clear()
@@ -50,10 +56,15 @@ public class TuiApp {
                 while (true) {
                     val currentSize = currentSize(terminal)
 
-                    val tick = appState.phase.tick(appState, services)
-                    if (tick != null) {
-                        appState = tick.app
-                        renderFrame(currentSize, renderer, appState, tick.flash)
+                    // Drain queued flashes one frame at a time so each
+                    // cascade event lands as a discrete on-screen message.
+                    if (appState.pendingFlashes.isNotEmpty()) {
+                        val head = appState.pendingFlashes.first()
+                        appState = appState.copy(pendingFlashes = appState.pendingFlashes.drop(1))
+                        renderFrame(currentSize, renderer, appState, head)
+                        // Block on input briefly so the user sees the flash.
+                        val event = rawMode.readEvent()
+                        if (event is KeyboardEvent && InputMapper.isQuit(event)) break
                         continue
                     }
 
@@ -62,7 +73,7 @@ public class TuiApp {
                     val event = rawMode.readEvent()
                     if (event is KeyboardEvent && InputMapper.isQuit(event)) break
 
-                    val transition = appState.phase.handle(event, appState, services) ?: continue
+                    val transition = appState.phase.handle(event, appState) ?: continue
 
                     appState = transition.app
                     if (transition.flash != null) {
@@ -142,4 +153,34 @@ public class TuiApp {
         renderer.render(buffer)
     }
 
+    private companion object {
+        private fun eventToFlash(event: GameEvent): FlashMessage? = when (event) {
+            is InitiativeRolled -> {
+                val p1 = event.initiative.rolls[PlayerId.PLAYER_1]!!
+                val p2 = event.initiative.rolls[PlayerId.PLAYER_2]!!
+                val loserName = if (event.initiative.loser == PlayerId.PLAYER_1) "P1" else "P2"
+                FlashMessage("Initiative: P1 rolled $p1, P2 rolled $p2 — $loserName moves first")
+            }
+            is HeatDissipated -> {
+                val details = event.heatBefore
+                    .filterValues { it > 0 }
+                    .map { (id, before) -> "${id.value}: $before→${event.heatAfter[id] ?: 0}" }
+                    .joinToString(", ")
+                    .ifEmpty { "No heat to dissipate" }
+                FlashMessage("Heat: $details")
+            }
+            is TurnEnded -> FlashMessage("Turn complete")
+            is AttacksResolved -> {
+                val hits = event.results.count { r -> r.hit }
+                val damage = event.results.sumOf { r -> r.damageApplied }
+                FlashMessage("Attacks resolved: ${event.results.size} attacks, $hits hits, $damage damage")
+            }
+            is PhaseChanged -> when (event.to) {
+                TurnPhase.WEAPON_ATTACK -> FlashMessage("Weapon Attack Phase")
+                TurnPhase.PHYSICAL_ATTACK -> FlashMessage("Physical Attack Phase")
+                else -> null
+            }
+            else -> null
+        }
+    }
 }

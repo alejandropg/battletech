@@ -54,7 +54,6 @@ public class WeaponAttackPhaseHandler : PhaseHandler {
         val accumulated = turn.attackDeclarations + cmd.declarations
         var newTurn = turn.copy(
             attackDeclarations = accumulated,
-            attackImpulse = null,
             attackSequence = turn.attackSequence.advance(),
         )
 
@@ -65,12 +64,6 @@ public class WeaponAttackPhaseHandler : PhaseHandler {
             newState = resolvedState
             newTurn = newTurn.copy(attackDeclarations = emptyList())
             events += AttacksResolved(results)
-        }
-
-        // Between impulses, seed a fresh draft holder for the next active
-        // player so the TUI's draft updates have something to write into.
-        if (!newTurn.attackSequence.isComplete) {
-            newTurn = newTurn.copy(attackImpulse = ImpulseDeclarations(newTurn.activeAttackPlayer))
         }
 
         return PhaseOutcome(newState, newTurn, events)
@@ -84,14 +77,13 @@ public class WeaponAttackPhaseHandler : PhaseHandler {
         turn: TurnState,
         roller: DiceRoller,
     ): PhaseOutcome {
-        if (turn.attackSequence.order.isNotEmpty()) return PhaseOutcome(state, turn, emptyList())
+        // Fresh entry = no sequence yet, or the previous phase left a fully
+        // consumed one behind. In the latter case we still want to reseed.
+        if (turn.attackSequence.order.isNotEmpty() && !turn.attackSequence.isComplete) {
+            return PhaseOutcome(state, turn, emptyList())
+        }
         val sequence = ImpulseSequence(attackOrderFor(turn.initiative, state))
-        val newTurn = turn.copy(
-            attackSequence = sequence,
-            attackImpulse = if (sequence.order.isNotEmpty()) {
-                ImpulseDeclarations(sequence.activePlayer)
-            } else null,
-        )
+        val newTurn = turn.copy(attackSequence = sequence)
         return PhaseOutcome(state, newTurn, emptyList())
     }
 }

@@ -23,16 +23,14 @@ import battletech.tactical.view.PlayerView
  *  - Commands flow through [submitCommand]. The current handler decides
  *    whether to [PhaseHandler.accepts] (else [CommandRejection.WrongPhase]),
  *    then [PhaseHandler.validate]s (else specific rejection), then
- *    [PhaseHandler.apply]s. If the handler reports [PhaseHandler.isComplete]
- *    after apply, the phase index advances (a [PhaseChanged] event is
- *    appended) and the new handler's on-entry work is deferred to the next
- *    [advance] call.
+ *    [PhaseHandler.apply]s. After applying, the session cascades through any
+ *    handlers that report [PhaseHandler.isComplete] — each advance fires the
+ *    new handler's [PhaseHandler.onEntry] and emits a [PhaseChanged] event
+ *    — until it lands on a handler that needs more input.
  *
- *  - System phases (Initiative/Heat/End) do their work in
- *    [PhaseHandler.onEntry], are immediately complete, and need [advance]
- *    to be called by the caller (the TUI tick loop) to fire. Each
- *    [advance] runs at most one on-entry + one phase-index increment, so
- *    each tick produces a discrete flash for the user.
+ *  - [advance] is the kickstart: it fires the current handler's on-entry if
+ *    pending and then runs the same cascade. Used at game start so the TUI
+ *    doesn't have to know about system phases (Initiative/Heat/End) at all.
  *
  * Threading: not internally synchronised. Callers must serialise commands.
  */
@@ -76,46 +74,42 @@ public class BattleSession(
         _gameState = outcome.state
         _turnState = outcome.turn
         val events = outcome.events.toMutableList()
-        if (handler.isComplete(_turnState)) {
-            events += advanceIndex()
-            // Fire on-entry for the new phase so its state is settled for
-            // the next read. We deliberately do NOT cascade further here —
-            // discrete TUI ticks drive system-phase cascades, one per tick.
-            val newHandler = handlers[_currentPhaseIndex]
-            if (_needsOnEntry) {
-                val entry = newHandler.onEntry(_gameState, _turnState, roller)
-                _gameState = entry.state
-                _turnState = entry.turn
-                events.addAll(entry.events)
-                _needsOnEntry = false
-            }
-        }
+        events.addAll(cascade())
         return CommandResult.Accepted(events)
     }
 
     /**
-     * Drive one step of phase progression. Used by the TUI tick loop to
-     * run system-phase on-entry work (init roll, heat dissipation,
-     * end-of-turn reset) and cascade into the next phase.
-     *
-     * One call does at most one on-entry + one phase-index increment, so
-     * each tick produces a discrete event stream.
+     * Kickstart the session at game start: fires the initial phase's
+     * on-entry if pending, then cascades through any auto-completing system
+     * phases. After construction with a fresh [TurnState.NULL], one call
+     * lands the session at [battletech.tactical.action.TurnPhase.MOVEMENT]
+     * with initiative rolled and the movement sequence seeded.
      */
     public fun advance(): List<GameEvent> {
         if (_matchOver) return emptyList()
-        val handler = handlers[_currentPhaseIndex]
         val events = mutableListOf<GameEvent>()
         if (_needsOnEntry) {
-            val outcome = handler.onEntry(_gameState, _turnState, roller)
-            _gameState = outcome.state
-            _turnState = outcome.turn
-            events.addAll(outcome.events)
-            _needsOnEntry = false
+            events.addAll(fireOnEntry())
         }
-        if (handler.isComplete(_turnState)) {
+        events.addAll(cascade())
+        return events
+    }
+
+    private fun cascade(): List<GameEvent> {
+        val events = mutableListOf<GameEvent>()
+        while (handlers[_currentPhaseIndex].isComplete(_turnState)) {
             events += advanceIndex()
+            events.addAll(fireOnEntry())
         }
         return events
+    }
+
+    private fun fireOnEntry(): List<GameEvent> {
+        val outcome = handlers[_currentPhaseIndex].onEntry(_gameState, _turnState, roller)
+        _gameState = outcome.state
+        _turnState = outcome.turn
+        _needsOnEntry = false
+        return outcome.events
     }
 
     private fun advanceIndex(): GameEvent {
@@ -123,23 +117,6 @@ public class BattleSession(
         _currentPhaseIndex = (_currentPhaseIndex + 1) % handlers.size
         _needsOnEntry = true
         return PhaseChanged(from, handlers[_currentPhaseIndex].phase)
-    }
-
-    /**
-     * Transitional escape hatch used by the TUI for the attack-impulse
-     * *draft* state — the in-progress declarations a player is building
-     * before they press Commit. PR7 moves the draft out of [TurnState]
-     * into the TUI's own state and removes this method.
-     */
-    @Suppress("DEPRECATION_ERROR")
-    @Deprecated(
-        "Transitional escape hatch for the TUI's attack-draft updates. " +
-            "PR7 removes it once the draft lives in the TUI layer.",
-    )
-    public fun applyMutation(transform: (GameState, TurnState) -> Pair<GameState, TurnState>) {
-        val (g, t) = transform(_gameState, _turnState)
-        _gameState = g
-        _turnState = t
     }
 
     public companion object {
