@@ -441,7 +441,7 @@ private fun resolveWeaponAttacksAndAdvance(
 ): Transition {
     val declarations = afterCommit.attackDeclarations
     val (resolvedGameState, flash) = if (declarations.isNotEmpty()) {
-        val (resolved, results) = resolveAttacks(declarations, gameStateWithTorso, svc.random)
+        val (resolved, results) = resolveAttacks(declarations, gameStateWithTorso, svc.roller)
         val hitCount = results.count { it.hit }
         val totalDamage = results.sumOf { it.damageApplied }
         resolved to FlashMessage("Attacks resolved: ${results.size} attacks, $hitCount hits, $totalDamage damage")

@@ -13,7 +13,7 @@ public data object InitiativePhase : Phase {
     override val turnPhase: TurnPhase = TurnPhase.INITIATIVE
 
     override fun tick(app: AppState, svc: PhaseServices): Transition {
-        val initiative = rollInitiative(svc.random)
+        val initiative = rollInitiative(svc.roller)
 
         val loserCount = app.gameState.unitsOf(initiative.loser).size
         val winnerCount = app.gameState.unitsOf(initiative.winner).size

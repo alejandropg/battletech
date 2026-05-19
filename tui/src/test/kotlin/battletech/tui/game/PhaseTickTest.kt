@@ -5,6 +5,7 @@ import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
 import battletech.tactical.action.movement.MoveActionDefinition
+import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.HexCoordinates
 import battletech.tui.aGameState
 import battletech.tui.aUnit
@@ -19,7 +20,6 @@ import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import kotlin.random.Random
 
 internal class PhaseTickTest {
 
@@ -28,7 +28,7 @@ internal class PhaseTickTest {
             MoveActionDefinition(),
             listOf(FireWeaponActionDefinition()),
         ),
-        random = Random(42),
+        roller = DiceRoller.seeded(42),
     )
 
     private fun anAppState(

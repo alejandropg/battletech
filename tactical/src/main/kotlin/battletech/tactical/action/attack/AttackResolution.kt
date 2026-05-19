@@ -2,13 +2,13 @@ package battletech.tactical.action.attack
 
 import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.UnitId
+import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HitLocation
 import battletech.tactical.model.HitLocationTable
 import battletech.tactical.model.InternalStructureLayout
 import kotlin.math.ceil
-import kotlin.random.Random
 
 public data class AttackDeclaration(
     val attackerId: UnitId,
@@ -31,11 +31,11 @@ public data class AttackResult(
 public fun resolveAttacks(
     declarations: List<AttackDeclaration>,
     gameState: GameState,
-    random: Random,
+    roller: DiceRoller,
 ): Pair<GameState, List<AttackResult>> {
     // All attacks resolve against the original state (simultaneous resolution)
     val results = declarations.map { declaration ->
-        resolveOneAttack(declaration, gameState, random)
+        resolveOneAttack(declaration, gameState, roller)
     }
 
     // Apply all damage to get the final state
@@ -73,7 +73,7 @@ public fun applyDamage(unit: CombatUnit, location: HitLocation, damage: Int): Co
 private fun resolveOneAttack(
     declaration: AttackDeclaration,
     gameState: GameState,
-    random: Random,
+    roller: DiceRoller,
 ): AttackResult {
     val attacker = gameState.unitById(declaration.attackerId)!!
     val target = gameState.unitById(declaration.targetId)!!
@@ -91,10 +91,10 @@ private fun resolveOneAttack(
     val secondaryPenalty = if (declaration.isPrimary) 0 else 1
     val targetNumber = attacker.gunnerySkill + rangeModifier + heatPenalty + secondaryPenalty
 
-    val roll = random.nextInt(1, 7) + random.nextInt(1, 7) // 2d6
+    val roll = roller.roll2d6()
 
     return if (roll >= targetNumber) {
-        val locationRoll = random.nextInt(1, 7) + random.nextInt(1, 7)
+        val locationRoll = roller.roll2d6()
         val hitLocation = HitLocationTable.roll(locationRoll)
         AttackResult(
             attackerId = declaration.attackerId,

@@ -1,6 +1,7 @@
 package battletech.tactical.action
 
-import kotlin.random.Random
+import battletech.tactical.dice.DiceRoller
+import battletech.tactical.dice.RandomDiceRoller
 
 public data class Initiative(
     val rolls: Map<PlayerId, Int>,
@@ -8,10 +9,10 @@ public data class Initiative(
     val winner: PlayerId,
 )
 
-public fun rollInitiative(random: Random = Random): Initiative {
+public fun rollInitiative(roller: DiceRoller = RandomDiceRoller()): Initiative {
     while (true) {
-        val roll1 = random.nextInt(1, 7) + random.nextInt(1, 7)
-        val roll2 = random.nextInt(1, 7) + random.nextInt(1, 7)
+        val roll1 = roller.roll2d6()
+        val roll2 = roller.roll2d6()
         if (roll1 == roll2) continue
 
         val (loser, winner) = if (roll1 < roll2) {
