@@ -1,9 +1,9 @@
 package battletech.tactical.action.attack.rule
 
 import battletech.tactical.action.RuleResult
-import battletech.tactical.action.UnavailabilityReason
 import battletech.tactical.action.attack.AttackRule
 import battletech.tactical.action.attack.WeaponAttackContext
+import battletech.tactical.command.RuleRejection
 
 public class WeaponNotDestroyedRule : AttackRule<WeaponAttackContext> {
 
@@ -12,12 +12,7 @@ public class WeaponNotDestroyedRule : AttackRule<WeaponAttackContext> {
         return if (!weapon.destroyed) {
             RuleResult.Satisfied
         } else {
-            RuleResult.Unsatisfied(
-                UnavailabilityReason(
-                    code = "WEAPON_DESTROYED",
-                    description = "${weapon.name} is destroyed",
-                )
-            )
+            RuleResult.Unsatisfied(RuleRejection.WeaponDestroyed(weaponName = weapon.name))
         }
     }
 }

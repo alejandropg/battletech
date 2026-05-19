@@ -1,9 +1,9 @@
 package battletech.tactical.action.attack.rule
 
 import battletech.tactical.action.RuleResult
-import battletech.tactical.action.UnavailabilityReason
 import battletech.tactical.action.attack.AttackRule
 import battletech.tactical.action.attack.WeaponAttackContext
+import battletech.tactical.command.RuleRejection
 
 public class HasAmmoRule : AttackRule<WeaponAttackContext> {
 
@@ -12,12 +12,7 @@ public class HasAmmoRule : AttackRule<WeaponAttackContext> {
         return if (weapon.ammo == null || weapon.ammo > 0) {
             RuleResult.Satisfied
         } else {
-            RuleResult.Unsatisfied(
-                UnavailabilityReason(
-                    code = "NO_AMMO",
-                    description = "${weapon.name} has no ammo remaining",
-                )
-            )
+            RuleResult.Unsatisfied(RuleRejection.NoAmmo(weaponName = weapon.name))
         }
     }
 }

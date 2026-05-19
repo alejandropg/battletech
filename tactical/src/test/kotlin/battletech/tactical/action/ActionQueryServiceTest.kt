@@ -5,6 +5,7 @@ import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
 import battletech.tactical.action.attack.definition.PunchActionDefinition
 import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.action.movement.MovementPreview
+import battletech.tactical.command.RuleRejection
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Weapon
@@ -99,9 +100,9 @@ internal class ActionQueryServiceTest {
         val action = report.actions[0]
         assertThat(action).isInstanceOf(UnavailableAction::class.java)
         val unavailable = action as UnavailableAction
-        assertThat(unavailable.reasons.map { it.code }).containsExactlyInAnyOrder(
-            "WEAPON_DESTROYED",
-            "NO_AMMO",
+        assertThat(unavailable.reasons.map { it::class }).containsExactlyInAnyOrder(
+            RuleRejection.WeaponDestroyed::class,
+            RuleRejection.NoAmmo::class,
         )
     }
 
@@ -191,9 +192,9 @@ internal class ActionQueryServiceTest {
         assertThat(unavailable).hasSize(1)
         val brokenAction = unavailable[0]
         assertEquals("Fire AC/20 at Hunchback", brokenAction.name)
-        assertThat(brokenAction.reasons.map { it.code }).containsExactlyInAnyOrder(
-            "WEAPON_DESTROYED",
-            "NO_AMMO",
+        assertThat(brokenAction.reasons.map { it::class }).containsExactlyInAnyOrder(
+            RuleRejection.WeaponDestroyed::class,
+            RuleRejection.NoAmmo::class,
         )
     }
 

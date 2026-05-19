@@ -1,9 +1,9 @@
 package battletech.tactical.action.attack.rule
 
 import battletech.tactical.action.RuleResult
-import battletech.tactical.action.UnavailabilityReason
 import battletech.tactical.action.attack.AttackContext
 import battletech.tactical.action.attack.AttackRule
+import battletech.tactical.command.RuleRejection
 
 public class AdjacentRule : AttackRule<AttackContext> {
 
@@ -12,12 +12,7 @@ public class AdjacentRule : AttackRule<AttackContext> {
         return if (distance == 1) {
             RuleResult.Satisfied
         } else {
-            RuleResult.Unsatisfied(
-                UnavailabilityReason(
-                    code = "NOT_ADJACENT",
-                    description = "Target is at distance $distance, must be adjacent (distance 1)",
-                )
-            )
+            RuleResult.Unsatisfied(RuleRejection.NotAdjacent(distance = distance))
         }
     }
 }

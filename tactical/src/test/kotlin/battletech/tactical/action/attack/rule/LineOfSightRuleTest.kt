@@ -4,6 +4,7 @@ import battletech.tactical.action.RuleResult
 import battletech.tactical.action.aGameState
 import battletech.tactical.action.aUnit
 import battletech.tactical.action.attack.aWeaponAttackContext
+import battletech.tactical.command.RuleRejection
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Terrain
@@ -38,7 +39,10 @@ internal class LineOfSightRuleTest {
 
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
         val unsatisfied = result as RuleResult.Unsatisfied
-        assertEquals("NO_LINE_OF_SIGHT", unsatisfied.reason.code)
+        assertThat(unsatisfied.reason).isInstanceOf(RuleRejection.NoLineOfSight::class.java)
+        val noLos = unsatisfied.reason as RuleRejection.NoLineOfSight
+        assertEquals(targetPos, noLos.blockerAt)
+        assertEquals(Terrain.HEAVY_WOODS, noLos.blockingTerrain)
     }
 
     @Test

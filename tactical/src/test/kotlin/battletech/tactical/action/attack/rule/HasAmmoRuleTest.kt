@@ -3,6 +3,7 @@ package battletech.tactical.action.attack.rule
 import battletech.tactical.action.RuleResult
 import battletech.tactical.action.aWeapon
 import battletech.tactical.action.attack.aWeaponAttackContext
+import battletech.tactical.command.RuleRejection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -31,7 +32,8 @@ internal class HasAmmoRuleTest {
 
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
         val unsatisfied = result as RuleResult.Unsatisfied
-        assertEquals("NO_AMMO", unsatisfied.reason.code)
-        assertThat(unsatisfied.reason.description).contains("SRM-4")
+        assertThat(unsatisfied.reason).isInstanceOf(RuleRejection.NoAmmo::class.java)
+        val noAmmo = unsatisfied.reason as RuleRejection.NoAmmo
+        assertEquals("SRM-4", noAmmo.weaponName)
     }
 }

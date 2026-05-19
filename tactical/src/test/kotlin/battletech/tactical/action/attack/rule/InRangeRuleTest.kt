@@ -4,6 +4,7 @@ import battletech.tactical.action.RuleResult
 import battletech.tactical.action.aUnit
 import battletech.tactical.action.aWeapon
 import battletech.tactical.action.attack.aWeaponAttackContext
+import battletech.tactical.command.RuleRejection
 import battletech.tactical.model.HexCoordinates
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -45,8 +46,10 @@ internal class InRangeRuleTest {
 
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
         val unsatisfied = result as RuleResult.Unsatisfied
-        assertEquals("OUT_OF_RANGE", unsatisfied.reason.code)
-        assertThat(unsatisfied.reason.description).contains("10")
-        assertThat(unsatisfied.reason.description).contains("9")
+        assertThat(unsatisfied.reason).isInstanceOf(RuleRejection.OutOfRange::class.java)
+        val outOfRange = unsatisfied.reason as RuleRejection.OutOfRange
+        assertEquals("Medium Laser", outOfRange.weaponName)
+        assertEquals(10, outOfRange.distance)
+        assertEquals(9, outOfRange.maxRange)
     }
 }
