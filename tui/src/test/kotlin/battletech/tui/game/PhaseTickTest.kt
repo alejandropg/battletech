@@ -269,8 +269,12 @@ internal class PhaseTickTest {
                 gameState = gameState,
                 turnState = turnState,
             )
+            // Simulate what MoveUnit's submitCommand does: apply the move,
+            // then let the session cascade — handler reports complete and
+            // the session advances into WEAPON_ATTACK.
             @Suppress("DEPRECATION")
             state.session.applyMutation { g, t -> g to t.advanceAfterUnitMoved(p1u1.id) }
+            state.session.advance()
 
             val newApp = battletech.tui.game.phase.advanceAfterMove(state)
 

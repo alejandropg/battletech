@@ -316,20 +316,10 @@ internal fun cycleToNextUnit(
 }
 
 internal fun advanceAfterMove(app: AppState): AppState {
-    // The MoveUnit command has already mutated session.gameState / session.turnState
-    // (including advanceAfterUnitMoved). The TUI only decides the next phase.
-    val turnState = app.turnState
-    return if (turnState.allImpulsesComplete) {
-        @Suppress("DEPRECATION")
-        app.session.applyMutation { g, t ->
-            g to t.copy(
-                attackSequence = ImpulseSequence(attackOrderFor(t.initiative, g)),
-            )
-        }
-        app.copy(phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK))
-    } else {
-        app.copy(phase = MovementPhase.SelectingUnit)
-    }
+    // The MoveUnit command auto-advances the session into WEAPON_ATTACK when
+    // movement is complete, and the handler's onEntry has already seeded the
+    // attack sequence. The TUI just re-syncs its phase to match the session.
+    return app.copy(phase = battletech.tui.game.mapToTuiPhase(app.session.currentPhase))
 }
 
 internal fun modePrompt(reachability: ReachabilityMap?): String {

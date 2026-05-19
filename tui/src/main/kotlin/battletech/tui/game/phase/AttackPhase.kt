@@ -63,22 +63,16 @@ public sealed interface AttackPhase : Phase {
         }
 
         override fun tick(app: AppState, svc: PhaseServices): Transition? {
-            val turnState = app.turnState
-            if (turnState.attackSequence.order.isNotEmpty()) return null
+            // If the attack sequence is already seeded, nothing to do.
+            if (app.turnState.attackSequence.order.isNotEmpty()) return null
 
-            val seededSequence = ImpulseSequence(attackOrderFor(turnState.initiative, app.gameState))
-            @Suppress("DEPRECATION")
-            app.session.applyMutation { g, t ->
-                g to t.copy(
-                    attackSequence = seededSequence,
-                    attackImpulse = if (seededSequence.order.isNotEmpty()) {
-                        ImpulseDeclarations(seededSequence.activePlayer)
-                    } else null,
-                )
-            }
+            // Drive one phase step: the attack handler's onEntry seeds the
+            // sequence and the first impulse holder.
+            app.session.advance()
+            if (app.turnState.attackSequence.order.isEmpty()) return null
+
             val flashText =
                 if (attackTurnPhase == TurnPhase.WEAPON_ATTACK) "Weapon Attack Phase" else "Physical Attack Phase"
-
             return enterFirstAttacker(app, attackTurnPhase, FlashMessage(flashText))
         }
 
@@ -402,8 +396,8 @@ internal fun enterFirstAttacker(
 
 internal fun commitAttackImpulse(app: AppState, attackTurnPhase: TurnPhase, svc: PhaseServices): Transition {
     val turnState = app.turnState
-    // Guard: commit pressed before the attack sequence has been seeded (e.g.
-    // empty TurnState.NULL). Treat as a no-op so the keypress isn't an error.
+    // Guard: commit pressed before the attack sequence has been seeded
+    // (e.g. immediately on phase entry before tick fires).
     if (turnState.attackSequence.order.isEmpty()) return Transition(app)
 
     val impulse = turnState.attackImpulse
@@ -412,44 +406,29 @@ internal fun commitAttackImpulse(app: AppState, attackTurnPhase: TurnPhase, svc:
         ?: emptyMap()
     val newDeclarations = impulse?.toAttackDeclarations().orEmpty()
     val activePlayer = turnState.activeAttackPlayer
-    val isWeapon = attackTurnPhase == TurnPhase.WEAPON_ATTACK
 
     val result = app.session.submitCommand(
         CommitAttackImpulse(
             playerId = activePlayer,
-            isWeaponPhase = isWeapon,
             declarations = newDeclarations,
             torsoFacings = torsoFacings,
         ),
     )
     val events = (result as? CommandResult.Accepted)?.events.orEmpty()
+    val phaseChanged = events.any { it is battletech.tactical.event.PhaseChanged }
 
-    // After the command, session.turnState reflects: declarations accumulated
-    // (or cleared on final-weapon resolution), attackImpulse=null, sequence advanced.
-    val afterCommit = app.turnState
-
-    return if (afterCommit.allAttackImpulsesComplete) {
-        if (isWeapon) {
-            val resolved = events.filterIsInstance<AttacksResolved>().firstOrNull()
-            val flash = resolved?.let {
-                val hitCount = it.results.count { r -> r.hit }
-                val totalDamage = it.results.sumOf { r -> r.damageApplied }
-                FlashMessage("Attacks resolved: ${it.results.size} attacks, $hitCount hits, $totalDamage damage")
-            }
-            // Clear the now-complete weapon sequence so the PHYSICAL tick re-seeds.
-            @Suppress("DEPRECATION")
-            app.session.applyMutation { g, t ->
-                g to t.copy(attackSequence = ImpulseSequence(emptyList()), attackImpulse = null)
-            }
-            Transition(app.copy(phase = AttackPhase.SelectingAttacker(TurnPhase.PHYSICAL_ATTACK)), flash)
-        } else {
-            Transition(app.copy(phase = HeatPhase))
+    return if (phaseChanged) {
+        // Session auto-advanced (and fired onEntry of the new phase). Sync
+        // the TUI phase and surface any resolution flash.
+        val flash = events.filterIsInstance<AttacksResolved>().firstOrNull()?.let {
+            val hitCount = it.results.count { r -> r.hit }
+            val totalDamage = it.results.sumOf { r -> r.damageApplied }
+            FlashMessage("Attacks resolved: ${it.results.size} attacks, $hitCount hits, $totalDamage damage")
         }
+        Transition(app.copy(phase = battletech.tui.game.mapToTuiPhase(app.session.currentPhase)), flash)
     } else {
-        @Suppress("DEPRECATION")
-        app.session.applyMutation { g, t ->
-            g to t.copy(attackImpulse = ImpulseDeclarations(t.activeAttackPlayer))
-        }
+        // Same domain phase — the handler has seeded the next impulse;
+        // enter its first attacker.
         enterFirstAttacker(app, attackTurnPhase)
     }
 }

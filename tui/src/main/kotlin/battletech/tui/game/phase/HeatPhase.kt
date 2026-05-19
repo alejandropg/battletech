@@ -1,9 +1,10 @@
 package battletech.tui.game.phase
 
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.model.applyHeatDissipation
+import battletech.tactical.event.HeatDissipated
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
+import battletech.tui.game.mapToTuiPhase
 import com.github.ajalt.mordant.input.InputEvent
 
 public data object HeatPhase : Phase {
@@ -12,17 +13,22 @@ public data object HeatPhase : Phase {
     override fun handle(event: InputEvent, app: AppState, svc: PhaseServices): Transition? = null
 
     override fun tick(app: AppState, svc: PhaseServices): Transition {
-        val oldUnits = app.gameState.units
-        @Suppress("DEPRECATION")
-        app.session.applyMutation { g, t -> g.applyHeatDissipation() to t }
-        val newUnits = app.gameState.units
-        val details = oldUnits.zip(newUnits)
-            .filter { (old, _) -> old.currentHeat > 0 }
-            .joinToString(", ") { (old, new) -> "${old.name}: ${old.currentHeat}→${new.currentHeat}" }
-            .ifEmpty { "No heat to dissipate" }
+        // Capture unit names BEFORE advance() mutates state (names don't
+        // change but using a pre-image keeps the message construction symmetric
+        // with the heat-before map carried by the event).
+        val unitNames = app.gameState.units.associate { it.id to it.name }
+        val events = app.session.advance()
+        val flash = events.filterIsInstance<HeatDissipated>().firstOrNull()?.let { ev ->
+            val details = ev.heatBefore
+                .filterValues { it > 0 }
+                .map { (id, before) -> "${unitNames[id] ?: id.value}: $before→${ev.heatAfter[id] ?: 0}" }
+                .joinToString(", ")
+                .ifEmpty { "No heat to dissipate" }
+            FlashMessage("Heat: $details")
+        }
         return Transition(
-            app.copy(phase = EndPhase),
-            FlashMessage("Heat: $details"),
+            app.copy(phase = mapToTuiPhase(app.session.currentPhase)),
+            flash,
         )
     }
 

@@ -1,9 +1,10 @@
 package battletech.tui.game.phase
 
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.model.resetTorsoFacings
+import battletech.tactical.event.TurnEnded
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
+import battletech.tui.game.mapToTuiPhase
 import com.github.ajalt.mordant.input.InputEvent
 
 public data object EndPhase : Phase {
@@ -12,11 +13,11 @@ public data object EndPhase : Phase {
     override fun handle(event: InputEvent, app: AppState, svc: PhaseServices): Transition? = null
 
     override fun tick(app: AppState, svc: PhaseServices): Transition {
-        @Suppress("DEPRECATION")
-        app.session.applyMutation { g, t -> g.resetTorsoFacings() to t }
+        val events = app.session.advance()
+        val flash = events.filterIsInstance<TurnEnded>().firstOrNull()?.let { FlashMessage("Turn complete") }
         return Transition(
-            app.copy(phase = InitiativePhase),
-            FlashMessage("Turn complete"),
+            app.copy(phase = mapToTuiPhase(app.session.currentPhase)),
+            flash,
         )
     }
 

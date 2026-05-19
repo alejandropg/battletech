@@ -13,7 +13,7 @@ public sealed interface CommandRejection : RejectionReason {
 
     public data class NotYourTurn(public val activePlayer: PlayerId, public val attemptedBy: PlayerId) : CommandRejection
 
-    public data class WrongPhase(public val expected: TurnPhase, public val actual: TurnPhase) : CommandRejection
+    public data class WrongPhase(public val actual: TurnPhase) : CommandRejection
 
     public data class UnitAlreadyActed(public val unitId: UnitId) : CommandRejection
 

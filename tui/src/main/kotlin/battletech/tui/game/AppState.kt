@@ -9,6 +9,11 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.TurnState
+import battletech.tui.game.phase.AttackPhase
+import battletech.tui.game.phase.EndPhase
+import battletech.tui.game.phase.HeatPhase
+import battletech.tui.game.phase.InitiativePhase
+import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.Phase
 
 /**
@@ -18,9 +23,7 @@ import battletech.tui.game.phase.Phase
  * cursor sits on the board.
  *
  * The [gameState] and [turnState] accessors read through the session;
- * mutations flow via `session.submitCommand(...)` or, transitionally,
- * `session.applyMutation { ... }`. PR7 removes the back-door once all
- * phase-progression lives in PR6 PhaseHandlers.
+ * mutations flow via `session.submitCommand(...)` or `session.advance()`.
  */
 public data class AppState(
     public val session: BattleSession,
@@ -33,11 +36,15 @@ public data class AppState(
 }
 
 /**
- * Back-compat factory matching the pre-PR5 positional signature so the
- * existing call sites (production and tests) keep compiling. Constructs a
- * fresh [BattleSession] around the supplied state. Once everything routes
- * through an externally-owned session (PR7+), this factory becomes
- * unnecessary and can be removed.
+ * Back-compat factory matching the pre-PR5 positional signature. Constructs
+ * a [BattleSession] positioned at the supplied [phase]'s domain phase so
+ * the session and TUI agree on where in the turn we are.
+ *
+ * - If [turnState] is [TurnState.NULL] (the fresh-game default), the
+ *   session is set up so its first [BattleSession.advance] call fires
+ *   the starting phase's on-entry work (e.g. roll initiative).
+ * - Otherwise the test/caller has pre-seeded a turnState that already
+ *   reflects the chosen phase; on-entry is treated as already done.
  */
 public fun AppState(
     gameState: GameState,
@@ -46,10 +53,33 @@ public fun AppState(
     cursor: HexCoordinates,
     roller: DiceRoller = RandomDiceRoller(),
 ): AppState = AppState(
-    session = BattleSession(gameState, turnState, roller),
+    session = BattleSession(
+        initialGameState = gameState,
+        initialTurnState = turnState,
+        roller = roller,
+        initialPhase = phase.turnPhase,
+        initialNeedsOnEntry = inferNeedsOnEntry(phase.turnPhase, turnState),
+    ),
     phase = phase,
     cursor = cursor,
 )
+
+/**
+ * Decide whether the session should fire on-entry for the starting phase.
+ *
+ * Player phases drive on-entry from state markers (e.g., attackSequence
+ * empty ⇒ WeaponAttack hasn't seeded yet ⇒ on-entry pending). System
+ * phases (Heat / End) have no neutral marker; assume on-entry is pending
+ * if the caller hasn't pre-supplied a turnState.
+ */
+private fun inferNeedsOnEntry(phase: TurnPhase, turn: TurnState): Boolean = when (phase) {
+    TurnPhase.INITIATIVE -> turn.initiative.rolls.isEmpty()
+    TurnPhase.MOVEMENT -> false
+    TurnPhase.WEAPON_ATTACK -> turn.attackSequence.order.isEmpty()
+    TurnPhase.PHYSICAL_ATTACK -> turn.attackSequence.order.isEmpty()
+    TurnPhase.HEAT -> turn === TurnState.NULL
+    TurnPhase.END -> turn === TurnState.NULL
+}
 
 public fun moveCursor(
     cursor: HexCoordinates,
@@ -58,4 +88,18 @@ public fun moveCursor(
 ): HexCoordinates {
     val neighbor = cursor.neighbor(direction)
     return if (neighbor in map.hexes) neighbor else cursor
+}
+
+/**
+ * Map the current domain [TurnPhase] to the TUI [Phase] sub-state machine
+ * we should be in. Used by the tick/transition path to re-sync app.phase
+ * with session.currentPhase after the session's auto-advance cascade.
+ */
+public fun mapToTuiPhase(domainPhase: TurnPhase): Phase = when (domainPhase) {
+    TurnPhase.INITIATIVE -> InitiativePhase
+    TurnPhase.MOVEMENT -> MovementPhase.SelectingUnit
+    TurnPhase.WEAPON_ATTACK -> AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
+    TurnPhase.PHYSICAL_ATTACK -> AttackPhase.SelectingAttacker(TurnPhase.PHYSICAL_ATTACK)
+    TurnPhase.HEAT -> HeatPhase
+    TurnPhase.END -> EndPhase
 }

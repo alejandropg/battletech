@@ -4,6 +4,7 @@ import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.Impulse
 import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId
+import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
 import battletech.tactical.action.attack.AttackDeclaration
 import battletech.tactical.command.CommandRejection
@@ -13,6 +14,8 @@ import battletech.tactical.command.MoveUnit
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.event.AttackDeclarationsRecorded
 import battletech.tactical.event.AttacksResolved
+import battletech.tactical.event.InitiativeRolled
+import battletech.tactical.event.PhaseChanged
 import battletech.tactical.event.TorsoFacingsApplied
 import battletech.tactical.event.UnitMoved
 import battletech.tactical.model.ArmorLayout
@@ -34,25 +37,29 @@ internal class BattleSessionTest {
     private val mech1 = aMech(id = "m1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
     private val mech2 = aMech(id = "m2", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 0))
 
-    private fun newSession(
-        units: List<CombatUnit> = listOf(mech1, mech2),
-        turn: TurnState = TurnState(
-            initiative = Initiative(
-                rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
-                loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
-            ),
-            movementSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1))),
+    private fun aMovementTurn(): TurnState = TurnState(
+        initiative = Initiative(
+            rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
+            loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
         ),
+        movementSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1))),
+    )
+
+    private fun sessionInMovement(
+        units: List<CombatUnit> = listOf(mech1, mech2),
+        turn: TurnState = aMovementTurn(),
         roller: DiceRoller = DiceRoller.seeded(42),
     ): BattleSession = BattleSession(
         initialGameState = GameState(units, GameMap(hexesFor(units))),
         initialTurnState = turn,
         roller = roller,
+        initialPhase = TurnPhase.MOVEMENT,
+        initialNeedsOnEntry = false,
     )
 
     @Test
     fun `MoveUnit applies and advances turn state`() {
-        val session = newSession()
+        val session = sessionInMovement()
         val destination = ReachableHex(
             position = HexCoordinates(1, 0),
             facing = HexDirection.NE,
@@ -66,8 +73,7 @@ internal class BattleSessionTest {
 
         assertThat(result).isInstanceOf(CommandResult.Accepted::class.java)
         val accepted = result as CommandResult.Accepted
-        assertThat(accepted.events).hasSize(1)
-        val moved = accepted.events.single() as UnitMoved
+        val moved = accepted.events.filterIsInstance<UnitMoved>().single()
         assertThat(moved.unitId).isEqualTo(mech1.id)
         assertThat(moved.from).isEqualTo(HexCoordinates(0, 0))
         assertThat(moved.to).isEqualTo(HexCoordinates(1, 0))
@@ -78,7 +84,7 @@ internal class BattleSessionTest {
 
     @Test
     fun `MoveUnit rejects UnknownUnit`() {
-        val session = newSession()
+        val session = sessionInMovement()
         val result = session.submitCommand(
             MoveUnit(PlayerId.PLAYER_1, UnitId("ghost"), aReachableHex(), MovementMode.WALK),
         )
@@ -88,7 +94,7 @@ internal class BattleSessionTest {
 
     @Test
     fun `MoveUnit rejects when player does not own the unit`() {
-        val session = newSession()
+        val session = sessionInMovement()
         val result = session.submitCommand(
             MoveUnit(PlayerId.PLAYER_2, mech1.id, aReachableHex(), MovementMode.WALK),
         )
@@ -98,15 +104,8 @@ internal class BattleSessionTest {
 
     @Test
     fun `MoveUnit rejects when the unit has already moved this turn`() {
-        val session = newSession(
-            turn = TurnState(
-                initiative = Initiative(
-                    rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
-                    loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
-                ),
-                movementSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
-                movedUnitIds = setOf(mech1.id),
-            ),
+        val session = sessionInMovement(
+            turn = aMovementTurn().copy(movedUnitIds = setOf(mech1.id)),
         )
         val result = session.submitCommand(
             MoveUnit(PlayerId.PLAYER_1, mech1.id, aReachableHex(), MovementMode.WALK),
@@ -116,23 +115,45 @@ internal class BattleSessionTest {
     }
 
     @Test
+    fun `submitCommand to wrong phase is rejected with WrongPhase`() {
+        // Heat phase doesn't accept any commands
+        val session = BattleSession(
+            initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
+            initialTurnState = aMovementTurn(),
+            roller = DiceRoller.seeded(42),
+            initialPhase = TurnPhase.HEAT,
+            initialNeedsOnEntry = false,
+        )
+        val result = session.submitCommand(
+            MoveUnit(PlayerId.PLAYER_1, mech1.id, aReachableHex(), MovementMode.WALK),
+        )
+        val rejected = result as CommandResult.Rejected
+        assertThat(rejected.reason).isInstanceOf(CommandRejection.WrongPhase::class.java)
+        assertThat((rejected.reason as CommandRejection.WrongPhase).actual).isEqualTo(TurnPhase.HEAT)
+    }
+
+    @Test
     fun `CommitAttackImpulse records declarations and applies torso facings (non-final, weapon phase)`() {
-        val session = newSession(
-            turn = TurnState(
-                initiative = Initiative(
-                    rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
-                    loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
-                ),
-                movementSequence = ImpulseSequence(emptyList()),
-                attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1))),
+        val turn = TurnState(
+            initiative = Initiative(
+                rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
+                loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
             ),
+            movementSequence = ImpulseSequence(emptyList()),
+            attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1))),
+        )
+        val session = BattleSession(
+            initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
+            initialTurnState = turn,
+            roller = DiceRoller.seeded(42),
+            initialPhase = TurnPhase.WEAPON_ATTACK,
+            initialNeedsOnEntry = false,
         )
         val decls = listOf(AttackDeclaration(mech1.id, mech2.id, 0, true))
 
         val result = session.submitCommand(
             CommitAttackImpulse(
                 playerId = PlayerId.PLAYER_1,
-                isWeaponPhase = true,
                 declarations = decls,
                 torsoFacings = mapOf(mech1.id to HexDirection.NE),
             ),
@@ -142,32 +163,36 @@ internal class BattleSessionTest {
         assertThat(accepted.events.filterIsInstance<TorsoFacingsApplied>()).hasSize(1)
         assertThat(accepted.events.filterIsInstance<AttackDeclarationsRecorded>()).hasSize(1)
         assertThat(accepted.events.filterIsInstance<AttacksResolved>()).isEmpty()
+        assertThat(accepted.events.filterIsInstance<PhaseChanged>()).isEmpty()
 
         assertThat(session.turnState.attackDeclarations).containsExactlyElementsOf(decls)
-        assertThat(session.turnState.attackImpulse).isNull()
+        assertThat(session.turnState.attackImpulse).isNotNull
         assertThat(session.gameState.unitById(mech1.id)!!.torsoFacing).isEqualTo(HexDirection.NE)
     }
 
     @Test
-    fun `CommitAttackImpulse resolves attacks on the final weapon-phase impulse`() {
+    fun `CommitAttackImpulse resolves attacks on the final weapon-phase impulse and advances to physical`() {
         val attacker = aMech(id = "a", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
         val target = aMech(id = "t", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 0))
-        val session = newSession(
-            units = listOf(attacker, target),
-            turn = TurnState(
-                initiative = Initiative(
-                    rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
-                    loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
-                ),
-                movementSequence = ImpulseSequence(emptyList()),
-                attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+        val turn = TurnState(
+            initiative = Initiative(
+                rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
+                loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
             ),
+            movementSequence = ImpulseSequence(emptyList()),
+            attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+        )
+        val session = BattleSession(
+            initialGameState = GameState(listOf(attacker, target), GameMap(hexesFor(listOf(attacker, target)))),
+            initialTurnState = turn,
+            roller = DiceRoller.seeded(42),
+            initialPhase = TurnPhase.WEAPON_ATTACK,
+            initialNeedsOnEntry = false,
         )
 
         val result = session.submitCommand(
             CommitAttackImpulse(
                 playerId = PlayerId.PLAYER_1,
-                isWeaponPhase = true,
                 declarations = listOf(AttackDeclaration(attacker.id, target.id, 0, true)),
                 torsoFacings = emptyMap(),
             ),
@@ -175,40 +200,30 @@ internal class BattleSessionTest {
 
         val accepted = result as CommandResult.Accepted
         assertThat(accepted.events.filterIsInstance<AttacksResolved>()).hasSize(1)
+        // Phase auto-advanced after the handler reported complete.
+        assertThat(accepted.events.filterIsInstance<PhaseChanged>()).hasSize(1)
+        assertThat(session.currentPhase).isEqualTo(TurnPhase.PHYSICAL_ATTACK)
         assertThat(session.turnState.attackDeclarations).isEmpty()
-        assertThat(session.turnState.attackSequence.isComplete).isTrue()
     }
 
     @Test
-    fun `CommitAttackImpulse on physical-phase final impulse drops declarations without resolving`() {
-        val session = newSession(
-            turn = TurnState(
-                initiative = Initiative(
-                    rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
-                    loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
-                ),
-                movementSequence = ImpulseSequence(emptyList()),
-                attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
-            ),
+    fun `advance bootstraps initiative on construction`() {
+        val session = BattleSession(
+            initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
+            initialTurnState = TurnState.NULL,
+            roller = DiceRoller.seeded(42),
         )
-
-        val result = session.submitCommand(
-            CommitAttackImpulse(
-                playerId = PlayerId.PLAYER_1,
-                isWeaponPhase = false,
-                declarations = listOf(AttackDeclaration(mech1.id, mech2.id, 0, true)),
-                torsoFacings = emptyMap(),
-            ),
-        )
-
-        val accepted = result as CommandResult.Accepted
-        assertThat(accepted.events.filterIsInstance<AttacksResolved>()).isEmpty()
-        assertThat(session.turnState.attackDeclarations).isEmpty()
+        // Tick once: Initiative.onEntry runs, isComplete=true, advance to MOVEMENT
+        val events = session.advance()
+        assertThat(events.filterIsInstance<InitiativeRolled>()).hasSize(1)
+        assertThat(events.filterIsInstance<PhaseChanged>()).hasSize(1)
+        assertThat(session.currentPhase).isEqualTo(TurnPhase.MOVEMENT)
+        assertThat(session.turnState.movementSequence.order).isNotEmpty
     }
 
     @Test
     fun `viewFor returns a PlayerView scoped to the requested player`() {
-        val session = newSession()
+        val session = sessionInMovement()
         val view = session.viewFor(PlayerId.PLAYER_1)
         assertThat(view.playerId).isEqualTo(PlayerId.PLAYER_1)
         assertThat(view.state.units).containsExactlyElementsOf(session.gameState.units)
@@ -256,7 +271,6 @@ internal class BattleSessionTest {
     )
 
     private fun hexesFor(units: List<CombatUnit>): Map<HexCoordinates, Hex> {
-        // Include every unit position plus a small margin so adjacent moves resolve.
         val coords = units.flatMap { u ->
             listOf(u.position) + HexDirection.entries.map { u.position.neighbor(it) }
         }

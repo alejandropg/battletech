@@ -30,14 +30,13 @@ public data class MoveUnit(
 
 /**
  * Commit a full attack impulse for [playerId]. [torsoFacings] is applied
- * to attacker units before resolution. When [isWeaponPhase] is true the
- * declarations are resolved immediately (dice rolled, damage applied);
- * when false (physical phase) the declarations are recorded for combined
- * resolution at the end of the phase — current behaviour matches the TUI.
+ * to attacker units before resolution. The active phase handler decides
+ * what "commit" means for its phase: WeaponAttackPhaseHandler resolves
+ * accumulated declarations on the final impulse; PhysicalAttackPhaseHandler
+ * just records them.
  */
 public data class CommitAttackImpulse(
     public val playerId: PlayerId,
-    public val isWeaponPhase: Boolean,
     public val declarations: List<AttackDeclaration>,
     public val torsoFacings: Map<UnitId, HexDirection>,
 ) : GameCommand
