@@ -6,8 +6,8 @@ import battletech.tactical.action.calculateMovementOrder
 import battletech.tactical.action.rollInitiative
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
-import battletech.tui.game.ImpulseSequence
-import battletech.tui.game.TurnState
+import battletech.tactical.session.ImpulseSequence
+import battletech.tactical.session.TurnState
 
 public data object InitiativePhase : Phase {
     override val turnPhase: TurnPhase = TurnPhase.INITIATIVE

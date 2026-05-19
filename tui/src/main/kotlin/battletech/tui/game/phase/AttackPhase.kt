@@ -13,12 +13,12 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.applyTorsoFacings
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
-import battletech.tui.game.ImpulseDeclarations
-import battletech.tui.game.ImpulseSequence
+import battletech.tactical.session.ImpulseDeclarations
+import battletech.tactical.session.ImpulseSequence
 import battletech.tui.game.RenderData
 import battletech.tui.game.TargetInfo
-import battletech.tui.game.TurnState
-import battletech.tui.game.UnitDeclaration
+import battletech.tactical.session.TurnState
+import battletech.tactical.session.UnitDeclaration
 import battletech.tui.game.fireArc
 import battletech.tui.game.losHighlights
 import battletech.tui.game.moveCursor

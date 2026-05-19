@@ -1,4 +1,4 @@
-package battletech.tui.game
+package battletech.tactical.session
 
 import battletech.tactical.action.Impulse
 import battletech.tactical.action.PlayerId

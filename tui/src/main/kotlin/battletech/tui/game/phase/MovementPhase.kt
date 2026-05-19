@@ -15,7 +15,7 @@ import battletech.tactical.movement.ReachableHex
 import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
 import battletech.tui.game.FlashMessage
-import battletech.tui.game.ImpulseSequence
+import battletech.tactical.session.ImpulseSequence
 import battletech.tui.game.RenderData
 import battletech.tui.game.moveCursor
 import battletech.tui.game.pathHighlights

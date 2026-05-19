@@ -1,4 +1,4 @@
-package battletech.tui.game
+package battletech.tactical.session
 
 import battletech.tactical.action.UnitId
 import battletech.tactical.model.HexDirection

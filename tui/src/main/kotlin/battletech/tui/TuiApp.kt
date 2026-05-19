@@ -7,7 +7,7 @@ import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
-import battletech.tui.game.TurnState
+import battletech.tactical.session.TurnState
 import battletech.tui.game.phase.InitiativePhase
 import battletech.tui.game.phase.PhaseServices
 import battletech.tui.input.InputMapper

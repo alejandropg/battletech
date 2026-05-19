@@ -1,5 +1,8 @@
 package battletech.tui.game
 
+import battletech.tactical.session.ImpulseDeclarations
+import battletech.tactical.session.ImpulseSequence
+import battletech.tactical.session.TurnState
 import battletech.tactical.action.ActionQueryService
 import battletech.tactical.action.Impulse
 import battletech.tactical.action.Initiative

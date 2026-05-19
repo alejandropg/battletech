@@ -1,5 +1,6 @@
 package battletech.tui.game
 
+import battletech.tactical.session.TurnState
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
