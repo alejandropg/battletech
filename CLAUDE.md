@@ -51,8 +51,10 @@ The project uses a layered module architecture:
 
 - **`strategic/`**
   - Library module for strategic-level game rules (campaign movement, logistics, aerospace, etc.)
+  - Not used yet, can be ignored.
 - **`tactical/`**
   - Library module for tactical-level game rules (combat, to-hit calculations, etc.)
+  - Is delivery-agnostic — no UI assumptions, no I/O. The TUI (and any future `web/` or `remote-server/` module) consumes it through the same public surface.
 - **`bt/`**
   - Application entry point is `battletech.MainKt`
 - **`tui/`**
@@ -61,6 +63,17 @@ The project uses a layered module architecture:
   - Entry point is `battletech.tui.MainKt`
 
 Dependencies flow: `bt` → `strategic` + `tactical`, `tui` → `tactical` (libraries are independent of each other)
+
+### Architecture invariants
+
+These are fixed. Don't relitigate them — see `docs/refactor-tactical-domain.md` for the rationale.
+
+- **Server-authoritative**: one `BattleSession` per match owns state; deliveries (TUI, future web/remote) never mutate `GameState` directly.
+- **Command-driven**: state changes flow through `session.submitCommand(GameCommand)`. After applying the handler, the session **auto-cascades** through any phase whose `isComplete` is true (firing each new phase's `onEntry` and emitting `PhaseChanged`), stopping at the next player phase. `session.advance()` is a one-shot kickstart used at game start to fire `InitiativePhaseHandler.onEntry` and cascade to `MOVEMENT`.
+- **PhaseHandler strategy**: adding a phase = adding a handler and registering it in `BattleSession.standardHandlers()`. Handlers are stateless — all data flows through arguments and `PhaseOutcome`. System phases (Initiative/Heat/End) do their work in `onEntry`, report `isComplete = true`, and rely on the cascade.
+- **Coarse commit-on-intent commands + rich per-player queries**: the TUI asks `PlayerView` "what is legal right now?" then submits a single coarse command (`MoveUnit`, `CommitAttackImpulse`). Don't add fine-grained mutation commands; build the next coarse command instead.
+- **Subscription is canonical**: `session.subscribe(playerId, listener)` is how remote/web clients will receive `GameEvent`s. Each event passes through `EventVisibility.filterFor` so hidden-info redaction lands without subscriber-side changes. `CommandResult.Accepted.events` is a synchronous courtesy returned to the submitter; do not rely on it for cross-player notification.
+- **No raw `Random`**: always go through `DiceRoller`. Seeded tests must match production roll order.
 
 ## Tool Preferences
 
