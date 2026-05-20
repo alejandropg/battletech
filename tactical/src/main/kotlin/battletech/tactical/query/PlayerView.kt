@@ -1,10 +1,10 @@
 package battletech.tactical.query
 
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.UnitId
-import battletech.tactical.attack.TargetInfo
+import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.UnitId
 import battletech.tactical.movement.ReachabilityMap
 
 /**

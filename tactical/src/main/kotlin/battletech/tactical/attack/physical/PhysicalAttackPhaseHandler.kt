@@ -1,9 +1,11 @@
-package battletech.tactical.attack
+package battletech.tactical.attack.physical
 
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.TurnPhase
+import battletech.tactical.attack.applyTorsoFacings
+import battletech.tactical.attack.weapon.attackOrderFor
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.GameCommand
@@ -16,7 +18,7 @@ import battletech.tactical.session.TurnState
 
 /**
  * Physical-attack phase. Same impulse seeding shape as
- * [WeaponAttackPhaseHandler], but the current engine doesn't resolve
+ * [battletech.tactical.attack.weapon.WeaponAttackPhaseHandler], but the current engine doesn't resolve
  * physical damage — declarations are recorded and dropped at the end of
  * the phase, matching the pre-PR6 TUI behaviour.
  */

@@ -1,11 +1,11 @@
 package battletech.tactical.session
 
-import battletech.tactical.model.PlayerId
+import battletech.tactical.attack.physical.PhysicalAttackPhaseHandler
+import battletech.tactical.attack.weapon.WeaponAttackPhaseHandler
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.dice.RandomDiceRoller
-import battletech.tactical.attack.PhysicalAttackPhaseHandler
-import battletech.tactical.attack.WeaponAttackPhaseHandler
 import battletech.tactical.model.GameState
+import battletech.tactical.model.PlayerId
 import battletech.tactical.movement.MovementPhaseHandler
 import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerView

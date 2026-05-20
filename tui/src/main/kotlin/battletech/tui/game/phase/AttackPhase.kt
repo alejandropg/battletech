@@ -1,16 +1,16 @@
 package battletech.tui.game.phase
 
+import battletech.tactical.attack.AttackDeclaration
+import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.model.CombatUnit
+import battletech.tactical.model.GameState
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.model.UnitId
-import battletech.tactical.attack.AttackDeclaration
-import battletech.tactical.session.CommitAttackImpulse
-import battletech.tactical.model.GameState
-import battletech.tactical.model.HexDirection
-import battletech.tactical.session.UnitDeclaration
 import battletech.tactical.query.PlayerView
-import battletech.tactical.attack.TargetInfo
+import battletech.tactical.session.CommitAttackImpulse
+import battletech.tactical.session.UnitDeclaration
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.RenderData

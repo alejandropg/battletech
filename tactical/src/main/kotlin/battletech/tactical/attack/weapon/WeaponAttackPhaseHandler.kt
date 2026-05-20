@@ -1,21 +1,24 @@
-package battletech.tactical.attack
+package battletech.tactical.attack.weapon
 
-import battletech.tactical.session.Impulse
-import battletech.tactical.session.Initiative
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.TurnPhase
+import battletech.tactical.attack.applyTorsoFacings
+import battletech.tactical.attack.resolveAttacks
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameEvent
+import battletech.tactical.session.Impulse
 import battletech.tactical.session.ImpulseSequence
+import battletech.tactical.session.Initiative
 import battletech.tactical.session.PhaseHandler
 import battletech.tactical.session.PhaseOutcome
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnState
+import battletech.tactical.session.calculateAttackOrder
 
 /**
  * Weapon-fire attack phase. On entry seeds the attack impulse sequence
@@ -91,7 +94,7 @@ public class WeaponAttackPhaseHandler : PhaseHandler {
 internal fun attackOrderFor(initiative: Initiative, state: GameState): List<Impulse> {
     val loser = initiative.loser
     val winner = initiative.winner
-    return battletech.tactical.session.calculateAttackOrder(
+    return calculateAttackOrder(
         loser = loser,
         loserUnitCount = state.unitsOf(loser).size,
         winner = winner,

@@ -1,4 +1,4 @@
-package battletech.tactical.attack
+package battletech.tactical.attack.weapon
 
 import battletech.tactical.model.UnitId
 

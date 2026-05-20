@@ -1,4 +1,4 @@
-package battletech.tactical.attack
+package battletech.tactical.attack.weapon
 
 public data class WeaponTargetInfo(
     val weaponIndex: Int,
