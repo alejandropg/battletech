@@ -5,7 +5,7 @@ import battletech.tactical.action.Impulse
 import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
-import battletech.tactical.action.attack.AttackDeclaration
+import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.model.GameState
 
 public data class TurnState(

@@ -1,8 +1,8 @@
 package battletech.tactical.action
 
-import battletech.tactical.action.attack.WeaponAttackPreview
-import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
-import battletech.tactical.action.attack.definition.PunchActionDefinition
+import battletech.tactical.attack.weapon.WeaponAttackPreview
+import battletech.tactical.attack.weapon.FireWeaponActionDefinition
+import battletech.tactical.attack.physical.PunchActionDefinition
 import battletech.tactical.movement.MoveActionDefinition
 import battletech.tactical.movement.MovementPreview
 import battletech.tactical.session.RuleRejection

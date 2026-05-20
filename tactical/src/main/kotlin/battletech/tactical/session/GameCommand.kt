@@ -2,7 +2,7 @@ package battletech.tactical.session
 
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
-import battletech.tactical.action.attack.AttackDeclaration
+import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.model.HexDirection
 import battletech.tactical.movement.MovementMode
 import battletech.tactical.movement.ReachableHex

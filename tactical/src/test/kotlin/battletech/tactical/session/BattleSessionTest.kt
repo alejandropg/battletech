@@ -6,7 +6,7 @@ import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
-import battletech.tactical.action.attack.AttackDeclaration
+import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.GameMap

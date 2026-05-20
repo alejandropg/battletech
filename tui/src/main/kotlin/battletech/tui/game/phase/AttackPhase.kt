@@ -4,13 +4,13 @@ import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
-import battletech.tactical.action.attack.AttackDeclaration
+import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexDirection
 import battletech.tactical.session.UnitDeclaration
 import battletech.tactical.view.PlayerView
-import battletech.tactical.view.TargetInfo
+import battletech.tactical.attack.TargetInfo
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.RenderData

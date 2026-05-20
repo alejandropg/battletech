@@ -6,7 +6,7 @@ import battletech.tactical.action.UnitId
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.movement.MovementMode
-import battletech.tactical.view.TargetInfo
+import battletech.tactical.attack.TargetInfo
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.RenderData

@@ -1,0 +1,59 @@
+package battletech.tactical.attack.weapon
+
+import battletech.tactical.action.RuleResult
+import battletech.tactical.action.aGameState
+import battletech.tactical.action.aUnit
+import battletech.tactical.attack.aWeaponAttackContext
+import battletech.tactical.session.RuleRejection
+import battletech.tactical.model.Hex
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.Terrain
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+
+internal class LineOfSightRuleTest {
+
+    private val rule = LineOfSightRule()
+
+    @Test
+    fun `satisfied when target is in clear terrain`() {
+        val targetPos = HexCoordinates(3, 0)
+        val target = aUnit(id = "target", position = targetPos)
+        val hexes = mapOf(targetPos to Hex(targetPos, Terrain.CLEAR))
+        val gameState = aGameState(hexes = hexes)
+
+        val result = rule.evaluate(aWeaponAttackContext(target = target, gameState = gameState))
+
+        assertEquals(RuleResult.Satisfied, result)
+    }
+
+    @Test
+    fun `unsatisfied when target is in heavy woods`() {
+        val targetPos = HexCoordinates(3, 0)
+        val target = aUnit(id = "target", position = targetPos)
+        val hexes = mapOf(targetPos to Hex(targetPos, Terrain.HEAVY_WOODS))
+        val gameState = aGameState(hexes = hexes)
+
+        val result = rule.evaluate(aWeaponAttackContext(target = target, gameState = gameState))
+
+        assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
+        val unsatisfied = result as RuleResult.Unsatisfied
+        assertThat(unsatisfied.reason).isInstanceOf(RuleRejection.NoLineOfSight::class.java)
+        val noLos = unsatisfied.reason as RuleRejection.NoLineOfSight
+        assertEquals(targetPos, noLos.blockerAt)
+        assertEquals(Terrain.HEAVY_WOODS, noLos.blockingTerrain)
+    }
+
+    @Test
+    fun `satisfied when target is in light woods`() {
+        val targetPos = HexCoordinates(3, 0)
+        val target = aUnit(id = "target", position = targetPos)
+        val hexes = mapOf(targetPos to Hex(targetPos, Terrain.LIGHT_WOODS))
+        val gameState = aGameState(hexes = hexes)
+
+        val result = rule.evaluate(aWeaponAttackContext(target = target, gameState = gameState))
+
+        assertEquals(RuleResult.Satisfied, result)
+    }
+}

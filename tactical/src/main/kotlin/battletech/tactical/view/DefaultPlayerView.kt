@@ -3,6 +3,8 @@ package battletech.tactical.view
 import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
+import battletech.tactical.attack.TargetInfo
+import battletech.tactical.attack.WeaponTargetInfo
 import battletech.tactical.model.FiringArc
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection

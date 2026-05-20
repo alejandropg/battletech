@@ -2,6 +2,7 @@ package battletech.tactical.view
 
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
+import battletech.tactical.attack.TargetInfo
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.movement.ReachabilityMap

@@ -2,7 +2,7 @@ package battletech.tactical.session
 
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
-import battletech.tactical.action.attack.AttackDeclaration
+import battletech.tactical.attack.AttackDeclaration
 
 public data class ImpulseDeclarations(
     val playerId: PlayerId,
