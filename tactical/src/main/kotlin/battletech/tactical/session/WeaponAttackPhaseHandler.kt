@@ -13,7 +13,7 @@ import battletech.tactical.event.AttacksResolved
 import battletech.tactical.event.GameEvent
 import battletech.tactical.event.TorsoFacingsApplied
 import battletech.tactical.model.GameState
-import battletech.tactical.model.applyTorsoFacings
+import battletech.tactical.action.attack.applyTorsoFacings
 
 /**
  * Weapon-fire attack phase. On entry seeds the attack impulse sequence

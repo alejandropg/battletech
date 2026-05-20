@@ -1,6 +1,8 @@
-package battletech.tactical.model
+package battletech.tactical.action.attack
 
 import battletech.tactical.action.UnitId
+import battletech.tactical.model.GameState
+import battletech.tactical.model.HexDirection
 
 public fun GameState.applyTorsoFacings(facings: Map<UnitId, HexDirection>): GameState {
     if (facings.isEmpty()) return this
@@ -14,14 +16,6 @@ public fun GameState.applyTorsoFacings(facings: Map<UnitId, HexDirection>): Game
 public fun GameState.resetTorsoFacings(): GameState {
     val updatedUnits = units.map { unit ->
         if (unit.torsoFacing != unit.facing) unit.copy(torsoFacing = unit.facing) else unit
-    }
-    return copy(units = updatedUnits)
-}
-
-public fun GameState.applyHeatDissipation(): GameState {
-    val updatedUnits = units.map { unit ->
-        val newHeat = maxOf(0, unit.currentHeat - unit.heatSinkCapacity)
-        unit.copy(currentHeat = newHeat)
     }
     return copy(units = updatedUnits)
 }

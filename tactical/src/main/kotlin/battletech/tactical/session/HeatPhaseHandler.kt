@@ -6,7 +6,6 @@ import battletech.tactical.command.GameCommand
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.event.HeatDissipated
 import battletech.tactical.model.GameState
-import battletech.tactical.model.applyHeatDissipation
 
 /**
  * System phase. On entry, applies heat dissipation across all units.

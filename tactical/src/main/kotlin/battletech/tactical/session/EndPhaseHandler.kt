@@ -6,7 +6,7 @@ import battletech.tactical.command.GameCommand
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.event.TurnEnded
 import battletech.tactical.model.GameState
-import battletech.tactical.model.resetTorsoFacings
+import battletech.tactical.action.attack.resetTorsoFacings
 
 /**
  * System phase. On entry, resets torso facings (units' torsos snap back to

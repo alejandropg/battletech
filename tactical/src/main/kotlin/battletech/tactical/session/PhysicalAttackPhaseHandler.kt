@@ -9,7 +9,7 @@ import battletech.tactical.event.AttackDeclarationsRecorded
 import battletech.tactical.event.GameEvent
 import battletech.tactical.event.TorsoFacingsApplied
 import battletech.tactical.model.GameState
-import battletech.tactical.model.applyTorsoFacings
+import battletech.tactical.action.attack.applyTorsoFacings
 
 /**
  * Physical-attack phase. Same impulse seeding shape as

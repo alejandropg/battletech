@@ -3,6 +3,9 @@ package battletech.tactical.model
 import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
+import battletech.tactical.action.attack.applyTorsoFacings
+import battletech.tactical.action.attack.resetTorsoFacings
+import battletech.tactical.session.applyHeatDissipation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

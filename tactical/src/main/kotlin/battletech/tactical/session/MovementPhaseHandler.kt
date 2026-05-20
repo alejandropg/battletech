@@ -9,6 +9,7 @@ import battletech.tactical.command.MoveUnit
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.event.UnitMoved
 import battletech.tactical.model.GameState
+import battletech.tactical.movement.moveUnit
 
 /**
  * Player phase. On entry, seeds the movement impulse sequence from initiative
