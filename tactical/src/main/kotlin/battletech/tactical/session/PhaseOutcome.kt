@@ -1,6 +1,5 @@
 package battletech.tactical.session
 
-import battletech.tactical.event.GameEvent
 import battletech.tactical.model.GameState
 
 /**

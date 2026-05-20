@@ -3,7 +3,7 @@ package battletech.tactical.action.attack.rule
 import battletech.tactical.action.RuleResult
 import battletech.tactical.action.aWeapon
 import battletech.tactical.action.attack.aWeaponAttackContext
-import battletech.tactical.command.RuleRejection
+import battletech.tactical.session.RuleRejection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

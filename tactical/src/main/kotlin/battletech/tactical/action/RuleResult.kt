@@ -1,6 +1,6 @@
 package battletech.tactical.action
 
-import battletech.tactical.command.RuleRejection
+import battletech.tactical.session.RuleRejection
 
 public sealed interface RuleResult {
     public data object Satisfied : RuleResult

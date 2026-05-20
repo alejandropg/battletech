@@ -2,12 +2,12 @@ package battletech.tui
 
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.event.AttacksResolved
-import battletech.tactical.event.GameEvent
-import battletech.tactical.event.HeatDissipated
-import battletech.tactical.event.InitiativeRolled
-import battletech.tactical.event.PhaseChanged
-import battletech.tactical.event.TurnEnded
+import battletech.tactical.session.AttacksResolved
+import battletech.tactical.session.GameEvent
+import battletech.tactical.session.HeatDissipated
+import battletech.tactical.session.InitiativeRolled
+import battletech.tactical.session.PhaseChanged
+import battletech.tactical.session.TurnEnded
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.session.BattleSession

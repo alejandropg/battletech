@@ -1,6 +1,6 @@
-package battletech.tactical.command
+package battletech.tactical.session
 
-import battletech.tactical.event.GameEvent
+
 
 /**
  * Outcome of submitting a [GameCommand] to a session. Subscribers receive

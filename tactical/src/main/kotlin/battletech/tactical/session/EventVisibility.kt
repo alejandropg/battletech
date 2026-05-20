@@ -1,7 +1,6 @@
 package battletech.tactical.session
 
 import battletech.tactical.action.PlayerId
-import battletech.tactical.event.GameEvent
 
 /**
  * Per-player event redaction seam. [filterFor] decides what (if anything)

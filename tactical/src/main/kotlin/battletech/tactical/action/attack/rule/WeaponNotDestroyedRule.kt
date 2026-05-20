@@ -3,7 +3,7 @@ package battletech.tactical.action.attack.rule
 import battletech.tactical.action.RuleResult
 import battletech.tactical.action.attack.AttackRule
 import battletech.tactical.action.attack.WeaponAttackContext
-import battletech.tactical.command.RuleRejection
+import battletech.tactical.session.RuleRejection
 
 public class WeaponNotDestroyedRule : AttackRule<WeaponAttackContext> {
 

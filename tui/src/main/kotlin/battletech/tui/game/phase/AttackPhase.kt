@@ -5,7 +5,7 @@ import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
 import battletech.tactical.action.attack.AttackDeclaration
-import battletech.tactical.command.CommitAttackImpulse
+import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexDirection
 import battletech.tactical.session.UnitDeclaration

@@ -4,7 +4,7 @@ import battletech.tactical.action.CombatUnit
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.UnitId
-import battletech.tactical.command.MoveUnit
+import battletech.tactical.session.MoveUnit
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection

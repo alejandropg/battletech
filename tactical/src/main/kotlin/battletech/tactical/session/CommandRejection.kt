@@ -1,4 +1,4 @@
-package battletech.tactical.command
+package battletech.tactical.session
 
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase

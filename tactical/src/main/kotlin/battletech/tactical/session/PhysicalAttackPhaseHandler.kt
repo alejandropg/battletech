@@ -2,12 +2,7 @@ package battletech.tactical.session
 
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.command.CommitAttackImpulse
-import battletech.tactical.command.GameCommand
 import battletech.tactical.dice.DiceRoller
-import battletech.tactical.event.AttackDeclarationsRecorded
-import battletech.tactical.event.GameEvent
-import battletech.tactical.event.TorsoFacingsApplied
 import battletech.tactical.model.GameState
 import battletech.tactical.action.attack.applyTorsoFacings
 

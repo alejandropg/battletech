@@ -3,7 +3,7 @@ package battletech.tactical.action.attack.rule
 import battletech.tactical.action.RuleResult
 import battletech.tactical.action.attack.AttackContext
 import battletech.tactical.action.attack.AttackRule
-import battletech.tactical.command.RuleRejection
+import battletech.tactical.session.RuleRejection
 import battletech.tactical.model.Terrain
 
 // Simplified: blocks LOS only if target hex is HEAVY_WOODS.

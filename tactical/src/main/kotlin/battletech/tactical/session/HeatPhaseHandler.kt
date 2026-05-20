@@ -2,9 +2,7 @@ package battletech.tactical.session
 
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
-import battletech.tactical.command.GameCommand
 import battletech.tactical.dice.DiceRoller
-import battletech.tactical.event.HeatDissipated
 import battletech.tactical.model.GameState
 
 /**

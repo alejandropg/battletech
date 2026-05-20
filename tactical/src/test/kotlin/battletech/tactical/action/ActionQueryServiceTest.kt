@@ -5,7 +5,7 @@ import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
 import battletech.tactical.action.attack.definition.PunchActionDefinition
 import battletech.tactical.action.movement.MoveActionDefinition
 import battletech.tactical.action.movement.MovementPreview
-import battletech.tactical.command.RuleRejection
+import battletech.tactical.session.RuleRejection
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Weapon

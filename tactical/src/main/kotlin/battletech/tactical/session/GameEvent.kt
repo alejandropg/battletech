@@ -1,4 +1,4 @@
-package battletech.tactical.event
+package battletech.tactical.session
 
 import battletech.tactical.action.Initiative
 import battletech.tactical.action.PlayerId

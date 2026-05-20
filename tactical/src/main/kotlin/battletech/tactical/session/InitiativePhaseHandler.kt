@@ -3,9 +3,7 @@ package battletech.tactical.session
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.rollInitiative
-import battletech.tactical.command.GameCommand
 import battletech.tactical.dice.DiceRoller
-import battletech.tactical.event.InitiativeRolled
 import battletech.tactical.model.GameState
 
 /**

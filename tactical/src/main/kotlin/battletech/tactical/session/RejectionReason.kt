@@ -1,4 +1,4 @@
-package battletech.tactical.command
+package battletech.tactical.session
 
 /**
  * Umbrella marker for anything that can cause a player intent to be rejected
