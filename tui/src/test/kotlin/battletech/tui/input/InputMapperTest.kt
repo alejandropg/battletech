@@ -19,11 +19,6 @@ internal class InputMapperTest {
     @Nested
     inner class IsQuitTest {
         @Test
-        fun `q is quit`() {
-            assertTrue(InputMapper.isQuit(key("q")))
-        }
-
-        @Test
         fun `ctrl+c is quit`() {
             assertTrue(InputMapper.isQuit(key("c", ctrl = true)))
         }
