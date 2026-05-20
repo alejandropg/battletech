@@ -2,6 +2,7 @@ package battletech.tactical.session
 
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
+import battletech.tactical.action.calculateMovementOrder
 import battletech.tactical.command.CommandRejection
 import battletech.tactical.command.GameCommand
 import battletech.tactical.command.MoveUnit
@@ -10,9 +11,10 @@ import battletech.tactical.event.UnitMoved
 import battletech.tactical.model.GameState
 
 /**
- * Player phase. Accepts [MoveUnit] for the unit owner whose impulse is
- * current and whose unit hasn't already moved this turn. The auto-advance
- * cascade leaves on [isComplete] (all movement impulses consumed).
+ * Player phase. On entry, seeds the movement impulse sequence from initiative
+ * results. Accepts [MoveUnit] for the unit owner whose impulse is current and
+ * whose unit hasn't already moved this turn. The auto-advance cascade leaves
+ * on [isComplete] (all movement impulses consumed).
  */
 public class MovementPhaseHandler : PhaseHandler {
 
@@ -65,4 +67,17 @@ public class MovementPhaseHandler : PhaseHandler {
 
     override fun isComplete(turn: TurnState): Boolean =
         turn.movementSequence.order.isNotEmpty() && turn.movementSequence.isComplete
+
+    override fun onEntry(
+        state: GameState,
+        turn: TurnState,
+        roller: DiceRoller,
+    ): PhaseOutcome {
+        val initiative = turn.initiative
+        val order = calculateMovementOrder(
+            loser = initiative.loser, loserUnitCount = state.unitsOf(initiative.loser).size,
+            winner = initiative.winner, winnerUnitCount = state.unitsOf(initiative.winner).size,
+        )
+        return PhaseOutcome(state, turn.copy(movementSequence = ImpulseSequence(order)), emptyList())
+    }
 }

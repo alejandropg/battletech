@@ -10,7 +10,7 @@ import battletech.tactical.model.GameState
 
 public data class TurnState(
     val initiative: Initiative,
-    val movementSequence: ImpulseSequence,
+    val movementSequence: ImpulseSequence = ImpulseSequence(emptyList()),
     val movedUnitIds: Set<UnitId> = emptySet(),
     val unitsMovedInCurrentImpulse: Int = 0,
     val attackSequence: ImpulseSequence = ImpulseSequence(emptyList()),
@@ -49,7 +49,6 @@ public data class TurnState(
     public companion object {
         public val NULL: TurnState = TurnState(
             Initiative(emptyMap(), PlayerId.PLAYER_1, PlayerId.PLAYER_2),
-            ImpulseSequence(emptyList()),
         )
     }
 }
