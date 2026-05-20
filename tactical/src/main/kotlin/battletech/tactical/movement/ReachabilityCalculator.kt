@@ -4,7 +4,6 @@ import battletech.tactical.action.CombatUnit
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
 import java.util.PriorityQueue
 
 public class ReachabilityCalculator(

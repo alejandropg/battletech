@@ -4,6 +4,7 @@ import battletech.tactical.action.PlayerId
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.GameState
+import battletech.tactical.movement.MovementPhaseHandler
 import battletech.tactical.view.DefaultPlayerView
 import battletech.tactical.view.PlayerView
 

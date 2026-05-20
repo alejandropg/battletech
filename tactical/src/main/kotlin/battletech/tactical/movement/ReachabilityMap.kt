@@ -2,7 +2,6 @@ package battletech.tactical.movement
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
 
 public data class ReachabilityMap(
     public val mode: MovementMode,

@@ -8,7 +8,7 @@ import battletech.tactical.session.MoveUnit
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
+import battletech.tactical.movement.MovementMode
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.view.PlayerView

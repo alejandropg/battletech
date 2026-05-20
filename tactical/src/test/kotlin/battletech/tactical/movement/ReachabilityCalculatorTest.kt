@@ -6,7 +6,7 @@ import battletech.tactical.model.GameMap
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
+import battletech.tactical.movement.MovementMode
 import battletech.tactical.model.Terrain
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals

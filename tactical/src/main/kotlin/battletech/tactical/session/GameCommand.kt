@@ -4,11 +4,11 @@ import battletech.tactical.action.PlayerId
 import battletech.tactical.action.UnitId
 import battletech.tactical.action.attack.AttackDeclaration
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
+import battletech.tactical.movement.MovementMode
 import battletech.tactical.movement.ReachableHex
 
 /**
- * A player intent submitted to a [battletech.tactical.session.BattleSession].
+ * A player intent submitted to a [BattleSession].
  * Coarse and commit-on-intent: each command represents a real game decision
  * the session validates and applies as one atomic step.
  *

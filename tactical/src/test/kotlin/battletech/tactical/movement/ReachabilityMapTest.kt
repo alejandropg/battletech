@@ -2,7 +2,7 @@ package battletech.tactical.movement
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
+import battletech.tactical.movement.MovementMode
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

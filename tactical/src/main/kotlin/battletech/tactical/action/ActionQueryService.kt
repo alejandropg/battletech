@@ -1,7 +1,7 @@
 package battletech.tactical.action
 
 import battletech.tactical.action.attack.AttackDefinition
-import battletech.tactical.action.movement.MoveActionDefinition
+import battletech.tactical.movement.MoveActionDefinition
 import battletech.tactical.model.GameState
 
 public class ActionQueryService(

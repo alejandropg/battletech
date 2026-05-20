@@ -7,12 +7,12 @@ import battletech.tactical.action.UnitId
 import battletech.tactical.action.attack.AttackResult
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
+import battletech.tactical.movement.MovementMode
 
 /**
  * Passive narration of something that happened in the session. Events are
  * the canonical channel by which clients learn about state changes;
- * see [battletech.tactical.command.CommandResult.Accepted].
+ * see [CommandResult.Accepted].
  *
  * Events describe past facts only — they are never commands in disguise.
  */

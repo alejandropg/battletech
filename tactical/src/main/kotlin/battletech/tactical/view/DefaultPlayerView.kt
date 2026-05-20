@@ -6,7 +6,7 @@ import battletech.tactical.action.UnitId
 import battletech.tactical.model.FiringArc
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
+import battletech.tactical.movement.MovementMode
 import battletech.tactical.movement.ReachabilityCalculator
 import battletech.tactical.movement.ReachabilityMap
 import kotlin.math.ceil

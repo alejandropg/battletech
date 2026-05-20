@@ -15,7 +15,7 @@ import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.InternalStructureLayout
-import battletech.tactical.model.MovementMode
+import battletech.tactical.movement.MovementMode
 import battletech.tactical.model.Weapons
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex

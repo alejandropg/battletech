@@ -1,10 +1,10 @@
-package battletech.tactical.action.movement
+package battletech.tactical.movement
 
 import battletech.tactical.action.aGameState
 import battletech.tactical.action.aUnit
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
-import battletech.tactical.model.MovementMode
+import battletech.tactical.movement.MovementMode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

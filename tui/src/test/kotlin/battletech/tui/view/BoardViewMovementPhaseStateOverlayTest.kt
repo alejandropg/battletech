@@ -2,7 +2,7 @@ package battletech.tui.view
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
+import battletech.tactical.movement.MovementMode
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.hex.HexHighlight

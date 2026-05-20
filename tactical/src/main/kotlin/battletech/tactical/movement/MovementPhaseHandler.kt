@@ -1,11 +1,18 @@
-package battletech.tactical.session
+package battletech.tactical.movement
 
 import battletech.tactical.action.PlayerId
 import battletech.tactical.action.TurnPhase
 import battletech.tactical.action.calculateMovementOrder
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
-import battletech.tactical.movement.moveUnit
+import battletech.tactical.session.CommandRejection
+import battletech.tactical.session.GameCommand
+import battletech.tactical.session.ImpulseSequence
+import battletech.tactical.session.MoveUnit
+import battletech.tactical.session.PhaseHandler
+import battletech.tactical.session.PhaseOutcome
+import battletech.tactical.session.TurnState
+import battletech.tactical.session.UnitMoved
 
 /**
  * Player phase. On entry, seeds the movement impulse sequence from initiative

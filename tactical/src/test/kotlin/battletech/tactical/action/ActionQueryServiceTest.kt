@@ -3,8 +3,8 @@ package battletech.tactical.action
 import battletech.tactical.action.attack.WeaponAttackPreview
 import battletech.tactical.action.attack.definition.FireWeaponActionDefinition
 import battletech.tactical.action.attack.definition.PunchActionDefinition
-import battletech.tactical.action.movement.MoveActionDefinition
-import battletech.tactical.action.movement.MovementPreview
+import battletech.tactical.movement.MoveActionDefinition
+import battletech.tactical.movement.MovementPreview
 import battletech.tactical.session.RuleRejection
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
