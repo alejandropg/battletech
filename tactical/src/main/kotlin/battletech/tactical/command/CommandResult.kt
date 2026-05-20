@@ -4,7 +4,7 @@ import battletech.tactical.event.GameEvent
 
 /**
  * Outcome of submitting a [GameCommand] to a session. Subscribers receive
- * the same events via the subscription channel (PR8); the submitter gets
+ * the same events via the subscription channel; the submitter gets
  * them synchronously here as a courtesy.
  */
 public sealed interface CommandResult {

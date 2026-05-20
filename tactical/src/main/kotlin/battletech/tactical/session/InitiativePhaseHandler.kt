@@ -45,8 +45,8 @@ public class InitiativePhaseHandler : PhaseHandler {
             winner = initiative.winner, winnerUnitCount = winnerCount,
         )
         val newTurn = TurnState(
-            initiative = initiative,
-            movementSequence = ImpulseSequence(movementOrder),
+            initiative,
+            ImpulseSequence(movementOrder)
         )
         return PhaseOutcome(state, newTurn, listOf(InitiativeRolled(initiative)))
     }

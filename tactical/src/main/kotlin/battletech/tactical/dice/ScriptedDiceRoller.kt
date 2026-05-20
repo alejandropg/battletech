@@ -1,6 +1,6 @@
 package battletech.tactical.dice
 
-public class ScriptedDiceRoller(rolls: List<Int>) : DiceRoller {
+internal class ScriptedDiceRoller(rolls: List<Int>) : DiceRoller {
     private val queue: ArrayDeque<Int> = ArrayDeque(rolls)
 
     override fun d6(): Int {

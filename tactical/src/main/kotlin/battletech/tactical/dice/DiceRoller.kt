@@ -10,10 +10,10 @@ public interface DiceRoller {
     public fun roll2d6(): Int = d6() + d6()
 
     public companion object {
-        public fun seeded(seed: Long): DiceRoller = RandomDiceRoller(Random(seed))
+        internal fun seeded(seed: Long): DiceRoller = RandomDiceRoller(Random(seed))
 
-        public fun deterministic(rolls: List<Int>): DiceRoller = ScriptedDiceRoller(rolls)
+        internal fun deterministic(rolls: List<Int>): DiceRoller = ScriptedDiceRoller(rolls)
 
-        public fun deterministic(vararg rolls: Int): DiceRoller = ScriptedDiceRoller(rolls.toList())
+        internal fun deterministic(vararg rolls: Int): DiceRoller = ScriptedDiceRoller(rolls.toList())
     }
 }

@@ -27,16 +27,33 @@ public data class UnitMoved(
     public val mpSpent: Int,
 ) : GameEvent
 
-public data class AttacksResolved(public val results: List<AttackResult>) : GameEvent
+public data class AttacksResolved(
+    public val results: List<AttackResult>
+) : GameEvent
 
-public data class AttackDeclarationsRecorded(public val player: PlayerId, public val count: Int) : GameEvent
+public data class AttackDeclarationsRecorded(
+    public val player: PlayerId,
+    public val count: Int
+) : GameEvent
 
-public data class TorsoFacingsApplied(public val facings: Map<UnitId, HexDirection>) : GameEvent
+public data class TorsoFacingsApplied(
+    public val facings: Map<UnitId, HexDirection>
+) : GameEvent
 
-public data class PhaseChanged(public val from: TurnPhase, public val to: TurnPhase) : GameEvent
+public data class PhaseChanged(
+    public val from: TurnPhase,
+    public val to: TurnPhase
+) : GameEvent
 
-public data class InitiativeRolled(public val initiative: Initiative) : GameEvent
+public data class InitiativeRolled(
+    public val initiative: Initiative
+) : GameEvent
 
-public data class HeatDissipated(public val heatBefore: Map<UnitId, Int>, public val heatAfter: Map<UnitId, Int>) : GameEvent
+public data class HeatDissipated(
+    public val heatBefore: Map<UnitId, Int>,
+    public val heatAfter: Map<UnitId, Int>
+) : GameEvent
 
-public data class TurnEnded(public val turnNumber: Int) : GameEvent
+public data class TurnEnded(
+    public val turnNumber: Int
+) : GameEvent

@@ -157,8 +157,8 @@ public class BattleSession(
         return PhaseChanged(from, handlers[_currentPhaseIndex].phase)
     }
 
-    public companion object {
-        public fun standardHandlers(): List<PhaseHandler> = listOf(
+    private companion object {
+        private fun standardHandlers(): List<PhaseHandler> = listOf(
             InitiativePhaseHandler(),
             MovementPhaseHandler(),
             WeaponAttackPhaseHandler(),
