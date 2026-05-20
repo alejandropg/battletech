@@ -1,18 +1,18 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.ac20
-import battletech.tactical.action.aGameState
-import battletech.tactical.action.aUnit
-import battletech.tactical.action.aWeapon
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.query.ac20
+import battletech.tactical.query.aGameState
+import battletech.tactical.query.aUnit
+import battletech.tactical.query.aWeapon
 import battletech.tactical.attack.WeaponAttackContext
 import battletech.tactical.attack.weapon.WeaponAttackPreview
 import battletech.tactical.attack.weapon.HasAmmoRule
 import battletech.tactical.attack.weapon.HeatPenaltyRule
 import battletech.tactical.attack.weapon.InRangeRule
 import battletech.tactical.attack.weapon.WeaponNotDestroyedRule
-import battletech.tactical.action.mediumLaser
-import battletech.tactical.action.srm4
+import battletech.tactical.query.mediumLaser
+import battletech.tactical.query.srm4
 import battletech.tactical.model.HexCoordinates
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals

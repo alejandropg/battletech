@@ -1,8 +1,8 @@
 package battletech.tui.game
 
-import battletech.tactical.action.PlayerId
-import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.UnitId
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.UnitId
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
@@ -13,7 +13,7 @@ import battletech.tactical.model.Weapon
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
-import battletech.tactical.view.DefaultPlayerView
+import battletech.tactical.query.DefaultPlayerView
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit

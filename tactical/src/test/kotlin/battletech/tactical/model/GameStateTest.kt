@@ -1,9 +1,9 @@
 package battletech.tactical.model
 
-import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.PlayerId
-import battletech.tactical.action.aGameState
-import battletech.tactical.action.aUnit
+import battletech.tactical.model.CombatUnit
+import battletech.tactical.model.PlayerId
+import battletech.tactical.query.aGameState
+import battletech.tactical.query.aUnit
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

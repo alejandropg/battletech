@@ -1,6 +1,6 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.action.ActionPreview
+import battletech.tactical.query.ActionPreview
 
 public data class WeaponAttackPreview(
     public val expectedDamage: IntRange,

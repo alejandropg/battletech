@@ -1,7 +1,7 @@
 package battletech.tui.game
 
-import battletech.tactical.action.PlayerId
-import battletech.tactical.action.TurnPhase
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.GameMap
@@ -10,7 +10,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.TurnState
-import battletech.tactical.view.PlayerView
+import battletech.tactical.query.PlayerView
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.Phase

@@ -1,7 +1,7 @@
 package battletech.tui
 
-import battletech.tactical.action.PlayerId
-import battletech.tactical.action.TurnPhase
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.HeatDissipated

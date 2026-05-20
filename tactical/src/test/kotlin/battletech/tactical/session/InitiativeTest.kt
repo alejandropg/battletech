@@ -1,6 +1,7 @@
-package battletech.tactical.action
+package battletech.tactical.session
 
 import battletech.tactical.dice.DiceRoller
+import battletech.tactical.model.PlayerId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test

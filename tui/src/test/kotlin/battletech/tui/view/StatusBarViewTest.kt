@@ -1,7 +1,7 @@
 package battletech.tui.view
 
 import battletech.tui.screen.ScreenBuffer
-import battletech.tactical.action.TurnPhase
+import battletech.tactical.model.TurnPhase
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

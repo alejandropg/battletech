@@ -1,6 +1,6 @@
 package battletech.tactical.attack
 
-import battletech.tactical.action.UnitId
+import battletech.tactical.model.UnitId
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexDirection
 

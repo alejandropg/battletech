@@ -1,19 +1,19 @@
 package battletech.tactical.session
 
-import battletech.tactical.action.PlayerId
+import battletech.tactical.model.PlayerId
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.attack.PhysicalAttackPhaseHandler
 import battletech.tactical.attack.WeaponAttackPhaseHandler
 import battletech.tactical.model.GameState
 import battletech.tactical.movement.MovementPhaseHandler
-import battletech.tactical.view.DefaultPlayerView
-import battletech.tactical.view.PlayerView
+import battletech.tactical.query.DefaultPlayerView
+import battletech.tactical.query.PlayerView
 
 /**
  * The authoritative aggregate for a single match. Holds [GameState] and
  * [TurnState] privately and delegates command processing to a list of
- * [PhaseHandler] strategies (one per [battletech.tactical.action.TurnPhase])
+ * [PhaseHandler] strategies (one per [battletech.tactical.model.TurnPhase])
  * in canonical order.
  *
  * Phase progression model:
@@ -37,7 +37,7 @@ public class BattleSession(
     initialTurnState: TurnState = TurnState.NULL,
     private val roller: DiceRoller = RandomDiceRoller(),
     private val handlers: List<PhaseHandler> = standardHandlers(),
-    initialPhase: battletech.tactical.action.TurnPhase = handlers.first().phase,
+    initialPhase: battletech.tactical.model.TurnPhase = handlers.first().phase,
     initialNeedsOnEntry: Boolean = true,
 ) {
 
@@ -53,7 +53,7 @@ public class BattleSession(
 
     public val gameState: GameState get() = _gameState
     public val turnState: TurnState get() = _turnState
-    public val currentPhase: battletech.tactical.action.TurnPhase
+    public val currentPhase: battletech.tactical.model.TurnPhase
         get() = handlers[_currentPhaseIndex].phase
     public val activePlayer: PlayerId?
         get() = handlers[_currentPhaseIndex].activePlayer(_turnState)
@@ -104,7 +104,7 @@ public class BattleSession(
      * Kickstart the session at game start: fires the initial phase's
      * on-entry if pending, then cascades through any auto-completing system
      * phases. After construction with a fresh [TurnState.NULL], one call
-     * lands the session at [battletech.tactical.action.TurnPhase.MOVEMENT]
+     * lands the session at [battletech.tactical.model.TurnPhase.MOVEMENT]
      * with initiative rolled and the movement sequence seeded.
      */
     public fun advance(): List<GameEvent> {

@@ -1,8 +1,8 @@
 package battletech.tactical.attack.physical
 
-import battletech.tactical.action.ActionPreview
-import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.TurnPhase
+import battletech.tactical.query.ActionPreview
+import battletech.tactical.model.CombatUnit
+import battletech.tactical.model.TurnPhase
 import battletech.tactical.attack.AttackDefinition
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.attack.PhysicalAttackContext

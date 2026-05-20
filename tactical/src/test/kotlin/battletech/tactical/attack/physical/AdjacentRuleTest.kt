@@ -1,7 +1,7 @@
 package battletech.tactical.attack.physical
 
-import battletech.tactical.action.RuleResult
-import battletech.tactical.action.aUnit
+import battletech.tactical.query.RuleResult
+import battletech.tactical.query.aUnit
 import battletech.tactical.attack.aPhysicalAttackContext
 import battletech.tactical.session.RuleRejection
 import battletech.tactical.model.HexCoordinates

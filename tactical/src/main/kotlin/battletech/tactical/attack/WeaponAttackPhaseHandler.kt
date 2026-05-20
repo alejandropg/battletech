@@ -1,9 +1,9 @@
 package battletech.tactical.attack
 
-import battletech.tactical.action.Impulse
-import battletech.tactical.action.Initiative
-import battletech.tactical.action.PlayerId
-import battletech.tactical.action.TurnPhase
+import battletech.tactical.session.Impulse
+import battletech.tactical.session.Initiative
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.session.AttackDeclarationsRecorded
@@ -91,7 +91,7 @@ public class WeaponAttackPhaseHandler : PhaseHandler {
 internal fun attackOrderFor(initiative: Initiative, state: GameState): List<Impulse> {
     val loser = initiative.loser
     val winner = initiative.winner
-    return battletech.tactical.action.calculateAttackOrder(
+    return battletech.tactical.session.calculateAttackOrder(
         loser = loser,
         loserUnitCount = state.unitsOf(loser).size,
         winner = winner,

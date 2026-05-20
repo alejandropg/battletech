@@ -1,8 +1,8 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.action.RuleResult
+import battletech.tactical.query.RuleResult
 import battletech.tactical.attack.aPhysicalAttackContext
-import battletech.tactical.action.aUnit
+import battletech.tactical.query.aUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

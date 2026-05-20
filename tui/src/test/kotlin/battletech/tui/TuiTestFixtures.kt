@@ -1,8 +1,8 @@
 package battletech.tui
 
-import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.PlayerId
-import battletech.tactical.action.UnitId
+import battletech.tactical.model.CombatUnit
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.UnitId
 import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState

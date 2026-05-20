@@ -1,7 +1,7 @@
 package battletech.tactical.model
 
-import battletech.tactical.action.PlayerId
-import battletech.tactical.action.UnitId
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.UnitId
 
 public class GameStateFactory {
 

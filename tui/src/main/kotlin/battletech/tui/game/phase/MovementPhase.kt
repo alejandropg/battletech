@@ -1,9 +1,9 @@
 package battletech.tui.game.phase
 
-import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.PlayerId
-import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.UnitId
+import battletech.tactical.model.CombatUnit
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.UnitId
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
@@ -11,7 +11,7 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.movement.MovementMode
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
-import battletech.tactical.view.PlayerView
+import battletech.tactical.query.PlayerView
 import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
 import battletech.tui.game.FlashMessage

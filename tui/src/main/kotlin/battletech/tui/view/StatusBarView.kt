@@ -1,6 +1,6 @@
 package battletech.tui.view
 
-import battletech.tactical.action.TurnPhase
+import battletech.tactical.model.TurnPhase
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 

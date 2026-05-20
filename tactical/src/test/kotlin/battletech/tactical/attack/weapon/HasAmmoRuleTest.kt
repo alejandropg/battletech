@@ -1,7 +1,7 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.action.RuleResult
-import battletech.tactical.action.aWeapon
+import battletech.tactical.query.RuleResult
+import battletech.tactical.query.aWeapon
 import battletech.tactical.attack.aWeaponAttackContext
 import battletech.tactical.session.RuleRejection
 import org.assertj.core.api.Assertions.assertThat

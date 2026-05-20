@@ -1,4 +1,6 @@
-package battletech.tactical.action
+package battletech.tactical.query
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.UnitId
 
 public data class PhaseActionReport(
     public val phase: TurnPhase,

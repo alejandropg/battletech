@@ -1,4 +1,4 @@
-package battletech.tactical.view
+package battletech.tactical.query
 
 import battletech.tactical.model.GameState
 

@@ -1,4 +1,4 @@
-package battletech.tactical.action
+package battletech.tactical.query
 
 public data class Warning(
     public val code: String,

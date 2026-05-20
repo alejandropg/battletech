@@ -1,9 +1,9 @@
 package battletech.tactical.session
 
-import battletech.tactical.action.Initiative
-import battletech.tactical.action.PlayerId
-import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.UnitId
+import battletech.tactical.session.Initiative
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.UnitId
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection

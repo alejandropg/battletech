@@ -1,6 +1,6 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.action.RuleResult
+import battletech.tactical.query.RuleResult
 import battletech.tactical.attack.AttackContext
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.session.RuleRejection

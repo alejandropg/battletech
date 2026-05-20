@@ -1,8 +1,8 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.action.RuleResult
-import battletech.tactical.action.aGameState
-import battletech.tactical.action.aUnit
+import battletech.tactical.query.RuleResult
+import battletech.tactical.query.aGameState
+import battletech.tactical.query.aUnit
 import battletech.tactical.attack.aWeaponAttackContext
 import battletech.tactical.session.RuleRejection
 import battletech.tactical.model.Hex

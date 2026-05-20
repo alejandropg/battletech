@@ -1,4 +1,5 @@
-package battletech.tactical.action
+package battletech.tactical.session
+import battletech.tactical.model.PlayerId
 
 public data class Impulse(
     val player: PlayerId,

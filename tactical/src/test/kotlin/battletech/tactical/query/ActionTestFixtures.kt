@@ -1,12 +1,15 @@
-package battletech.tactical.action
+package battletech.tactical.query
 
 import battletech.tactical.model.ArmorLayout
+import battletech.tactical.model.CombatUnit
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.InternalStructureLayout
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.UnitId
 import battletech.tactical.model.Weapon
 import battletech.tactical.model.Weapons
 

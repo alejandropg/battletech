@@ -1,8 +1,8 @@
 package battletech.tui.game
 
-import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.RuleResult
-import battletech.tactical.action.UnitId
+import battletech.tactical.model.CombatUnit
+import battletech.tactical.query.RuleResult
+import battletech.tactical.model.UnitId
 import battletech.tactical.attack.PhysicalAttackContext
 import battletech.tactical.attack.weapon.LineOfSightRule
 import battletech.tactical.model.GameState

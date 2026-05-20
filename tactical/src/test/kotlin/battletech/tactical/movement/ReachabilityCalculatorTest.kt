@@ -1,7 +1,7 @@
 package battletech.tactical.movement
 
-import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.aUnit
+import battletech.tactical.model.CombatUnit
+import battletech.tactical.query.aUnit
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates

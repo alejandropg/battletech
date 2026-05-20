@@ -1,8 +1,8 @@
 package battletech.tui.game
 
-import battletech.tactical.action.Impulse
-import battletech.tactical.action.Initiative
-import battletech.tactical.action.PlayerId
+import battletech.tactical.session.Impulse
+import battletech.tactical.session.Initiative
+import battletech.tactical.model.PlayerId
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.movement.MovementMode
@@ -11,7 +11,7 @@ import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.TurnState
-import battletech.tactical.view.DefaultPlayerView
+import battletech.tactical.query.DefaultPlayerView
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit

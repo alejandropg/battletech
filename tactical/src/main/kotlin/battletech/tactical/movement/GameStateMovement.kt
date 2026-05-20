@@ -1,6 +1,6 @@
 package battletech.tactical.movement
 
-import battletech.tactical.action.UnitId
+import battletech.tactical.model.UnitId
 import battletech.tactical.model.GameState
 
 public fun GameState.moveUnit(unitId: UnitId, destination: ReachableHex): GameState {

@@ -1,6 +1,6 @@
 package battletech.tactical.session
 
-import battletech.tactical.action.UnitId
+import battletech.tactical.model.UnitId
 import battletech.tactical.model.HexDirection
 
 public data class UnitDeclaration(

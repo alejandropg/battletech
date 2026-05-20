@@ -1,5 +1,6 @@
-package battletech.tactical.action
+package battletech.tactical.session
 
+import battletech.tactical.model.PlayerId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

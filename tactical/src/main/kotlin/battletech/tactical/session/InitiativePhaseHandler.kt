@@ -1,8 +1,8 @@
 package battletech.tactical.session
 
-import battletech.tactical.action.PlayerId
-import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.rollInitiative
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.session.rollInitiative
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 

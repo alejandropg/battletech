@@ -1,6 +1,6 @@
 package battletech.tactical.movement
 
-import battletech.tactical.action.CombatUnit
+import battletech.tactical.model.CombatUnit
 import battletech.tactical.model.GameState
 
 public data class MovementContext(

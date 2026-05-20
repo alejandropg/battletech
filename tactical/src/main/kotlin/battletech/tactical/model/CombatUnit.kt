@@ -1,4 +1,4 @@
-package battletech.tactical.action
+package battletech.tactical.model
 
 import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.HexCoordinates

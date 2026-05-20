@@ -1,6 +1,6 @@
 package battletech.tactical.attack
 
-import battletech.tactical.action.CombatUnit
+import battletech.tactical.model.CombatUnit
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Weapon
 

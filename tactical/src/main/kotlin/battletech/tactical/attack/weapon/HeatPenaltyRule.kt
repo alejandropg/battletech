@@ -1,7 +1,7 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.action.RuleResult
-import battletech.tactical.action.Warning
+import battletech.tactical.query.RuleResult
+import battletech.tactical.query.Warning
 import battletech.tactical.attack.AttackContext
 import battletech.tactical.attack.AttackRule
 import kotlin.math.ceil

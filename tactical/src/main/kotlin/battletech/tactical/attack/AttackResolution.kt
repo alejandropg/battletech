@@ -1,7 +1,7 @@
 package battletech.tactical.attack
 
-import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.UnitId
+import battletech.tactical.model.CombatUnit
+import battletech.tactical.model.UnitId
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.GameState

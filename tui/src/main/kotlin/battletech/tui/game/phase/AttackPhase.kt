@@ -1,15 +1,15 @@
 package battletech.tui.game.phase
 
-import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.PlayerId
-import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.UnitId
+import battletech.tactical.model.CombatUnit
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.UnitId
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexDirection
 import battletech.tactical.session.UnitDeclaration
-import battletech.tactical.view.PlayerView
+import battletech.tactical.query.PlayerView
 import battletech.tactical.attack.TargetInfo
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
@@ -408,4 +408,4 @@ internal fun commitAttackImpulse(
 }
 
 private fun playerView(player: PlayerId, gameState: GameState): PlayerView =
-    battletech.tactical.view.DefaultPlayerView(player, gameState)
+    battletech.tactical.query.DefaultPlayerView(player, gameState)

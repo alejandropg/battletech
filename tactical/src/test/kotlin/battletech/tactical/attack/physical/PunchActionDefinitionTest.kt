@@ -1,8 +1,8 @@
 package battletech.tactical.attack.physical
 
-import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.aGameState
-import battletech.tactical.action.aUnit
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.query.aGameState
+import battletech.tactical.query.aUnit
 import battletech.tactical.attack.PhysicalAttackContext
 import battletech.tactical.attack.physical.PhysicalAttackPreview
 import battletech.tactical.attack.physical.AdjacentRule

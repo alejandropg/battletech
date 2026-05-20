@@ -1,7 +1,7 @@
 package battletech.tactical.session
 
-import battletech.tactical.action.Impulse
-import battletech.tactical.action.PlayerId
+import battletech.tactical.session.Impulse
+import battletech.tactical.model.PlayerId
 
 public data class ImpulseSequence(
     val order: List<Impulse>,

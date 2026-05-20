@@ -1,8 +1,8 @@
 package battletech.tactical.model
 
-import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.PlayerId
-import battletech.tactical.action.UnitId
+import battletech.tactical.model.CombatUnit
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.UnitId
 import battletech.tactical.attack.applyTorsoFacings
 import battletech.tactical.attack.resetTorsoFacings
 import battletech.tactical.session.applyHeatDissipation

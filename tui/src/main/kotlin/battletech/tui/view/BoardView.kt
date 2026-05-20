@@ -1,6 +1,6 @@
 package battletech.tui.view
 
-import battletech.tactical.action.PlayerId
+import battletech.tactical.model.PlayerId
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection

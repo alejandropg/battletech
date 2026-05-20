@@ -1,7 +1,8 @@
-package battletech.tactical.action
+package battletech.tactical.session
 
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.dice.RandomDiceRoller
+import battletech.tactical.model.PlayerId
 
 public data class Initiative(
     val rolls: Map<PlayerId, Int>,

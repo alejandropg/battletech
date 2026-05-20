@@ -1,8 +1,8 @@
 package battletech.tui.game.phase
 
-import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.UnitId
+import battletech.tactical.model.CombatUnit
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.UnitId
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.movement.MovementMode

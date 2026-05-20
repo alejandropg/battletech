@@ -1,9 +1,9 @@
 package battletech.tactical.attack
 
-import battletech.tactical.action.aUnit
-import battletech.tactical.action.anArmorLayout
-import battletech.tactical.action.anInternalStructureLayout
-import battletech.tactical.action.mediumLaser
+import battletech.tactical.query.aUnit
+import battletech.tactical.query.anArmorLayout
+import battletech.tactical.query.anInternalStructureLayout
+import battletech.tactical.query.mediumLaser
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState

@@ -1,4 +1,4 @@
-package battletech.tactical.action
+package battletech.tactical.query
 
 import battletech.tactical.session.RuleRejection
 

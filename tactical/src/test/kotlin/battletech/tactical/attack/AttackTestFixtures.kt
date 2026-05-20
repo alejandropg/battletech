@@ -1,9 +1,9 @@
 package battletech.tactical.attack
 
-import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.aGameState
-import battletech.tactical.action.aUnit
-import battletech.tactical.action.aWeapon
+import battletech.tactical.model.CombatUnit
+import battletech.tactical.query.aGameState
+import battletech.tactical.query.aUnit
+import battletech.tactical.query.aWeapon
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Weapon
 

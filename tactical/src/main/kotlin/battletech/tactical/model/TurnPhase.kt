@@ -1,4 +1,4 @@
-package battletech.tactical.action
+package battletech.tactical.model
 
 public enum class TurnPhase {
     INITIATIVE,

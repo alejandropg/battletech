@@ -1,13 +1,13 @@
 package battletech.tactical.attack
 
-import battletech.tactical.action.ActionId
-import battletech.tactical.action.ActionOption
-import battletech.tactical.action.ActionPreview
-import battletech.tactical.action.AvailableAction
-import battletech.tactical.action.CombatUnit
-import battletech.tactical.action.RuleResult
-import battletech.tactical.action.TurnPhase
-import battletech.tactical.action.UnavailableAction
+import battletech.tactical.query.ActionId
+import battletech.tactical.query.ActionOption
+import battletech.tactical.query.ActionPreview
+import battletech.tactical.query.AvailableAction
+import battletech.tactical.model.CombatUnit
+import battletech.tactical.query.RuleResult
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.query.UnavailableAction
 import battletech.tactical.model.GameState
 
 public interface AttackDefinition<C : AttackContext> {

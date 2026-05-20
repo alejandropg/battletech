@@ -5,7 +5,7 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Terrain
-import battletech.tactical.view.DefaultPlayerView
+import battletech.tactical.query.DefaultPlayerView
 import battletech.tui.aUnit
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.enterBrowsing
