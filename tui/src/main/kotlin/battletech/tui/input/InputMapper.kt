@@ -9,15 +9,14 @@ import com.github.ajalt.mordant.input.MouseEvent
 public object InputMapper {
 
     public fun isQuit(event: KeyboardEvent): Boolean =
-        event.ctrl && event.key == "c"
+        event.key == "q" || (event.ctrl && event.key == "c")
 
     private fun keyToDirection(key: String): HexDirection? = when (key) {
         "ArrowUp", "w" -> HexDirection.N
         "ArrowDown", "s" -> HexDirection.S
         "ArrowRight", "d" -> HexDirection.SE
-        "ArrowLeft", "a" -> HexDirection.SW
+        "ArrowLeft", "a" -> HexDirection.NW
         "e" -> HexDirection.NE
-        "q" -> HexDirection.NW
         else -> null
     }
 

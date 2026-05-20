@@ -52,7 +52,7 @@ internal class AttackPhaseTest {
         cursor: HexCoordinates = HexCoordinates(0, 0),
     ) = AppState(gameState, turnState, phase, cursor)
 
-    private fun viewFor(unit: battletech.tactical.action.CombatUnit, gameState: GameState): DefaultPlayerView =
+    private fun viewFor(unit: battletech.tactical.model.CombatUnit, gameState: GameState): DefaultPlayerView =
         DefaultPlayerView(unit.owner, gameState)
 
     @Nested
