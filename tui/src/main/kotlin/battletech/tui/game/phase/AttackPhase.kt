@@ -367,8 +367,8 @@ private fun firstCursorPosition(targets: List<TargetInfo>): Pair<Int, Int> {
 
 /**
  * Submit the impulse to the session and re-sync the TUI phase to whatever
- * phase the session settled at after the cascade. Surfaces an
- * [AttacksResolved] flash when the final weapon-phase impulse resolves.
+ * phase the session settled at after the cascade. Domain events emitted by
+ * the cascade are recorded in `session.gameLog` and rendered by the LOG panel.
  */
 internal fun commitAttackImpulse(
     app: AppState,
@@ -401,9 +401,6 @@ internal fun commitAttackImpulse(
             torsoFacings = torsoFacings,
         ),
     )
-    // Flashes for domain events (AttacksResolved, PhaseChanged, etc.)
-    // are produced by the subscription channel in TuiApp; we only re-sync
-    // the TUI phase to whatever phase the cascade settled at.
     return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)))
 }
 

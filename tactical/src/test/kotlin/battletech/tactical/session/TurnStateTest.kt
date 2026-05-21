@@ -30,6 +30,11 @@ internal class TurnStateTest {
     )
 
     @Test
+    fun `NULL TurnState has turnNumber 1`() {
+        assertEquals(1, TurnState.NULL.turnNumber)
+    }
+
+    @Test
     fun `activePlayer returns current impulse player`() {
         val state = aTurnState()
         assertEquals(PlayerId.PLAYER_1, state.activePlayer)

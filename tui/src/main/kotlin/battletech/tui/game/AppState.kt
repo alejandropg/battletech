@@ -1,16 +1,16 @@
 package battletech.tui.game
 
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.TurnPhase
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.query.PlayerView
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.TurnState
-import battletech.tactical.query.PlayerView
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.Phase
@@ -18,22 +18,16 @@ import battletech.tui.game.phase.Phase
 /**
  * The TUI's UI-shell state. Holds a reference to the authoritative
  * [BattleSession] (the source of truth for gameState and turnState) plus
- * pure UI state: which [Phase] sub-state machine is active, where the
- * cursor sits, and any flashes left over from a multi-step cascade.
+ * pure UI state: which [Phase] sub-state machine is active and where the
+ * cursor sits.
  *
  * The [gameState] and [turnState] accessors read through the session;
  * mutations flow via `session.submitCommand(...)`.
- *
- * [pendingFlashes] queues flashes produced by an auto-advance cascade
- * across system phases (Heat → End → Initiative). The main loop drains
- * one per render frame so each event the player should see lands as a
- * discrete on-screen message.
  */
 public data class AppState(
     public val session: BattleSession,
     public val phase: Phase,
     public val cursor: HexCoordinates,
-    public val pendingFlashes: List<FlashMessage> = emptyList(),
 ) {
     public val gameState: GameState get() = session.gameState
     public val turnState: TurnState get() = session.turnState

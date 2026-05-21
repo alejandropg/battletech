@@ -1,10 +1,10 @@
 package battletech.tactical.session
 
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.TurnPhase
+import battletech.tactical.attack.resetTorsoFacings
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
-import battletech.tactical.attack.resetTorsoFacings
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
 
 /**
  * System phase. On entry, resets torso facings (units' torsos snap back to
@@ -35,6 +35,10 @@ public class EndPhaseHandler : PhaseHandler {
         roller: DiceRoller,
     ): PhaseOutcome {
         val resetState = state.resetTorsoFacings()
-        return PhaseOutcome(resetState, turn, listOf(TurnEnded(turnNumber = 0)))
+        return PhaseOutcome(
+            state = resetState,
+            turn = turn.copy(turnNumber = turn.turnNumber + 1),
+            events = listOf(TurnEnded(turnNumber = turn.turnNumber)),
+        )
     }
 }

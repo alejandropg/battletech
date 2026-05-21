@@ -1,10 +1,9 @@
 package battletech.tactical.session
 
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.TurnPhase
-import battletech.tactical.session.rollInitiative
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
 
 /**
  * System phase. On entry, rolls initiative for the new turn. Completes
@@ -34,6 +33,10 @@ public class InitiativePhaseHandler : PhaseHandler {
         roller: DiceRoller,
     ): PhaseOutcome {
         val initiative = rollInitiative(roller)
-        return PhaseOutcome(state, TurnState(initiative), listOf(InitiativeRolled(initiative)))
+        return PhaseOutcome(
+            state = state,
+            turn = TurnState(initiative = initiative, turnNumber = turn.turnNumber),
+            events = listOf(InitiativeRolled(initiative)),
+        )
     }
 }

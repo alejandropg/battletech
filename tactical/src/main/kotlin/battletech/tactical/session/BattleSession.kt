@@ -51,6 +51,9 @@ public class BattleSession(
 
     private val listeners: MutableMap<PlayerId, MutableList<(GameEvent) -> Unit>> = mutableMapOf()
 
+    private val _gameLog: GameLog = GameLog()
+
+    public val gameLog: GameLog get() = _gameLog
     public val gameState: GameState get() = _gameState
     public val turnState: TurnState get() = _turnState
     public val currentPhase: battletech.tactical.model.TurnPhase
@@ -92,6 +95,7 @@ public class BattleSession(
             return CommandResult.Rejected(reason)
         }
         val outcome = handler.apply(command, _gameState, _turnState, roller)
+        logEvents(outcome.events)
         _gameState = outcome.state
         _turnState = outcome.turn
         val events = outcome.events.toMutableList()
@@ -118,8 +122,16 @@ public class BattleSession(
         return events
     }
 
+    private fun logEvents(events: List<GameEvent>) {
+        for (event in events) {
+            _gameLog.append(
+                LogEntry(_turnState.turnNumber, GameLogFormatter.format(event, _gameState, _turnState)),
+            )
+        }
+    }
+
     private fun dispatch(events: List<GameEvent>) {
-        if (listeners.isEmpty() || events.isEmpty()) return
+        if (events.isEmpty() || listeners.isEmpty()) return
         // Iterate over a snapshot so listeners that unsubscribe themselves
         // mid-dispatch don't trip a ConcurrentModificationException.
         val snapshot = listeners.mapValues { (_, list) -> list.toList() }
@@ -142,6 +154,7 @@ public class BattleSession(
 
     private fun fireOnEntry(): List<GameEvent> {
         val outcome = handlers[_currentPhaseIndex].onEntry(_gameState, _turnState, roller)
+        logEvents(outcome.events)
         _gameState = outcome.state
         _turnState = outcome.turn
         _needsOnEntry = false
@@ -152,7 +165,9 @@ public class BattleSession(
         val from = handlers[_currentPhaseIndex].phase
         _currentPhaseIndex = (_currentPhaseIndex + 1) % handlers.size
         _needsOnEntry = true
-        return PhaseChanged(from, handlers[_currentPhaseIndex].phase)
+        val event = PhaseChanged(from, handlers[_currentPhaseIndex].phase)
+        logEvents(listOf(event))
+        return event
     }
 
     private companion object {
