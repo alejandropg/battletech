@@ -25,7 +25,7 @@ public class LogView(
     }
 
     private fun wrapEntry(entry: LogEntry, width: Int): List<String> {
-        val prefix = "[T${entry.turn}] "
+        val prefix = "[%02d] ".format(entry.turn)
         val indent = " ".repeat(prefix.length)
         val firstLineCapacity = (width - prefix.length).coerceAtLeast(1)
         val continuationCapacity = (width - indent.length).coerceAtLeast(1)

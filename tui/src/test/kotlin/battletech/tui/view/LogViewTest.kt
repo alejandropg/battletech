@@ -29,7 +29,18 @@ internal class LogViewTest {
 
         // Inner content starts at x=2, y=1 (just inside the box).
         val firstLine = readLine(buffer, x = 2, y = 1, width = 24)
-        assertEquals("[T2] Phase: Movement", firstLine)
+        assertEquals("[02] Phase: Movement", firstLine)
+    }
+
+    @Test
+    fun `turn numbers of 10 or more are not padded further`() {
+        val view = LogView(entries = listOf(LogEntry(turn = 10, text = "Phase: Movement")))
+        val buffer = ScreenBuffer(28, 10)
+
+        view.render(buffer, 0, 0, 28, 10)
+
+        val firstLine = readLine(buffer, x = 2, y = 1, width = 24)
+        assertEquals("[10] Phase: Movement", firstLine)
     }
 
     @Test
@@ -43,9 +54,9 @@ internal class LogViewTest {
 
         view.render(buffer, 0, 0, 28, 10)
 
-        assertEquals("[T1] Phase: Init", readLine(buffer, 2, 1, 24))
-        assertEquals("[T1] Init: P1 5, P2 8", readLine(buffer, 2, 2, 24))
-        assertEquals("[T1] Phase: Move", readLine(buffer, 2, 3, 24))
+        assertEquals("[01] Phase: Init", readLine(buffer, 2, 1, 24))
+        assertEquals("[01] Init: P1 5, P2 8", readLine(buffer, 2, 2, 24))
+        assertEquals("[01] Phase: Move", readLine(buffer, 2, 3, 24))
         // Below the last entry should be empty inside the box.
         assertEquals("", readLine(buffer, 2, 4, 24))
     }
@@ -59,15 +70,15 @@ internal class LogViewTest {
 
         view.render(buffer, 0, 0, 28, 10)
 
-        // Inner width = 24. Prefix "[T2] " = 5 chars. First wrap row gets up to 19 chars of text.
+        // Inner width = 24. Prefix "[02] " = 5 chars. First wrap row gets up to 19 chars of text.
         // Continuation lines are indented by 5 spaces under the prefix.
         val line1 = readLine(buffer, 2, 1, 24)
         val line2 = readLine(buffer, 2, 2, 24)
         // Verify the first line starts with the prefix and contains a prefix of the text.
-        assert(line1.startsWith("[T2] ")) { "Line 1 missing prefix: '$line1'" }
+        assert(line1.startsWith("[02] ")) { "Line 1 missing prefix: '$line1'" }
         assert(line2.startsWith("     ")) { "Line 2 not indented: '$line2'" }
         // The text content should reassemble (whitespace flexible).
-        val reassembled = (line1.removePrefix("[T2] ") + " " + line2.trim()).replace(Regex("\\s+"), " ").trim()
+        val reassembled = (line1.removePrefix("[02] ") + " " + line2.trim()).replace(Regex("\\s+"), " ").trim()
         // Allow for further wrapping if necessary, but at minimum the first two visual lines together
         // should reproduce the start of the text.
         assert(reassembled.startsWith("Initiative: P1 rolled 6,")) {
@@ -86,13 +97,13 @@ internal class LogViewTest {
 
         // The bottom inner row (y = 4, since box bottom is y=5) should be the most recent entry.
         val bottomInnerRow = readLine(buffer, 2, 4, 24)
-        assertEquals("[T1] line 10", bottomInnerRow)
+        assertEquals("[01] line 10", bottomInnerRow)
         // The row above should be the previous entry.
         val secondFromBottom = readLine(buffer, 2, 3, 24)
-        assertEquals("[T1] line 9", secondFromBottom)
+        assertEquals("[01] line 9", secondFromBottom)
         // And the top inner row should be entry 7 (showing the last 4 entries).
         val topInner = readLine(buffer, 2, 1, 24)
-        assertEquals("[T1] line 7", topInner)
+        assertEquals("[01] line 7", topInner)
     }
 
     private fun readLine(buffer: ScreenBuffer, x: Int, y: Int, width: Int): String =
