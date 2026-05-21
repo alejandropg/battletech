@@ -27,8 +27,18 @@ public object GameLogFormatter {
             "Attacks: $fired fired, $hits hit, $damage damage"
         }
         is AttackDeclarationsRecorded -> {
-            val noun = if (event.count == 1) "attack" else "attacks"
-            "${playerLabel(event.player)} declared ${event.count} $noun"
+            val grouped = event.declarations.groupBy { it.attackerId to it.targetId }
+            val pairs = grouped.entries.joinToString(", ") { (key, decls) ->
+                val (attackerId, targetId) = key
+                val attacker = state.unitById(attackerId)
+                val attackerName = attacker?.name ?: attackerId.value
+                val targetName = state.unitById(targetId)?.name ?: targetId.value
+                val weaponNames = decls.joinToString(", ") { decl ->
+                    attacker?.weapons?.getOrNull(decl.weaponIndex)?.name ?: "weapon#${decl.weaponIndex}"
+                }
+                "$attackerName→$targetName ($weaponNames)"
+            }
+            "${playerLabel(event.player)} declared: $pairs"
         }
         is TorsoFacingsApplied -> {
             if (event.facings.isEmpty()) {

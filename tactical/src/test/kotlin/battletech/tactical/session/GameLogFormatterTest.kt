@@ -122,25 +122,74 @@ internal class GameLogFormatterTest {
     }
 
     @Test
-    fun `AttackDeclarationsRecorded shows player and count`() {
+    fun `AttackDeclarationsRecorded shows attacker, target, and fired weapons`() {
+        val atlas = aMech(id = "atlas", name = "Atlas", owner = PlayerId.PLAYER_1)
+        val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
+        val stateWithUnits = emptyState.copy(units = listOf(atlas, locust))
+
         val text = GameLogFormatter.format(
-            event = AttackDeclarationsRecorded(PlayerId.PLAYER_1, count = 2),
-            state = emptyState,
+            event = AttackDeclarationsRecorded(
+                player = PlayerId.PLAYER_1,
+                declarations = listOf(
+                    battletech.tactical.attack.AttackDeclaration(
+                        attackerId = atlas.id, targetId = locust.id, weaponIndex = 0, isPrimary = true,
+                    ),
+                ),
+            ),
+            state = stateWithUnits,
             turn = emptyTurn,
         )
 
-        assertThat(text).isEqualTo("P1 declared 2 attacks")
+        // atlas has one weapon configured: medium laser ("Medium Laser").
+        assertThat(text).isEqualTo("P1 declared: Atlas→Locust (Medium Laser)")
     }
 
     @Test
-    fun `AttackDeclarationsRecorded uses singular 'attack' for count of 1`() {
+    fun `AttackDeclarationsRecorded groups multiple weapons fired at the same target`() {
+        val atlas = aMech(
+            id = "atlas",
+            name = "Atlas",
+            owner = PlayerId.PLAYER_1,
+            weapons = listOf(Weapons.mediumLaser(), Weapons.lrm5()),
+        )
+        val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
+        val stateWithUnits = emptyState.copy(units = listOf(atlas, locust))
+
         val text = GameLogFormatter.format(
-            event = AttackDeclarationsRecorded(PlayerId.PLAYER_2, count = 1),
-            state = emptyState,
+            event = AttackDeclarationsRecorded(
+                player = PlayerId.PLAYER_1,
+                declarations = listOf(
+                    battletech.tactical.attack.AttackDeclaration(atlas.id, locust.id, 0, true),
+                    battletech.tactical.attack.AttackDeclaration(atlas.id, locust.id, 1, false),
+                ),
+            ),
+            state = stateWithUnits,
             turn = emptyTurn,
         )
 
-        assertThat(text).isEqualTo("P2 declared 1 attack")
+        assertThat(text).isEqualTo("P1 declared: Atlas→Locust (Medium Laser, LRM 5)")
+    }
+
+    @Test
+    fun `AttackDeclarationsRecorded lists multiple attacker-target pairs separated by commas`() {
+        val atlas = aMech(id = "atlas", name = "Atlas", owner = PlayerId.PLAYER_1)
+        val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
+        val marauder = aMech(id = "marauder", name = "Marauder", owner = PlayerId.PLAYER_2)
+        val stateWithUnits = emptyState.copy(units = listOf(atlas, locust, marauder))
+
+        val text = GameLogFormatter.format(
+            event = AttackDeclarationsRecorded(
+                player = PlayerId.PLAYER_1,
+                declarations = listOf(
+                    battletech.tactical.attack.AttackDeclaration(atlas.id, locust.id, 0, true),
+                    battletech.tactical.attack.AttackDeclaration(atlas.id, marauder.id, 0, false),
+                ),
+            ),
+            state = stateWithUnits,
+            turn = emptyTurn,
+        )
+
+        assertThat(text).isEqualTo("P1 declared: Atlas→Locust (Medium Laser), Atlas→Marauder (Medium Laser)")
     }
 
     @Test
@@ -238,13 +287,14 @@ internal class GameLogFormatterTest {
         owner: PlayerId = PlayerId.PLAYER_1,
         position: HexCoordinates = HexCoordinates(0, 0),
         currentHeat: Int = 0,
+        weapons: List<battletech.tactical.unit.Weapon> = listOf(Weapons.mediumLaser()),
     ): CombatUnit = CombatUnit(
         id = UnitId(id),
         owner = owner,
         name = name,
         gunnerySkill = 4,
         pilotingSkill = 5,
-        weapons = listOf(Weapons.mediumLaser()),
+        weapons = weapons,
         position = position,
         facing = HexDirection.N,
         torsoFacing = HexDirection.N,

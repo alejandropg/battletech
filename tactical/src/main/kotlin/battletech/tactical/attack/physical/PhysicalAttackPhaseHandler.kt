@@ -55,7 +55,7 @@ public class PhysicalAttackPhaseHandler : PhaseHandler {
             attackDeclarations = accumulated,
             attackSequence = turn.attackSequence.advance(),
         )
-        events += AttackDeclarationsRecorded(player = cmd.playerId, count = cmd.declarations.size)
+        events += AttackDeclarationsRecorded(player = cmd.playerId, declarations = cmd.declarations)
 
         if (newTurn.attackSequence.isComplete) {
             newTurn = newTurn.copy(attackDeclarations = emptyList())

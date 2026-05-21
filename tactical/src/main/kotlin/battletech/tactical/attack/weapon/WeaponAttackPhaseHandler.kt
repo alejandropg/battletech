@@ -62,7 +62,7 @@ public class WeaponAttackPhaseHandler : PhaseHandler {
             attackSequence = turn.attackSequence.advance(),
         )
 
-        events += AttackDeclarationsRecorded(player = cmd.playerId, count = cmd.declarations.size)
+        events += AttackDeclarationsRecorded(player = cmd.playerId, declarations = cmd.declarations)
 
         if (newTurn.attackSequence.isComplete && accumulated.isNotEmpty()) {
             val (resolvedState, results) = resolveAttacks(accumulated, newState, roller)

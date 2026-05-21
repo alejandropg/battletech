@@ -1,5 +1,6 @@
 package battletech.tactical.session
 
+import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -32,7 +33,7 @@ public data class AttacksResolved(
 
 public data class AttackDeclarationsRecorded(
     public val player: PlayerId,
-    public val count: Int
+    public val declarations: List<AttackDeclaration>,
 ) : GameEvent
 
 public data class TorsoFacingsApplied(
