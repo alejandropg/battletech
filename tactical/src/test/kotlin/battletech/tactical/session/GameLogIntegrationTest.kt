@@ -38,8 +38,17 @@ internal class GameLogIntegrationTest {
         session.advance()
 
         val texts = session.gameLog.snapshot().map { it.text }
-        assertThat(texts).contains("Phase: Movement")
         assertThat(texts.any { it.startsWith("Initiative:") }).isTrue()
+    }
+
+    @Test
+    fun `phase changes are not logged`() {
+        val session = freshSession()
+
+        session.advance()
+
+        val texts = session.gameLog.snapshot().map { it.text }
+        assertThat(texts.none { it.startsWith("Phase:") }).isTrue()
     }
 
     @Test

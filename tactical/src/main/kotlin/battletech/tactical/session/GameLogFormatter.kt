@@ -3,13 +3,12 @@ package battletech.tactical.session
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
-import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementMode
 
 public object GameLogFormatter {
 
-    public fun format(event: GameEvent, state: GameState, turn: TurnState): String = when (event) {
-        is PhaseChanged -> "Phase: ${phaseName(event.to)}"
+    public fun format(event: GameEvent, state: GameState, turn: TurnState): String? = when (event) {
+        is PhaseChanged -> null
         is InitiativeRolled -> {
             val p1 = event.initiative.rolls[PlayerId.PLAYER_1]
             val p2 = event.initiative.rolls[PlayerId.PLAYER_2]
@@ -68,13 +67,4 @@ public object GameLogFormatter {
 
     private fun hexLabel(coord: HexCoordinates): String =
         "%02d%02d".format(coord.col + 1, coord.row + 1)
-
-    private fun phaseName(phase: TurnPhase): String = when (phase) {
-        TurnPhase.INITIATIVE -> "Initiative"
-        TurnPhase.MOVEMENT -> "Movement"
-        TurnPhase.WEAPON_ATTACK -> "Weapon Attack"
-        TurnPhase.PHYSICAL_ATTACK -> "Physical Attack"
-        TurnPhase.HEAT -> "Heat"
-        TurnPhase.END -> "End"
-    }
 }

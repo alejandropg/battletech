@@ -25,14 +25,14 @@ internal class GameLogFormatterTest {
     private val emptyTurn = TurnState.NULL
 
     @Test
-    fun `PhaseChanged formats as 'Phase X'`() {
+    fun `PhaseChanged is not logged`() {
         val text = GameLogFormatter.format(
             event = PhaseChanged(TurnPhase.INITIATIVE, TurnPhase.MOVEMENT),
             state = emptyState,
             turn = emptyTurn,
         )
 
-        assertThat(text).isEqualTo("Phase: Movement")
+        assertThat(text).isNull()
     }
 
     @Test
