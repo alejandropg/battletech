@@ -1,13 +1,11 @@
 package battletech.tactical.attack
 
-import battletech.tactical.model.CombatUnit
-import battletech.tactical.model.UnitId
 import battletech.tactical.dice.DiceRoller
-import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.GameState
-import battletech.tactical.model.HitLocation
-import battletech.tactical.model.HitLocationTable
-import battletech.tactical.model.InternalStructureLayout
+import battletech.tactical.unit.ArmorLayout
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.InternalStructureLayout
+import battletech.tactical.unit.UnitId
 import kotlin.math.ceil
 
 public data class AttackDeclaration(

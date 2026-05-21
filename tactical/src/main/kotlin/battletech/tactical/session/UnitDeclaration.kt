@@ -1,7 +1,7 @@
 package battletech.tactical.session
 
-import battletech.tactical.model.UnitId
 import battletech.tactical.model.HexDirection
+import battletech.tactical.unit.UnitId
 
 public data class UnitDeclaration(
     val unitId: UnitId,

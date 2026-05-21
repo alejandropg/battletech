@@ -1,13 +1,12 @@
 package battletech.tactical.session
 
-import battletech.tactical.session.Initiative
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.UnitId
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementMode
+import battletech.tactical.unit.UnitId
 
 /**
  * Passive narration of something that happened in the session. Events are

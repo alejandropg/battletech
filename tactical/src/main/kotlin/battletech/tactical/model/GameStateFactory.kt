@@ -1,7 +1,8 @@
 package battletech.tactical.model
 
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.UnitId
+import battletech.tactical.unit.MechModels
+import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.createUnit
 
 public class GameStateFactory {
 

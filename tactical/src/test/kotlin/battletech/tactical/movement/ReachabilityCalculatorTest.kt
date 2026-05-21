@@ -1,13 +1,12 @@
 package battletech.tactical.movement
 
-import battletech.tactical.model.CombatUnit
-import battletech.tactical.query.aUnit
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.movement.MovementMode
 import battletech.tactical.model.Terrain
+import battletech.tactical.query.aUnit
+import battletech.tactical.unit.CombatUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

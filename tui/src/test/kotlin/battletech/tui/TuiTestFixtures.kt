@@ -1,17 +1,17 @@
 package battletech.tui
 
-import battletech.tactical.model.CombatUnit
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.UnitId
-import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.InternalStructureLayout
+import battletech.tactical.model.PlayerId
 import battletech.tactical.model.Terrain
-import battletech.tactical.model.Weapon
+import battletech.tactical.unit.ArmorLayout
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.InternalStructureLayout
+import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.Weapon
 
 internal fun aHex(
     col: Int = 0,

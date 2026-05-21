@@ -1,19 +1,19 @@
 package battletech.tui.game
 
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.UnitId
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.movement.MovementMode
+import battletech.tactical.model.PlayerId
 import battletech.tactical.model.Terrain
-import battletech.tactical.model.Weapon
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.movement.MovementMode
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.query.DefaultPlayerView
+import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.Weapon
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit

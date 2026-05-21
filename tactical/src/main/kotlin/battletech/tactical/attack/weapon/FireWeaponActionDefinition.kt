@@ -1,12 +1,12 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.query.ActionPreview
-import battletech.tactical.model.CombatUnit
-import battletech.tactical.model.TurnPhase
 import battletech.tactical.attack.AttackDefinition
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.attack.WeaponAttackContext
 import battletech.tactical.model.GameState
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.query.ActionPreview
+import battletech.tactical.unit.CombatUnit
 import kotlin.math.ceil
 
 public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> {

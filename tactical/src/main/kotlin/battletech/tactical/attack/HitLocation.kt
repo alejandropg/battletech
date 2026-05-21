@@ -1,4 +1,4 @@
-package battletech.tactical.model
+package battletech.tactical.attack
 
 public enum class HitLocation {
     HEAD,

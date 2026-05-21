@@ -1,4 +1,4 @@
-package battletech.tactical.model
+package battletech.tactical.unit
 
 public object MechModels {
     private val registry: Map<String, MechModel> = listOf(

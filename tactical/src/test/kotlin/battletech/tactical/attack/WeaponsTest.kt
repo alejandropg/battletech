@@ -1,11 +1,10 @@
 package battletech.tactical.attack
 
+import battletech.tactical.unit.Weapons
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import battletech.tactical.model.Weapon
-import battletech.tactical.model.Weapons
 
 internal class WeaponsTest {
 

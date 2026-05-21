@@ -1,11 +1,12 @@
 package battletech.tactical.model
 
-import battletech.tactical.model.CombatUnit
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.UnitId
 import battletech.tactical.attack.applyTorsoFacings
 import battletech.tactical.attack.resetTorsoFacings
 import battletech.tactical.session.applyHeatDissipation
+import battletech.tactical.unit.ArmorLayout
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.InternalStructureLayout
+import battletech.tactical.unit.UnitId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

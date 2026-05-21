@@ -1,4 +1,4 @@
-package battletech.tactical.model
+package battletech.tactical.unit
 
 public data class MechModel(
     val variant: String,

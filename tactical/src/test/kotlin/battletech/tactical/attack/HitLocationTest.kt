@@ -3,8 +3,6 @@ package battletech.tactical.attack
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import battletech.tactical.model.HitLocation
-import battletech.tactical.model.HitLocationTable
 
 internal class HitLocationTest {
 

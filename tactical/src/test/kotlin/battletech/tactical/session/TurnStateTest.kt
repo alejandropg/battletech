@@ -1,9 +1,7 @@
 package battletech.tactical.session
 
-import battletech.tactical.session.Impulse
-import battletech.tactical.session.Initiative
 import battletech.tactical.model.PlayerId
-import battletech.tactical.model.UnitId
+import battletech.tactical.unit.UnitId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue

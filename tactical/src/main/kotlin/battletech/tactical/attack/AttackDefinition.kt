@@ -1,14 +1,14 @@
 package battletech.tactical.attack
 
+import battletech.tactical.model.GameState
+import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.ActionId
 import battletech.tactical.query.ActionOption
 import battletech.tactical.query.ActionPreview
 import battletech.tactical.query.AvailableAction
-import battletech.tactical.model.CombatUnit
 import battletech.tactical.query.RuleResult
-import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.UnavailableAction
-import battletech.tactical.model.GameState
+import battletech.tactical.unit.CombatUnit
 
 public interface AttackDefinition<C : AttackContext> {
     public val phase: TurnPhase

@@ -1,16 +1,16 @@
 package battletech.tactical.query
 
+import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
-import battletech.tactical.model.CombatUnit
-import battletech.tactical.model.FiringArc
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
-import battletech.tactical.model.UnitId
 import battletech.tactical.movement.MovementMode
 import battletech.tactical.movement.ReachabilityCalculator
 import battletech.tactical.movement.ReachabilityMap
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.UnitId
 import kotlin.math.ceil
 
 public class DefaultPlayerView(

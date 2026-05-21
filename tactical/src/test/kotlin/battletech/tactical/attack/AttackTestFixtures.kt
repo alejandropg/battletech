@@ -1,11 +1,11 @@
 package battletech.tactical.attack
 
-import battletech.tactical.model.CombatUnit
+import battletech.tactical.model.GameState
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.aWeapon
-import battletech.tactical.model.GameState
-import battletech.tactical.model.Weapon
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.Weapon
 
 internal fun aWeaponAttackContext(
     actor: CombatUnit = aUnit(),

@@ -1,8 +1,7 @@
 package battletech.tactical.model
 
-import battletech.tactical.model.CombatUnit
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.UnitId
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.UnitId
 
 public data class GameState(
     public val units: List<CombatUnit>,

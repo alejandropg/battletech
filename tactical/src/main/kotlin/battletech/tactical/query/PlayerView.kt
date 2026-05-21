@@ -4,8 +4,8 @@ import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
-import battletech.tactical.model.UnitId
 import battletech.tactical.movement.ReachabilityMap
+import battletech.tactical.unit.UnitId
 
 /**
  * Read-side surface scoped to one [PlayerId]. Deliveries (TUI, web, remote

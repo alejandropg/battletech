@@ -1,6 +1,6 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.model.UnitId
+import battletech.tactical.unit.UnitId
 
 public data class TargetInfo(
     val unitId: UnitId,

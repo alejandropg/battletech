@@ -1,8 +1,8 @@
 package battletech.tactical.attack
 
-import battletech.tactical.model.CombatUnit
 import battletech.tactical.model.GameState
-import battletech.tactical.model.Weapon
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.Weapon
 
 public sealed interface AttackContext {
     public val actor: CombatUnit

@@ -1,24 +1,22 @@
 package battletech.tactical.session
 
-import battletech.tactical.model.CombatUnit
-import battletech.tactical.session.Impulse
-import battletech.tactical.session.Initiative
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.UnitId
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.dice.DiceRoller
-import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.InternalStructureLayout
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementMode
-import battletech.tactical.model.Weapons
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
+import battletech.tactical.unit.ArmorLayout
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.InternalStructureLayout
+import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.Weapons
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

@@ -1,17 +1,17 @@
 package battletech.tui.game
 
-import battletech.tactical.session.Impulse
-import battletech.tactical.session.Initiative
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.TurnPhase
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.Weapon
-import battletech.tactical.session.ImpulseSequence
-import battletech.tactical.session.TurnState
-import battletech.tactical.session.UnitDeclaration
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.DefaultPlayerView
+import battletech.tactical.session.Impulse
+import battletech.tactical.session.ImpulseSequence
+import battletech.tactical.session.Initiative
+import battletech.tactical.session.TurnState
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.Weapon
 import battletech.tui.aGameMap
 import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackPhase
@@ -52,7 +52,7 @@ internal class AttackPhaseTest {
         cursor: HexCoordinates = HexCoordinates(0, 0),
     ) = AppState(gameState, turnState, phase, cursor)
 
-    private fun viewFor(unit: battletech.tactical.model.CombatUnit, gameState: GameState): DefaultPlayerView =
+    private fun viewFor(unit: CombatUnit, gameState: GameState): DefaultPlayerView =
         DefaultPlayerView(unit.owner, gameState)
 
     @Nested

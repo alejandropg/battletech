@@ -1,11 +1,10 @@
 package battletech.tactical.query
 
 import battletech.tactical.attack.AttackDefinition
-import battletech.tactical.movement.MoveActionDefinition
 import battletech.tactical.model.GameState
-import battletech.tactical.model.CombatUnit
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.UnitId
+import battletech.tactical.movement.MoveActionDefinition
+import battletech.tactical.unit.CombatUnit
 
 public class ActionQueryService(
     private val movementDefinition: MoveActionDefinition,

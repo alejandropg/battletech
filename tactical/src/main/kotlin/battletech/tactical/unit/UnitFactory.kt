@@ -1,8 +1,8 @@
-package battletech.tactical.model
+package battletech.tactical.unit
 
-import battletech.tactical.model.CombatUnit
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
-import battletech.tactical.model.UnitId
 
 public fun MechModel.createUnit(
     id: UnitId,

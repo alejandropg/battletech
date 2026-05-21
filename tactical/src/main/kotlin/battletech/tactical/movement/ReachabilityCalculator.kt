@@ -1,9 +1,9 @@
 package battletech.tactical.movement
 
-import battletech.tactical.model.CombatUnit
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.unit.CombatUnit
 import java.util.PriorityQueue
 
 public class ReachabilityCalculator(

@@ -1,7 +1,7 @@
 package battletech.tactical.movement
 
-import battletech.tactical.model.CombatUnit
 import battletech.tactical.model.GameState
+import battletech.tactical.unit.CombatUnit
 
 public class MoveActionDefinition {
 

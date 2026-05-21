@@ -1,10 +1,8 @@
-package battletech.tactical.model
+package battletech.tactical.unit
 
-import battletech.tactical.model.ArmorLayout
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.InternalStructureLayout
-import battletech.tactical.model.Weapon
+import battletech.tactical.model.PlayerId
 
 public data class CombatUnit(
     public val id: UnitId,

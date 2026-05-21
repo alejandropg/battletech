@@ -1,4 +1,4 @@
-package battletech.tactical.model
+package battletech.tactical.unit
 
 public object Weapons {
     public fun mediumLaser(): Weapon = Weapon(

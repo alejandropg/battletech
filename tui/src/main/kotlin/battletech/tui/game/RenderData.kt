@@ -3,14 +3,14 @@ package battletech.tui.game
 import battletech.tactical.attack.PhysicalAttackContext
 import battletech.tactical.attack.weapon.LineOfSightRule
 import battletech.tactical.attack.weapon.TargetInfo
-import battletech.tactical.model.CombatUnit
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.UnitId
 import battletech.tactical.movement.MovementMode
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.query.RuleResult
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.UnitId
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.hex.HexHighlight
 

@@ -2,7 +2,7 @@ package battletech.tactical.session
 
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.UnitId
+import battletech.tactical.unit.UnitId
 
 /**
  * Reasons the session refuses a command before the underlying rules are

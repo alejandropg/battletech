@@ -1,4 +1,4 @@
-package battletech.tactical.model
+package battletech.tactical.unit
 
 public data class Weapon(
     public val name: String,

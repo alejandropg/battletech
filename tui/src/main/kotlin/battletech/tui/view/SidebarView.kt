@@ -1,6 +1,6 @@
 package battletech.tui.view
 
-import battletech.tactical.model.CombatUnit
+import battletech.tactical.unit.CombatUnit
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 

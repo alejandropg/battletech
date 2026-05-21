@@ -1,5 +1,8 @@
-package battletech.tactical.model
+package battletech.tactical.attack.weapon
 
+import battletech.tactical.model.GameMap
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import kotlin.math.atan2
 
 public object FiringArc {

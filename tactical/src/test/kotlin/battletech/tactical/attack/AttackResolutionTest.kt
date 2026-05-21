@@ -1,14 +1,13 @@
 package battletech.tactical.attack
 
-import battletech.tactical.query.aUnit
-import battletech.tactical.query.anArmorLayout
-import battletech.tactical.query.anInternalStructureLayout
-import battletech.tactical.query.mediumLaser
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
-import battletech.tactical.model.HitLocation
+import battletech.tactical.query.aUnit
+import battletech.tactical.query.anArmorLayout
+import battletech.tactical.query.anInternalStructureLayout
+import battletech.tactical.query.mediumLaser
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull

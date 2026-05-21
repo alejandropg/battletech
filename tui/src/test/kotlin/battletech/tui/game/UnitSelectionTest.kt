@@ -1,12 +1,12 @@
 package battletech.tui.game
 
-import battletech.tactical.session.ImpulseSequence
-import battletech.tactical.session.TurnState
-import battletech.tactical.session.Impulse
-import battletech.tactical.session.Initiative
-import battletech.tactical.model.PlayerId
-import battletech.tactical.model.UnitId
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.PlayerId
+import battletech.tactical.session.Impulse
+import battletech.tactical.session.ImpulseSequence
+import battletech.tactical.session.Initiative
+import battletech.tactical.session.TurnState
+import battletech.tactical.unit.UnitId
 import battletech.tui.aGameState
 import battletech.tui.aUnit
 import org.junit.jupiter.api.Assertions.assertEquals

@@ -1,15 +1,15 @@
 package battletech.tactical.query
 
-import battletech.tactical.attack.weapon.WeaponAttackPreview
-import battletech.tactical.attack.weapon.FireWeaponActionDefinition
 import battletech.tactical.attack.physical.PunchActionDefinition
-import battletech.tactical.movement.MoveActionDefinition
-import battletech.tactical.movement.MovementPreview
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.attack.weapon.FireWeaponActionDefinition
+import battletech.tactical.attack.weapon.WeaponAttackPreview
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.Weapon
+import battletech.tactical.movement.MoveActionDefinition
+import battletech.tactical.movement.MovementPreview
+import battletech.tactical.session.RuleRejection
+import battletech.tactical.unit.Weapon
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
