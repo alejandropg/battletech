@@ -1,10 +1,12 @@
 package battletech.tui.view
 
+import battletech.tactical.model.GameState
 import battletech.tactical.session.LogEntry
 import battletech.tui.screen.ScreenBuffer
 
 public class LogView(
     private val entries: List<LogEntry>,
+    private val gameState: GameState,
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -25,12 +27,13 @@ public class LogView(
     }
 
     private fun wrapEntry(entry: LogEntry, width: Int): List<String> {
+        val text = GameLogFormatter.format(entry.event, gameState) ?: return emptyList()
         val prefix = "[%02d] ".format(entry.turn)
         val indent = " ".repeat(prefix.length)
         val firstLineCapacity = (width - prefix.length).coerceAtLeast(1)
         val continuationCapacity = (width - indent.length).coerceAtLeast(1)
 
-        val words = entry.text.split(' ').filter { it.isNotEmpty() }
+        val words = text.split(' ').filter { it.isNotEmpty() }
         val lines = mutableListOf<String>()
         var current = StringBuilder()
         var capacity = firstLineCapacity

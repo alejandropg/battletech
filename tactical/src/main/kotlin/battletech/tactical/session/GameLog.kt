@@ -2,7 +2,7 @@ package battletech.tactical.session
 
 public data class LogEntry(
     public val turn: Int,
-    public val text: String,
+    public val event: GameEvent,
 )
 
 public class GameLog {

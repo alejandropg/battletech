@@ -124,8 +124,7 @@ public class BattleSession(
 
     private fun logEvents(events: List<GameEvent>) {
         for (event in events) {
-            val text = GameLogFormatter.format(event, _gameState, _turnState) ?: continue
-            _gameLog.append(LogEntry(_turnState.turnNumber, text))
+            _gameLog.append(LogEntry(_turnState.turnNumber, event))
         }
     }
 

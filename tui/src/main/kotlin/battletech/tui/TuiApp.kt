@@ -130,7 +130,7 @@ public class TuiApp {
         sidebarView.render(buffer, nextX, 0, sidebarWidth, boardHeight)
         nextX += sidebarWidth
 
-        val logView = LogView(entries = appState.session.gameLog.snapshot())
+        val logView = LogView(entries = appState.session.gameLog.snapshot(), gameState = appState.session.gameState)
         logView.render(buffer, nextX, 0, logWidth, boardHeight)
 
         val prompt = flash?.text ?: appState.phase.prompt(appState)

@@ -37,18 +37,18 @@ internal class GameLogIntegrationTest {
 
         session.advance()
 
-        val texts = session.gameLog.snapshot().map { it.text }
-        assertThat(texts.any { it.startsWith("Initiative:") }).isTrue()
+        val events = session.gameLog.snapshot().map { it.event }
+        assertThat(events.any { it is InitiativeRolled }).isTrue()
     }
 
     @Test
-    fun `phase changes are not logged`() {
+    fun `all events including phase changes are stored in the log`() {
         val session = freshSession()
 
         session.advance()
 
-        val texts = session.gameLog.snapshot().map { it.text }
-        assertThat(texts.none { it.startsWith("Phase:") }).isTrue()
+        val events = session.gameLog.snapshot().map { it.event }
+        assertThat(events.any { it is PhaseChanged }).isTrue()
     }
 
     @Test
@@ -66,8 +66,8 @@ internal class GameLogIntegrationTest {
 
         session.submitCommand(MoveUnit(PlayerId.PLAYER_1, mech1.id, destination, MovementMode.WALK))
 
-        val texts = session.gameLog.snapshot().map { it.text }
-        assertThat(texts.any { it.startsWith("m1 walked 0101→0201") }).isTrue()
+        val events = session.gameLog.snapshot().map { it.event }
+        assertThat(events.any { it is UnitMoved && it.unitId == mech1.id }).isTrue()
     }
 
     @Test
@@ -86,9 +86,8 @@ internal class GameLogIntegrationTest {
 
         session.advance()
 
-        val turnEndedEntries = session.gameLog.snapshot().filter { it.text.startsWith("Turn ") }
-        val turnEnded = turnEndedEntries.single { it.text.contains("complete") }
-        assertThat(turnEnded.text).isEqualTo("Turn 1 complete")
+        val turnEnded = session.gameLog.snapshot().single { it.event is TurnEnded }
+        assertThat((turnEnded.event as TurnEnded).turnNumber).isEqualTo(1)
         assertThat(turnEnded.turn).isEqualTo(1)
     }
 

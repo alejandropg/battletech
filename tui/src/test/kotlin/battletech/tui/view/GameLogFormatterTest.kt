@@ -1,5 +1,7 @@
-package battletech.tactical.session
+package battletech.tui.view
 
+import battletech.tactical.attack.AttackDeclaration
+import battletech.tactical.attack.AttackResult
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
@@ -8,6 +10,15 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementMode
+import battletech.tactical.session.AttackDeclarationsRecorded
+import battletech.tactical.session.AttacksResolved
+import battletech.tactical.session.HeatDissipated
+import battletech.tactical.session.Initiative
+import battletech.tactical.session.InitiativeRolled
+import battletech.tactical.session.PhaseChanged
+import battletech.tactical.session.TorsoFacingsApplied
+import battletech.tactical.session.TurnEnded
+import battletech.tactical.session.UnitMoved
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.InternalStructureLayout
@@ -22,14 +33,12 @@ internal class GameLogFormatterTest {
         units = emptyList(),
         map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0)))),
     )
-    private val emptyTurn = TurnState.NULL
 
     @Test
     fun `PhaseChanged is not logged`() {
         val text = GameLogFormatter.format(
             event = PhaseChanged(TurnPhase.INITIATIVE, TurnPhase.MOVEMENT),
             state = emptyState,
-            turn = emptyTurn,
         )
 
         assertThat(text).isNull()
@@ -50,7 +59,6 @@ internal class GameLogFormatterTest {
                 mpSpent = 3,
             ),
             state = stateWithAtlas,
-            turn = emptyTurn,
         )
 
         assertThat(text).isEqualTo("Atlas walked 0301→0302 (3 MP)")
@@ -64,12 +72,12 @@ internal class GameLogFormatterTest {
         val ran = GameLogFormatter.format(
             event = UnitMoved(atlas.id, HexCoordinates(0, 0), HexCoordinates(0, 1),
                 HexDirection.N, MovementMode.RUN, 5),
-            stateWithAtlas, emptyTurn,
+            stateWithAtlas,
         )
         val jumped = GameLogFormatter.format(
             event = UnitMoved(atlas.id, HexCoordinates(0, 0), HexCoordinates(0, 1),
                 HexDirection.N, MovementMode.JUMP, 4),
-            stateWithAtlas, emptyTurn,
+            stateWithAtlas,
         )
 
         assertThat(ran).isEqualTo("Atlas ran 0101→0102 (5 MP)")
@@ -87,7 +95,6 @@ internal class GameLogFormatterTest {
         val text = GameLogFormatter.format(
             event = InitiativeRolled(initiative),
             state = emptyState,
-            turn = emptyTurn,
         )
 
         assertThat(text).isEqualTo("Initiative: P1 rolled 6, P2 rolled 3 — P2 moves first")
@@ -104,7 +111,6 @@ internal class GameLogFormatterTest {
         val text = GameLogFormatter.format(
             event = AttacksResolved(results),
             state = emptyState,
-            turn = emptyTurn,
         )
 
         assertThat(text).isEqualTo("Attacks: 3 fired, 2 hit, 12 damage")
@@ -115,7 +121,6 @@ internal class GameLogFormatterTest {
         val text = GameLogFormatter.format(
             event = AttacksResolved(emptyList()),
             state = emptyState,
-            turn = emptyTurn,
         )
 
         assertThat(text).isEqualTo("Attacks: 0 fired, 0 hit, 0 damage")
@@ -131,13 +136,12 @@ internal class GameLogFormatterTest {
             event = AttackDeclarationsRecorded(
                 player = PlayerId.PLAYER_1,
                 declarations = listOf(
-                    battletech.tactical.attack.AttackDeclaration(
+                    AttackDeclaration(
                         attackerId = atlas.id, targetId = locust.id, weaponIndex = 0, isPrimary = true,
                     ),
                 ),
             ),
             state = stateWithUnits,
-            turn = emptyTurn,
         )
 
         // atlas has one weapon configured: medium laser ("Medium Laser").
@@ -159,12 +163,11 @@ internal class GameLogFormatterTest {
             event = AttackDeclarationsRecorded(
                 player = PlayerId.PLAYER_1,
                 declarations = listOf(
-                    battletech.tactical.attack.AttackDeclaration(atlas.id, locust.id, 0, true),
-                    battletech.tactical.attack.AttackDeclaration(atlas.id, locust.id, 1, false),
+                    AttackDeclaration(atlas.id, locust.id, 0, true),
+                    AttackDeclaration(atlas.id, locust.id, 1, false),
                 ),
             ),
             state = stateWithUnits,
-            turn = emptyTurn,
         )
 
         assertThat(text).isEqualTo("P1 declared: Atlas→Locust (Medium Laser, LRM 5)")
@@ -181,12 +184,11 @@ internal class GameLogFormatterTest {
             event = AttackDeclarationsRecorded(
                 player = PlayerId.PLAYER_1,
                 declarations = listOf(
-                    battletech.tactical.attack.AttackDeclaration(atlas.id, locust.id, 0, true),
-                    battletech.tactical.attack.AttackDeclaration(atlas.id, marauder.id, 0, false),
+                    AttackDeclaration(atlas.id, locust.id, 0, true),
+                    AttackDeclaration(atlas.id, marauder.id, 0, false),
                 ),
             ),
             state = stateWithUnits,
-            turn = emptyTurn,
         )
 
         assertThat(text).isEqualTo("P1 declared: Atlas→Locust (Medium Laser), Atlas→Marauder (Medium Laser)")
@@ -206,7 +208,6 @@ internal class GameLogFormatterTest {
                 ),
             ),
             state = stateWithUnits,
-            turn = emptyTurn,
         )
 
         assertThat(text).isEqualTo("Torso facings: Atlas→NE, Locust→S")
@@ -217,7 +218,6 @@ internal class GameLogFormatterTest {
         val text = GameLogFormatter.format(
             event = TorsoFacingsApplied(facings = emptyMap()),
             state = emptyState,
-            turn = emptyTurn,
         )
 
         assertThat(text).isEqualTo("Torso facings: no changes")
@@ -235,7 +235,6 @@ internal class GameLogFormatterTest {
                 heatAfter = mapOf(atlas.id to 4, locust.id to 0),
             ),
             state = stateWithUnits,
-            turn = emptyTurn,
         )
 
         assertThat(text).isEqualTo("Heat: Atlas 8→4")
@@ -252,7 +251,6 @@ internal class GameLogFormatterTest {
                 heatAfter = mapOf(atlas.id to 0),
             ),
             state = stateWithAtlas,
-            turn = emptyTurn,
         )
 
         assertThat(text).isEqualTo("Heat: no heat to dissipate")
@@ -263,14 +261,13 @@ internal class GameLogFormatterTest {
         val text = GameLogFormatter.format(
             event = TurnEnded(turnNumber = 3),
             state = emptyState,
-            turn = emptyTurn,
         )
 
         assertThat(text).isEqualTo("Turn 3 complete")
     }
 
-    private fun anAttackResult(hit: Boolean, damage: Int): battletech.tactical.attack.AttackResult =
-        battletech.tactical.attack.AttackResult(
+    private fun anAttackResult(hit: Boolean, damage: Int): AttackResult =
+        AttackResult(
             attackerId = UnitId("a"),
             targetId = UnitId("t"),
             weaponName = "ML",

@@ -1,13 +1,22 @@
-package battletech.tactical.session
+package battletech.tui.view
 
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
 import battletech.tactical.movement.MovementMode
+import battletech.tactical.session.AttackDeclarationsRecorded
+import battletech.tactical.session.AttacksResolved
+import battletech.tactical.session.GameEvent
+import battletech.tactical.session.HeatDissipated
+import battletech.tactical.session.InitiativeRolled
+import battletech.tactical.session.PhaseChanged
+import battletech.tactical.session.TorsoFacingsApplied
+import battletech.tactical.session.TurnEnded
+import battletech.tactical.session.UnitMoved
 
-public object GameLogFormatter {
+internal object GameLogFormatter {
 
-    public fun format(event: GameEvent, state: GameState, turn: TurnState): String? = when (event) {
+    fun format(event: GameEvent, state: GameState): String? = when (event) {
         is PhaseChanged -> null
         is InitiativeRolled -> {
             val p1 = event.initiative.rolls[PlayerId.PLAYER_1]

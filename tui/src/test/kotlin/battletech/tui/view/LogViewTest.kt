@@ -1,15 +1,28 @@
 package battletech.tui.view
 
+import battletech.tactical.model.GameMap
+import battletech.tactical.model.GameState
+import battletech.tactical.model.Hex
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.PlayerId
+import battletech.tactical.session.Initiative
+import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.LogEntry
+import battletech.tactical.session.TurnEnded
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class LogViewTest {
 
+    private val emptyState = GameState(
+        units = emptyList(),
+        map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0)))),
+    )
+
     @Test
     fun `renders a box titled LOG`() {
-        val view = LogView(entries = emptyList())
+        val view = LogView(entries = emptyList(), gameState = emptyState)
         val buffer = ScreenBuffer(28, 10)
 
         view.render(buffer, 0, 0, 28, 10)
@@ -22,50 +35,59 @@ internal class LogViewTest {
 
     @Test
     fun `renders a single short entry at the top with turn prefix`() {
-        val view = LogView(entries = listOf(LogEntry(turn = 2, text = "Phase: Movement")))
+        val view = LogView(entries = listOf(LogEntry(turn = 2, event = TurnEnded(2))), gameState = emptyState)
         val buffer = ScreenBuffer(28, 10)
 
         view.render(buffer, 0, 0, 28, 10)
 
         // Inner content starts at x=2, y=1 (just inside the box).
         val firstLine = readLine(buffer, x = 2, y = 1, width = 24)
-        assertEquals("[02] Phase: Movement", firstLine)
+        assertEquals("[02] Turn 2 complete", firstLine)
     }
 
     @Test
     fun `turn numbers of 10 or more are not padded further`() {
-        val view = LogView(entries = listOf(LogEntry(turn = 10, text = "Phase: Movement")))
+        val view = LogView(entries = listOf(LogEntry(turn = 10, event = TurnEnded(10))), gameState = emptyState)
         val buffer = ScreenBuffer(28, 10)
 
         view.render(buffer, 0, 0, 28, 10)
 
         val firstLine = readLine(buffer, x = 2, y = 1, width = 24)
-        assertEquals("[10] Phase: Movement", firstLine)
+        assertEquals("[10] Turn 10 complete", firstLine)
     }
 
     @Test
     fun `renders multiple entries top-anchored in append order`() {
-        val view = LogView(entries = listOf(
-            LogEntry(1, "Phase: Init"),
-            LogEntry(1, "Init: P1 5, P2 8"),
-            LogEntry(1, "Phase: Move"),
-        ))
+        val view = LogView(
+            entries = listOf(
+                LogEntry(1, TurnEnded(1)),
+                LogEntry(1, TurnEnded(2)),
+                LogEntry(1, TurnEnded(3)),
+            ),
+            gameState = emptyState,
+        )
         val buffer = ScreenBuffer(28, 10)
 
         view.render(buffer, 0, 0, 28, 10)
 
-        assertEquals("[01] Phase: Init", readLine(buffer, 2, 1, 24))
-        assertEquals("[01] Init: P1 5, P2 8", readLine(buffer, 2, 2, 24))
-        assertEquals("[01] Phase: Move", readLine(buffer, 2, 3, 24))
+        assertEquals("[01] Turn 1 complete", readLine(buffer, 2, 1, 24))
+        assertEquals("[01] Turn 2 complete", readLine(buffer, 2, 2, 24))
+        assertEquals("[01] Turn 3 complete", readLine(buffer, 2, 3, 24))
         // Below the last entry should be empty inside the box.
         assertEquals("", readLine(buffer, 2, 4, 24))
     }
 
     @Test
     fun `wraps long entries to multiple visual lines, continuation indented under the prefix`() {
-        val view = LogView(entries = listOf(
-            LogEntry(2, "Initiative: P1 rolled 6, P2 rolled 3 — P2 moves first"),
-        ))
+        val initiative = Initiative(
+            rolls = mapOf(PlayerId.PLAYER_1 to 6, PlayerId.PLAYER_2 to 3),
+            loser = PlayerId.PLAYER_2,
+            winner = PlayerId.PLAYER_1,
+        )
+        val view = LogView(
+            entries = listOf(LogEntry(2, InitiativeRolled(initiative))),
+            gameState = emptyState,
+        )
         val buffer = ScreenBuffer(28, 10)
 
         view.render(buffer, 0, 0, 28, 10)
@@ -89,21 +111,21 @@ internal class LogViewTest {
     @Test
     fun `when content overflows, the most recent line is at the bottom of the panel`() {
         // Panel of height 6: inner height = 4 rows.
-        val entries = (1..10).map { LogEntry(turn = 1, text = "line $it") }
-        val view = LogView(entries)
+        val entries = (1..10).map { LogEntry(turn = 1, event = TurnEnded(it)) }
+        val view = LogView(entries, gameState = emptyState)
         val buffer = ScreenBuffer(28, 6)
 
         view.render(buffer, 0, 0, 28, 6)
 
         // The bottom inner row (y = 4, since box bottom is y=5) should be the most recent entry.
         val bottomInnerRow = readLine(buffer, 2, 4, 24)
-        assertEquals("[01] line 10", bottomInnerRow)
+        assertEquals("[01] Turn 10 complete", bottomInnerRow)
         // The row above should be the previous entry.
         val secondFromBottom = readLine(buffer, 2, 3, 24)
-        assertEquals("[01] line 9", secondFromBottom)
+        assertEquals("[01] Turn 9 complete", secondFromBottom)
         // And the top inner row should be entry 7 (showing the last 4 entries).
         val topInner = readLine(buffer, 2, 1, 24)
-        assertEquals("[01] line 7", topInner)
+        assertEquals("[01] Turn 7 complete", topInner)
     }
 
     private fun readLine(buffer: ScreenBuffer, x: Int, y: Int, width: Int): String =
