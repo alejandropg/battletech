@@ -2,18 +2,21 @@ package battletech.tui.hex
 
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexDirection
-import battletech.tactical.movement.MovementMode
 import battletech.tactical.model.Terrain
+import battletech.tactical.movement.MovementMode
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
 public object HexRenderer {
 
-    // nf-md-tree_outline, nf-md-tree and another Nerd Fonts icons are above U+FFFF, need surrogate pairs
-    private val ICON_LIGHT_WOODS = String(Character.toChars(0xF0E69))
-    private val ICON_HEAVY_WOODS = String(Character.toChars(0xF0531))
-    private val ICON_WATER = String(Character.toChars(0xF078D))
+    // Terrain icons (nf-md-tree_outline, nf-md-tree and another Nerd Fonts icons are above U+FFFF, need surrogate pairs)
+    private fun terrainIcon(terrain: Terrain): String = when (terrain) {
+        Terrain.CLEAR       -> ""
+        Terrain.LIGHT_WOODS -> String(Character.toChars(0xF0E69))
+        Terrain.HEAVY_WOODS -> String(Character.toChars(0xF0531))
+        Terrain.WATER       -> String(Character.toChars(0xF078D))
+    }
 
     // Elevation icons (nf-md-numeric_N_box_multiple_outline)
     private fun elevationIcon(elevation: Int): String = when (elevation) {
@@ -129,17 +132,13 @@ public object HexRenderer {
     private fun contentBackground(highlight: HexHighlight): Color = Color.DEFAULT
 
     private fun renderTerrain(buffer: ScreenBuffer, x: Int, y: Int, terrain: Terrain, bg: Color) {
-        when (terrain) {
-            Terrain.CLEAR -> Unit
-            Terrain.LIGHT_WOODS ->
-                buffer.set(x + 2, y + 1, Cell(ICON_LIGHT_WOODS, Color.GREEN, bg))
-
-            Terrain.HEAVY_WOODS ->
-                buffer.set(x + 2, y + 1, Cell(ICON_HEAVY_WOODS, Color.DARK_GREEN, bg))
-
-            Terrain.WATER ->
-                buffer.set(x + 2, y + 1, Cell(ICON_WATER, Color.BLUE, bg))
+        val color = when (terrain) {
+            Terrain.CLEAR       -> return
+            Terrain.LIGHT_WOODS -> Color.GREEN
+            Terrain.HEAVY_WOODS -> Color.DARK_GREEN
+            Terrain.WATER       -> Color.BLUE
         }
+        buffer.set(x + 2, y + 1, Cell(terrainIcon(terrain), color, bg))
     }
 
     private fun renderBorder(buffer: ScreenBuffer, x: Int, y: Int, fg: Color) {
