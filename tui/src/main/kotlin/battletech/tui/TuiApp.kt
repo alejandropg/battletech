@@ -2,6 +2,8 @@ package battletech.tui
 
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.TurnState
 import battletech.tui.game.AppState
@@ -11,6 +13,7 @@ import battletech.tui.input.InputMapper
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
 import battletech.tui.view.BoardView
+import battletech.tui.view.DeclaredTargetsView
 import battletech.tui.view.LogView
 import battletech.tui.view.SidebarView
 import battletech.tui.view.StatusBarView
@@ -88,7 +91,10 @@ public class TuiApp {
         val attackRender = appState.phase.attackRender(appState.gameState)
         val hasTargets = attackRender?.targets?.isNotEmpty() == true
         val targetsWidth = if (hasTargets) 28 else 0
-        val boardWidth = size.width - sidebarWidth - logWidth - targetsWidth
+        val isAttackPhase = appState.currentPhase == TurnPhase.WEAPON_ATTACK ||
+            appState.currentPhase == TurnPhase.PHYSICAL_ATTACK
+        val declaredWidth = if (isAttackPhase) 28 else 0
+        val boardWidth = size.width - sidebarWidth - logWidth - targetsWidth - declaredWidth
         val boardHeight = size.height - statusBarHeight
 
         val buffer = ScreenBuffer(size.width, size.height)
@@ -124,6 +130,19 @@ public class TuiApp {
             )
             targetsView.render(buffer, nextX, 0, targetsWidth, boardHeight)
             nextX += targetsWidth
+        }
+
+        if (isAttackPhase) {
+            val turnState = appState.turnState
+            val viewingPlayer = if (turnState.attackSequence.order.isEmpty() || turnState.allAttackImpulsesComplete)
+                PlayerId.PLAYER_1
+            else
+                turnState.activeAttackPlayer
+            val declaredData = appState.phase.declaredTargetsRender(appState.gameState, turnState, viewingPlayer)
+            if (declaredData != null) {
+                DeclaredTargetsView(declaredData).render(buffer, nextX, 0, declaredWidth, boardHeight)
+            }
+            nextX += declaredWidth
         }
 
         val sidebarView = SidebarView(unit = selectedUnit)

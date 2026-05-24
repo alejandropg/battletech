@@ -6,8 +6,10 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerView
 import battletech.tactical.session.CommitAttackImpulse
+import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
@@ -79,6 +81,12 @@ public sealed interface AttackPhase : Phase {
             if (turnState.attackSequence.order.isEmpty() || turnState.allAttackImpulsesComplete) return null
             return if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
         }
+
+        override fun declaredTargetsRender(
+            gameState: GameState,
+            turnState: TurnState,
+            viewingPlayer: PlayerId,
+        ): DeclaredTargetsRender = buildDeclaredTargetsRender(gameState, turnState, viewingPlayer, drafts)
 
         private fun trySelect(app: AppState): Transition {
             val unit = app.gameState.unitAt(app.cursor) ?: return Transition(app)
@@ -188,6 +196,12 @@ public sealed interface AttackPhase : Phase {
             if (turnState.allAttackImpulsesComplete) return null
             return if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
         }
+
+        override fun declaredTargetsRender(
+            gameState: GameState,
+            turnState: TurnState,
+            viewingPlayer: PlayerId,
+        ): DeclaredTargetsRender = buildDeclaredTargetsRender(gameState, turnState, viewingPlayer, allDrafts())
 
         private fun nextAttacker(app: AppState): Transition {
             val turn = app.turnState
@@ -406,3 +420,104 @@ internal fun commitAttackImpulse(
 
 private fun playerView(player: PlayerId, gameState: GameState): PlayerView =
     battletech.tactical.query.DefaultPlayerView(player, gameState)
+
+internal fun buildDeclaredTargetsRender(
+    gameState: GameState,
+    turnState: TurnState,
+    viewingPlayer: PlayerId,
+    drafts: Map<UnitId, UnitDeclaration>,
+): DeclaredTargetsRender {
+    val playerOrder: List<PlayerId> = if (turnState.attackSequence.order.isNotEmpty()) {
+        turnState.attackSequence.order.map { it.player }.distinct()
+    } else {
+        listOf(PlayerId.PLAYER_1, PlayerId.PLAYER_2)
+    }
+
+    val committedByAttacker: Map<UnitId, List<AttackDeclaration>> =
+        turnState.attackDeclarations.groupBy { it.attackerId }
+
+    val activeDrafts: Map<UnitId, UnitDeclaration> = drafts.filter { (unitId, decl) ->
+        val unit = gameState.unitById(unitId) ?: return@filter false
+        unit.owner == viewingPlayer && decl.weaponAssignments.values.any { it.isNotEmpty() }
+    }
+
+    val entries = mutableListOf<DeclaredAttackerEntry>()
+
+    for (player in playerOrder) {
+        val committedAttackerIds = committedByAttacker.keys
+            .filter { id -> gameState.unitById(id)?.owner == player }
+            .sortedBy { it.value }
+
+        for (attackerId in committedAttackerIds) {
+            val attackerUnit = gameState.unitById(attackerId) ?: continue
+            val declarations = committedByAttacker[attackerId] ?: continue
+            val view = DefaultPlayerView(attackerUnit.owner, gameState)
+            val targetInfos = view.targetInfos(attackerId, attackerUnit.torsoFacing)
+
+            val byTarget = declarations.groupBy { it.targetId }
+            val targetEntries = byTarget.entries.map { (targetId, decls) ->
+                val targetName = gameState.unitById(targetId)?.name ?: targetId.value
+                val isPrimary = decls.any { it.isPrimary }
+                val weaponEntries = decls.sortedBy { it.weaponIndex }.map { decl ->
+                    resolveWeaponEntry(attackerUnit, decl.weaponIndex, targetId, targetInfos)
+                }
+                DeclaredTargetEntry(targetName = targetName, isPrimary = isPrimary, weapons = weaponEntries)
+            }
+
+            entries += DeclaredAttackerEntry(
+                attackerName = attackerUnit.name,
+                ownerPlayer = player,
+                isDraft = false,
+                targets = targetEntries,
+            )
+        }
+
+        if (player == viewingPlayer) {
+            val draftAttackerIds = activeDrafts.keys
+                .filter { id -> gameState.unitById(id)?.owner == player }
+                .sortedBy { it.value }
+
+            for (attackerId in draftAttackerIds) {
+                val decl = activeDrafts[attackerId] ?: continue
+                val attackerUnit = gameState.unitById(attackerId) ?: continue
+                val view = DefaultPlayerView(attackerUnit.owner, gameState)
+                val targetInfos = view.targetInfos(attackerId, decl.torsoFacing)
+
+                val targetEntries = decl.weaponAssignments.entries
+                    .filter { (_, weapons) -> weapons.isNotEmpty() }
+                    .map { (targetId, weaponIndices) ->
+                        val targetName = gameState.unitById(targetId)?.name ?: targetId.value
+                        val isPrimary = decl.primaryTargetId == targetId
+                        val weaponEntries = weaponIndices.sorted().map { weaponIndex ->
+                            resolveWeaponEntry(attackerUnit, weaponIndex, targetId, targetInfos)
+                        }
+                        DeclaredTargetEntry(targetName = targetName, isPrimary = isPrimary, weapons = weaponEntries)
+                    }
+
+                entries += DeclaredAttackerEntry(
+                    attackerName = attackerUnit.name,
+                    ownerPlayer = player,
+                    isDraft = true,
+                    targets = targetEntries,
+                )
+            }
+        }
+    }
+
+    return DeclaredTargetsRender(entries = entries)
+}
+
+private fun resolveWeaponEntry(
+    attackerUnit: battletech.tactical.unit.CombatUnit,
+    weaponIndex: Int,
+    targetId: UnitId,
+    targetInfos: List<battletech.tactical.attack.weapon.TargetInfo>,
+): DeclaredWeaponEntry {
+    val weaponName = attackerUnit.weapons.getOrNull(weaponIndex)?.name ?: "Unknown"
+    val chance = targetInfos
+        .firstOrNull { it.unitId == targetId }
+        ?.weapons
+        ?.firstOrNull { it.weaponIndex == weaponIndex }
+        ?.successChance ?: 0
+    return DeclaredWeaponEntry(weaponName = weaponName, successChance = chance)
+}

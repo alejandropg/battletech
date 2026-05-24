@@ -3,8 +3,10 @@ package battletech.tui.game.phase
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementMode
+import battletech.tactical.session.TurnState
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
@@ -34,6 +36,12 @@ public sealed interface Phase {
 
     public fun attackRender(gameState: GameState): AttackRender? = null
 
+    public fun declaredTargetsRender(
+        gameState: GameState,
+        turnState: TurnState,
+        viewingPlayer: PlayerId,
+    ): DeclaredTargetsRender? = null
+
     public fun movementMode(): MovementMode? = null
 
     public fun activePlayerLabel(app: AppState): String? = null
@@ -51,3 +59,20 @@ public data class AttackRender(
     val cursorTargetIndex: Int,
     val cursorWeaponIndex: Int,
 )
+
+public data class DeclaredWeaponEntry(val weaponName: String, val successChance: Int)
+
+public data class DeclaredTargetEntry(
+    val targetName: String,
+    val isPrimary: Boolean,
+    val weapons: List<DeclaredWeaponEntry>,
+)
+
+public data class DeclaredAttackerEntry(
+    val attackerName: String,
+    val ownerPlayer: PlayerId,
+    val isDraft: Boolean,
+    val targets: List<DeclaredTargetEntry>,
+)
+
+public data class DeclaredTargetsRender(val entries: List<DeclaredAttackerEntry>)
