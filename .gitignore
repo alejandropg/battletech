@@ -14,10 +14,9 @@ build/
 .claude/settings.local.json
 .claude/worktrees/
 .bot_env/
+.junie/
+.scratch/
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Agents
-.scratch/
