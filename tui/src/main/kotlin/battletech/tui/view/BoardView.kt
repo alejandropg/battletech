@@ -24,6 +24,7 @@ public class BoardView(
     private val movementMode: MovementMode? = null,
     private val torsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
     private val validTargetPositions: Set<HexCoordinates> = emptySet(),
+    private val selectedTargetPosition: HexCoordinates? = null,
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -79,10 +80,11 @@ public class BoardView(
                 val unit = gameState.unitAt(coords)
                 if (unit != null) {
                     val isValidTarget = coords in validTargetPositions
-                    val unitColor = if (isValidTarget) {
-                        Color.RED
-                    } else {
-                        when (unit.owner) {
+                    val isSelectedTarget = coords == selectedTargetPosition
+                    val unitColor = when {
+                        isSelectedTarget -> Color.RED
+                        isValidTarget -> Color.YELLOW
+                        else -> when (unit.owner) {
                             PlayerId.PLAYER_1 -> Color.BLUE
                             PlayerId.PLAYER_2 -> Color.MAGENTA
                         }
