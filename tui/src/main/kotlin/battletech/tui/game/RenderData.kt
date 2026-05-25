@@ -20,6 +20,7 @@ public data class RenderData(
     val facingSelection: FacingSelection? = null,
     val torsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
     val validTargetPositions: Set<HexCoordinates> = emptySet(),
+    val selectedTargetPosition: HexCoordinates? = null,
 ) {
     public companion object {
         public val EMPTY: RenderData = RenderData()

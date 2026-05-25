@@ -116,6 +116,7 @@ public class TuiApp {
             movementMode = movementMode,
             torsoFacings = renderData.torsoFacings,
             validTargetPositions = renderData.validTargetPositions,
+            selectedTargetPosition = renderData.selectedTargetPosition,
         )
         boardView.render(buffer, 0, 0, boardWidth, boardHeight)
 

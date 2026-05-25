@@ -169,10 +169,13 @@ public sealed interface AttackPhase : Phase {
             val targetPositions = view.resolveTargetPositions(validIds)
             val los = losHighlights(attacker, validIds, gameState)
             val selectedLos = selectedLosHighlights(attacker, this, targets, gameState)
+            val selectedTargetPosition = targets.getOrNull(cursorTargetIndex)
+                ?.let { gameState.unitById(it.unitId)?.position }
             return RenderData(
                 hexHighlights = arcHighlights + los + selectedLos,
                 torsoFacings = torsoFacings,
                 validTargetPositions = targetPositions,
+                selectedTargetPosition = selectedTargetPosition,
             )
         }
 
