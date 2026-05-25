@@ -11,6 +11,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementMode
 import battletech.tactical.session.AttackDeclarationsRecorded
+import battletech.tui.hex.movementModeIcon
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.Initiative
@@ -45,7 +46,7 @@ internal class GameLogFormatterTest {
     }
 
     @Test
-    fun `UnitMoved shows the unit name, mode-specific verb, hex coords, and MP spent`() {
+    fun `UnitMoved shows the unit name, mode icon, hex coords, and MP spent`() {
         val atlas = aMech(id = "atlas", name = "Atlas", position = HexCoordinates(2, 0))
         val stateWithAtlas = emptyState.copy(units = listOf(atlas))
 
@@ -61,11 +62,11 @@ internal class GameLogFormatterTest {
             state = stateWithAtlas,
         )
 
-        assertThat(text).isEqualTo("Atlas walked 0301→0302 (3 MP)")
+        assertThat(text).isEqualTo("Atlas ${movementModeIcon(MovementMode.WALK)} 0301→0302 (3 MP)")
     }
 
     @Test
-    fun `UnitMoved uses 'ran' for RUN and 'jumped' for JUMP`() {
+    fun `UnitMoved uses the run icon for RUN and jump icon for JUMP`() {
         val atlas = aMech(id = "atlas", name = "Atlas", position = HexCoordinates(0, 0))
         val stateWithAtlas = emptyState.copy(units = listOf(atlas))
 
@@ -80,8 +81,8 @@ internal class GameLogFormatterTest {
             stateWithAtlas,
         )
 
-        assertThat(ran).isEqualTo("Atlas ran 0101→0102 (5 MP)")
-        assertThat(jumped).isEqualTo("Atlas jumped 0101→0102 (4 MP)")
+        assertThat(ran).isEqualTo("Atlas ${movementModeIcon(MovementMode.RUN)} 0101→0102 (5 MP)")
+        assertThat(jumped).isEqualTo("Atlas ${movementModeIcon(MovementMode.JUMP)} 0101→0102 (4 MP)")
     }
 
     @Test

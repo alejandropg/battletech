@@ -32,13 +32,6 @@ public object HexRenderer {
         else -> error("No elevation icon for elevation: $elevation")
     }
 
-    // Movement mode icons (nf-md-walk, nf-md-run-fast, nf-md-rocket-launch)
-    private fun movementModeIcon(mode: MovementMode): String = when (mode) {
-        MovementMode.WALK -> String(Character.toChars(0xF0583))
-        MovementMode.RUN  -> String(Character.toChars(0xF046E))
-        MovementMode.JUMP -> String(Character.toChars(0xF14DE))
-    }
-
     // Facing arrow icons (same codepoints as UnitRenderer)
     private fun facingIcon(direction: HexDirection): String = when (direction) {
         HexDirection.N  -> String(Character.toChars(0xF09C7))
