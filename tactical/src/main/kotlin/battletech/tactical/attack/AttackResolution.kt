@@ -89,10 +89,10 @@ private fun resolveOneAttack(
     val secondaryPenalty = if (declaration.isPrimary) 0 else 1
     val targetNumber = attacker.gunnerySkill + rangeModifier + heatPenalty + secondaryPenalty
 
-    val roll = roller.roll2d6()
+    val roll = roller.roll2d6().total
 
     return if (roll >= targetNumber) {
-        val locationRoll = roller.roll2d6()
+        val locationRoll = roller.roll2d6().total
         val hitLocation = HitLocationTable.roll(locationRoll)
         AttackResult(
             attackerId = declaration.attackerId,

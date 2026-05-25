@@ -2,6 +2,7 @@ package battletech.tui.view
 
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.AttackResult
+import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
@@ -86,9 +87,9 @@ internal class GameLogFormatterTest {
     }
 
     @Test
-    fun `InitiativeRolled shows both rolls and the player who moves first`() {
+    fun `InitiativeRolled shows both rolls with dice icons and the player who moves first`() {
         val initiative = Initiative(
-            rolls = mapOf(PlayerId.PLAYER_1 to 6, PlayerId.PLAYER_2 to 3),
+            rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(3, 3), PlayerId.PLAYER_2 to DiceRoll(1, 2)),
             loser = PlayerId.PLAYER_2,
             winner = PlayerId.PLAYER_1,
         )
@@ -98,7 +99,9 @@ internal class GameLogFormatterTest {
             state = emptyState,
         )
 
-        assertThat(text).isEqualTo("Initiative: P1 rolled 6, P2 rolled 3 — P2 moves first")
+        assertThat(text).isEqualTo(
+            "Initiative: P1 ${diceIcon(3)}${diceIcon(3)} 6, P2 ${diceIcon(1)}${diceIcon(2)} 3 — P2 moves first"
+        )
     }
 
     @Test

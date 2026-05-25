@@ -1,5 +1,6 @@
 package battletech.tactical.session
 
+import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -20,7 +21,7 @@ internal class TurnStateTest {
         unitsMovedInCurrentImpulse: Int = 0,
     ) = TurnState(
         initiative = Initiative(
-            rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
+            rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
             loser = PlayerId.PLAYER_1,
             winner = PlayerId.PLAYER_2,
         ),

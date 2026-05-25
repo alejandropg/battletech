@@ -1,6 +1,7 @@
 package battletech.tui.game.phase
 
 import battletech.tactical.attack.AttackDeclaration
+import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -34,7 +35,7 @@ internal class DeclaredTargetsRenderTest {
     )
 
     private fun initiative() = Initiative(
-        rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
+        rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
         loser = PlayerId.PLAYER_1,
         winner = PlayerId.PLAYER_2,
     )

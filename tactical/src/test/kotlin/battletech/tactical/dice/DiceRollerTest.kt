@@ -1,5 +1,6 @@
 package battletech.tactical.dice
 
+import battletech.tactical.dice.DiceRoll
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -25,7 +26,7 @@ internal class DiceRollerTest {
     @Test
     fun `roll2d6 sums two d6 in order`() {
         val roller = ScriptedDiceRoller(listOf(3, 5))
-        assertThat(roller.roll2d6()).isEqualTo(8)
+        assertThat(roller.roll2d6()).isEqualTo(DiceRoll(3, 5))
     }
 
     @Test

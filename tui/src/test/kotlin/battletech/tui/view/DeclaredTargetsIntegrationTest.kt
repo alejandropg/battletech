@@ -1,5 +1,6 @@
 package battletech.tui.view
 
+import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -47,7 +48,7 @@ internal class DeclaredTargetsIntegrationTest {
         val gameState = GameState(listOf(attacker, target), map)
         val turnState = TurnState(
             initiative = Initiative(
-                rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
+                rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
                 loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
             ),
             attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
@@ -93,7 +94,7 @@ internal class DeclaredTargetsIntegrationTest {
         val gameState = GameState(listOf(attacker, target), map)
         val turnState = TurnState(
             initiative = Initiative(
-                rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
+                rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
                 loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
             ),
             attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
@@ -129,7 +130,7 @@ internal class DeclaredTargetsIntegrationTest {
         val gameState = GameState(emptyList(), map)
         val turnState = TurnState(
             initiative = Initiative(
-                rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
+                rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
                 loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
             ),
             attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
