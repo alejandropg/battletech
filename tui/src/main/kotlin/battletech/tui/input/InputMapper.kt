@@ -15,9 +15,9 @@ public object InputMapper {
         "ArrowUp", "w" -> HexDirection.N
         "ArrowDown", "s" -> HexDirection.S
         "ArrowRight", "d" -> HexDirection.SE
-        "ArrowLeft", "a" -> HexDirection.NW
+        "ArrowLeft", "q" -> HexDirection.NW
         "e" -> HexDirection.NE
-        "q" -> HexDirection.NW
+        "a" -> HexDirection.SW
         else -> null
     }
 
