@@ -3,7 +3,7 @@ package battletech.tui.view
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
-import battletech.tactical.movement.MovementMode
+import battletech.tui.hex.movementModeIcon
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.GameEvent
@@ -26,8 +26,8 @@ internal object GameLogFormatter {
         }
         is UnitMoved -> {
             val name = state.unitById(event.unitId)?.name ?: event.unitId.value
-            val verb = movementVerb(event.mode)
-            "$name $verb ${hexLabel(event.from)}→${hexLabel(event.to)} (${event.mpSpent} MP)"
+            val icon = movementModeIcon(event.mode)
+            "$name $icon ${hexLabel(event.from)}→${hexLabel(event.to)} (${event.mpSpent} MP)"
         }
         is AttacksResolved -> {
             val fired = event.results.size
@@ -76,12 +76,6 @@ internal object GameLogFormatter {
     private fun playerLabel(player: PlayerId): String = when (player) {
         PlayerId.PLAYER_1 -> "P1"
         PlayerId.PLAYER_2 -> "P2"
-    }
-
-    private fun movementVerb(mode: MovementMode): String = when (mode) {
-        MovementMode.WALK -> "walked"
-        MovementMode.RUN -> "ran"
-        MovementMode.JUMP -> "jumped"
     }
 
     private fun hexLabel(coord: HexCoordinates): String =
