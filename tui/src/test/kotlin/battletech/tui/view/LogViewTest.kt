@@ -1,5 +1,6 @@
 package battletech.tui.view
 
+import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
@@ -80,7 +81,7 @@ internal class LogViewTest {
     @Test
     fun `wraps long entries to multiple visual lines, continuation indented under the prefix`() {
         val initiative = Initiative(
-            rolls = mapOf(PlayerId.PLAYER_1 to 6, PlayerId.PLAYER_2 to 3),
+            rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(3, 3), PlayerId.PLAYER_2 to DiceRoll(1, 2)),
             loser = PlayerId.PLAYER_2,
             winner = PlayerId.PLAYER_1,
         )
@@ -103,7 +104,7 @@ internal class LogViewTest {
         val reassembled = (line1.removePrefix("[02] ") + " " + line2.trim()).replace(Regex("\\s+"), " ").trim()
         // Allow for further wrapping if necessary, but at minimum the first two visual lines together
         // should reproduce the start of the text.
-        assert(reassembled.startsWith("Initiative: P1 rolled 6,")) {
+        assert(reassembled.startsWith("Initiative: P1")) {
             "Reassembled text didn't start as expected: '$reassembled'"
         }
     }

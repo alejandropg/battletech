@@ -19,10 +19,10 @@ internal object GameLogFormatter {
     fun format(event: GameEvent, state: GameState): String? = when (event) {
         is PhaseChanged -> null
         is InitiativeRolled -> {
-            val p1 = event.initiative.rolls[PlayerId.PLAYER_1]
-            val p2 = event.initiative.rolls[PlayerId.PLAYER_2]
+            val p1 = event.initiative.rolls[PlayerId.PLAYER_1]!!
+            val p2 = event.initiative.rolls[PlayerId.PLAYER_2]!!
             val first = playerLabel(event.initiative.loser)
-            "Initiative: P1 rolled $p1, P2 rolled $p2 — $first moves first"
+            "Initiative: P1 ${diceIcon(p1.d1)}${diceIcon(p1.d2)} ${p1.total}, P2 ${diceIcon(p2.d1)}${diceIcon(p2.d2)} ${p2.total} — $first moves first"
         }
         is UnitMoved -> {
             val name = state.unitById(event.unitId)?.name ?: event.unitId.value

@@ -1,5 +1,6 @@
 package battletech.tactical.session
 
+import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
@@ -121,7 +122,7 @@ internal class GameLogIntegrationTest {
 
     private fun aMovementTurn(): TurnState = TurnState(
         initiative = Initiative(
-            rolls = mapOf(PlayerId.PLAYER_1 to 5, PlayerId.PLAYER_2 to 8),
+            rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
             loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
         ),
         movementSequence = ImpulseSequence(

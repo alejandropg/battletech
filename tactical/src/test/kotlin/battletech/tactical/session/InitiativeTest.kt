@@ -4,6 +4,7 @@ import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.PlayerId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 
 internal class InitiativeTest {
@@ -20,7 +21,7 @@ internal class InitiativeTest {
 
         assertEquals(p1Roll, result.rolls[PlayerId.PLAYER_1])
         assertEquals(p2Roll, result.rolls[PlayerId.PLAYER_2])
-        if (p1Roll < p2Roll) {
+        if (p1Roll.total < p2Roll.total) {
             assertEquals(PlayerId.PLAYER_1, result.loser)
             assertEquals(PlayerId.PLAYER_2, result.winner)
         } else {
@@ -34,8 +35,10 @@ internal class InitiativeTest {
         val result = rollInitiative(DiceRoller.seeded(123))
 
         assertEquals(2, result.rolls.size)
-        assert(result.rolls[PlayerId.PLAYER_1]!! in 2..12)
-        assert(result.rolls[PlayerId.PLAYER_2]!! in 2..12)
+        assertNotNull(result.rolls[PlayerId.PLAYER_1])
+        assertNotNull(result.rolls[PlayerId.PLAYER_2])
+        assert(result.rolls[PlayerId.PLAYER_1]!!.total in 2..12)
+        assert(result.rolls[PlayerId.PLAYER_2]!!.total in 2..12)
     }
 
     @Test
@@ -53,13 +56,13 @@ internal class InitiativeTest {
             val r = DiceRoller.seeded(seed)
             val roll1 = r.roll2d6()
             val roll2 = r.roll2d6()
-            if (roll1 == roll2) break
+            if (roll1.total == roll2.total) break
             seed++
         }
 
         // Should still produce a valid result (not hang)
         val result = rollInitiative(DiceRoller.seeded(seed))
         assertNotEquals(result.loser, result.winner)
-        assertNotEquals(result.rolls[PlayerId.PLAYER_1], result.rolls[PlayerId.PLAYER_2])
+        assertNotEquals(result.rolls[PlayerId.PLAYER_1]!!.total, result.rolls[PlayerId.PLAYER_2]!!.total)
     }
 }
