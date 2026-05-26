@@ -2,8 +2,8 @@ package battletech.tui.hex
 
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
-import battletech.tactical.movement.MovementMode
 import battletech.tactical.model.Terrain
+import battletech.tactical.movement.MovementMode
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -158,17 +158,17 @@ internal class HexRendererTest {
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.LINE_OF_SIGHT)
 
         assertEquals(".", buffer.get(4, 2).char)
-        assertEquals(Color.WHITE, buffer.get(4, 2).fg)
+        assertEquals(Color.YELLOW, buffer.get(4, 2).fg)
     }
 
     @Test
-    fun `line of sight selected highlight shows bright yellow dot at center`() {
+    fun `line of sight selected highlight shows red icon at center`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.LINE_OF_SIGHT_SELECTED)
 
-        assertEquals(".", buffer.get(4, 2).char)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(4, 2).fg)
+        assertEquals(String(Character.toChars(0xF05B0)), buffer.get(4, 2).char)
+        assertEquals(Color.RED, buffer.get(4, 2).fg)
     }
 }
