@@ -25,10 +25,22 @@ public class ScreenBuffer(
         fg: Color = Color.DEFAULT,
         bg: Color = Color.DEFAULT,
     ) {
-        for ((i, char) in text.withIndex()) {
-            val cx = x + i
-            if (cx >= width) break
-            set(cx, y, Cell(char.toString(), fg, bg))
+        var cx = x
+        var i = 0
+        while (i < text.length && cx < width) {
+            val cp = text.codePointAt(i)
+            val charCount = Character.charCount(cp)
+            val w = CellWidth.of(cp)
+            if (w == 0) {
+                i += charCount
+                continue
+            }
+            set(cx, y, Cell(text.substring(i, i + charCount), fg, bg))
+            if (w == 2 && cx + 1 < width) {
+                set(cx + 1, y, Cell("", fg, bg))
+            }
+            cx += w
+            i += charCount
         }
     }
 

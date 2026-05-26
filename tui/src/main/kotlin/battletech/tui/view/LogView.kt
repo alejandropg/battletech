@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.model.GameState
 import battletech.tactical.session.LogEntry
 import battletech.tui.screen.ScreenBuffer
+import battletech.tui.screen.TextWrap
 
 public class LogView(
     private val entries: List<LogEntry>,
@@ -30,40 +31,9 @@ public class LogView(
         val text = GameLogFormatter.format(entry.event, gameState) ?: return emptyList()
         val prefix = "[%02d] ".format(entry.turn)
         val indent = " ".repeat(prefix.length)
-        val firstLineCapacity = (width - prefix.length).coerceAtLeast(1)
-        val continuationCapacity = (width - indent.length).coerceAtLeast(1)
-
-        val words = text.split(' ').filter { it.isNotEmpty() }
-        val lines = mutableListOf<String>()
-        var current = StringBuilder()
-        var capacity = firstLineCapacity
-
-        for (word in words) {
-            val sep = if (current.isEmpty()) "" else " "
-            val needed = sep.length + word.length
-            if (current.length + needed <= capacity) {
-                current.append(sep).append(word)
-            } else {
-                lines += current.toString()
-                current = StringBuilder()
-                capacity = continuationCapacity
-                if (word.length <= capacity) {
-                    current.append(word)
-                } else {
-                    // Word longer than capacity — hard-split.
-                    var remaining = word
-                    while (remaining.length > capacity) {
-                        lines += remaining.take(capacity)
-                        remaining = remaining.drop(capacity)
-                    }
-                    current.append(remaining)
-                }
-            }
-        }
-        if (current.isNotEmpty()) lines += current.toString()
-
-        return lines.mapIndexed { index, text ->
-            if (index == 0) prefix + text else indent + text
-        }
+        val firstWidth = (width - prefix.length).coerceAtLeast(1)
+        val contWidth = (width - indent.length).coerceAtLeast(1)
+        return TextWrap.wrap(text, firstWidth, contWidth)
+            .mapIndexed { i, line -> if (i == 0) prefix + line else indent + line }
     }
 }

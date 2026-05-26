@@ -81,6 +81,43 @@ internal class ScreenBufferTest {
     }
 
     @Test
+    fun `writeString puts a non-BMP nerd-font icon in a single cell`() {
+        val buffer = ScreenBuffer(10, 1)
+        val die = String(Character.toChars(0xF01CA)) // nf-md-dice_1, 2 UTF-16 chars
+
+        buffer.writeString(2, 0, "A" + die + "B")
+
+        assertEquals("A", buffer.get(2, 0).char)
+        assertEquals(die, buffer.get(3, 0).char)
+        assertEquals(2, buffer.get(3, 0).char.length) // surrogate pair preserved as one cell
+        assertEquals("B", buffer.get(4, 0).char)
+        assertEquals(" ", buffer.get(5, 0).char)
+    }
+
+    @Test
+    fun `writeString reserves two cells for an East-Asian wide codepoint`() {
+        val buffer = ScreenBuffer(10, 1)
+
+        buffer.writeString(0, 0, "中A")
+
+        assertEquals("中", buffer.get(0, 0).char)
+        assertEquals("", buffer.get(1, 0).char) // filler reserves the second visual cell
+        assertEquals("A", buffer.get(2, 0).char)
+    }
+
+    @Test
+    fun `writeString skips zero-width combining marks`() {
+        val buffer = ScreenBuffer(5, 1)
+
+        // 'e' + combining acute (U+0301) + 'x'
+        buffer.writeString(0, 0, "éx")
+
+        assertEquals("e", buffer.get(0, 0).char)
+        assertEquals("x", buffer.get(1, 0).char)
+        assertEquals(" ", buffer.get(2, 0).char)
+    }
+
+    @Test
     fun `width and height are accessible`() {
         val buffer = ScreenBuffer(10, 20)
 

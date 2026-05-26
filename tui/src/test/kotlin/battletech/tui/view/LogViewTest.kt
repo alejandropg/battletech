@@ -129,6 +129,36 @@ internal class LogViewTest {
         assertEquals("[01] Turn 7 complete", topInner)
     }
 
+    @Test
+    fun `nerd-font dice icons do not push content past the panel border`() {
+        // Mirrors the reported bug: an InitiativeRolled line containing four dice icons
+        // must not overflow the LOG panel's right border. With width=40, inner width=36,
+        // prefix "[01] " = 5 chars, so first-line capacity is 31 visual cells.
+        val initiative = Initiative(
+            rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(4, 5), PlayerId.PLAYER_2 to DiceRoll(3, 4)),
+            loser = PlayerId.PLAYER_2,
+            winner = PlayerId.PLAYER_1,
+        )
+        val view = LogView(
+            entries = listOf(LogEntry(1, InitiativeRolled(initiative))),
+            gameState = emptyState,
+        )
+        val buffer = ScreenBuffer(40, 6)
+
+        view.render(buffer, 0, 0, 40, 6)
+
+        // Right border column must stay '│' on every row inside the panel —
+        // no cell on the right border should have been overwritten by leaking content.
+        for (y in 1..4) {
+            assertEquals("│", buffer.get(39, y).char, "right border at row $y")
+        }
+        // Each dice icon must occupy exactly one cell as a full surrogate-pair string,
+        // not a split half-surrogate per cell.
+        val firstLine = (2 until 38).map { buffer.get(it, 1).char }.joinToString("").trimEnd()
+        val dice4 = String(Character.toChars(0xF01CD))
+        assert(firstLine.contains(dice4)) { "first line should contain dice_4 glyph: '$firstLine'" }
+    }
+
     private fun readLine(buffer: ScreenBuffer, x: Int, y: Int, width: Int): String =
         (x until x + width).map { buffer.get(it, y).char }.joinToString("").trimEnd()
 }
