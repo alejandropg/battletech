@@ -1,5 +1,5 @@
 [versions]
-jvm = "21"
+jvm = "25"
 kotlin = "2.3.0"
 junit = "6.0.2"
 mockk = "1.14.9"

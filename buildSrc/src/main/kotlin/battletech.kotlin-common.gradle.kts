@@ -11,7 +11,10 @@ repositories {
 val libs = the<VersionCatalogsExtension>().named("libs")
 
 kotlin {
-    val jvmVersion = libs.findVersion("jvm").get().toString()
+    val isClaudeCloud = providers.environmentVariable("CLAUDE_CODE").isPresent
+    val jvmVersion =
+        if (isClaudeCloud) "21" // Claude Cloud only support Java 21
+        else libs.findVersion("jvm").get().toString()
     jvmToolchain {
         languageVersion = JavaLanguageVersion.of(jvmVersion)
     }
