@@ -65,16 +65,4 @@ public class ScreenBuffer(
         }
     }
 
-    public fun diff(other: ScreenBuffer): List<CellChange> {
-        val changes = mutableListOf<CellChange>()
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                val otherCell = other.cells[y][x]
-                if (cells[y][x] != otherCell) {
-                    changes.add(CellChange(x, y, otherCell))
-                }
-            }
-        }
-        return changes
-    }
 }

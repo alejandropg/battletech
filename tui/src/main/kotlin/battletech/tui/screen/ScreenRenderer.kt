@@ -7,38 +7,26 @@ import com.github.ajalt.mordant.terminal.Terminal
 
 public class ScreenRenderer(private val terminal: Terminal) {
 
-    private var previousBuffer: ScreenBuffer? = null
-
     public fun render(buffer: ScreenBuffer) {
-        val prev = previousBuffer
-        if (prev == null) {
-            renderFull(buffer)
-        } else {
-            val changes = prev.diff(buffer)
-            for (change in changes) {
-                renderCell(change.x, change.y, change.cell)
-            }
-        }
+        renderFull(buffer)
         System.out.flush()
-        previousBuffer = buffer
     }
 
     public fun clear() {
         terminal.cursor.hide()
-        print("\u001b[2J\u001b[H")
+        print("[2J[H")
         System.out.flush()
-        previousBuffer = null
     }
 
     public fun cleanup() {
         terminal.cursor.show()
-        print("\u001b[2J\u001b[H")
+        print("[2J[H")
         System.out.flush()
     }
 
     private fun renderFull(buffer: ScreenBuffer) {
         val sb = StringBuilder()
-        sb.append("\u001b[H")
+        sb.append("[H")
         for (y in 0 until buffer.height) {
             for (x in 0 until buffer.width) {
                 val cell = buffer.get(x, y)
@@ -47,10 +35,6 @@ public class ScreenRenderer(private val terminal: Terminal) {
             if (y < buffer.height - 1) sb.append("\r\n")
         }
         print(sb)
-    }
-
-    private fun renderCell(x: Int, y: Int, cell: Cell) {
-        print("\u001b[${y + 1};${x + 1}H${styledChar(cell)}")
     }
 
     private fun styledChar(cell: Cell): String {

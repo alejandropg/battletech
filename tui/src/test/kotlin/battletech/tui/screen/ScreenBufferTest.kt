@@ -1,7 +1,6 @@
 package battletech.tui.screen
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
@@ -79,40 +78,6 @@ internal class ScreenBufferTest {
         buffer.writeString(0, 0, "AB")
 
         assertEquals(Cell("A", Color.DEFAULT, Color.DEFAULT), buffer.get(0, 0))
-    }
-
-    @Test
-    fun `diff returns empty list for identical buffers`() {
-        val a = ScreenBuffer(3, 3)
-        val b = ScreenBuffer(3, 3)
-
-        val changes = a.diff(b)
-
-        assertTrue(changes.isEmpty())
-    }
-
-    @Test
-    fun `diff returns changed cells`() {
-        val a = ScreenBuffer(3, 3)
-        val b = ScreenBuffer(3, 3)
-        b.set(1, 2, Cell("X", Color.RED, Color.DEFAULT))
-
-        val changes = a.diff(b)
-
-        assertEquals(1, changes.size)
-        assertEquals(CellChange(1, 2, Cell("X", Color.RED, Color.DEFAULT)), changes[0])
-    }
-
-    @Test
-    fun `diff returns multiple changes`() {
-        val a = ScreenBuffer(3, 3)
-        val b = ScreenBuffer(3, 3)
-        b.set(0, 0, Cell("A"))
-        b.set(2, 2, Cell("B"))
-
-        val changes = a.diff(b)
-
-        assertEquals(2, changes.size)
     }
 
     @Test
