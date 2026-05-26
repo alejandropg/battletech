@@ -21,26 +21,26 @@ BattleTech Rules Engine is a multi-module project implementing BattleTech, hexag
 # Build entire project
 ./gradlew build
 
+# Build the app TUI fat JAR (single-file distributable) to deploy and run
+./gradlew :tui:shadowJar
+
 # Run all tests
 ./gradlew test
 
 # Run tests for specific module
-./gradlew :strategic:test
-./gradlew :tactical:test
-./gradlew :bt:test
+./gradlew :<module>:test
 
 # Run a single test class
 ./gradlew :strategic:test --tests "battletech.strategic.StrategicRulesTest"
 
-# Run the application
-./gradlew :bt:run
-
-# Build TUI fat JAR (single-file distributable)
-./gradlew :tui:createExecutable  # → tui/build/tui (self-executing, Unix/macOS)
-
-# Run the TUI application
-# (Gradle always forks a JVM detached from the terminal, so use the JAR directly)
-./gradlew :tui:shadowJar && java -jar tui/build/libs/tui.jar
+# Run the TUI application (build first)
+# Visual spot-checks only (automated tests are the primary strategy; use tmux when you need
+# to verify TUI rendering that can't be expressed as a unit test)
+tmux new-session -d -s btech -x 220 -y 50
+tmux send-keys -t btech 'java -jar tui/build/libs/tui.jar' Enter && sleep 3
+tmux capture-pane -t btech -p                 # inspect output
+tmux send-keys -t btech '<key>' ''            # send keystroke ('Tab','Enter','Escape','Up','c'…)
+tmux kill-session -t btech
 ```
 
 ## Architecture
