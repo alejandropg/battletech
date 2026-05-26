@@ -57,6 +57,8 @@ TERRAINS=(
   "Level 7;nf-md-numeric_7_box_multiple_outline;f03b7;203;213;225;50;50;50"
   "Level 8;nf-md-numeric_8_box_multiple_outline;f03ba;203;213;225;50;50;50"
   "Level 9;nf-md-numeric_9_box_multiple_outline;f03bd;203;213;225;50;50;50"
+  "Dice 1;nf-fa-dice_one;edef;203;213;225;50;50;50"
+  "Dice 1;nf-md-dice_1;f01ca;203;213;225;50;50;50"
 
 )
 
