@@ -78,3 +78,5 @@ These are fixed. Don't relitigate them — see `docs/refactor-tactical-domain.md
 ## Tool Preferences
 
 - **Always use the LSP tool** for code intelligence operations: finding references, go-to-definition, hover info, document/workspace symbols, call hierarchy, implementations. Never fall back to Grep/Glob for tasks the LSP can handle.
+- **Never use `git -C <path>` when session is already opened in the project root**; breaks permission rules and is redundant.
+
