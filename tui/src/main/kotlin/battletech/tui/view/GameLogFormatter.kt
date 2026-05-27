@@ -12,6 +12,7 @@ import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitMoved
+import battletech.tui.hex.diceIcon
 import battletech.tui.hex.movementModeIcon
 
 internal object GameLogFormatter {

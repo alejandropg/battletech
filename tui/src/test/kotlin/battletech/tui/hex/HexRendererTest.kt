@@ -168,7 +168,7 @@ internal class HexRendererTest {
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.LINE_OF_SIGHT_SELECTED)
 
-        assertEquals(String(Character.toChars(0xF05B0)), buffer.get(4, 2).char)
+        assertEquals(targetIcon(), buffer.get(4, 2).char)
         assertEquals(Color.RED, buffer.get(4, 2).fg)
     }
 }

@@ -12,7 +12,6 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementMode
 import battletech.tactical.session.AttackDeclarationsRecorded
-import battletech.tui.hex.movementModeIcon
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.Initiative
@@ -26,6 +25,8 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapons
+import battletech.tui.hex.diceIcon
+import battletech.tui.hex.movementModeIcon
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -63,7 +64,7 @@ internal class GameLogFormatterTest {
             state = stateWithAtlas,
         )
 
-        assertThat(text).isEqualTo("Atlas ${movementModeIcon(MovementMode.WALK)} 0301→0302 (3 MP)")
+        assertThat(text).isEqualTo("Atlas ${movementModeIcon(MovementMode.WALK)} (3 MP) 0301→0302")
     }
 
     @Test
@@ -82,8 +83,8 @@ internal class GameLogFormatterTest {
             stateWithAtlas,
         )
 
-        assertThat(ran).isEqualTo("Atlas ${movementModeIcon(MovementMode.RUN)} 0101→0102 (5 MP)")
-        assertThat(jumped).isEqualTo("Atlas ${movementModeIcon(MovementMode.JUMP)} 0101→0102 (4 MP)")
+        assertThat(ran).isEqualTo("Atlas ${movementModeIcon(MovementMode.RUN)} (5 MP) 0101→0102")
+        assertThat(jumped).isEqualTo("Atlas ${movementModeIcon(MovementMode.JUMP)} (4 MP) 0101→0102")
     }
 
     @Test
