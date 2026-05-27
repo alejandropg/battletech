@@ -34,4 +34,7 @@ public interface PlayerView {
 
     /** Positions of the given unit IDs on the board. */
     public fun resolveTargetPositions(targetIds: Set<UnitId>): Set<HexCoordinates>
+
+    /** Public projection of a unit — fields visible to all players. Returns null if not found. */
+    public fun publicUnit(unitId: UnitId): PublicUnit?
 }

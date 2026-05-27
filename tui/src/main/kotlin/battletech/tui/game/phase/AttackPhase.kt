@@ -8,6 +8,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerView
+import battletech.tactical.query.PublicUnit
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
@@ -192,6 +193,14 @@ public sealed interface AttackPhase : Phase {
                 cursorTargetIndex = cursorTargetIndex,
                 cursorWeaponIndex = cursorWeaponIndex,
             )
+        }
+
+        override fun targetStatusUnit(gameState: GameState): PublicUnit? {
+            val attacker = gameState.unitById(unitId) ?: return null
+            val view = playerView(attacker.owner, gameState)
+            val targets = view.targetInfos(unitId, torsoFacing)
+            val target = targets.getOrNull(cursorTargetIndex) ?: return null
+            return view.publicUnit(target.unitId)
         }
 
         override fun activePlayerLabel(app: AppState): String? {

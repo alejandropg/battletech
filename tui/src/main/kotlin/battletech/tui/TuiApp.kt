@@ -17,6 +17,7 @@ import battletech.tui.view.DeclaredTargetsView
 import battletech.tui.view.LogView
 import battletech.tui.view.SidebarView
 import battletech.tui.view.StatusBarView
+import battletech.tui.view.TargetStatusView
 import battletech.tui.view.TargetsView
 import battletech.tui.view.Viewport
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -94,7 +95,9 @@ public class TuiApp {
         val isAttackPhase = appState.currentPhase == TurnPhase.WEAPON_ATTACK ||
             appState.currentPhase == TurnPhase.PHYSICAL_ATTACK
         val declaredWidth = if (isAttackPhase) 28 else 0
-        val boardWidth = size.width - sidebarWidth - logWidth - targetsWidth - declaredWidth
+        val targetStatusUnit = appState.phase.targetStatusUnit(appState.gameState)
+        val targetStatusWidth = if (targetStatusUnit != null) 28 else 0
+        val boardWidth = size.width - sidebarWidth - logWidth - targetsWidth - declaredWidth - targetStatusWidth
         val boardHeight = size.height - statusBarHeight
 
         val buffer = ScreenBuffer(size.width, size.height)
@@ -121,6 +124,10 @@ public class TuiApp {
         boardView.render(buffer, 0, 0, boardWidth, boardHeight)
 
         var nextX = boardWidth
+        if (targetStatusUnit != null) {
+            TargetStatusView(targetStatusUnit).render(buffer, nextX, 0, targetStatusWidth, boardHeight)
+            nextX += targetStatusWidth
+        }
         if (attackRender != null && hasTargets) {
             val targetsView = TargetsView(
                 targets = attackRender.targets,

@@ -23,6 +23,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -284,6 +285,49 @@ internal class AttackPhaseTest {
             val result = setup.handle(KeyboardEvent(" "), state)!!
             val resultPhase = result.app.phase as AttackPhase.Declaring
             assertEquals(enemy2.id, resultPhase.primaryTargetId)
+        }
+    }
+
+    @Nested
+    inner class TargetStatusUnitTest {
+
+        @Test
+        fun `targetStatusUnit returns null for SelectingAttacker`() {
+            val phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
+            val gameState = GameState(emptyList(), aGameMap())
+
+            assertNull(phase.targetStatusUnit(gameState))
+        }
+
+        @Test
+        fun `targetStatusUnit returns null for Declaring with no targets`() {
+            val unit = aUnit(
+                weapons = listOf(mediumLaser()),
+                position = HexCoordinates(2, 2),
+                facing = HexDirection.N,
+            )
+            val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 4))
+            val gameState = GameState(listOf(unit, enemy), map5x5)
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
+
+            assertNull(phase.targetStatusUnit(gameState))
+        }
+
+        @Test
+        fun `targetStatusUnit returns PublicUnit for cursor target`() {
+            val unit = aUnit(
+                weapons = listOf(mediumLaser()),
+                position = HexCoordinates(2, 2),
+                facing = HexDirection.NE,
+            )
+            val enemy = aUnit(id = "enemy", name = "Centurion", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
+            val gameState = GameState(listOf(unit, enemy), map5x5)
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
+
+            val result = phase.targetStatusUnit(gameState)
+
+            assertNotNull(result)
+            assertEquals("Centurion", result!!.name)
         }
     }
 

@@ -6,6 +6,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementMode
+import battletech.tactical.query.PublicUnit
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
@@ -35,6 +36,8 @@ public sealed interface Phase {
     public fun pathDestination(): HexCoordinates? = null
 
     public fun attackRender(gameState: GameState): AttackRender? = null
+
+    public fun targetStatusUnit(gameState: GameState): PublicUnit? = null
 
     public fun declaredTargetsRender(
         gameState: GameState,
