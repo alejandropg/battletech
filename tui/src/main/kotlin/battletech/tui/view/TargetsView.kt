@@ -13,6 +13,11 @@ public class TargetsView(
     private val cursorWeaponIndex: Int = 0,
 ) : View {
 
+    public companion object {
+        public const val INDEX: Int = 3
+        public const val TITLE: String = "TARGETS"
+    }
+
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         buffer.drawBox(x, y, width, height, "TARGETS", index = 3)
 

@@ -8,6 +8,11 @@ public class SidebarView(
     private val unit: CombatUnit?,
 ) : View {
 
+    public companion object {
+        public const val INDEX: Int = 1
+        public const val TITLE: String = "UNIT STATUS"
+    }
+
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         buffer.drawBox(x, y, width, height, "UNIT STATUS", index = 1)
 

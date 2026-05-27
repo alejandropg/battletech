@@ -65,6 +65,11 @@ public object InputMapper {
         else -> null
     }
 
+    public fun isCollapseToggle(event: KeyboardEvent): Int? {
+        if (!event.alt) return null
+        return event.key.singleOrNull()?.digitToIntOrNull()
+    }
+
     public fun mapMouseToHex(event: MouseEvent, boardX: Int, boardY: Int): HexCoordinates? {
         if (!event.left) return null
         val x = event.x - boardX

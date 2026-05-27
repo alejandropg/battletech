@@ -10,6 +10,11 @@ public class LogView(
     private val gameState: GameState,
 ) : View {
 
+    public companion object {
+        public const val INDEX: Int = 0
+        public const val TITLE: String = "LOG"
+    }
+
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         buffer.drawBox(x, y, width, height, "LOG", index = 0)
 

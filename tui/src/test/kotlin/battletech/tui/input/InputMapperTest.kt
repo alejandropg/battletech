@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test
 
 internal class InputMapperTest {
 
-    private fun key(key: String, ctrl: Boolean = false): KeyboardEvent =
-        KeyboardEvent(key, ctrl = ctrl, alt = false)
+    private fun key(key: String, ctrl: Boolean = false, alt: Boolean = false): KeyboardEvent =
+        KeyboardEvent(key, ctrl = ctrl, alt = alt)
 
     @Nested
     inner class IsQuitTest {
@@ -216,6 +216,34 @@ internal class InputMapperTest {
         @Test
         fun `unknown key returns null`() {
             assertNull(InputMapper.mapAttackEvent(key("q")))
+        }
+    }
+
+    @Nested
+    inner class IsCollapseToggleTest {
+        @Test
+        fun `Alt+3 returns 3`() {
+            assertEquals(3, InputMapper.isCollapseToggle(key("3", alt = true)))
+        }
+
+        @Test
+        fun `Alt+0 returns 0`() {
+            assertEquals(0, InputMapper.isCollapseToggle(key("0", alt = true)))
+        }
+
+        @Test
+        fun `plain 3 without alt returns null`() {
+            assertNull(InputMapper.isCollapseToggle(key("3")))
+        }
+
+        @Test
+        fun `Ctrl+3 without alt returns null`() {
+            assertNull(InputMapper.isCollapseToggle(key("3", ctrl = true)))
+        }
+
+        @Test
+        fun `Alt+a non-digit returns null`() {
+            assertNull(InputMapper.isCollapseToggle(key("a", alt = true)))
         }
     }
 

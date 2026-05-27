@@ -28,6 +28,7 @@ public data class AppState(
     public val session: BattleSession,
     public val phase: Phase,
     public val cursor: HexCoordinates,
+    public val collapsedPanels: Set<Int> = emptySet(),
 ) {
     public val gameState: GameState get() = session.gameState
     public val turnState: TurnState get() = session.turnState
