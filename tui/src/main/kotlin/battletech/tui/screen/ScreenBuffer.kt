@@ -50,6 +50,7 @@ public class ScreenBuffer(
         width: Int,
         height: Int,
         title: String = "",
+        index: Int? = null,
         borderColor: Color = Color.GREEN,
         titleColor: Color = Color.BRIGHT_YELLOW,
     ) {
@@ -70,10 +71,15 @@ public class ScreenBuffer(
             set(x + width - 1, y + i, Cell("│", borderColor))
         }
 
-        if (title.isNotEmpty() && width > title.length + 6) {
-            set(x + 3, y, Cell(" ", borderColor))
-            writeString(x + 4, y, title, titleColor)
-            set(x + 4 + title.length, y, Cell(" ", borderColor))
+        if (title.isNotEmpty()) {
+            if (index != null && width > title.length + 8) {
+                writeString(x + 2, y, "[$index] $title", titleColor)
+                set(x + 6 + title.length, y, Cell(" ", borderColor))
+            } else if (index == null && width > title.length + 6) {
+                set(x + 3, y, Cell(" ", borderColor))
+                writeString(x + 4, y, title, titleColor)
+                set(x + 4 + title.length, y, Cell(" ", borderColor))
+            }
         }
     }
 

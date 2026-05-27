@@ -42,7 +42,9 @@ internal class TargetStatusViewTest {
         assertEquals("╮", buffer.get(27, 0).char)
         assertEquals("╰", buffer.get(0, 29).char)
         assertEquals("╯", buffer.get(27, 29).char)
-        val title = (4 until 17).map { buffer.get(it, 0).char }.joinToString("")
+        val prefix = (2 until 6).map { buffer.get(it, 0).char }.joinToString("")
+        assertEquals("[4] ", prefix)
+        val title = (6 until 19).map { buffer.get(it, 0).char }.joinToString("")
         assertEquals("TARGET STATUS", title)
     }
 

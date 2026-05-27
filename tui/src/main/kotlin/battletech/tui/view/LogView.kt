@@ -11,7 +11,7 @@ public class LogView(
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "LOG")
+        buffer.drawBox(x, y, width, height, "LOG", index = 0)
 
         val innerX = x + 2
         val innerY = y + 1

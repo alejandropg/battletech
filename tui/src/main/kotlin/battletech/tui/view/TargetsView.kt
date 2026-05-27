@@ -14,7 +14,7 @@ public class TargetsView(
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "TARGETS")
+        buffer.drawBox(x, y, width, height, "TARGETS", index = 3)
 
         val cx = x + 2
         var cy = y + 2

@@ -173,9 +173,28 @@ internal class ScreenBufferTest {
     fun `drawBox uses specified colors`() {
         val buffer = ScreenBuffer(10, 3)
 
-        buffer.drawBox(0, 0, 10, 3, "", Color.RED, Color.WHITE)
+        buffer.drawBox(0, 0, 10, 3, "", borderColor = Color.RED, titleColor = Color.WHITE)
 
         assertEquals(Color.RED, buffer.get(0, 0).fg)
+    }
+
+    @Test
+    fun `drawBox renders indexed title`() {
+        val buffer = ScreenBuffer(20, 3)
+
+        buffer.drawBox(0, 0, 20, 3, "TEST", index = 2)
+
+        assertEquals("[", buffer.get(2, 0).char)
+        assertEquals("2", buffer.get(3, 0).char)
+        assertEquals("]", buffer.get(4, 0).char)
+        assertEquals(" ", buffer.get(5, 0).char)
+        assertEquals("T", buffer.get(6, 0).char)
+        assertEquals("E", buffer.get(7, 0).char)
+        assertEquals("S", buffer.get(8, 0).char)
+        assertEquals("T", buffer.get(9, 0).char)
+        assertEquals(" ", buffer.get(10, 0).char)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 0).fg)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(6, 0).fg)
     }
 
     @Test

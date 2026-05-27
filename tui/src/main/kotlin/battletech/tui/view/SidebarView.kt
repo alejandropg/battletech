@@ -9,7 +9,7 @@ public class SidebarView(
 ) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "UNIT STATUS")
+        buffer.drawBox(x, y, width, height, "UNIT STATUS", index = 1)
 
         val cx = x + 2
         var cy = y + 2

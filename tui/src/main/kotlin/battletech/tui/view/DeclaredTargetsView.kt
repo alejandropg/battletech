@@ -8,7 +8,7 @@ import battletech.tui.screen.ScreenBuffer
 public class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "DECLARED TARGETS")
+        buffer.drawBox(x, y, width, height, "DECLARED TARGETS", index = 2)
 
         val cx = x + 2
         var cy = y + 2

@@ -7,7 +7,7 @@ import battletech.tui.screen.ScreenBuffer
 public class TargetStatusView(private val unit: PublicUnit?) : View {
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "TARGET STATUS")
+        buffer.drawBox(x, y, width, height, "TARGET STATUS", index = 4)
 
         val cx = x + 2
         var cy = y + 2
