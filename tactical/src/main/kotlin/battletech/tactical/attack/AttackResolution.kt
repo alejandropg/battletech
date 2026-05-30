@@ -1,5 +1,6 @@
 package battletech.tactical.attack
 
+import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.unit.ArmorLayout
@@ -7,6 +8,8 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import kotlin.math.ceil
+
+public enum class RangeBand { SHORT, MEDIUM, LONG, OUT_OF_RANGE }
 
 public data class AttackDeclaration(
     val attackerId: UnitId,
@@ -24,6 +27,13 @@ public data class AttackResult(
     val damageApplied: Int,
     val targetNumber: Int,
     val roll: Int,
+    val toHitRoll: DiceRoll,
+    val locationRoll: DiceRoll?,
+    val gunnery: Int,
+    val rangeModifier: Int,
+    val rangeBand: RangeBand,
+    val heatPenalty: Int,
+    val secondaryPenalty: Int,
 )
 
 public fun resolveAttacks(
@@ -78,22 +88,22 @@ private fun resolveOneAttack(
     val weapon = attacker.weapons[declaration.weaponIndex]
 
     val distance = attacker.position.distanceTo(target.position)
-    val rangeModifier = when {
-        distance <= weapon.shortRange -> 0
-        distance <= weapon.mediumRange -> 2
-        distance <= weapon.longRange -> 4
-        else -> 99
+    val (rangeModifier, rangeBand) = when {
+        distance <= weapon.shortRange -> 0 to RangeBand.SHORT
+        distance <= weapon.mediumRange -> 2 to RangeBand.MEDIUM
+        distance <= weapon.longRange -> 4 to RangeBand.LONG
+        else -> 99 to RangeBand.OUT_OF_RANGE
     }
 
     val heatPenalty = heatPenaltyModifier(attacker)
     val secondaryPenalty = if (declaration.isPrimary) 0 else 1
     val targetNumber = attacker.gunnerySkill + rangeModifier + heatPenalty + secondaryPenalty
 
-    val roll = roller.roll2d6().total
+    val toHitRoll = roller.roll2d6()
 
-    return if (roll >= targetNumber) {
-        val locationRoll = roller.roll2d6().total
-        val hitLocation = HitLocationTable.roll(locationRoll)
+    return if (toHitRoll.total >= targetNumber) {
+        val locationRoll = roller.roll2d6()
+        val hitLocation = HitLocationTable.roll(locationRoll.total)
         AttackResult(
             attackerId = declaration.attackerId,
             targetId = declaration.targetId,
@@ -102,7 +112,14 @@ private fun resolveOneAttack(
             hitLocation = hitLocation,
             damageApplied = weapon.damage,
             targetNumber = targetNumber,
-            roll = roll,
+            roll = toHitRoll.total,
+            toHitRoll = toHitRoll,
+            locationRoll = locationRoll,
+            gunnery = attacker.gunnerySkill,
+            rangeModifier = rangeModifier,
+            rangeBand = rangeBand,
+            heatPenalty = heatPenalty,
+            secondaryPenalty = secondaryPenalty,
         )
     } else {
         AttackResult(
@@ -113,7 +130,14 @@ private fun resolveOneAttack(
             hitLocation = null,
             damageApplied = 0,
             targetNumber = targetNumber,
-            roll = roll,
+            roll = toHitRoll.total,
+            toHitRoll = toHitRoll,
+            locationRoll = null,
+            gunnery = attacker.gunnerySkill,
+            rangeModifier = rangeModifier,
+            rangeBand = rangeBand,
+            heatPenalty = heatPenalty,
+            secondaryPenalty = secondaryPenalty,
         )
     }
 }

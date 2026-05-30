@@ -1,5 +1,6 @@
 package battletech.tui.game
 
+import battletech.tactical.attack.AttackResult
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.GameMap
@@ -29,6 +30,7 @@ public data class AppState(
     public val phase: Phase,
     public val cursor: HexCoordinates,
     public val collapsedPanels: Set<Int> = emptySet(),
+    public val lastAttackResults: List<AttackResult>? = null,
 ) {
     public val gameState: GameState get() = session.gameState
     public val turnState: TurnState get() = session.turnState

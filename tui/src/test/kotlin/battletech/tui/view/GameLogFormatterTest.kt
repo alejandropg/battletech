@@ -2,6 +2,7 @@ package battletech.tui.view
 
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.AttackResult
+import battletech.tactical.attack.RangeBand
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
@@ -281,6 +282,13 @@ internal class GameLogFormatterTest {
             damageApplied = damage,
             targetNumber = 8,
             roll = if (hit) 10 else 5,
+            toHitRoll = if (hit) DiceRoll(5, 5) else DiceRoll(2, 3),
+            locationRoll = null,
+            gunnery = 4,
+            rangeModifier = 0,
+            rangeBand = RangeBand.SHORT,
+            heatPenalty = 0,
+            secondaryPenalty = 0,
         )
 
     private fun aMech(

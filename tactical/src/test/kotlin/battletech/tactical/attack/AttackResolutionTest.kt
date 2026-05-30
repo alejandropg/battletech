@@ -8,8 +8,10 @@ import battletech.tactical.query.aUnit
 import battletech.tactical.query.anArmorLayout
 import battletech.tactical.query.anInternalStructureLayout
 import battletech.tactical.query.mediumLaser
+import battletech.tactical.dice.DiceRoll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -194,6 +196,70 @@ internal class AttackResolutionTest {
         assertEquals(2, results.size)
         assertEquals(attacker.id, results[0].attackerId)
         assertEquals(attacker2.id, results[1].attackerId)
+    }
+
+    @Test
+    fun `toHitRoll has correct faces and total`() {
+        val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
+        // deterministic: to-hit = 4+5=9 (hit, TN=4), location = 3+4=7 (CENTER_TORSO)
+        val roller = DiceRoller.deterministic(4, 5, 3, 4)
+        val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val result = results.single()
+        assertEquals(DiceRoll(4, 5), result.toHitRoll)
+        assertEquals(9, result.toHitRoll.total)
+    }
+
+    @Test
+    fun `hit result has non-null locationRoll with correct faces`() {
+        val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
+        val roller = DiceRoller.deterministic(4, 5, 3, 4)
+        val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val result = results.single()
+        assertTrue(result.hit)
+        assertNotNull(result.locationRoll)
+        assertEquals(DiceRoll(3, 4), result.locationRoll)
+        assertEquals(7, result.locationRoll!!.total)
+    }
+
+    @Test
+    fun `miss result has null locationRoll`() {
+        val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
+        // TN = 4, roll = 1+1 = 2 (miss)
+        val roller = DiceRoller.deterministic(1, 1)
+        val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val result = results.single()
+        assertFalse(result.hit)
+        assertNull(result.locationRoll)
+    }
+
+    @Test
+    fun `TN breakdown fields correct for short range primary with no heat`() {
+        val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
+        val roller = DiceRoller.deterministic(4, 5, 3, 4)
+        val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val result = results.single()
+        assertEquals(4, result.gunnery)
+        assertEquals(0, result.rangeModifier)
+        assertEquals(RangeBand.SHORT, result.rangeBand)
+        assertEquals(0, result.heatPenalty)
+        assertEquals(0, result.secondaryPenalty)
+    }
+
+    @Test
+    fun `TN breakdown fields correct for medium range secondary with heat penalty`() {
+        val hotAttacker = attacker.copy(currentHeat = 16, heatSinkCapacity = 10)
+        val farTarget = target.copy(position = HexCoordinates(5, 0)) // medium range for ML
+        val state = gameState.copy(units = listOf(hotAttacker, farTarget))
+        val declaration = AttackDeclaration(hotAttacker.id, farTarget.id, 0, false)
+        // TN = 4+2+2+1=9, roll=1+1=2 (miss, no location roll needed)
+        val roller = DiceRoller.deterministic(1, 1)
+        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        val result = results.single()
+        assertEquals(4, result.gunnery)
+        assertEquals(2, result.rangeModifier)
+        assertEquals(RangeBand.MEDIUM, result.rangeBand)
+        assertEquals(2, result.heatPenalty)
+        assertEquals(1, result.secondaryPenalty)
     }
 
     @Test

@@ -9,7 +9,9 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerView
 import battletech.tactical.query.PublicUnit
+import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.CommitAttackImpulse
+import battletech.tactical.session.CommandResult
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
 import battletech.tactical.unit.CombatUnit
@@ -420,14 +422,26 @@ internal fun commitAttackImpulse(
         }
     }
 
-    app.session.submitCommand(
+    val result = app.session.submitCommand(
         CommitAttackImpulse(
             playerId = activePlayer,
             declarations = declarations,
             torsoFacings = torsoFacings,
         ),
     )
-    return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)))
+    val accepted = result as? CommandResult.Accepted
+    val resolvedResults = accepted?.events?.filterIsInstance<AttacksResolved>()?.firstOrNull()?.results
+    val newPhase = mapToTuiPhase(app.session.currentPhase)
+    val isNewWeaponAttackPhase = newPhase.turnPhase == TurnPhase.WEAPON_ATTACK
+    val updatedApp = app.copy(
+        phase = newPhase,
+        lastAttackResults = when {
+            resolvedResults != null -> resolvedResults
+            isNewWeaponAttackPhase -> null
+            else -> app.lastAttackResults
+        },
+    )
+    return Transition(updatedApp)
 }
 
 private fun playerView(player: PlayerId, gameState: GameState): PlayerView =

@@ -1,5 +1,6 @@
 package battletech.tui.game.phase
 
+import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
@@ -79,3 +80,9 @@ public data class DeclaredAttackerEntry(
 )
 
 public data class DeclaredTargetsRender(val entries: List<DeclaredAttackerEntry>)
+
+public data class AttackResultsRender(
+    val results: List<AttackResult>,
+    val unitNames: Map<UnitId, String>,
+    val unitOwners: Map<UnitId, PlayerId>,
+)

@@ -12,6 +12,8 @@ import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
+import battletech.tui.game.phase.AttackResultsRender
+import battletech.tui.view.AttackResultsView
 import battletech.tui.view.BoardView
 import battletech.tui.view.CollapsedPanelView
 import battletech.tui.view.DeclaredTargetsView
@@ -107,15 +109,17 @@ public class TuiApp {
         fun panelWidth(index: Int): Int = when {
             index !in visible -> 0
             index in appState.collapsedPanels -> 7
+            index == AttackResultsView.INDEX -> 36
             else -> 28
         }
 
         val targetStatusWidth = panelWidth(TargetStatusView.INDEX)
         val targetsWidth      = panelWidth(TargetsView.INDEX)
         val declaredWidth     = panelWidth(DeclaredTargetsView.INDEX)
+        val attackResultsWidth = panelWidth(AttackResultsView.INDEX)
         val sidebarWidth      = panelWidth(SidebarView.INDEX)
         val logWidth          = panelWidth(LogView.INDEX)
-        val boardWidth = size.width - sidebarWidth - logWidth - targetsWidth - declaredWidth - targetStatusWidth
+        val boardWidth = size.width - sidebarWidth - logWidth - targetsWidth - declaredWidth - attackResultsWidth - targetStatusWidth
         val boardHeight = size.height - statusBarHeight
 
         val buffer = ScreenBuffer(size.width, size.height)
@@ -178,6 +182,20 @@ public class TuiApp {
                 }
             }
             nextX += declaredWidth
+        }
+        if (attackResultsWidth > 0) {
+            val results = appState.lastAttackResults
+            if (results != null) {
+                val unitNames = appState.gameState.units.associate { it.id to it.name }
+                val unitOwners = appState.gameState.units.associate { it.id to it.owner }
+                val render = AttackResultsRender(
+                    results = results,
+                    unitNames = unitNames,
+                    unitOwners = unitOwners,
+                )
+                AttackResultsView(render).render(buffer, nextX, 0, attackResultsWidth, boardHeight)
+            }
+            nextX += attackResultsWidth
         }
         if (sidebarWidth > 0) {
             val v: View = if (SidebarView.INDEX in appState.collapsedPanels)
