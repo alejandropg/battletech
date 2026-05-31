@@ -6,7 +6,7 @@ import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.movement.MovementMode
+import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.query.RuleResult
 import battletech.tactical.unit.CombatUnit

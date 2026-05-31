@@ -36,4 +36,10 @@ public sealed interface RuleRejection : RejectionReason {
 
     /** A unit tried to make a physical attack with a destroyed (0 internal structure) limb. */
     public data class LimbDestroyed(val attackerId: UnitId) : RuleRejection
+
+    /** A unit tried to kick after running or jumping (kicks need walk/standing). */
+    public data object CannotKickAfterRunningOrJumping : RuleRejection
+
+    /** A unit tried to punch after jumping (only a death-from-above is allowed from a jump). */
+    public data object CannotPunchAfterJumping : RuleRejection
 }

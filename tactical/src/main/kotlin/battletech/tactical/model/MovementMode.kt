@@ -1,4 +1,4 @@
-package battletech.tactical.movement
+package battletech.tactical.model
 
 public enum class MovementMode {
     WALK, RUN, JUMP,

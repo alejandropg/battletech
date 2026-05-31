@@ -3,7 +3,7 @@ package battletech.tui.hex
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.Terrain
-import battletech.tactical.movement.MovementMode
+import battletech.tactical.model.MovementMode
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer

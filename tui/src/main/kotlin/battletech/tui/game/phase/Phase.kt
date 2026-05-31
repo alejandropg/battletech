@@ -6,7 +6,7 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.movement.MovementMode
+import battletech.tactical.model.MovementMode
 import battletech.tactical.query.PublicUnit
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.CombatUnit

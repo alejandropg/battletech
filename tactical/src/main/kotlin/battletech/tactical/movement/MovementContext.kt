@@ -1,5 +1,7 @@
 package battletech.tactical.movement
 
+import battletech.tactical.model.MovementMode
+
 import battletech.tactical.model.GameState
 import battletech.tactical.unit.CombatUnit
 

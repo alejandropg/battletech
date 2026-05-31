@@ -4,7 +4,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.movement.MovementMode
+import battletech.tactical.model.MovementMode
 import battletech.tui.hex.HexGeometry
 import battletech.tui.hex.HexHighlight
 import battletech.tui.hex.HexLayout

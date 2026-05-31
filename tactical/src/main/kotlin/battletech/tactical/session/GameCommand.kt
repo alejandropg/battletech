@@ -4,7 +4,7 @@ import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.physical.PhysicalAttackDeclaration
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
-import battletech.tactical.movement.MovementMode
+import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.unit.UnitId
 

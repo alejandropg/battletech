@@ -2,7 +2,6 @@ package battletech.tactical.attack.physical
 
 import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.applyDamage
-import battletech.tactical.attack.heatPenaltyModifier
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
@@ -64,7 +63,7 @@ private fun resolveOnePhysicalAttack(
     val target = gameState.unitById(declaration.targetId)!!
     val direction = attackDirection(attacker, target)
 
-    val targetNumber = attacker.pilotingSkill + heatPenaltyModifier(attacker) + attackModifier(declaration)
+    val targetNumber = physicalToHitTargetNumber(attacker, target, declaration.kind, gameState)
     val toHitRoll = roller.roll2d6()
 
     if (toHitRoll.total < targetNumber) {
@@ -98,11 +97,6 @@ private fun resolveOnePhysicalAttack(
         locationRoll = locationRoll,
         attackDirection = direction,
     )
-}
-
-private fun attackModifier(declaration: PhysicalAttackDeclaration): Int = when (declaration.kind) {
-    is PhysicalAttackKind.Punch -> 0
-    is PhysicalAttackKind.Kick -> -2
 }
 
 private fun damageFor(declaration: PhysicalAttackDeclaration, attacker: CombatUnit): Int = when (declaration.kind) {

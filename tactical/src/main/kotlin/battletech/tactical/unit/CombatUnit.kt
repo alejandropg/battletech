@@ -22,4 +22,5 @@ public data class CombatUnit(
     public val heatSinkCapacity: Int,
     public val armor: ArmorLayout,
     public val internalStructure: InternalStructureLayout,
+    public val movementThisTurn: MovementThisTurn = MovementThisTurn.STATIONARY,
 )

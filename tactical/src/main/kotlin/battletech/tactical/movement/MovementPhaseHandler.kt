@@ -1,5 +1,7 @@
 package battletech.tactical.movement
 
+import battletech.tactical.unit.MovementThisTurn
+
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.calculateMovementOrder
@@ -56,7 +58,17 @@ public class MovementPhaseHandler : PhaseHandler {
     ): PhaseOutcome {
         val cmd = command as MoveUnit
         val from = state.unitById(cmd.unitId)!!.position
-        val newState = state.moveUnit(cmd.unitId, cmd.destination)
+        val hexesMoved = hexesMoved(from, cmd.destination)
+        val movedState = state.moveUnit(cmd.unitId, cmd.destination)
+        val newState = movedState.copy(
+            units = movedState.units.map { unit ->
+                if (unit.id == cmd.unitId) {
+                    unit.copy(movementThisTurn = MovementThisTurn(cmd.mode, hexesMoved))
+                } else {
+                    unit
+                }
+            },
+        )
         val newTurn = turn.advanceAfterUnitMoved(cmd.unitId)
         val event = UnitMoved(
             unitId = cmd.unitId,
@@ -82,6 +94,17 @@ public class MovementPhaseHandler : PhaseHandler {
             loser = initiative.loser, loserUnitCount = state.unitsOf(initiative.loser).size,
             winner = initiative.winner, winnerUnitCount = state.unitsOf(initiative.winner).size,
         )
-        return PhaseOutcome(state, turn.copy(movementSequence = ImpulseSequence(order)), emptyList())
+        // Clear last turn's movement so attacker/target movement modifiers
+        // reflect only this turn's movement.
+        val resetState = state.copy(
+            units = state.units.map { it.copy(movementThisTurn = MovementThisTurn.STATIONARY) },
+        )
+        return PhaseOutcome(resetState, turn.copy(movementSequence = ImpulseSequence(order)), emptyList())
     }
+}
+
+/** Hexes actually entered along [destination]'s path (turn-in-place steps excluded). */
+internal fun hexesMoved(from: battletech.tactical.model.HexCoordinates, destination: ReachableHex): Int {
+    val positions = listOf(from) + destination.path.map { it.position }
+    return positions.zipWithNext().count { (previous, next) -> previous != next }
 }

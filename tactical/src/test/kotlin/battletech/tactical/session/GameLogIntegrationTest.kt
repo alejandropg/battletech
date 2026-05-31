@@ -9,7 +9,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.movement.MovementMode
+import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.unit.ArmorLayout

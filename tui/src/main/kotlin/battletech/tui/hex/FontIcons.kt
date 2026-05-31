@@ -1,6 +1,6 @@
 package battletech.tui.hex
 
-import battletech.tactical.movement.MovementMode
+import battletech.tactical.model.MovementMode
 
 // Nerd Fonts icons (https://www.nerdfonts.com/cheat-sheet)
 private val NF_MD_DICE_1         = String(Character.toChars(0xF01CA))

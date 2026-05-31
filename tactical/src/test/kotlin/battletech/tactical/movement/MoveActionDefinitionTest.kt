@@ -4,7 +4,7 @@ import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
-import battletech.tactical.movement.MovementMode
+import battletech.tactical.model.MovementMode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

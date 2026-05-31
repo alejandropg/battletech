@@ -6,6 +6,8 @@ import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
+import battletech.tactical.unit.MovementThisTurn
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import org.assertj.core.api.Assertions.assertThat
@@ -36,6 +38,21 @@ internal class PhysicalAttackResolutionTest {
 
         val damagedTarget = newState.unitById(target.id)!!
         assertThat(damagedTarget.armor.leftArm).isEqualTo(target.armor.leftArm - 5)
+    }
+
+    @Test
+    fun `resolution to-hit reflects attacker movement`() {
+        val attacker = aUnit(id = "attacker", tonnage = 50, pilotingSkill = 5, position = attackerPos)
+            .copy(movementThisTurn = MovementThisTurn(MovementMode.WALK, 2))
+        val target = aUnit(id = "target", position = targetPos, facing = bearing)
+        val state = aGameState(units = listOf(attacker, target))
+        val declaration = PhysicalAttackDeclaration(attacker.id, target.id, Punch(Side.LEFT))
+
+        val roller = DiceRoller.deterministic(3, 3, 1)
+        val (_, results) = resolvePhysicalAttacks(listOf(declaration), state, roller)
+
+        // piloting 5 + walked 1 = 6.
+        assertThat(results.single().targetNumber).isEqualTo(6)
     }
 
     @Test

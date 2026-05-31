@@ -17,6 +17,7 @@ public class PunchActionDefinition : AttackDefinition<PhysicalAttackContext> {
 
     override val rules: List<AttackRule<PhysicalAttackContext>> = listOf(
         AdjacentRule(),
+        PunchMovementRule(),
         HeatPenaltyRule(),
     )
 
@@ -37,7 +38,9 @@ public class PunchActionDefinition : AttackDefinition<PhysicalAttackContext> {
     }
 
     override fun successChance(context: PhysicalAttackContext): Int =
-        twoD6AtLeastProbability(context.actor.pilotingSkill)
+        twoD6AtLeastProbability(
+            physicalToHitTargetNumber(context.actor, context.target, PhysicalAttackKind.Punch(Side.LEFT), context.gameState),
+        )
 
     override fun actionName(context: PhysicalAttackContext): String =
         "Punch ${context.target.name}"

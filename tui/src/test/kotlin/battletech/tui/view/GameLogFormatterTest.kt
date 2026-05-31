@@ -11,7 +11,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.movement.MovementMode
+import battletech.tactical.model.MovementMode
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.HeatDissipated

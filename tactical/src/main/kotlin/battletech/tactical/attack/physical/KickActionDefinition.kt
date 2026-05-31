@@ -17,6 +17,7 @@ public class KickActionDefinition : AttackDefinition<PhysicalAttackContext> {
 
     override val rules: List<AttackRule<PhysicalAttackContext>> = listOf(
         AdjacentRule(),
+        KickMovementRule(),
         HeatPenaltyRule(),
     )
 
@@ -33,13 +34,10 @@ public class KickActionDefinition : AttackDefinition<PhysicalAttackContext> {
     }
 
     override fun successChance(context: PhysicalAttackContext): Int =
-        twoD6AtLeastProbability(context.actor.pilotingSkill + KICK_MODIFIER)
+        twoD6AtLeastProbability(
+            physicalToHitTargetNumber(context.actor, context.target, PhysicalAttackKind.Kick(Side.LEFT), context.gameState),
+        )
 
     override fun actionName(context: PhysicalAttackContext): String =
         "Kick ${context.target.name}"
-
-    private companion object {
-        /** Total Warfare: a kick is −2 to the to-hit target number. */
-        const val KICK_MODIFIER = -2
-    }
 }
