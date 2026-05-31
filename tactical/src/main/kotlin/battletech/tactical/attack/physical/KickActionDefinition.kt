@@ -19,6 +19,7 @@ public class KickActionDefinition : AttackDefinition<PhysicalAttackContext> {
         AdjacentRule(),
         KickReachRule(),
         KickMovementRule(),
+        ProneAttackerRule(),
         HeatPenaltyRule(),
     )
 

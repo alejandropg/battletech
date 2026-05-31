@@ -48,4 +48,7 @@ public sealed interface RuleRejection : RejectionReason {
 
     /** The target is too deep in water to be struck by this physical attack. */
     public data class TargetUnderwater(val depth: Int) : RuleRejection
+
+    /** A prone unit tried to make a physical attack. */
+    public data object AttackerProne : RuleRejection
 }

@@ -19,6 +19,12 @@ public sealed interface CommandRejection : RejectionReason {
 
     public data class UnknownUnit(public val unitId: UnitId) : CommandRejection
 
+    /** A prone unit was told to move; it must stand up first. */
+    public data class UnitProne(public val unitId: UnitId) : CommandRejection
+
+    /** A non-prone unit was told to stand up. */
+    public data class UnitNotProne(public val unitId: UnitId) : CommandRejection
+
     public data object MatchOver : CommandRejection
 
     public data class RuleViolation(public val rule: RuleRejection) : CommandRejection

@@ -3,6 +3,7 @@ package battletech.tactical.attack.weapon
 import battletech.tactical.attack.AttackDefinition
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.attack.WeaponAttackContext
+import battletech.tactical.attack.proneTargetToHitModifier
 import battletech.tactical.model.GameState
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.ActionPreview
@@ -59,6 +60,7 @@ public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> 
 
         val heatPenalty = heatPenaltyModifier(context.actor)
         targetNumber += heatPenalty
+        targetNumber += proneTargetToHitModifier(context.target, distance)
 
         return TWO_D6_PROBABILITY.getOrElse(targetNumber) { 0 }
     }

@@ -1,6 +1,7 @@
 package battletech.tactical.attack.physical
 
 import battletech.tactical.attack.heatPenaltyModifier
+import battletech.tactical.attack.proneTargetToHitModifier
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Terrain
 import battletech.tactical.model.MovementMode
@@ -31,6 +32,7 @@ public fun physicalToHitTargetNumber(
     attackerMovementModifier(attacker) +
     targetMovementModifier(target) +
     terrainModifier(target, gameState) +
+    proneTargetToHitModifier(target, attacker.position.distanceTo(target.position)) +
     heatPenaltyModifier(attacker) +
     attackKindModifier(kind)
 

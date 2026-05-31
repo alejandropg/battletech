@@ -30,6 +30,16 @@ public data class MoveUnit(
 ) : GameCommand
 
 /**
+ * Attempt to stand a prone unit during the movement phase: rolls a Piloting
+ * Skill Roll. On success the unit is no longer prone and may still move this
+ * impulse; on failure it remains prone and its activation is spent.
+ */
+public data class StandUp(
+    public val playerId: PlayerId,
+    public val unitId: UnitId,
+) : GameCommand
+
+/**
  * Commit a full attack impulse for [playerId]. [torsoFacings] is applied
  * to attacker units before resolution. The active phase handler decides
  * what "commit" means for its phase: WeaponAttackPhaseHandler resolves

@@ -13,8 +13,11 @@ import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.PhaseHandler
 import battletech.tactical.session.PhaseOutcome
+import battletech.tactical.session.StandUp
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitMoved
+import battletech.tactical.session.UnitStoodUp
+import battletech.tactical.unit.pilotingSkillRoll
 
 /**
  * Player phase. On entry, seeds the movement impulse sequence from initiative
@@ -31,21 +34,42 @@ public class MovementPhaseHandler : PhaseHandler {
         else turn.activePlayer
 
     override fun accepts(command: GameCommand, turn: TurnState): Boolean =
-        command is MoveUnit
+        command is MoveUnit || command is StandUp
 
     override fun validate(
         command: GameCommand,
         state: GameState,
         turn: TurnState,
+    ): CommandRejection? = when (command) {
+        is MoveUnit -> validateActivation(command.unitId, command.playerId, state, turn)
+            ?: if (state.unitById(command.unitId)?.isProne == true) {
+                CommandRejection.UnitProne(command.unitId)
+            } else {
+                null
+            }
+
+        is StandUp -> validateActivation(command.unitId, command.playerId, state, turn)
+            ?: if (state.unitById(command.unitId)?.isProne != true) {
+                CommandRejection.UnitNotProne(command.unitId)
+            } else {
+                null
+            }
+
+        else -> null
+    }
+
+    private fun validateActivation(
+        unitId: battletech.tactical.unit.UnitId,
+        playerId: PlayerId,
+        state: GameState,
+        turn: TurnState,
     ): CommandRejection? {
-        val cmd = command as MoveUnit
-        val unit = state.unitById(cmd.unitId)
-            ?: return CommandRejection.UnknownUnit(cmd.unitId)
-        if (unit.owner != cmd.playerId) {
-            return CommandRejection.NotYourTurn(activePlayer = unit.owner, attemptedBy = cmd.playerId)
+        val unit = state.unitById(unitId) ?: return CommandRejection.UnknownUnit(unitId)
+        if (unit.owner != playerId) {
+            return CommandRejection.NotYourTurn(activePlayer = unit.owner, attemptedBy = playerId)
         }
-        if (cmd.unitId in turn.movedUnitIds) {
-            return CommandRejection.UnitAlreadyActed(cmd.unitId)
+        if (unitId in turn.movedUnitIds) {
+            return CommandRejection.UnitAlreadyActed(unitId)
         }
         return null
     }
@@ -55,8 +79,37 @@ public class MovementPhaseHandler : PhaseHandler {
         state: GameState,
         turn: TurnState,
         roller: DiceRoller,
+    ): PhaseOutcome = when (command) {
+        is StandUp -> applyStandUp(command, state, turn, roller)
+        is MoveUnit -> applyMove(command, state, turn)
+        else -> PhaseOutcome(state, turn, emptyList())
+    }
+
+    private fun applyStandUp(
+        cmd: StandUp,
+        state: GameState,
+        turn: TurnState,
+        roller: DiceRoller,
     ): PhaseOutcome {
-        val cmd = command as MoveUnit
+        val unit = state.unitById(cmd.unitId)!!
+        val psr = pilotingSkillRoll(unit, roller)
+        return if (psr.passed) {
+            // Stood up; activation NOT consumed so the unit may still move this impulse.
+            val newState = state.copy(
+                units = state.units.map { if (it.id == cmd.unitId) it.copy(isProne = false) else it },
+            )
+            PhaseOutcome(newState, turn, listOf(UnitStoodUp(cmd.unitId, psr, stoodUp = true)))
+        } else {
+            // Failed to rise; remains prone and its activation is spent.
+            PhaseOutcome(state, turn.advanceAfterUnitMoved(cmd.unitId), listOf(UnitStoodUp(cmd.unitId, psr, stoodUp = false)))
+        }
+    }
+
+    private fun applyMove(
+        cmd: MoveUnit,
+        state: GameState,
+        turn: TurnState,
+    ): PhaseOutcome {
         val from = state.unitById(cmd.unitId)!!.position
         val hexesMoved = hexesMoved(from, cmd.destination)
         val movedState = state.moveUnit(cmd.unitId, cmd.destination)

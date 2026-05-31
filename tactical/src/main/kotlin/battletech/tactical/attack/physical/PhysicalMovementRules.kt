@@ -25,3 +25,9 @@ public class PunchMovementRule : AttackRule<AttackContext> {
             RuleResult.Satisfied
         }
 }
+
+/** A prone unit cannot make any physical attack. */
+public class ProneAttackerRule : AttackRule<AttackContext> {
+    override fun evaluate(context: AttackContext): RuleResult =
+        if (context.actor.isProne) RuleResult.Unsatisfied(RuleRejection.AttackerProne) else RuleResult.Satisfied
+}

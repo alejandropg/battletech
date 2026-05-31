@@ -9,6 +9,7 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.model.MovementMode
+import battletech.tactical.unit.PilotingSkillRoll
 import battletech.tactical.unit.UnitId
 
 /**
@@ -40,6 +41,12 @@ public data class PhysicalAttacksResolved(
 public data class UnitFell(
     public val unitId: UnitId,
     public val fall: FallResult,
+) : GameEvent
+
+public data class UnitStoodUp(
+    public val unitId: UnitId,
+    public val psr: PilotingSkillRoll,
+    public val stoodUp: Boolean,
 ) : GameEvent
 
 public data class AttackDeclarationsRecorded(

@@ -166,6 +166,30 @@ internal class AttackResolutionTest {
     }
 
     @Test
+    fun `prone adjacent target lowers the target number by two`() {
+        val proneTarget = target.copy(isProne = true)
+        val state = gameState.copy(units = listOf(attacker, proneTarget))
+        val declaration = AttackDeclaration(attacker.id, proneTarget.id, 0, true)
+
+        val roller = DiceRoller.seeded(42)
+        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        // gunnery 4 + range 0 - 2 (prone adjacent) = 2
+        assertEquals(2, results.single().targetNumber)
+    }
+
+    @Test
+    fun `prone target at range raises the target number by one`() {
+        val proneFarTarget = target.copy(position = HexCoordinates(5, 0), isProne = true)
+        val state = gameState.copy(units = listOf(attacker, proneFarTarget))
+        val declaration = AttackDeclaration(attacker.id, proneFarTarget.id, 0, true)
+
+        val roller = DiceRoller.seeded(42)
+        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        // gunnery 4 + medium range 2 + 1 (prone at range) = 7
+        assertEquals(7, results.single().targetNumber)
+    }
+
+    @Test
     fun `medium range adds plus 2 modifier`() {
         val farTarget = target.copy(position = HexCoordinates(5, 0)) // distance 5, medium range for ML
         val state = gameState.copy(units = listOf(attacker, farTarget))

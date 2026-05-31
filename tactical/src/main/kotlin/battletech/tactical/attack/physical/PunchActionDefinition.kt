@@ -19,6 +19,7 @@ public class PunchActionDefinition : AttackDefinition<PhysicalAttackContext> {
         AdjacentRule(),
         PunchReachRule(),
         PunchMovementRule(),
+        ProneAttackerRule(),
         HeatPenaltyRule(),
     )
 

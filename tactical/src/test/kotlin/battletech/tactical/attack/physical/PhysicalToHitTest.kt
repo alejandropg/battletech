@@ -59,6 +59,13 @@ internal class PhysicalToHitTest {
     }
 
     @Test
+    fun `a prone adjacent target is easier to hit`() {
+        val proneTarget = target().copy(isProne = true)
+        // piloting 4, adjacent prone target -> -2.
+        assertEquals(2, punchTn(attacker(), proneTarget))
+    }
+
+    @Test
     fun `woods on the target hex add to the target number`() {
         val light = mapOf(targetPos to Hex(targetPos, Terrain.LIGHT_WOODS))
         val heavy = mapOf(targetPos to Hex(targetPos, Terrain.HEAVY_WOODS))

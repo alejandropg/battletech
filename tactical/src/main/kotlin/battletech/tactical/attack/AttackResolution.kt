@@ -102,7 +102,8 @@ private fun resolveOneAttack(
 
     val heatPenalty = heatPenaltyModifier(attacker)
     val secondaryPenalty = if (declaration.isPrimary) 0 else 1
-    val targetNumber = attacker.gunnerySkill + rangeModifier + heatPenalty + secondaryPenalty
+    val proneModifier = proneTargetToHitModifier(target, distance)
+    val targetNumber = attacker.gunnerySkill + rangeModifier + heatPenalty + secondaryPenalty + proneModifier
 
     val toHitRoll = roller.roll2d6()
 
