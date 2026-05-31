@@ -23,6 +23,7 @@ internal class GameStateTransformsTest {
         id = UnitId(id),
         owner = PlayerId.PLAYER_1,
         name = "Atlas",
+        tonnage = 100,
         gunnerySkill = 4,
         pilotingSkill = 5,
         weapons = emptyList(),

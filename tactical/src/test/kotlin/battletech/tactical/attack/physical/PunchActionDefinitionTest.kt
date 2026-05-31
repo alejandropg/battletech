@@ -47,18 +47,20 @@ internal class PunchActionDefinitionTest {
     }
 
     @Test
-    fun `preview includes fixed punch damage`() {
-        val actor = aUnit(position = HexCoordinates(0, 0))
+    fun `preview punch damage is ceil of tonnage over ten`() {
+        // Total Warfare: punch damage = ceil(tonnage / 10).
         val target = aUnit(id = "enemy", position = HexCoordinates(1, 0))
-        val context = PhysicalAttackContext(
-            actor = actor,
-            target = target,
-            gameState = aGameState(),
-        )
 
-        val preview = definition.preview(context) as PhysicalAttackPreview
+        fun previewFor(tonnage: Int): PhysicalAttackPreview {
+            val actor = aUnit(tonnage = tonnage, position = HexCoordinates(0, 0))
+            val context = PhysicalAttackContext(actor = actor, target = target, gameState = aGameState())
+            return definition.preview(context) as PhysicalAttackPreview
+        }
 
-        assertEquals(5..5, preview.expectedDamage)
+        assertEquals(5..5, previewFor(50).expectedDamage)
+        assertEquals(8..8, previewFor(75).expectedDamage)
+        assertEquals(3..3, previewFor(25).expectedDamage)
+        assertEquals(10..10, previewFor(100).expectedDamage)
     }
 
     @Test

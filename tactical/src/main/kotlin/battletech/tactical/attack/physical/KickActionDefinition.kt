@@ -9,11 +9,11 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.ActionPreview
 import battletech.tactical.unit.CombatUnit
 
-public class PunchActionDefinition : AttackDefinition<PhysicalAttackContext> {
+public class KickActionDefinition : AttackDefinition<PhysicalAttackContext> {
 
     override val phase: TurnPhase = TurnPhase.PHYSICAL_ATTACK
 
-    override val name: String = "Punch"
+    override val name: String = "Kick"
 
     override val rules: List<AttackRule<PhysicalAttackContext>> = listOf(
         AdjacentRule(),
@@ -23,22 +23,23 @@ public class PunchActionDefinition : AttackDefinition<PhysicalAttackContext> {
     override fun expand(actor: CombatUnit, gameState: GameState): List<PhysicalAttackContext> {
         val enemies = gameState.units.filter { it.id != actor.id }
         return enemies.map { target ->
-            PhysicalAttackContext(
-                actor = actor,
-                target = target,
-                gameState = gameState,
-            )
+            PhysicalAttackContext(actor = actor, target = target, gameState = gameState)
         }
     }
 
     override fun preview(context: PhysicalAttackContext): ActionPreview {
-        val damage = punchDamage(context.actor)
+        val damage = kickDamage(context.actor)
         return PhysicalAttackPreview(expectedDamage = damage..damage)
     }
 
     override fun successChance(context: PhysicalAttackContext): Int =
-        twoD6AtLeastProbability(context.actor.pilotingSkill)
+        twoD6AtLeastProbability(context.actor.pilotingSkill + KICK_MODIFIER)
 
     override fun actionName(context: PhysicalAttackContext): String =
-        "Punch ${context.target.name}"
+        "Kick ${context.target.name}"
+
+    private companion object {
+        /** Total Warfare: a kick is −2 to the to-hit target number. */
+        const val KICK_MODIFIER = -2
+    }
 }

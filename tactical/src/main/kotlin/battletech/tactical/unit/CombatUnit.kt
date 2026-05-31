@@ -8,6 +8,7 @@ public data class CombatUnit(
     public val id: UnitId,
     public val owner: PlayerId,
     public val name: String,
+    public val tonnage: Int,
     public val gunnerySkill: Int,
     public val pilotingSkill: Int,
     public val weapons: List<Weapon>,

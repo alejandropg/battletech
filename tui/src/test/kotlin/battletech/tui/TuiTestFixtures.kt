@@ -75,6 +75,7 @@ internal fun aUnit(
     id = UnitId(id),
     owner = owner,
     name = name,
+    tonnage = 50,
     gunnerySkill = 4,
     pilotingSkill = 5,
     weapons = weapons,

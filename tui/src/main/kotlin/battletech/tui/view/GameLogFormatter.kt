@@ -9,6 +9,7 @@ import battletech.tactical.session.GameEvent
 import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.PhaseChanged
+import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitMoved
@@ -75,6 +76,13 @@ internal object GameLogFormatter {
                 }
             if (parts.isEmpty()) "Heat: no heat to dissipate"
             else "Heat: ${parts.joinToString(", ")}"
+        }
+
+        is PhysicalAttacksResolved -> {
+            val made = event.results.size
+            val hits = event.results.count { it.hit }
+            val damage = event.results.sumOf { it.damageApplied }
+            "Physical attacks: $made made, $hits hit, $damage damage"
         }
 
         is TurnEnded -> "Turn ${event.turnNumber} complete"

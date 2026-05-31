@@ -160,6 +160,7 @@ internal class SubscriptionTest {
         id = UnitId(id),
         owner = owner,
         name = id,
+        tonnage = 50,
         gunnerySkill = 4,
         pilotingSkill = 5,
         weapons = listOf(Weapons.mediumLaser()),

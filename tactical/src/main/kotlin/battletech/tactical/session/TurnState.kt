@@ -1,6 +1,7 @@
 package battletech.tactical.session
 
 import battletech.tactical.attack.AttackDeclaration
+import battletech.tactical.attack.physical.PhysicalAttackDeclaration
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.CombatUnit
@@ -13,6 +14,7 @@ public data class TurnState(
     val unitsMovedInCurrentImpulse: Int = 0,
     val attackSequence: ImpulseSequence = ImpulseSequence(emptyList()),
     val attackDeclarations: List<AttackDeclaration> = emptyList(),
+    val physicalAttackDeclarations: List<PhysicalAttackDeclaration> = emptyList(),
     val turnNumber: Int = 1,
 ) {
     val currentImpulse: Impulse get() = movementSequence.current

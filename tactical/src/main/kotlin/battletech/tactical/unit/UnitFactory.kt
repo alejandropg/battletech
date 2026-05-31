@@ -15,6 +15,7 @@ public fun MechModel.createUnit(
     id = id,
     owner = owner,
     name = name,
+    tonnage = tonnage,
     gunnerySkill = gunnerySkill,
     pilotingSkill = pilotingSkill,
     weapons = weapons.map { it() },

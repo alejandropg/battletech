@@ -1,6 +1,7 @@
 package battletech.tactical.session
 
 import battletech.tactical.attack.AttackDeclaration
+import battletech.tactical.attack.physical.PhysicalAttackDeclaration
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.movement.MovementMode
@@ -38,5 +39,18 @@ public data class MoveUnit(
 public data class CommitAttackImpulse(
     public val playerId: PlayerId,
     public val declarations: List<AttackDeclaration>,
+    public val torsoFacings: Map<UnitId, HexDirection>,
+) : GameCommand
+
+/**
+ * Commit a full physical-attack impulse for [playerId]. Carries
+ * [PhysicalAttackDeclaration]s (punches/kicks) rather than weapon declarations.
+ * [torsoFacings] is applied to attacker units before resolution.
+ * [PhysicalAttackPhaseHandler] resolves accumulated declarations on the final
+ * impulse and applies damage.
+ */
+public data class CommitPhysicalAttackImpulse(
+    public val playerId: PlayerId,
+    public val declarations: List<PhysicalAttackDeclaration>,
     public val torsoFacings: Map<UnitId, HexDirection>,
 ) : GameCommand

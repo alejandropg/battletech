@@ -61,12 +61,17 @@ public fun resolveAttacks(
     return updatedState to results
 }
 
-public fun applyDamage(unit: CombatUnit, location: HitLocation, damage: Int): CombatUnit {
-    val currentArmor = getArmor(unit.armor, location)
+public fun applyDamage(
+    unit: CombatUnit,
+    location: HitLocation,
+    damage: Int,
+    useRearArmor: Boolean = false,
+): CombatUnit {
+    val currentArmor = getArmor(unit.armor, location, useRearArmor)
     val armorAfter = (currentArmor - damage).coerceAtLeast(0)
     val overflow = (damage - currentArmor).coerceAtLeast(0)
 
-    val newArmor = setArmor(unit.armor, location, armorAfter)
+    val newArmor = setArmor(unit.armor, location, armorAfter, useRearArmor)
     val newIS = if (overflow > 0) {
         val currentIS = getInternalStructure(unit.internalStructure, location)
         val isAfter = (currentIS - overflow).coerceAtLeast(0)
@@ -142,31 +147,41 @@ private fun resolveOneAttack(
     }
 }
 
-private fun heatPenaltyModifier(actor: CombatUnit): Int {
+public fun heatPenaltyModifier(actor: CombatUnit): Int {
     val excessHeat = actor.currentHeat - actor.heatSinkCapacity
     return if (excessHeat <= 0) 0 else ceil(excessHeat / 3.0).toInt()
 }
 
-private fun getArmor(armor: ArmorLayout, location: HitLocation): Int = when (location) {
-    HitLocation.HEAD -> armor.head
-    HitLocation.CENTER_TORSO -> armor.centerTorso
-    HitLocation.LEFT_TORSO -> armor.leftTorso
-    HitLocation.RIGHT_TORSO -> armor.rightTorso
-    HitLocation.LEFT_ARM -> armor.leftArm
-    HitLocation.RIGHT_ARM -> armor.rightArm
-    HitLocation.LEFT_LEG -> armor.leftLeg
-    HitLocation.RIGHT_LEG -> armor.rightLeg
+private fun getArmor(armor: ArmorLayout, location: HitLocation, rear: Boolean): Int = when {
+    rear && location == HitLocation.CENTER_TORSO -> armor.centerTorsoRear
+    rear && location == HitLocation.LEFT_TORSO -> armor.leftTorsoRear
+    rear && location == HitLocation.RIGHT_TORSO -> armor.rightTorsoRear
+    else -> when (location) {
+        HitLocation.HEAD -> armor.head
+        HitLocation.CENTER_TORSO -> armor.centerTorso
+        HitLocation.LEFT_TORSO -> armor.leftTorso
+        HitLocation.RIGHT_TORSO -> armor.rightTorso
+        HitLocation.LEFT_ARM -> armor.leftArm
+        HitLocation.RIGHT_ARM -> armor.rightArm
+        HitLocation.LEFT_LEG -> armor.leftLeg
+        HitLocation.RIGHT_LEG -> armor.rightLeg
+    }
 }
 
-private fun setArmor(armor: ArmorLayout, location: HitLocation, value: Int): ArmorLayout = when (location) {
-    HitLocation.HEAD -> armor.copy(head = value)
-    HitLocation.CENTER_TORSO -> armor.copy(centerTorso = value)
-    HitLocation.LEFT_TORSO -> armor.copy(leftTorso = value)
-    HitLocation.RIGHT_TORSO -> armor.copy(rightTorso = value)
-    HitLocation.LEFT_ARM -> armor.copy(leftArm = value)
-    HitLocation.RIGHT_ARM -> armor.copy(rightArm = value)
-    HitLocation.LEFT_LEG -> armor.copy(leftLeg = value)
-    HitLocation.RIGHT_LEG -> armor.copy(rightLeg = value)
+private fun setArmor(armor: ArmorLayout, location: HitLocation, value: Int, rear: Boolean): ArmorLayout = when {
+    rear && location == HitLocation.CENTER_TORSO -> armor.copy(centerTorsoRear = value)
+    rear && location == HitLocation.LEFT_TORSO -> armor.copy(leftTorsoRear = value)
+    rear && location == HitLocation.RIGHT_TORSO -> armor.copy(rightTorsoRear = value)
+    else -> when (location) {
+        HitLocation.HEAD -> armor.copy(head = value)
+        HitLocation.CENTER_TORSO -> armor.copy(centerTorso = value)
+        HitLocation.LEFT_TORSO -> armor.copy(leftTorso = value)
+        HitLocation.RIGHT_TORSO -> armor.copy(rightTorso = value)
+        HitLocation.LEFT_ARM -> armor.copy(leftArm = value)
+        HitLocation.RIGHT_ARM -> armor.copy(rightArm = value)
+        HitLocation.LEFT_LEG -> armor.copy(leftLeg = value)
+        HitLocation.RIGHT_LEG -> armor.copy(rightLeg = value)
+    }
 }
 
 private fun getInternalStructure(is_: InternalStructureLayout, location: HitLocation): Int = when (location) {

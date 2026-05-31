@@ -6,21 +6,23 @@ import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.session.AttackDeclarationsRecorded
-import battletech.tactical.session.CommitAttackImpulse
+import battletech.tactical.session.CommandRejection
+import battletech.tactical.session.CommitPhysicalAttackImpulse
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.PhaseHandler
 import battletech.tactical.session.PhaseOutcome
+import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnState
 
 /**
  * Physical-attack phase. Same impulse seeding shape as
- * [battletech.tactical.attack.weapon.WeaponAttackPhaseHandler], but the current engine doesn't resolve
- * physical damage — declarations are recorded and dropped at the end of
- * the phase, matching the pre-PR6 TUI behaviour.
+ * [battletech.tactical.attack.weapon.WeaponAttackPhaseHandler]: declarations
+ * accumulate across impulses and, on the final impulse, resolve against the
+ * current game state with damage applied (punch/kick to-hit, directional
+ * hit-location tables, tonnage-based damage).
  */
 public class PhysicalAttackPhaseHandler : PhaseHandler {
 
@@ -31,9 +33,19 @@ public class PhysicalAttackPhaseHandler : PhaseHandler {
         else turn.activeAttackPlayer
 
     override fun accepts(command: GameCommand, turn: TurnState): Boolean =
-        command is CommitAttackImpulse &&
+        command is CommitPhysicalAttackImpulse &&
             turn.attackSequence.order.isNotEmpty() &&
             !turn.attackSequence.isComplete
+
+    override fun validate(
+        command: GameCommand,
+        state: GameState,
+        turn: TurnState,
+    ): CommandRejection? {
+        val cmd = command as CommitPhysicalAttackImpulse
+        return physicalImpulseViolation(cmd.declarations, state)
+            ?.let { CommandRejection.RuleViolation(it) }
+    }
 
     override fun apply(
         command: GameCommand,
@@ -41,7 +53,7 @@ public class PhysicalAttackPhaseHandler : PhaseHandler {
         turn: TurnState,
         roller: DiceRoller,
     ): PhaseOutcome {
-        val cmd = command as CommitAttackImpulse
+        val cmd = command as CommitPhysicalAttackImpulse
         val events = mutableListOf<GameEvent>()
 
         var newState = state
@@ -50,15 +62,17 @@ public class PhysicalAttackPhaseHandler : PhaseHandler {
             events += TorsoFacingsApplied(cmd.torsoFacings)
         }
 
-        val accumulated = turn.attackDeclarations + cmd.declarations
+        val accumulated = turn.physicalAttackDeclarations + cmd.declarations
         var newTurn = turn.copy(
-            attackDeclarations = accumulated,
+            physicalAttackDeclarations = accumulated,
             attackSequence = turn.attackSequence.advance(),
         )
-        events += AttackDeclarationsRecorded(player = cmd.playerId, declarations = cmd.declarations)
 
-        if (newTurn.attackSequence.isComplete) {
-            newTurn = newTurn.copy(attackDeclarations = emptyList())
+        if (newTurn.attackSequence.isComplete && accumulated.isNotEmpty()) {
+            val (resolvedState, results) = resolvePhysicalAttacks(accumulated, newState, roller)
+            newState = resolvedState
+            newTurn = newTurn.copy(physicalAttackDeclarations = emptyList())
+            events += PhysicalAttacksResolved(results)
         }
 
         return PhaseOutcome(newState, newTurn, events)

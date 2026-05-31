@@ -2,6 +2,7 @@ package battletech.tactical.session
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Terrain
+import battletech.tactical.unit.UnitId
 
 /**
  * Typed reasons a tactical rule refuses an action. Each case carries the
@@ -26,4 +27,13 @@ public sealed interface RuleRejection : RejectionReason {
     ) : RuleRejection
 
     public data class WeaponDestroyed(val weaponName: String) : RuleRejection
+
+    /** A unit tried to use the same limb for more than one physical attack this turn. */
+    public data class LimbAlreadyUsed(val attackerId: UnitId) : RuleRejection
+
+    /** A unit tried to both punch and kick in the same turn (only one is allowed). */
+    public data class PunchAndKickSameTurn(val attackerId: UnitId) : RuleRejection
+
+    /** A unit tried to make a physical attack with a destroyed (0 internal structure) limb. */
+    public data class LimbDestroyed(val attackerId: UnitId) : RuleRejection
 }

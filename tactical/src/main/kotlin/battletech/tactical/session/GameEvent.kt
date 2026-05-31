@@ -2,6 +2,7 @@ package battletech.tactical.session
 
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.AttackResult
+import battletech.tactical.attack.physical.PhysicalAttackResult
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
@@ -29,6 +30,10 @@ public data class UnitMoved(
 
 public data class AttacksResolved(
     public val results: List<AttackResult>
+) : GameEvent
+
+public data class PhysicalAttacksResolved(
+    public val results: List<PhysicalAttackResult>
 ) : GameEvent
 
 public data class AttackDeclarationsRecorded(
