@@ -16,6 +16,7 @@ import battletech.tactical.session.Initiative
 import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.RuleRejection
 import battletech.tactical.session.TurnState
+import battletech.tactical.session.UnitFell
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -53,6 +54,23 @@ internal class PhysicalAttackPhaseHandlerTest {
         assertThat(outcome.state.unitById(target.id)!!.armor.leftArm)
             .isEqualTo(target.armor.leftArm - 5)
         assertThat(outcome.turn.physicalAttackDeclarations).isEmpty()
+    }
+
+    @Test
+    fun `a kick knockdown emits a UnitFell event`() {
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(PhysicalAttackDeclaration(attacker.id, target.id, Kick(Side.RIGHT))),
+            torsoFacings = emptyMap(),
+        )
+        // hit (2+2, TN 3); location 1; target PSR 1+1 fail; fall 3+4 -> CT; facing 1.
+        val roller = DiceRoller.deterministic(2, 2, 1, 1, 1, 3, 4, 1)
+
+        val outcome = handler.apply(command, gameState, turnWithOneImpulse(), roller)
+
+        val fell = outcome.events.filterIsInstance<UnitFell>().single()
+        assertThat(fell.unitId).isEqualTo(target.id)
+        assertThat(outcome.state.unitById(target.id)!!.isProne).isTrue()
     }
 
     @Test

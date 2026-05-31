@@ -23,4 +23,5 @@ public data class CombatUnit(
     public val armor: ArmorLayout,
     public val internalStructure: InternalStructureLayout,
     public val movementThisTurn: MovementThisTurn = MovementThisTurn.STATIONARY,
+    public val isProne: Boolean = false,
 )

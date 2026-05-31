@@ -11,6 +11,7 @@ import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.TorsoFacingsApplied
+import battletech.tactical.session.UnitFell
 import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitMoved
 import battletech.tui.hex.diceIcon
@@ -83,6 +84,11 @@ internal object GameLogFormatter {
             val hits = event.results.count { it.hit }
             val damage = event.results.sumOf { it.damageApplied }
             "Physical attacks: $made made, $hits hit, $damage damage"
+        }
+
+        is UnitFell -> {
+            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            "$name fell — ${event.fall.damage} damage"
         }
 
         is TurnEnded -> "Turn ${event.turnNumber} complete"

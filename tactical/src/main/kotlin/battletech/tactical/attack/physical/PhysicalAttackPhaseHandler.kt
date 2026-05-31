@@ -16,6 +16,7 @@ import battletech.tactical.session.PhaseOutcome
 import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnState
+import battletech.tactical.session.UnitFell
 
 /**
  * Physical-attack phase. Same impulse seeding shape as
@@ -73,6 +74,13 @@ public class PhysicalAttackPhaseHandler : PhaseHandler {
             newState = resolvedState
             newTurn = newTurn.copy(physicalAttackDeclarations = emptyList())
             events += PhysicalAttacksResolved(results)
+            for (result in results) {
+                val fallenId = result.fallenUnitId
+                val fall = result.fall
+                if (fallenId != null && fall != null) {
+                    events += UnitFell(unitId = fallenId, fall = fall)
+                }
+            }
         }
 
         return PhaseOutcome(newState, newTurn, events)
