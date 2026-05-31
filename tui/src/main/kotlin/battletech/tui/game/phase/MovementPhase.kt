@@ -10,6 +10,7 @@ import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.query.PlayerView
 import battletech.tactical.session.MoveUnit
+import battletech.tactical.session.StandUp
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
@@ -83,6 +84,11 @@ public sealed interface MovementPhase : Phase {
             }
             if (unit.id in turnState.movedUnitIds) {
                 return Transition(app, FlashMessage("Already moved"))
+            }
+            if (unit.isProne) {
+                // A prone unit must stand before it can move.
+                app.session.submitCommand(StandUp(playerId = unit.owner, unitId = unit.id))
+                return Transition(app.copy(phase = battletech.tui.game.mapToTuiPhase(app.session.currentPhase)))
             }
 
             val newPhase = enterBrowsing(unit, app.viewFor(unit.owner))

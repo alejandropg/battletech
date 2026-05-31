@@ -32,6 +32,9 @@ public interface PlayerView {
     /** Full target/weapon legality and success-chance data for the cursor UI. */
     public fun targetInfos(attackerId: UnitId, torsoFacing: HexDirection): List<TargetInfo>
 
+    /** Physical-attack options (punch per arm, kick) against each adjacent enemy. */
+    public fun physicalAttackOptions(attackerId: UnitId): List<PhysicalAttackOption>
+
     /** Positions of the given unit IDs on the board. */
     public fun resolveTargetPositions(targetIds: Set<UnitId>): Set<HexCoordinates>
 

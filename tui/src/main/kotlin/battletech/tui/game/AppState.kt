@@ -15,6 +15,7 @@ import battletech.tactical.session.TurnState
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.Phase
+import battletech.tui.game.phase.PhysicalAttackPhase
 
 /**
  * The TUI's UI-shell state. Holds a reference to the authoritative
@@ -103,5 +104,5 @@ public fun mapToTuiPhase(domainPhase: TurnPhase): Phase = when (domainPhase) {
     TurnPhase.END,
     -> MovementPhase.SelectingUnit
     TurnPhase.WEAPON_ATTACK -> AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
-    TurnPhase.PHYSICAL_ATTACK -> AttackPhase.SelectingAttacker(TurnPhase.PHYSICAL_ATTACK)
+    TurnPhase.PHYSICAL_ATTACK -> PhysicalAttackPhase.SelectingAttacker()
 }
