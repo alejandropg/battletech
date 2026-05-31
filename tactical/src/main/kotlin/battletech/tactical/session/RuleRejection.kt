@@ -42,4 +42,10 @@ public sealed interface RuleRejection : RejectionReason {
 
     /** A unit tried to punch after jumping (only a death-from-above is allowed from a jump). */
     public data object CannotPunchAfterJumping : RuleRejection
+
+    /** The target's level is out of reach for this physical attack. */
+    public data class ElevationOutOfReach(val levelDifference: Int) : RuleRejection
+
+    /** The target is too deep in water to be struck by this physical attack. */
+    public data class TargetUnderwater(val depth: Int) : RuleRejection
 }

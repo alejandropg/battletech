@@ -17,6 +17,7 @@ public class PunchActionDefinition : AttackDefinition<PhysicalAttackContext> {
 
     override val rules: List<AttackRule<PhysicalAttackContext>> = listOf(
         AdjacentRule(),
+        PunchReachRule(),
         PunchMovementRule(),
         HeatPenaltyRule(),
     )

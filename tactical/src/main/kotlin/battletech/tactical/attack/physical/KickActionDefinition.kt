@@ -17,6 +17,7 @@ public class KickActionDefinition : AttackDefinition<PhysicalAttackContext> {
 
     override val rules: List<AttackRule<PhysicalAttackContext>> = listOf(
         AdjacentRule(),
+        KickReachRule(),
         KickMovementRule(),
         HeatPenaltyRule(),
     )

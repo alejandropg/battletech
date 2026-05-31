@@ -22,9 +22,10 @@ internal class PunchActionDefinitionTest {
     }
 
     @Test
-    fun `rules include adjacent, movement and heat penalty`() {
+    fun `rules include adjacent, reach, movement and heat penalty`() {
         assertThat(definition.rules.map { it::class }).containsExactlyInAnyOrder(
             AdjacentRule::class,
+            PunchReachRule::class,
             PunchMovementRule::class,
             HeatPenaltyRule::class,
         )
