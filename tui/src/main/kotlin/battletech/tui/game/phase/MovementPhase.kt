@@ -3,9 +3,9 @@ package battletech.tui.game.phase
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.query.PlayerView
@@ -17,6 +17,7 @@ import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.RenderData
+import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.moveCursor
 import battletech.tui.game.pathHighlights
 import battletech.tui.game.reachabilityHighlights
@@ -35,10 +36,10 @@ internal val FACING_ORDER: List<HexDirection> = listOf(
 
 internal const val SELECT_FACING_PROMPT = "Select facing (1-6)"
 
-public sealed interface MovementPhase : Phase {
+internal sealed interface MovementPhase : Phase {
     override val turnPhase: TurnPhase get() = TurnPhase.MOVEMENT
 
-    public data object SelectingUnit : MovementPhase {
+    data object SelectingUnit : MovementPhase {
 
         override fun handle(event: InputEvent, app: AppState): Transition? {
             val action = when (event) {
@@ -88,7 +89,7 @@ public sealed interface MovementPhase : Phase {
             if (unit.isProne) {
                 // A prone unit must stand before it can move.
                 app.session.submitCommand(StandUp(playerId = unit.owner, unitId = unit.id))
-                return Transition(app.copy(phase = battletech.tui.game.mapToTuiPhase(app.session.currentPhase)))
+                return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)))
             }
 
             val newPhase = enterBrowsing(unit, app.viewFor(unit.owner))
@@ -309,7 +310,7 @@ private fun submitMove(
             mode = mode,
         ),
     )
-    return Transition(app.copy(phase = battletech.tui.game.mapToTuiPhase(app.session.currentPhase)))
+    return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)))
 }
 
 internal fun modePrompt(reachability: ReachabilityMap?): String {

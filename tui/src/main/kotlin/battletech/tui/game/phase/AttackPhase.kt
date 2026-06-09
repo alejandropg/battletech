@@ -10,8 +10,8 @@ import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerView
 import battletech.tactical.query.PublicUnit
 import battletech.tactical.session.AttacksResolved
-import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.CommandResult
+import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
 import battletech.tactical.unit.CombatUnit
@@ -34,7 +34,7 @@ import com.github.ajalt.mordant.input.MouseEvent
 internal const val DECLARING_PROMPT =
     "←/→ twist torso | ↑/↓ navigate weapons | Space: toggle | Tab: next attacker | 'c': commit"
 
-public sealed interface AttackPhase : Phase {
+internal sealed interface AttackPhase : Phase {
     public val attackTurnPhase: TurnPhase
 
     /**

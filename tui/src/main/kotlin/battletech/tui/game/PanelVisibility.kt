@@ -8,8 +8,8 @@ import battletech.tui.view.SidebarView
 import battletech.tui.view.TargetStatusView
 import battletech.tui.view.TargetsView
 
-public object PanelVisibility {
-    public fun visibleIndices(appState: AppState): Set<Int> {
+internal object PanelVisibility {
+    fun visibleIndices(appState: AppState): Set<Int> {
         val visible = mutableSetOf(LogView.INDEX, SidebarView.INDEX)
         if (appState.phase.targetStatusUnit(appState.gameState) != null) visible += TargetStatusView.INDEX
         val attackRender = appState.phase.attackRender(appState.gameState)

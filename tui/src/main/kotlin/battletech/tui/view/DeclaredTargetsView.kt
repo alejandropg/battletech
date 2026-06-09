@@ -5,11 +5,11 @@ import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
-public class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {
+internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {
 
-    public companion object {
-        public const val INDEX: Int = 2
-        public const val TITLE: String = "DECLARED TARGETS"
+    companion object {
+        const val INDEX: Int = 2
+        const val TITLE: String = "DECLARED TARGETS"
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {

@@ -30,12 +30,12 @@ internal const val PHYSICAL_DECLARING_PROMPT =
 /** Chosen physical attacks per attacker: target id -> set of attack kinds. */
 internal typealias PhysicalDrafts = Map<UnitId, Map<UnitId, Set<PhysicalAttackKind>>>
 
-public sealed interface PhysicalAttackPhase : Phase {
+internal sealed interface PhysicalAttackPhase : Phase {
     override val turnPhase: TurnPhase get() = TurnPhase.PHYSICAL_ATTACK
 
-    public val drafts: PhysicalDrafts
+    val drafts: PhysicalDrafts
 
-    public data class SelectingAttacker(
+    data class SelectingAttacker(
         override val drafts: PhysicalDrafts = emptyMap(),
     ) : PhysicalAttackPhase {
 

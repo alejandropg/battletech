@@ -68,7 +68,7 @@ internal class DeclaredTargetsIntegrationTest {
         val renderData = phase.declaredTargetsRender(gameState, turnState, PlayerId.PLAYER_1)
 
         assertNotNull(renderData)
-        assertEquals(1, renderData!!.entries.size)
+        assertEquals(1, renderData.entries.size)
         val entry = renderData.entries[0]
         assertTrue(entry.isDraft)
         assertEquals("Wolverine", entry.attackerName)
@@ -111,7 +111,7 @@ internal class DeclaredTargetsIntegrationTest {
             drafts = emptyMap(),
         )
 
-        val renderData = phase.declaredTargetsRender(gameState, turnState, PlayerId.PLAYER_1)!!
+        val renderData = phase.declaredTargetsRender(gameState, turnState, PlayerId.PLAYER_1)
         val buffer = ScreenBuffer(28, 30)
         DeclaredTargetsView(renderData).render(buffer, 0, 0, 28, 30)
 
@@ -138,7 +138,7 @@ internal class DeclaredTargetsIntegrationTest {
 
         val phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
 
-        val renderData = phase.declaredTargetsRender(gameState, turnState, PlayerId.PLAYER_1)!!
+        val renderData = phase.declaredTargetsRender(gameState, turnState, PlayerId.PLAYER_1)
         val buffer = ScreenBuffer(28, 20)
         DeclaredTargetsView(renderData).render(buffer, 0, 0, 28, 20)
 

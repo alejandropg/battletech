@@ -304,18 +304,6 @@ internal class DeclaredTargetsRenderTest {
     }
 
     @Test
-    fun `declaredTargetsRender on SelectingAttacker returns non-null`() {
-        val phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
-        val gameState = GameState(emptyList(), map)
-        val turnState = turnState()
-
-        val result = phase.declaredTargetsRender(gameState, turnState, PlayerId.PLAYER_1)
-
-        // Should never be null for AttackPhase
-        assertTrue(result != null)
-    }
-
-    @Test
     fun `declaredTargetsRender on Declaring includes live editing state`() {
         val attacker = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
@@ -337,8 +325,7 @@ internal class DeclaredTargetsRenderTest {
 
         val result = declaring.declaredTargetsRender(gameState, turnState, PlayerId.PLAYER_1)
 
-        assertTrue(result != null)
-        assertEquals(1, result!!.entries.size)
+        assertEquals(1, result.entries.size)
         assertTrue(result.entries[0].isDraft)
     }
 }

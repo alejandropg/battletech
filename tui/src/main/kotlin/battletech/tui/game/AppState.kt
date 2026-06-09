@@ -26,18 +26,18 @@ import battletech.tui.game.phase.PhysicalAttackPhase
  * The [gameState] and [turnState] accessors read through the session;
  * mutations flow via `session.submitCommand(...)`.
  */
-public data class AppState(
-    public val session: BattleSession,
-    public val phase: Phase,
-    public val cursor: HexCoordinates,
-    public val collapsedPanels: Set<Int> = emptySet(),
-    public val lastAttackResults: List<AttackResult>? = null,
+internal data class AppState(
+    val session: BattleSession,
+    val phase: Phase,
+    val cursor: HexCoordinates,
+    val collapsedPanels: Set<Int> = emptySet(),
+    val lastAttackResults: List<AttackResult>? = null,
 ) {
-    public val gameState: GameState get() = session.gameState
-    public val turnState: TurnState get() = session.turnState
-    public val currentPhase: TurnPhase get() = phase.turnPhase
+    val gameState: GameState get() = session.gameState
+    val turnState: TurnState get() = session.turnState
+    val currentPhase: TurnPhase get() = phase.turnPhase
 
-    public fun viewFor(player: PlayerId): PlayerView = session.viewFor(player)
+    fun viewFor(player: PlayerId): PlayerView = session.viewFor(player)
 }
 
 /**
@@ -46,7 +46,7 @@ public data class AppState(
  * the session and TUI agree on where in the turn we are. Used primarily by
  * tests that pre-seed a known [turnState].
  */
-public fun AppState(
+internal fun AppState(
     gameState: GameState,
     turnState: TurnState = TurnState.NULL,
     phase: Phase,
@@ -97,7 +97,7 @@ public fun moveCursor(
  * presents a generic SelectingUnit/SelectingAttacker placeholder — the
  * cascade should drive past system phases before the next render.
  */
-public fun mapToTuiPhase(domainPhase: TurnPhase): Phase = when (domainPhase) {
+internal fun mapToTuiPhase(domainPhase: TurnPhase): Phase = when (domainPhase) {
     TurnPhase.MOVEMENT,
     TurnPhase.INITIATIVE,
     TurnPhase.HEAT,

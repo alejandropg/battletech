@@ -8,11 +8,11 @@ import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
-public class AttackResultsView(private val data: AttackResultsRender) : View {
+internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
-    public companion object {
-        public const val INDEX: Int = 5
-        public const val TITLE: String = "ATTACK RESULTS"
+    companion object {
+        const val INDEX: Int = 5
+        const val TITLE: String = "ATTACK RESULTS"
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {

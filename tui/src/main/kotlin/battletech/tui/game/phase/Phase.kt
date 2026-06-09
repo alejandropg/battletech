@@ -1,18 +1,14 @@
 package battletech.tui.game.phase
 
-import battletech.tactical.attack.AttackResult
-import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.MovementMode
 import battletech.tactical.query.PublicUnit
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.CombatUnit
-import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
-import battletech.tui.game.FlashMessage
 import battletech.tui.game.RenderData
 import com.github.ajalt.mordant.input.InputEvent
 
@@ -23,66 +19,30 @@ import com.github.ajalt.mordant.input.InputEvent
  * data. They never mutate game state directly — all writes flow through
  * [AppState.session].
  */
-public sealed interface Phase {
-    public val turnPhase: TurnPhase
+internal sealed interface Phase {
+    val turnPhase: TurnPhase
 
-    public fun handle(event: InputEvent, app: AppState): Transition? = null
+    fun handle(event: InputEvent, app: AppState): Transition? = null
 
-    public fun render(gameState: GameState): RenderData = RenderData.EMPTY
+    fun render(gameState: GameState): RenderData = RenderData.EMPTY
 
-    public fun prompt(app: AppState): String
+    fun prompt(app: AppState): String
 
-    public fun selectedUnit(app: AppState): CombatUnit? = null
+    fun selectedUnit(app: AppState): CombatUnit? = null
 
-    public fun pathDestination(): HexCoordinates? = null
+    fun pathDestination(): HexCoordinates? = null
 
-    public fun attackRender(gameState: GameState): AttackRender? = null
+    fun attackRender(gameState: GameState): AttackRender? = null
 
-    public fun targetStatusUnit(gameState: GameState): PublicUnit? = null
+    fun targetStatusUnit(gameState: GameState): PublicUnit? = null
 
-    public fun declaredTargetsRender(
+    fun declaredTargetsRender(
         gameState: GameState,
         turnState: TurnState,
         viewingPlayer: PlayerId,
     ): DeclaredTargetsRender? = null
 
-    public fun movementMode(): MovementMode? = null
+    fun movementMode(): MovementMode? = null
 
-    public fun activePlayerLabel(app: AppState): String? = null
+    fun activePlayerLabel(app: AppState): String? = null
 }
-
-public data class Transition(
-    val app: AppState,
-    val flash: FlashMessage? = null,
-)
-
-public data class AttackRender(
-    val targets: List<TargetInfo>,
-    val weaponAssignments: Map<UnitId, Set<Int>>,
-    val primaryTargetId: UnitId?,
-    val cursorTargetIndex: Int,
-    val cursorWeaponIndex: Int,
-)
-
-public data class DeclaredWeaponEntry(val weaponName: String, val successChance: Int)
-
-public data class DeclaredTargetEntry(
-    val targetName: String,
-    val isPrimary: Boolean,
-    val weapons: List<DeclaredWeaponEntry>,
-)
-
-public data class DeclaredAttackerEntry(
-    val attackerName: String,
-    val ownerPlayer: PlayerId,
-    val isDraft: Boolean,
-    val targets: List<DeclaredTargetEntry>,
-)
-
-public data class DeclaredTargetsRender(val entries: List<DeclaredAttackerEntry>)
-
-public data class AttackResultsRender(
-    val results: List<AttackResult>,
-    val unitNames: Map<UnitId, String>,
-    val unitOwners: Map<UnitId, PlayerId>,
-)
