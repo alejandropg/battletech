@@ -14,12 +14,14 @@ public object PanelVisibility {
         if (appState.phase.targetStatusUnit(appState.gameState) != null) visible += TargetStatusView.INDEX
         val attackRender = appState.phase.attackRender(appState.gameState)
         if (attackRender?.targets?.isNotEmpty() == true) visible += TargetsView.INDEX
-        val isAttackPhase = appState.currentPhase == TurnPhase.WEAPON_ATTACK ||
-            appState.currentPhase == TurnPhase.PHYSICAL_ATTACK
-        if (isAttackPhase) visible += DeclaredTargetsView.INDEX
+        // Only the weapon-attack flow populates the declared-targets panel. The
+        // dedicated physical-attack flow leaves declaredTargetsRender null, so
+        // reserving the column there would render as a blank gap between the
+        // tactical map and the attack-results panel.
+        if (appState.currentPhase == TurnPhase.WEAPON_ATTACK) visible += DeclaredTargetsView.INDEX
         // Results stay visible from weapon resolution onward (through physical
         // attack + movement). The cascade stops at PHYSICAL_ATTACK, so only
-        // WEAPON_ATTACK must hide them; during PHYSICAL_ATTACK both panels show.
+        // WEAPON_ATTACK must hide them.
         if (appState.lastAttackResults != null &&
             appState.currentPhase != TurnPhase.WEAPON_ATTACK
         ) {

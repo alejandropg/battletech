@@ -9,6 +9,7 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.aGameState
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
+import battletech.tui.game.phase.PhysicalAttackPhase
 import battletech.tui.view.AttackResultsView
 import battletech.tui.view.DeclaredTargetsView
 import battletech.tui.view.LogView
@@ -52,16 +53,19 @@ internal class PanelVisibilityTest {
     }
 
     @Test
-    fun `physical attack phase includes DECLARED TARGETS`() {
+    fun `physical attack phase does not reserve DECLARED TARGETS`() {
+        // The dedicated physical-attack flow does not populate the declared-targets
+        // panel, so reserving its column would render as a blank gap between the
+        // tactical map and the attack-results panel. The freed width goes to the map.
         val appState = AppState(
             gameState = emptyState,
-            phase = AttackPhase.SelectingAttacker(TurnPhase.PHYSICAL_ATTACK),
+            phase = PhysicalAttackPhase.SelectingAttacker(),
             cursor = cursor,
         )
 
         val visible = PanelVisibility.visibleIndices(appState)
 
-        assertTrue(visible.contains(DeclaredTargetsView.INDEX))
+        assertFalse(visible.contains(DeclaredTargetsView.INDEX))
     }
 
     @Test
