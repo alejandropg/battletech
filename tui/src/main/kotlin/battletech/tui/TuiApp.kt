@@ -9,22 +9,22 @@ import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
+import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.input.InputMapper
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
-import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.view.AttackResultsView
 import battletech.tui.view.BoardView
 import battletech.tui.view.DeclaredTargetsView
 import battletech.tui.view.LogView
 import battletech.tui.view.PanelSlot
-import battletech.tui.view.SidebarView
 import battletech.tui.view.StatusBarView
 import battletech.tui.view.TargetStatusView
 import battletech.tui.view.TargetsView
+import battletech.tui.view.UnitStatusView
 import battletech.tui.view.View
-import battletech.tui.view.resolvePanel
 import battletech.tui.view.Viewport
+import battletech.tui.view.resolvePanel
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseTracking
 import com.github.ajalt.mordant.input.enterRawMode
@@ -118,7 +118,7 @@ public class TuiApp {
         val targetsWidth      = panelWidth(TargetsView.INDEX)
         val declaredWidth     = panelWidth(DeclaredTargetsView.INDEX)
         val attackResultsWidth = panelWidth(AttackResultsView.INDEX)
-        val sidebarWidth      = panelWidth(SidebarView.INDEX)
+        val sidebarWidth      = panelWidth(UnitStatusView.INDEX)
         val logWidth          = panelWidth(LogView.INDEX)
         val boardWidth = size.width - sidebarWidth - logWidth - targetsWidth - declaredWidth - attackResultsWidth - targetStatusWidth
         val boardHeight = size.height - statusBarHeight
@@ -182,8 +182,8 @@ public class TuiApp {
                     )
                 }
             },
-            slot(SidebarView.INDEX, sidebarWidth, SidebarView.TITLE) {
-                SidebarView(unit = selectedUnit)
+            slot(UnitStatusView.INDEX, sidebarWidth, UnitStatusView.TITLE) {
+                UnitStatusView(unit = selectedUnit)
             },
             slot(LogView.INDEX, logWidth, LogView.TITLE) {
                 LogView(entries = appState.session.gameLog.snapshot(), gameState = appState.session.gameState)

@@ -4,13 +4,13 @@ import battletech.tactical.model.TurnPhase
 import battletech.tui.view.AttackResultsView
 import battletech.tui.view.DeclaredTargetsView
 import battletech.tui.view.LogView
-import battletech.tui.view.SidebarView
 import battletech.tui.view.TargetStatusView
 import battletech.tui.view.TargetsView
+import battletech.tui.view.UnitStatusView
 
 internal object PanelVisibility {
     fun visibleIndices(appState: AppState): Set<Int> {
-        val visible = mutableSetOf(LogView.INDEX, SidebarView.INDEX)
+        val visible = mutableSetOf(LogView.INDEX, UnitStatusView.INDEX)
         if (appState.phase.targetStatusUnit(appState.gameState) != null) visible += TargetStatusView.INDEX
         val attackRender = appState.phase.attackRender(appState.gameState)
         if (attackRender?.targets?.isNotEmpty() == true) visible += TargetsView.INDEX

@@ -4,7 +4,7 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
-public class SidebarView(
+public class UnitStatusView(
     private val unit: CombatUnit?,
 ) : View {
 

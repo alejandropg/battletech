@@ -9,12 +9,12 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-internal class SidebarViewTest {
+internal class UnitStatusViewTest {
 
     @Test
     fun `renders unit name`() {
         val unit = aUnit(name = "Atlas")
-        val view = SidebarView(unit)
+        val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 14)
 
         view.render(buffer, 0, 0, 28, 14)
@@ -26,7 +26,7 @@ internal class SidebarViewTest {
     @Test
     fun `renders gunnery and piloting skills`() {
         val unit = aUnit()
-        val view = SidebarView(unit)
+        val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 14)
 
         view.render(buffer, 0, 0, 28, 14)
@@ -40,7 +40,7 @@ internal class SidebarViewTest {
     @Test
     fun `renders heat bar`() {
         val unit = aUnit()
-        val view = SidebarView(unit)
+        val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 14)
 
         view.render(buffer, 0, 0, 28, 14)
@@ -51,7 +51,7 @@ internal class SidebarViewTest {
 
     @Test
     fun `renders with no unit selected shows empty`() {
-        val view = SidebarView(null)
+        val view = UnitStatusView(null)
         val buffer = ScreenBuffer(28, 14)
 
         view.render(buffer, 0, 0, 28, 14)
@@ -62,7 +62,7 @@ internal class SidebarViewTest {
 
     @Test
     fun `renders box border`() {
-        val view = SidebarView(null)
+        val view = UnitStatusView(null)
         val buffer = ScreenBuffer(28, 14)
 
         view.render(buffer, 0, 0, 28, 14)
@@ -76,7 +76,7 @@ internal class SidebarViewTest {
     @Test
     fun `renders walk and run movement points`() {
         val unit = aUnit(walkingMP = 3, runningMP = 5)
-        val view = SidebarView(unit)
+        val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 14)
 
         view.render(buffer, 0, 0, 28, 14)
@@ -91,7 +91,7 @@ internal class SidebarViewTest {
     @Test
     fun `renders jump only when nonzero`() {
         val unit = aUnit()
-        val view = SidebarView(unit)
+        val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 14)
 
         view.render(buffer, 0, 0, 28, 14)
@@ -105,7 +105,7 @@ internal class SidebarViewTest {
     @Test
     fun `renders heat bar in red when overheated`() {
         val unit = aUnit().copy(currentHeat = 8)
-        val view = SidebarView(unit)
+        val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 14)
 
         view.render(buffer, 0, 0, 28, 14)
@@ -116,7 +116,7 @@ internal class SidebarViewTest {
     @Test
     fun `renders armor section header when armor is present`() {
         val unit = aUnit(armor = anArmorLayout())
-        val view = SidebarView(unit)
+        val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 30)
 
         view.render(buffer, 0, 0, 28, 30)
@@ -128,7 +128,7 @@ internal class SidebarViewTest {
     @Test
     fun `renders head armor value in cyan`() {
         val unit = aUnit(armor = anArmorLayout(head = 9))
-        val view = SidebarView(unit)
+        val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 30)
 
         view.render(buffer, 0, 0, 28, 30)
@@ -143,7 +143,7 @@ internal class SidebarViewTest {
     @Test
     fun `renders center torso armor in bright yellow`() {
         val unit = aUnit(armor = anArmorLayout(centerTorso = 47))
-        val view = SidebarView(unit)
+        val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 30)
 
         view.render(buffer, 0, 0, 28, 30)
@@ -158,7 +158,7 @@ internal class SidebarViewTest {
     @Test
     fun `renders torso rear values in default color`() {
         val unit = aUnit(armor = anArmorLayout(centerTorsoRear = 8))
-        val view = SidebarView(unit)
+        val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 30)
 
         view.render(buffer, 0, 0, 28, 30)
@@ -172,7 +172,7 @@ internal class SidebarViewTest {
     @Test
     fun `renders arm and leg armor values`() {
         val unit = aUnit(armor = anArmorLayout(leftArm = 34, rightArm = 34, leftLeg = 41, rightLeg = 41))
-        val view = SidebarView(unit)
+        val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 30)
 
         view.render(buffer, 0, 0, 28, 30)

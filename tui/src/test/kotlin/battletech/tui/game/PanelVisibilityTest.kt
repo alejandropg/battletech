@@ -13,7 +13,7 @@ import battletech.tui.game.phase.PhysicalAttackPhase
 import battletech.tui.view.AttackResultsView
 import battletech.tui.view.DeclaredTargetsView
 import battletech.tui.view.LogView
-import battletech.tui.view.SidebarView
+import battletech.tui.view.UnitStatusView
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -34,7 +34,7 @@ internal class PanelVisibilityTest {
 
         val visible = PanelVisibility.visibleIndices(appState)
 
-        assertEquals(setOf(LogView.INDEX, SidebarView.INDEX), visible)
+        assertEquals(setOf(LogView.INDEX, UnitStatusView.INDEX), visible)
     }
 
     @Test
@@ -48,7 +48,7 @@ internal class PanelVisibilityTest {
         val visible = PanelVisibility.visibleIndices(appState)
 
         assertTrue(visible.contains(LogView.INDEX))
-        assertTrue(visible.contains(SidebarView.INDEX))
+        assertTrue(visible.contains(UnitStatusView.INDEX))
         assertTrue(visible.contains(DeclaredTargetsView.INDEX))
     }
 
