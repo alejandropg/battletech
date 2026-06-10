@@ -12,7 +12,7 @@ import battletech.tui.input.InputMapper
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
 import battletech.tui.view.BoardView
-import battletech.tui.view.Panel
+import battletech.tui.view.FrameLayout
 import battletech.tui.view.PanelFrame
 import battletech.tui.view.PanelSlot
 import battletech.tui.view.Panels
@@ -95,26 +95,20 @@ public class TuiApp {
         appState: AppState,
         flash: FlashMessage? = null,
     ) {
-        val statusBarHeight = 7
-
         val visible = PanelVisibility.visibleIndices(appState)
-        val frame = PanelFrame(appState)
-
-        // 0 when hidden, the collapsed stub width when collapsed, else the
-        // panel's own width. The board fills whatever is left.
-        fun panelWidth(panel: Panel): Int = when {
-            panel.id.index !in visible -> 0
-            panel.id.index in appState.collapsedPanels -> 7
-            else -> panel.width
-        }
-
-        val boardWidth = size.width - Panels.ordered.sumOf { panelWidth(it) }
-        val boardHeight = size.height - statusBarHeight
+        val layout = FrameLayout.compute(
+            termWidth = size.width,
+            termHeight = size.height,
+            visiblePanels = visible,
+            collapsedPanels = appState.collapsedPanels,
+            panelDescriptors = Panels.ordered.map { it.id.index to it.width },
+        )
 
         val buffer = ScreenBuffer(size.width, size.height)
-        val viewport = Viewport(0, 0, boardWidth - 4, boardHeight - 4)
+        val frame = PanelFrame(appState)
 
         val renderData = appState.phase.render(appState.gameState)
+        val viewport = Viewport(0, 0, layout.boardWidth - 4, layout.boardHeight - 4)
         val boardView = BoardView(
             appState.gameState,
             viewport,
@@ -128,26 +122,18 @@ public class TuiApp {
             validTargetPositions = renderData.validTargetPositions,
             selectedTargetPosition = renderData.selectedTargetPosition,
         )
-        boardView.render(buffer, 0, 0, boardWidth, boardHeight)
+        boardView.render(buffer, 0, 0, layout.boardWidth, layout.boardHeight)
 
-        var nextX = boardWidth
-        for (panel in Panels.ordered) {
-            val width = panelWidth(panel)
-            if (width <= 0) continue
-            val slot = PanelSlot(
-                panel.id.index,
-                width,
-                panel.title,
-                collapsed = panel.id.index in appState.collapsedPanels,
-            ) { panel.build(frame) }
-            resolvePanel(slot)?.render(buffer, nextX, 0, width, boardHeight)
-            nextX += width
+        for (slot in layout.slots) {
+            val panel = Panels.ordered.first { it.id.index == slot.panelIndex }
+            val panelSlot = PanelSlot(slot.panelIndex, slot.width, panel.title, slot.collapsed) { panel.build(frame) }
+            resolvePanel(panelSlot)?.render(buffer, slot.x, 0, slot.width, layout.boardHeight)
         }
 
         val prompt = flash?.text ?: appState.phase.prompt(appState)
         val activePlayerInfo = appState.phase.activePlayerLabel(appState)
         val statusBarView = StatusBarView(appState.currentPhase, prompt, activePlayerInfo)
-        statusBarView.render(buffer, 0, boardHeight, size.width, statusBarHeight)
+        statusBarView.render(buffer, 0, layout.boardHeight, size.width, FrameLayout.STATUS_BAR_HEIGHT)
 
         renderer.render(buffer)
     }
