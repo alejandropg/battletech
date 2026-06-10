@@ -29,7 +29,6 @@
     ]
   },
   "enabledPlugins": {
-    "kotlin-lsp@claude-plugins-official": true,
-    "aca-development-process@aca": true
+    "kotlin-lsp@claude-plugins-official": true
   }
 }
