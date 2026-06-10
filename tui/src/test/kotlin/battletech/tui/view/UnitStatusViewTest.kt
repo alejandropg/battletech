@@ -47,7 +47,33 @@ internal class UnitStatusViewTest {
         view.render(buffer, 0, 0, 28, 14)
 
         val line = (2 until 26).map { buffer.get(it, 12).char }.joinToString("")
-        assertTrue(line.contains("[░░░░░░░░░░]"))
+        assertTrue(line.contains("[" + "░".repeat(22) + "]"))
+    }
+
+    @Test
+    fun `renders heat value paired to bar fill without max`() {
+        // 15 of 30 -> 10 filled cells. cx=2, first cell at col 5, last filled at col 14.
+        val unit = aUnit().copy(currentHeat = 15)
+        val view = UnitStatusView(unit)
+        val buffer = ScreenBuffer(28, 14)
+
+        view.render(buffer, 0, 0, 28, 14)
+
+        // last digit sits under the last filled cell (col 14)
+        assertEquals("1", buffer.get(12, 13).char)
+        assertEquals("5", buffer.get(13, 13).char)
+    }
+
+    @Test
+    fun `renders zero heat value under first bar cell`() {
+        val unit = aUnit() // currentHeat = 0
+        val view = UnitStatusView(unit)
+        val buffer = ScreenBuffer(28, 14)
+
+        view.render(buffer, 0, 0, 28, 14)
+
+        // cx=2, "[" prefix -> first cell at col 3
+        assertEquals("0", buffer.get(3, 13).char)
     }
 
     @Test
@@ -105,7 +131,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders heat bar in red when overheated`() {
-        val unit = aUnit().copy(currentHeat = 8)
+        val unit = aUnit().copy(currentHeat = 22)
         val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 14)
 
@@ -122,9 +148,9 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // Shifted down one row by the projected-heat "End:" line.
-        val row15 = (2 until 26).map { buffer.get(it, 15).char }.joinToString("")
-        assertTrue(row15.contains("ARMOR"))
+        // Shifted down by the projected-heat "End:" line and the standalone heat value line.
+        val row16 = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
+        assertTrue(row16.contains("ARMOR"))
     }
 
     @Test
@@ -135,11 +161,11 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // HD value row: cy=16, "HD: 9" starts at cx+9=11
-        val line = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
+        // HD value row: cy=17, "HD: 9" starts at cx+9=11
+        val line = (2 until 26).map { buffer.get(it, 17).char }.joinToString("")
         assertTrue(line.contains("HD"))
         assertTrue(line.contains("9"))
-        assertEquals(Color.CYAN, buffer.get(11, 16).fg) // 'H' of "HD: 9"
+        assertEquals(Color.CYAN, buffer.get(11, 17).fg) // 'H' of "HD: 9"
     }
 
     @Test
@@ -150,11 +176,11 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // CT row: cy=17, "CT:47" starts at cx+9=11
-        val line = (2 until 26).map { buffer.get(it, 17).char }.joinToString("")
+        // CT row: cy=18, "CT:47" starts at cx+9=11
+        val line = (2 until 26).map { buffer.get(it, 18).char }.joinToString("")
         assertTrue(line.contains("CT"))
         assertTrue(line.contains("47"))
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(11, 17).fg) // 'C' of "CT:47"
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(11, 18).fg) // 'C' of "CT:47"
     }
 
     @Test
@@ -165,10 +191,10 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // Rear row: cy=18, CT rear "r: 8" starts at cx+10=12
-        val line = (2 until 26).map { buffer.get(it, 18).char }.joinToString("")
+        // Rear row: cy=19, CT rear "r: 8" starts at cx+10=12
+        val line = (2 until 26).map { buffer.get(it, 19).char }.joinToString("")
         assertTrue(line.contains("r"))
-        assertEquals(Color.DEFAULT, buffer.get(12, 18).fg) // 'r' of CT rear
+        assertEquals(Color.DEFAULT, buffer.get(12, 19).fg) // 'r' of CT rear
     }
 
     @Test
@@ -179,12 +205,12 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // Arms row: cy=19
-        val armsRow = (2 until 26).map { buffer.get(it, 19).char }.joinToString("")
+        // Arms row: cy=20
+        val armsRow = (2 until 26).map { buffer.get(it, 20).char }.joinToString("")
         assertTrue(armsRow.contains("LA"))
         assertTrue(armsRow.contains("RA"))
-        // Legs row: cy=20
-        val legsRow = (2 until 26).map { buffer.get(it, 20).char }.joinToString("")
+        // Legs row: cy=21
+        val legsRow = (2 until 26).map { buffer.get(it, 21).char }.joinToString("")
         assertTrue(legsRow.contains("LL"))
         assertTrue(legsRow.contains("RL"))
         assertTrue(legsRow.contains("41"))
@@ -198,10 +224,10 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 20)
 
-        // Source line directly under the bar (row 13).
-        val line = (2 until 26).map { buffer.get(it, 13).char }.joinToString("")
+        // Source line under the bar and the heat value line (row 14).
+        val line = (2 until 26).map { buffer.get(it, 14).char }.joinToString("")
         assertTrue(line.contains("Running +2"))
-        assertEquals(Color.DEFAULT, buffer.get(2, 13).fg)
+        assertEquals(Color.DEFAULT, buffer.get(2, 14).fg)
     }
 
     @Test
@@ -212,9 +238,9 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 20)
 
-        val line = (2 until 26).map { buffer.get(it, 13).char }.joinToString("")
+        val line = (2 until 26).map { buffer.get(it, 14).char }.joinToString("")
         assertTrue(line.contains("Walking +1"))
-        assertEquals(Color.GRAY, buffer.get(2, 13).fg)
+        assertEquals(Color.GRAY, buffer.get(2, 14).fg)
     }
 
     @Test
@@ -226,8 +252,8 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 20)
 
-        // bar(12), one source(13), End(14)
-        val line = (2 until 26).map { buffer.get(it, 14).char }.joinToString("")
+        // bar(12), value(13), one source(14), End(15)
+        val line = (2 until 26).map { buffer.get(it, 15).char }.joinToString("")
         assertTrue(line.contains("End: 4"))
     }
 }

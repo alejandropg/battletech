@@ -58,18 +58,28 @@ public class UnitStatusView(
         // HEAT
         buffer.writeString(cx, cy, sectionHeader("HEAT"), Color.CYAN)
         cy += 1
-        val barWidth = 10
-        val filled = if (unit.heatSinkCapacity > 0)
-            (unit.currentHeat * barWidth / unit.heatSinkCapacity).coerceAtMost(barWidth)
-        else 0
+        // 30 is the canonical BattleTech heat scale. It can't be drawn 1-char-per-heat
+        // in this panel, so the bar is proportionally scaled: a fixed 20-cell bar spans
+        // the whole 0–30 range (each block ≈ 1.5 heat). The exact value sits below it.
+        val maxHeat = 30
+        val barWidth = 22
+        val filled = (unit.currentHeat * barWidth / maxHeat).coerceIn(0, barWidth)
         val bar = "█".repeat(filled) + "░".repeat(barWidth - filled)
         val heatColor = when {
-            unit.heatSinkCapacity == 0 -> Color.WHITE
-            unit.currentHeat >= unit.heatSinkCapacity * 0.7 -> Color.RED
-            unit.currentHeat >= unit.heatSinkCapacity * 0.3 -> Color.YELLOW
+            unit.currentHeat >= maxHeat * 0.7 -> Color.RED
+            unit.currentHeat >= maxHeat * 0.3 -> Color.YELLOW
             else -> Color.GREEN
         }
-        buffer.writeString(cx, cy, "[$bar]  ${unit.currentHeat} / ${unit.heatSinkCapacity}", heatColor)
+        // Bar indented two columns. The value below omits the constant max and is
+        // right-aligned so its last digit sits under the last filled cell, tracking
+        // the fill as heat rises.
+        buffer.writeString(cx, cy, "[$bar]", heatColor)
+        cy += 1
+        val value = unit.currentHeat.toString()
+        // First bar cell is at cx + 1 (the "[" prefix). Anchor on the last filled
+        // cell, or the first cell when empty, then right-align the number to it.
+        val anchorCol = cx + filled.coerceAtLeast(1)
+        buffer.writeString(anchorCol - value.length + 1, cy, value, heatColor)
         cy += 1
 
         // Heat generated this turn: committed sources in the default colour, the
