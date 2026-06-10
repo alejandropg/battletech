@@ -143,8 +143,10 @@ internal class SubscriptionTest {
                 rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
                 loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
             ),
-            movementSequence = ImpulseSequence(
-                listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1)),
+            movement = MovementProgress(
+                sequence = ImpulseSequence(
+                    listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1)),
+                ),
             ),
         )
         return BattleSession(

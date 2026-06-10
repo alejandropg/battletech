@@ -92,7 +92,9 @@ internal class MovementPhaseTest {
             rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
             loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
         ),
-        movementSequence = ImpulseSequence(movementOrder),
+        movement = battletech.tactical.session.MovementProgress(
+            sequence = ImpulseSequence(movementOrder),
+        ),
     )
 
     private fun anAppState(

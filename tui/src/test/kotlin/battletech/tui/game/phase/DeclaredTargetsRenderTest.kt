@@ -53,8 +53,10 @@ internal class DeclaredTargetsRenderTest {
         attackSequence: ImpulseSequence = attackSequenceP1First(),
     ) = TurnState(
         initiative = initiative(),
-        attackSequence = attackSequence,
-        attackDeclarations = attackDeclarations,
+        attack = battletech.tactical.session.AttackProgress(
+            sequence = attackSequence,
+            weaponDeclarations = attackDeclarations,
+        ),
     )
 
     @Test

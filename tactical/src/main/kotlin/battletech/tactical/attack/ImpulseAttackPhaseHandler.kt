@@ -7,7 +7,6 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.Impulse
-import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.PhaseHandler
 import battletech.tactical.session.PhaseOutcome
@@ -28,27 +27,24 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
     protected abstract fun acceptsCommand(command: GameCommand): Boolean
 
     final override fun activePlayer(turn: TurnState): PlayerId? =
-        if (turn.attackSequence.order.isEmpty() || turn.attackSequence.isComplete) null
-        else turn.activeAttackPlayer
+        if (!turn.attack.inProgress) null
+        else turn.attack.activePlayer
 
     final override fun accepts(command: GameCommand, turn: TurnState): Boolean =
-        acceptsCommand(command) &&
-            turn.attackSequence.order.isNotEmpty() &&
-            !turn.attackSequence.isComplete
+        acceptsCommand(command) && turn.attack.inProgress
 
     final override fun isComplete(turn: TurnState): Boolean =
-        turn.attackSequence.order.isNotEmpty() && turn.attackSequence.isComplete
+        turn.attack.sequence.order.isNotEmpty() && turn.attack.isComplete
 
     final override fun onEntry(
         state: GameState,
         turn: TurnState,
         roller: DiceRoller,
     ): PhaseOutcome {
-        if (turn.attackSequence.order.isNotEmpty() && !turn.attackSequence.isComplete) {
+        if (turn.attack.inProgress) {
             return PhaseOutcome(state, turn, emptyList())
         }
-        val sequence = ImpulseSequence(attackOrderFor(turn.initiative, state))
-        val newTurn = turn.copy(attackSequence = sequence)
+        val newTurn = turn.copy(attack = turn.attack.seed(attackOrderFor(turn.initiative, state)))
         return PhaseOutcome(state, newTurn, emptyList())
     }
 

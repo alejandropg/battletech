@@ -25,9 +25,11 @@ internal class TurnStateTest {
             loser = PlayerId.PLAYER_1,
             winner = PlayerId.PLAYER_2,
         ),
-        movementSequence = ImpulseSequence(movementOrder, currentImpulseIndex),
-        movedUnitIds = movedUnitIds,
-        unitsMovedInCurrentImpulse = unitsMovedInCurrentImpulse,
+        movement = MovementProgress(
+            sequence = ImpulseSequence(movementOrder, currentImpulseIndex),
+            movedUnitIds = movedUnitIds,
+            movedInCurrentImpulse = unitsMovedInCurrentImpulse,
+        ),
     )
 
     @Test

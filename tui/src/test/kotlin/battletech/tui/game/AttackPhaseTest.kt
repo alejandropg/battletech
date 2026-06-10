@@ -43,8 +43,12 @@ internal class AttackPhaseTest {
             rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
             loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
         ),
-        movementSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
-        attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 3))),
+        movement = battletech.tactical.session.MovementProgress(
+            sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+        ),
+        attack = battletech.tactical.session.AttackProgress(
+            sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 3))),
+        ),
     )
 
     private fun anAppState(
@@ -200,8 +204,12 @@ internal class AttackPhaseTest {
                     rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
                     loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
                 ),
-                movementSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
-                attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+                movement = battletech.tactical.session.MovementProgress(
+                    sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+                ),
+                attack = battletech.tactical.session.AttackProgress(
+                    sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+                ),
             )
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = enemy.position)

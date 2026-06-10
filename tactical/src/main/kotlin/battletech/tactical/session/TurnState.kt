@@ -7,39 +7,107 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 
-public data class TurnState(
-    val initiative: Initiative,
-    val movementSequence: ImpulseSequence = ImpulseSequence(emptyList()),
+/** Movement-phase progress: who has moved, impulse position. All updates go through [afterUnitMoved]. */
+public data class MovementProgress(
+    val sequence: ImpulseSequence = ImpulseSequence(emptyList()),
     val movedUnitIds: Set<UnitId> = emptySet(),
-    val unitsMovedInCurrentImpulse: Int = 0,
-    val attackSequence: ImpulseSequence = ImpulseSequence(emptyList()),
-    val attackDeclarations: List<AttackDeclaration> = emptyList(),
-    val physicalAttackDeclarations: List<PhysicalAttackDeclaration> = emptyList(),
-    val turnNumber: Int = 1,
+    val movedInCurrentImpulse: Int = 0,
 ) {
-    val currentImpulse: Impulse get() = movementSequence.current
-    val activePlayer: PlayerId get() = movementSequence.activePlayer
-    val remainingInImpulse: Int get() = currentImpulse.unitCount - unitsMovedInCurrentImpulse
-    val allImpulsesComplete: Boolean get() = movementSequence.isComplete
+    public val currentImpulse: Impulse get() = sequence.current
+    public val activePlayer: PlayerId get() = sequence.activePlayer
+    public val remainingInImpulse: Int get() = currentImpulse.unitCount - movedInCurrentImpulse
+    public val isComplete: Boolean get() = sequence.isComplete
 
-    val currentAttackImpulse: Impulse get() = attackSequence.current
-    val activeAttackPlayer: PlayerId get() = attackSequence.activePlayer
-    val allAttackImpulsesComplete: Boolean get() = attackSequence.isComplete
-
-    public fun advanceAfterUnitMoved(unitId: UnitId): TurnState {
+    /** Records the move and advances the impulse when its unit quota is reached. */
+    public fun afterUnitMoved(unitId: UnitId): MovementProgress {
         val updated = copy(
             movedUnitIds = movedUnitIds + unitId,
-            unitsMovedInCurrentImpulse = unitsMovedInCurrentImpulse + 1,
+            movedInCurrentImpulse = movedInCurrentImpulse + 1,
         )
         return if (updated.remainingInImpulse == 0) {
             updated.copy(
-                movementSequence = updated.movementSequence.advance(),
-                unitsMovedInCurrentImpulse = 0,
+                sequence = updated.sequence.advance(),
+                movedInCurrentImpulse = 0,
             )
         } else {
             updated
         }
     }
+}
+
+/**
+ * Attack-phase progress. ONE shared [sequence] serves both attack phases:
+ * the weapon phase completes it, then the physical phase's onEntry re-seeds it.
+ */
+public data class AttackProgress(
+    val sequence: ImpulseSequence = ImpulseSequence(emptyList()),
+    val weaponDeclarations: List<AttackDeclaration> = emptyList(),
+    val physicalDeclarations: List<PhysicalAttackDeclaration> = emptyList(),
+) {
+    public val currentImpulse: Impulse get() = sequence.current
+    public val activePlayer: PlayerId get() = sequence.activePlayer
+    public val isComplete: Boolean get() = sequence.isComplete
+    public val inProgress: Boolean get() = sequence.order.isNotEmpty() && !sequence.isComplete
+
+    public fun seed(impulses: List<Impulse>): AttackProgress = copy(sequence = ImpulseSequence(impulses))
+
+    /**
+     * Records weapon declarations for the current impulse and advances the sequence.
+     * When the sequence completes, the caller resolves the accumulated declarations
+     * and then calls [clearWeaponDeclarations].
+     */
+    public fun recordWeaponImpulse(
+        newDeclarations: List<AttackDeclaration>,
+    ): AttackProgress = copy(
+        weaponDeclarations = weaponDeclarations + newDeclarations,
+        sequence = sequence.advance(),
+    )
+
+    /** Clears weapon declarations after they have been resolved. */
+    public fun clearWeaponDeclarations(): AttackProgress = copy(weaponDeclarations = emptyList())
+
+    /**
+     * Records physical declarations for the current impulse and advances the sequence.
+     */
+    public fun recordPhysicalImpulse(
+        newDeclarations: List<PhysicalAttackDeclaration>,
+    ): AttackProgress = copy(
+        physicalDeclarations = physicalDeclarations + newDeclarations,
+        sequence = sequence.advance(),
+    )
+
+    /** Clears physical declarations after they have been resolved. */
+    public fun clearPhysicalDeclarations(): AttackProgress = copy(physicalDeclarations = emptyList())
+}
+
+public data class TurnState(
+    val initiative: Initiative,
+    val movement: MovementProgress = MovementProgress(),
+    val attack: AttackProgress = AttackProgress(),
+    val turnNumber: Int = 1,
+) {
+    // ── Delegating accessors for backward compatibility ───────────────────────
+
+    val movementSequence: ImpulseSequence get() = movement.sequence
+    val movedUnitIds: Set<UnitId> get() = movement.movedUnitIds
+    val unitsMovedInCurrentImpulse: Int get() = movement.movedInCurrentImpulse
+
+    val attackSequence: ImpulseSequence get() = attack.sequence
+    val attackDeclarations: List<AttackDeclaration> get() = attack.weaponDeclarations
+    val physicalAttackDeclarations: List<PhysicalAttackDeclaration> get() = attack.physicalDeclarations
+
+    val currentImpulse: Impulse get() = movement.currentImpulse
+    val activePlayer: PlayerId get() = movement.activePlayer
+    val remainingInImpulse: Int get() = movement.remainingInImpulse
+    val allImpulsesComplete: Boolean get() = movement.isComplete
+
+    val currentAttackImpulse: Impulse get() = attack.currentImpulse
+    val activeAttackPlayer: PlayerId get() = attack.activePlayer
+    val allAttackImpulsesComplete: Boolean get() = attack.isComplete
+
+    /** Delegates to [MovementProgress.afterUnitMoved] for backward compatibility. */
+    public fun advanceAfterUnitMoved(unitId: UnitId): TurnState =
+        copy(movement = movement.afterUnitMoved(unitId))
 
     public fun selectableUnits(gameState: GameState): List<CombatUnit> =
         gameState.activeUnitsOf(activePlayer).filter { it.id !in movedUnitIds }

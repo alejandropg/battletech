@@ -28,8 +28,10 @@ internal class UnitSelectionTest {
             loser = PlayerId.PLAYER_1,
             winner = PlayerId.PLAYER_2,
         ),
-        movementSequence = ImpulseSequence(movementOrder),
-        movedUnitIds = movedUnitIds,
+        movement = battletech.tactical.session.MovementProgress(
+            sequence = ImpulseSequence(movementOrder),
+            movedUnitIds = movedUnitIds,
+        ),
     )
 
     @Test

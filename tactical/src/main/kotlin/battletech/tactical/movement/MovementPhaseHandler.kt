@@ -31,8 +31,8 @@ public class MovementPhaseHandler : PhaseHandler {
     override val phase: TurnPhase = TurnPhase.MOVEMENT
 
     override fun activePlayer(turn: TurnState): PlayerId? =
-        if (turn.movementSequence.order.isEmpty() || turn.movementSequence.isComplete) null
-        else turn.activePlayer
+        if (turn.movement.sequence.order.isEmpty() || turn.movement.isComplete) null
+        else turn.movement.activePlayer
 
     override fun accepts(command: GameCommand, turn: TurnState): Boolean =
         command is MoveUnit || command is StandUp
@@ -69,7 +69,7 @@ public class MovementPhaseHandler : PhaseHandler {
         if (unit.owner != playerId) {
             return CommandRejection.NotYourTurn(activePlayer = unit.owner, attemptedBy = playerId)
         }
-        if (unitId in turn.movedUnitIds) {
+        if (unitId in turn.movement.movedUnitIds) {
             return CommandRejection.UnitAlreadyActed(unitId)
         }
         return null
@@ -102,7 +102,7 @@ public class MovementPhaseHandler : PhaseHandler {
             PhaseOutcome(newState, turn, listOf(UnitStoodUp(cmd.unitId, psr, stoodUp = true)))
         } else {
             // Failed to rise; remains prone and its activation is spent.
-            PhaseOutcome(state, turn.advanceAfterUnitMoved(cmd.unitId), listOf(UnitStoodUp(cmd.unitId, psr, stoodUp = false)))
+            PhaseOutcome(state, turn.copy(movement = turn.movement.afterUnitMoved(cmd.unitId)), listOf(UnitStoodUp(cmd.unitId, psr, stoodUp = false)))
         }
     }
 
@@ -128,7 +128,7 @@ public class MovementPhaseHandler : PhaseHandler {
                 }
             },
         )
-        val newTurn = turn.advanceAfterUnitMoved(cmd.unitId)
+        val newTurn = turn.copy(movement = turn.movement.afterUnitMoved(cmd.unitId))
         val event = UnitMoved(
             unitId = cmd.unitId,
             from = from,
@@ -141,7 +141,7 @@ public class MovementPhaseHandler : PhaseHandler {
     }
 
     override fun isComplete(turn: TurnState): Boolean =
-        turn.movementSequence.order.isNotEmpty() && turn.movementSequence.isComplete
+        turn.movement.sequence.order.isNotEmpty() && turn.movement.isComplete
 
     override fun onEntry(
         state: GameState,
@@ -159,7 +159,11 @@ public class MovementPhaseHandler : PhaseHandler {
         val resetState = state.copy(
             units = state.units.map { it.copy(movementThisTurn = MovementThisTurn.STATIONARY) },
         )
-        return PhaseOutcome(resetState, turn.copy(movementSequence = ImpulseSequence(order)), emptyList())
+        return PhaseOutcome(
+            resetState,
+            turn.copy(movement = turn.movement.copy(sequence = ImpulseSequence(order))),
+            emptyList(),
+        )
     }
 }
 

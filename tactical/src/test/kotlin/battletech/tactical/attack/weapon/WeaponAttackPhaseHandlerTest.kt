@@ -9,6 +9,7 @@ import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.mediumLaser
 import battletech.tactical.session.AttackDeclarationsRecorded
+import battletech.tactical.session.AttackProgress
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.Impulse
@@ -50,10 +51,12 @@ internal class WeaponAttackPhaseHandlerTest {
     // A seeded two-impulse sequence: PLAYER_1 first, then PLAYER_2.
     private fun seededTwoImpulseTurn(): TurnState = TurnState(
         initiative = initiative,
-        attackSequence = ImpulseSequence(
-            order = listOf(
-                Impulse(PlayerId.PLAYER_1, 1),
-                Impulse(PlayerId.PLAYER_2, 1),
+        attack = AttackProgress(
+            sequence = ImpulseSequence(
+                order = listOf(
+                    Impulse(PlayerId.PLAYER_1, 1),
+                    Impulse(PlayerId.PLAYER_2, 1),
+                ),
             ),
         ),
     )
@@ -61,24 +64,28 @@ internal class WeaponAttackPhaseHandlerTest {
     // A seeded one-impulse sequence (single active impulse, not yet complete).
     private fun seededOneImpulseTurn(): TurnState = TurnState(
         initiative = initiative,
-        attackSequence = ImpulseSequence(
-            order = listOf(Impulse(PlayerId.PLAYER_1, 1)),
+        attack = AttackProgress(
+            sequence = ImpulseSequence(
+                order = listOf(Impulse(PlayerId.PLAYER_1, 1)),
+            ),
         ),
     )
 
     // A completed sequence (currentIndex past end).
     private fun completedSequenceTurn(): TurnState = TurnState(
         initiative = initiative,
-        attackSequence = ImpulseSequence(
-            order = listOf(Impulse(PlayerId.PLAYER_1, 1)),
-            currentIndex = 1,
+        attack = AttackProgress(
+            sequence = ImpulseSequence(
+                order = listOf(Impulse(PlayerId.PLAYER_1, 1)),
+                currentIndex = 1,
+            ),
         ),
     )
 
     // An empty sequence (no order).
     private fun emptySequenceTurn(): TurnState = TurnState(
         initiative = initiative,
-        attackSequence = ImpulseSequence(order = emptyList()),
+        attack = AttackProgress(sequence = ImpulseSequence(order = emptyList())),
     )
 
     private val noRoller = DiceRoller.deterministic(emptyList())
@@ -226,13 +233,15 @@ internal class WeaponAttackPhaseHandlerTest {
         )
         // Pre-accumulate the PLAYER_1 declaration from the first impulse.
         val turn = seededTwoImpulseTurn().copy(
-            attackDeclarations = listOf(declaration),
-            attackSequence = ImpulseSequence(
-                order = listOf(
-                    Impulse(PlayerId.PLAYER_1, 1),
-                    Impulse(PlayerId.PLAYER_2, 1),
+            attack = AttackProgress(
+                sequence = ImpulseSequence(
+                    order = listOf(
+                        Impulse(PlayerId.PLAYER_1, 1),
+                        Impulse(PlayerId.PLAYER_2, 1),
+                    ),
+                    currentIndex = 1, // PLAYER_2's impulse is next (final)
                 ),
-                currentIndex = 1, // PLAYER_2's impulse is next (final)
+                weaponDeclarations = listOf(declaration),
             ),
         )
         val cmd = CommitAttackImpulse(

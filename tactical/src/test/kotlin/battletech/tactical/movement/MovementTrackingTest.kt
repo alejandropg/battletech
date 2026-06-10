@@ -13,6 +13,7 @@ import battletech.tactical.query.aUnit
 import battletech.tactical.session.Impulse
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
+import battletech.tactical.session.MovementProgress
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.TurnState
 import org.assertj.core.api.Assertions.assertThat
@@ -25,7 +26,7 @@ internal class MovementTrackingTest {
 
     private fun turnFor(player: PlayerId) = TurnState(
         initiative = Initiative(emptyMap(), PlayerId.PLAYER_1, PlayerId.PLAYER_2),
-        movementSequence = ImpulseSequence(listOf(Impulse(player, 1))),
+        movement = MovementProgress(sequence = ImpulseSequence(listOf(Impulse(player, 1)))),
     )
 
     @Test

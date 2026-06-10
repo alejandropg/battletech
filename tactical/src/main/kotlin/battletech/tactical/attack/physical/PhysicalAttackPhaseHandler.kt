@@ -47,16 +47,13 @@ public class PhysicalAttackPhaseHandler : ImpulseAttackPhaseHandler() {
 
         var newState = applyTorsoFacingsStep(state, cmd.torsoFacings, events)
 
-        val accumulated = turn.physicalAttackDeclarations + cmd.declarations
-        var newTurn = turn.copy(
-            physicalAttackDeclarations = accumulated,
-            attackSequence = turn.attackSequence.advance(),
-        )
+        var newAttack = turn.attack.recordPhysicalImpulse(cmd.declarations)
 
-        if (newTurn.attackSequence.isComplete && accumulated.isNotEmpty()) {
+        val accumulated = newAttack.physicalDeclarations
+        if (newAttack.isComplete && accumulated.isNotEmpty()) {
             val (resolvedState, results) = resolvePhysicalAttacks(accumulated, newState, roller)
             newState = resolvedState
-            newTurn = newTurn.copy(physicalAttackDeclarations = emptyList())
+            newAttack = newAttack.clearPhysicalDeclarations()
             events += PhysicalAttacksResolved(results)
             for (result in results) {
                 val fallenId = result.fallenUnitId
@@ -67,6 +64,6 @@ public class PhysicalAttackPhaseHandler : ImpulseAttackPhaseHandler() {
             }
         }
 
-        return PhaseOutcome(newState, newTurn, events)
+        return PhaseOutcome(newState, turn.copy(attack = newAttack), events)
     }
 }

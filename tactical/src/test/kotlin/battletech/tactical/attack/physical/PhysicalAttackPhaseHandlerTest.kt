@@ -8,6 +8,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
+import battletech.tactical.session.AttackProgress
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommitPhysicalAttackImpulse
 import battletech.tactical.session.Impulse
@@ -34,7 +35,7 @@ internal class PhysicalAttackPhaseHandlerTest {
 
     private fun turnWithOneImpulse() = TurnState(
         initiative = Initiative(emptyMap(), PlayerId.PLAYER_1, PlayerId.PLAYER_2),
-        attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+        attack = AttackProgress(sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1)))),
     )
 
     @Test

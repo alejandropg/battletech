@@ -11,6 +11,7 @@ import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.Impulse
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
+import battletech.tactical.session.MovementProgress
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.StandUp
 import battletech.tactical.session.TurnState
@@ -26,7 +27,7 @@ internal class MovementStandUpTest {
 
     private fun turn() = TurnState(
         initiative = Initiative(emptyMap(), PlayerId.PLAYER_1, PlayerId.PLAYER_2),
-        movementSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+        movement = MovementProgress(sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1)))),
     )
 
     private fun standUp() = StandUp(PlayerId.PLAYER_1, prone.id)

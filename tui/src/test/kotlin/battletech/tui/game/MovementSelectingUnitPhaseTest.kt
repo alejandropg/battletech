@@ -36,9 +36,11 @@ internal class MovementSelectingUnitPhaseTest {
             loser = PlayerId.PLAYER_1,
             winner = PlayerId.PLAYER_2,
         ),
-        movementSequence = ImpulseSequence(movementOrder, currentImpulseIndex),
-        movedUnitIds = movedUnitIds,
-        unitsMovedInCurrentImpulse = unitsMovedInCurrentImpulse,
+        movement = battletech.tactical.session.MovementProgress(
+            sequence = ImpulseSequence(movementOrder, currentImpulseIndex),
+            movedUnitIds = movedUnitIds,
+            movedInCurrentImpulse = unitsMovedInCurrentImpulse,
+        ),
     )
 
     private fun anAppState(

@@ -31,7 +31,9 @@ internal class BattleSessionTest {
             rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
             loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
         ),
-        movementSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1))),
+        movement = MovementProgress(
+            sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1))),
+        ),
     )
 
     private fun sessionInMovement(
@@ -94,7 +96,7 @@ internal class BattleSessionTest {
     @Test
     fun `MoveUnit rejects when the unit has already moved this turn`() {
         val session = sessionInMovement(
-            turn = aMovementTurn().copy(movedUnitIds = setOf(mech1.id)),
+            turn = aMovementTurn().copy(movement = aMovementTurn().movement.copy(movedUnitIds = setOf(mech1.id))),
         )
         val result = session.submitCommand(
             MoveUnit(PlayerId.PLAYER_1, mech1.id, aReachableHex(), MovementMode.WALK),
@@ -128,8 +130,9 @@ internal class BattleSessionTest {
                 rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
                 loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
             ),
-            movementSequence = ImpulseSequence(emptyList()),
-            attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1))),
+            attack = AttackProgress(
+                sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1))),
+            ),
         )
         val session = BattleSession(
             initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
@@ -167,8 +170,9 @@ internal class BattleSessionTest {
                 rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
                 loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
             ),
-            movementSequence = ImpulseSequence(emptyList()),
-            attackSequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+            attack = AttackProgress(
+                sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+            ),
         )
         val session = BattleSession(
             initialGameState = GameState(listOf(attacker, target), GameMap(hexesFor(listOf(attacker, target)))),

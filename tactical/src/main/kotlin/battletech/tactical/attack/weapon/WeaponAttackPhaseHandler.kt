@@ -43,21 +43,18 @@ public class WeaponAttackPhaseHandler : ImpulseAttackPhaseHandler() {
         // on the attacker now so the Heat Phase folds it in.
         newState = newState.applyWeaponHeat(cmd.declarations)
 
-        val accumulated = turn.attackDeclarations + cmd.declarations
-        var newTurn = turn.copy(
-            attackDeclarations = accumulated,
-            attackSequence = turn.attackSequence.advance(),
-        )
+        var newAttack = turn.attack.recordWeaponImpulse(cmd.declarations)
 
         events += AttackDeclarationsRecorded(player = cmd.playerId, declarations = cmd.declarations)
 
-        if (newTurn.attackSequence.isComplete && accumulated.isNotEmpty()) {
+        val accumulated = newAttack.weaponDeclarations
+        if (newAttack.isComplete && accumulated.isNotEmpty()) {
             val (resolvedState, results) = resolveAttacks(accumulated, newState, roller)
             newState = resolvedState
-            newTurn = newTurn.copy(attackDeclarations = emptyList())
+            newAttack = newAttack.clearWeaponDeclarations()
             events += AttacksResolved(results)
         }
 
-        return PhaseOutcome(newState, newTurn, events)
+        return PhaseOutcome(newState, turn.copy(attack = newAttack), events)
     }
 }
