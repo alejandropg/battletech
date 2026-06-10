@@ -1,12 +1,14 @@
 package battletech.tui.view
 
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.HeatSource
 import battletech.tui.game.PanelId
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
 public class UnitStatusView(
     private val unit: CombatUnit?,
+    private val pendingHeat: List<HeatSource> = emptyList(),
 ) : View {
 
     public companion object {
@@ -68,6 +70,26 @@ public class UnitStatusView(
             else -> Color.GREEN
         }
         buffer.writeString(cx, cy, "[$bar]  ${unit.currentHeat} / ${unit.heatSinkCapacity}", heatColor)
+        cy += 1
+
+        // Heat generated this turn: committed sources in the default colour, the
+        // in-progress (hovered move / selected weapons) preview in gray.
+        for (source in unit.heatGeneratedThisTurn) {
+            buffer.writeString(cx, cy, "  ${source.label} +${source.amount}", Color.DEFAULT)
+            cy += 1
+        }
+        for (source in pendingHeat) {
+            buffer.writeString(cx, cy, "  ${source.label} +${source.amount}", Color.GRAY)
+            cy += 1
+        }
+        // Projected end-of-turn heat: current + generated − dissipation. Gray
+        // while a preview is pending, since it is hypothetical until committed.
+        val committedGenerated = unit.heatGeneratedThisTurn.sumOf { it.amount }
+        val previewGenerated = pendingHeat.sumOf { it.amount }
+        val projected = (unit.currentHeat + committedGenerated + previewGenerated - unit.heatSinkCapacity)
+            .coerceAtLeast(0)
+        val projectedColor = if (pendingHeat.isEmpty()) Color.DEFAULT else Color.GRAY
+        buffer.writeString(cx, cy, "  End: $projected", projectedColor)
         cy += 2
 
         // ARMOR

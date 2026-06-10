@@ -3,12 +3,13 @@ package battletech.tactical.attack.weapon
 import battletech.tactical.attack.AttackDefinition
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.attack.WeaponAttackContext
+import battletech.tactical.attack.immobileTargetToHitModifier
 import battletech.tactical.attack.proneTargetToHitModifier
+import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.ActionPreview
 import battletech.tactical.unit.CombatUnit
-import kotlin.math.ceil
 
 public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> {
 
@@ -61,17 +62,16 @@ public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> 
         val heatPenalty = heatPenaltyModifier(context.actor)
         targetNumber += heatPenalty
         targetNumber += proneTargetToHitModifier(context.target, distance)
+        targetNumber += immobileTargetToHitModifier(context.target)
 
-        return TWO_D6_PROBABILITY.getOrElse(targetNumber) { 0 }
+        return TWO_D6_PROBABILITY.getOrElse(targetNumber.coerceAtLeast(2)) { 0 }
     }
 
     override fun actionName(context: WeaponAttackContext): String =
         "Fire ${context.weapon.name} at ${context.target.name}"
 
-    private fun heatPenaltyModifier(actor: CombatUnit): Int {
-        val excessHeat = actor.currentHeat - actor.heatSinkCapacity
-        return if (excessHeat <= 0) 0 else ceil(excessHeat / 3.0).toInt()
-    }
+    private fun heatPenaltyModifier(actor: CombatUnit): Int =
+        HeatScale.toHitPenalty(actor.currentHeat)
 
     private companion object {
         val TWO_D6_PROBABILITY: Map<Int, Int> = mapOf(

@@ -6,12 +6,15 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.heat.movementHeatSource
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
+import battletech.tactical.movement.hexesMoved
 import battletech.tactical.query.PlayerView
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.StandUp
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
@@ -163,6 +166,13 @@ internal sealed interface MovementPhase : Phase {
 
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitById(unitId)
 
+        override fun pendingHeat(app: AppState): List<HeatSource> {
+            val destination = hoveredDestination ?: return emptyList()
+            val unit = app.gameState.unitById(unitId) ?: return emptyList()
+            val hexes = hexesMoved(unit.position, destination)
+            return listOfNotNull(movementHeatSource(reachability.mode, hexes))
+        }
+
         override fun pathDestination(): HexCoordinates? = hoveredPath?.lastOrNull()
 
         override fun movementMode(): MovementMode = reachability.mode
@@ -250,6 +260,13 @@ internal sealed interface MovementPhase : Phase {
         )
 
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitById(unitId)
+
+        override fun pendingHeat(app: AppState): List<HeatSource> {
+            val unit = app.gameState.unitById(unitId) ?: return emptyList()
+            val destination = options.minByOrNull { it.mpSpent } ?: return emptyList()
+            val hexes = hexesMoved(unit.position, destination)
+            return listOfNotNull(movementHeatSource(reachability.mode, hexes))
+        }
 
         override fun pathDestination(): HexCoordinates? = path.lastOrNull()
 

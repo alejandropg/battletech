@@ -23,6 +23,8 @@ internal class PanelFrame(private val appState: AppState) {
 
     val selectedUnit by lazy { appState.phase.selectedUnit(appState) }
 
+    val pendingHeat by lazy { appState.phase.pendingHeat(appState) }
+
     val logEntries by lazy { appState.session.gameLog.snapshot() }
 
     val declaredTargets by lazy {

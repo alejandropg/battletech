@@ -30,6 +30,46 @@ internal class ReachabilityCalculatorTest {
     private fun calculator(map: GameMap, units: List<CombatUnit>) =
         ReachabilityCalculator(map, units)
 
+    // --- Heat movement penalty ---
+
+    @Test
+    fun `heat reduces walking MP`() {
+        val map = flatClearMap(6)
+        val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 4, currentHeat = 10)
+        val calc = calculator(map, listOf(actor))
+
+        // heat 10 -> -2 MP
+        assertEquals(2, calc.calculate(actor, MovementMode.WALK).maxMP)
+    }
+
+    @Test
+    fun `heat re-derives running MP from reduced walk`() {
+        val map = flatClearMap(6)
+        val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 4, runningMP = 6, currentHeat = 5)
+        val calc = calculator(map, listOf(actor))
+
+        // heat 5 -> -1 walk (3) -> run = ceil(3 * 1.5) = 5
+        assertEquals(5, calc.calculate(actor, MovementMode.RUN).maxMP)
+    }
+
+    @Test
+    fun `no heat penalty leaves stored running MP untouched`() {
+        val map = flatClearMap(6)
+        val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 4, runningMP = 6, currentHeat = 0)
+        val calc = calculator(map, listOf(actor))
+
+        assertEquals(6, calc.calculate(actor, MovementMode.RUN).maxMP)
+    }
+
+    @Test
+    fun `heat does not reduce jump MP`() {
+        val map = flatClearMap(6)
+        val actor = aUnit(position = HexCoordinates(0, 0), jumpMP = 4, currentHeat = 25)
+        val calc = calculator(map, listOf(actor))
+
+        assertEquals(4, calc.calculate(actor, MovementMode.JUMP).maxMP)
+    }
+
     // --- Walk/Run Tests ---
 
     @Test

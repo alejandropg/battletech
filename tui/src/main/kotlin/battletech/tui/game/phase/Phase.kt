@@ -8,6 +8,7 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.PublicUnit
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.HeatSource
 import battletech.tui.game.AppState
 import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData
@@ -30,6 +31,13 @@ internal sealed interface Phase {
     fun prompt(app: AppState): String
 
     fun selectedUnit(app: AppState): CombatUnit? = null
+
+    /**
+     * Heat the [selectedUnit] *would* generate if the in-progress declaration
+     * (hovered move / selected weapons) were committed. Rendered gray in the
+     * UNIT STATUS HEAT panel; empty when there is nothing pending.
+     */
+    fun pendingHeat(app: AppState): List<HeatSource> = emptyList()
 
     fun pathDestination(): HexCoordinates? = null
 

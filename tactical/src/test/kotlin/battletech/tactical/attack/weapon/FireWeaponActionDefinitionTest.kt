@@ -160,9 +160,10 @@ internal class FireWeaponActionDefinitionTest {
 
     @Test
     fun `success chance is zero when target number exceeds 12`() {
-        val actor = aUnit(gunnerySkill = 4, position = HexCoordinates(0, 0))
+        val actor = aUnit(gunnerySkill = 5, position = HexCoordinates(0, 0))
         val target = aUnit(id = "enemy", position = HexCoordinates(8, 0))
         val weapon = aWeapon(shortRange = 3, mediumRange = 6, longRange = 9)
+        // gunnery 5 + long range 4 + heat +4 (table max) = 13 → impossible
         val overheatedActor = actor.copy(currentHeat = 30, heatSinkCapacity = 10)
         val context = WeaponAttackContext(
             actor = overheatedActor,

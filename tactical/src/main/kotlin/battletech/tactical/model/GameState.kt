@@ -12,4 +12,8 @@ public data class GameState(
 
     public fun unitById(id: UnitId): CombatUnit? = units.find { it.id == id }
     public fun unitsOf(player: PlayerId): List<CombatUnit> = units.filter { it.owner == player }
+
+    /** Units a player can still activate this turn — excludes shutdown 'Mechs. */
+    public fun activeUnitsOf(player: PlayerId): List<CombatUnit> =
+        unitsOf(player).filter { !it.isShutdown }
 }

@@ -13,6 +13,8 @@ import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.attack.AttackRule
+import battletech.tactical.attack.immobileTargetToHitModifier
+import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
@@ -21,7 +23,6 @@ import battletech.tactical.movement.ReachabilityCalculator
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
-import kotlin.math.ceil
 
 public class DefaultPlayerView(
     override val playerId: PlayerId,
@@ -30,6 +31,7 @@ public class DefaultPlayerView(
 
     override fun legalMovementsFor(unitId: UnitId): List<ReachabilityMap> {
         val unit = state.unitById(unitId) ?: return emptyList()
+        if (unit.isShutdown) return emptyList()
         val calculator = ReachabilityCalculator(state.map, state.units)
         return buildList {
             if (unit.walkingMP > 0) add(calculator.calculate(unit, MovementMode.WALK))
@@ -82,6 +84,7 @@ public class DefaultPlayerView(
                         else -> 4
                     }
                     val heatPenalty = heatPenaltyModifier(attacker)
+                    val immobileModifier = immobileTargetToHitModifier(target)
                     val modifiers = mutableListOf<String>()
                     when {
                         distance <= weapon.shortRange -> {}
@@ -89,8 +92,11 @@ public class DefaultPlayerView(
                         else -> modifiers.add("+4 long")
                     }
                     if (heatPenalty > 0) modifiers.add("+$heatPenalty heat")
+                    if (immobileModifier != 0) modifiers.add("$immobileModifier immobile")
 
-                    val chance = TWO_D6_PROBABILITY[attacker.gunnerySkill + rangeModifier + heatPenalty] ?: 0
+                    val targetNumber = (attacker.gunnerySkill + rangeModifier + heatPenalty + immobileModifier)
+                        .coerceAtLeast(2)
+                    val chance = TWO_D6_PROBABILITY[targetNumber] ?: 0
                     WeaponTargetInfo(
                         weaponIndex = index,
                         weaponName = weapon.name,
@@ -204,10 +210,8 @@ public class DefaultPlayerView(
         }
     }
 
-    private fun heatPenaltyModifier(actor: CombatUnit): Int {
-        val excessHeat = actor.currentHeat - actor.heatSinkCapacity
-        return if (excessHeat <= 0) 0 else ceil(excessHeat / 3.0).toInt()
-    }
+    private fun heatPenaltyModifier(actor: CombatUnit): Int =
+        HeatScale.toHitPenalty(actor.currentHeat)
 
     private companion object {
         val TWO_D6_PROBABILITY: Map<Int, Int> = mapOf(

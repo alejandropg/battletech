@@ -161,7 +161,7 @@ internal class AttackResolutionTest {
         val roller = DiceRoller.seeded(42)
         val (_, results) = resolveAttacks(listOf(declaration), state, roller)
         val result = results.single()
-        // gunnery 4 + range 0 + heat penalty ceil(6/3)=2 = 6
+        // gunnery 4 + range 0 + heat penalty (heat 16 → +2) = 6
         assertEquals(6, result.targetNumber)
     }
 
@@ -175,6 +175,18 @@ internal class AttackResolutionTest {
         val (_, results) = resolveAttacks(listOf(declaration), state, roller)
         // gunnery 4 + range 0 - 2 (prone adjacent) = 2
         assertEquals(2, results.single().targetNumber)
+    }
+
+    @Test
+    fun `shutdown target lowers the target number by four`() {
+        val shutdownTarget = target.copy(isShutdown = true)
+        val state = gameState.copy(units = listOf(attacker, shutdownTarget))
+        val declaration = AttackDeclaration(attacker.id, shutdownTarget.id, 0, true)
+
+        val roller = DiceRoller.seeded(42)
+        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        // gunnery 4 + range 0 - 4 (immobile) = 0
+        assertEquals(0, results.single().targetNumber)
     }
 
     @Test

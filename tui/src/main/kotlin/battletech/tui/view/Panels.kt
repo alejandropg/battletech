@@ -30,7 +30,7 @@ internal object Panels {
             frame.attackResults?.let(::AttackResultsView)
         },
         Panel(PanelId.UNIT_STATUS, UnitStatusView.TITLE, width = 28) { frame ->
-            UnitStatusView(frame.selectedUnit)
+            UnitStatusView(frame.selectedUnit, frame.pendingHeat)
         },
         Panel(PanelId.LOG, LogView.TITLE, width = 28) { frame ->
             LogView(entries = frame.logEntries, gameState = frame.gameState)

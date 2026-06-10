@@ -1,5 +1,6 @@
 package battletech.tui.view
 
+import battletech.tactical.unit.HeatSource
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.screen.Color
@@ -121,8 +122,9 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        val row14 = (2 until 26).map { buffer.get(it, 14).char }.joinToString("")
-        assertTrue(row14.contains("ARMOR"))
+        // Shifted down one row by the projected-heat "End:" line.
+        val row15 = (2 until 26).map { buffer.get(it, 15).char }.joinToString("")
+        assertTrue(row15.contains("ARMOR"))
     }
 
     @Test
@@ -133,11 +135,11 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // HD value row: cy=15, "HD: 9" starts at cx+9=11
-        val line = (2 until 26).map { buffer.get(it, 15).char }.joinToString("")
+        // HD value row: cy=16, "HD: 9" starts at cx+9=11
+        val line = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
         assertTrue(line.contains("HD"))
         assertTrue(line.contains("9"))
-        assertEquals(Color.CYAN, buffer.get(11, 15).fg) // 'H' of "HD: 9"
+        assertEquals(Color.CYAN, buffer.get(11, 16).fg) // 'H' of "HD: 9"
     }
 
     @Test
@@ -148,11 +150,11 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // CT row: cy=16, "CT:47" starts at cx+9=11
-        val line = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
+        // CT row: cy=17, "CT:47" starts at cx+9=11
+        val line = (2 until 26).map { buffer.get(it, 17).char }.joinToString("")
         assertTrue(line.contains("CT"))
         assertTrue(line.contains("47"))
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(11, 16).fg) // 'C' of "CT:47"
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(11, 17).fg) // 'C' of "CT:47"
     }
 
     @Test
@@ -163,10 +165,10 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // Rear row: cy=17, CT rear "r: 8" starts at cx+10=12
-        val line = (2 until 26).map { buffer.get(it, 17).char }.joinToString("")
+        // Rear row: cy=18, CT rear "r: 8" starts at cx+10=12
+        val line = (2 until 26).map { buffer.get(it, 18).char }.joinToString("")
         assertTrue(line.contains("r"))
-        assertEquals(Color.DEFAULT, buffer.get(12, 17).fg) // 'r' of CT rear
+        assertEquals(Color.DEFAULT, buffer.get(12, 18).fg) // 'r' of CT rear
     }
 
     @Test
@@ -177,14 +179,55 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // Arms row: cy=18
-        val armsRow = (2 until 26).map { buffer.get(it, 18).char }.joinToString("")
+        // Arms row: cy=19
+        val armsRow = (2 until 26).map { buffer.get(it, 19).char }.joinToString("")
         assertTrue(armsRow.contains("LA"))
         assertTrue(armsRow.contains("RA"))
-        // Legs row: cy=19
-        val legsRow = (2 until 26).map { buffer.get(it, 19).char }.joinToString("")
+        // Legs row: cy=20
+        val legsRow = (2 until 26).map { buffer.get(it, 20).char }.joinToString("")
         assertTrue(legsRow.contains("LL"))
         assertTrue(legsRow.contains("RL"))
         assertTrue(legsRow.contains("41"))
+    }
+
+    @Test
+    fun `renders committed heat sources in default color`() {
+        val unit = aUnit().copy(heatGeneratedThisTurn = listOf(HeatSource("Running", 2)))
+        val view = UnitStatusView(unit)
+        val buffer = ScreenBuffer(28, 20)
+
+        view.render(buffer, 0, 0, 28, 20)
+
+        // Source line directly under the bar (row 13).
+        val line = (2 until 26).map { buffer.get(it, 13).char }.joinToString("")
+        assertTrue(line.contains("Running +2"))
+        assertEquals(Color.DEFAULT, buffer.get(2, 13).fg)
+    }
+
+    @Test
+    fun `renders pending heat preview in gray`() {
+        val unit = aUnit()
+        val view = UnitStatusView(unit, pendingHeat = listOf(HeatSource("Walking", 1)))
+        val buffer = ScreenBuffer(28, 20)
+
+        view.render(buffer, 0, 0, 28, 20)
+
+        val line = (2 until 26).map { buffer.get(it, 13).char }.joinToString("")
+        assertTrue(line.contains("Walking +1"))
+        assertEquals(Color.GRAY, buffer.get(2, 13).fg)
+    }
+
+    @Test
+    fun `renders projected end-of-turn heat`() {
+        // current 12, +2 running, dissipates 10 -> projected 4
+        val unit = aUnit().copy(currentHeat = 12, heatGeneratedThisTurn = listOf(HeatSource("Running", 2)))
+        val view = UnitStatusView(unit)
+        val buffer = ScreenBuffer(28, 20)
+
+        view.render(buffer, 0, 0, 28, 20)
+
+        // bar(12), one source(13), End(14)
+        val line = (2 until 26).map { buffer.get(it, 14).char }.joinToString("")
+        assertTrue(line.contains("End: 4"))
     }
 }

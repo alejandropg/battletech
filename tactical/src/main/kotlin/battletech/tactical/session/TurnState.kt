@@ -42,10 +42,10 @@ public data class TurnState(
     }
 
     public fun selectableUnits(gameState: GameState): List<CombatUnit> =
-        gameState.unitsOf(activePlayer).filter { it.id !in movedUnitIds }
+        gameState.activeUnitsOf(activePlayer).filter { it.id !in movedUnitIds }
 
     public fun selectableAttackUnits(gameState: GameState): List<CombatUnit> =
-        gameState.unitsOf(activeAttackPlayer)
+        gameState.activeUnitsOf(activeAttackPlayer)
 
     public companion object {
         public val NULL: TurnState = TurnState(

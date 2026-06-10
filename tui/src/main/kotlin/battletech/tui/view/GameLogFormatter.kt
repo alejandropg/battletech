@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
+import battletech.tactical.session.AmmoExploded
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.GameEvent
@@ -12,6 +13,8 @@ import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.UnitFell
+import battletech.tactical.session.UnitRestarted
+import battletech.tactical.session.UnitShutdown
 import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitMoved
@@ -95,6 +98,21 @@ internal object GameLogFormatter {
         is UnitStoodUp -> {
             val name = state.unitById(event.unitId)?.name ?: event.unitId.value
             if (event.stoodUp) "$name stood up" else "$name failed to stand"
+        }
+
+        is UnitShutdown -> {
+            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            if (event.auto) "$name auto-shut down (heat ≥ 30)" else "$name shut down from heat"
+        }
+
+        is UnitRestarted -> {
+            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            "$name restarted"
+        }
+
+        is AmmoExploded -> {
+            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            "$name ammo explosion: ${event.weaponName} (${event.damage} damage)"
         }
 
         is TurnEnded -> "Turn ${event.turnNumber} complete"

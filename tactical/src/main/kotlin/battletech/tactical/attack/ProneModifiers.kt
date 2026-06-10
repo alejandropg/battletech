@@ -12,3 +12,10 @@ public fun proneTargetToHitModifier(target: CombatUnit, distance: Int): Int = wh
     distance <= 1 -> -2
     else -> 1
 }
+
+/**
+ * To-hit bonus for attacking an immobile (shut-down) target: it cannot evade,
+ * so every attacker enjoys −4. No modifier against an operational target.
+ */
+public fun immobileTargetToHitModifier(target: CombatUnit): Int =
+    if (target.isShutdown) -4 else 0

@@ -2,7 +2,9 @@ package battletech.tactical.model
 
 import battletech.tactical.attack.applyTorsoFacings
 import battletech.tactical.attack.resetTorsoFacings
-import battletech.tactical.session.applyHeatDissipation
+import battletech.tactical.heat.movementHeatSource
+import battletech.tactical.session.applyHeatPhase
+import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.InternalStructureLayout
@@ -44,13 +46,13 @@ internal class GameStateTransformsTest {
     )
 
     @Nested
-    inner class ApplyHeatDissipationTest {
+    inner class ApplyHeatPhaseTest {
         @Test
         fun `reduces heat by sink capacity`() {
             val unit = aUnit(currentHeat = 10, heatSinkCapacity = 4)
             val gameState = GameState(listOf(unit), map)
 
-            val result = gameState.applyHeatDissipation()
+            val result = gameState.applyHeatPhase()
 
             assertEquals(6, result.units[0].currentHeat)
         }
@@ -60,7 +62,7 @@ internal class GameStateTransformsTest {
             val unit = aUnit(currentHeat = 2, heatSinkCapacity = 10)
             val gameState = GameState(listOf(unit), map)
 
-            val result = gameState.applyHeatDissipation()
+            val result = gameState.applyHeatPhase()
 
             assertEquals(0, result.units[0].currentHeat)
         }
@@ -71,10 +73,41 @@ internal class GameStateTransformsTest {
             val u2 = aUnit(id = "u2", currentHeat = 4, heatSinkCapacity = 4)
             val gameState = GameState(listOf(u1, u2), map)
 
-            val result = gameState.applyHeatDissipation()
+            val result = gameState.applyHeatPhase()
 
             assertEquals(5, result.units[0].currentHeat)
             assertEquals(0, result.units[1].currentHeat)
+        }
+
+        @Test
+        fun `folds generated heat before dissipating and clears the list`() {
+            val unit = aUnit(currentHeat = 5, heatSinkCapacity = 10).copy(
+                // walking + medium laser = +1 +3 = +4
+                heatGeneratedThisTurn = listOf(
+                    movementHeatSource(MovementMode.WALK, 2)!!,
+                    HeatSource("Medium Laser", 3),
+                ),
+            )
+            val gameState = GameState(listOf(unit), map)
+
+            val result = gameState.applyHeatPhase()
+
+            // 5 + 4 - 10 = -1 -> floored at 0
+            assertEquals(0, result.units[0].currentHeat)
+            assertEquals(emptyList<HeatSource>(), result.units[0].heatGeneratedThisTurn)
+        }
+
+        @Test
+        fun `net heat climbs when generation exceeds dissipation`() {
+            val unit = aUnit(currentHeat = 10, heatSinkCapacity = 10).copy(
+                heatGeneratedThisTurn = listOf(HeatSource("PPC", 10), HeatSource("Running", 2)),
+            )
+            val gameState = GameState(listOf(unit), map)
+
+            val result = gameState.applyHeatPhase()
+
+            // 10 + 12 - 10 = 12
+            assertEquals(12, result.units[0].currentHeat)
         }
     }
 

@@ -2,12 +2,12 @@ package battletech.tactical.attack
 
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
+import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
-import kotlin.math.ceil
 
 public enum class RangeBand { SHORT, MEDIUM, LONG, OUT_OF_RANGE }
 
@@ -103,7 +103,9 @@ private fun resolveOneAttack(
     val heatPenalty = heatPenaltyModifier(attacker)
     val secondaryPenalty = if (declaration.isPrimary) 0 else 1
     val proneModifier = proneTargetToHitModifier(target, distance)
-    val targetNumber = attacker.gunnerySkill + rangeModifier + heatPenalty + secondaryPenalty + proneModifier
+    val immobileModifier = immobileTargetToHitModifier(target)
+    val targetNumber = attacker.gunnerySkill + rangeModifier + heatPenalty +
+        secondaryPenalty + proneModifier + immobileModifier
 
     val toHitRoll = roller.roll2d6()
 
@@ -148,10 +150,8 @@ private fun resolveOneAttack(
     }
 }
 
-public fun heatPenaltyModifier(actor: CombatUnit): Int {
-    val excessHeat = actor.currentHeat - actor.heatSinkCapacity
-    return if (excessHeat <= 0) 0 else ceil(excessHeat / 3.0).toInt()
-}
+public fun heatPenaltyModifier(actor: CombatUnit): Int =
+    HeatScale.toHitPenalty(actor.currentHeat)
 
 private fun getArmor(armor: ArmorLayout, location: HitLocation, rear: Boolean): Int = when {
     rear && location == HitLocation.CENTER_TORSO -> armor.centerTorsoRear

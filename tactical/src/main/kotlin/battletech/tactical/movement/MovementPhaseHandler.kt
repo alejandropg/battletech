@@ -1,6 +1,7 @@
 package battletech.tactical.movement
 
 import battletech.tactical.unit.MovementThisTurn
+import battletech.tactical.heat.movementHeatSource
 
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
@@ -112,11 +113,16 @@ public class MovementPhaseHandler : PhaseHandler {
     ): PhaseOutcome {
         val from = state.unitById(cmd.unitId)!!.position
         val hexesMoved = hexesMoved(from, cmd.destination)
+        val heatSource = movementHeatSource(cmd.mode, hexesMoved)
         val movedState = state.moveUnit(cmd.unitId, cmd.destination)
         val newState = movedState.copy(
             units = movedState.units.map { unit ->
                 if (unit.id == cmd.unitId) {
-                    unit.copy(movementThisTurn = MovementThisTurn(cmd.mode, hexesMoved))
+                    unit.copy(
+                        movementThisTurn = MovementThisTurn(cmd.mode, hexesMoved),
+                        heatGeneratedThisTurn = unit.heatGeneratedThisTurn +
+                            listOfNotNull(heatSource),
+                    )
                 } else {
                     unit
                 }
@@ -143,9 +149,10 @@ public class MovementPhaseHandler : PhaseHandler {
         roller: DiceRoller,
     ): PhaseOutcome {
         val initiative = turn.initiative
+        // Shutdown 'Mechs can't move, so they don't take an impulse slot.
         val order = calculateMovementOrder(
-            loser = initiative.loser, loserUnitCount = state.unitsOf(initiative.loser).size,
-            winner = initiative.winner, winnerUnitCount = state.unitsOf(initiative.winner).size,
+            loser = initiative.loser, loserUnitCount = state.activeUnitsOf(initiative.loser).size,
+            winner = initiative.winner, winnerUnitCount = state.activeUnitsOf(initiative.winner).size,
         )
         // Clear last turn's movement so attacker/target movement modifiers
         // reflect only this turn's movement.
@@ -157,7 +164,7 @@ public class MovementPhaseHandler : PhaseHandler {
 }
 
 /** Hexes actually entered along [destination]'s path (turn-in-place steps excluded). */
-internal fun hexesMoved(from: battletech.tactical.model.HexCoordinates, destination: ReachableHex): Int {
+public fun hexesMoved(from: battletech.tactical.model.HexCoordinates, destination: ReachableHex): Int {
     val positions = listOf(from) + destination.path.map { it.position }
     return positions.zipWithNext().count { (previous, next) -> previous != next }
 }

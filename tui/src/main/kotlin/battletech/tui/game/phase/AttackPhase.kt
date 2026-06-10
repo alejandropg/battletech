@@ -2,6 +2,7 @@ package battletech.tui.game.phase
 
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.weapon.TargetInfo
+import battletech.tactical.heat.weaponHeatSource
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
@@ -195,6 +196,14 @@ internal sealed interface AttackPhase : Phase {
         }
 
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitById(unitId)
+
+        override fun pendingHeat(app: AppState): List<battletech.tactical.unit.HeatSource> {
+            val attacker = app.gameState.unitById(unitId) ?: return emptyList()
+            val firedWeaponIndices = weaponAssignments.values.flatten().toSet()
+            return firedWeaponIndices.sorted().mapNotNull { index ->
+                attacker.weapons.getOrNull(index)?.let(::weaponHeatSource)
+            }
+        }
 
         override fun attackRender(gameState: GameState): AttackRender {
             val attacker = gameState.unitById(unitId)

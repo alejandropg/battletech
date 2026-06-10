@@ -2,11 +2,13 @@ package battletech.tactical.movement
 
 import battletech.tactical.model.MovementMode
 
+import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.unit.CombatUnit
 import java.util.PriorityQueue
+import kotlin.math.ceil
 
 public class ReachabilityCalculator(
     private val gameMap: GameMap,
@@ -14,9 +16,13 @@ public class ReachabilityCalculator(
 ) {
 
     public fun calculate(actor: CombatUnit, mode: MovementMode): ReachabilityMap {
+        // Heat slows walking (and the running derived from it); jump jets are
+        // unaffected. See HeatScale.movementPenalty / docs/rules/heat.md.
+        val penalty = HeatScale.movementPenalty(actor.currentHeat)
+        val effectiveWalk = (actor.walkingMP - penalty).coerceAtLeast(0)
         val maxMP = when (mode) {
-            MovementMode.WALK -> actor.walkingMP
-            MovementMode.RUN -> actor.runningMP
+            MovementMode.WALK -> effectiveWalk
+            MovementMode.RUN -> if (penalty == 0) actor.runningMP else ceil(effectiveWalk * 1.5).toInt()
             MovementMode.JUMP -> actor.jumpMP
         }
 
