@@ -4,7 +4,6 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
-import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.heat.movementHeatSource
 import battletech.tactical.movement.ReachabilityMap
@@ -20,6 +19,7 @@ import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.RenderData
+import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.moveCursor
 import battletech.tui.game.pathHighlights
@@ -66,7 +66,7 @@ internal sealed interface MovementPhase : Phase {
 
         override fun prompt(app: AppState): String {
             val turnState = app.turnState
-            val playerName = if (turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
+            val playerName = turnState.activePlayer.displayName
             val remaining = turnState.remainingInImpulse
             return "$playerName: select a unit to move ($remaining remaining)"
         }
@@ -76,7 +76,7 @@ internal sealed interface MovementPhase : Phase {
         override fun activePlayerLabel(app: AppState): String? {
             val turnState = app.turnState
             if (turnState.allImpulsesComplete) return null
-            return if (turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
+            return turnState.activePlayer.displayName
         }
 
         private fun trySelect(app: AppState): Transition {
@@ -179,7 +179,7 @@ internal sealed interface MovementPhase : Phase {
 
         override fun activePlayerLabel(app: AppState): String? {
             val turnState = app.turnState
-            return if (turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
+            return turnState.activePlayer.displayName
         }
 
         private fun confirm(app: AppState): Transition {
@@ -274,7 +274,7 @@ internal sealed interface MovementPhase : Phase {
 
         override fun activePlayerLabel(app: AppState): String? {
             val turnState = app.turnState
-            return if (turnState.activePlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
+            return turnState.activePlayer.displayName
         }
 
         private fun commitByFacing(app: AppState, index: Int): Transition {

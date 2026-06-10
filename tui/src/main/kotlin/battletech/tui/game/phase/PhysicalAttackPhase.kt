@@ -16,6 +16,8 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.PanelId
+import battletech.tui.game.attackPlayerLabel
+import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.moveCursor
 import battletech.tui.input.AttackAction
@@ -65,17 +67,13 @@ internal sealed interface PhysicalAttackPhase : Phase {
         override fun prompt(app: AppState): String {
             val turnState = app.turnState
             if (turnState.allAttackImpulsesComplete) return "All physical attacks declared"
-            val name = if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
+            val name = turnState.activeAttackPlayer.displayName
             return "$name: select a unit to punch/kick | 'c' to commit"
         }
 
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitAt(app.cursor)
 
-        override fun activePlayerLabel(app: AppState): String? {
-            val turnState = app.turnState
-            if (turnState.attackSequence.order.isEmpty() || turnState.allAttackImpulsesComplete) return null
-            return if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
-        }
+        override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState)
 
         private fun trySelect(app: AppState): Transition {
             val unit = app.gameState.unitAt(app.cursor) ?: return Transition(app)
@@ -115,11 +113,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
 
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitById(unitId)
 
-        override fun activePlayerLabel(app: AppState): String? {
-            val turnState = app.turnState
-            if (turnState.allAttackImpulsesComplete) return null
-            return if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
-        }
+        override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState, requireSeeded = false)
 
         override fun attackRender(gameState: GameState): AttackRender {
             val options = optionsFor(gameState)

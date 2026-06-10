@@ -21,6 +21,8 @@ import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData
+import battletech.tui.game.attackPlayerLabel
+import battletech.tui.game.displayName
 import battletech.tui.game.losHighlights
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.moveCursor
@@ -86,17 +88,13 @@ internal sealed interface AttackPhase : Phase {
         override fun prompt(app: AppState): String {
             val turnState = app.turnState
             if (turnState.allAttackImpulsesComplete) return "All attacks declared"
-            val playerName = if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
+            val playerName = turnState.activeAttackPlayer.displayName
             return "$playerName: select units, toggle weapons | 'c' to commit"
         }
 
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitAt(app.cursor)
 
-        override fun activePlayerLabel(app: AppState): String? {
-            val turnState = app.turnState
-            if (turnState.attackSequence.order.isEmpty() || turnState.allAttackImpulsesComplete) return null
-            return if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
-        }
+        override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState)
 
         override fun declaredTargetsRender(
             gameState: GameState,
@@ -226,11 +224,7 @@ internal sealed interface AttackPhase : Phase {
             return view.publicUnit(target.unitId)
         }
 
-        override fun activePlayerLabel(app: AppState): String? {
-            val turnState = app.turnState
-            if (turnState.allAttackImpulsesComplete) return null
-            return if (turnState.activeAttackPlayer == PlayerId.PLAYER_1) "Player 1" else "Player 2"
-        }
+        override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState, requireSeeded = false)
 
         override fun declaredTargetsRender(
             gameState: GameState,
