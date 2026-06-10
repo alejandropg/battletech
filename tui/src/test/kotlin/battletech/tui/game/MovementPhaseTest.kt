@@ -420,7 +420,7 @@ internal class MovementPhaseTest {
 
             assertNotNull(result)
             assertEquals(gameState, result!!.app.gameState)
-            assertEquals(turnState.movedUnitIds, result.app.turnState.movedUnitIds)
+            assertEquals(turnState.movement.movedUnitIds, result.app.turnState.movement.movedUnitIds)
         }
 
         @Test

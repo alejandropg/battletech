@@ -60,8 +60,8 @@ internal sealed interface PhysicalAttackPhase : Phase {
 
         override fun prompt(app: AppState): String {
             val turnState = app.turnState
-            if (turnState.allAttackImpulsesComplete) return "All physical attacks declared"
-            val name = turnState.activeAttackPlayer.displayName
+            if (turnState.attack.isComplete) return "All physical attacks declared"
+            val name = turnState.attack.activePlayer.displayName
             return "$name: select a unit to punch/kick | 'c' to commit"
         }
 
@@ -72,7 +72,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
         private fun trySelect(app: AppState): Transition =
             selectOwnUnit(
                 app = app,
-                activePlayer = app.turnState.activeAttackPlayer,
+                activePlayer = app.turnState.attack.activePlayer,
                 onSelect = { unit ->
                     Transition(app.copy(phase = enterPhysicalDeclaring(unit.id, app, drafts)))
                 },
@@ -205,14 +205,14 @@ internal fun enterPhysicalDeclaring(unitId: UnitId, app: AppState, drafts: Physi
 
 internal fun commitPhysicalImpulse(app: AppState, drafts: PhysicalDrafts): Transition {
     val turnState = app.turnState
-    if (turnState.attackSequence.order.isEmpty()) return Transition(app)
+    if (turnState.attack.sequence.order.isEmpty()) return Transition(app)
 
     val declarations = drafts.flatMap { (attackerId, byTarget) ->
         byTarget.flatMap { (targetId, kinds) -> kinds.map { PhysicalAttackDeclaration(attackerId, targetId, it) } }
     }
     app.session.submitCommand(
         CommitPhysicalAttackImpulse(
-            playerId = turnState.activeAttackPlayer,
+            playerId = turnState.attack.activePlayer,
             declarations = declarations,
             torsoFacings = emptyMap(),
         ),

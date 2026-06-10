@@ -15,7 +15,7 @@ internal val PlayerId.displayName: String
  *   sequence order hasn't been seeded yet (i.e. order is empty).
  */
 internal fun attackPlayerLabel(turnState: TurnState, requireSeeded: Boolean = true): String? {
-    if (requireSeeded && turnState.attackSequence.order.isEmpty()) return null
-    if (turnState.allAttackImpulsesComplete) return null
-    return turnState.activeAttackPlayer.displayName
+    if (requireSeeded && turnState.attack.sequence.order.isEmpty()) return null
+    if (turnState.attack.isComplete) return null
+    return turnState.attack.activePlayer.displayName
 }

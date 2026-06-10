@@ -75,8 +75,8 @@ internal fun AppState(
 private fun inferNeedsOnEntry(phase: TurnPhase, turn: TurnState): Boolean = when (phase) {
     TurnPhase.INITIATIVE -> turn.initiative.rolls.isEmpty()
     TurnPhase.MOVEMENT -> false
-    TurnPhase.WEAPON_ATTACK -> turn.attackSequence.order.isEmpty()
-    TurnPhase.PHYSICAL_ATTACK -> turn.attackSequence.order.isEmpty()
+    TurnPhase.WEAPON_ATTACK -> turn.attack.sequence.order.isEmpty()
+    TurnPhase.PHYSICAL_ATTACK -> turn.attack.sequence.order.isEmpty()
     TurnPhase.HEAT -> turn === TurnState.NULL
     TurnPhase.END -> turn === TurnState.NULL
 }

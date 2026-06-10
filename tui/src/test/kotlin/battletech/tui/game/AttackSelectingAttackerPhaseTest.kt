@@ -97,7 +97,7 @@ internal class AttackSelectingAttackerPhaseTest {
             val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), state)
 
             assertNotNull(result)
-            assertEquals(1, result!!.app.turnState.attackSequence.currentIndex)
+            assertEquals(1, result!!.app.turnState.attack.sequence.currentIndex)
         }
 
         @Test
@@ -111,7 +111,7 @@ internal class AttackSelectingAttackerPhaseTest {
             val state = anAppState(turnState = turnState)
 
             val afterLoser = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), state)!!
-            assertEquals(PlayerId.PLAYER_2, afterLoser.app.turnState.activeAttackPlayer)
+            assertEquals(PlayerId.PLAYER_2, afterLoser.app.turnState.attack.activePlayer)
             assertEquals(TurnPhase.WEAPON_ATTACK, afterLoser.app.currentPhase)
 
             val nextPhase = afterLoser.app.phase

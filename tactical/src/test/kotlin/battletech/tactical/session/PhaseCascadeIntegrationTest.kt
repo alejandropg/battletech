@@ -54,7 +54,7 @@ import org.junit.jupiter.api.Test
  *       [PhaseChanged] events.
  *
  * I7 – In turn 2's MOVEMENT, a unit that moved in turn 1 can be moved again (i.e.,
- *       [TurnState.movedUnitIds] and [TurnState.unitsMovedInCurrentImpulse] were
+ *       [MovementProgress.movedUnitIds] and [MovementProgress.movedInCurrentImpulse] were
  *       reset), and the [MoveUnit] command is accepted.
  */
 internal class PhaseCascadeIntegrationTest {
@@ -110,7 +110,7 @@ internal class PhaseCascadeIntegrationTest {
         assertThat(phaseChanges.single().to).isEqualTo(TurnPhase.MOVEMENT)
 
         // Movement sequence is seeded (non-empty)
-        assertThat(session.turnState.movementSequence.order).isNotEmpty()
+        assertThat(session.turnState.movement.sequence.order).isNotEmpty()
 
         // Subscriber received the same events
         assertThat(received.filterIsInstance<InitiativeRolled>()).hasSize(1)
@@ -186,10 +186,10 @@ internal class PhaseCascadeIntegrationTest {
         val loser = initiative.loser
 
         // Attack sequence is seeded (non-empty)
-        assertThat(session.turnState.attackSequence.order).isNotEmpty()
+        assertThat(session.turnState.attack.sequence.order).isNotEmpty()
         // Loser declares first
         assertThat(session.activePlayer).isEqualTo(loser)
-        assertThat(session.turnState.activeAttackPlayer).isEqualTo(loser)
+        assertThat(session.turnState.attack.activePlayer).isEqualTo(loser)
     }
 
     // -------------------------------------------------------------------------
@@ -215,7 +215,7 @@ internal class PhaseCascadeIntegrationTest {
         val winner = initiative.winner
 
         // 1v1 attack order: loser first, then winner (one impulse each)
-        val attackOrder = session.turnState.attackSequence.order
+        val attackOrder = session.turnState.attack.sequence.order
         assertThat(attackOrder).hasSize(2) // [Impulse(loser,1), Impulse(winner,1)]
 
         // Loser commits empty declarations
@@ -267,8 +267,8 @@ internal class PhaseCascadeIntegrationTest {
         val loser = initiative.loser
 
         // Attack sequence re-seeded: non-empty and not complete
-        assertThat(session.turnState.attackSequence.order).isNotEmpty()
-        assertThat(session.turnState.attackSequence.isComplete).isFalse()
+        assertThat(session.turnState.attack.sequence.order).isNotEmpty()
+        assertThat(session.turnState.attack.sequence.isComplete).isFalse()
 
         // Loser is first in physical attack sequence
         assertThat(session.activePlayer).isEqualTo(loser)
@@ -356,8 +356,8 @@ internal class PhaseCascadeIntegrationTest {
         assertThat(session.turnState.turnNumber).isEqualTo(2)
 
         // movedUnitIds and unitsMovedInCurrentImpulse were reset by the cascade
-        assertThat(session.turnState.movedUnitIds).isEmpty()
-        assertThat(session.turnState.unitsMovedInCurrentImpulse).isEqualTo(0)
+        assertThat(session.turnState.movement.movedUnitIds).isEmpty()
+        assertThat(session.turnState.movement.movedInCurrentImpulse).isEqualTo(0)
 
         // The active player for turn 2 can move their unit (was the turn-1 loser)
         val t2Initiative = session.turnState.initiative
@@ -370,7 +370,7 @@ internal class PhaseCascadeIntegrationTest {
         assertThat(moveResult).isInstanceOf(CommandResult.Accepted::class.java)
 
         // Unit is now in movedUnitIds
-        assertThat(session.turnState.movedUnitIds).contains(loserUnit.id)
+        assertThat(session.turnState.movement.movedUnitIds).contains(loserUnit.id)
     }
 
     // -------------------------------------------------------------------------

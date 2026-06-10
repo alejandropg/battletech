@@ -70,7 +70,7 @@ internal class BattleSessionTest {
         assertThat(moved.to).isEqualTo(HexCoordinates(1, 0))
         assertThat(moved.mode).isEqualTo(MovementMode.WALK)
         assertThat(session.gameState.unitById(mech1.id)!!.position).isEqualTo(HexCoordinates(1, 0))
-        assertThat(session.turnState.movedUnitIds).contains(mech1.id)
+        assertThat(session.turnState.movement.movedUnitIds).contains(mech1.id)
     }
 
     @Test
@@ -157,7 +157,7 @@ internal class BattleSessionTest {
         assertThat(accepted.events.filterIsInstance<AttacksResolved>()).isEmpty()
         assertThat(accepted.events.filterIsInstance<PhaseChanged>()).isEmpty()
 
-        assertThat(session.turnState.attackDeclarations).containsExactlyElementsOf(decls)
+        assertThat(session.turnState.attack.weaponDeclarations).containsExactlyElementsOf(decls)
         assertThat(session.gameState.unitById(mech1.id)!!.torsoFacing).isEqualTo(HexDirection.NE)
     }
 
@@ -195,7 +195,7 @@ internal class BattleSessionTest {
         // Phase auto-advanced after the handler reported complete.
         assertThat(accepted.events.filterIsInstance<PhaseChanged>()).hasSize(1)
         assertThat(session.currentPhase).isEqualTo(TurnPhase.PHYSICAL_ATTACK)
-        assertThat(session.turnState.attackDeclarations).isEmpty()
+        assertThat(session.turnState.attack.weaponDeclarations).isEmpty()
     }
 
     @Test
@@ -210,7 +210,7 @@ internal class BattleSessionTest {
         assertThat(events.filterIsInstance<InitiativeRolled>()).hasSize(1)
         assertThat(events.filterIsInstance<PhaseChanged>()).hasSize(1)
         assertThat(session.currentPhase).isEqualTo(TurnPhase.MOVEMENT)
-        assertThat(session.turnState.movementSequence.order).isNotEmpty
+        assertThat(session.turnState.movement.sequence.order).isNotEmpty
     }
 
     @Test

@@ -30,10 +30,10 @@ internal class PanelFrame(private val appState: AppState) {
     val declaredTargets by lazy {
         val turnState = appState.turnState
         val viewingPlayer =
-            if (turnState.attackSequence.order.isEmpty() || turnState.allAttackImpulsesComplete) {
+            if (turnState.attack.sequence.order.isEmpty() || turnState.attack.isComplete) {
                 PlayerId.PLAYER_1
             } else {
-                turnState.activeAttackPlayer
+                turnState.attack.activePlayer
             }
         appState.phase.declaredTargetsRender(gameState, turnState, viewingPlayer)
     }

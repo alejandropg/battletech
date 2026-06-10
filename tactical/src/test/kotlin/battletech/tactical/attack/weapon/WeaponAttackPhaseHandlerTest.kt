@@ -168,11 +168,11 @@ internal class WeaponAttackPhaseHandlerTest {
         val outcome = handler.onEntry(gameState, turn, noRoller)
 
         // PLAYER_1 is loser (1 active unit) → first impulse; PLAYER_2 winner (1 active unit) → second.
-        assertThat(outcome.turn.attackSequence.order).containsExactly(
+        assertThat(outcome.turn.attack.sequence.order).containsExactly(
             Impulse(PlayerId.PLAYER_1, 1),
             Impulse(PlayerId.PLAYER_2, 1),
         )
-        assertThat(outcome.turn.attackSequence.currentIndex).isEqualTo(0)
+        assertThat(outcome.turn.attack.sequence.currentIndex).isEqualTo(0)
     }
 
     @Test
@@ -191,9 +191,9 @@ internal class WeaponAttackPhaseHandlerTest {
         val outcome = handler.onEntry(gameState, turn, noRoller)
 
         // A completed sequence (guard at lines 90-92) must be replaced with a fresh one.
-        assertThat(outcome.turn.attackSequence.currentIndex).isEqualTo(0)
-        assertThat(outcome.turn.attackSequence.order).isNotEmpty()
-        assertThat(outcome.turn.attackSequence.isComplete).isFalse()
+        assertThat(outcome.turn.attack.sequence.currentIndex).isEqualTo(0)
+        assertThat(outcome.turn.attack.sequence.order).isNotEmpty()
+        assertThat(outcome.turn.attack.sequence.isComplete).isFalse()
     }
 
     // ── apply mid-impulse ────────────────────────────────────────────────────
@@ -215,8 +215,8 @@ internal class WeaponAttackPhaseHandlerTest {
         val turn = seededTwoImpulseTurn()
         val outcome = handler.apply(cmd, gameState, turn, noRoller)
 
-        assertThat(outcome.turn.attackDeclarations).containsExactly(declaration)
-        assertThat(outcome.turn.attackSequence.currentIndex).isEqualTo(1)
+        assertThat(outcome.turn.attack.weaponDeclarations).containsExactly(declaration)
+        assertThat(outcome.turn.attack.sequence.currentIndex).isEqualTo(1)
         assertThat(outcome.events.filterIsInstance<AttackDeclarationsRecorded>()).hasSize(1)
         assertThat(outcome.events.filterIsInstance<AttacksResolved>()).isEmpty()
     }
@@ -254,7 +254,7 @@ internal class WeaponAttackPhaseHandlerTest {
 
         val outcome = handler.apply(cmd, gameState, turn, roller)
 
-        assertThat(outcome.turn.attackDeclarations).isEmpty()
+        assertThat(outcome.turn.attack.weaponDeclarations).isEmpty()
         val resolved = outcome.events.filterIsInstance<AttacksResolved>().single()
         assertThat(resolved.results).hasSize(1)
         assertThat(resolved.results.single().hit).isTrue()

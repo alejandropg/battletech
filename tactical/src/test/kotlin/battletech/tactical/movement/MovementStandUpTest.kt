@@ -43,7 +43,7 @@ internal class MovementStandUpTest {
         val stood = outcome.events.filterIsInstance<UnitStoodUp>().single()
         assertThat(stood.stoodUp).isTrue()
         // Activation not consumed: the unit may still move this impulse.
-        assertThat(outcome.turn.movedUnitIds).doesNotContain(prone.id)
+        assertThat(outcome.turn.movement.movedUnitIds).doesNotContain(prone.id)
     }
 
     @Test
@@ -55,7 +55,7 @@ internal class MovementStandUpTest {
 
         assertThat(outcome.state.unitById(prone.id)!!.isProne).isTrue()
         assertThat(outcome.events.filterIsInstance<UnitStoodUp>().single().stoodUp).isFalse()
-        assertThat(outcome.turn.movedUnitIds).contains(prone.id)
+        assertThat(outcome.turn.movement.movedUnitIds).contains(prone.id)
     }
 
     @Test

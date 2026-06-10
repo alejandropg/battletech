@@ -86,34 +86,11 @@ public data class TurnState(
     val attack: AttackProgress = AttackProgress(),
     val turnNumber: Int = 1,
 ) {
-    // ── Delegating accessors for backward compatibility ───────────────────────
-
-    val movementSequence: ImpulseSequence get() = movement.sequence
-    val movedUnitIds: Set<UnitId> get() = movement.movedUnitIds
-    val unitsMovedInCurrentImpulse: Int get() = movement.movedInCurrentImpulse
-
-    val attackSequence: ImpulseSequence get() = attack.sequence
-    val attackDeclarations: List<AttackDeclaration> get() = attack.weaponDeclarations
-    val physicalAttackDeclarations: List<PhysicalAttackDeclaration> get() = attack.physicalDeclarations
-
-    val currentImpulse: Impulse get() = movement.currentImpulse
-    val activePlayer: PlayerId get() = movement.activePlayer
-    val remainingInImpulse: Int get() = movement.remainingInImpulse
-    val allImpulsesComplete: Boolean get() = movement.isComplete
-
-    val currentAttackImpulse: Impulse get() = attack.currentImpulse
-    val activeAttackPlayer: PlayerId get() = attack.activePlayer
-    val allAttackImpulsesComplete: Boolean get() = attack.isComplete
-
-    /** Delegates to [MovementProgress.afterUnitMoved] for backward compatibility. */
-    public fun advanceAfterUnitMoved(unitId: UnitId): TurnState =
-        copy(movement = movement.afterUnitMoved(unitId))
-
     public fun selectableUnits(gameState: GameState): List<CombatUnit> =
-        gameState.activeUnitsOf(activePlayer).filter { it.id !in movedUnitIds }
+        gameState.activeUnitsOf(movement.activePlayer).filter { it.id !in movement.movedUnitIds }
 
     public fun selectableAttackUnits(gameState: GameState): List<CombatUnit> =
-        gameState.activeUnitsOf(activeAttackPlayer)
+        gameState.activeUnitsOf(attack.activePlayer)
 
     public companion object {
         public val NULL: TurnState = TurnState(

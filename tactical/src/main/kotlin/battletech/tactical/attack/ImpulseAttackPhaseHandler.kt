@@ -17,7 +17,7 @@ import battletech.tactical.unit.UnitId
 
 /**
  * Base for attack phases driven by an alternating impulse sequence
- * (weapon fire, physical attacks). On entry (re-)seeds [TurnState.attackSequence]
+ * (weapon fire, physical attacks). On entry (re-)seeds [AttackProgress.sequence]
  * from initiative; the re-seed-when-complete guard lets the physical phase
  * reuse the sequence the weapon phase finished. Stateless.
  */

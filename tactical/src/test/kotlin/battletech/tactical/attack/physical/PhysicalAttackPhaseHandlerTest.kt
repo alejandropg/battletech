@@ -54,7 +54,7 @@ internal class PhysicalAttackPhaseHandlerTest {
         assertThat(resolved.results.single().hit).isTrue()
         assertThat(outcome.state.unitById(target.id)!!.armor.leftArm)
             .isEqualTo(target.armor.leftArm - 5)
-        assertThat(outcome.turn.physicalAttackDeclarations).isEmpty()
+        assertThat(outcome.turn.attack.physicalDeclarations).isEmpty()
     }
 
     @Test

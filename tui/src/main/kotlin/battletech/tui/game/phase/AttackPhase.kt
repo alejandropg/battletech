@@ -78,8 +78,8 @@ internal sealed interface AttackPhase : Phase {
 
         override fun prompt(app: AppState): String {
             val turnState = app.turnState
-            if (turnState.allAttackImpulsesComplete) return "All attacks declared"
-            val playerName = turnState.activeAttackPlayer.displayName
+            if (turnState.attack.isComplete) return "All attacks declared"
+            val playerName = turnState.attack.activePlayer.displayName
             return "$playerName: select units, toggle weapons | 'c' to commit"
         }
 
@@ -96,7 +96,7 @@ internal sealed interface AttackPhase : Phase {
         private fun trySelect(app: AppState): Transition =
             selectOwnUnit(
                 app = app,
-                activePlayer = app.turnState.activeAttackPlayer,
+                activePlayer = app.turnState.attack.activePlayer,
                 onSelect = { unit ->
                     val newPhase = enterDeclaring(unit, attackTurnPhase, app.viewFor(unit.owner), drafts)
                     Transition(app.copy(phase = newPhase))
@@ -317,9 +317,9 @@ internal fun commitAttackImpulse(
 ): Transition {
     val turnState = app.turnState
     // Guard: nothing to commit if the sequence hasn't been seeded.
-    if (turnState.attackSequence.order.isEmpty()) return Transition(app)
+    if (turnState.attack.sequence.order.isEmpty()) return Transition(app)
 
-    val activePlayer = turnState.activeAttackPlayer
+    val activePlayer = turnState.attack.activePlayer
     val torsoFacings: Map<UnitId, HexDirection> = drafts.values.associate { it.unitId to it.torsoFacing }
     val declarations = drafts.values.toAttackDeclarations()
 
@@ -354,14 +354,14 @@ internal fun buildDeclaredTargetsRender(
     viewingPlayer: PlayerId,
     drafts: Map<UnitId, UnitDeclaration>,
 ): DeclaredTargetsRender {
-    val playerOrder: List<PlayerId> = if (turnState.attackSequence.order.isNotEmpty()) {
-        turnState.attackSequence.order.map { it.player }.distinct()
+    val playerOrder: List<PlayerId> = if (turnState.attack.sequence.order.isNotEmpty()) {
+        turnState.attack.sequence.order.map { it.player }.distinct()
     } else {
         listOf(PlayerId.PLAYER_1, PlayerId.PLAYER_2)
     }
 
     val committedByAttacker: Map<UnitId, List<AttackDeclaration>> =
-        turnState.attackDeclarations.groupBy { it.attackerId }
+        turnState.attack.weaponDeclarations.groupBy { it.attackerId }
 
     val activeDrafts: Map<UnitId, UnitDeclaration> = drafts.filter { (unitId, decl) ->
         val unit = gameState.unitById(unitId) ?: return@filter false

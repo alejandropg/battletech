@@ -58,8 +58,8 @@ internal sealed interface MovementPhase : Phase {
 
         override fun prompt(app: AppState): String {
             val turnState = app.turnState
-            val playerName = turnState.activePlayer.displayName
-            val remaining = turnState.remainingInImpulse
+            val playerName = turnState.movement.activePlayer.displayName
+            val remaining = turnState.movement.remainingInImpulse
             return "$playerName: select a unit to move ($remaining remaining)"
         }
 
@@ -67,17 +67,17 @@ internal sealed interface MovementPhase : Phase {
 
         override fun activePlayerLabel(app: AppState): String? {
             val turnState = app.turnState
-            if (turnState.allImpulsesComplete) return null
-            return turnState.activePlayer.displayName
+            if (turnState.movement.isComplete) return null
+            return turnState.movement.activePlayer.displayName
         }
 
         private fun trySelect(app: AppState): Transition {
             val turnState = app.turnState
             return selectOwnUnit(
                 app = app,
-                activePlayer = turnState.activePlayer,
+                activePlayer = turnState.movement.activePlayer,
                 extraGuard = { unit ->
-                    if (unit.id in turnState.movedUnitIds) FlashMessage("Already moved") else null
+                    if (unit.id in turnState.movement.movedUnitIds) FlashMessage("Already moved") else null
                 },
                 onSelect = { unit ->
                     if (unit.isProne) {
@@ -172,7 +172,7 @@ internal sealed interface MovementPhase : Phase {
 
         override fun activePlayerLabel(app: AppState): String? {
             val turnState = app.turnState
-            return turnState.activePlayer.displayName
+            return turnState.movement.activePlayer.displayName
         }
 
         private fun confirm(app: AppState): Transition {
@@ -267,7 +267,7 @@ internal sealed interface MovementPhase : Phase {
 
         override fun activePlayerLabel(app: AppState): String? {
             val turnState = app.turnState
-            return turnState.activePlayer.displayName
+            return turnState.movement.activePlayer.displayName
         }
 
         private fun commitByFacing(app: AppState, index: Int): Transition {
