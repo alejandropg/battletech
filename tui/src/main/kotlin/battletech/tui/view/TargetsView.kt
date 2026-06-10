@@ -2,6 +2,7 @@ package battletech.tui.view
 
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.unit.UnitId
+import battletech.tui.game.PanelId
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
@@ -14,12 +15,12 @@ public class TargetsView(
 ) : View {
 
     public companion object {
-        public const val INDEX: Int = 3
+        public val INDEX: Int = PanelId.Targets.index
         public const val TITLE: String = "TARGETS"
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "TARGETS", index = 3)
+        buffer.drawBox(x, y, width, height, "TARGETS", index = INDEX)
 
         val cx = x + 2
         var cy = y + 2

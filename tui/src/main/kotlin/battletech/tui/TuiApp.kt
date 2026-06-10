@@ -2,27 +2,21 @@ package battletech.tui
 
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
-import battletech.tactical.model.PlayerId
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.TurnState
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
-import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.input.InputMapper
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
-import battletech.tui.view.AttackResultsView
 import battletech.tui.view.BoardView
-import battletech.tui.view.DeclaredTargetsView
-import battletech.tui.view.LogView
+import battletech.tui.view.Panel
+import battletech.tui.view.PanelFrame
 import battletech.tui.view.PanelSlot
+import battletech.tui.view.Panels
 import battletech.tui.view.StatusBarView
-import battletech.tui.view.TargetStatusView
-import battletech.tui.view.TargetsView
-import battletech.tui.view.UnitStatusView
-import battletech.tui.view.View
 import battletech.tui.view.Viewport
 import battletech.tui.view.resolvePanel
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -103,34 +97,24 @@ public class TuiApp {
     ) {
         val statusBarHeight = 7
 
-        val attackRender = appState.phase.attackRender(appState.gameState)
-        val targetStatusUnit = appState.phase.targetStatusUnit(appState.gameState)
         val visible = PanelVisibility.visibleIndices(appState)
+        val frame = PanelFrame(appState)
 
-        fun panelWidth(index: Int): Int = when {
-            index !in visible -> 0
-            index in appState.collapsedPanels -> 7
-            index == AttackResultsView.INDEX -> 36
-            else -> 28
+        // 0 when hidden, the collapsed stub width when collapsed, else the
+        // panel's own width. The board fills whatever is left.
+        fun panelWidth(panel: Panel): Int = when {
+            panel.id.index !in visible -> 0
+            panel.id.index in appState.collapsedPanels -> 7
+            else -> panel.width
         }
 
-        val targetStatusWidth = panelWidth(TargetStatusView.INDEX)
-        val targetsWidth      = panelWidth(TargetsView.INDEX)
-        val declaredWidth     = panelWidth(DeclaredTargetsView.INDEX)
-        val attackResultsWidth = panelWidth(AttackResultsView.INDEX)
-        val sidebarWidth      = panelWidth(UnitStatusView.INDEX)
-        val logWidth          = panelWidth(LogView.INDEX)
-        val boardWidth = size.width - sidebarWidth - logWidth - targetsWidth - declaredWidth - attackResultsWidth - targetStatusWidth
+        val boardWidth = size.width - Panels.ordered.sumOf { panelWidth(it) }
         val boardHeight = size.height - statusBarHeight
 
         val buffer = ScreenBuffer(size.width, size.height)
         val viewport = Viewport(0, 0, boardWidth - 4, boardHeight - 4)
 
         val renderData = appState.phase.render(appState.gameState)
-        val selectedUnit = appState.phase.selectedUnit(appState)
-        val pathDestination = appState.phase.pathDestination()
-        val movementMode = appState.phase.movementMode()
-
         val boardView = BoardView(
             appState.gameState,
             viewport,
@@ -138,63 +122,26 @@ public class TuiApp {
             hexHighlights = renderData.hexHighlights,
             reachableFacings = renderData.reachableFacings,
             facingSelectionFacings = renderData.facingSelection?.facings,
-            pathDestination = pathDestination,
-            movementMode = movementMode,
+            pathDestination = appState.phase.pathDestination(),
+            movementMode = appState.phase.movementMode(),
             torsoFacings = renderData.torsoFacings,
             validTargetPositions = renderData.validTargetPositions,
             selectedTargetPosition = renderData.selectedTargetPosition,
         )
         boardView.render(buffer, 0, 0, boardWidth, boardHeight)
 
-        fun slot(index: Int, width: Int, title: String, buildReal: () -> View?): PanelSlot =
-            PanelSlot(index, width, title, collapsed = index in appState.collapsedPanels, buildReal)
-
-        val slots = listOf(
-            slot(TargetStatusView.INDEX, targetStatusWidth, TargetStatusView.TITLE) {
-                TargetStatusView(targetStatusUnit)
-            },
-            slot(TargetsView.INDEX, targetsWidth, TargetsView.TITLE) {
-                TargetsView(
-                    targets = attackRender!!.targets,
-                    weaponAssignments = attackRender.weaponAssignments,
-                    primaryTargetId = attackRender.primaryTargetId,
-                    cursorTargetIndex = attackRender.cursorTargetIndex,
-                    cursorWeaponIndex = attackRender.cursorWeaponIndex,
-                )
-            },
-            slot(DeclaredTargetsView.INDEX, declaredWidth, DeclaredTargetsView.TITLE) {
-                val turnState = appState.turnState
-                val viewingPlayer = if (turnState.attackSequence.order.isEmpty() || turnState.allAttackImpulsesComplete)
-                    PlayerId.PLAYER_1
-                else
-                    turnState.activeAttackPlayer
-                appState.phase.declaredTargetsRender(appState.gameState, turnState, viewingPlayer)
-                    ?.let(::DeclaredTargetsView)
-            },
-            slot(AttackResultsView.INDEX, attackResultsWidth, AttackResultsView.TITLE) {
-                appState.lastAttackResults?.let { results ->
-                    AttackResultsView(
-                        AttackResultsRender(
-                            results = results,
-                            unitNames = appState.gameState.units.associate { it.id to it.name },
-                            unitOwners = appState.gameState.units.associate { it.id to it.owner },
-                        )
-                    )
-                }
-            },
-            slot(UnitStatusView.INDEX, sidebarWidth, UnitStatusView.TITLE) {
-                UnitStatusView(unit = selectedUnit)
-            },
-            slot(LogView.INDEX, logWidth, LogView.TITLE) {
-                LogView(entries = appState.session.gameLog.snapshot(), gameState = appState.session.gameState)
-            },
-        )
-
         var nextX = boardWidth
-        for (s in slots) {
-            if (s.width <= 0) continue
-            resolvePanel(s)?.render(buffer, nextX, 0, s.width, boardHeight)
-            nextX += s.width
+        for (panel in Panels.ordered) {
+            val width = panelWidth(panel)
+            if (width <= 0) continue
+            val slot = PanelSlot(
+                panel.id.index,
+                width,
+                panel.title,
+                collapsed = panel.id.index in appState.collapsedPanels,
+            ) { panel.build(frame) }
+            resolvePanel(slot)?.render(buffer, nextX, 0, width, boardHeight)
+            nextX += width
         }
 
         val prompt = flash?.text ?: appState.phase.prompt(appState)

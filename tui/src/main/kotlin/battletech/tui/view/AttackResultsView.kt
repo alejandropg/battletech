@@ -4,6 +4,7 @@ import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.RangeBand
 import battletech.tactical.model.PlayerId
+import battletech.tui.game.PanelId
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
@@ -11,7 +12,7 @@ import battletech.tui.screen.ScreenBuffer
 internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
     companion object {
-        const val INDEX: Int = 5
+        val INDEX: Int = PanelId.AttackResults.index
         const val TITLE: String = "ATTACK RESULTS"
     }
 

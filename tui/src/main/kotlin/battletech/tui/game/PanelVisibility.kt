@@ -1,32 +1,30 @@
 package battletech.tui.game
 
 import battletech.tactical.model.TurnPhase
-import battletech.tui.view.AttackResultsView
-import battletech.tui.view.DeclaredTargetsView
-import battletech.tui.view.LogView
-import battletech.tui.view.TargetStatusView
-import battletech.tui.view.TargetsView
-import battletech.tui.view.UnitStatusView
 
+/**
+ * Decides which side panels are visible this frame, as a set of [PanelId.index]
+ * values. Composes three kinds of owner:
+ *
+ *  - **Always-on** structural panels (LOG, UNIT STATUS).
+ *  - **Cross-phase** state-driven panels (ATTACK RESULTS) whose visibility spans
+ *    several phases and depends on [AppState] rather than any single phase.
+ *  - **Phase-local** panels, delegated to the active phase via
+ *    [battletech.tui.game.phase.Phase.visiblePanels].
+ *
+ * Recomputed every frame, so nothing can go stale.
+ */
 internal object PanelVisibility {
-    fun visibleIndices(appState: AppState): Set<Int> {
-        val visible = mutableSetOf(LogView.INDEX, UnitStatusView.INDEX)
-        if (appState.phase.targetStatusUnit(appState.gameState) != null) visible += TargetStatusView.INDEX
-        val attackRender = appState.phase.attackRender(appState.gameState)
-        if (attackRender?.targets?.isNotEmpty() == true) visible += TargetsView.INDEX
-        // Only the weapon-attack flow populates the declared-targets panel. The
-        // dedicated physical-attack flow leaves declaredTargetsRender null, so
-        // reserving the column there would render as a blank gap between the
-        // tactical map and the attack-results panel.
-        if (appState.currentPhase == TurnPhase.WEAPON_ATTACK) visible += DeclaredTargetsView.INDEX
+    fun visibleIndices(appState: AppState): Set<Int> = buildSet {
+        add(PanelId.Log.index)
+        add(PanelId.UnitStatus.index)
+
         // Results stay visible from weapon resolution onward (through physical
-        // attack + movement). The cascade stops at PHYSICAL_ATTACK, so only
-        // WEAPON_ATTACK must hide them.
-        if (appState.lastAttackResults != null &&
-            appState.currentPhase != TurnPhase.WEAPON_ATTACK
-        ) {
-            visible += AttackResultsView.INDEX
+        // attack + movement). Only the weapon-attack flow hides them.
+        if (appState.lastAttackResults != null && appState.currentPhase != TurnPhase.WEAPON_ATTACK) {
+            add(PanelId.AttackResults.index)
         }
-        return visible
+
+        appState.phase.visiblePanels(appState.gameState).forEach { add(it.index) }
     }
 }

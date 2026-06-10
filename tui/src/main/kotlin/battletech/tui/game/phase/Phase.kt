@@ -9,6 +9,7 @@ import battletech.tactical.query.PublicUnit
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.CombatUnit
 import battletech.tui.game.AppState
+import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData
 import com.github.ajalt.mordant.input.InputEvent
 
@@ -35,6 +36,14 @@ internal sealed interface Phase {
     fun attackRender(gameState: GameState): AttackRender? = null
 
     fun targetStatusUnit(gameState: GameState): PublicUnit? = null
+
+    /**
+     * Phase-local side panels the active phase wants visible. The always-on
+     * and cross-phase panels (LOG, UNIT STATUS, ATTACK RESULTS) are decided by
+     * [battletech.tui.game.PanelVisibility], not here — a phase only declares
+     * the panels that belong to its own workflow.
+     */
+    fun visiblePanels(gameState: GameState): Set<PanelId> = emptySet()
 
     fun declaredTargetsRender(
         gameState: GameState,

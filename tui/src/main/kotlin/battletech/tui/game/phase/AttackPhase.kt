@@ -18,6 +18,7 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
+import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData
 import battletech.tui.game.losHighlights
 import battletech.tui.game.mapToTuiPhase
@@ -44,6 +45,17 @@ internal sealed interface AttackPhase : Phase {
      */
     public val drafts: Map<UnitId, UnitDeclaration>
     override val turnPhase: TurnPhase get() = attackTurnPhase
+
+    override fun visiblePanels(gameState: GameState): Set<PanelId> = buildSet {
+        // The declared-targets panel belongs to the weapon-attack declaration
+        // flow only; the physical-attack flow leaves it empty (see
+        // PhysicalAttackPhase), so reserving its column there would render as a
+        // blank gap. Targets/TargetStatus follow whatever the active sub-phase
+        // populates — SelectingAttacker has neither, Declaring has both.
+        if (attackTurnPhase == TurnPhase.WEAPON_ATTACK) add(PanelId.DeclaredTargets)
+        if (attackRender(gameState)?.targets?.isNotEmpty() == true) add(PanelId.Targets)
+        if (targetStatusUnit(gameState) != null) add(PanelId.TargetStatus)
+    }
 
     public data class SelectingAttacker(
         override val attackTurnPhase: TurnPhase,

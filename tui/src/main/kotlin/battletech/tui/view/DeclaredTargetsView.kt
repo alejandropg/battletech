@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import battletech.tactical.model.PlayerId
+import battletech.tui.game.PanelId
 import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
@@ -8,12 +9,12 @@ import battletech.tui.screen.ScreenBuffer
 internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {
 
     companion object {
-        const val INDEX: Int = 2
+        val INDEX: Int = PanelId.DeclaredTargets.index
         const val TITLE: String = "DECLARED TARGETS"
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "DECLARED TARGETS", index = 2)
+        buffer.drawBox(x, y, width, height, "DECLARED TARGETS", index = INDEX)
 
         val cx = x + 2
         var cy = y + 2

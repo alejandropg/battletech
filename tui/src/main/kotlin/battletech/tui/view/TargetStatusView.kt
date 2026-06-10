@@ -1,18 +1,19 @@
 package battletech.tui.view
 
 import battletech.tactical.query.PublicUnit
+import battletech.tui.game.PanelId
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
 public class TargetStatusView(private val unit: PublicUnit?) : View {
 
     public companion object {
-        public const val INDEX: Int = 4
+        public val INDEX: Int = PanelId.TargetStatus.index
         public const val TITLE: String = "TARGET STATUS"
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "TARGET STATUS", index = 4)
+        buffer.drawBox(x, y, width, height, "TARGET STATUS", index = INDEX)
 
         val cx = x + 2
         var cy = y + 2

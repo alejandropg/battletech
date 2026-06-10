@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import battletech.tactical.unit.CombatUnit
+import battletech.tui.game.PanelId
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
@@ -9,12 +10,12 @@ public class UnitStatusView(
 ) : View {
 
     public companion object {
-        public const val INDEX: Int = 1
+        public val INDEX: Int = PanelId.UnitStatus.index
         public const val TITLE: String = "UNIT STATUS"
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "UNIT STATUS", index = 1)
+        buffer.drawBox(x, y, width, height, "UNIT STATUS", index = INDEX)
 
         val cx = x + 2
         var cy = y + 2

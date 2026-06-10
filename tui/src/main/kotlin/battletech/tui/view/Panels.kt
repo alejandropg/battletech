@@ -1,0 +1,54 @@
+package battletech.tui.view
+
+import battletech.tui.game.PanelId
+
+/**
+ * Static description of one side panel: its stable [id], its [title], its
+ * expanded [width], and how to [build] its view from the per-frame [PanelFrame].
+ *
+ * A panel carries no visibility logic — [battletech.tui.game.PanelVisibility]
+ * decides what shows — and never sees `AppState`; it builds from the prepared
+ * data on [PanelFrame].
+ */
+internal class Panel(
+    val id: PanelId,
+    val title: String,
+    val width: Int,
+    val build: (PanelFrame) -> View?,
+)
+
+/**
+ * The side-panel registry, in left-to-right render order (the tactical board
+ * fills the space to their left). This list *is* the layout order; a panel's
+ * [PanelId.index] is the independent collapse/identity key and need not match.
+ */
+internal object Panels {
+    val ordered: List<Panel> = listOf(
+        Panel(PanelId.TargetStatus, TargetStatusView.TITLE, width = 28) { frame ->
+            TargetStatusView(frame.targetStatusUnit)
+        },
+        Panel(PanelId.Targets, TargetsView.TITLE, width = 28) { frame ->
+            frame.attackRender?.let {
+                TargetsView(
+                    targets = it.targets,
+                    weaponAssignments = it.weaponAssignments,
+                    primaryTargetId = it.primaryTargetId,
+                    cursorTargetIndex = it.cursorTargetIndex,
+                    cursorWeaponIndex = it.cursorWeaponIndex,
+                )
+            }
+        },
+        Panel(PanelId.DeclaredTargets, DeclaredTargetsView.TITLE, width = 28) { frame ->
+            frame.declaredTargets?.let(::DeclaredTargetsView)
+        },
+        Panel(PanelId.AttackResults, AttackResultsView.TITLE, width = 36) { frame ->
+            frame.attackResults?.let(::AttackResultsView)
+        },
+        Panel(PanelId.UnitStatus, UnitStatusView.TITLE, width = 28) { frame ->
+            UnitStatusView(frame.selectedUnit)
+        },
+        Panel(PanelId.Log, LogView.TITLE, width = 28) { frame ->
+            LogView(entries = frame.logEntries, gameState = frame.gameState)
+        },
+    )
+}

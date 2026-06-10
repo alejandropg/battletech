@@ -2,6 +2,7 @@ package battletech.tui.view
 
 import battletech.tactical.model.GameState
 import battletech.tactical.session.LogEntry
+import battletech.tui.game.PanelId
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.TextWrap
 
@@ -11,12 +12,12 @@ public class LogView(
 ) : View {
 
     public companion object {
-        public const val INDEX: Int = 0
+        public val INDEX: Int = PanelId.Log.index
         public const val TITLE: String = "LOG"
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "LOG", index = 0)
+        buffer.drawBox(x, y, width, height, "LOG", index = INDEX)
 
         val innerX = x + 2
         val innerY = y + 1
