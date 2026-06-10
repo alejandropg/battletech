@@ -15,6 +15,7 @@ import battletech.tactical.session.CommandResult
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
+import battletech.tactical.session.toAttackDeclarations
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
@@ -424,18 +425,7 @@ internal fun commitAttackImpulse(
 
     val activePlayer = turnState.activeAttackPlayer
     val torsoFacings: Map<UnitId, HexDirection> = drafts.values.associate { it.unitId to it.torsoFacing }
-    val declarations = drafts.values.flatMap { decl ->
-        decl.weaponAssignments.flatMap { (targetId, weaponIndices) ->
-            weaponIndices.map { weaponIndex ->
-                AttackDeclaration(
-                    attackerId = decl.unitId,
-                    targetId = targetId,
-                    weaponIndex = weaponIndex,
-                    isPrimary = targetId == decl.primaryTargetId,
-                )
-            }
-        }
-    }
+    val declarations = drafts.values.toAttackDeclarations()
 
     val result = app.session.submitCommand(
         CommitAttackImpulse(
