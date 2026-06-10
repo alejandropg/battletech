@@ -45,18 +45,10 @@ internal sealed interface MovementPhase : Phase {
     data object SelectingUnit : MovementPhase {
 
         override fun handle(event: InputEvent, app: AppState): Transition? {
-            val action = when (event) {
-                is KeyboardEvent -> InputMapper.mapIdleEvent(event)
-                is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
-                    ?.let { IdleAction.ClickHex(it) }
-            } ?: return null
+            val action = mapIdleInput(event) ?: return null
 
             return when (action) {
-                is IdleAction.MoveCursor -> {
-                    val newCursor = moveCursor(app.cursor, action.direction, app.gameState.map)
-                    Transition(app.copy(cursor = newCursor))
-                }
-
+                is IdleAction.MoveCursor -> handleCursorMove(app, action)
                 is IdleAction.ClickHex -> trySelect(app.copy(cursor = action.coords))
                 is IdleAction.SelectUnit -> trySelect(app)
                 is IdleAction.CycleUnit -> cycleToNextUnit(app, app.gameState.unitAt(app.cursor)?.id)
@@ -80,23 +72,24 @@ internal sealed interface MovementPhase : Phase {
         }
 
         private fun trySelect(app: AppState): Transition {
-            val unit = app.gameState.unitAt(app.cursor) ?: return Transition(app)
             val turnState = app.turnState
-
-            if (unit.owner != turnState.activePlayer) {
-                return Transition(app, FlashMessage("Not your unit"))
-            }
-            if (unit.id in turnState.movedUnitIds) {
-                return Transition(app, FlashMessage("Already moved"))
-            }
-            if (unit.isProne) {
-                // A prone unit must stand before it can move.
-                app.session.submitCommand(StandUp(playerId = unit.owner, unitId = unit.id))
-                return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)))
-            }
-
-            val newPhase = enterBrowsing(unit, app.viewFor(unit.owner))
-            return Transition(app.copy(phase = newPhase))
+            return selectOwnUnit(
+                app = app,
+                activePlayer = turnState.activePlayer,
+                extraGuard = { unit ->
+                    if (unit.id in turnState.movedUnitIds) FlashMessage("Already moved") else null
+                },
+                onSelect = { unit ->
+                    if (unit.isProne) {
+                        // A prone unit must stand before it can move.
+                        app.session.submitCommand(StandUp(playerId = unit.owner, unitId = unit.id))
+                        Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)))
+                    } else {
+                        val newPhase = enterBrowsing(unit, app.viewFor(unit.owner))
+                        Transition(app.copy(phase = newPhase))
+                    }
+                },
+            )
         }
 
     }
@@ -132,7 +125,7 @@ internal sealed interface MovementPhase : Phase {
         override fun handle(event: InputEvent, app: AppState): Transition? {
             val action = when (event) {
                 is KeyboardEvent -> InputMapper.mapBrowsingEvent(event)
-                is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
+                is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y)
                     ?.let { BrowsingAction.ClickHex(it) }
             } ?: return null
 

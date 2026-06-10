@@ -19,13 +19,11 @@ import battletech.tui.game.PanelId
 import battletech.tui.game.attackPlayerLabel
 import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
-import battletech.tui.game.moveCursor
 import battletech.tui.input.AttackAction
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
-import com.github.ajalt.mordant.input.MouseEvent
 
 internal const val PHYSICAL_DECLARING_PROMPT =
     "↑/↓ navigate | Space: toggle punch/kick | Tab: next attacker | 'c': commit"
@@ -49,17 +47,13 @@ internal sealed interface PhysicalAttackPhase : Phase {
     ) : PhysicalAttackPhase {
 
         override fun handle(event: InputEvent, app: AppState): Transition? {
-            val action = when (event) {
-                is KeyboardEvent -> InputMapper.mapIdleEvent(event)
-                is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)?.let { IdleAction.ClickHex(it) }
-            } ?: return null
+            val action = mapIdleInput(event) ?: return null
 
             return when (action) {
-                is IdleAction.MoveCursor ->
-                    Transition(app.copy(cursor = moveCursor(app.cursor, action.direction, app.gameState.map)))
+                is IdleAction.MoveCursor -> handleCursorMove(app, action)
                 is IdleAction.ClickHex -> trySelect(app.copy(cursor = action.coords))
                 is IdleAction.SelectUnit -> trySelect(app)
-                is IdleAction.CycleUnit -> cycleUnit(app)
+                is IdleAction.CycleUnit -> cycleSelectable(app, app.turnState.selectableAttackUnits(app.gameState))
                 is IdleAction.CommitDeclarations -> commitPhysicalImpulse(app, drafts)
             }
         }
@@ -75,18 +69,14 @@ internal sealed interface PhysicalAttackPhase : Phase {
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState)
 
-        private fun trySelect(app: AppState): Transition {
-            val unit = app.gameState.unitAt(app.cursor) ?: return Transition(app)
-            if (unit.owner != app.turnState.activeAttackPlayer) return Transition(app, FlashMessage("Not your unit"))
-            return Transition(app.copy(phase = enterPhysicalDeclaring(unit.id, app, drafts)))
-        }
-
-        private fun cycleUnit(app: AppState): Transition {
-            val units = app.turnState.selectableAttackUnits(app.gameState)
-            if (units.isEmpty()) return Transition(app)
-            val idx = units.indexOfFirst { it.position == app.cursor }
-            return Transition(app.copy(cursor = units[(idx + 1) % units.size].position))
-        }
+        private fun trySelect(app: AppState): Transition =
+            selectOwnUnit(
+                app = app,
+                activePlayer = app.turnState.activeAttackPlayer,
+                onSelect = { unit ->
+                    Transition(app.copy(phase = enterPhysicalDeclaring(unit.id, app, drafts)))
+                },
+            )
     }
 
     public data class Declaring(

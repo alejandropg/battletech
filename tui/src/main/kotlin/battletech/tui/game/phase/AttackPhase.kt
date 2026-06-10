@@ -19,14 +19,12 @@ import battletech.tactical.session.toAttackDeclarations
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
-import battletech.tui.game.FlashMessage
 import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData
 import battletech.tui.game.attackPlayerLabel
 import battletech.tui.game.displayName
 import battletech.tui.game.losHighlights
 import battletech.tui.game.mapToTuiPhase
-import battletech.tui.game.moveCursor
 import battletech.tui.game.selectedLosHighlights
 import battletech.tui.hex.HexHighlight
 import battletech.tui.input.AttackAction
@@ -67,21 +65,13 @@ internal sealed interface AttackPhase : Phase {
     ) : AttackPhase {
 
         override fun handle(event: InputEvent, app: AppState): Transition? {
-            val action = when (event) {
-                is KeyboardEvent -> InputMapper.mapIdleEvent(event)
-                is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
-                    ?.let { IdleAction.ClickHex(it) }
-            } ?: return null
+            val action = mapIdleInput(event) ?: return null
 
             return when (action) {
-                is IdleAction.MoveCursor -> {
-                    val newCursor = moveCursor(app.cursor, action.direction, app.gameState.map)
-                    Transition(app.copy(cursor = newCursor))
-                }
-
+                is IdleAction.MoveCursor -> handleCursorMove(app, action)
                 is IdleAction.ClickHex -> trySelect(app.copy(cursor = action.coords))
                 is IdleAction.SelectUnit -> trySelect(app)
-                is IdleAction.CycleUnit -> cycleUnit(app)
+                is IdleAction.CycleUnit -> cycleSelectable(app, app.turnState.selectableAttackUnits(app.gameState))
                 is IdleAction.CommitDeclarations -> commitAttackImpulse(app, attackTurnPhase, drafts)
             }
         }
@@ -103,27 +93,15 @@ internal sealed interface AttackPhase : Phase {
             viewingPlayer: PlayerId,
         ): DeclaredTargetsRender = buildDeclaredTargetsRender(gameState, turnState, viewingPlayer, drafts)
 
-        private fun trySelect(app: AppState): Transition {
-            val unit = app.gameState.unitAt(app.cursor) ?: return Transition(app)
-            val turnState = app.turnState
-
-            if (unit.owner != turnState.activeAttackPlayer) {
-                return Transition(app, FlashMessage("Not your unit"))
-            }
-
-            val newPhase = enterDeclaring(unit, attackTurnPhase, app.viewFor(unit.owner), drafts)
-            return Transition(app.copy(phase = newPhase))
-        }
-
-        private fun cycleUnit(app: AppState): Transition {
-            val turnState = app.turnState
-            val units = turnState.selectableAttackUnits(app.gameState)
-            if (units.isEmpty()) return Transition(app)
-
-            val currentIdx = units.indexOfFirst { it.position == app.cursor }
-            val nextIdx = (currentIdx + 1) % units.size
-            return Transition(app.copy(cursor = units[nextIdx].position))
-        }
+        private fun trySelect(app: AppState): Transition =
+            selectOwnUnit(
+                app = app,
+                activePlayer = app.turnState.activeAttackPlayer,
+                onSelect = { unit ->
+                    val newPhase = enterDeclaring(unit, attackTurnPhase, app.viewFor(unit.owner), drafts)
+                    Transition(app.copy(phase = newPhase))
+                },
+            )
     }
 
     public data class Declaring(
@@ -152,7 +130,7 @@ internal sealed interface AttackPhase : Phase {
         override fun handle(event: InputEvent, app: AppState): Transition? {
             val action = when (event) {
                 is KeyboardEvent -> InputMapper.mapAttackEvent(event)
-                is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2)
+                is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y)
                     ?.let { AttackAction.ClickTarget(it) }
             } ?: return null
 
