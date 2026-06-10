@@ -8,7 +8,7 @@ import battletech.tui.screen.ScreenBuffer
 public class TargetStatusView(private val unit: PublicUnit?) : View {
 
     public companion object {
-        public val INDEX: Int = PanelId.TargetStatus.index
+        public val INDEX: Int = PanelId.TARGET_STATUS.index
         public const val TITLE: String = "TARGET STATUS"
     }
 

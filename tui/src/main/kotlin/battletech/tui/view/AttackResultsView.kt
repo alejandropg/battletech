@@ -12,7 +12,7 @@ import battletech.tui.screen.ScreenBuffer
 internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
     companion object {
-        val INDEX: Int = PanelId.AttackResults.index
+        val INDEX: Int = PanelId.ATTACK_RESULTS.index
         const val TITLE: String = "ATTACK RESULTS"
     }
 

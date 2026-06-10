@@ -12,10 +12,10 @@ package battletech.tui.game
  * derive from it.
  */
 internal enum class PanelId(val index: Int) {
-    Log(0),
-    UnitStatus(1),
-    DeclaredTargets(2),
-    Targets(3),
-    TargetStatus(4),
-    AttackResults(5),
+    LOG(0),
+    UNIT_STATUS(1),
+    DECLARED_TARGETS(2),
+    TARGETS(3),
+    TARGET_STATUS(4),
+    ATTACK_RESULTS(5),
 }

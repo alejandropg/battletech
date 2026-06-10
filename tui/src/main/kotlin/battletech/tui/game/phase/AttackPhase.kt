@@ -52,9 +52,9 @@ internal sealed interface AttackPhase : Phase {
         // PhysicalAttackPhase), so reserving its column there would render as a
         // blank gap. Targets/TargetStatus follow whatever the active sub-phase
         // populates — SelectingAttacker has neither, Declaring has both.
-        if (attackTurnPhase == TurnPhase.WEAPON_ATTACK) add(PanelId.DeclaredTargets)
-        if (attackRender(gameState)?.targets?.isNotEmpty() == true) add(PanelId.Targets)
-        if (targetStatusUnit(gameState) != null) add(PanelId.TargetStatus)
+        if (attackTurnPhase == TurnPhase.WEAPON_ATTACK) add(PanelId.DECLARED_TARGETS)
+        if (attackRender(gameState)?.targets?.isNotEmpty() == true) add(PanelId.TARGETS)
+        if (targetStatusUnit(gameState) != null) add(PanelId.TARGET_STATUS)
     }
 
     public data class SelectingAttacker(

@@ -12,7 +12,7 @@ public class LogView(
 ) : View {
 
     public companion object {
-        public val INDEX: Int = PanelId.Log.index
+        public val INDEX: Int = PanelId.LOG.index
         public const val TITLE: String = "LOG"
     }
 

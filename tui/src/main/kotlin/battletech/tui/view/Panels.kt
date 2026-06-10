@@ -24,10 +24,10 @@ internal class Panel(
  */
 internal object Panels {
     val ordered: List<Panel> = listOf(
-        Panel(PanelId.TargetStatus, TargetStatusView.TITLE, width = 28) { frame ->
+        Panel(PanelId.TARGET_STATUS, TargetStatusView.TITLE, width = 28) { frame ->
             TargetStatusView(frame.targetStatusUnit)
         },
-        Panel(PanelId.Targets, TargetsView.TITLE, width = 28) { frame ->
+        Panel(PanelId.TARGETS, TargetsView.TITLE, width = 28) { frame ->
             frame.attackRender?.let {
                 TargetsView(
                     targets = it.targets,
@@ -38,16 +38,16 @@ internal object Panels {
                 )
             }
         },
-        Panel(PanelId.DeclaredTargets, DeclaredTargetsView.TITLE, width = 28) { frame ->
+        Panel(PanelId.DECLARED_TARGETS, DeclaredTargetsView.TITLE, width = 28) { frame ->
             frame.declaredTargets?.let(::DeclaredTargetsView)
         },
-        Panel(PanelId.AttackResults, AttackResultsView.TITLE, width = 36) { frame ->
+        Panel(PanelId.ATTACK_RESULTS, AttackResultsView.TITLE, width = 36) { frame ->
             frame.attackResults?.let(::AttackResultsView)
         },
-        Panel(PanelId.UnitStatus, UnitStatusView.TITLE, width = 28) { frame ->
+        Panel(PanelId.UNIT_STATUS, UnitStatusView.TITLE, width = 28) { frame ->
             UnitStatusView(frame.selectedUnit)
         },
-        Panel(PanelId.Log, LogView.TITLE, width = 28) { frame ->
+        Panel(PanelId.LOG, LogView.TITLE, width = 28) { frame ->
             LogView(entries = frame.logEntries, gameState = frame.gameState)
         },
     )

@@ -16,13 +16,13 @@ import battletech.tactical.model.TurnPhase
  */
 internal object PanelVisibility {
     fun visibleIndices(appState: AppState): Set<Int> = buildSet {
-        add(PanelId.Log.index)
-        add(PanelId.UnitStatus.index)
+        add(PanelId.LOG.index)
+        add(PanelId.UNIT_STATUS.index)
 
         // Results stay visible from weapon resolution onward (through physical
         // attack + movement). Only the weapon-attack flow hides them.
         if (appState.lastAttackResults != null && appState.currentPhase != TurnPhase.WEAPON_ATTACK) {
-            add(PanelId.AttackResults.index)
+            add(PanelId.ATTACK_RESULTS.index)
         }
 
         appState.phase.visiblePanels(appState.gameState).forEach { add(it.index) }

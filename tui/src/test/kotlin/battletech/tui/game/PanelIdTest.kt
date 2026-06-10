@@ -12,11 +12,11 @@ internal class PanelIdTest {
      */
     @Test
     fun `panel indices are stable`() {
-        assertEquals(0, PanelId.Log.index)
-        assertEquals(1, PanelId.UnitStatus.index)
-        assertEquals(2, PanelId.DeclaredTargets.index)
-        assertEquals(3, PanelId.Targets.index)
-        assertEquals(4, PanelId.TargetStatus.index)
-        assertEquals(5, PanelId.AttackResults.index)
+        assertEquals(0, PanelId.LOG.index)
+        assertEquals(1, PanelId.UNIT_STATUS.index)
+        assertEquals(2, PanelId.DECLARED_TARGETS.index)
+        assertEquals(3, PanelId.TARGETS.index)
+        assertEquals(4, PanelId.TARGET_STATUS.index)
+        assertEquals(5, PanelId.ATTACK_RESULTS.index)
     }
 }

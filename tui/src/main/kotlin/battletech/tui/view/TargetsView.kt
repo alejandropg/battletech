@@ -15,7 +15,7 @@ public class TargetsView(
 ) : View {
 
     public companion object {
-        public val INDEX: Int = PanelId.Targets.index
+        public val INDEX: Int = PanelId.TARGETS.index
         public const val TITLE: String = "TARGETS"
     }
 

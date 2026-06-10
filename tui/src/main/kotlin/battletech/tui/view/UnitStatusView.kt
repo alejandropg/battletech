@@ -10,7 +10,7 @@ public class UnitStatusView(
 ) : View {
 
     public companion object {
-        public val INDEX: Int = PanelId.UnitStatus.index
+        public val INDEX: Int = PanelId.UNIT_STATUS.index
         public const val TITLE: String = "UNIT STATUS"
     }
 

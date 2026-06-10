@@ -9,7 +9,7 @@ import battletech.tui.screen.ScreenBuffer
 internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {
 
     companion object {
-        val INDEX: Int = PanelId.DeclaredTargets.index
+        val INDEX: Int = PanelId.DECLARED_TARGETS.index
         const val TITLE: String = "DECLARED TARGETS"
     }
 

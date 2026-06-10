@@ -39,7 +39,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
     override fun visiblePanels(gameState: GameState): Set<PanelId> = buildSet {
         // Physical attacks reuse the TARGETS panel (Declaring populates it) but
         // never the declared-targets column. The freed width goes to the map.
-        if (attackRender(gameState)?.targets?.isNotEmpty() == true) add(PanelId.Targets)
+        if (attackRender(gameState)?.targets?.isNotEmpty() == true) add(PanelId.TARGETS)
     }
 
     data class SelectingAttacker(

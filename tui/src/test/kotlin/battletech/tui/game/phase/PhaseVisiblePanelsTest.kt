@@ -19,7 +19,7 @@ internal class PhaseVisiblePanelsTest {
     fun `weapon-attack attacker selection reserves DECLARED TARGETS`() {
         val phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
 
-        assertEquals(setOf(PanelId.DeclaredTargets), phase.visiblePanels(gameState))
+        assertEquals(setOf(PanelId.DECLARED_TARGETS), phase.visiblePanels(gameState))
     }
 
     @Test
