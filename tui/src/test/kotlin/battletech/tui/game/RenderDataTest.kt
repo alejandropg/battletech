@@ -187,11 +187,13 @@ internal class RenderDataTest {
         ): AttackPhase.Declaring = AttackPhase.Declaring(
             attackTurnPhase = TurnPhase.WEAPON_ATTACK,
             unitId = attacker,
-            torsoFacing = torsoFacing,
-            cursorTargetIndex = cursorTargetIndex,
-            cursorWeaponIndex = 0,
-            weaponAssignments = emptyMap(),
-            primaryTargetId = null,
+            allocation = battletech.tui.game.phase.WeaponAllocation(
+                torsoFacing = torsoFacing,
+                cursorTargetIndex = cursorTargetIndex,
+                cursorWeaponIndex = 0,
+                weaponAssignments = emptyMap(),
+                primaryTargetId = null,
+            ),
         )
 
         @Test

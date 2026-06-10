@@ -14,6 +14,7 @@ import battletech.tactical.unit.Weapon
 import battletech.tui.aGameMap
 import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackPhase
+import battletech.tui.game.phase.WeaponAllocation
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -57,11 +58,13 @@ internal class DeclaredTargetsIntegrationTest {
         val phase = AttackPhase.Declaring(
             attackTurnPhase = TurnPhase.WEAPON_ATTACK,
             unitId = attacker.id,
-            torsoFacing = HexDirection.N,
-            cursorTargetIndex = 0,
-            cursorWeaponIndex = 0,
-            weaponAssignments = mapOf(target.id to setOf(0)),
-            primaryTargetId = target.id,
+            allocation = WeaponAllocation(
+                torsoFacing = HexDirection.N,
+                weaponAssignments = mapOf(target.id to setOf(0)),
+                primaryTargetId = target.id,
+                cursorTargetIndex = 0,
+                cursorWeaponIndex = 0,
+            ),
             drafts = emptyMap(),
         )
 
@@ -103,11 +106,13 @@ internal class DeclaredTargetsIntegrationTest {
         val phase = AttackPhase.Declaring(
             attackTurnPhase = TurnPhase.WEAPON_ATTACK,
             unitId = attacker.id,
-            torsoFacing = HexDirection.N,
-            cursorTargetIndex = 0,
-            cursorWeaponIndex = 0,
-            weaponAssignments = mapOf(target.id to setOf(0)),
-            primaryTargetId = target.id,
+            allocation = WeaponAllocation(
+                torsoFacing = HexDirection.N,
+                weaponAssignments = mapOf(target.id to setOf(0)),
+                primaryTargetId = target.id,
+                cursorTargetIndex = 0,
+                cursorWeaponIndex = 0,
+            ),
             drafts = emptyMap(),
         )
 

@@ -275,10 +275,12 @@ internal class AttackPhaseTest {
             assertTrue(enemy1Idx >= 0)
 
             val setup = phase.copy(
-                weaponAssignments = mapOf(enemy1.id to setOf(0), enemy2.id to setOf(1)),
-                primaryTargetId = enemy1.id,
-                cursorTargetIndex = enemy1Idx,
-                cursorWeaponIndex = 0,
+                allocation = phase.allocation.copy(
+                    weaponAssignments = mapOf(enemy1.id to setOf(0), enemy2.id to setOf(1)),
+                    primaryTargetId = enemy1.id,
+                    cursorTargetIndex = enemy1Idx,
+                    cursorWeaponIndex = 0,
+                ),
             )
             val state = anAppState(setup, gameState, turnState, cursor = enemy1.position)
 
