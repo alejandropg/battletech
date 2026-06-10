@@ -368,70 +368,69 @@ internal fun buildDeclaredTargetsRender(
         unit.owner == viewingPlayer && decl.weaponAssignments.values.any { it.isNotEmpty() }
     }
 
-    val entries = mutableListOf<DeclaredAttackerEntry>()
-
-    for (player in playerOrder) {
-        val committedAttackerIds = committedByAttacker.keys
-            .filter { id -> gameState.unitById(id)?.owner == player }
-            .sortedBy { it.value }
-
-        for (attackerId in committedAttackerIds) {
-            val attackerUnit = gameState.unitById(attackerId) ?: continue
-            val declarations = committedByAttacker[attackerId] ?: continue
-            val view = DefaultPlayerView(attackerUnit.owner, gameState)
-            val targetInfos = view.targetInfos(attackerId, attackerUnit.torsoFacing)
-
-            val byTarget = declarations.groupBy { it.targetId }
-            val targetEntries = byTarget.entries.map { (targetId, decls) ->
-                val targetName = gameState.unitById(targetId)?.name ?: targetId.value
-                val isPrimary = decls.any { it.isPrimary }
-                val weaponEntries = decls.sortedBy { it.weaponIndex }.map { decl ->
-                    resolveWeaponEntry(attackerUnit, decl.weaponIndex, targetId, targetInfos)
-                }
-                DeclaredTargetEntry(targetName = targetName, isPrimary = isPrimary, weapons = weaponEntries)
-            }
-
-            entries += DeclaredAttackerEntry(
-                attackerName = attackerUnit.name,
-                ownerPlayer = player,
-                isDraft = false,
-                targets = targetEntries,
-            )
-        }
-
-        if (player == viewingPlayer) {
-            val draftAttackerIds = activeDrafts.keys
+    // Normalize both sources to (targetId, sortedWeaponIndices, isPrimary) triples,
+    // then delegate to a single helper that builds one DeclaredAttackerEntry.
+    val entries = buildList {
+        for (player in playerOrder) {
+            committedByAttacker.keys
                 .filter { id -> gameState.unitById(id)?.owner == player }
                 .sortedBy { it.value }
-
-            for (attackerId in draftAttackerIds) {
-                val decl = activeDrafts[attackerId] ?: continue
-                val attackerUnit = gameState.unitById(attackerId) ?: continue
-                val view = DefaultPlayerView(attackerUnit.owner, gameState)
-                val targetInfos = view.targetInfos(attackerId, decl.torsoFacing)
-
-                val targetEntries = decl.weaponAssignments.entries
-                    .filter { (_, weapons) -> weapons.isNotEmpty() }
-                    .map { (targetId, weaponIndices) ->
-                        val targetName = gameState.unitById(targetId)?.name ?: targetId.value
-                        val isPrimary = decl.primaryTargetId == targetId
-                        val weaponEntries = weaponIndices.sorted().map { weaponIndex ->
-                            resolveWeaponEntry(attackerUnit, weaponIndex, targetId, targetInfos)
+                .forEach { attackerId ->
+                    val attackerUnit = gameState.unitById(attackerId) ?: return@forEach
+                    val declarations = committedByAttacker[attackerId] ?: return@forEach
+                    val normalized = declarations.groupBy { it.targetId }
+                        .map { (targetId, decls) ->
+                            Triple(targetId, decls.sortedBy { it.weaponIndex }.map { it.weaponIndex }, decls.any { it.isPrimary })
                         }
-                        DeclaredTargetEntry(targetName = targetName, isPrimary = isPrimary, weapons = weaponEntries)
-                    }
+                    val targetInfos = DefaultPlayerView(attackerUnit.owner, gameState)
+                        .targetInfos(attackerId, attackerUnit.torsoFacing)
+                    add(attackerEntry(attackerUnit, normalized, isDraft = false, player, gameState, targetInfos))
+                }
 
-                entries += DeclaredAttackerEntry(
-                    attackerName = attackerUnit.name,
-                    ownerPlayer = player,
-                    isDraft = true,
-                    targets = targetEntries,
-                )
+            if (player == viewingPlayer) {
+                activeDrafts.keys
+                    .filter { id -> gameState.unitById(id)?.owner == player }
+                    .sortedBy { it.value }
+                    .forEach { attackerId ->
+                        val decl = activeDrafts[attackerId] ?: return@forEach
+                        val attackerUnit = gameState.unitById(attackerId) ?: return@forEach
+                        val normalized = decl.weaponAssignments.entries
+                            .filter { (_, weapons) -> weapons.isNotEmpty() }
+                            .map { (targetId, weaponIndices) ->
+                                Triple(targetId, weaponIndices.sorted(), decl.primaryTargetId == targetId)
+                            }
+                        val targetInfos = DefaultPlayerView(attackerUnit.owner, gameState)
+                            .targetInfos(attackerId, decl.torsoFacing)
+                        add(attackerEntry(attackerUnit, normalized, isDraft = true, player, gameState, targetInfos))
+                    }
             }
         }
     }
 
     return DeclaredTargetsRender(entries = entries)
+}
+
+private fun attackerEntry(
+    attackerUnit: battletech.tactical.unit.CombatUnit,
+    targets: List<Triple<UnitId, List<Int>, Boolean>>,
+    isDraft: Boolean,
+    ownerPlayer: PlayerId,
+    gameState: GameState,
+    targetInfos: List<battletech.tactical.attack.weapon.TargetInfo>,
+): DeclaredAttackerEntry {
+    val targetEntries = targets.map { (targetId, weaponIndices, isPrimary) ->
+        val targetName = gameState.unitById(targetId)?.name ?: targetId.value
+        val weaponEntries = weaponIndices.map { weaponIndex ->
+            resolveWeaponEntry(attackerUnit, weaponIndex, targetId, targetInfos)
+        }
+        DeclaredTargetEntry(targetName = targetName, isPrimary = isPrimary, weapons = weaponEntries)
+    }
+    return DeclaredAttackerEntry(
+        attackerName = attackerUnit.name,
+        ownerPlayer = ownerPlayer,
+        isDraft = isDraft,
+        targets = targetEntries,
+    )
 }
 
 private fun resolveWeaponEntry(
