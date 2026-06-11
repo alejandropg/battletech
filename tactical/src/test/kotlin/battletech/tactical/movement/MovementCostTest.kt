@@ -5,27 +5,20 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Terrain
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 
 internal class MovementCostTest {
 
-    @Test
-    fun `clear terrain costs 1`() {
-        assertEquals(1, MovementCost.terrainCost(Terrain.CLEAR))
-    }
-
-    @Test
-    fun `light woods costs 2`() {
-        assertEquals(2, MovementCost.terrainCost(Terrain.LIGHT_WOODS))
-    }
-
-    @Test
-    fun `heavy woods costs 3`() {
-        assertEquals(3, MovementCost.terrainCost(Terrain.HEAVY_WOODS))
-    }
-
-    @Test
-    fun `water costs 2`() {
-        assertEquals(2, MovementCost.terrainCost(Terrain.WATER))
+    @ParameterizedTest
+    @CsvSource(
+        "CLEAR, 1",
+        "LIGHT_WOODS, 2",
+        "HEAVY_WOODS, 3",
+        "WATER, 2",
+    )
+    fun `terrain has its movement cost`(terrain: Terrain, expected: Int) {
+        assertEquals(expected, MovementCost.terrainCost(terrain))
     }
 
     @Test
