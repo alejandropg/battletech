@@ -175,9 +175,9 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // Shifted down by the heat-sink row, the projected-heat "End:" line, and the standalone heat value line.
-        val row17 = (2 until 26).map { buffer.get(it, 17).char }.joinToString("")
-        assertTrue(row17.contains("ARMOR"))
+        // Shifted down by: heat-sink row, current bar (2 rows), "End" label, projected bar (2 rows), blank.
+        val row19 = (2 until 26).map { buffer.get(it, 19).char }.joinToString("")
+        assertTrue(row19.contains("ARMOR"))
     }
 
     @Test
@@ -188,11 +188,11 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // HD value row: cy=18, "HD: 9" starts at cx+9=11
-        val line = (2 until 26).map { buffer.get(it, 18).char }.joinToString("")
+        // HD value row: cy=20, "HD: 9" starts at cx+9=11
+        val line = (2 until 26).map { buffer.get(it, 20).char }.joinToString("")
         assertTrue(line.contains("HD"))
         assertTrue(line.contains("9"))
-        assertEquals(Color.CYAN, buffer.get(11, 18).fg) // 'H' of "HD: 9"
+        assertEquals(Color.CYAN, buffer.get(11, 20).fg) // 'H' of "HD: 9"
     }
 
     @Test
@@ -203,11 +203,11 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // CT row: cy=19, "CT:47" starts at cx+9=11
-        val line = (2 until 26).map { buffer.get(it, 19).char }.joinToString("")
+        // CT row: cy=21, "CT:47" starts at cx+9=11
+        val line = (2 until 26).map { buffer.get(it, 21).char }.joinToString("")
         assertTrue(line.contains("CT"))
         assertTrue(line.contains("47"))
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(11, 19).fg) // 'C' of "CT:47"
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(11, 21).fg) // 'C' of "CT:47"
     }
 
     @Test
@@ -218,10 +218,10 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // Rear row: cy=20, CT rear "r: 8" starts at cx+10=12
-        val line = (2 until 26).map { buffer.get(it, 20).char }.joinToString("")
+        // Rear row: cy=22, CT rear "r: 8" starts at cx+10=12
+        val line = (2 until 26).map { buffer.get(it, 22).char }.joinToString("")
         assertTrue(line.contains("r"))
-        assertEquals(Color.DEFAULT, buffer.get(12, 20).fg) // 'r' of CT rear
+        assertEquals(Color.DEFAULT, buffer.get(12, 22).fg) // 'r' of CT rear
     }
 
     @Test
@@ -232,12 +232,12 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // Arms row: cy=21
-        val armsRow = (2 until 26).map { buffer.get(it, 21).char }.joinToString("")
+        // Arms row: cy=23
+        val armsRow = (2 until 26).map { buffer.get(it, 23).char }.joinToString("")
         assertTrue(armsRow.contains("LA"))
         assertTrue(armsRow.contains("RA"))
-        // Legs row: cy=22
-        val legsRow = (2 until 26).map { buffer.get(it, 22).char }.joinToString("")
+        // Legs row: cy=24
+        val legsRow = (2 until 26).map { buffer.get(it, 24).char }.joinToString("")
         assertTrue(legsRow.contains("LL"))
         assertTrue(legsRow.contains("RL"))
         assertTrue(legsRow.contains("41"))
@@ -279,8 +279,11 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 20)
 
-        // heatSink(12), bar(13), value(14), one source(15), End(16)
-        val line = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
-        assertTrue(line.contains("End: 4"))
+        // heatSink(12), current bar(13), current value(14), one source(15), End label(16),
+        // projected bar(17), projected value(18)
+        val endLabel = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
+        assertTrue(endLabel.contains("End"))
+        val projectedValueRow = (2 until 26).map { buffer.get(it, 18).char }.joinToString("")
+        assertTrue(projectedValueRow.contains("4"))
     }
 }
