@@ -1,10 +1,8 @@
 package battletech.tactical.session
 
-import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
-import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
@@ -12,13 +10,6 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
-import battletech.tactical.unit.ArmorLayout
-import battletech.tactical.unit.CombatUnit
-import battletech.tactical.unit.HeatSink
-import battletech.tactical.unit.HeatSinkType
-import battletech.tactical.unit.InternalStructureLayout
-import battletech.tactical.unit.UnitId
-import battletech.tactical.unit.Weapons
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -139,69 +130,13 @@ internal class SubscriptionTest {
 
     // ---------- helpers ----------
 
-    private fun sessionInMovement(): BattleSession {
-        val turn = TurnState(
-            initiative = Initiative(
-                rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
-                loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
-            ),
-            movement = MovementProgress(
-                sequence = ImpulseSequence(
-                    listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1)),
-                ),
-            ),
-        )
-        return BattleSession(
-            initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
-            initialTurnState = turn,
-            roller = DiceRoller.seeded(42),
-            initialPhase = TurnPhase.MOVEMENT,
-            initialNeedsOnEntry = false,
-        )
-    }
-
-    private fun aMech(id: String, owner: PlayerId, position: HexCoordinates): CombatUnit = CombatUnit(
-        id = UnitId(id),
-        owner = owner,
-        name = id,
-        tonnage = 50,
-        gunnerySkill = 4,
-        pilotingSkill = 5,
-        weapons = listOf(Weapons.mediumLaser()),
-        position = position,
-        facing = HexDirection.N,
-        torsoFacing = HexDirection.N,
-        walkingMP = 4,
-        runningMP = 6,
-        jumpMP = 0,
-        currentHeat = 0,
-        heatSink = HeatSink(HeatSinkType.STS, 10),
-        armor = ArmorLayout(
-            head = 9,
-            centerTorso = 30, centerTorsoRear = 10,
-            leftTorso = 25, leftTorsoRear = 8,
-            rightTorso = 25, rightTorsoRear = 8,
-            leftArm = 20, rightArm = 20,
-            leftLeg = 25, rightLeg = 25,
-        ),
-        internalStructure = InternalStructureLayout(
-            head = 3,
-            centerTorso = 31,
-            leftTorso = 21,
-            rightTorso = 21,
-            leftArm = 17,
-            rightArm = 17,
-            leftLeg = 21,
-            rightLeg = 21,
-        ),
+    private fun sessionInMovement(): BattleSession = BattleSession(
+        initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
+        initialTurnState = aMovementTurn(),
+        roller = DiceRoller.seeded(42),
+        initialPhase = TurnPhase.MOVEMENT,
+        initialNeedsOnEntry = false,
     )
-
-    private fun hexesFor(units: List<CombatUnit>): Map<HexCoordinates, Hex> {
-        val coords = units.flatMap { u ->
-            listOf(u.position) + HexDirection.entries.map { u.position.neighbor(it) }
-        }
-        return coords.distinct().associateWith { Hex(it) }
-    }
 
     private fun aReachableHex(): ReachableHex = ReachableHex(
         position = HexCoordinates(1, 0),

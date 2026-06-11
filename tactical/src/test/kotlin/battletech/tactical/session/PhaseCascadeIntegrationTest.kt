@@ -3,7 +3,6 @@ package battletech.tactical.session
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
-import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
@@ -11,13 +10,6 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
-import battletech.tactical.unit.ArmorLayout
-import battletech.tactical.unit.CombatUnit
-import battletech.tactical.unit.HeatSink
-import battletech.tactical.unit.HeatSinkType
-import battletech.tactical.unit.InternalStructureLayout
-import battletech.tactical.unit.UnitId
-import battletech.tactical.unit.Weapons
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -81,7 +73,7 @@ internal class PhaseCascadeIntegrationTest {
     )
 
     private fun freshSession(): BattleSession = BattleSession(
-        initialGameState = GameState(listOf(p1unit, p2unit), map()),
+        initialGameState = GameState(listOf(p1unit, p2unit), GameMap(hexesFor(listOf(p1unit, p2unit)))),
         initialTurnState = TurnState.NULL,
         roller = roller,
     )
@@ -483,47 +475,4 @@ internal class PhaseCascadeIntegrationTest {
         check(r2 is CommandResult.Accepted) { "physical impulse 2 failed: $r2" }
     }
 
-    private fun aMech(id: String, owner: PlayerId, position: HexCoordinates): CombatUnit = CombatUnit(
-        id = UnitId(id),
-        owner = owner,
-        name = id,
-        tonnage = 50,
-        gunnerySkill = 4,
-        pilotingSkill = 5,
-        weapons = listOf(Weapons.mediumLaser()),
-        position = position,
-        facing = HexDirection.N,
-        torsoFacing = HexDirection.N,
-        walkingMP = 4,
-        runningMP = 6,
-        jumpMP = 0,
-        currentHeat = 0,
-        heatSink = HeatSink(HeatSinkType.STS, 10),
-        armor = ArmorLayout(
-            head = 9,
-            centerTorso = 30, centerTorsoRear = 10,
-            leftTorso = 25, leftTorsoRear = 8,
-            rightTorso = 25, rightTorsoRear = 8,
-            leftArm = 20, rightArm = 20,
-            leftLeg = 25, rightLeg = 25,
-        ),
-        internalStructure = InternalStructureLayout(
-            head = 3,
-            centerTorso = 31,
-            leftTorso = 21,
-            rightTorso = 21,
-            leftArm = 17,
-            rightArm = 17,
-            leftLeg = 21,
-            rightLeg = 21,
-        ),
-    )
-
-    /** Build a map covering every hex within reach of both unit positions. */
-    private fun map(): GameMap {
-        val coords = listOf(p1unit, p2unit).flatMap { u ->
-            listOf(u.position) + HexDirection.entries.map { u.position.neighbor(it) }
-        }
-        return GameMap(coords.distinct().associateWith { Hex(it) })
-    }
 }

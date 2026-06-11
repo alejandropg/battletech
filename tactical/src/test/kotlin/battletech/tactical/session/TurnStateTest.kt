@@ -1,6 +1,5 @@
 package battletech.tactical.session
 
-import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -11,27 +10,6 @@ import org.junit.jupiter.api.Test
 
 internal class TurnStateTest {
 
-    private fun aTurnState(
-        movementOrder: List<Impulse> = listOf(
-            Impulse(PlayerId.PLAYER_1, 1),
-            Impulse(PlayerId.PLAYER_2, 1),
-        ),
-        currentImpulseIndex: Int = 0,
-        movedUnitIds: Set<UnitId> = emptySet(),
-        unitsMovedInCurrentImpulse: Int = 0,
-    ) = TurnState(
-        initiative = Initiative(
-            rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
-            loser = PlayerId.PLAYER_1,
-            winner = PlayerId.PLAYER_2,
-        ),
-        movement = MovementProgress(
-            sequence = ImpulseSequence(movementOrder, currentImpulseIndex),
-            movedUnitIds = movedUnitIds,
-            movedInCurrentImpulse = unitsMovedInCurrentImpulse,
-        ),
-    )
-
     @Test
     fun `NULL TurnState has turnNumber 1`() {
         assertEquals(1, TurnState.NULL.turnNumber)
@@ -39,22 +17,22 @@ internal class TurnStateTest {
 
     @Test
     fun `activePlayer returns current impulse player`() {
-        val state = aTurnState()
+        val state = aMovementTurn()
         assertEquals(PlayerId.PLAYER_1, state.movement.activePlayer)
     }
 
     @Test
     fun `remainingInImpulse returns units left to move`() {
-        val state = aTurnState(
+        val state = aMovementTurn(
             movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 3)),
-            unitsMovedInCurrentImpulse = 1,
+            movedInCurrentImpulse = 1,
         )
         assertEquals(2, state.movement.remainingInImpulse)
     }
 
     @Test
     fun `allImpulsesComplete when index past end`() {
-        val state = aTurnState(
+        val state = aMovementTurn(
             movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 1)),
             currentImpulseIndex = 1,
         )
@@ -63,7 +41,7 @@ internal class TurnStateTest {
 
     @Test
     fun `allImpulsesComplete is false when impulses remain`() {
-        val state = aTurnState(currentImpulseIndex = 0)
+        val state = aMovementTurn(currentImpulseIndex = 0)
         assertFalse(state.movement.isComplete)
     }
 
@@ -72,7 +50,7 @@ internal class TurnStateTest {
 
         @Test
         fun `adds unit to movedUnitIds`() {
-            val state = aTurnState(
+            val state = aMovementTurn(
                 movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 2)),
             )
 
@@ -83,7 +61,7 @@ internal class TurnStateTest {
 
         @Test
         fun `advances impulse when current impulse is full`() {
-            val state = aTurnState(
+            val state = aMovementTurn(
                 movementOrder = listOf(
                     Impulse(PlayerId.PLAYER_1, 1),
                     Impulse(PlayerId.PLAYER_2, 1),
@@ -98,7 +76,7 @@ internal class TurnStateTest {
 
         @Test
         fun `stays in current impulse when more units remain`() {
-            val state = aTurnState(
+            val state = aMovementTurn(
                 movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 3)),
             )
 
@@ -110,7 +88,7 @@ internal class TurnStateTest {
 
         @Test
         fun `all impulses complete after last unit moves`() {
-            val state = aTurnState(
+            val state = aMovementTurn(
                 movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 1)),
             )
 
@@ -121,7 +99,7 @@ internal class TurnStateTest {
 
         @Test
         fun `multi-impulse progression`() {
-            val state = aTurnState(
+            val state = aMovementTurn(
                 movementOrder = listOf(
                     Impulse(PlayerId.PLAYER_1, 1),
                     Impulse(PlayerId.PLAYER_2, 2),
