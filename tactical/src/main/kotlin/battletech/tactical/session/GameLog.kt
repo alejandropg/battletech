@@ -14,6 +14,4 @@ public class GameLog {
     public fun append(entry: LogEntry) {
         entries += entry
     }
-
-    public fun lastN(n: Int): List<LogEntry> = entries.takeLast(n)
 }

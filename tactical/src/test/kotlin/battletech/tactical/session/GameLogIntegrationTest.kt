@@ -46,17 +46,6 @@ internal class GameLogIntegrationTest {
     }
 
     @Test
-    fun `lastN returns only the most recent entries`() {
-        val session = freshSession()
-
-        session.advance()
-
-        val all = session.gameLog.snapshot()
-        assertThat(all.size).isGreaterThan(1)
-        assertThat(session.gameLog.lastN(1)).containsExactly(all.last())
-    }
-
-    @Test
     fun `submitCommand appends entries for emitted events`() {
         val session = sessionInMovement()
         val destination = ReachableHex(
