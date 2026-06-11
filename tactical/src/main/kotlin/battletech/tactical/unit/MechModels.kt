@@ -176,7 +176,7 @@ public object MechModels {
             tonnage = 100,
             walkingMP = 3,
             runningMP = 5,
-            heatSink = HeatSink(HeatSinkType.DTS, 10),
+            heatSink = HeatSink(HeatSinkType.STS, 20),
             armor = ArmorLayout(
                 head = 9,
                 centerTorso = 47, centerTorsoRear = 14,
