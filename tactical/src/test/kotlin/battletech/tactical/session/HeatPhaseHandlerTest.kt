@@ -5,6 +5,8 @@ import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.aWeapon
 import battletech.tactical.query.mediumLaser
+import battletech.tactical.unit.HeatSink
+import battletech.tactical.unit.HeatSinkType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -21,7 +23,7 @@ internal class HeatPhaseHandlerTest {
     @Test
     fun `auto shutdown at heat thirty without a shutdown roll`() {
         // 40 - 10 dissipation = 30 -> auto shutdown; ammo roll still happens (no ammo weapon)
-        val unit = aUnit(currentHeat = 40, heatSinkCapacity = 10, weapons = listOf(mediumLaser()))
+        val unit = aUnit(currentHeat = 40, heatSink = HeatSink(HeatSinkType.STS, 10), weapons = listOf(mediumLaser()))
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(6, 6))
 
@@ -32,7 +34,7 @@ internal class HeatPhaseHandlerTest {
     @Test
     fun `fails shutdown avoidance and powers down`() {
         // 24 - 10 = 14 -> shutdown roll target 4; roll 2 fails
-        val unit = aUnit(currentHeat = 24, heatSinkCapacity = 10, weapons = listOf(mediumLaser()))
+        val unit = aUnit(currentHeat = 24, heatSink = HeatSink(HeatSinkType.STS, 10), weapons = listOf(mediumLaser()))
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(1, 1))
 
@@ -42,7 +44,7 @@ internal class HeatPhaseHandlerTest {
 
     @Test
     fun `passes shutdown avoidance and stays online`() {
-        val unit = aUnit(currentHeat = 24, heatSinkCapacity = 10, weapons = listOf(mediumLaser()))
+        val unit = aUnit(currentHeat = 24, heatSink = HeatSink(HeatSinkType.STS, 10), weapons = listOf(mediumLaser()))
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(3, 2))
 
@@ -53,7 +55,7 @@ internal class HeatPhaseHandlerTest {
     @Test
     fun `auto restart when heat falls below the threshold`() {
         // shutdown unit cools to 0 -> auto restart, no dice
-        val unit = aUnit(currentHeat = 10, heatSinkCapacity = 10, weapons = listOf(mediumLaser()))
+        val unit = aUnit(currentHeat = 10, heatSink = HeatSink(HeatSinkType.STS, 10), weapons = listOf(mediumLaser()))
             .copy(isShutdown = true)
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic())
@@ -66,7 +68,7 @@ internal class HeatPhaseHandlerTest {
     fun `ammo explodes on a failed avoidance roll`() {
         // 25 - 10 = 15 -> shutdown target 4 (avoided), ammo target 4 (failed)
         val ammoWeapon = aWeapon(name = "AC/20", damage = 2, ammo = 5)
-        val unit = aUnit(currentHeat = 25, heatSinkCapacity = 10, weapons = listOf(ammoWeapon))
+        val unit = aUnit(currentHeat = 25, heatSink = HeatSink(HeatSinkType.STS, 10), weapons = listOf(ammoWeapon))
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(6, 6, 1, 1))
 

@@ -19,7 +19,7 @@ public data class CombatUnit(
     public val runningMP: Int = 0,
     public val jumpMP: Int = 0,
     public val currentHeat: Int = 0,
-    public val heatSinkCapacity: Int,
+    public val heatSink: HeatSink,
     public val armor: ArmorLayout,
     public val internalStructure: InternalStructureLayout,
     public val movementThisTurn: MovementThisTurn = MovementThisTurn.STATIONARY,

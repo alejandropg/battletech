@@ -4,9 +4,11 @@ import battletech.tactical.attack.applyTorsoFacings
 import battletech.tactical.attack.resetTorsoFacings
 import battletech.tactical.heat.movementHeatSource
 import battletech.tactical.session.applyHeatPhase
-import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.HeatSink
+import battletech.tactical.unit.HeatSinkType
+import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -18,7 +20,7 @@ internal class GameStateTransformsTest {
     private fun aUnit(
         id: String = "u1",
         currentHeat: Int = 0,
-        heatSinkCapacity: Int = 10,
+        heatSink: HeatSink = HeatSink(HeatSinkType.STS, 10),
         facing: HexDirection = HexDirection.N,
         torsoFacing: HexDirection = HexDirection.N,
     ): CombatUnit = CombatUnit(
@@ -36,7 +38,7 @@ internal class GameStateTransformsTest {
         runningMP = 0,
         jumpMP = 0,
         armor = ArmorLayout(9, 47, 14, 32, 10, 32, 10, 34, 34, 41, 41),
-        heatSinkCapacity = heatSinkCapacity,
+        heatSink = heatSink,
         internalStructure = InternalStructureLayout(3, 31, 21, 21, 17, 17, 21, 21),
         currentHeat = currentHeat,
     )
@@ -49,7 +51,7 @@ internal class GameStateTransformsTest {
     inner class ApplyHeatPhaseTest {
         @Test
         fun `reduces heat by sink capacity`() {
-            val unit = aUnit(currentHeat = 10, heatSinkCapacity = 4)
+            val unit = aUnit(currentHeat = 10, heatSink = HeatSink(HeatSinkType.STS, 4))
             val gameState = GameState(listOf(unit), map)
 
             val result = gameState.applyHeatPhase()
@@ -59,7 +61,7 @@ internal class GameStateTransformsTest {
 
         @Test
         fun `heat does not go below zero`() {
-            val unit = aUnit(currentHeat = 2, heatSinkCapacity = 10)
+            val unit = aUnit(currentHeat = 2, heatSink = HeatSink(HeatSinkType.STS, 10))
             val gameState = GameState(listOf(unit), map)
 
             val result = gameState.applyHeatPhase()
@@ -69,8 +71,8 @@ internal class GameStateTransformsTest {
 
         @Test
         fun `applies to all units`() {
-            val u1 = aUnit(id = "u1", currentHeat = 8, heatSinkCapacity = 3)
-            val u2 = aUnit(id = "u2", currentHeat = 4, heatSinkCapacity = 4)
+            val u1 = aUnit(id = "u1", currentHeat = 8, heatSink = HeatSink(HeatSinkType.STS, 3))
+            val u2 = aUnit(id = "u2", currentHeat = 4, heatSink = HeatSink(HeatSinkType.STS, 4))
             val gameState = GameState(listOf(u1, u2), map)
 
             val result = gameState.applyHeatPhase()
@@ -81,7 +83,7 @@ internal class GameStateTransformsTest {
 
         @Test
         fun `folds generated heat before dissipating and clears the list`() {
-            val unit = aUnit(currentHeat = 5, heatSinkCapacity = 10).copy(
+            val unit = aUnit(currentHeat = 5, heatSink = HeatSink(HeatSinkType.STS, 10)).copy(
                 // walking + medium laser = +1 +3 = +4
                 heatGeneratedThisTurn = listOf(
                     movementHeatSource(MovementMode.WALK, 2)!!,
@@ -99,7 +101,7 @@ internal class GameStateTransformsTest {
 
         @Test
         fun `net heat climbs when generation exceeds dissipation`() {
-            val unit = aUnit(currentHeat = 10, heatSinkCapacity = 10).copy(
+            val unit = aUnit(currentHeat = 10, heatSink = HeatSink(HeatSinkType.STS, 10)).copy(
                 heatGeneratedThisTurn = listOf(HeatSource("PPC", 10), HeatSource("Running", 2)),
             )
             val gameState = GameState(listOf(unit), map)

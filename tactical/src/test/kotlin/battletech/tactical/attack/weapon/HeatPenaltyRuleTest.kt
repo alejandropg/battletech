@@ -1,8 +1,10 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.query.RuleResult
 import battletech.tactical.attack.aPhysicalAttackContext
+import battletech.tactical.query.RuleResult
 import battletech.tactical.query.aUnit
+import battletech.tactical.unit.HeatSink
+import battletech.tactical.unit.HeatSinkType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -13,7 +15,7 @@ internal class HeatPenaltyRuleTest {
 
     @Test
     fun `satisfied below the first heat threshold regardless of capacity`() {
-        val actor = aUnit(currentHeat = 7, heatSinkCapacity = 0)
+        val actor = aUnit(currentHeat = 7, heatSink = HeatSink(HeatSinkType.STS, 0))
 
         val result = rule.evaluate(aPhysicalAttackContext(actor = actor))
 
@@ -22,7 +24,7 @@ internal class HeatPenaltyRuleTest {
 
     @Test
     fun `penalized once heat reaches the table threshold`() {
-        val actor = aUnit(currentHeat = 8, heatSinkCapacity = 20)
+        val actor = aUnit(currentHeat = 8, heatSink = HeatSink(HeatSinkType.STS, 20))
 
         val result = rule.evaluate(aPhysicalAttackContext(actor = actor))
 
@@ -34,7 +36,7 @@ internal class HeatPenaltyRuleTest {
 
     @Test
     fun `modifier follows the heat scale`() {
-        val actor = aUnit(currentHeat = 18, heatSinkCapacity = 10)
+        val actor = aUnit(currentHeat = 18, heatSink = HeatSink(HeatSinkType.STS, 10))
 
         val result = rule.evaluate(aPhysicalAttackContext(actor = actor))
 
@@ -44,7 +46,7 @@ internal class HeatPenaltyRuleTest {
 
     @Test
     fun `description includes the heat value`() {
-        val actor = aUnit(currentHeat = 14, heatSinkCapacity = 10)
+        val actor = aUnit(currentHeat = 14, heatSink = HeatSink(HeatSinkType.STS, 10))
 
         val result = rule.evaluate(aPhysicalAttackContext(actor = actor))
 

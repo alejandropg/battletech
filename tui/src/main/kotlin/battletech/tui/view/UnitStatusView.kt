@@ -58,6 +58,14 @@ public class UnitStatusView(
         // HEAT
         buffer.writeString(cx, cy, sectionHeader("HEAT"), Color.CYAN)
         cy += 1
+        val heatSinkStr = "${unit.heatSink.type.name}: " +
+                if (unit.heatSink.type.sinkRatio == 1)
+                    "${unit.heatSink.dissipation()}"
+                else
+                    "${unit.heatSink.units}(${unit.heatSink.dissipation()})"
+
+        buffer.writeString(cx, cy, heatSinkStr, Color.WHITE)
+        cy += 1
         // 30 is the canonical BattleTech heat scale. It can't be drawn 1-char-per-heat
         // in this panel, so the bar is proportionally scaled: a fixed 20-cell bar spans
         // the whole 0–30 range (each block ≈ 1.5 heat). The max sits inline after "]".
@@ -96,7 +104,7 @@ public class UnitStatusView(
         // while a preview is pending, since it is hypothetical until committed.
         val committedGenerated = unit.heatGeneratedThisTurn.sumOf { it.amount }
         val previewGenerated = pendingHeat.sumOf { it.amount }
-        val projected = (unit.currentHeat + committedGenerated + previewGenerated - unit.heatSinkCapacity)
+        val projected = (unit.currentHeat + committedGenerated + previewGenerated - unit.heatSink.dissipation())
             .coerceAtLeast(0)
         val projectedColor = if (pendingHeat.isEmpty()) Color.DEFAULT else Color.GRAY
         buffer.writeString(cx, cy, "  End: $projected", projectedColor)

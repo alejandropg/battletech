@@ -9,6 +9,8 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MoveActionDefinition
 import battletech.tactical.movement.MovementPreview
 import battletech.tactical.session.RuleRejection
+import battletech.tactical.unit.HeatSink
+import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.Weapon
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -113,7 +115,7 @@ internal class ActionQueryServiceTest {
             weapons = listOf(mediumLaser()),
             position = HexCoordinates(0, 0),
             currentHeat = 13,
-            heatSinkCapacity = 10,
+            heatSink = HeatSink(HeatSinkType.STS, 10),
         )
         val enemy = aUnit(id = "enemy", position = HexCoordinates(2, 0))
         val gameState = aGameState(units = listOf(actor, enemy))

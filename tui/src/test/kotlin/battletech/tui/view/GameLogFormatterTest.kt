@@ -9,9 +9,9 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.MovementMode
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.HeatDissipated
@@ -23,6 +23,8 @@ import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitMoved
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.HeatSink
+import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapons
@@ -313,7 +315,7 @@ internal class GameLogFormatterTest {
         runningMP = 6,
         jumpMP = 4,
         currentHeat = currentHeat,
-        heatSinkCapacity = 10,
+        heatSink = HeatSink(HeatSinkType.STS, 10),
         armor = ArmorLayout(
             head = 9,
             centerTorso = 30, centerTorsoRear = 10,

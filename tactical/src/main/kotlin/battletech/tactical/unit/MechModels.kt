@@ -59,7 +59,7 @@ public object MechModels {
             walkingMP = 6,
             runningMP = 9,
             jumpMP = 6,
-            heatSinkCapacity = 13,
+            heatSink = HeatSink(HeatSinkType.STS, 13),
             armor = ArmorLayout(
                 head = 6,
                 centerTorso = 23, centerTorsoRear = 5,
@@ -77,7 +77,7 @@ public object MechModels {
             walkingMP = 5,
             runningMP = 8,
             jumpMP = 5,
-            heatSinkCapacity = 12,
+            heatSink = HeatSink(HeatSinkType.STS, 12),
             armor = ArmorLayout(
                 head = 9,
                 centerTorso = 20, centerTorsoRear = 7,
@@ -95,7 +95,7 @@ public object MechModels {
             walkingMP = 5,
             runningMP = 8,
             jumpMP = 5,
-            heatSinkCapacity = 12,
+            heatSink = HeatSink(HeatSinkType.STS, 12),
             armor = ArmorLayout(
                 head = 9,
                 centerTorso = 23, centerTorsoRear = 8,
@@ -112,7 +112,7 @@ public object MechModels {
             tonnage = 70,
             walkingMP = 4,
             runningMP = 6,
-            heatSinkCapacity = 18,
+            heatSink = HeatSink(HeatSinkType.STS, 18),
             armor = ArmorLayout(
                 head = 9,
                 centerTorso = 20, centerTorsoRear = 8,
@@ -135,7 +135,7 @@ public object MechModels {
             tonnage = 75,
             walkingMP = 4,
             runningMP = 6,
-            heatSinkCapacity = 18,
+            heatSink = HeatSink(HeatSinkType.STS, 18),
             armor = ArmorLayout(
                 head = 9,
                 centerTorso = 35, centerTorsoRear = 10,
@@ -156,7 +156,7 @@ public object MechModels {
             tonnage = 70,
             walkingMP = 4,
             runningMP = 6,
-            heatSinkCapacity = 15,
+            heatSink = HeatSink(HeatSinkType.STS, 15),
             armor = ArmorLayout(
                 head = 9,
                 centerTorso = 33, centerTorsoRear = 10,
@@ -176,7 +176,7 @@ public object MechModels {
             tonnage = 100,
             walkingMP = 3,
             runningMP = 5,
-            heatSinkCapacity = 20,
+            heatSink = HeatSink(HeatSinkType.DTS, 10),
             armor = ArmorLayout(
                 head = 9,
                 centerTorso = 47, centerTorsoRear = 14,

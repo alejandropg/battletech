@@ -8,13 +8,15 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.HeatSink
+import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapons
@@ -242,7 +244,7 @@ internal class BattleSessionTest {
         runningMP = 6,
         jumpMP = 0,
         currentHeat = 0,
-        heatSinkCapacity = 10,
+        heatSink = HeatSink(HeatSinkType.STS, 10),
         armor = ArmorLayout(
             head = 9,
             centerTorso = 30, centerTorsoRear = 10,

@@ -24,7 +24,7 @@ public fun MechModel.createUnit(
     walkingMP = walkingMP,
     runningMP = runningMP,
     jumpMP = jumpMP,
-    heatSinkCapacity = heatSinkCapacity,
+    heatSink = heatSink,
     armor = armor,
     internalStructure = internalStructure,
 )

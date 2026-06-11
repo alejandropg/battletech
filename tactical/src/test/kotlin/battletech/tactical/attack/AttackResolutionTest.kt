@@ -1,5 +1,6 @@
 package battletech.tactical.attack
 
+import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
@@ -8,7 +9,8 @@ import battletech.tactical.query.aUnit
 import battletech.tactical.query.anArmorLayout
 import battletech.tactical.query.anInternalStructureLayout
 import battletech.tactical.query.mediumLaser
-import battletech.tactical.dice.DiceRoll
+import battletech.tactical.unit.HeatSink
+import battletech.tactical.unit.HeatSinkType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -154,7 +156,7 @@ internal class AttackResolutionTest {
 
     @Test
     fun `heat penalty increases target number`() {
-        val hotAttacker = attacker.copy(currentHeat = 16, heatSinkCapacity = 10)
+        val hotAttacker = attacker.copy(currentHeat = 16, heatSink = HeatSink(HeatSinkType.STS, 10))
         val state = gameState.copy(units = listOf(hotAttacker, target))
         val declaration = AttackDeclaration(hotAttacker.id, target.id, 0, true)
 
@@ -283,7 +285,7 @@ internal class AttackResolutionTest {
 
     @Test
     fun `TN breakdown fields correct for medium range secondary with heat penalty`() {
-        val hotAttacker = attacker.copy(currentHeat = 16, heatSinkCapacity = 10)
+        val hotAttacker = attacker.copy(currentHeat = 16, heatSink = HeatSink(HeatSinkType.STS, 10))
         val farTarget = target.copy(position = HexCoordinates(5, 0)) // medium range for ML
         val state = gameState.copy(units = listOf(hotAttacker, farTarget))
         val declaration = AttackDeclaration(hotAttacker.id, farTarget.id, 0, false)

@@ -1,19 +1,16 @@
 package battletech.tactical.attack.weapon
 
+import battletech.tactical.attack.WeaponAttackContext
+import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.query.ac20
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.aWeapon
-import battletech.tactical.attack.WeaponAttackContext
-import battletech.tactical.attack.weapon.WeaponAttackPreview
-import battletech.tactical.attack.weapon.HasAmmoRule
-import battletech.tactical.attack.weapon.HeatPenaltyRule
-import battletech.tactical.attack.weapon.InRangeRule
-import battletech.tactical.attack.weapon.WeaponNotDestroyedRule
+import battletech.tactical.query.ac20
 import battletech.tactical.query.mediumLaser
 import battletech.tactical.query.srm4
-import battletech.tactical.model.HexCoordinates
+import battletech.tactical.unit.HeatSink
+import battletech.tactical.unit.HeatSinkType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -164,7 +161,7 @@ internal class FireWeaponActionDefinitionTest {
         val target = aUnit(id = "enemy", position = HexCoordinates(8, 0))
         val weapon = aWeapon(shortRange = 3, mediumRange = 6, longRange = 9)
         // gunnery 5 + long range 4 + heat +4 (table max) = 13 → impossible
-        val overheatedActor = actor.copy(currentHeat = 30, heatSinkCapacity = 10)
+        val overheatedActor = actor.copy(currentHeat = 30, heatSink = HeatSink(HeatSinkType.STS, 10))
         val context = WeaponAttackContext(
             actor = overheatedActor,
             target = target,

@@ -8,6 +8,8 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.HeatSink
+import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
@@ -99,7 +101,7 @@ internal fun aUnit(
     runningMP: Int = 6,
     jumpMP: Int = 0,
     currentHeat: Int = 0,
-    heatSinkCapacity: Int = 10,
+    heatSink: HeatSink = HeatSink(HeatSinkType.STS, 10),
     armor: ArmorLayout = anArmorLayout(),
     internalStructure: InternalStructureLayout = anInternalStructureLayout(),
 ): CombatUnit = CombatUnit(
@@ -116,7 +118,7 @@ internal fun aUnit(
     runningMP = runningMP,
     jumpMP = jumpMP,
     currentHeat = currentHeat,
-    heatSinkCapacity = heatSinkCapacity,
+    heatSink = heatSink,
     armor = armor,
     internalStructure = internalStructure,
 )

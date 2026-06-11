@@ -1,6 +1,8 @@
 package battletech.tactical.query
 
 import battletech.tactical.model.PlayerId
+import battletech.tactical.unit.HeatSink
+import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.UnitId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -51,14 +53,14 @@ internal class DefaultPlayerViewTest {
 
     @Test
     fun `publicUnit does not expose private fields`() {
-        // PublicUnit has no gunnerySkill, pilotingSkill, currentHeat, heatSinkCapacity fields —
+        // PublicUnit has no gunnerySkill, pilotingSkill, currentHeat, heatSink fields —
         // verified by the fact that this file compiles without referencing them on PublicUnit.
-        val unit = aUnit(id = "u1", gunnerySkill = 3, pilotingSkill = 4, currentHeat = 15, heatSinkCapacity = 10)
+        val unit = aUnit(id = "u1", gunnerySkill = 3, pilotingSkill = 4, currentHeat = 15, heatSink = HeatSink(HeatSinkType.STS, 10))
         val result = viewFor(unit).publicUnit(UnitId("u1"))!!
 
         // Only the public projection fields are accessible
         assertEquals("Test Mech", result.name)
-        assertEquals(listOf("gunnerySkill", "pilotingSkill", "currentHeat", "heatSinkCapacity").none { field ->
+        assertEquals(listOf("gunnerySkill", "pilotingSkill", "currentHeat", "heatSink").none { field ->
             result.javaClass.declaredFields.any { it.name == field }
         }, true)
     }

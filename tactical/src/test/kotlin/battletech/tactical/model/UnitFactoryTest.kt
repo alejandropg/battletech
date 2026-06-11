@@ -1,5 +1,7 @@
 package battletech.tactical.model
 
+import battletech.tactical.unit.HeatSink
+import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.MechModels
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.createUnit
@@ -34,7 +36,7 @@ internal class UnitFactoryTest {
         assertEquals(3, unit.walkingMP)
         assertEquals(5, unit.runningMP)
         assertEquals(0, unit.jumpMP)
-        assertEquals(20, unit.heatSinkCapacity)
+        assertEquals(HeatSink(HeatSinkType.STS, 20), unit.heatSink)
     }
 
     @Test

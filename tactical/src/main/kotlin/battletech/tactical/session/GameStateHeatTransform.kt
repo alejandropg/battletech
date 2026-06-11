@@ -14,7 +14,7 @@ import battletech.tactical.model.GameState
 public fun GameState.applyHeatPhase(): GameState {
     val updatedUnits = units.map { unit ->
         val generated = unit.heatGeneratedThisTurn.sumOf { it.amount }
-        val newHeat = maxOf(0, unit.currentHeat + generated - unit.heatSinkCapacity)
+        val newHeat = maxOf(0, unit.currentHeat + generated - unit.heatSink.dissipation())
         unit.copy(currentHeat = newHeat, heatGeneratedThisTurn = emptyList())
     }
     return copy(units = updatedUnits)

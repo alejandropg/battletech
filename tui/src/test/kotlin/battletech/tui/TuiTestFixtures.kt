@@ -9,6 +9,8 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.Terrain
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.HeatSink
+import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
@@ -70,6 +72,7 @@ internal fun aUnit(
     jumpMP: Int = 0,
     weapons: List<Weapon> = emptyList(),
     armor: ArmorLayout = anArmorLayout(),
+    heatSink: HeatSink = HeatSink(HeatSinkType.STS, 10),
     internalStructure: InternalStructureLayout = anInternalStructureLayout(),
 ): CombatUnit = CombatUnit(
     id = UnitId(id),
@@ -85,7 +88,7 @@ internal fun aUnit(
     runningMP = runningMP,
     jumpMP = jumpMP,
     armor = armor,
-    heatSinkCapacity = 10,
+    heatSink = heatSink,
     internalStructure = internalStructure,
 )
 
