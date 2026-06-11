@@ -44,36 +44,52 @@ internal class UnitStatusViewTest {
     fun `renders heat bar`() {
         val unit = aUnit()
         val view = UnitStatusView(unit)
-        val buffer = ScreenBuffer(28, 14)
+        val buffer = ScreenBuffer(28, 20)
 
-        view.render(buffer, 0, 0, 28, 14)
+        view.render(buffer, 0, 0, 28, 20)
 
         val line = (2 until 26).map { buffer.get(it, 13).char }.joinToString("")
         assertTrue(line.contains("[" + "░".repeat(20) + "]30"))
     }
 
     @Test
-    fun `renders STS heat sink capacity on row above bar`() {
-        val unit = aUnit(heatSink = HeatSink(HeatSinkType.STS, 10))
+    fun `renders current heat label above bar`() {
+        val unit = aUnit()
         val view = UnitStatusView(unit)
-        val buffer = ScreenBuffer(28, 14)
+        val buffer = ScreenBuffer(28, 20)
 
-        view.render(buffer, 0, 0, 28, 14)
+        view.render(buffer, 0, 0, 28, 20)
 
-        val line = (2 until 26).map { buffer.get(it, 12).char }.joinToString("").trim()
-        assertTrue(line.contains("STS: 10"))
+        val label = (2 until 26).map { buffer.get(it, 12).char }.joinToString("")
+        assertTrue(label.contains("Current"))
+        val bar = (2 until 26).map { buffer.get(it, 13).char }.joinToString("")
+        assertTrue(bar.contains("]30"))
     }
 
     @Test
-    fun `renders DTS heat sink capacity with units and dissipation`() {
+    fun `renders STS dissipation bar with suffix`() {
+        val unit = aUnit(heatSink = HeatSink(HeatSinkType.STS, 10))
+        val view = UnitStatusView(unit)
+        val buffer = ScreenBuffer(28, 20)
+
+        view.render(buffer, 0, 0, 28, 20)
+
+        val line = (2 until 26).map { buffer.get(it, 15).char }.joinToString("")
+        assertTrue(line.contains("[" + "░".repeat(10) + "]STS 10"))
+        val oldSinkLine = (2 until 26).map { buffer.get(it, 12).char }.joinToString("")
+        assertFalse(oldSinkLine.contains("STS:"))
+    }
+
+    @Test
+    fun `renders DTS dissipation bar with units and dissipation suffix`() {
         val unit = aUnit(heatSink = HeatSink(HeatSinkType.DTS, 10))
         val view = UnitStatusView(unit)
-        val buffer = ScreenBuffer(28, 14)
+        val buffer = ScreenBuffer(28, 20)
 
-        view.render(buffer, 0, 0, 28, 14)
+        view.render(buffer, 0, 0, 28, 20)
 
-        val line = (2 until 26).map { buffer.get(it, 12).char }.joinToString("").trim()
-        assertTrue(line.contains("DTS: 10(20)"))
+        val line = (2 until 26).map { buffer.get(it, 15).char }.joinToString("")
+        assertTrue(line.contains("]DTS 10(20)"))
     }
 
     @Test
@@ -81,11 +97,11 @@ internal class UnitStatusViewTest {
         // 15 of 30 -> barWidth=20 -> 10 filled cells. cx=2, anchorCol=12, "15" starts at col 11.
         val unit = aUnit().copy(currentHeat = 15)
         val view = UnitStatusView(unit)
-        val buffer = ScreenBuffer(28, 15)
+        val buffer = ScreenBuffer(28, 20)
 
-        view.render(buffer, 0, 0, 28, 15)
+        view.render(buffer, 0, 0, 28, 20)
 
-        // last digit sits under the last filled cell (col 12)
+        // last digit sits under the last filled cell (col 12); value row is 14
         assertEquals("1", buffer.get(11, 14).char)
         assertEquals("5", buffer.get(12, 14).char)
     }
@@ -94,9 +110,9 @@ internal class UnitStatusViewTest {
     fun `renders zero heat value under first bar cell`() {
         val unit = aUnit() // currentHeat = 0
         val view = UnitStatusView(unit)
-        val buffer = ScreenBuffer(28, 15)
+        val buffer = ScreenBuffer(28, 20)
 
-        view.render(buffer, 0, 0, 28, 15)
+        view.render(buffer, 0, 0, 28, 20)
 
         // cx=2, "[" prefix -> first cell at col 3
         assertEquals("0", buffer.get(3, 14).char)
@@ -160,9 +176,9 @@ internal class UnitStatusViewTest {
     fun `renders heat bar in red when overheated`() {
         val unit = aUnit().copy(currentHeat = 22)
         val view = UnitStatusView(unit)
-        val buffer = ScreenBuffer(28, 14)
+        val buffer = ScreenBuffer(28, 20)
 
-        view.render(buffer, 0, 0, 28, 14)
+        view.render(buffer, 0, 0, 28, 20)
 
         assertEquals(Color.RED, buffer.get(2, 13).fg)
     }
@@ -175,9 +191,10 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // Shifted down by: heat-sink row, current bar (2 rows), "End" label, projected bar (2 rows), blank.
-        val row19 = (2 until 26).map { buffer.get(it, 19).char }.joinToString("")
-        assertTrue(row19.contains("ARMOR"))
+        // Shifted down by: "Current" label, current bar (2 rows), diss bar (2 rows),
+        // "Projected" label, projected bar (2 rows), blank.
+        val row21 = (2 until 26).map { buffer.get(it, 21).char }.joinToString("")
+        assertTrue(row21.contains("ARMOR"))
     }
 
     @Test
@@ -188,11 +205,11 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // HD value row: cy=20, "HD: 9" starts at cx+9=11
-        val line = (2 until 26).map { buffer.get(it, 20).char }.joinToString("")
+        // HD value row: cy=22, "HD: 9" starts at cx+9=11
+        val line = (2 until 26).map { buffer.get(it, 22).char }.joinToString("")
         assertTrue(line.contains("HD"))
         assertTrue(line.contains("9"))
-        assertEquals(Color.CYAN, buffer.get(11, 20).fg) // 'H' of "HD: 9"
+        assertEquals(Color.CYAN, buffer.get(11, 22).fg) // 'H' of "HD: 9"
     }
 
     @Test
@@ -203,11 +220,11 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // CT row: cy=21, "CT:47" starts at cx+9=11
-        val line = (2 until 26).map { buffer.get(it, 21).char }.joinToString("")
+        // CT row: cy=23, "CT:47" starts at cx+9=11
+        val line = (2 until 26).map { buffer.get(it, 23).char }.joinToString("")
         assertTrue(line.contains("CT"))
         assertTrue(line.contains("47"))
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(11, 21).fg) // 'C' of "CT:47"
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(11, 23).fg) // 'C' of "CT:47"
     }
 
     @Test
@@ -218,10 +235,10 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // Rear row: cy=22, CT rear "r: 8" starts at cx+10=12
-        val line = (2 until 26).map { buffer.get(it, 22).char }.joinToString("")
+        // Rear row: cy=24, CT rear "r: 8" starts at cx+10=12
+        val line = (2 until 26).map { buffer.get(it, 24).char }.joinToString("")
         assertTrue(line.contains("r"))
-        assertEquals(Color.DEFAULT, buffer.get(12, 22).fg) // 'r' of CT rear
+        assertEquals(Color.DEFAULT, buffer.get(12, 24).fg) // 'r' of CT rear
     }
 
     @Test
@@ -232,12 +249,12 @@ internal class UnitStatusViewTest {
 
         view.render(buffer, 0, 0, 28, 30)
 
-        // Arms row: cy=23
-        val armsRow = (2 until 26).map { buffer.get(it, 23).char }.joinToString("")
+        // Arms row: cy=25
+        val armsRow = (2 until 26).map { buffer.get(it, 25).char }.joinToString("")
         assertTrue(armsRow.contains("LA"))
         assertTrue(armsRow.contains("RA"))
-        // Legs row: cy=24
-        val legsRow = (2 until 26).map { buffer.get(it, 24).char }.joinToString("")
+        // Legs row: cy=26
+        val legsRow = (2 until 26).map { buffer.get(it, 26).char }.joinToString("")
         assertTrue(legsRow.contains("LL"))
         assertTrue(legsRow.contains("RL"))
         assertTrue(legsRow.contains("41"))
@@ -271,19 +288,82 @@ internal class UnitStatusViewTest {
     }
 
     @Test
-    fun `renders projected end-of-turn heat`() {
-        // current 12, +2 running, dissipates 10 -> projected 4
-        val unit = aUnit().copy(currentHeat = 12, heatGeneratedThisTurn = listOf(HeatSource("Running", 2)))
+    fun `renders dissipated heat capped at dissipation capacity`() {
+        // current 12, +2 running, dissipation 10 -> dissipated = min(14, 10) = 10 -> bar fully filled
+        val unit = aUnit().copy(
+            currentHeat = 12,
+            heatGeneratedThisTurn = listOf(HeatSource("Running", 2)),
+        )
         val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 20)
 
         view.render(buffer, 0, 0, 28, 20)
 
-        // heatSink(12), current bar(13), current value(14), one source(15), End label(16),
-        // projected bar(17), projected value(18)
-        val endLabel = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
-        assertTrue(endLabel.contains("End"))
-        val projectedValueRow = (2 until 26).map { buffer.get(it, 18).char }.joinToString("")
+        // one source at row 15, diss bar at row 16
+        val dissBar = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
+        assertTrue(dissBar.contains("[" + "█".repeat(10) + "]STS 10"))
+        assertEquals("1", buffer.get(11, 17).char)
+        assertEquals("0", buffer.get(12, 17).char)
+    }
+
+    @Test
+    fun `renders dissipated heat from pending preview`() {
+        // pending 5, DTS 10 -> dissipation 20, dissipated = min(5, 20) = 5, width 10 -> 2 filled
+        val view = UnitStatusView(
+            aUnit(heatSink = HeatSink(HeatSinkType.DTS, 10)),
+            pendingHeat = listOf(HeatSource("Walking", 5)),
+        )
+        val buffer = ScreenBuffer(28, 20)
+
+        view.render(buffer, 0, 0, 28, 20)
+
+        // pending source at row 15, diss bar at row 16
+        val dissBar = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
+        assertTrue(dissBar.contains("[██░░░░░░░░]DTS 10(20)"))
+        assertEquals("5", buffer.get(4, 17).char)
+    }
+
+    @Test
+    fun `renders dissipation bar in red when at capacity`() {
+        // same fixture as capped test: dissipated 10 >= 10*0.7 -> RED
+        val unit = aUnit().copy(
+            currentHeat = 12,
+            heatGeneratedThisTurn = listOf(HeatSource("Running", 2)),
+        )
+        val view = UnitStatusView(unit)
+        val buffer = ScreenBuffer(28, 20)
+
+        view.render(buffer, 0, 0, 28, 20)
+
+        assertEquals(Color.RED, buffer.get(2, 16).fg)
+    }
+
+    @Test
+    fun `renders zero dissipation heat sink without error`() {
+        val unit = aUnit(heatSink = HeatSink(HeatSinkType.STS, 0))
+        val view = UnitStatusView(unit)
+        val buffer = ScreenBuffer(28, 20)
+
+        view.render(buffer, 0, 0, 28, 20)
+
+        val dissBar = (2 until 26).map { buffer.get(it, 15).char }.joinToString("")
+        assertTrue(dissBar.contains("[" + "░".repeat(10) + "]STS 0"))
+    }
+
+    @Test
+    fun `renders projected end-of-turn heat`() {
+        // current 12, +2 running, dissipates 10 -> projected 4
+        val unit = aUnit().copy(currentHeat = 12, heatGeneratedThisTurn = listOf(HeatSource("Running", 2)))
+        val view = UnitStatusView(unit)
+        val buffer = ScreenBuffer(28, 22)
+
+        view.render(buffer, 0, 0, 28, 22)
+
+        // "Current"(12), current bar(13), current value(14), one source(15), diss bar(16),
+        // diss value(17), "Projected"(18), projected bar(19), projected value(20)
+        val projectedLabel = (2 until 26).map { buffer.get(it, 18).char }.joinToString("")
+        assertTrue(projectedLabel.contains("Projected"))
+        val projectedValueRow = (2 until 26).map { buffer.get(it, 20).char }.joinToString("")
         assertTrue(projectedValueRow.contains("4"))
     }
 }
