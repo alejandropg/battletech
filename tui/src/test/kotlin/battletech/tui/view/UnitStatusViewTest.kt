@@ -47,21 +47,21 @@ internal class UnitStatusViewTest {
         view.render(buffer, 0, 0, 28, 14)
 
         val line = (2 until 26).map { buffer.get(it, 12).char }.joinToString("")
-        assertTrue(line.contains("[" + "░".repeat(22) + "]"))
+        assertTrue(line.contains("[" + "░".repeat(20) + "]30"))
     }
 
     @Test
     fun `renders heat value paired to bar fill without max`() {
-        // 15 of 30 -> 10 filled cells. cx=2, first cell at col 5, last filled at col 14.
+        // 15 of 30 -> barWidth=20 -> 10 filled cells. cx=2, anchorCol=12, "15" starts at col 11.
         val unit = aUnit().copy(currentHeat = 15)
         val view = UnitStatusView(unit)
         val buffer = ScreenBuffer(28, 14)
 
         view.render(buffer, 0, 0, 28, 14)
 
-        // last digit sits under the last filled cell (col 14)
-        assertEquals("1", buffer.get(12, 13).char)
-        assertEquals("5", buffer.get(13, 13).char)
+        // last digit sits under the last filled cell (col 12)
+        assertEquals("1", buffer.get(11, 13).char)
+        assertEquals("5", buffer.get(12, 13).char)
     }
 
     @Test

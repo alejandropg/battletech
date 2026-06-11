@@ -60,9 +60,9 @@ public class UnitStatusView(
         cy += 1
         // 30 is the canonical BattleTech heat scale. It can't be drawn 1-char-per-heat
         // in this panel, so the bar is proportionally scaled: a fixed 20-cell bar spans
-        // the whole 0–30 range (each block ≈ 1.5 heat). The exact value sits below it.
+        // the whole 0–30 range (each block ≈ 1.5 heat). The max sits inline after "]".
         val maxHeat = 30
-        val barWidth = 22
+        val barWidth = 20
         val filled = (unit.currentHeat * barWidth / maxHeat).coerceIn(0, barWidth)
         val bar = "█".repeat(filled) + "░".repeat(barWidth - filled)
         val heatColor = when {
@@ -73,7 +73,7 @@ public class UnitStatusView(
         // Bar indented two columns. The value below omits the constant max and is
         // right-aligned so its last digit sits under the last filled cell, tracking
         // the fill as heat rises.
-        buffer.writeString(cx, cy, "[$bar]", heatColor)
+        buffer.writeString(cx, cy, "[$bar]$maxHeat", heatColor)
         cy += 1
         val value = unit.currentHeat.toString()
         // First bar cell is at cx + 1 (the "[" prefix). Anchor on the last filled
