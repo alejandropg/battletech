@@ -10,9 +10,9 @@ import battletech.tactical.session.Impulse
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.TurnState
-import battletech.tactical.unit.Weapon
 import battletech.tui.aGameMap
 import battletech.tui.aUnit
+import battletech.tui.mediumLaser
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.WeaponAllocation
 import battletech.tui.screen.Color
@@ -29,11 +29,6 @@ import org.junit.jupiter.api.Test
 internal class DeclaredTargetsIntegrationTest {
 
     private val map = aGameMap(cols = 7, rows = 7)
-
-    private fun mediumLaser() = Weapon(
-        name = "Medium Laser", damage = 5, heat = 3,
-        shortRange = 3, mediumRange = 6, longRange = 9,
-    )
 
     @Test
     fun `Declaring phase produces non-null render struct with draft entry`() {

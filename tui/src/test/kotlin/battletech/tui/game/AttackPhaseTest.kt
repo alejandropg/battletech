@@ -1,6 +1,5 @@
 package battletech.tui.game
 
-import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -8,13 +7,12 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.session.Impulse
-import battletech.tactical.session.ImpulseSequence
-import battletech.tactical.session.Initiative
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.CombatUnit
-import battletech.tactical.unit.Weapon
 import battletech.tui.aGameMap
+import battletech.tui.aTurnState
 import battletech.tui.aUnit
+import battletech.tui.mediumLaser
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.commitAttackImpulse
 import battletech.tui.game.phase.enterDeclaring
@@ -30,26 +28,10 @@ import org.junit.jupiter.api.Test
 
 internal class AttackPhaseTest {
 
-    private fun mediumLaser(): Weapon = Weapon(
-        name = "Medium Laser", damage = 5, heat = 3,
-        shortRange = 3, mediumRange = 6, longRange = 9,
-    )
-
     private val map5x5 = aGameMap(cols = 5, rows = 5)
     private val map7x7 = aGameMap(cols = 7, rows = 7)
 
-    private fun baseTurnState(): TurnState = TurnState(
-        initiative = Initiative(
-            rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
-            loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
-        ),
-        movement = battletech.tactical.session.MovementProgress(
-            sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
-        ),
-        attack = battletech.tactical.session.AttackProgress(
-            sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 3))),
-        ),
-    )
+    private fun baseTurnState(): TurnState = aTurnState(attackOrder = listOf(Impulse(PlayerId.PLAYER_1, 3)))
 
     private fun anAppState(
         phase: battletech.tui.game.phase.Phase,
@@ -199,18 +181,7 @@ internal class AttackPhaseTest {
             val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
             val gameState = GameState(listOf(unit, enemy), map5x5)
-            val turnState = TurnState(
-                initiative = Initiative(
-                    rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
-                    loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
-                ),
-                movement = battletech.tactical.session.MovementProgress(
-                    sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
-                ),
-                attack = battletech.tactical.session.AttackProgress(
-                    sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
-                ),
-            )
+            val turnState = aTurnState(attackOrder = listOf(Impulse(PlayerId.PLAYER_1, 1)))
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = enemy.position)
 

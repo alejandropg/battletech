@@ -12,9 +12,10 @@ import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
-import battletech.tactical.unit.Weapon
 import battletech.tui.aGameMap
 import battletech.tui.aUnit
+import battletech.tui.mediumLaser
+import battletech.tui.srm6
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -23,16 +24,6 @@ import org.junit.jupiter.api.Test
 internal class DeclaredTargetsRenderTest {
 
     private val map = aGameMap(cols = 7, rows = 7)
-
-    private fun mediumLaser() = Weapon(
-        name = "Medium Laser", damage = 5, heat = 3,
-        shortRange = 3, mediumRange = 6, longRange = 9,
-    )
-
-    private fun srm6() = Weapon(
-        name = "SRM 6", damage = 12, heat = 4,
-        shortRange = 3, mediumRange = 6, longRange = 9,
-    )
 
     private fun initiative() = Initiative(
         rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),

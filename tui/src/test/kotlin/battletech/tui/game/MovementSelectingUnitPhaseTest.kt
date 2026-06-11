@@ -1,15 +1,12 @@
 package battletech.tui.game
 
-import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
-import battletech.tactical.session.Impulse
-import battletech.tactical.session.ImpulseSequence
-import battletech.tactical.session.Initiative
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.UnitId
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
+import battletech.tui.aTurnState
 import battletech.tui.aUnit
 import battletech.tui.game.phase.MovementPhase
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -21,27 +18,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 internal class MovementSelectingUnitPhaseTest {
-
-    private fun aTurnState(
-        movementOrder: List<Impulse> = listOf(
-            Impulse(PlayerId.PLAYER_1, 1),
-            Impulse(PlayerId.PLAYER_2, 1),
-        ),
-        currentImpulseIndex: Int = 0,
-        movedUnitIds: Set<UnitId> = emptySet(),
-        unitsMovedInCurrentImpulse: Int = 0,
-    ) = TurnState(
-        initiative = Initiative(
-            rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
-            loser = PlayerId.PLAYER_1,
-            winner = PlayerId.PLAYER_2,
-        ),
-        movement = battletech.tactical.session.MovementProgress(
-            sequence = ImpulseSequence(movementOrder, currentImpulseIndex),
-            movedUnitIds = movedUnitIds,
-            movedInCurrentImpulse = unitsMovedInCurrentImpulse,
-        ),
-    )
 
     private fun anAppState(
         cursor: HexCoordinates = HexCoordinates(0, 0),

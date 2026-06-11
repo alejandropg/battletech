@@ -1,8 +1,6 @@
 package battletech.tui.game
 
-import battletech.tactical.dice.DiceRoll
 import battletech.tactical.session.Impulse
-import battletech.tactical.session.Initiative
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -10,12 +8,12 @@ import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
-import battletech.tactical.session.ImpulseSequence
-import battletech.tactical.session.TurnState
 import battletech.tactical.query.DefaultPlayerView
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
+import battletech.tui.aTurnState
 import battletech.tui.aUnit
+import battletech.tui.anAppState
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.enterBrowsing
@@ -84,25 +82,6 @@ internal class MovementPhaseTest {
             ),
         ),
     )
-
-    private fun aTurnState(
-        movementOrder: List<Impulse> = listOf(Impulse(PlayerId.PLAYER_1, 1)),
-    ) = TurnState(
-        initiative = Initiative(
-            rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
-            loser = PlayerId.PLAYER_1, winner = PlayerId.PLAYER_2,
-        ),
-        movement = battletech.tactical.session.MovementProgress(
-            sequence = ImpulseSequence(movementOrder),
-        ),
-    )
-
-    private fun anAppState(
-        phase: battletech.tui.game.phase.Phase,
-        cursor: HexCoordinates = HexCoordinates(0, 0),
-        gameState: battletech.tactical.model.GameState = aGameState(),
-        turnState: TurnState = aTurnState(),
-    ) = AppState(gameState, turnState, phase, cursor)
 
     @Nested
     inner class EnterBrowsingTest {

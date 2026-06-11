@@ -21,13 +21,13 @@ import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitMoved
-import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
-import battletech.tactical.unit.HeatSink
-import battletech.tactical.unit.HeatSinkType
-import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.Weapons
+import battletech.tui.aUnit
+import battletech.tui.anArmorLayout
+import battletech.tui.mediumLaser
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.movementModeIcon
 import org.assertj.core.api.Assertions.assertThat
@@ -299,40 +299,23 @@ internal class GameLogFormatterTest {
         owner: PlayerId = PlayerId.PLAYER_1,
         position: HexCoordinates = HexCoordinates(0, 0),
         currentHeat: Int = 0,
-        weapons: List<battletech.tactical.unit.Weapon> = listOf(Weapons.mediumLaser()),
-    ): CombatUnit = CombatUnit(
-        id = UnitId(id),
-        owner = owner,
+        weapons: List<Weapon> = listOf(mediumLaser()),
+    ): CombatUnit = aUnit(
+        id = id,
         name = name,
-        tonnage = 50,
-        gunnerySkill = 4,
-        pilotingSkill = 5,
-        weapons = weapons,
+        owner = owner,
         position = position,
-        facing = HexDirection.N,
-        torsoFacing = HexDirection.N,
+        currentHeat = currentHeat,
+        weapons = weapons,
         walkingMP = 4,
         runningMP = 6,
         jumpMP = 4,
-        currentHeat = currentHeat,
-        heatSink = HeatSink(HeatSinkType.STS, 10),
-        armor = ArmorLayout(
-            head = 9,
+        armor = anArmorLayout(
             centerTorso = 30, centerTorsoRear = 10,
             leftTorso = 25, leftTorsoRear = 8,
             rightTorso = 25, rightTorsoRear = 8,
             leftArm = 20, rightArm = 20,
             leftLeg = 25, rightLeg = 25,
-        ),
-        internalStructure = InternalStructureLayout(
-            head = 3,
-            centerTorso = 31,
-            leftTorso = 21,
-            rightTorso = 21,
-            leftArm = 17,
-            rightArm = 17,
-            leftLeg = 21,
-            rightLeg = 21,
         ),
     )
 }

@@ -13,10 +13,10 @@ import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.unit.UnitId
-import battletech.tactical.unit.Weapon
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit
+import battletech.tui.mediumLaser
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.hex.HexHighlight
@@ -61,11 +61,6 @@ internal class RenderDataTest {
         mode = MovementMode.RUN,
         maxMP = 6,
         destinations = reachableHexes,
-    )
-
-    private fun mediumLaser(): Weapon = Weapon(
-        name = "Medium Laser", damage = 5, heat = 3,
-        shortRange = 3, mediumRange = 6, longRange = 9,
     )
 
     @Nested

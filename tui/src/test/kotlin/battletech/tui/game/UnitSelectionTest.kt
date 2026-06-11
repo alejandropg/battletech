@@ -1,14 +1,12 @@
 package battletech.tui.game
 
-import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
 import battletech.tactical.session.Impulse
-import battletech.tactical.session.ImpulseSequence
-import battletech.tactical.session.Initiative
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.UnitId
 import battletech.tui.aGameState
+import battletech.tui.aTurnState
 import battletech.tui.aUnit
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -16,22 +14,12 @@ import org.junit.jupiter.api.Test
 
 internal class UnitSelectionTest {
 
-    private fun aTurnState(
+    private fun aMovementTurn(
         activePlayer: PlayerId = PlayerId.PLAYER_1,
-        movementOrder: List<Impulse> = listOf(
-            Impulse(activePlayer, 2),
-        ),
         movedUnitIds: Set<UnitId> = emptySet(),
-    ) = TurnState(
-        initiative = Initiative(
-            rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
-            loser = PlayerId.PLAYER_1,
-            winner = PlayerId.PLAYER_2,
-        ),
-        movement = battletech.tactical.session.MovementProgress(
-            sequence = ImpulseSequence(movementOrder),
-            movedUnitIds = movedUnitIds,
-        ),
+    ): TurnState = aTurnState(
+        movementOrder = listOf(Impulse(activePlayer, 2)),
+        movedUnitIds = movedUnitIds,
     )
 
     @Test
@@ -40,7 +28,7 @@ internal class UnitSelectionTest {
         val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(1, 0))
         val u3 = aUnit(id = "u3", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 0))
         val gameState = aGameState(units = listOf(u1, u2, u3))
-        val turnState = aTurnState(activePlayer = PlayerId.PLAYER_1)
+        val turnState = aMovementTurn(activePlayer = PlayerId.PLAYER_1)
 
         val result = turnState.selectableUnits(gameState)
 
@@ -52,7 +40,7 @@ internal class UnitSelectionTest {
         val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
         val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(1, 0))
         val gameState = aGameState(units = listOf(u1, u2))
-        val turnState = aTurnState(
+        val turnState = aMovementTurn(
             activePlayer = PlayerId.PLAYER_1,
             movedUnitIds = setOf(UnitId("u1")),
         )
@@ -66,7 +54,7 @@ internal class UnitSelectionTest {
     fun `returns empty when no selectable units`() {
         val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, 0))
         val gameState = aGameState(units = listOf(u1))
-        val turnState = aTurnState(activePlayer = PlayerId.PLAYER_1)
+        val turnState = aMovementTurn(activePlayer = PlayerId.PLAYER_1)
 
         val result = turnState.selectableUnits(gameState)
 

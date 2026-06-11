@@ -1,5 +1,6 @@
 package battletech.tui
 
+import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
@@ -7,6 +8,12 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.Terrain
+import battletech.tactical.session.AttackProgress
+import battletech.tactical.session.Impulse
+import battletech.tactical.session.ImpulseSequence
+import battletech.tactical.session.Initiative
+import battletech.tactical.session.MovementProgress
+import battletech.tactical.session.TurnState
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSink
@@ -14,6 +21,44 @@ import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
+import battletech.tactical.unit.Weapons
+import battletech.tui.game.AppState
+import battletech.tui.game.phase.Phase
+
+internal fun mediumLaser(): Weapon = Weapons.mediumLaser()
+
+internal fun srm6(): Weapon = Weapon(
+    name = "SRM 6", damage = 12, heat = 4,
+    shortRange = 3, mediumRange = 6, longRange = 9,
+)
+
+internal fun aTurnState(
+    movementOrder: List<Impulse> = listOf(Impulse(PlayerId.PLAYER_1, 1)),
+    currentImpulseIndex: Int = 0,
+    movedUnitIds: Set<UnitId> = emptySet(),
+    attackOrder: List<Impulse> = listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1)),
+    currentAttackImpulseIndex: Int = 0,
+): TurnState = TurnState(
+    initiative = Initiative(
+        rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
+        loser = PlayerId.PLAYER_1,
+        winner = PlayerId.PLAYER_2,
+    ),
+    movement = MovementProgress(
+        sequence = ImpulseSequence(movementOrder, currentImpulseIndex),
+        movedUnitIds = movedUnitIds,
+    ),
+    attack = AttackProgress(
+        sequence = ImpulseSequence(attackOrder, currentAttackImpulseIndex),
+    ),
+)
+
+internal fun anAppState(
+    phase: Phase,
+    cursor: HexCoordinates = HexCoordinates(0, 0),
+    gameState: GameState = aGameState(),
+    turnState: TurnState = aTurnState(),
+): AppState = AppState(gameState, turnState, phase, cursor)
 
 internal fun aHex(
     col: Int = 0,
@@ -70,6 +115,7 @@ internal fun aUnit(
     walkingMP: Int = 0,
     runningMP: Int = 0,
     jumpMP: Int = 0,
+    currentHeat: Int = 0,
     weapons: List<Weapon> = emptyList(),
     armor: ArmorLayout = anArmorLayout(),
     heatSink: HeatSink = HeatSink(HeatSinkType.STS, 10),
@@ -87,6 +133,7 @@ internal fun aUnit(
     walkingMP = walkingMP,
     runningMP = runningMP,
     jumpMP = jumpMP,
+    currentHeat = currentHeat,
     armor = armor,
     heatSink = heatSink,
     internalStructure = internalStructure,
