@@ -25,7 +25,8 @@ dependencies {
     implementation(project(":tactical"))
     implementation(libs.mordant)
     implementation(libs.mordant.coroutines)
-
+    implementation(libs.kotlinx.coroutines.core)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
 
 tasks.shadowJar {

@@ -2,6 +2,7 @@ package battletech.tui
 
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.PlayerId
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.TurnState
 import battletech.tui.game.AppState
@@ -10,6 +11,9 @@ import battletech.tui.game.PanelScroll
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
+import battletech.tui.loop.UiEvent
+import battletech.tui.loop.resizeEvents
+import battletech.tui.loop.terminalInputEvents
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
 import battletech.tui.view.BoardView
@@ -24,9 +28,19 @@ import battletech.tui.view.resolvePanel
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.input.MouseTracking
-import com.github.ajalt.mordant.input.enterRawMode
 import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 public class TuiApp {
 
@@ -35,6 +49,20 @@ public class TuiApp {
         val maxOffsets: Map<Int, Int>,
     )
 
+    /**
+     * Entry point. Sets up the session, wires subscriptions for every player into
+     * [internalEvents], merges all event sources, and drives [runLoop].
+     *
+     * ### Single-thread confinement
+     * All session mutations, AppState updates, and rendering run on the single
+     * [runBlocking] (main) thread. Only the terminal input producer runs on
+     * Dispatchers.IO — that is handled internally by [terminalInputEvents].
+     *
+     * ### Quit is not flow cancellation
+     * Quit is detected inside [terminalInputEvents] (ctrl+c) which emits [UiEvent.Quit]
+     * and then naturally completes its flow. We never cancel the flow externally as a
+     * quit mechanism — doing so would leave the terminal in raw mode.
+     */
     public fun run() {
         val terminal = Terminal()
         val renderer = ScreenRenderer(terminal)
@@ -47,30 +75,72 @@ public class TuiApp {
         // Kickstart cascades INITIATIVE → MOVEMENT; the session's gameLog
         // captures the cascade events and the LOG panel renders them.
         session.advance()
-        var appState = AppState(
+        val appState = AppState(
             session = session,
             phase = mapToTuiPhase(session.currentPhase),
             cursor = HexCoordinates(0, 0),
         )
 
         renderer.clear()
+        try {
+            runBlocking {
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                val subscriptions = PlayerId.entries.map { player ->
+                    session.subscribe(player) { internalEvents.trySend(UiEvent.Session(it)) }
+                }
+                try {
+                    runLoop(
+                        events = merge(
+                            terminal.terminalInputEvents(MouseTracking.Normal),
+                            terminal.resizeEvents(),
+                            internalEvents.receiveAsFlow(),
+                        ),
+                        internalEvents = internalEvents,
+                        terminal = terminal,
+                        renderer = renderer,
+                        initialState = appState,
+                    )
+                } finally {
+                    subscriptions.forEach { it.unsubscribe() }
+                }
+            }
+        } finally {
+            renderer.cleanup()
+        }
+    }
+
+    /**
+     * Headless-testable event loop. Collects [events] until [UiEvent.Quit] is seen.
+     *
+     * Flash jobs are launched in the enclosing [coroutineScope]; they post [UiEvent.FlashExpired]
+     * back through [internalEvents]. The active flash job is cancelled after the collect loop
+     * returns so no coroutine outlives the loop.
+     */
+    internal suspend fun runLoop(
+        events: Flow<UiEvent>,
+        internalEvents: SendChannel<UiEvent>,
+        terminal: Terminal,
+        renderer: ScreenRenderer,
+        initialState: AppState,
+    ): Unit = coroutineScope {
+        var appState = initialState
+        var activeFlash: FlashMessage? = null
+        var flashGeneration = 0L
+        var flashJob: Job? = null
+        var size = currentSize(terminal)
 
         var frame = RenderedFrame(
             layout = FrameLayout(boardWidth = 0, boardHeight = 0, slots = emptyList()),
             maxOffsets = emptyMap(),
         )
 
-        try {
-            terminal.enterRawMode(mouseTracking = MouseTracking.Normal).use { rawMode ->
-                while (true) {
-                    val currentSize = currentSize(terminal)
+        // Render the initial frame before collecting any events.
+        frame = renderFrame(size, renderer, appState, activeFlash)
 
-                    val transitionFlash: FlashMessage? = pendingFlash
-                    pendingFlash = null
-                    frame = renderFrame(currentSize, renderer, appState, transitionFlash)
-
-                    val event = rawMode.readEvent()
-                    if (event is KeyboardEvent && InputMapper.isQuit(event)) break
+        events.takeWhile { it != UiEvent.Quit }.collect { ui ->
+            when (ui) {
+                is UiEvent.Input -> {
+                    val event = ui.event
 
                     // Handle scroll events before any other input dispatch.
                     // Slot is computed first so overPanel can be passed to scrollDelta,
@@ -92,11 +162,14 @@ public class TuiApp {
                                     ),
                                 )
                             }
-                            continue  // scroll events never reach phases
+                            frame = renderFrame(size, renderer, appState, activeFlash)
+                            return@collect  // scroll events never reach phases
                         }
                     }
 
-                    val collapseIndex = if (event is KeyboardEvent) InputMapper.isCollapseToggle(event) else null
+                    val collapseIndex = if (event is KeyboardEvent) {
+                        InputMapper.isCollapseToggle(event)
+                    } else null
                     if (collapseIndex != null) {
                         val visible = PanelVisibility.visibleIndices(appState)
                         if (collapseIndex in visible) {
@@ -104,20 +177,61 @@ public class TuiApp {
                             val next = if (collapseIndex in current) current - collapseIndex else current + collapseIndex
                             appState = appState.copy(collapsedPanels = next)
                         }
-                        continue
+                        frame = renderFrame(size, renderer, appState, activeFlash)
+                        return@collect
                     }
 
-                    val transition = appState.phase.handle(event, appState) ?: continue
+                    val transition = appState.phase.handle(event, appState) ?: run {
+                        frame = renderFrame(size, renderer, appState, activeFlash)
+                        return@collect
+                    }
                     appState = transition.app
-                    pendingFlash = transition.flash
+
+                    val flash = transition.flash
+                    if (flash != null) {
+                        activeFlash = flash
+                        flashGeneration++
+                        val gen = flashGeneration
+                        flashJob?.cancel()
+                        flashJob = launch {
+                            delay(flash.duration)
+                            internalEvents.send(UiEvent.FlashExpired(gen))
+                        }
+                    }
+
+                    frame = renderFrame(size, renderer, appState, activeFlash)
+                }
+
+                is UiEvent.Resized -> {
+                    size = ui.size
+                    frame = renderFrame(size, renderer, appState, activeFlash)
+                }
+
+                is UiEvent.FlashExpired -> {
+                    if (ui.generation == flashGeneration) {
+                        activeFlash = null
+                        frame = renderFrame(size, renderer, appState, activeFlash)
+                    }
+                    // Stale expiry (earlier flash replaced by a newer one): ignore.
+                }
+
+                // Re-render only: the renderer re-reads state through the session.
+                // Locally these events arrive synchronously during submitCommand so
+                // the extra render is cheap and idempotent. This branch is the
+                // remote-play notification slot — remote clients will see live updates here.
+                is UiEvent.Session -> {
+                    frame = renderFrame(size, renderer, appState, activeFlash)
+                }
+
+                UiEvent.Quit -> {
+                    // Unreachable inside collect (filtered by takeWhile).
                 }
             }
-        } finally {
-            renderer.cleanup()
         }
-    }
 
-    private var pendingFlash: FlashMessage? = null
+        // Cancel any pending flash job so the coroutineScope can complete cleanly.
+        flashJob?.cancel()
+    }
 
     private fun currentSize(terminal: Terminal): Size {
         val size = terminal.updateSize()

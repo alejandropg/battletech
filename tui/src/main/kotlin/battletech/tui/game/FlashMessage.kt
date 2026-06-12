@@ -1,3 +1,6 @@
 package battletech.tui.game
 
-public data class FlashMessage(val text: String)
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+
+public data class FlashMessage(val text: String, val duration: Duration = 3.seconds)
