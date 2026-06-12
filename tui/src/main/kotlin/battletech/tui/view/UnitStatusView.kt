@@ -15,13 +15,11 @@ public class UnitStatusView(
     public companion object {
         public val INDEX: Int = PanelId.UNIT_STATUS.index
         public const val TITLE: String = "UNIT STATUS"
-        private const val PADDING = 2
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "UNIT STATUS", index = INDEX)
-
-        val content = ContentWriter(buffer, x + PADDING, y + PADDING, width - (PADDING * 2))
+        // One blank row for pixel parity with the decorator's y+1 inner-content start
+        val content = ContentWriter(buffer, x, y + 1, width)
 
         if (unit == null) {
             content.writeln("No unit selected", Color.WHITE)
@@ -57,8 +55,6 @@ public class UnitStatusView(
             val heatBar = HeatBarWidget(barWidth = 20, maxValue = 30)
             content.cy = heatBar.draw(buffer, content.x, content.cy, unit.currentHeat)
 
-            // Heat generated this turn: committed sources in the default colour, the
-            // in-progress (hovered move / selected weapons) preview in gray.
             for (source in unit.heatGeneratedThisTurn) {
                 writeln("  ${source.label} +${source.amount}")
             }
@@ -69,9 +65,6 @@ public class UnitStatusView(
             val committedGenerated = unit.heatGeneratedThisTurn.sumOf { it.amount }
             val previewGenerated = pendingHeat.sumOf { it.amount }
 
-            // Dissipation bar: shows how much heat will be removed this turn, capped at
-            // the sink's capacity. Includes the pending preview so the player sees the
-            // full dissipation picture before committing.
             val sink = unit.heatSink
             val dissipation = sink.dissipation()
             val sinkSuffix =
@@ -81,14 +74,11 @@ public class UnitStatusView(
             content.cy = HeatBarWidget(barWidth = 10, maxValue = dissipation, suffix = sinkSuffix)
                 .draw(buffer, content.x, content.cy, dissipated)
 
-            // Projected end-of-turn heat: current + generated − dissipation, coloured
-            // by the same thresholds as the current bar regardless of pending state.
             writeln("Projected")
             val projected = (unit.currentHeat + committedGenerated + previewGenerated - dissipation).coerceAtLeast(0)
             content.cy = heatBar.draw(buffer, content.x, content.cy, projected)
             newLine()
         }
-
 
         // ARMOR
         with(content) {
