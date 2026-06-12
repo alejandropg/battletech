@@ -177,7 +177,7 @@ internal class DeclaredTargetsViewTest {
         decorated.render(buffer, 0, 0, width, height)
 
         // The scrollbar thumb '█' must appear on the right border (col width-1) somewhere
-        val thumbFound = (1 until height - 1).any { row -> buffer.get(width - 1, row).char == "█" }
+        val thumbFound = (1 until height - 1).any { row -> buffer.get(width - 1, row).char == "▐" }
         assertTrue(thumbFound) {
             val output = buildString {
                 for (row in 0 until height) {
@@ -185,7 +185,7 @@ internal class DeclaredTargetsViewTest {
                     appendLine()
                 }
             }
-            "Expected scrollbar thumb '█' on right border in:\n$output"
+            "Expected scrollbar thumb '▐' on right border in:\n$output"
         }
     }
 

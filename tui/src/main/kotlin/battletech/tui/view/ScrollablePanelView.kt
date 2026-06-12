@@ -47,7 +47,7 @@ internal class ScrollablePanelView(
         )
         if (thumbRange != null) {
             for (row in thumbRange) {
-                buffer.set(x + width - 1, y + 1 + row, Cell("█", Color.GREEN))
+                buffer.set(x + width - 1, y + 1 + row, Cell("▐", Color.GREEN))
             }
         }
     }

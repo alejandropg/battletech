@@ -1,6 +1,5 @@
 package battletech.tui.view
 
-import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -125,7 +124,7 @@ internal class ScrollablePanelViewTest {
         for (row in 1..8) {
             val cell = buffer.get(29, row)
             if (row - 1 in thumbRange) {
-                assertEquals("█", cell.char, "expected thumb at row $row")
+                assertEquals("▐", cell.char, "expected thumb at row $row")
                 assertEquals(Color.GREEN, cell.fg)
             } else {
                 assertEquals("│", cell.char, "expected border at row $row")
