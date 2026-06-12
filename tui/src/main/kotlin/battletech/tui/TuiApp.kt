@@ -72,24 +72,27 @@ public class TuiApp {
                     val event = rawMode.readEvent()
                     if (event is KeyboardEvent && InputMapper.isQuit(event)) break
 
-                    // Handle wheel events before any other input dispatch
+                    // Handle scroll events before any other input dispatch.
+                    // Slot is computed first so overPanel can be passed to scrollDelta,
+                    // which applies the Mordant posix wheel-parsing workaround (left/right
+                    // press over a panel treated as wheel-up/down; see InputMapper.scrollDelta).
                     if (event is MouseEvent) {
-                        val wheel = InputMapper.wheelDelta(event)
-                        if (wheel != null) {
-                            val slot = PanelScroll.slotAt(frame.layout, event.x, event.y)
+                        val slot = PanelScroll.slotAt(frame.layout, event.x, event.y)
+                        val delta = InputMapper.scrollDelta(event, overPanel = slot != null)
+                        if (delta != null) {
                             if (slot != null) {
                                 val panel = Panels.ordered.first { it.id.index == slot.panelIndex }
                                 appState = appState.copy(
                                     panelScrollOffsets = PanelScroll.update(
                                         appState.panelScrollOffsets,
                                         slot.panelIndex,
-                                        wheel,
+                                        delta,
                                         frame.maxOffsets[slot.panelIndex] ?: 0,
                                         panel.anchorBottom,
                                     ),
                                 )
                             }
-                            continue  // wheel events never reach phases
+                            continue  // scroll events never reach phases
                         }
                     }
 

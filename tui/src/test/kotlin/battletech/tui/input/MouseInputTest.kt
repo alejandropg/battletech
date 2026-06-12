@@ -58,27 +58,72 @@ internal class MouseInputTest {
     }
 
     @Test
-    fun `wheelUp event returns negative delta`() {
+    fun `wheelUp over panel returns negative delta`() {
         val event = MouseEvent(x = 10, y = 10, wheelUp = true)
 
-        val delta = InputMapper.wheelDelta(event)
-
-        assertEquals(-PanelScroll.STEP, delta)
+        assertEquals(-PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = true))
     }
 
     @Test
-    fun `wheelDown event returns positive delta`() {
+    fun `wheelUp not over panel returns negative delta`() {
+        val event = MouseEvent(x = 10, y = 10, wheelUp = true)
+
+        assertEquals(-PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = false))
+    }
+
+    @Test
+    fun `wheelDown over panel returns positive delta`() {
         val event = MouseEvent(x = 10, y = 10, wheelDown = true)
 
-        val delta = InputMapper.wheelDelta(event)
-
-        assertEquals(PanelScroll.STEP, delta)
+        assertEquals(PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = true))
     }
 
     @Test
-    fun `non-wheel event returns null delta`() {
+    fun `wheelDown not over panel returns positive delta`() {
+        val event = MouseEvent(x = 10, y = 10, wheelDown = true)
+
+        assertEquals(PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = false))
+    }
+
+    @Test
+    fun `left press over panel returns negative delta (Mordant wheel workaround)`() {
         val event = MouseEvent(x = 10, y = 10, left = true)
 
-        assertNull(InputMapper.wheelDelta(event))
+        assertEquals(-PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = true))
+    }
+
+    @Test
+    fun `right press over panel returns positive delta (Mordant wheel workaround)`() {
+        val event = MouseEvent(x = 10, y = 10, right = true)
+
+        assertEquals(PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = true))
+    }
+
+    @Test
+    fun `left press not over panel returns null`() {
+        val event = MouseEvent(x = 10, y = 10, left = true)
+
+        assertNull(InputMapper.scrollDelta(event, overPanel = false))
+    }
+
+    @Test
+    fun `right press not over panel returns null`() {
+        val event = MouseEvent(x = 10, y = 10, right = true)
+
+        assertNull(InputMapper.scrollDelta(event, overPanel = false))
+    }
+
+    @Test
+    fun `release event over panel returns null`() {
+        val event = MouseEvent(x = 10, y = 10)
+
+        assertNull(InputMapper.scrollDelta(event, overPanel = true))
+    }
+
+    @Test
+    fun `wheelUp takes precedence over overPanel=false`() {
+        val event = MouseEvent(x = 10, y = 10, wheelUp = true)
+
+        assertEquals(-PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = false))
     }
 }
