@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
  * then advance by each panel's allocated width.
  *
  * Descriptor order matches [Panels.ordered]:
- *   [(4,28), (3,28), (2,28), (5,36), (1,28), (0,28)]
+ *   [(4,28), (3,28), (2,28), (5,34), (1,28), (0,28)]
  *   TARGET_STATUS / TARGETS / DECLARED_TARGETS / ATTACK_RESULTS / UNIT_STATUS / LOG
  */
 internal class FrameLayoutTest {
@@ -20,7 +20,7 @@ internal class FrameLayoutTest {
         4 to 28,  // TARGET_STATUS
         3 to 28,  // TARGETS
         2 to 28,  // DECLARED_TARGETS
-        5 to 36,  // ATTACK_RESULTS
+        5 to 34,  // ATTACK_RESULTS
         1 to 28,  // UNIT_STATUS
         0 to 28,  // LOG
     )
@@ -34,7 +34,7 @@ internal class FrameLayoutTest {
 
     @Test
     fun `all panels visible and none collapsed`() {
-        // totalPanelWidth = 28+28+28+36+28+28 = 176 => boardWidth = 220-176 = 44
+        // totalPanelWidth = 28+28+28+34+28+28 = 174 => boardWidth = 220-174 = 46
         val layout = FrameLayout.compute(
             termWidth = termWidth,
             termHeight = termHeight,
@@ -43,16 +43,16 @@ internal class FrameLayoutTest {
             panelDescriptors = allDescriptors,
         )
 
-        assertEquals(44, layout.boardWidth)
+        assertEquals(46, layout.boardWidth)
         assertEquals(expectedBoardHeight, layout.boardHeight)
         assertEquals(6, layout.slots.size)
 
         // Panels placed left-to-right starting at x = boardWidth
         val s = layout.slots
-        assertEquals(PanelSlotLayout(panelIndex = 4, x = 44,  width = 28, collapsed = false), s[0]) // TARGET_STATUS
-        assertEquals(PanelSlotLayout(panelIndex = 3, x = 72,  width = 28, collapsed = false), s[1]) // TARGETS
-        assertEquals(PanelSlotLayout(panelIndex = 2, x = 100, width = 28, collapsed = false), s[2]) // DECLARED_TARGETS
-        assertEquals(PanelSlotLayout(panelIndex = 5, x = 128, width = 36, collapsed = false), s[3]) // ATTACK_RESULTS
+        assertEquals(PanelSlotLayout(panelIndex = 4, x = 46,  width = 28, collapsed = false), s[0]) // TARGET_STATUS
+        assertEquals(PanelSlotLayout(panelIndex = 3, x = 74,  width = 28, collapsed = false), s[1]) // TARGETS
+        assertEquals(PanelSlotLayout(panelIndex = 2, x = 102, width = 28, collapsed = false), s[2]) // DECLARED_TARGETS
+        assertEquals(PanelSlotLayout(panelIndex = 5, x = 130, width = 34, collapsed = false), s[3]) // ATTACK_RESULTS
         assertEquals(PanelSlotLayout(panelIndex = 1, x = 164, width = 28, collapsed = false), s[4]) // UNIT_STATUS
         assertEquals(PanelSlotLayout(panelIndex = 0, x = 192, width = 28, collapsed = false), s[5]) // LOG
     }
@@ -60,7 +60,7 @@ internal class FrameLayoutTest {
     @Test
     fun `one panel collapsed — stub width 7, board absorbs freed space`() {
         // LOG (index=0) collapsed: its width becomes 7 instead of 28 (saves 21)
-        // totalPanelWidth = 28+28+28+36+28+7 = 155 => boardWidth = 220-155 = 65
+        // totalPanelWidth = 28+28+28+34+28+7 = 153 => boardWidth = 220-153 = 67
         val layout = FrameLayout.compute(
             termWidth = termWidth,
             termHeight = termHeight,
@@ -69,16 +69,16 @@ internal class FrameLayoutTest {
             panelDescriptors = allDescriptors,
         )
 
-        assertEquals(65, layout.boardWidth)
+        assertEquals(67, layout.boardWidth)
         assertEquals(expectedBoardHeight, layout.boardHeight)
         assertEquals(6, layout.slots.size)
 
         // All preceding slots shift right by 21 (the space freed by the stub)
         val s = layout.slots
-        assertEquals(PanelSlotLayout(panelIndex = 4, x = 65,  width = 28, collapsed = false), s[0])
-        assertEquals(PanelSlotLayout(panelIndex = 3, x = 93,  width = 28, collapsed = false), s[1])
-        assertEquals(PanelSlotLayout(panelIndex = 2, x = 121, width = 28, collapsed = false), s[2])
-        assertEquals(PanelSlotLayout(panelIndex = 5, x = 149, width = 36, collapsed = false), s[3])
+        assertEquals(PanelSlotLayout(panelIndex = 4, x = 67,  width = 28, collapsed = false), s[0])
+        assertEquals(PanelSlotLayout(panelIndex = 3, x = 95,  width = 28, collapsed = false), s[1])
+        assertEquals(PanelSlotLayout(panelIndex = 2, x = 123, width = 28, collapsed = false), s[2])
+        assertEquals(PanelSlotLayout(panelIndex = 5, x = 151, width = 34, collapsed = false), s[3])
         assertEquals(PanelSlotLayout(panelIndex = 1, x = 185, width = 28, collapsed = false), s[4])
         assertEquals(PanelSlotLayout(panelIndex = 0, x = 213, width =  7, collapsed = true),  s[5])
     }

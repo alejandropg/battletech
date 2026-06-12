@@ -38,7 +38,7 @@ public class TargetsView(
             }
             val nameColor = if (isCursorOnTarget) Color.BRIGHT_YELLOW else Color.WHITE
             val nameLine = "  ${target.unitName}$tag"
-            content.writeln(nameLine.take(content.width), nameColor)
+            content.writeln(nameLine, nameColor)
 
             val assignedToThisTarget = weaponAssignments[target.unitId] ?: emptySet()
             val assignedToOtherTargets = weaponAssignments.entries
@@ -69,7 +69,7 @@ public class TargetsView(
                     isDisabled -> Color.GRAY
                     else -> Color.WHITE
                 }
-                content.writeln(weaponLine.take(content.width), color)
+                content.writeln(weaponLine, color)
             }
 
             if (target.weapons.isNotEmpty()) {
@@ -77,7 +77,7 @@ public class TargetsView(
                 val mods = availableWeapons.firstOrNull()?.modifiers ?: target.weapons.first().modifiers
                 if (mods.isNotEmpty()) {
                     val modLine = "  [${mods.joinToString(", ")}]"
-                    content.writeln(modLine.take(content.width), Color.DEFAULT)
+                    content.writeln(modLine, Color.DEFAULT)
                 }
             }
 

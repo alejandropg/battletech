@@ -24,7 +24,7 @@ internal class PanelsTest {
     @Test
     fun `attack results panel is wider than the rest`() {
         val byId = Panels.ordered.associateBy { it.id }
-        assertEquals(36, byId.getValue(PanelId.ATTACK_RESULTS).width)
+        assertEquals(34, byId.getValue(PanelId.ATTACK_RESULTS).width)
         assertEquals(28, byId.getValue(PanelId.LOG).width)
         assertEquals(28, byId.getValue(PanelId.TARGETS).width)
     }

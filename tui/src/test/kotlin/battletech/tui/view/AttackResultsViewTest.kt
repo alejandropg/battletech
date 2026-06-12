@@ -82,7 +82,7 @@ internal class AttackResultsViewTest {
     }
 
     /** Renders via the decorator — pixel-parity regression guard for box/title/coordinates. */
-    private fun renderToString(results: List<AttackResult>, width: Int = 36, height: Int = 30): String {
+    private fun renderToString(results: List<AttackResult>, width: Int = 34, height: Int = 30): String {
         val view = makeView(results)
         val decorated = ScrollablePanelView(
             index = AttackResultsView.INDEX,
@@ -197,7 +197,7 @@ internal class AttackResultsViewTest {
             aHitResult(weaponName = "Weapon$i")
         }
         val view = makeView(results)
-        val width = 36
+        val width = 34
         val height = 10
         val decorated = ScrollablePanelView(
             index = AttackResultsView.INDEX,

@@ -27,19 +27,19 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
             val attackerColor = if (entry.isDraft) Color.GRAY else playerColor(entry.ownerPlayer)
             val contentColor = if (entry.isDraft) Color.GRAY else Color.WHITE
 
-            content.writeln(entry.attackerName.take(content.width), attackerColor)
+            content.writeln(entry.attackerName, attackerColor)
 
             for (target in entry.targets) {
                 val tag = if (target.isPrimary) "[P]" else "[S]"
-                val targetLine = "  > ${target.targetName} $tag"
-                content.writeln(targetLine.take(content.width), contentColor)
+                val targetLine = "> ${target.targetName} $tag"
+                content.writeln(targetLine, contentColor)
 
                 for (weapon in target.weapons) {
-                    val left = "      ${weapon.weaponName}"
+                    val left = "    ${weapon.weaponName}"
                     val right = "${weapon.successChance}%"
                     val padding = (content.width - left.length - right.length).coerceAtLeast(1)
                     val weaponLine = "$left${" ".repeat(padding)}$right"
-                    content.writeln(weaponLine.take(content.width), contentColor)
+                    content.writeln(weaponLine, contentColor)
                 }
             }
 

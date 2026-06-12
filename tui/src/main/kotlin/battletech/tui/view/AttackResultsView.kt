@@ -26,14 +26,14 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         for ((attackerId, attackerResults) in byAttacker) {
             val attackerName = data.unitNames[attackerId] ?: attackerId.value
             val attackerColor = playerColor(data.unitOwners[attackerId])
-            content.writeln(attackerName.take(content.width), attackerColor)
+            content.writeln(attackerName, attackerColor)
 
             val byTarget = attackerResults.groupBy { it.targetId }
 
             for ((targetId, targetResults) in byTarget) {
                 val targetName = data.unitNames[targetId] ?: targetId.value
-                val targetLine = "  > $targetName"
-                content.writeln(targetLine.take(content.width), Color.WHITE)
+                val targetLine = "> $targetName"
+                content.writeln(targetLine, Color.WHITE)
 
                 for (result in targetResults) {
                     renderWeaponResult(content, result)
@@ -44,12 +44,12 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
     private fun renderWeaponResult(content: ContentWriter, result: AttackResult) {
         // Line 1: weapon name + outcome (right-aligned)
-        val left = "    ${result.weaponName}"
+        val left = "  ${result.weaponName}"
         val outcomeText = if (result.hit) "HIT" else "MISS"
         val outcomeColor = if (result.hit) Color.GREEN else Color.RED
         val padding = (content.width - left.length - outcomeText.length).coerceAtLeast(1)
         val weaponLine = "$left${" ".repeat(padding)}$outcomeText"
-        content.writeln(weaponLine.take(content.width), Color.WHITE)
+        content.writeln(weaponLine, Color.WHITE)
         // Overwrite the outcome portion in the correct color
         val outcomeX = content.x + content.width - outcomeText.length
         if (outcomeX >= content.x) {
@@ -57,22 +57,22 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         }
 
         // Line 2: TN breakdown
-        content.writeln(buildTnLine(result).take(content.width), Color.WHITE)
+        content.writeln(buildTnLine(result), Color.WHITE)
 
         // Line 3: to-hit dice
         val toHit = result.toHitRoll
-        val line = "     to-hit  ${toHit.d1}+${toHit.d2} = ${toHit.total}"
-        content.writeln(line.take(content.width), Color.WHITE)
+        val line = "   to-hit  ${toHit.d1}+${toHit.d2} = ${toHit.total}"
+        content.writeln(line, Color.WHITE)
 
         // Lines 4-5: location dice + damage (hit only)
         val locRoll = result.locationRoll
         val hitLoc = result.hitLocation
         if (result.hit && locRoll != null && hitLoc != null) {
-            val locLine = "     loc     ${locRoll.d1}+${locRoll.d2} = ${locRoll.total}"
-            content.writeln(locLine.take(content.width), Color.WHITE)
+            val locLine = "   loc     ${locRoll.d1}+${locRoll.d2} = ${locRoll.total}"
+            content.writeln(locLine, Color.WHITE)
             val locationName = hitLocationName(hitLoc)
-            val dmgLine = "     → $locationName   ${result.damageApplied} dmg"
-            content.writeln(dmgLine.take(content.width), Color.WHITE)
+            val dmgLine = "   → $locationName   ${result.damageApplied} dmg"
+            content.writeln(dmgLine, Color.WHITE)
         }
     }
 
@@ -83,7 +83,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
             RangeBand.LONG -> "long"
             RangeBand.OUT_OF_RANGE -> "oor"
         }
-        val sb = StringBuilder("     TN G${result.gunnery} +${result.rangeModifier}$bandStr")
+        val sb = StringBuilder("   TN G${result.gunnery} +${result.rangeModifier}$bandStr")
         if (result.heatPenalty > 0) sb.append(" +${result.heatPenalty}heat")
         if (result.secondaryPenalty > 0) sb.append(" +${result.secondaryPenalty}sec")
         sb.append(" = ${result.targetNumber}")

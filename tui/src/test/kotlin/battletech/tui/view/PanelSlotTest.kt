@@ -30,7 +30,7 @@ internal class PanelSlotTest {
     fun `expanded slot wraps content in ScrollablePanelView and renders box plus content`() {
         val slot = PanelSlot(
             index = AttackResultsView.INDEX,
-            width = 36,
+            width = 34,
             title = AttackResultsView.TITLE,
             collapsed = false,
             scrollOffset = null,
@@ -40,8 +40,8 @@ internal class PanelSlotTest {
         val resolved = resolvePanel(slot)
 
         // Must be a ScrollablePanelView (internal class — verify via rendering)
-        val buffer = ScreenBuffer(36, 10)
-        resolved!!.render(buffer, 0, 0, 36, 10)
+        val buffer = ScreenBuffer(34, 10)
+        resolved!!.render(buffer, 0, 0, 34, 10)
         // Box: top-left corner present
         assertEquals("╭", buffer.get(0, 0).char)
         // Content "CONTENT" placed at x+2, y+1 (inside box)

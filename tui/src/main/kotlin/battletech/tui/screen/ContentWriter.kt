@@ -18,7 +18,8 @@ internal class ContentWriter(
     }
 
     fun writeln(text: String, fg: Color = Color.DEFAULT, bg: Color = Color.DEFAULT) {
-        buffer.writeString(x, cy, text, fg, bg)
+        val truncated = if (text.length > width) text.substring(0, width - 1) + "…" else text
+        buffer.writeString(x, cy, truncated, fg, bg)
         cy += 1
     }
 
