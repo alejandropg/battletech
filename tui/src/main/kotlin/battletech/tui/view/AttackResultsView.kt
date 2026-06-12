@@ -7,6 +7,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tui.game.PanelId
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.screen.Color
+import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
 
 internal class AttackResultsView(private val data: AttackResultsRender) : View {
@@ -14,102 +15,87 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
     companion object {
         val INDEX: Int = PanelId.ATTACK_RESULTS.index
         const val TITLE: String = "ATTACK RESULTS"
+        private const val PADDING = 2
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         buffer.drawBox(x, y, width, height, TITLE, index = INDEX)
 
-        val cx = x + 2
-        var cy = y + 2
-        val inner = width - 4
         val lastRow = y + height - 1
+        val content = ContentWriter(buffer, x + PADDING, y + PADDING, width - (PADDING * 2))
 
         val byAttacker = data.results.groupBy { it.attackerId }
 
         for ((attackerId, attackerResults) in byAttacker) {
-            if (cy >= lastRow) break
+            if (content.cy >= lastRow) break
 
             val attackerName = data.unitNames[attackerId] ?: attackerId.value
             val attackerColor = playerColor(data.unitOwners[attackerId])
-            buffer.writeString(cx, cy, attackerName.take(inner), attackerColor)
-            cy++
+            content.writeln(attackerName.take(content.width), attackerColor)
 
             val byTarget = attackerResults.groupBy { it.targetId }
 
             for ((targetId, targetResults) in byTarget) {
-                if (cy >= lastRow) break
+                if (content.cy >= lastRow) break
 
                 val targetName = data.unitNames[targetId] ?: targetId.value
                 val targetLine = "  > $targetName"
-                buffer.writeString(cx, cy, targetLine.take(inner), Color.WHITE)
-                cy++
+                content.writeln(targetLine.take(content.width), Color.WHITE)
 
                 for (result in targetResults) {
-                    if (cy >= lastRow) break
-                    cy = renderWeaponResult(buffer, result, cx, inner, cy, lastRow)
+                    if (content.cy >= lastRow) break
+                    renderWeaponResult(content, result, lastRow)
                 }
             }
         }
     }
 
     private fun renderWeaponResult(
-        buffer: ScreenBuffer,
+        content: ContentWriter,
         result: AttackResult,
-        cx: Int,
-        inner: Int,
-        startCy: Int,
         lastRow: Int,
-    ): Int {
-        var cy = startCy
-
+    ) {
         // Line 1: weapon name + outcome (right-aligned)
-        if (cy < lastRow) {
+        if (content.cy < lastRow) {
             val left = "    ${result.weaponName}"
             val outcomeText = if (result.hit) "HIT" else "MISS"
             val outcomeColor = if (result.hit) Color.GREEN else Color.RED
-            val padding = (inner - left.length - outcomeText.length).coerceAtLeast(1)
+            val padding = (content.width - left.length - outcomeText.length).coerceAtLeast(1)
             val weaponLine = "$left${" ".repeat(padding)}$outcomeText"
-            buffer.writeString(cx, cy, weaponLine.take(inner), Color.WHITE)
+            content.writeln(weaponLine.take(content.width), Color.WHITE)
             // Overwrite the outcome portion in the correct color
-            val outcomeX = cx + inner - outcomeText.length
-            if (outcomeX >= cx) {
-                buffer.writeString(outcomeX, cy, outcomeText, outcomeColor)
+            val outcomeX = content.x + content.width - outcomeText.length
+            if (outcomeX >= content.x) {
+                content.buffer.writeString(outcomeX, content.cy - 1, outcomeText, outcomeColor)
             }
-            cy++
         }
 
         // Line 2: TN breakdown
-        if (cy < lastRow) {
-            buffer.writeString(cx, cy, buildTnLine(result).take(inner), Color.WHITE)
-            cy++
+        if (content.cy < lastRow) {
+            content.writeln(buildTnLine(result).take(content.width), Color.WHITE)
         }
 
         // Line 3: to-hit dice
-        if (cy < lastRow) {
+        if (content.cy < lastRow) {
             val toHit = result.toHitRoll
             val line = "     to-hit  ${toHit.d1}+${toHit.d2} = ${toHit.total}"
-            buffer.writeString(cx, cy, line.take(inner), Color.WHITE)
-            cy++
+            content.writeln(line.take(content.width), Color.WHITE)
         }
 
         // Lines 4-5: location dice + damage (hit only)
         val locRoll = result.locationRoll
         val hitLoc = result.hitLocation
         if (result.hit && locRoll != null && hitLoc != null) {
-            if (cy < lastRow) {
+            if (content.cy < lastRow) {
                 val line = "     loc     ${locRoll.d1}+${locRoll.d2} = ${locRoll.total}"
-                buffer.writeString(cx, cy, line.take(inner), Color.WHITE)
-                cy++
+                content.writeln(line.take(content.width), Color.WHITE)
             }
-            if (cy < lastRow) {
+            if (content.cy < lastRow) {
                 val locationName = hitLocationName(hitLoc)
                 val line = "     → $locationName   ${result.damageApplied} dmg"
-                buffer.writeString(cx, cy, line.take(inner), Color.WHITE)
-                cy++
+                content.writeln(line.take(content.width), Color.WHITE)
             }
         }
-
-        return cy
     }
 
     private fun buildTnLine(result: AttackResult): String {

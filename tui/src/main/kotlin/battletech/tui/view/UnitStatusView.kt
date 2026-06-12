@@ -4,6 +4,7 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tui.game.PanelId
 import battletech.tui.screen.Color
+import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
 
 public class UnitStatusView(
@@ -14,118 +15,110 @@ public class UnitStatusView(
     public companion object {
         public val INDEX: Int = PanelId.UNIT_STATUS.index
         public const val TITLE: String = "UNIT STATUS"
+        private const val PADDING = 2
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         buffer.drawBox(x, y, width, height, "UNIT STATUS", index = INDEX)
 
-        val cx = x + 2
-        var cy = y + 2
+        val content = ContentWriter(buffer, x + PADDING, y + PADDING, width - (PADDING * 2))
 
         if (unit == null) {
-            buffer.writeString(cx, cy, "No unit selected", Color.WHITE)
+            content.writeln("No unit selected", Color.WHITE)
             return
         }
 
-        buffer.writeString(cx, cy, unit.name, Color.BRIGHT_YELLOW)
-        cy += 2
-
-        val innerWidth = width - 6
-        fun sectionHeader(label: String): String {
-            val dashes = (innerWidth - label.length - 1).coerceAtLeast(0)
-            return "$label ${"─".repeat(dashes)}"
+        // UNIT
+        with(content) {
+            writeln(unit.name, Color.BRIGHT_YELLOW)
+            newLine()
         }
 
         // PILOT
-        buffer.writeString(cx, cy, sectionHeader("PILOT"), Color.CYAN)
-        cy += 1
-        buffer.writeString(cx, cy, "Gunnery  : ${unit.gunnerySkill}", Color.WHITE)
-        cy += 1
-        buffer.writeString(cx, cy, "Piloting : ${unit.pilotingSkill}", Color.WHITE)
-        cy += 2
+        with(content) {
+            writeHeader("PILOT")
+            writeln("Gunnery  : ${unit.gunnerySkill}", Color.WHITE)
+            writeln("Piloting : ${unit.pilotingSkill}", Color.WHITE)
+            newLine()
+        }
 
         // MOVEMENT
-        buffer.writeString(cx, cy, sectionHeader("MOVEMENT"), Color.CYAN)
-        cy += 1
-        buffer.writeString(cx, cy, "Walk : ${unit.walkingMP}    Run : ${unit.runningMP}", Color.WHITE)
-        cy += 1
-        if (unit.jumpMP > 0) {
-            buffer.writeString(cx, cy, "Jump : ${unit.jumpMP}", Color.WHITE)
-            cy += 1
+        with(content) {
+            writeHeader("MOVEMENT")
+            writeln("Walk : ${unit.walkingMP}    Run : ${unit.runningMP}", Color.WHITE)
+            if (unit.jumpMP > 0) writeln("Jump : ${unit.jumpMP}", Color.WHITE)
+            newLine()
         }
-        cy += 1
 
         // HEAT
-        buffer.writeString(cx, cy, sectionHeader("HEAT"), Color.CYAN)
-        cy += 1
-        buffer.writeString(cx, cy, "Current", Color.DEFAULT)
-        cy += 1
-        val heatBar = HeatBarWidget(barWidth = 20, maxValue = 30)
+        with(content) {
+            writeHeader("HEAT")
+            writeln("Current")
+            val heatBar = HeatBarWidget(barWidth = 20, maxValue = 30)
+            content.cy = heatBar.draw(buffer, content.x, content.cy, unit.currentHeat)
 
-        cy = heatBar.draw(buffer, cx, cy, unit.currentHeat)
+            // Heat generated this turn: committed sources in the default colour, the
+            // in-progress (hovered move / selected weapons) preview in gray.
+            for (source in unit.heatGeneratedThisTurn) {
+                writeln("  ${source.label} +${source.amount}")
+            }
+            for (source in pendingHeat) {
+                writeln("  ${source.label} +${source.amount}", Color.GRAY)
+            }
 
-        // Heat generated this turn: committed sources in the default colour, the
-        // in-progress (hovered move / selected weapons) preview in gray.
-        for (source in unit.heatGeneratedThisTurn) {
-            buffer.writeString(cx, cy, "  ${source.label} +${source.amount}", Color.DEFAULT)
-            cy += 1
+            val committedGenerated = unit.heatGeneratedThisTurn.sumOf { it.amount }
+            val previewGenerated = pendingHeat.sumOf { it.amount }
+
+            // Dissipation bar: shows how much heat will be removed this turn, capped at
+            // the sink's capacity. Includes the pending preview so the player sees the
+            // full dissipation picture before committing.
+            val sink = unit.heatSink
+            val dissipation = sink.dissipation()
+            val sinkSuffix =
+                if (sink.type.sinkRatio == 1) "${sink.type.name} $dissipation"
+                else "${sink.type.name} ${sink.units}($dissipation)"
+            val dissipated = minOf(unit.currentHeat + committedGenerated + previewGenerated, dissipation)
+            content.cy = HeatBarWidget(barWidth = 10, maxValue = dissipation, suffix = sinkSuffix)
+                .draw(buffer, content.x, content.cy, dissipated)
+
+            // Projected end-of-turn heat: current + generated − dissipation, coloured
+            // by the same thresholds as the current bar regardless of pending state.
+            writeln("Projected")
+            val projected = (unit.currentHeat + committedGenerated + previewGenerated - dissipation).coerceAtLeast(0)
+            content.cy = heatBar.draw(buffer, content.x, content.cy, projected)
+            newLine()
         }
-        for (source in pendingHeat) {
-            buffer.writeString(cx, cy, "  ${source.label} +${source.amount}", Color.GRAY)
-            cy += 1
-        }
-        val committedGenerated = unit.heatGeneratedThisTurn.sumOf { it.amount }
-        val previewGenerated = pendingHeat.sumOf { it.amount }
 
-        // Dissipation bar: shows how much heat will be removed this turn, capped at
-        // the sink's capacity. Includes the pending preview so the player sees the
-        // full dissipation picture before committing.
-        val sink = unit.heatSink
-        val dissipation = sink.dissipation()
-        val sinkSuffix =
-            if (sink.type.sinkRatio == 1) "${sink.type.name} $dissipation"
-            else "${sink.type.name} ${sink.units}($dissipation)"
-        val dissipated = minOf(unit.currentHeat + committedGenerated + previewGenerated, dissipation)
-        cy = HeatBarWidget(barWidth = 10, maxValue = dissipation, suffix = sinkSuffix)
-            .draw(buffer, cx, cy, dissipated)
-
-        // Projected end-of-turn heat: current + generated − dissipation, coloured
-        // by the same thresholds as the current bar regardless of pending state.
-        val projected = (unit.currentHeat + committedGenerated + previewGenerated - dissipation).coerceAtLeast(0)
-        buffer.writeString(cx, cy, "Projected", Color.DEFAULT)
-        cy += 1
-        cy = heatBar.draw(buffer, cx, cy, projected)
-        cy += 1 // blank separator before ARMOR
 
         // ARMOR
-        val armor = unit.armor
-        buffer.writeString(cx, cy, sectionHeader("ARMOR"), Color.CYAN)
-        cy += 1
-        buffer.writeString(cx + 9, cy, "HD:%2d".format(armor.head), Color.CYAN)
-        cy += 1
-        buffer.writeString(cx + 2, cy, "LT:%2d".format(armor.leftTorso), Color.GREEN)
-        buffer.writeString(cx + 9, cy, "CT:%2d".format(armor.centerTorso), Color.BRIGHT_YELLOW)
-        buffer.writeString(cx + 16, cy, "RT:%2d".format(armor.rightTorso), Color.GREEN)
-        cy += 1
-        buffer.writeString(cx + 3, cy, "r:%2d".format(armor.leftTorsoRear), Color.DEFAULT)
-        buffer.writeString(cx + 10, cy, "r:%2d".format(armor.centerTorsoRear), Color.DEFAULT)
-        buffer.writeString(cx + 17, cy, "r:%2d".format(armor.rightTorsoRear), Color.DEFAULT)
-        cy += 1
-        buffer.writeString(cx + 0, cy, "LA:%2d".format(armor.leftArm), Color.GREEN)
-        buffer.writeString(cx + 17, cy, "RA:%2d".format(armor.rightArm), Color.GREEN)
-        cy += 1
-        buffer.writeString(cx + 3, cy, "LL:%2d".format(armor.leftLeg), Color.GREEN)
-        buffer.writeString(cx + 14, cy, "RL:%2d".format(armor.rightLeg), Color.GREEN)
-        cy += 2
+        with(content) {
+            val armor = unit.armor
+            writeHeader("ARMOR")
+            writeStr(9, "HD:%2d".format(armor.head), Color.CYAN)
+            newLine()
+            writeStr(2, "LT:%2d".format(armor.leftTorso), Color.GREEN)
+            writeStr(9, "CT:%2d".format(armor.centerTorso), Color.BRIGHT_YELLOW)
+            writeStr(16, "RT:%2d".format(armor.rightTorso), Color.GREEN)
+            newLine()
+            writeStr(3, "r:%2d".format(armor.leftTorsoRear), Color.DEFAULT)
+            writeStr(10, "r:%2d".format(armor.centerTorsoRear), Color.DEFAULT)
+            writeStr(17, "r:%2d".format(armor.rightTorsoRear), Color.DEFAULT)
+            newLine()
+            writeStr(0, "LA:%2d".format(armor.leftArm), Color.GREEN)
+            writeStr(17, "RA:%2d".format(armor.rightArm), Color.GREEN)
+            newLine()
+            writeStr(3, "LL:%2d".format(armor.leftLeg), Color.GREEN)
+            writeStr(14, "RL:%2d".format(armor.rightLeg), Color.GREEN)
+            repeat(2) { newLine() }
+        }
 
         // WEAPONS
-        buffer.writeString(cx, cy, sectionHeader("WEAPONS"), Color.CYAN)
-        cy += 1
-        for (weapon in unit.weapons) {
-            if (cy >= y + height - 1) break
-            val ammoStr = weapon.ammo?.let { " [$it]" } ?: ""
-            buffer.writeString(cx, cy, "  ${weapon.name}$ammoStr", Color.WHITE)
-            cy += 1
+        with(content) {
+            writeHeader("WEAPONS")
+            for (weapon in unit.weapons) {
+                val ammoStr = weapon.ammo?.let { " [$it]" } ?: ""
+                writeln("  ${weapon.name}$ammoStr", Color.WHITE)
+            }
         }
     }
 }

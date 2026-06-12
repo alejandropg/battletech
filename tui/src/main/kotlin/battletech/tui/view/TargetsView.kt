@@ -4,6 +4,7 @@ import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.PanelId
 import battletech.tui.screen.Color
+import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
 
 public class TargetsView(
@@ -17,21 +18,22 @@ public class TargetsView(
     public companion object {
         public val INDEX: Int = PanelId.TARGETS.index
         public const val TITLE: String = "TARGETS"
+        private const val PADDING = 2
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         buffer.drawBox(x, y, width, height, "TARGETS", index = INDEX)
 
-        val cx = x + 2
-        var cy = y + 2
+        val lastRow = y + height - 1
+        val content = ContentWriter(buffer, x + PADDING, y + PADDING, width - (PADDING * 2))
 
         if (targets.isEmpty()) {
-            buffer.writeString(cx, cy, "No targets", Color.WHITE)
+            content.writeln("No targets", Color.WHITE)
             return
         }
 
         for ((index, target) in targets.withIndex()) {
-            if (cy >= y + height - 1) break
+            if (content.cy >= lastRow) break
 
             val isCursorOnTarget = index == cursorTargetIndex
             val tag = when {
@@ -42,8 +44,7 @@ public class TargetsView(
             // Target name: no arrow (arrow is on weapon line); highlight if cursor is within this target
             val nameColor = if (isCursorOnTarget) Color.BRIGHT_YELLOW else Color.WHITE
             val nameLine = "  ${target.unitName}$tag"
-            buffer.writeString(cx, cy, nameLine.take(width - 4), nameColor)
-            cy++
+            content.writeln(nameLine.take(content.width), nameColor)
 
             val assignedToThisTarget = weaponAssignments[target.unitId] ?: emptySet()
             val assignedToOtherTargets = weaponAssignments.entries
@@ -52,7 +53,7 @@ public class TargetsView(
                 .toSet()
 
             for ((wi, weapon) in target.weapons.withIndex()) {
-                if (cy >= y + height - 1) break
+                if (content.cy >= lastRow) break
 
                 val isCursorHere = isCursorOnTarget && wi == cursorWeaponIndex
                 val isAssignedElsewhere = weapon.weaponIndex in assignedToOtherTargets
@@ -66,10 +67,9 @@ public class TargetsView(
                 val assignedElsewhereMarker = if (isAssignedElsewhere) "[-]" else "[$mark]"
 
                 val cursor = if (isCursorHere) "\u25B6" else " "
-                val availableWidth = width - 4
                 val left = "$cursor $assignedElsewhereMarker ${weapon.weaponName}"
                 val right = "${weapon.successChance}%"
-                val padding = (availableWidth - left.length - right.length).coerceAtLeast(1)
+                val padding = (content.width - left.length - right.length).coerceAtLeast(1)
                 val weaponLine = "$left${" ".repeat(padding)}$right"
 
                 val color = when {
@@ -77,21 +77,19 @@ public class TargetsView(
                     isDisabled -> Color.GRAY
                     else -> Color.WHITE
                 }
-                buffer.writeString(cx, cy, weaponLine.take(availableWidth), color)
-                cy++
+                content.writeln(weaponLine.take(content.width), color)
             }
 
             if (target.weapons.isNotEmpty()) {
                 val availableWeapons = target.weapons.filter { it.available }
                 val mods = availableWeapons.firstOrNull()?.modifiers ?: target.weapons.first().modifiers
-                if (mods.isNotEmpty() && cy < y + height - 1) {
+                if (mods.isNotEmpty() && content.cy < lastRow) {
                     val modLine = "  [${mods.joinToString(", ")}]"
-                    buffer.writeString(cx, cy, modLine.take(width - 4), Color.DEFAULT)
-                    cy++
+                    content.writeln(modLine.take(content.width), Color.DEFAULT)
                 }
             }
 
-            cy++ // blank line between targets
+            content.newLine() // blank line between targets
         }
     }
 }
