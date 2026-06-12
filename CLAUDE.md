@@ -64,9 +64,11 @@ The project uses a layered module architecture:
 
 Dependencies flow: `bt` → `strategic` + `tactical`, `tui` → `tactical` (libraries are independent of each other)
 
-### Architecture invariants
+### Architecture principles
 
-These are fixed. Don't relitigate them — see `docs/refactor-tactical-domain.md` for the rationale.
+OOP + SOLID + KISS + DRY + YAGNI
+
+### Architecture invariants
 
 - **Server-authoritative**: one `BattleSession` per match owns state; deliveries (TUI, future web/remote) never mutate `GameState` directly.
 - **Command-driven**: state changes flow through `session.submitCommand(GameCommand)`. After applying the handler, the session **auto-cascades** through any phase whose `isComplete` is true (firing each new phase's `onEntry` and emitting `PhaseChanged`), stopping at the next player phase. `session.advance()` is a one-shot kickstart used at game start to fire `InitiativePhaseHandler.onEntry` and cascade to `MOVEMENT`.

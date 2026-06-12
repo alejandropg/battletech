@@ -72,14 +72,26 @@ internal class AttackResultsViewTest {
         secondaryPenalty = secondaryPenalty,
     )
 
-    private fun renderToString(results: List<AttackResult>, width: Int = 36, height: Int = 30): String {
+    private fun makeView(results: List<AttackResult>): AttackResultsView {
         val render = AttackResultsRender(
             results = results,
             unitNames = mapOf(attackerId to "Atlas", targetId to "Hunchback"),
             unitOwners = mapOf(attackerId to PlayerId.PLAYER_1, targetId to PlayerId.PLAYER_2),
         )
+        return AttackResultsView(render)
+    }
+
+    /** Renders via the decorator — pixel-parity regression guard for box/title/coordinates. */
+    private fun renderToString(results: List<AttackResult>, width: Int = 36, height: Int = 30): String {
+        val view = makeView(results)
+        val decorated = ScrollablePanelView(
+            index = AttackResultsView.INDEX,
+            title = AttackResultsView.TITLE,
+            content = view,
+            scrollOffset = 0,
+        )
         val buffer = ScreenBuffer(width, height)
-        AttackResultsView(render).render(buffer, 0, 0, width, height)
+        decorated.render(buffer, 0, 0, width, height)
         return buildString {
             for (row in 0 until height) {
                 for (col in 0 until width) {
@@ -176,5 +188,32 @@ internal class AttackResultsViewTest {
     fun `target name appears as target line`() {
         val output = renderToString(listOf(aHitResult()))
         assertTrue(output.contains("> Hunchback")) { "Expected target line with Hunchback: $output" }
+    }
+
+    @Test
+    fun `scrolled view shows later lines when content overflows`() {
+        // Build enough results to exceed a small panel height
+        val results = (1..5).map { i ->
+            aHitResult(weaponName = "Weapon$i")
+        }
+        val view = makeView(results)
+        val width = 36
+        val height = 10
+        val decorated = ScrollablePanelView(
+            index = AttackResultsView.INDEX,
+            title = AttackResultsView.TITLE,
+            content = view,
+            scrollOffset = 15,
+        )
+        val buffer = ScreenBuffer(width, height)
+        decorated.render(buffer, 0, 0, width, height)
+        val output = buildString {
+            for (row in 0 until height) {
+                for (col in 0 until width) append(buffer.get(col, row).char)
+                appendLine()
+            }
+        }
+        // With offset=15, lines before row 15 are scrolled away; later weapon entries are visible
+        assertTrue(output.contains("Weapon")) { "Expected weapon lines after scroll: $output" }
     }
 }
