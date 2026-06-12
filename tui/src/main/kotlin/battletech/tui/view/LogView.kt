@@ -17,19 +17,10 @@ public class LogView(
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "LOG", index = INDEX)
+        val visualLines = entries.flatMap { wrapEntry(it, width) }
 
-        val innerX = x + 2
-        val innerY = y + 1
-        val innerWidth = (width - 4).coerceAtLeast(0)
-        val innerHeight = (height - 2).coerceAtLeast(0)
-        if (innerWidth <= 0 || innerHeight <= 0) return
-
-        val visualLines = entries.flatMap { wrapEntry(it, innerWidth) }
-        val visible = if (visualLines.size <= innerHeight) visualLines else visualLines.takeLast(innerHeight)
-
-        for ((i, line) in visible.withIndex()) {
-            buffer.writeString(innerX, innerY + i, line)
+        for ((i, line) in visualLines.withIndex()) {
+            buffer.writeString(x, y + i, line)
         }
     }
 
