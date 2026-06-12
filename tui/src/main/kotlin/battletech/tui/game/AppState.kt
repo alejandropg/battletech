@@ -32,6 +32,7 @@ internal data class AppState(
     val cursor: HexCoordinates,
     val collapsedPanels: Set<Int> = emptySet(),
     val lastAttackResults: List<AttackResult>? = null,
+    val panelScrollOffsets: Map<Int, Int> = emptyMap(),
 ) {
     val gameState: GameState get() = session.gameState
     val turnState: TurnState get() = session.turnState

@@ -2,6 +2,7 @@ package battletech.tui.input
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tui.game.PanelScroll
 import battletech.tui.hex.HexLayout
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
@@ -68,6 +69,17 @@ public object InputMapper {
     public fun isCollapseToggle(event: KeyboardEvent): Int? {
         if (!event.alt) return null
         return event.key.singleOrNull()?.digitToIntOrNull()
+    }
+
+    /**
+     * Returns the scroll delta for a wheel event: negative for wheelUp
+     * (scroll content up = view moves toward newer/lower content), positive
+     * for wheelDown. Returns null for non-wheel events.
+     */
+    public fun wheelDelta(event: MouseEvent): Int? = when {
+        event.wheelUp -> -PanelScroll.STEP
+        event.wheelDown -> PanelScroll.STEP
+        else -> null
     }
 
     public fun mapMouseToHex(event: MouseEvent, boardX: Int, boardY: Int): HexCoordinates? {

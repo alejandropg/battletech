@@ -1,6 +1,7 @@
 package battletech.tui.input
 
 import battletech.tactical.model.HexCoordinates
+import battletech.tui.game.PanelScroll
 import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -54,5 +55,30 @@ internal class MouseInputTest {
         val event = MouseEvent(x = 1, y = 1, left = true)
 
         assertNull(InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2))
+    }
+
+    @Test
+    fun `wheelUp event returns negative delta`() {
+        val event = MouseEvent(x = 10, y = 10, wheelUp = true)
+
+        val delta = InputMapper.wheelDelta(event)
+
+        assertEquals(-PanelScroll.STEP, delta)
+    }
+
+    @Test
+    fun `wheelDown event returns positive delta`() {
+        val event = MouseEvent(x = 10, y = 10, wheelDown = true)
+
+        val delta = InputMapper.wheelDelta(event)
+
+        assertEquals(PanelScroll.STEP, delta)
+    }
+
+    @Test
+    fun `non-wheel event returns null delta`() {
+        val event = MouseEvent(x = 10, y = 10, left = true)
+
+        assertNull(InputMapper.wheelDelta(event))
     }
 }
