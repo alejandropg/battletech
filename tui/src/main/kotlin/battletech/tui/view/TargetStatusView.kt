@@ -11,13 +11,11 @@ public class TargetStatusView(private val unit: PublicUnit?) : View {
     public companion object {
         public val INDEX: Int = PanelId.TARGET_STATUS.index
         public const val TITLE: String = "TARGET STATUS"
-        private const val PADDING = 2
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "TARGET STATUS", index = INDEX)
-
-        val content = ContentWriter(buffer, x + PADDING, y + PADDING, width - (PADDING * 2))
+        // One blank row for pixel parity with the decorator's y+1 inner-content start
+        val content = ContentWriter(buffer, x, y + 1, width)
 
         if (unit == null) {
             content.writeln("No target selected", Color.WHITE)
@@ -64,7 +62,6 @@ public class TargetStatusView(private val unit: PublicUnit?) : View {
         with(content) {
             writeHeader("WEAPONS")
             for (weapon in unit.weapons) {
-                if (content.cy >= y + height - 1) break
                 writeln("  ${weapon.name}", Color.WHITE)
             }
         }

@@ -31,12 +31,23 @@ internal class TargetStatusViewTest {
         weapons = weapons,
     )
 
+    /** Render via decorator at (0,0) — pixel-parity regression guard for box/coordinates. */
+    private fun renderDecorated(view: TargetStatusView, width: Int = 28, height: Int = 30): ScreenBuffer {
+        val decorated = ScrollablePanelView(
+            index = TargetStatusView.INDEX,
+            title = TargetStatusView.TITLE,
+            content = view,
+            scrollOffset = 0,
+        )
+        val buffer = ScreenBuffer(width, height)
+        decorated.render(buffer, 0, 0, width, height)
+        return buffer
+    }
+
     @Test
     fun `renders box border with title TARGET STATUS`() {
         val view = TargetStatusView(null)
-        val buffer = ScreenBuffer(28, 30)
-
-        view.render(buffer, 0, 0, 28, 30)
+        val buffer = renderDecorated(view)
 
         assertEquals("╭", buffer.get(0, 0).char)
         assertEquals("╮", buffer.get(27, 0).char)
@@ -52,9 +63,7 @@ internal class TargetStatusViewTest {
     fun `renders unit name in BRIGHT_YELLOW`() {
         val unit = aPublicUnit(name = "Hunchback")
         val view = TargetStatusView(unit)
-        val buffer = ScreenBuffer(28, 30)
-
-        view.render(buffer, 0, 0, 28, 30)
+        val buffer = renderDecorated(view)
 
         val line = (2 until 11).map { buffer.get(it, 2).char }.joinToString("")
         assertEquals("Hunchback", line)
@@ -64,9 +73,7 @@ internal class TargetStatusViewTest {
     @Test
     fun `renders No target selected when unit is null`() {
         val view = TargetStatusView(null)
-        val buffer = ScreenBuffer(28, 30)
-
-        view.render(buffer, 0, 0, 28, 30)
+        val buffer = renderDecorated(view)
 
         val line = (2 until 20).map { buffer.get(it, 2).char }.joinToString("")
         assertEquals("No target selected", line.trim())
@@ -76,9 +83,7 @@ internal class TargetStatusViewTest {
     fun `renders MOVEMENT section with walk and run values`() {
         val unit = aPublicUnit(walkingMP = 4, runningMP = 6)
         val view = TargetStatusView(unit)
-        val buffer = ScreenBuffer(28, 30)
-
-        view.render(buffer, 0, 0, 28, 30)
+        val buffer = renderDecorated(view)
 
         val headerRow = (2 until 26).map { buffer.get(it, 4).char }.joinToString("")
         assertTrue(headerRow.contains("MOVEMENT"))
@@ -93,9 +98,7 @@ internal class TargetStatusViewTest {
     fun `renders ARMOR section with HD CT and LL values`() {
         val unit = aPublicUnit()
         val view = TargetStatusView(unit)
-        val buffer = ScreenBuffer(28, 30)
-
-        view.render(buffer, 0, 0, 28, 30)
+        val buffer = renderDecorated(view)
 
         val armorHeader = (2 until 26).map { buffer.get(it, 7).char }.joinToString("")
         assertTrue(armorHeader.contains("ARMOR"))
@@ -114,9 +117,7 @@ internal class TargetStatusViewTest {
     fun `renders WEAPONS section with weapon names`() {
         val unit = aPublicUnit(weapons = listOf(PublicWeapon("AC/20"), PublicWeapon("Medium Laser")))
         val view = TargetStatusView(unit)
-        val buffer = ScreenBuffer(28, 30)
-
-        view.render(buffer, 0, 0, 28, 30)
+        val buffer = renderDecorated(view)
 
         val weaponsHeader = (2 until 26).map { buffer.get(it, 14).char }.joinToString("")
         assertTrue(weaponsHeader.contains("WEAPONS"))
@@ -130,9 +131,7 @@ internal class TargetStatusViewTest {
     fun `does not render PILOT section`() {
         val unit = aPublicUnit()
         val view = TargetStatusView(unit)
-        val buffer = ScreenBuffer(28, 30)
-
-        view.render(buffer, 0, 0, 28, 30)
+        val buffer = renderDecorated(view)
 
         val allText = (0 until 30).flatMap { row ->
             (0 until 28).map { col -> buffer.get(col, row).char }
