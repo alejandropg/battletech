@@ -83,4 +83,16 @@ public class ScreenBuffer(
         }
     }
 
+    public fun blit(src: ScreenBuffer, srcX: Int, srcY: Int, destX: Int, destY: Int, width: Int, height: Int) {
+        for (row in 0 until height) {
+            val sy = srcY + row
+            if (sy < 0 || sy >= src.height) continue
+            for (col in 0 until width) {
+                val sx = srcX + col
+                if (sx < 0 || sx >= src.width) continue
+                set(destX + col, destY + row, src.get(sx, sy))
+            }
+        }
+    }
+
 }

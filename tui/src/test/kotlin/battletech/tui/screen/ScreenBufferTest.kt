@@ -215,4 +215,42 @@ internal class ScreenBufferTest {
         assertEquals("╭", buffer.get(2, 1).char)
         assertEquals("╯", buffer.get(11, 5).char)
     }
+
+    @Test
+    fun `blit copies cell char fg and bg from source to destination`() {
+        val src = ScreenBuffer(5, 5)
+        src.set(1, 2, Cell("X", Color.RED, Color.BLUE))
+        val dest = ScreenBuffer(10, 10)
+
+        dest.blit(src, 1, 2, 3, 4, 1, 1)
+
+        assertEquals(Cell("X", Color.RED, Color.BLUE), dest.get(3, 4))
+    }
+
+    @Test
+    fun `blit clips at destination right and bottom edges`() {
+        val src = ScreenBuffer(5, 5)
+        src.set(0, 0, Cell("A", Color.GREEN))
+        src.set(1, 0, Cell("B", Color.GREEN))
+        src.set(2, 0, Cell("C", Color.GREEN))
+        val dest = ScreenBuffer(4, 4)
+
+        dest.blit(src, 0, 0, 3, 0, 3, 1)
+
+        assertEquals(Cell("A", Color.GREEN), dest.get(3, 0))
+        assertEquals(Cell(" "), dest.get(2, 0))
+    }
+
+    @Test
+    fun `blit skips source rows and cols beyond source bounds`() {
+        val src = ScreenBuffer(2, 2)
+        src.set(0, 0, Cell("Z", Color.CYAN))
+        val dest = ScreenBuffer(10, 10)
+
+        dest.blit(src, 0, 0, 0, 0, 5, 5)
+
+        assertEquals(Cell("Z", Color.CYAN), dest.get(0, 0))
+        assertEquals(Cell(" "), dest.get(2, 0))
+        assertEquals(Cell(" "), dest.get(0, 2))
+    }
 }
