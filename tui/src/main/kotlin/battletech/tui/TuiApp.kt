@@ -6,6 +6,7 @@ import battletech.tactical.session.BattleSession
 import battletech.tactical.session.TurnState
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
+import battletech.tui.game.PanelScroll
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
@@ -16,16 +17,23 @@ import battletech.tui.view.FrameLayout
 import battletech.tui.view.PanelFrame
 import battletech.tui.view.PanelSlot
 import battletech.tui.view.Panels
+import battletech.tui.view.ScrollablePanelView
 import battletech.tui.view.StatusBarView
 import battletech.tui.view.Viewport
 import battletech.tui.view.resolvePanel
 import com.github.ajalt.mordant.input.KeyboardEvent
+import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.input.MouseTracking
 import com.github.ajalt.mordant.input.enterRawMode
 import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
 
 public class TuiApp {
+
+    private data class RenderedFrame(
+        val layout: FrameLayout,
+        val maxOffsets: Map<Int, Int>,
+    )
 
     public fun run() {
         val terminal = Terminal()
@@ -47,6 +55,11 @@ public class TuiApp {
 
         renderer.clear()
 
+        var frame = RenderedFrame(
+            layout = FrameLayout(boardWidth = 0, boardHeight = 0, slots = emptyList()),
+            maxOffsets = emptyMap(),
+        )
+
         try {
             terminal.enterRawMode(mouseTracking = MouseTracking.Normal).use { rawMode ->
                 while (true) {
@@ -54,10 +67,31 @@ public class TuiApp {
 
                     val transitionFlash: FlashMessage? = pendingFlash
                     pendingFlash = null
-                    renderFrame(currentSize, renderer, appState, transitionFlash)
+                    frame = renderFrame(currentSize, renderer, appState, transitionFlash)
 
                     val event = rawMode.readEvent()
                     if (event is KeyboardEvent && InputMapper.isQuit(event)) break
+
+                    // Handle wheel events before any other input dispatch
+                    if (event is MouseEvent) {
+                        val wheel = InputMapper.wheelDelta(event)
+                        if (wheel != null) {
+                            val slot = PanelScroll.slotAt(frame.layout, event.x, event.y)
+                            if (slot != null) {
+                                val panel = Panels.ordered.first { it.id.index == slot.panelIndex }
+                                appState = appState.copy(
+                                    panelScrollOffsets = PanelScroll.update(
+                                        appState.panelScrollOffsets,
+                                        slot.panelIndex,
+                                        wheel,
+                                        frame.maxOffsets[slot.panelIndex] ?: 0,
+                                        panel.anchorBottom,
+                                    ),
+                                )
+                            }
+                            continue  // wheel events never reach phases
+                        }
+                    }
 
                     val collapseIndex = if (event is KeyboardEvent) InputMapper.isCollapseToggle(event) else null
                     if (collapseIndex != null) {
@@ -94,7 +128,7 @@ public class TuiApp {
         renderer: ScreenRenderer,
         appState: AppState,
         flash: FlashMessage? = null,
-    ) {
+    ): RenderedFrame {
         val visible = PanelVisibility.visibleIndices(appState)
         val layout = FrameLayout.compute(
             termWidth = size.width,
@@ -124,10 +158,21 @@ public class TuiApp {
         )
         boardView.render(buffer, 0, 0, layout.boardWidth, layout.boardHeight)
 
+        val maxOffsets = mutableMapOf<Int, Int>()
         for (slot in layout.slots) {
             val panel = Panels.ordered.first { it.id.index == slot.panelIndex }
-            val panelSlot = PanelSlot(slot.panelIndex, slot.width, panel.title, slot.collapsed) { panel.build(frame) }
-            resolvePanel(panelSlot)?.render(buffer, slot.x, 0, slot.width, layout.boardHeight)
+            val panelSlot = PanelSlot(
+                index = slot.panelIndex,
+                width = slot.width,
+                title = panel.title,
+                collapsed = slot.collapsed,
+                scrollOffset = appState.panelScrollOffsets[slot.panelIndex],
+                anchorBottom = panel.anchorBottom,
+            ) { panel.build(frame) }
+            val view = resolvePanel(panelSlot)
+            view?.render(buffer, slot.x, 0, slot.width, layout.boardHeight)
+            val mo = (view as? ScrollablePanelView)?.maxOffset
+            if (mo != null) maxOffsets[slot.panelIndex] = mo
         }
 
         val prompt = flash?.text ?: appState.phase.prompt(appState)
@@ -136,5 +181,6 @@ public class TuiApp {
         statusBarView.render(buffer, 0, layout.boardHeight, size.width, FrameLayout.STATUS_BAR_HEIGHT)
 
         renderer.render(buffer)
+        return RenderedFrame(layout, maxOffsets)
     }
 }
