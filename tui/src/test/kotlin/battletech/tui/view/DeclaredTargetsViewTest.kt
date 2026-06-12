@@ -156,7 +156,7 @@ internal class DeclaredTargetsViewTest {
     }
 
     @Test
-    fun `overflow renders plus-N-more indicator`() {
+    fun `overflow shows scrollbar thumb when wrapped in decorator`() {
         // Use height=10 to force overflow with multiple attackers
         val entries = (1..6).map { i ->
             attacker("Attacker $i", PlayerId.PLAYER_1, false,
@@ -164,27 +164,48 @@ internal class DeclaredTargetsViewTest {
             )
         }
         val view = DeclaredTargetsView(DeclaredTargetsRender(entries))
+        val decorated = ScrollablePanelView(
+            index = DeclaredTargetsView.INDEX,
+            title = DeclaredTargetsView.TITLE,
+            content = view,
+            scrollOffset = 0,
+        )
 
-        val buffer = ScreenBuffer(28, 10)
-        view.render(buffer, 0, 0, 28, 10)
-        val output = buildString {
-            for (row in 0 until 10) {
-                for (col in 0 until 28) {
-                    append(buffer.get(col, row).char)
+        val width = 28
+        val height = 10
+        val buffer = ScreenBuffer(width, height)
+        decorated.render(buffer, 0, 0, width, height)
+
+        // The scrollbar thumb '█' must appear on the right border (col width-1) somewhere
+        val thumbFound = (1 until height - 1).any { row -> buffer.get(width - 1, row).char == "█" }
+        assertTrue(thumbFound) {
+            val output = buildString {
+                for (row in 0 until height) {
+                    for (col in 0 until width) append(buffer.get(col, row).char)
+                    appendLine()
                 }
-                appendLine()
             }
-        }
-
-        assertTrue(output.contains("+") && output.contains("more")) {
-            "Expected overflow indicator in:\n$output"
+            "Expected scrollbar thumb '█' on right border in:\n$output"
         }
     }
 
     @Test
     fun `panel title is DECLARED TARGETS`() {
         val view = DeclaredTargetsView(DeclaredTargetsRender(emptyList()))
-        val output = renderToString(view)
+        val decorated = ScrollablePanelView(
+            index = DeclaredTargetsView.INDEX,
+            title = DeclaredTargetsView.TITLE,
+            content = view,
+            scrollOffset = 0,
+        )
+        val buffer = ScreenBuffer(28, 10)
+        decorated.render(buffer, 0, 0, 28, 10)
+        val output = buildString {
+            for (row in 0 until 10) {
+                for (col in 0 until 28) append(buffer.get(col, row).char)
+                appendLine()
+            }
+        }
         assertTrue(output.contains("DECLARED TARGETS"))
     }
 }
