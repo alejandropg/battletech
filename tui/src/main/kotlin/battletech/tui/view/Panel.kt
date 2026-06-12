@@ -14,5 +14,6 @@ internal class Panel(
     val id: PanelId,
     val title: String,
     val width: Int,
+    val anchorBottom: Boolean = false,
     val build: (PanelFrame) -> View?,
 )
