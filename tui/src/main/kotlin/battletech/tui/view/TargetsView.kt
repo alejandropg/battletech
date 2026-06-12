@@ -18,14 +18,11 @@ public class TargetsView(
     public companion object {
         public val INDEX: Int = PanelId.TARGETS.index
         public const val TITLE: String = "TARGETS"
-        private const val PADDING = 2
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "TARGETS", index = INDEX)
-
-        val lastRow = y + height - 1
-        val content = ContentWriter(buffer, x + PADDING, y + PADDING, width - (PADDING * 2))
+        // One blank row for pixel parity with the decorator's y+1 inner-content start
+        val content = ContentWriter(buffer, x, y + 1, width)
 
         if (targets.isEmpty()) {
             content.writeln("No targets", Color.WHITE)
@@ -33,15 +30,12 @@ public class TargetsView(
         }
 
         for ((index, target) in targets.withIndex()) {
-            if (content.cy >= lastRow) break
-
             val isCursorOnTarget = index == cursorTargetIndex
             val tag = when {
                 primaryTargetId == null -> ""
                 target.unitId == primaryTargetId -> " [P]"
                 else -> " [S]"
             }
-            // Target name: no arrow (arrow is on weapon line); highlight if cursor is within this target
             val nameColor = if (isCursorOnTarget) Color.BRIGHT_YELLOW else Color.WHITE
             val nameLine = "  ${target.unitName}$tag"
             content.writeln(nameLine.take(content.width), nameColor)
@@ -53,8 +47,6 @@ public class TargetsView(
                 .toSet()
 
             for ((wi, weapon) in target.weapons.withIndex()) {
-                if (content.cy >= lastRow) break
-
                 val isCursorHere = isCursorOnTarget && wi == cursorWeaponIndex
                 val isAssignedElsewhere = weapon.weaponIndex in assignedToOtherTargets
                 val isAssignedHere = weapon.weaponIndex in assignedToThisTarget
@@ -66,7 +58,7 @@ public class TargetsView(
                 }
                 val assignedElsewhereMarker = if (isAssignedElsewhere) "[-]" else "[$mark]"
 
-                val cursor = if (isCursorHere) "\u25B6" else " "
+                val cursor = if (isCursorHere) "▶" else " "
                 val left = "$cursor $assignedElsewhereMarker ${weapon.weaponName}"
                 val right = "${weapon.successChance}%"
                 val padding = (content.width - left.length - right.length).coerceAtLeast(1)
@@ -83,7 +75,7 @@ public class TargetsView(
             if (target.weapons.isNotEmpty()) {
                 val availableWeapons = target.weapons.filter { it.available }
                 val mods = availableWeapons.firstOrNull()?.modifiers ?: target.weapons.first().modifiers
-                if (mods.isNotEmpty() && content.cy < lastRow) {
+                if (mods.isNotEmpty()) {
                     val modLine = "  [${mods.joinToString(", ")}]"
                     content.writeln(modLine.take(content.width), Color.DEFAULT)
                 }
