@@ -246,6 +246,45 @@ internal class TuiAppLoopTest {
         loopJob.join()
     }
 
+    // -------------------------------------------------------------------------
+    // Test 5: an exception while handling one event must not kill the loop.
+    //
+    // This guards the Ctrl+C-freeze fix: if event handling ever throws (e.g. a
+    // rendering bug), the exception used to propagate out of collect{} and cancel
+    // the whole coroutineScope — including the terminal input producer, which could
+    // leave it stuck mid-blocking-read in raw mode. The loop must instead log and
+    // keep collecting, so a subsequent Quit (e.g. ctrl+c) is still honored.
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `exception while handling one event does not stop the loop from reaching Quit`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+        val loopJob = launch {
+            app.runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = buildAppState(),
+            )
+        }
+
+        // Negative dimensions make ScreenBuffer's backing array allocation throw
+        // NegativeArraySizeException inside renderFrame — a stand-in for any bug
+        // surfacing during event handling.
+        internalEvents.send(UiEvent.Resized(Size(-1, 40)))
+
+        // The loop must still be alive and processing events after the failure.
+        recorder.clearOutput()
+        internalEvents.send(UiEvent.Resized(Size(120, 40)))
+        assertTrue(recorder.output().isNotEmpty(), "Expected loop to keep rendering after a handled exception")
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+        assertTrue(loopJob.isCompleted, "Expected loop to terminate cleanly on Quit after recovering from an exception")
+    }
+
     // ---- helpers ----
 
     private fun String.countOccurrences(sub: String): Int {

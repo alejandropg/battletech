@@ -30,6 +30,7 @@ import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.input.MouseTracking
 import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
@@ -138,94 +139,104 @@ public class TuiApp {
         frame = renderFrame(size, renderer, appState, activeFlash)
 
         events.takeWhile { it != UiEvent.Quit }.collect { ui ->
-            when (ui) {
-                is UiEvent.Input -> {
-                    val event = ui.event
+            // A single bad event must not propagate out of collect: that would cancel this
+            // coroutineScope and, with it, the terminal input producer running on Dispatchers.IO —
+            // exactly the external-cancellation hazard documented on Terminal.terminalInputEvents.
+            try {
+                when (ui) {
+                    is UiEvent.Input -> {
+                        val event = ui.event
 
-                    // Handle scroll events before any other input dispatch.
-                    // Slot is computed first so overPanel can be passed to scrollDelta,
-                    // which applies the Mordant posix wheel-parsing workaround (left/right
-                    // press over a panel treated as wheel-up/down; see InputMapper.scrollDelta).
-                    if (event is MouseEvent) {
-                        val slot = PanelScroll.slotAt(frame.layout, event.x, event.y)
-                        val delta = InputMapper.scrollDelta(event, overPanel = slot != null)
-                        if (delta != null) {
-                            if (slot != null) {
-                                val panel = Panels.ordered.first { it.id.index == slot.panelIndex }
-                                appState = appState.copy(
-                                    panelScrollOffsets = PanelScroll.update(
-                                        appState.panelScrollOffsets,
-                                        slot.panelIndex,
-                                        delta,
-                                        frame.maxOffsets[slot.panelIndex] ?: 0,
-                                        panel.anchorBottom,
-                                    ),
-                                )
+                        // Handle scroll events before any other input dispatch.
+                        // Slot is computed first so overPanel can be passed to scrollDelta,
+                        // which applies the Mordant posix wheel-parsing workaround (left/right
+                        // press over a panel treated as wheel-up/down; see InputMapper.scrollDelta).
+                        if (event is MouseEvent) {
+                            val slot = PanelScroll.slotAt(frame.layout, event.x, event.y)
+                            val delta = InputMapper.scrollDelta(event, overPanel = slot != null)
+                            if (delta != null) {
+                                if (slot != null) {
+                                    val panel = Panels.ordered.first { it.id.index == slot.panelIndex }
+                                    appState = appState.copy(
+                                        panelScrollOffsets = PanelScroll.update(
+                                            appState.panelScrollOffsets,
+                                            slot.panelIndex,
+                                            delta,
+                                            frame.maxOffsets[slot.panelIndex] ?: 0,
+                                            panel.anchorBottom,
+                                        ),
+                                    )
+                                }
+                                frame = renderFrame(size, renderer, appState, activeFlash)
+                                return@collect  // scroll events never reach phases
+                            }
+                        }
+
+                        val collapseIndex = if (event is KeyboardEvent) {
+                            InputMapper.isCollapseToggle(event)
+                        } else null
+                        if (collapseIndex != null) {
+                            val visible = PanelVisibility.visibleIndices(appState)
+                            if (collapseIndex in visible) {
+                                val current = appState.collapsedPanels
+                                val next = if (collapseIndex in current) current - collapseIndex else current + collapseIndex
+                                appState = appState.copy(collapsedPanels = next)
                             }
                             frame = renderFrame(size, renderer, appState, activeFlash)
-                            return@collect  // scroll events never reach phases
+                            return@collect
                         }
-                    }
 
-                    val collapseIndex = if (event is KeyboardEvent) {
-                        InputMapper.isCollapseToggle(event)
-                    } else null
-                    if (collapseIndex != null) {
-                        val visible = PanelVisibility.visibleIndices(appState)
-                        if (collapseIndex in visible) {
-                            val current = appState.collapsedPanels
-                            val next = if (collapseIndex in current) current - collapseIndex else current + collapseIndex
-                            appState = appState.copy(collapsedPanels = next)
+                        val transition = appState.phase.handle(event, appState) ?: run {
+                            frame = renderFrame(size, renderer, appState, activeFlash)
+                            return@collect
                         }
-                        frame = renderFrame(size, renderer, appState, activeFlash)
-                        return@collect
-                    }
+                        appState = transition.app
 
-                    val transition = appState.phase.handle(event, appState) ?: run {
-                        frame = renderFrame(size, renderer, appState, activeFlash)
-                        return@collect
-                    }
-                    appState = transition.app
-
-                    val flash = transition.flash
-                    if (flash != null) {
-                        activeFlash = flash
-                        flashGeneration++
-                        val gen = flashGeneration
-                        flashJob?.cancel()
-                        flashJob = launch {
-                            delay(flash.duration)
-                            internalEvents.send(UiEvent.FlashExpired(gen))
+                        val flash = transition.flash
+                        if (flash != null) {
+                            activeFlash = flash
+                            flashGeneration++
+                            val gen = flashGeneration
+                            flashJob?.cancel()
+                            flashJob = launch {
+                                delay(flash.duration)
+                                internalEvents.send(UiEvent.FlashExpired(gen))
+                            }
                         }
-                    }
 
-                    frame = renderFrame(size, renderer, appState, activeFlash)
-                }
-
-                is UiEvent.Resized -> {
-                    size = ui.size
-                    frame = renderFrame(size, renderer, appState, activeFlash)
-                }
-
-                is UiEvent.FlashExpired -> {
-                    if (ui.generation == flashGeneration) {
-                        activeFlash = null
                         frame = renderFrame(size, renderer, appState, activeFlash)
                     }
-                    // Stale expiry (earlier flash replaced by a newer one): ignore.
-                }
 
-                // Re-render only: the renderer re-reads state through the session.
-                // Locally these events arrive synchronously during submitCommand so
-                // the extra render is cheap and idempotent. This branch is the
-                // remote-play notification slot — remote clients will see live updates here.
-                is UiEvent.Session -> {
-                    frame = renderFrame(size, renderer, appState, activeFlash)
-                }
+                    is UiEvent.Resized -> {
+                        size = ui.size
+                        frame = renderFrame(size, renderer, appState, activeFlash)
+                    }
 
-                UiEvent.Quit -> {
-                    // Unreachable inside collect (filtered by takeWhile).
+                    is UiEvent.FlashExpired -> {
+                        if (ui.generation == flashGeneration) {
+                            activeFlash = null
+                            frame = renderFrame(size, renderer, appState, activeFlash)
+                        }
+                        // Stale expiry (earlier flash replaced by a newer one): ignore.
+                    }
+
+                    // Re-render only: the renderer re-reads state through the session.
+                    // Locally these events arrive synchronously during submitCommand so
+                    // the extra render is cheap and idempotent. This branch is the
+                    // remote-play notification slot — remote clients will see live updates here.
+                    is UiEvent.Session -> {
+                        frame = renderFrame(size, renderer, appState, activeFlash)
+                    }
+
+                    UiEvent.Quit -> {
+                        // Unreachable inside collect (filtered by takeWhile).
+                    }
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                System.err.println("Unhandled exception while processing $ui:")
+                e.printStackTrace()
             }
         }
 

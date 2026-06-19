@@ -4,9 +4,10 @@ import battletech.tui.input.InputMapper
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseTracking
-import com.github.ajalt.mordant.input.coroutines.receiveEventsFlow
+import com.github.ajalt.mordant.input.enterRawMode
 import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.isActive
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -37,23 +39,37 @@ internal fun uiInputEvents(raw: Flow<InputEvent>): Flow<UiEvent> =
 /**
  * Produces a [UiEvent] flow by reading terminal input events with Mordant's coroutine support.
  *
- * ### Critical design constraint: quit must terminate FROM WITHIN this flow
+ * The normal quit path is ctrl+c: [uiInputEvents] uses [takeWhile] so that when the user presses
+ * it, the producer observes the predicate returning `false` immediately at that event's own emit
+ * and stops, letting [enterRawMode]'s `use` block restore raw mode at that exact point.
  *
- * Mordant's [receiveEventsFlow] performs an infinite blocking `readEvent` call in the background
- * and only observes coroutine cancellation at each `emit` point. Additionally, Mordant has no
- * raw-mode shutdown hook that is triggered by external cancellation — if the coroutine is cancelled
- * between two key presses, the terminal may be left in raw mode.
- *
- * For this reason, quit terminates the flow **from within**: [uiInputEvents] uses [takeWhile] so
- * that when the user presses ctrl+c, the producer coroutine (running on [Dispatchers.IO]) observes
- * the predicate returning `false` immediately at that event's own emit and stops. This allows
- * Mordant's `use` block to restore raw mode cleanly at the point of the quit key itself.
- *
- * **Never rely on external cancellation of this flow** (e.g. via `cancel()` on the collecting
- * coroutine scope) for clean shutdown; always route quit through the ctrl+c key.
+ * That path alone isn't sufficient, though: Mordant has no raw-mode shutdown hook for *external*
+ * cancellation (e.g. an unrelated exception elsewhere cancelling the collecting coroutineScope).
+ * A naive infinite-blocking `readEvent()` only observes such cancellation at its next `emit`,
+ * which may never come if the terminal looks frozen and the user stops typing — leaving the
+ * terminal stuck in raw mode and the JVM unable to exit. [rawModePollingFlow] polls with a short
+ * timeout and checks [isActive] between polls so any cancellation, from any cause, is noticed
+ * within [pollTimeout] instead of depending on the next keystroke.
  */
 internal fun Terminal.terminalInputEvents(mouseTracking: MouseTracking): Flow<UiEvent> =
-    uiInputEvents(receiveEventsFlow(mouseTracking)).flowOn(Dispatchers.IO)
+    uiInputEvents(rawModePollingFlow(mouseTracking)).flowOn(Dispatchers.IO)
+
+/**
+ * Enters raw mode and emits input events, polling with [pollTimeout] instead of blocking
+ * indefinitely so that coroutine cancellation is observed promptly even while idle. See
+ * [terminalInputEvents] for why this matters.
+ */
+private fun Terminal.rawModePollingFlow(
+    mouseTracking: MouseTracking,
+    pollTimeout: Duration = 100.milliseconds,
+): Flow<InputEvent> = flow {
+    enterRawMode(mouseTracking).use { rawMode ->
+        while (currentCoroutineContext().isActive) {
+            val event = rawMode.readEventOrNull(pollTimeout) ?: continue
+            emit(event)
+        }
+    }
+}
 
 /**
  * Produces a [UiEvent.Resized] flow by polling [Terminal.updateSize] at [period] intervals.
