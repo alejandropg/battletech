@@ -26,7 +26,7 @@ internal object Panels {
         Panel(PanelId.DECLARED_TARGETS, DeclaredTargetsView.TITLE, width = 28) { frame ->
             frame.declaredTargets?.let(::DeclaredTargetsView)
         },
-        Panel(PanelId.ATTACK_RESULTS, AttackResultsView.TITLE, width = 34) { frame ->
+        Panel(PanelId.ATTACK_RESULTS, AttackResultsView.TITLE, width = 28) { frame ->
             frame.attackResults?.let(::AttackResultsView)
         },
         Panel(PanelId.UNIT_STATUS, UnitStatusView.TITLE, width = 28) { frame ->
