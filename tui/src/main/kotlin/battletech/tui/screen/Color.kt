@@ -14,5 +14,13 @@ public enum class Color {
     BRIGHT_YELLOW,
     ORANGE,
     MAGENTA,
-    GRAY,
+    GRAY;
+
+    public companion object {
+        /** Uncommitted / preview content the player has not committed yet. */
+        public val DRAFT: Color = GRAY
+
+        /** Disabled or unavailable elements (e.g. unusable weapons). */
+        public val DISABLED: Color = GRAY
+    }
 }

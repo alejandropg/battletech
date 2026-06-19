@@ -24,8 +24,8 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
         }
 
         for ((index, entry) in data.entries.withIndex()) {
-            val attackerColor = if (entry.isDraft) Color.GRAY else playerColor(entry.ownerPlayer)
-            val contentColor = if (entry.isDraft) Color.GRAY else Color.WHITE
+            val attackerColor = if (entry.isDraft) Color.DRAFT else playerColor(entry.ownerPlayer)
+            val contentColor = if (entry.isDraft) Color.DRAFT else Color.WHITE
 
             content.writeln(entry.attackerName, attackerColor)
 

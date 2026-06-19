@@ -66,7 +66,7 @@ public class TargetsView(
 
                 val color = when {
                     isCursorHere -> Color.BRIGHT_YELLOW
-                    isDisabled -> Color.GRAY
+                    isDisabled -> Color.DISABLED
                     else -> Color.WHITE
                 }
                 content.writeln(weaponLine, color)

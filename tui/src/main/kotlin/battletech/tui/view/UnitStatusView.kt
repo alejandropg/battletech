@@ -60,7 +60,7 @@ public class UnitStatusView(
                 writeln("  ${source.label} +${source.amount}")
             }
             for (source in pendingHeat) {
-                writeln("  ${source.label} +${source.amount}", Color.GRAY)
+                writeln("  ${source.label} +${source.amount}", Color.DRAFT)
             }
 
             val committedGenerated = unit.heatGeneratedThisTurn.sumOf { it.amount }
@@ -124,7 +124,7 @@ public class UnitStatusView(
     /**
      * Single-worst-value-per-category heat penalty lines for [current] (applied baseline) vs
      * [projected] heat. A line is solid ([Color.DEFAULT]) when the worst value is already in
-     * force at [current]; otherwise it is projection-only ([Color.GRAY]).
+     * force at [current]; otherwise it is projection-only ([Color.DRAFT]).
      */
     internal fun penaltyLines(current: Int, projected: Int): List<Pair<String, Color>> {
         val lines = mutableListOf<Pair<String, Color>>()
@@ -132,13 +132,13 @@ public class UnitStatusView(
         val mp = maxOf(HeatScale.movementPenalty(current), HeatScale.movementPenalty(projected))
         if (mp > 0) {
             val applied = HeatScale.movementPenalty(current) == mp
-            lines += "-$mp MP" to (if (applied) Color.DEFAULT else Color.GRAY)
+            lines += "-$mp MP" to (if (applied) Color.DEFAULT else Color.DRAFT)
         }
 
         val th = maxOf(HeatScale.toHitPenalty(current), HeatScale.toHitPenalty(projected))
         if (th > 0) {
             val applied = HeatScale.toHitPenalty(current) == th
-            lines += "+$th To-Hit" to (if (applied) Color.DEFAULT else Color.GRAY)
+            lines += "+$th To-Hit" to (if (applied) Color.DEFAULT else Color.DRAFT)
         }
 
         val currentAutoShutdown = HeatScale.isAutoShutdown(current)
@@ -146,12 +146,12 @@ public class UnitStatusView(
         val currentShutdownTarget = HeatScale.shutdownAvoidTarget(current)
         val projectedShutdownTarget = HeatScale.shutdownAvoidTarget(projected)
         if (currentAutoShutdown || projectedAutoShutdown) {
-            lines += "Shutdown AUTO" to (if (currentAutoShutdown) Color.DEFAULT else Color.GRAY)
+            lines += "Shutdown AUTO" to (if (currentAutoShutdown) Color.DEFAULT else Color.DRAFT)
         } else {
             val target = maxOfNullable(currentShutdownTarget, projectedShutdownTarget)
             if (target != null) {
                 val applied = currentShutdownTarget == target
-                lines += "Shutdown $target+" to (if (applied) Color.DEFAULT else Color.GRAY)
+                lines += "Shutdown $target+" to (if (applied) Color.DEFAULT else Color.DRAFT)
             }
         }
 
@@ -160,7 +160,7 @@ public class UnitStatusView(
         val ammoTarget = maxOfNullable(currentAmmoTarget, projectedAmmoTarget)
         if (ammoTarget != null) {
             val applied = currentAmmoTarget == ammoTarget
-            lines += "Ammo $ammoTarget+" to (if (applied) Color.DEFAULT else Color.GRAY)
+            lines += "Ammo $ammoTarget+" to (if (applied) Color.DEFAULT else Color.DRAFT)
         }
 
         return lines
