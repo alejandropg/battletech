@@ -1,5 +1,6 @@
 package battletech.tui.view
 
+import battletech.tactical.heat.HeatScale
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tui.game.PanelId
@@ -77,6 +78,14 @@ public class UnitStatusView(
             writeln("Projected")
             val projected = (unit.currentHeat + committedGenerated + previewGenerated - dissipation).coerceAtLeast(0)
             content.cy = heatBar.draw(buffer, content.x, content.cy, projected)
+
+            val penalties = penaltyLines(unit.currentHeat, projected)
+            if (penalties.isNotEmpty()) {
+                writeln("Penalties")
+                for ((text, fg) in penalties) {
+                    writeln(text, fg)
+                }
+            }
             newLine()
         }
 
@@ -110,5 +119,56 @@ public class UnitStatusView(
                 writeln("  ${weapon.name}$ammoStr", Color.WHITE)
             }
         }
+    }
+
+    /**
+     * Single-worst-value-per-category heat penalty lines for [current] (applied baseline) vs
+     * [projected] heat. A line is solid ([Color.DEFAULT]) when the worst value is already in
+     * force at [current]; otherwise it is projection-only ([Color.GRAY]).
+     */
+    internal fun penaltyLines(current: Int, projected: Int): List<Pair<String, Color>> {
+        val lines = mutableListOf<Pair<String, Color>>()
+
+        val mp = maxOf(HeatScale.movementPenalty(current), HeatScale.movementPenalty(projected))
+        if (mp > 0) {
+            val applied = HeatScale.movementPenalty(current) == mp
+            lines += "-$mp MP" to (if (applied) Color.DEFAULT else Color.GRAY)
+        }
+
+        val th = maxOf(HeatScale.toHitPenalty(current), HeatScale.toHitPenalty(projected))
+        if (th > 0) {
+            val applied = HeatScale.toHitPenalty(current) == th
+            lines += "+$th To-Hit" to (if (applied) Color.DEFAULT else Color.GRAY)
+        }
+
+        val currentAutoShutdown = HeatScale.isAutoShutdown(current)
+        val projectedAutoShutdown = HeatScale.isAutoShutdown(projected)
+        val currentShutdownTarget = HeatScale.shutdownAvoidTarget(current)
+        val projectedShutdownTarget = HeatScale.shutdownAvoidTarget(projected)
+        if (currentAutoShutdown || projectedAutoShutdown) {
+            lines += "Shutdown AUTO" to (if (currentAutoShutdown) Color.DEFAULT else Color.GRAY)
+        } else {
+            val target = maxOfNullable(currentShutdownTarget, projectedShutdownTarget)
+            if (target != null) {
+                val applied = currentShutdownTarget == target
+                lines += "Shutdown $target+" to (if (applied) Color.DEFAULT else Color.GRAY)
+            }
+        }
+
+        val currentAmmoTarget = HeatScale.ammoExplosionAvoidTarget(current)
+        val projectedAmmoTarget = HeatScale.ammoExplosionAvoidTarget(projected)
+        val ammoTarget = maxOfNullable(currentAmmoTarget, projectedAmmoTarget)
+        if (ammoTarget != null) {
+            val applied = currentAmmoTarget == ammoTarget
+            lines += "Ammo $ammoTarget+" to (if (applied) Color.DEFAULT else Color.GRAY)
+        }
+
+        return lines
+    }
+
+    private fun maxOfNullable(a: Int?, b: Int?): Int? = when {
+        a == null -> b
+        b == null -> a
+        else -> maxOf(a, b)
     }
 }
