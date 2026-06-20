@@ -70,13 +70,9 @@ public class TargetsView(
                     else -> Color.WHITE
                 }
                 content.writeln(weaponLine, color)
-            }
 
-            if (target.weapons.isNotEmpty()) {
-                val availableWeapons = target.weapons.filter { it.available }
-                val mods = availableWeapons.firstOrNull()?.modifiers ?: target.weapons.first().modifiers
-                if (mods.isNotEmpty()) {
-                    val modLine = "  [${mods.joinToString(", ")}]"
+                if (weapon.modifiers.isNotEmpty()) {
+                    val modLine = "    [${weapon.modifiers.joinToString(", ")}]"
                     content.writeln(modLine, Color.DEFAULT)
                 }
             }

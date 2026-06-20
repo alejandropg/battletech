@@ -186,6 +186,29 @@ internal class TargetsViewTest {
     }
 
     @Test
+    fun `each weapon renders its own modifiers`() {
+        val targetWithDifferingMods = TargetInfo(
+            unitId = UnitId("atlas"),
+            unitName = "Atlas",
+            weapons = listOf(
+                WeaponTargetInfo(0, "AC/20", 58, 20, listOf("+2 med"), available = true),
+                WeaponTargetInfo(1, "Medium Laser", 72, 5, listOf("+4 long"), available = true),
+            ),
+        )
+        val view = TargetsView(
+            targets = listOf(targetWithDifferingMods),
+            weaponAssignments = emptyMap(),
+            primaryTargetId = null,
+            cursorTargetIndex = 0,
+        )
+
+        val output = renderToString(view)
+
+        assertTrue(output.contains("[+2 med]"))
+        assertTrue(output.contains("[+4 long]"))
+    }
+
+    @Test
     fun `arrow navigates across target boundary`() {
         // This is a controller-level test; here we just verify rendering with cursor on second target
         val view = TargetsView(
