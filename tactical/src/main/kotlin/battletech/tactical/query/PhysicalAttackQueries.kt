@@ -9,7 +9,6 @@ import battletech.tactical.attack.physical.Side
 import battletech.tactical.attack.physical.kickDamage
 import battletech.tactical.attack.physical.physicalToHitTargetNumber
 import battletech.tactical.attack.physical.punchDamage
-import battletech.tactical.attack.physical.twoD6AtLeastProbability
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 
@@ -29,7 +28,6 @@ internal class PhysicalAttackQueries(private val state: PublicGameState) {
 
             val punchReasons = unsatisfiedReasons(punchDef.rules, context)
             val punchTargetNumber = physicalToHitTargetNumber(attacker, enemy, PhysicalAttackKind.Punch(Side.LEFT), state)
-            val punchChance = twoD6AtLeastProbability(punchTargetNumber)
             val punchOptions = listOf(Side.LEFT, Side.RIGHT).map { arm ->
                 val limbReasons = punchReasons + limbDestroyedReason(armStructure(attacker, arm), attackerId)
                 PhysicalAttackOption(
@@ -38,7 +36,6 @@ internal class PhysicalAttackQueries(private val state: PublicGameState) {
                     kind = PhysicalAttackKind.Punch(arm),
                     label = "Punch (${arm.name.lowercase()} arm)",
                     available = limbReasons.isEmpty(),
-                    successChance = punchChance,
                     targetDiceRoll = punchTargetNumber,
                     expectedDamage = punchDamage(attacker),
                     unavailableReasons = limbReasons,
@@ -47,7 +44,6 @@ internal class PhysicalAttackQueries(private val state: PublicGameState) {
 
             val kickReasons = unsatisfiedReasons(kickDef.rules, context)
             val kickTargetNumber = physicalToHitTargetNumber(attacker, enemy, PhysicalAttackKind.Kick(Side.RIGHT), state)
-            val kickChance = twoD6AtLeastProbability(kickTargetNumber)
             // Kick uses whichever leg is intact (prefer right); the kicking leg only
             // matters for the attacker's own fall on a miss.
             val kickLeg = if (legStructure(attacker, Side.RIGHT) > 0) Side.RIGHT else Side.LEFT
@@ -58,7 +54,6 @@ internal class PhysicalAttackQueries(private val state: PublicGameState) {
                 kind = PhysicalAttackKind.Kick(kickLeg),
                 label = "Kick",
                 available = kickLegReasons.isEmpty(),
-                successChance = kickChance,
                 targetDiceRoll = kickTargetNumber,
                 expectedDamage = kickDamage(attacker),
                 unavailableReasons = kickLegReasons,

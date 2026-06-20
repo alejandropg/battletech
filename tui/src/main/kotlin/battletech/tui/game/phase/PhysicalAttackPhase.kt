@@ -116,10 +116,9 @@ internal sealed interface PhysicalAttackPhase : Phase {
                         WeaponTargetInfo(
                             weaponIndex = index,
                             weaponName = option.label,
-                            successChance = option.successChance,
+                            targetDiceRoll = option.targetDiceRoll,
                             damage = option.expectedDamage,
                             modifiers = emptyList(),
-                            targetDiceRoll = option.targetDiceRoll,
                             available = option.available,
                         )
                     },

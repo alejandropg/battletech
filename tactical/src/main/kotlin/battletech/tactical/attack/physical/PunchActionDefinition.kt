@@ -4,6 +4,7 @@ import battletech.tactical.attack.AttackDefinition
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.attack.PhysicalAttackContext
 import battletech.tactical.attack.weapon.HeatPenaltyRule
+import battletech.tactical.dice.twoD6AtLeastProbability
 import battletech.tactical.model.GameState
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.ActionPreview
@@ -41,7 +42,12 @@ public class PunchActionDefinition : AttackDefinition<PhysicalAttackContext> {
 
     override fun successChance(context: PhysicalAttackContext): Int =
         twoD6AtLeastProbability(
-            physicalToHitTargetNumber(context.actor, context.target, PhysicalAttackKind.Punch(Side.LEFT), context.gameState),
+            physicalToHitTargetNumber(
+                context.actor,
+                context.target,
+                PhysicalAttackKind.Punch(Side.LEFT),
+                context.gameState
+            ),
         )
 
     override fun actionName(context: PhysicalAttackContext): String =

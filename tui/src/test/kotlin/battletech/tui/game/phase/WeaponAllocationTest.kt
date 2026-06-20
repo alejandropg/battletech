@@ -20,10 +20,9 @@ internal class WeaponAllocationTest {
     ) = WeaponTargetInfo(
         weaponIndex = index,
         weaponName = "ML-$index",
-        successChance = 72,
+        targetDiceRoll = 6,
         damage = 5,
         modifiers = emptyList(),
-        targetDiceRoll = 6,
         available = available,
     )
 

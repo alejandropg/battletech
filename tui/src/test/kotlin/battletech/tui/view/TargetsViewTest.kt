@@ -15,8 +15,8 @@ internal class TargetsViewTest {
         unitId = UnitId("atlas"),
         unitName = "Atlas",
         weapons = listOf(
-            WeaponTargetInfo(0, "AC/20", 58, 20, listOf(), 7, available = true),
-            WeaponTargetInfo(1, "Medium Laser", 72, 5, listOf(), 6, available = true),
+            WeaponTargetInfo(0, "AC/20", 7, 20, listOf()),
+            WeaponTargetInfo(1, "Medium Laser", 6, 5, listOf()),
         ),
     )
 
@@ -24,7 +24,7 @@ internal class TargetsViewTest {
         unitId = UnitId("hunch"),
         unitName = "Hunchback",
         weapons = listOf(
-            WeaponTargetInfo(0, "LRM15", 45, 15, listOf("+1 second"), 8, available = true),
+            WeaponTargetInfo(0, "LRM15", 8, 15, listOf("+1 second")),
         ),
     )
 
@@ -167,8 +167,8 @@ internal class TargetsViewTest {
             unitId = UnitId("atlas"),
             unitName = "Atlas",
             weapons = listOf(
-                WeaponTargetInfo(0, "AC/20", 58, 20, listOf(), 7, available = true),
-                WeaponTargetInfo(1, "LRM15", 0, 15, listOf(), 13, available = false),
+                WeaponTargetInfo(0, "AC/20", 7, 20, listOf()),
+                WeaponTargetInfo(1, "LRM15", 13, 15, listOf(), available = false),
             ),
         )
         val view = TargetsView(
@@ -207,8 +207,8 @@ internal class TargetsViewTest {
             unitId = UnitId("atlas"),
             unitName = "Atlas",
             weapons = listOf(
-                WeaponTargetInfo(0, "AC/20", 58, 20, listOf("+2 med"), 7, available = true),
-                WeaponTargetInfo(1, "Medium Laser", 72, 5, listOf("+4 long"), 6, available = true),
+                WeaponTargetInfo(0, "AC/20", 7, 20, listOf("+2 med")),
+                WeaponTargetInfo(1, "Medium Laser", 6, 5, listOf("+4 long")),
             ),
         )
         val view = TargetsView(

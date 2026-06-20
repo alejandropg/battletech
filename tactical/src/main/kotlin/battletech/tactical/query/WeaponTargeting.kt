@@ -13,11 +13,6 @@ import battletech.tactical.unit.Weapon
 
 internal class WeaponTargeting(private val state: PublicGameState) {
 
-    private val TWO_D6_PROBABILITY: Map<Int, Int> = mapOf(
-        2 to 100, 3 to 97, 4 to 92, 5 to 83, 6 to 72,
-        7 to 58, 8 to 42, 9 to 28, 10 to 17, 11 to 8, 12 to 3,
-    )
-
     fun fireArc(attackerId: UnitId, torsoFacing: HexDirection): Set<HexCoordinates> {
         val attacker = state.unitById(attackerId) ?: return emptySet()
         return FiringArc.forwardArc(attacker.position, torsoFacing, state.map)
@@ -46,10 +41,9 @@ internal class WeaponTargeting(private val state: PublicGameState) {
                     WeaponTargetInfo(
                         weaponIndex = index,
                         weaponName = weapon.name,
-                        successChance = 0,
+                        targetDiceRoll = 13,
                         damage = weapon.damage,
                         modifiers = emptyList(),
-                        targetDiceRoll = 13,
                         available = false,
                     )
                 } else {
@@ -71,15 +65,12 @@ internal class WeaponTargeting(private val state: PublicGameState) {
 
                     val targetNumber = (attacker.gunnerySkill + rangeModifier + heatPenalty + immobileModifier)
                         .coerceAtLeast(2)
-                    val chance = TWO_D6_PROBABILITY[targetNumber] ?: 0
                     WeaponTargetInfo(
                         weaponIndex = index,
                         weaponName = weapon.name,
-                        successChance = chance,
+                        targetDiceRoll = targetNumber,
                         damage = weapon.damage,
                         modifiers = modifiers,
-                        targetDiceRoll = targetNumber,
-                        available = true,
                     )
                 }
             }

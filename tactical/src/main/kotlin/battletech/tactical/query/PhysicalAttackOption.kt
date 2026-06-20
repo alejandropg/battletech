@@ -1,6 +1,7 @@
 package battletech.tactical.query
 
 import battletech.tactical.attack.physical.PhysicalAttackKind
+import battletech.tactical.dice.twoD6AtLeastProbability
 import battletech.tactical.session.RuleRejection
 import battletech.tactical.unit.UnitId
 
@@ -16,8 +17,9 @@ public data class PhysicalAttackOption(
     public val kind: PhysicalAttackKind,
     public val label: String,
     public val available: Boolean,
-    public val successChance: Int,
     public val targetDiceRoll: Int,
     public val expectedDamage: Int,
     public val unavailableReasons: List<RuleRejection>,
-)
+) {
+    public val successChance: Int = twoD6AtLeastProbability(targetDiceRoll)
+}
