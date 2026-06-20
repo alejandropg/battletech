@@ -23,6 +23,7 @@ internal class WeaponAllocationTest {
         successChance = 72,
         damage = 5,
         modifiers = emptyList(),
+        targetDiceRoll = 6,
         available = available,
     )
 

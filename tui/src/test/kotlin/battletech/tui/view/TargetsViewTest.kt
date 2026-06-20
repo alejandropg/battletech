@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.unit.UnitId
+import battletech.tui.hex.diceRoll
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -14,8 +15,8 @@ internal class TargetsViewTest {
         unitId = UnitId("atlas"),
         unitName = "Atlas",
         weapons = listOf(
-            WeaponTargetInfo(0, "AC/20", 58, 20, listOf(), available = true),
-            WeaponTargetInfo(1, "Medium Laser", 72, 5, listOf(), available = true),
+            WeaponTargetInfo(0, "AC/20", 58, 20, listOf(), 7, available = true),
+            WeaponTargetInfo(1, "Medium Laser", 72, 5, listOf(), 6, available = true),
         ),
     )
 
@@ -23,7 +24,7 @@ internal class TargetsViewTest {
         unitId = UnitId("hunch"),
         unitName = "Hunchback",
         weapons = listOf(
-            WeaponTargetInfo(0, "LRM15", 45, 15, listOf("+1 second"), available = true),
+            WeaponTargetInfo(0, "LRM15", 45, 15, listOf("+1 second"), 8, available = true),
         ),
     )
 
@@ -102,6 +103,21 @@ internal class TargetsViewTest {
     }
 
     @Test
+    fun `weapon row shows needed dice roll before success percentage`() {
+        val view = TargetsView(
+            targets = listOf(targetA),
+            weaponAssignments = emptyMap(),
+            primaryTargetId = UnitId("atlas"),
+            cursorTargetIndex = 0,
+        )
+
+        val output = renderToString(view)
+
+        assertTrue(output.contains("${diceRoll()}7 58%"))
+        assertTrue(output.contains("${diceRoll()}6 72%"))
+    }
+
+    @Test
     fun `toggled weapons show asterisk`() {
         val view = TargetsView(
             targets = listOf(targetA),
@@ -151,8 +167,8 @@ internal class TargetsViewTest {
             unitId = UnitId("atlas"),
             unitName = "Atlas",
             weapons = listOf(
-                WeaponTargetInfo(0, "AC/20", 58, 20, listOf(), available = true),
-                WeaponTargetInfo(1, "LRM15", 0, 15, listOf(), available = false),
+                WeaponTargetInfo(0, "AC/20", 58, 20, listOf(), 7, available = true),
+                WeaponTargetInfo(1, "LRM15", 0, 15, listOf(), 13, available = false),
             ),
         )
         val view = TargetsView(
@@ -191,8 +207,8 @@ internal class TargetsViewTest {
             unitId = UnitId("atlas"),
             unitName = "Atlas",
             weapons = listOf(
-                WeaponTargetInfo(0, "AC/20", 58, 20, listOf("+2 med"), available = true),
-                WeaponTargetInfo(1, "Medium Laser", 72, 5, listOf("+4 long"), available = true),
+                WeaponTargetInfo(0, "AC/20", 58, 20, listOf("+2 med"), 7, available = true),
+                WeaponTargetInfo(1, "Medium Laser", 72, 5, listOf("+4 long"), 6, available = true),
             ),
         )
         val view = TargetsView(

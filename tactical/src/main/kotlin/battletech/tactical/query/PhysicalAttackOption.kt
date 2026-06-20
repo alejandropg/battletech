@@ -17,6 +17,7 @@ public data class PhysicalAttackOption(
     public val label: String,
     public val available: Boolean,
     public val successChance: Int,
+    public val targetDiceRoll: Int,
     public val expectedDamage: Int,
     public val unavailableReasons: List<RuleRejection>,
 )

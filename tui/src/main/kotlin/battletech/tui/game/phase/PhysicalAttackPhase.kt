@@ -119,6 +119,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
                             successChance = option.successChance,
                             damage = option.expectedDamage,
                             modifiers = emptyList(),
+                            targetDiceRoll = option.targetDiceRoll,
                             available = option.available,
                         )
                     },

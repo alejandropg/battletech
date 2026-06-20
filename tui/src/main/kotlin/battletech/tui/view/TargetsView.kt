@@ -3,6 +3,8 @@ package battletech.tui.view
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.PanelId
+import battletech.tui.hex.diceRoll
+import battletech.tui.screen.CellWidth
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
@@ -60,8 +62,8 @@ public class TargetsView(
 
                 val cursor = if (isCursorHere) "▶" else " "
                 val left = "$cursor $assignedElsewhereMarker ${weapon.weaponName}"
-                val right = "${weapon.successChance}%"
-                val padding = (content.width - left.length - right.length).coerceAtLeast(1)
+                val right = "${diceRoll()}${weapon.targetDiceRoll} ${weapon.successChance}%"
+                val padding = (content.width - left.length - CellWidth.of(right)).coerceAtLeast(1)
                 val weaponLine = "$left${" ".repeat(padding)}$right"
 
                 val color = when {

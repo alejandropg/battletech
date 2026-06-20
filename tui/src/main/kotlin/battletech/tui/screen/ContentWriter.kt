@@ -18,9 +18,22 @@ internal class ContentWriter(
     }
 
     fun writeln(text: String, fg: Color = Color.DEFAULT, bg: Color = Color.DEFAULT) {
-        val truncated = if (text.length > width) text.substring(0, width - 1) + "…" else text
+        val truncated = if (CellWidth.of(text) > width) truncateToWidth(text, width - 1) + "…" else text
         buffer.writeString(x, cy, truncated, fg, bg)
         cy += 1
+    }
+
+    private fun truncateToWidth(text: String, maxWidth: Int): String {
+        var displayWidth = 0
+        var i = 0
+        while (i < text.length) {
+            val codePoint = text.codePointAt(i)
+            val codePointWidth = CellWidth.of(codePoint)
+            if (displayWidth + codePointWidth > maxWidth) break
+            displayWidth += codePointWidth
+            i += Character.charCount(codePoint)
+        }
+        return text.substring(0, i)
     }
 
     fun writeStr(padding: Int = 0, text: String, fg: Color = Color.DEFAULT, bg: Color = Color.DEFAULT) {

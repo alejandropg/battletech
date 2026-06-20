@@ -13,6 +13,7 @@ private val NF_MD_WALK           = String(Character.toChars(0xF0583))
 private val NF_MD_RUN_FAST       = String(Character.toChars(0xF046E))
 private val NF_MD_ROCKET_LAUNCH  = String(Character.toChars(0xF14DE))
 private val NF_MD_TARGET         = String(Character.toChars(0xF04FE))
+private val NF_MD_DICE_MULTIPLE_OUTLINE = String(Character.toChars(0xF1156))
 
 internal fun diceIcon(value: Int): String =
     when (value) {
@@ -24,6 +25,8 @@ internal fun diceIcon(value: Int): String =
         6 -> NF_MD_DICE_6
         else -> error("Value must be from 1 to 6")
     }
+
+internal fun diceRoll(): String = NF_MD_DICE_MULTIPLE_OUTLINE
 
 internal fun movementModeIcon(mode: MovementMode): String = when (mode) {
     MovementMode.WALK -> NF_MD_WALK

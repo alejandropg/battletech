@@ -49,6 +49,7 @@ internal class WeaponTargeting(private val state: PublicGameState) {
                         successChance = 0,
                         damage = weapon.damage,
                         modifiers = emptyList(),
+                        targetDiceRoll = 13,
                         available = false,
                     )
                 } else {
@@ -77,6 +78,7 @@ internal class WeaponTargeting(private val state: PublicGameState) {
                         successChance = chance,
                         damage = weapon.damage,
                         modifiers = modifiers,
+                        targetDiceRoll = targetNumber,
                         available = true,
                     )
                 }
