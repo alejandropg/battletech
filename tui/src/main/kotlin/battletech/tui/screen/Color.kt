@@ -12,6 +12,7 @@ public enum class Color {
     DARK_GREEN,
     BROWN,
     BRIGHT_YELLOW,
+    BRIGHT_GREEN,
     ORANGE,
     MAGENTA,
     GRAY;

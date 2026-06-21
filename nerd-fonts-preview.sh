@@ -85,6 +85,7 @@ TERRAINS=(
   "Check;nf-md-check_bold;f0e1e;${GREEN_LIGHT};${GREEN_LIGHT_BG}"
   "Checkbox;nf-md-checkbox_blank_outline;f0131;${GRAY};${GRAY_BG}"
   "Checkbox;nf-md-checkbox_marked_outline;f0135;${GREEN_LIGHT};${GREEN_LIGHT_BG}"
+  "Checkbox;nf-md-minus_box_outline;f06f2;${GRAY};${GRAY_BG}"
 
 )
 

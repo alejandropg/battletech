@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.unit.UnitId
+import battletech.tui.hex.checkboxIcon
 import battletech.tui.hex.diceRoll
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
@@ -118,7 +119,7 @@ internal class TargetsViewTest {
     }
 
     @Test
-    fun `toggled weapons show asterisk`() {
+    fun `toggled weapons show checked checkbox`() {
         val view = TargetsView(
             targets = listOf(targetA),
             weaponAssignments = mapOf(UnitId("atlas") to setOf(0)),
@@ -128,7 +129,7 @@ internal class TargetsViewTest {
 
         val output = renderToString(view)
 
-        assertTrue(output.contains("[*]"))
+        assertTrue(output.contains(checkboxIcon(CheckState.CHECKED)))
     }
 
     @Test

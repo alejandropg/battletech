@@ -54,14 +54,15 @@ public class TargetsView(
                 val isAssignedHere = weapon.weaponIndex in assignedToThisTarget
                 val isDisabled = !weapon.available || isAssignedElsewhere
 
-                val mark = when {
-                    isAssignedHere -> "*"
-                    else -> " "
+                val state = when {
+                    isAssignedElsewhere -> CheckState.INDETERMINATE
+                    isAssignedHere -> CheckState.CHECKED
+                    else -> CheckState.UNCHECKED
                 }
-                val assignedElsewhereMarker = if (isAssignedElsewhere) "[-]" else "[$mark]"
 
                 val cursor = if (isCursorHere) "▶" else " "
-                val left = "$cursor $assignedElsewhereMarker ${weapon.weaponName}"
+                // One space placeholder at column 2 is where the checkbox glyph is overlaid below.
+                val left = "$cursor   ${weapon.weaponName}"
                 val right = "${diceRoll()}${weapon.targetDiceRoll} ${weapon.successChance}%"
                 val padding = (content.width - left.length - CellWidth.of(right)).coerceAtLeast(1)
                 val weaponLine = "$left${" ".repeat(padding)}$right"
@@ -71,7 +72,14 @@ public class TargetsView(
                     isDisabled -> Color.DISABLED
                     else -> Color.WHITE
                 }
+                val checkboxColor = when {
+                    isCursorHere -> Color.BRIGHT_YELLOW
+                    isDisabled -> Color.DISABLED
+                    else -> Checkbox.intrinsicColor(state)
+                }
+                val row = content.cy
                 content.writeln(weaponLine, color)
+                Checkbox.draw(content.buffer, content.x + 2, row, state, checkboxColor)
 
                 if (weapon.modifiers.isNotEmpty()) {
                     val modLine = "    [${weapon.modifiers.joinToString(", ")}]"
