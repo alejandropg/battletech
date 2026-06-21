@@ -79,6 +79,12 @@ TERRAINS=(
   "Level 9;nf-md-numeric_9_box_multiple_outline;f03bd;${SLATE};${SLATE_BG}"
   "Dice 1;nf-fa-dice_one;edef;${SLATE};${SLATE_BG}"
   "Dice 1;nf-md-dice_1;f01ca;${SLATE};${SLATE_BG}"
+  "Check;nf-fa-check;f00c;${GREEN_LIGHT};${GREEN_LIGHT_BG}"
+  "Check;nf-md-check;f012c;${GREEN_LIGHT};${GREEN_LIGHT_BG}"
+  "Check;nf-oct-check;f42e;${GREEN_LIGHT};${GREEN_LIGHT_BG}"
+  "Check;nf-md-check_bold;f0e1e;${GREEN_LIGHT};${GREEN_LIGHT_BG}"
+  "Checkbox;nf-md-checkbox_blank_outline;f0131;${GRAY};${GRAY_BG}"
+  "Checkbox;nf-md-checkbox_marked_outline;f0135;${GREEN_LIGHT};${GREEN_LIGHT_BG}"
 
 )
 
