@@ -83,7 +83,7 @@ public class TargetsView(
 
                 if (weapon.modifiers.isNotEmpty()) {
                     val modLine = "    [${weapon.modifiers.joinToString(", ")}]"
-                    content.writeln(modLine, Color.DEFAULT)
+                    content.writeln(modLine, color)
                 }
             }
 
