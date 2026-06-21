@@ -440,10 +440,13 @@ private fun resolveWeaponEntry(
     targetInfos: List<battletech.tactical.attack.weapon.TargetInfo>,
 ): DeclaredWeaponEntry {
     val weaponName = attackerUnit.weapons.getOrNull(weaponIndex)?.name ?: "Unknown"
-    val chance = targetInfos
+    val weaponInfo = targetInfos
         .firstOrNull { it.unitId == targetId }
         ?.weapons
         ?.firstOrNull { it.weaponIndex == weaponIndex }
-        ?.successChance ?: 0
-    return DeclaredWeaponEntry(weaponName = weaponName, successChance = chance)
+    return DeclaredWeaponEntry(
+        weaponName = weaponName,
+        successChance = weaponInfo?.successChance ?: 0,
+        targetDiceRoll = weaponInfo?.targetDiceRoll ?: 13,
+    )
 }

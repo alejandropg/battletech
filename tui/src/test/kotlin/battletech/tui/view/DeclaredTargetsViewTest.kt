@@ -5,6 +5,7 @@ import battletech.tui.game.phase.DeclaredAttackerEntry
 import battletech.tui.game.phase.DeclaredTargetEntry
 import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.game.phase.DeclaredWeaponEntry
+import battletech.tui.hex.diceRoll
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -12,7 +13,8 @@ import org.junit.jupiter.api.Test
 
 internal class DeclaredTargetsViewTest {
 
-    private fun weapon(name: String, chance: Int = 72) = DeclaredWeaponEntry(name, chance)
+    private fun weapon(name: String, chance: Int = 72, targetRoll: Int = 6) =
+        DeclaredWeaponEntry(name, chance, targetRoll)
     private fun target(name: String, primary: Boolean, vararg weapons: DeclaredWeaponEntry) =
         DeclaredTargetEntry(name, primary, weapons.toList())
     private fun attacker(name: String, player: PlayerId, draft: Boolean, vararg targets: DeclaredTargetEntry) =
@@ -153,6 +155,17 @@ internal class DeclaredTargetsViewTest {
         )))
         val output = renderToString(view)
         assertTrue(output.contains("72%"))
+    }
+
+    @Test
+    fun `weapon line shows target dice roll`() {
+        val view = DeclaredTargetsView(DeclaredTargetsRender(listOf(
+            attacker("Wolverine", PlayerId.PLAYER_2, false,
+                target("Atlas", true, weapon("SRM 6", chance = 72, targetRoll = 6)),
+            )
+        )))
+        val output = renderToString(view)
+        assertTrue(output.contains("${diceRoll()}6 72%"))
     }
 
     @Test

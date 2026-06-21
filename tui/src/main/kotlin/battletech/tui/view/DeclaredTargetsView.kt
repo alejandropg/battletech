@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.model.PlayerId
 import battletech.tui.game.PanelId
 import battletech.tui.game.phase.DeclaredTargetsRender
+import battletech.tui.screen.CellWidth
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
@@ -36,8 +37,8 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
 
                 for (weapon in target.weapons) {
                     val left = "    ${weapon.weaponName}"
-                    val right = "${weapon.successChance}%"
-                    val padding = (content.width - left.length - right.length).coerceAtLeast(1)
+                    val right = hitChanceLabel(weapon.targetDiceRoll, weapon.successChance)
+                    val padding = (content.width - left.length - CellWidth.of(right)).coerceAtLeast(1)
                     val weaponLine = "$left${" ".repeat(padding)}$right"
                     content.writeln(weaponLine, contentColor)
                 }
