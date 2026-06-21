@@ -110,6 +110,7 @@ public class ScreenRenderer(private val terminal: Terminal) {
         Color.BRIGHT_GREEN -> TextColors.brightGreen
         Color.ORANGE -> TextColors.Companion.color(Ansi256(208))
         Color.MAGENTA -> TextColors.magenta
+        Color.LIGHT_BLUE -> TextColors.Companion.color(Ansi256(117))
         Color.GRAY -> TextColors.gray
     }
 
@@ -128,6 +129,7 @@ public class ScreenRenderer(private val terminal: Terminal) {
         Color.BRIGHT_GREEN -> TextColors.brightGreen.bg
         Color.ORANGE -> TextColors.Companion.color(Ansi256(208)).bg
         Color.MAGENTA -> TextColors.magenta.bg
+        Color.LIGHT_BLUE -> TextColors.Companion.color(Ansi256(117)).bg
         Color.GRAY -> TextColors.gray.bg
     }
 }

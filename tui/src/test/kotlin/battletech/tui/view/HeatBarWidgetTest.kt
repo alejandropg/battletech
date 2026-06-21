@@ -76,13 +76,13 @@ internal class HeatBarWidgetTest {
     }
 
     @Test
-    fun `colors green below thirty percent`() {
+    fun `colors light blue below thirty percent`() {
         val widget = HeatBarWidget(20, 30)
         val buffer = ScreenBuffer(28, 5)
 
         widget.draw(buffer, 2, 0, 8)
 
-        assertEquals(Color.GREEN, buffer.get(2, 0).fg)
+        assertEquals(Color.LIGHT_BLUE, buffer.get(2, 0).fg)
     }
 
     @Test

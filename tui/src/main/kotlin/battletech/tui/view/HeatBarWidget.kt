@@ -25,10 +25,10 @@ public class HeatBarWidget(
         return y + 2
     }
 
-    // Color thresholds: red at 70 %+ of max, yellow at 30 %+, green below.
+    // Color thresholds: red at 70 %+ of max, yellow at 30 %+, light blue below.
     private fun colorFor(value: Int): Color = when {
         value >= maxValue * 0.7 -> Color.RED
         value >= maxValue * 0.3 -> Color.YELLOW
-        else -> Color.GREEN
+        else -> Color.LIGHT_BLUE
     }
 }

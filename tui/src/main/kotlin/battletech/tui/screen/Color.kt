@@ -15,6 +15,7 @@ public enum class Color {
     BRIGHT_GREEN,
     ORANGE,
     MAGENTA,
+    LIGHT_BLUE,
     GRAY;
 
     public companion object {
