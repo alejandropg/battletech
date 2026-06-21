@@ -254,6 +254,16 @@ internal class TuiAppLoopTest {
     // the whole coroutineScope — including the terminal input producer, which could
     // leave it stuck mid-blocking-read in raw mode. The loop must instead log and
     // keep collecting, so a subsequent Quit (e.g. ctrl+c) is still honored.
+    //
+    // The per-event guard in TuiApp.runLoop catches `Throwable`, not just `Exception`,
+    // because a jar rewritten under a live JVM (e.g. redeploy-while-running) can surface
+    // NoClassDefFoundError/LinkageError — both Errors, not Exceptions — while handling a
+    // single event. There is no clean way to provoke a real java.lang.Error through this
+    // test's public event surface (AppState/phase handling has no reachable Error path,
+    // and faking one would require test-only production hooks, which we avoid per the
+    // project's no-gold-plating stance). The NegativeArraySizeException below stands in
+    // as a representative "something throws mid-handling" case; it exercises the same
+    // catch-and-continue path that now also covers Throwable.
     // -------------------------------------------------------------------------
 
     @Test

@@ -142,6 +142,8 @@ public class TuiApp {
             // A single bad event must not propagate out of collect: that would cancel this
             // coroutineScope and, with it, the terminal input producer running on Dispatchers.IO —
             // exactly the external-cancellation hazard documented on Terminal.terminalInputEvents.
+            // This applies equally to an Exception or an Error (e.g. NoClassDefFoundError/LinkageError
+            // from a jar rewritten under a live JVM), so we catch Throwable rather than Exception.
             try {
                 when (ui) {
                     is UiEvent.Input -> {
@@ -234,8 +236,8 @@ public class TuiApp {
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                System.err.println("Unhandled exception while processing $ui:")
+            } catch (e: Throwable) {
+                System.err.println("Unhandled throwable while processing $ui:")
                 e.printStackTrace()
             }
         }
