@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.model.GameState
 import battletech.tactical.session.LogEntry
 import battletech.tui.game.PanelId
+import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.TextWrap
 
@@ -17,20 +18,28 @@ public class LogView(
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        val visualLines = entries.flatMap { wrapEntry(it, width) }
+        var row = 0
+        var lastTurn: Int? = null
 
-        for ((i, line) in visualLines.withIndex()) {
-            buffer.writeString(x, y + i, line)
+        for (entry in entries) {
+            val text = GameLogFormatter.format(entry.event, gameState) ?: continue
+
+            if (entry.turn != lastTurn) {
+                buffer.writeString(x, y + row, turnHeader(entry.turn, width), fg = Color.GRAY)
+                row += 1
+                lastTurn = entry.turn
+            }
+
+            for (line in TextWrap.wrap(text, width)) {
+                buffer.writeString(x, y + row, line)
+                row += 1
+            }
         }
     }
 
-    private fun wrapEntry(entry: LogEntry, width: Int): List<String> {
-        val text = GameLogFormatter.format(entry.event, gameState) ?: return emptyList()
-        val prefix = "[%02d] ".format(entry.turn)
-        val indent = " ".repeat(prefix.length)
-        val firstWidth = (width - prefix.length).coerceAtLeast(1)
-        val contWidth = (width - indent.length).coerceAtLeast(1)
-        return TextWrap.wrap(text, firstWidth, contWidth)
-            .mapIndexed { i, line -> if (i == 0) prefix + line else indent + line }
+    private fun turnHeader(turn: Int, width: Int): String {
+        val label = "── TURN $turn "
+        val fill = (width - label.length).coerceAtLeast(0)
+        return label + "─".repeat(fill)
     }
 }

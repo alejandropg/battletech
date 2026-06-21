@@ -5,20 +5,42 @@ import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.LogEntry
-import battletech.tactical.session.TurnEnded
+import battletech.tactical.session.UnitMoved
+import battletech.tactical.session.UnitStoodUp
+import battletech.tactical.unit.PilotingSkillRoll
+import battletech.tactical.unit.UnitId
+import battletech.tui.aUnit
+import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class LogViewTest {
 
+    private val mUnit = aUnit(id = "m", name = "M")
+
     private val emptyState = GameState(
-        units = emptyList(),
+        units = listOf(mUnit),
         map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0)))),
+    )
+
+    private val passedPsr = PilotingSkillRoll(targetNumber = 5, roll = DiceRoll(4, 4), passed = true)
+
+    private fun stoodUp(): UnitStoodUp =
+        UnitStoodUp(unitId = mUnit.id, psr = passedPsr, stoodUp = true)
+
+    private fun movedTo(toCol: Int): UnitMoved = UnitMoved(
+        unitId = mUnit.id,
+        from = HexCoordinates(0, 0),
+        to = HexCoordinates(toCol, 0),
+        finalFacing = mUnit.facing,
+        mode = MovementMode.WALK,
+        mpSpent = 1,
     )
 
     /** Render via decorator — pixel-parity regression guard for box/border/coordinate assertions. */
@@ -53,45 +75,70 @@ internal class LogViewTest {
     }
 
     @Test
-    fun `renders a single short entry at the top with turn prefix`() {
-        val view = LogView(entries = listOf(LogEntry(turn = 2, event = TurnEnded(2))), gameState = emptyState)
+    fun `renders a single short entry under a turn header, with no turn prefix`() {
+        val view = LogView(entries = listOf(LogEntry(turn = 2, event = stoodUp())), gameState = emptyState)
         val buffer = renderDecorated(view, scrollOffset = 0)
 
         // Inner content starts at x=2, y=1 (just inside the box).
-        val firstLine = readLine(buffer, x = 2, y = 1, width = 24)
-        assertEquals("[02] Turn 2 complete", firstLine)
+        val headerLine = readLine(buffer, x = 2, y = 1, width = 24)
+        assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
+        val entryLine = readLine(buffer, x = 2, y = 2, width = 24)
+        assertEquals("M stood up", entryLine)
     }
 
     @Test
-    fun `turn numbers of 10 or more are not padded further`() {
-        val view = LogView(entries = listOf(LogEntry(turn = 10, event = TurnEnded(10))), gameState = emptyState)
-        val buffer = renderDecorated(view, scrollOffset = 0)
-
-        val firstLine = readLine(buffer, x = 2, y = 1, width = 24)
-        assertEquals("[10] Turn 10 complete", firstLine)
-    }
-
-    @Test
-    fun `renders multiple entries top-anchored in append order`() {
+    fun `header row foreground is gray and a single turn produces exactly one header`() {
         val view = LogView(
             entries = listOf(
-                LogEntry(1, TurnEnded(1)),
-                LogEntry(1, TurnEnded(2)),
-                LogEntry(1, TurnEnded(3)),
+                LogEntry(2, movedTo(1)),
+                LogEntry(2, movedTo(2)),
             ),
             gameState = emptyState,
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assertEquals("[01] Turn 1 complete", readLine(buffer, 2, 1, 24))
-        assertEquals("[01] Turn 2 complete", readLine(buffer, 2, 2, 24))
-        assertEquals("[01] Turn 3 complete", readLine(buffer, 2, 3, 24))
-        // Below the last entry should be empty inside the box.
-        assertEquals("", readLine(buffer, 2, 4, 24))
+        assertEquals(Color.GRAY, buffer.get(2, 1).fg)
+        // Only one header for the single turn: row 2 and row 3 are plain entries, not headers.
+        val headerLine = readLine(buffer, 2, 1, 24)
+        assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
+        assert(readLine(buffer, 2, 2, 24).contains("0101→0201")) { "Expected first move entry" }
+        assert(readLine(buffer, 2, 3, 24).contains("0101→0301")) { "Expected second move entry" }
+        assertEquals(Color.DEFAULT, buffer.get(2, 2).fg)
     }
 
     @Test
-    fun `wraps long entries to multiple visual lines, continuation indented under the prefix`() {
+    fun `turn numbers of 10 or more render correctly in the header`() {
+        val view = LogView(entries = listOf(LogEntry(turn = 10, event = stoodUp())), gameState = emptyState)
+        val buffer = renderDecorated(view, scrollOffset = 0)
+
+        val headerLine = readLine(buffer, x = 2, y = 1, width = 24)
+        assertEquals("── TURN 10 ─────────────", headerLine)
+        val entryLine = readLine(buffer, x = 2, y = 2, width = 24)
+        assertEquals("M stood up", entryLine)
+    }
+
+    @Test
+    fun `renders multiple entries top-anchored in append order under a single header`() {
+        val view = LogView(
+            entries = listOf(
+                LogEntry(1, movedTo(1)),
+                LogEntry(1, movedTo(2)),
+                LogEntry(1, movedTo(3)),
+            ),
+            gameState = emptyState,
+        )
+        val buffer = renderDecorated(view, scrollOffset = 0)
+
+        assert(readLine(buffer, 2, 1, 24).startsWith("── TURN 1 ")) { "Expected header at row 1" }
+        assert(readLine(buffer, 2, 2, 24).contains("0101→0201")) { "Expected first move entry" }
+        assert(readLine(buffer, 2, 3, 24).contains("0101→0301")) { "Expected second move entry" }
+        assert(readLine(buffer, 2, 4, 24).contains("0101→0401")) { "Expected third move entry" }
+        // Below the last entry should be empty inside the box.
+        assertEquals("", readLine(buffer, 2, 5, 24))
+    }
+
+    @Test
+    fun `wraps long entries to multiple visual lines at full width with no indent`() {
         val initiative = Initiative(
             rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(3, 3), PlayerId.PLAYER_2 to DiceRoll(1, 2)),
             loser = PlayerId.PLAYER_2,
@@ -103,17 +150,14 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        // Inner width = 24. Prefix "[02] " = 5 chars. First wrap row gets up to 19 chars of text.
-        // Continuation lines are indented by 5 spaces under the prefix.
-        val line1 = readLine(buffer, 2, 1, 24)
-        val line2 = readLine(buffer, 2, 2, 24)
-        // Verify the first line starts with the prefix and contains a prefix of the text.
-        assert(line1.startsWith("[02] ")) { "Line 1 missing prefix: '$line1'" }
-        assert(line2.startsWith("     ")) { "Line 2 not indented: '$line2'" }
+        // Row 1 is the turn header; the entry text starts wrapping at row 2.
+        assert(readLine(buffer, 2, 1, 24).startsWith("── TURN 2 ")) { "Expected header at row 1" }
+        val line1 = readLine(buffer, 2, 2, 24)
+        val line2 = readLine(buffer, 2, 3, 24)
+        // No prefix and no indent: both lines start directly with text.
+        assert(line1.startsWith("Initiative: P1")) { "Line 1 should start with the entry text: '$line1'" }
         // The text content should reassemble (whitespace flexible).
-        val reassembled = (line1.removePrefix("[02] ") + " " + line2.trim()).replace(Regex("\\s+"), " ").trim()
-        // Allow for further wrapping if necessary, but at minimum the first two visual lines together
-        // should reproduce the start of the text.
+        val reassembled = (line1 + " " + line2.trim()).replace(Regex("\\s+"), " ").trim()
         assert(reassembled.startsWith("Initiative: P1")) {
             "Reassembled text didn't start as expected: '$reassembled'"
         }
@@ -122,40 +166,38 @@ internal class LogViewTest {
     @Test
     fun `when content overflows, the most recent line is at the bottom of the panel`() {
         // Panel of height 6: inner height = 4 rows. Decorated with anchorBottom=true.
-        val entries = (1..10).map { LogEntry(turn = 1, event = TurnEnded(it)) }
+        // Each entry is its own turn, so every entry is preceded by its own header row.
+        val entries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val view = LogView(entries, gameState = emptyState)
         val buffer = renderDecorated(view, height = 6, scrollOffset = null, anchorBottom = true)
 
         // The bottom inner row (y = 4, since box bottom is y=5) should be the most recent entry.
         val bottomInnerRow = readLine(buffer, 2, 4, 24)
-        assertEquals("[01] Turn 10 complete", bottomInnerRow)
-        // The row above should be the previous entry.
+        assertEquals("M stood up", bottomInnerRow)
+        // The row above is that entry's own header.
         val secondFromBottom = readLine(buffer, 2, 3, 24)
-        assertEquals("[01] Turn 9 complete", secondFromBottom)
-        // And the top inner row should be entry 7 (showing the last 4 entries).
-        val topInner = readLine(buffer, 2, 1, 24)
-        assertEquals("[01] Turn 7 complete", topInner)
+        assert(secondFromBottom.startsWith("── TURN 10 ")) { "Expected header above last entry: '$secondFromBottom'" }
     }
 
     @Test
     fun `scrollOffset 0 with overflowing content shows the oldest entries`() {
-        val entries = (1..10).map { LogEntry(turn = 1, event = TurnEnded(it)) }
+        val entries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val view = LogView(entries, gameState = emptyState)
         // anchorBottom=true but scrollOffset=0 detaches scroll to top
         val buffer = renderDecorated(view, height = 6, scrollOffset = 0, anchorBottom = true)
 
-        // With offset=0 the oldest entries are visible
+        // With offset=0 the oldest entries are visible: header for turn 1, then its entry.
         val firstLine = readLine(buffer, 2, 1, 24)
-        assertEquals("[01] Turn 1 complete", firstLine)
+        assert(firstLine.startsWith("── TURN 1 ")) { "Expected header at row 1: '$firstLine'" }
         val secondLine = readLine(buffer, 2, 2, 24)
-        assertEquals("[01] Turn 2 complete", secondLine)
+        assertEquals("M stood up", secondLine)
     }
 
     @Test
     fun `nerd-font dice icons do not push content past the panel border`() {
         // Mirrors the reported bug: an InitiativeRolled line containing four dice icons
         // must not overflow the LOG panel's right border. With width=40, inner width=36,
-        // prefix "[01] " = 5 chars, so first-line capacity is 31 visual cells.
+        // and no prefix, the first-line capacity is the full 36 visual cells.
         val initiative = Initiative(
             rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(4, 5), PlayerId.PLAYER_2 to DiceRoll(3, 4)),
             loser = PlayerId.PLAYER_2,
@@ -173,10 +215,10 @@ internal class LogViewTest {
             assertEquals("│", buffer.get(39, y).char, "right border at row $y")
         }
         // Each dice icon must occupy exactly one cell as a full surrogate-pair string,
-        // not a split half-surrogate per cell.
-        val firstLine = (2 until 38).map { buffer.get(it, 1).char }.joinToString("").trimEnd()
+        // not a split half-surrogate per cell. Row 1 is the turn header; the entry is on row 2.
+        val entryLine = (2 until 38).map { buffer.get(it, 2).char }.joinToString("").trimEnd()
         val dice4 = String(Character.toChars(0xF01CD))
-        assert(firstLine.contains(dice4)) { "first line should contain dice_4 glyph: '$firstLine'" }
+        assert(entryLine.contains(dice4)) { "entry line should contain dice_4 glyph: '$entryLine'" }
     }
 
     private fun readLine(buffer: ScreenBuffer, x: Int, y: Int, width: Int): String =

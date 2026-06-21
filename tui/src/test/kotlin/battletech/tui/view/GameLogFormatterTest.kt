@@ -104,7 +104,7 @@ internal class GameLogFormatterTest {
         )
 
         assertThat(text).isEqualTo(
-            "Initiative: P1 ${diceIcon(3)}${diceIcon(3)} 6, P2 ${diceIcon(1)}${diceIcon(2)} 3 — P2 moves first"
+            "Initiative: P1 ${diceIcon(3)}+${diceIcon(3)}=6, P2 ${diceIcon(1)}+${diceIcon(2)}=3 — P2 moves first"
         )
     }
 
@@ -265,13 +265,9 @@ internal class GameLogFormatterTest {
     }
 
     @Test
-    fun `TurnEnded shows the turn number that just ended`() {
-        val text = GameLogFormatter.format(
-            event = TurnEnded(turnNumber = 3),
-            state = emptyState,
-        )
-
-        assertThat(text).isEqualTo("Turn 3 complete")
+    fun `TurnEnded is not logged`() {
+        val text = GameLogFormatter.format(event = TurnEnded(turnNumber = 3), state = emptyState)
+        assertThat(text).isNull()
     }
 
     private fun anAttackResult(hit: Boolean, damage: Int): AttackResult =

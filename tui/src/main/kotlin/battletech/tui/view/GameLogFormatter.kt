@@ -29,7 +29,7 @@ internal object GameLogFormatter {
             val p1 = event.initiative.rolls[PlayerId.PLAYER_1]!!
             val p2 = event.initiative.rolls[PlayerId.PLAYER_2]!!
             val first = playerLabel(event.initiative.loser)
-            "Initiative: P1 ${diceIcon(p1.d1)}${diceIcon(p1.d2)} ${p1.total}, P2 ${diceIcon(p2.d1)}${diceIcon(p2.d2)} ${p2.total} — $first moves first"
+            "Initiative: P1 ${diceIcon(p1.d1)}+${diceIcon(p1.d2)}=${p1.total}, P2 ${diceIcon(p2.d1)}+${diceIcon(p2.d2)}=${p2.total} — $first moves first"
         }
 
         is UnitMoved -> {
@@ -115,7 +115,7 @@ internal object GameLogFormatter {
             "$name ammo explosion: ${event.weaponName} (${event.damage} damage)"
         }
 
-        is TurnEnded -> "Turn ${event.turnNumber} complete"
+        is TurnEnded -> null
     }
 
     private fun playerLabel(player: PlayerId): String = when (player) {
