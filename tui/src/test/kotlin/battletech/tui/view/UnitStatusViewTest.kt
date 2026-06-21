@@ -3,8 +3,11 @@ package battletech.tui.view
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.HeatSource
+import battletech.tactical.unit.Weapon
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
+import battletech.tui.hex.ammoIcon
+import battletech.tui.hex.infinityIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -327,5 +330,45 @@ internal class UnitStatusViewTest {
         assertTrue(projectedLabel.contains("Projected"))
         val projectedValueRow = (2 until 26).map { buffer.get(it, 20).char }.joinToString("")
         assertTrue(projectedValueRow.contains("4"))
+    }
+
+    private fun rowContaining(buffer: ScreenBuffer, height: Int, text: String): Int {
+        for (row in 0 until height) {
+            val line = (2 until 26).map { buffer.get(it, row).char }.joinToString("")
+            if (line.contains(text)) return row
+        }
+        error("No row contains \"$text\"")
+    }
+
+    @Test
+    fun `renders ammo count with ammunition icon right-aligned`() {
+        val weapon = Weapon(
+            name = "AC/20", damage = 20, heat = 7,
+            shortRange = 3, mediumRange = 6, longRange = 9, ammo = 5,
+        )
+        val unit = aUnit(weapons = listOf(weapon))
+        val view = UnitStatusView(unit)
+        val buffer = renderDecorated(view, height = 40)
+
+        val row = rowContaining(buffer, 40, "AC/20")
+        val line = (2 until 26).map { buffer.get(it, row).char }.joinToString("")
+        assertTrue(line.contains("5"))
+        assertEquals(ammoIcon(), buffer.get(25, row).char)
+    }
+
+    @Test
+    fun `renders infinity icon right-aligned for weapons without ammo`() {
+        val weapon = Weapon(
+            name = "Medium Laser", damage = 5, heat = 3,
+            shortRange = 3, mediumRange = 6, longRange = 9, ammo = null,
+        )
+        val unit = aUnit(weapons = listOf(weapon))
+        val view = UnitStatusView(unit)
+        val buffer = renderDecorated(view, height = 40)
+
+        val row = rowContaining(buffer, 40, "Medium Laser")
+        val line = (2 until 26).map { buffer.get(it, row).char }.joinToString("")
+        assertFalse(line.contains("["))
+        assertEquals(infinityIcon(), buffer.get(25, row).char)
     }
 }

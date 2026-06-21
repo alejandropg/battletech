@@ -41,6 +41,16 @@ internal class ContentWriter(
         buffer.writeString(cx, cy, text, fg, bg)
     }
 
+    /** Writes [left] flush to the panel's left edge and [right] flush to its right edge. */
+    fun writeRow(left: String, right: String, fg: Color = Color.DEFAULT) {
+        val rightWidth = CellWidth.of(right)
+        val maxLeft = (width - rightWidth - 1).coerceAtLeast(0)
+        val leftText = if (CellWidth.of(left) > maxLeft) truncateToWidth(left, maxLeft - 1) + "…" else left
+        buffer.writeString(x, cy, leftText, fg)
+        buffer.writeString(x + width - rightWidth, cy, right, fg)
+        cy += 1
+    }
+
     fun newLine() {
         cy += 1
     }

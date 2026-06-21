@@ -86,6 +86,9 @@ TERRAINS=(
   "Checkbox;nf-md-checkbox_blank_outline;f0131;${GRAY};${GRAY_BG}"
   "Checkbox;nf-md-checkbox_marked_outline;f0135;${GREEN_LIGHT};${GREEN_LIGHT_BG}"
   "Checkbox;nf-md-minus_box_outline;f06f2;${GRAY};${GRAY_BG}"
+  "Ammunition;nf-md-ammunition;f0ce8;${SLATE};${SLATE_BG}"
+  "Infinity;nf-fa-infinity;edfe;${SLATE};${SLATE_BG}"
+  "Infinity;nf-md-infinity;f06e4;${SLATE};${SLATE_BG}"
 
 )
 

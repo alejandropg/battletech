@@ -4,6 +4,8 @@ import battletech.tactical.heat.HeatScale
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tui.game.PanelId
+import battletech.tui.hex.ammoIcon
+import battletech.tui.hex.infinityIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
@@ -115,8 +117,8 @@ public class UnitStatusView(
         with(content) {
             writeHeader("WEAPONS")
             for (weapon in unit.weapons) {
-                val ammoStr = weapon.ammo?.let { " [$it]" } ?: ""
-                writeln("  ${weapon.name}$ammoStr", Color.WHITE)
+                val right = weapon.ammo?.let { "$it ${ammoIcon()}" } ?: infinityIcon()
+                writeRow("  ${weapon.name}", right, Color.WHITE)
             }
         }
     }
