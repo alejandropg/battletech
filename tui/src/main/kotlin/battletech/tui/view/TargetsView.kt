@@ -39,7 +39,7 @@ public class TargetsView(
                 else -> " [S]"
             }
             val nameColor = if (isCursorOnTarget) Color.BRIGHT_YELLOW else Color.WHITE
-            val nameLine = "  ${target.unitName}$tag"
+            val nameLine = "${target.unitName}$tag"
             content.writeln(nameLine, nameColor)
 
             val assignedToThisTarget = weaponAssignments[target.unitId] ?: emptySet()
