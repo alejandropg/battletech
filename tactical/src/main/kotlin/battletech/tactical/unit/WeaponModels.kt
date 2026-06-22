@@ -1,7 +1,7 @@
 package battletech.tactical.unit
 
-public object Weapons {
-    public fun mediumLaser(): Weapon = Weapon(
+public object WeaponModels {
+    public val mediumLaser: WeaponModel = WeaponModel(
         name = "Medium Laser",
         damage = 5,
         heat = 3,
@@ -11,7 +11,7 @@ public object Weapons {
         criticalSlots = 1,
     )
 
-    public fun largeLaser(): Weapon = Weapon(
+    public val largeLaser: WeaponModel = WeaponModel(
         name = "Large Laser",
         damage = 8,
         heat = 8,
@@ -21,7 +21,7 @@ public object Weapons {
         criticalSlots = 2,
     )
 
-    public fun ac20(): Weapon = Weapon(
+    public val ac20: WeaponModel = WeaponModel(
         name = "AC/20",
         damage = 20,
         heat = 7,
@@ -33,7 +33,7 @@ public object Weapons {
         ammoType = AmmoType.AC20,
     )
 
-    public fun srm6(): Weapon = Weapon(
+    public val srm6: WeaponModel = WeaponModel(
         name = "SRM 6",
         damage = 12,
         heat = 4,
@@ -44,7 +44,7 @@ public object Weapons {
         ammoType = AmmoType.SRM6,
     )
 
-    public fun smallLaser(): Weapon = Weapon(
+    public val smallLaser: WeaponModel = WeaponModel(
         name = "Small Laser",
         damage = 3,
         heat = 1,
@@ -54,7 +54,7 @@ public object Weapons {
         criticalSlots = 1,
     )
 
-    public fun machineGun(): Weapon = Weapon(
+    public val machineGun: WeaponModel = WeaponModel(
         name = "Machine Gun",
         damage = 2,
         heat = 0,
@@ -65,7 +65,7 @@ public object Weapons {
         ammoType = AmmoType.MG,
     )
 
-    public fun srm2(): Weapon = Weapon(
+    public val srm2: WeaponModel = WeaponModel(
         name = "SRM 2",
         damage = 4,
         heat = 2,
@@ -76,7 +76,7 @@ public object Weapons {
         ammoType = AmmoType.SRM2,
     )
 
-    public fun ppc(): Weapon = Weapon(
+    public val ppc: WeaponModel = WeaponModel(
         name = "PPC",
         damage = 10,
         heat = 10,
@@ -87,7 +87,7 @@ public object Weapons {
         criticalSlots = 3,
     )
 
-    public fun lrm5(): Weapon = Weapon(
+    public val lrm5: WeaponModel = WeaponModel(
         name = "LRM 5",
         damage = 5,
         heat = 2,
@@ -99,7 +99,7 @@ public object Weapons {
         ammoType = AmmoType.LRM5,
     )
 
-    public fun lrm10(): Weapon = Weapon(
+    public val lrm10: WeaponModel = WeaponModel(
         name = "LRM 10",
         damage = 10,
         heat = 4,
@@ -111,7 +111,7 @@ public object Weapons {
         ammoType = AmmoType.LRM10,
     )
 
-    public fun lrm20(): Weapon = Weapon(
+    public val lrm20: WeaponModel = WeaponModel(
         name = "LRM 20",
         damage = 20,
         heat = 6,
@@ -123,7 +123,7 @@ public object Weapons {
         ammoType = AmmoType.LRM20,
     )
 
-    public fun ac5(): Weapon = Weapon(
+    public val ac5: WeaponModel = WeaponModel(
         name = "AC/5",
         damage = 5,
         heat = 1,

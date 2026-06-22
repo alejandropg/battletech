@@ -8,10 +8,10 @@ import org.junit.jupiter.api.Test
 internal class CriticalLayoutTest {
 
     private fun buildSampleMech(): MechCriticalBuild = mechLayout {
-        place(MechLocation.RIGHT_TORSO) { Weapons.ac20() }
+        place(MechLocation.RIGHT_TORSO, WeaponModels.ac20)
         ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, tons = 1)
-        place(MechLocation.LEFT_ARM) { Weapons.mediumLaser() }
-        place(MechLocation.RIGHT_ARM) { Weapons.mediumLaser() }
+        place(MechLocation.LEFT_ARM, WeaponModels.mediumLaser)
+        place(MechLocation.RIGHT_ARM, WeaponModels.mediumLaser)
         heatSinks(2)
         jumpJets(2)
     }
@@ -40,7 +40,7 @@ internal class CriticalLayoutTest {
 
     @Test
     fun `validate throws when a weapon's span is corrupted`() {
-        val srm6 = Weapons.srm6().copy(mountId = WeaponMountId(0), location = MechLocation.LEFT_TORSO)
+        val srm6 = Weapon(model = WeaponModels.srm6, mountId = WeaponMountId(0), location = MechLocation.LEFT_TORSO)
         val slots = MutableList<CriticalSlotContent>(SLOT_COUNTS[MechLocation.LEFT_TORSO]!!) { CriticalSlotContent.Empty }
         slots[0] = CriticalSlotContent.WeaponMount(WeaponMountId(0))
 
@@ -131,7 +131,7 @@ internal class CriticalLayoutTest {
     fun `omitActuators removes the hand actuator from an arm`() {
         val build = mechLayout {
             omitActuators(MechLocation.LEFT_ARM, hand = true)
-            place(MechLocation.LEFT_ARM) { Weapons.mediumLaser() }
+            place(MechLocation.LEFT_ARM, WeaponModels.mediumLaser)
         }
 
         val slots = build.layout.slotsAt(MechLocation.LEFT_ARM)

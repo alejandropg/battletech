@@ -101,17 +101,15 @@ public class CriticalLayoutBuilder {
         }
     }
 
-    public fun place(location: MechLocation, weapon: () -> Weapon): WeaponMountId {
+    public fun place(location: MechLocation, model: WeaponModel): WeaponMountId {
         val id = WeaponMountId(nextMountId++)
-        val rawWeapon = weapon()
-        val stampedWeapon = rawWeapon.copy(mountId = id, location = location)
+        val weapon = Weapon(model = model, mountId = id, location = location)
         val slots = slotsByLocation.getValue(location)
-        val startIndex = findContiguousEmptyRun(slots, stampedWeapon.criticalSlots)
-            ?: throw IllegalStateException("not enough contiguous free slots in $location for ${stampedWeapon.name}")
-        for (offset in 0 until stampedWeapon.criticalSlots) {
+        val startIndex = checkNotNull(findContiguousEmptyRun(slots, weapon.criticalSlots)) { "not enough contiguous free slots in $location for ${weapon.name}" }
+        for (offset in 0 until weapon.criticalSlots) {
             slots[startIndex + offset] = CriticalSlotContent.WeaponMount(id)
         }
-        placedWeapons.add(stampedWeapon)
+        placedWeapons.add(weapon)
         return id
     }
 

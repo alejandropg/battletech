@@ -11,7 +11,8 @@ import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
-import battletech.tactical.unit.Weapons
+import battletech.tactical.unit.Weapon
+import battletech.tactical.unit.WeaponModels
 
 internal fun aMech(id: String, owner: PlayerId, position: HexCoordinates): CombatUnit = CombatUnit(
     id = UnitId(id),
@@ -20,7 +21,7 @@ internal fun aMech(id: String, owner: PlayerId, position: HexCoordinates): Comba
     tonnage = 50,
     gunnerySkill = 4,
     pilotingSkill = 5,
-    weapons = listOf(Weapons.mediumLaser()),
+    weapons = listOf(Weapon(model = WeaponModels.mediumLaser)),
     position = position,
     facing = HexDirection.N,
     torsoFacing = HexDirection.N,

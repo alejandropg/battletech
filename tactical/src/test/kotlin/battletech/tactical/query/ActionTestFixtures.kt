@@ -15,22 +15,25 @@ import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
-import battletech.tactical.unit.Weapons
+import battletech.tactical.unit.WeaponModel
+import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.empty
 
-internal fun mediumLaser(): Weapon = Weapons.mediumLaser()
+internal fun mediumLaser(): Weapon = Weapon(model = WeaponModels.mediumLaser)
 
 internal fun srm4(): Weapon = Weapon(
-    name = "SRM-4",
-    damage = 8,
-    heat = 3,
-    shortRange = 3,
-    mediumRange = 6,
-    longRange = 9,
-    ammoType = AmmoType.SRM2,
+    model = WeaponModel(
+        name = "SRM-4",
+        damage = 8,
+        heat = 3,
+        shortRange = 3,
+        mediumRange = 6,
+        longRange = 9,
+        ammoType = AmmoType.SRM2,
+    ),
 )
 
-internal fun ac20(): Weapon = Weapons.ac20()
+internal fun ac20(): Weapon = Weapon(model = WeaponModels.ac20)
 
 internal fun aWeapon(
     name: String = "Test Weapon",
@@ -43,14 +46,16 @@ internal fun aWeapon(
     ammoType: AmmoType? = null,
     destroyed: Boolean = false,
 ): Weapon = Weapon(
-    name = name,
-    damage = damage,
-    heat = heat,
-    minimumRange = minimumRange,
-    shortRange = shortRange,
-    mediumRange = mediumRange,
-    longRange = longRange,
-    ammoType = ammoType,
+    model = WeaponModel(
+        name = name,
+        damage = damage,
+        heat = heat,
+        minimumRange = minimumRange,
+        shortRange = shortRange,
+        mediumRange = mediumRange,
+        longRange = longRange,
+        ammoType = ammoType,
+    ),
     destroyed = destroyed,
 )
 

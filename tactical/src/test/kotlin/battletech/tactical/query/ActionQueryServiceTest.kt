@@ -14,6 +14,7 @@ import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.Weapon
+import battletech.tactical.unit.WeaponModel
 import battletech.tactical.unit.mechLayout
 import battletech.tactical.unit.withSlot
 import org.assertj.core.api.Assertions.assertThat
@@ -88,13 +89,15 @@ internal class ActionQueryServiceTest {
     @Test
     fun `collects all reasons for unavailable actions`() {
         val destroyedWeaponNoAmmo = Weapon(
-            name = "Broken AC/20",
-            damage = 20,
-            heat = 7,
-            shortRange = 3,
-            mediumRange = 6,
-            longRange = 9,
-            ammoType = AmmoType.AC20,
+            model = WeaponModel(
+                name = "Broken AC/20",
+                damage = 20,
+                heat = 7,
+                shortRange = 3,
+                mediumRange = 6,
+                longRange = 9,
+                ammoType = AmmoType.AC20,
+            ),
             destroyed = true,
         )
         val emptyLayout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
@@ -163,14 +166,16 @@ internal class ActionQueryServiceTest {
         val mediumLaser = mediumLaser()
         val srm4 = srm4()
         val destroyedAc20 = Weapon(
-            name = "AC/20",
-            damage = 20,
-            heat = 7,
-            minimumRange = 3,
-            shortRange = 3,
-            mediumRange = 6,
-            longRange = 9,
-            ammoType = AmmoType.AC20,
+            model = WeaponModel(
+                name = "AC/20",
+                damage = 20,
+                heat = 7,
+                minimumRange = 3,
+                shortRange = 3,
+                mediumRange = 6,
+                longRange = 9,
+                ammoType = AmmoType.AC20,
+            ),
             destroyed = true,
         )
         val atlasLayout = mechLayout {

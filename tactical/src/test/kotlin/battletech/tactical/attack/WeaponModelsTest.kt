@@ -1,17 +1,16 @@
 package battletech.tactical.attack
 
 import battletech.tactical.unit.AmmoType
-import battletech.tactical.unit.Weapons
+import battletech.tactical.unit.WeaponModels
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
-internal class WeaponsTest {
+internal class WeaponModelsTest {
 
     @Test
     fun `mediumLaser returns correct stats`() {
-        val weapon = Weapons.mediumLaser()
+        val weapon = WeaponModels.mediumLaser
 
         assertEquals("Medium Laser", weapon.name)
         assertEquals(5, weapon.damage)
@@ -25,7 +24,7 @@ internal class WeaponsTest {
 
     @Test
     fun `ac20 returns correct stats`() {
-        val weapon = Weapons.ac20()
+        val weapon = WeaponModels.ac20
 
         assertEquals("AC/20", weapon.name)
         assertEquals(20, weapon.damage)
@@ -39,7 +38,7 @@ internal class WeaponsTest {
 
     @Test
     fun `srm6 returns correct stats`() {
-        val weapon = Weapons.srm6()
+        val weapon = WeaponModels.srm6
 
         assertEquals("SRM 6", weapon.name)
         assertEquals(12, weapon.damage)
@@ -48,10 +47,10 @@ internal class WeaponsTest {
     }
 
     @Test
-    fun `each call returns independent instance`() {
-        val w1 = Weapons.mediumLaser()
-        val w2 = Weapons.mediumLaser()
+    fun `each reference returns the same shared instance`() {
+        val w1 = WeaponModels.mediumLaser
+        val w2 = WeaponModels.mediumLaser
 
-        assertNotSame(w1, w2)
+        assertEquals(w1, w2)
     }
 }

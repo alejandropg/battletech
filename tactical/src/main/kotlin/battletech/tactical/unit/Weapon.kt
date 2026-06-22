@@ -3,16 +3,18 @@ package battletech.tactical.unit
 import battletech.tactical.model.MechLocation
 
 public data class Weapon(
-    public val name: String,
-    public val damage: Int,
-    public val heat: Int,
-    public val minimumRange: Int = 0,
-    public val shortRange: Int,
-    public val mediumRange: Int,
-    public val longRange: Int,
-    public val destroyed: Boolean = false,
-    public val criticalSlots: Int = 1,
-    public val ammoType: AmmoType? = null,
-    public val location: MechLocation? = null,
+    public val model: WeaponModel,
     public val mountId: WeaponMountId? = null,
-)
+    public val location: MechLocation? = null,
+    public val destroyed: Boolean = false,
+) {
+    public val name: String get() = model.name
+    public val damage: Int get() = model.damage
+    public val heat: Int get() = model.heat
+    public val minimumRange: Int get() = model.minimumRange
+    public val shortRange: Int get() = model.shortRange
+    public val mediumRange: Int get() = model.mediumRange
+    public val longRange: Int get() = model.longRange
+    public val criticalSlots: Int get() = model.criticalSlots
+    public val ammoType: AmmoType? get() = model.ammoType
+}

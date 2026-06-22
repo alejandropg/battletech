@@ -24,7 +24,7 @@ import battletech.tactical.session.UnitMoved
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
-import battletech.tactical.unit.Weapons
+import battletech.tactical.unit.WeaponModels
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.mediumLaser
@@ -162,7 +162,7 @@ internal class GameLogFormatterTest {
             id = "atlas",
             name = "Atlas",
             owner = PlayerId.PLAYER_1,
-            weapons = listOf(Weapons.mediumLaser(), Weapons.lrm5()),
+            weapons = listOf(Weapon(model = WeaponModels.mediumLaser), Weapon(model = WeaponModels.lrm5)),
         )
         val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
         val stateWithUnits = emptyState.copy(units = listOf(atlas, locust))

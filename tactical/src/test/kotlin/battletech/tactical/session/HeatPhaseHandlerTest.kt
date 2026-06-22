@@ -8,7 +8,7 @@ import battletech.tactical.query.mediumLaser
 import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
-import battletech.tactical.unit.Weapons
+import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.mechLayout
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -71,7 +71,7 @@ internal class HeatPhaseHandlerTest {
     fun `ammo explodes on a failed avoidance roll`() {
         // 25 - 10 = 15 -> shutdown target 4 (avoided), ammo target 4 (failed)
         val build = mechLayout {
-            place(MechLocation.RIGHT_TORSO, Weapons::ac20)
+            place(MechLocation.RIGHT_TORSO, WeaponModels.ac20)
             ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)
         }
         val unit = aUnit(
