@@ -9,7 +9,10 @@ public class HasAmmoRule : AttackRule<WeaponAttackContext> {
 
     override fun evaluate(context: WeaponAttackContext): RuleResult {
         val weapon = context.weapon
-        return if (weapon.ammo == null || weapon.ammo > 0) {
+        val type = weapon.ammoType ?: return RuleResult.Satisfied
+        val remaining = context.actor.criticalLayout.ammoBins()
+            .filter { it.third.type == type }.sumOf { it.third.shots }
+        return if (remaining > 0) {
             RuleResult.Satisfied
         } else {
             RuleResult.Unsatisfied(RuleRejection.NoAmmo(weaponName = weapon.name))

@@ -16,12 +16,14 @@ import battletech.tactical.session.MovementProgress
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.CriticalLayout
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.Weapons
+import battletech.tactical.unit.empty
 import battletech.tui.game.AppState
 import battletech.tui.game.phase.Phase
 
@@ -120,6 +122,7 @@ internal fun aUnit(
     armor: ArmorLayout = anArmorLayout(),
     heatSink: HeatSink = HeatSink(HeatSinkType.STS, 10),
     internalStructure: InternalStructureLayout = anInternalStructureLayout(),
+    criticalLayout: CriticalLayout = CriticalLayout.empty(),
 ): CombatUnit = CombatUnit(
     id = UnitId(id),
     owner = owner,
@@ -137,6 +140,7 @@ internal fun aUnit(
     armor = armor,
     heatSink = heatSink,
     internalStructure = internalStructure,
+    criticalLayout = criticalLayout,
 )
 
 internal fun anArmorLayout(

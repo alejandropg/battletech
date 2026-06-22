@@ -6,14 +6,17 @@ import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
+import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.CriticalLayout
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.Weapons
+import battletech.tactical.unit.empty
 
 internal fun mediumLaser(): Weapon = Weapons.mediumLaser()
 
@@ -24,7 +27,7 @@ internal fun srm4(): Weapon = Weapon(
     shortRange = 3,
     mediumRange = 6,
     longRange = 9,
-    ammo = 25,
+    ammoType = AmmoType.SRM2,
 )
 
 internal fun ac20(): Weapon = Weapons.ac20()
@@ -37,7 +40,7 @@ internal fun aWeapon(
     shortRange: Int = 3,
     mediumRange: Int = 6,
     longRange: Int = 9,
-    ammo: Int? = null,
+    ammoType: AmmoType? = null,
     destroyed: Boolean = false,
 ): Weapon = Weapon(
     name = name,
@@ -47,7 +50,7 @@ internal fun aWeapon(
     shortRange = shortRange,
     mediumRange = mediumRange,
     longRange = longRange,
-    ammo = ammo,
+    ammoType = ammoType,
     destroyed = destroyed,
 )
 
@@ -104,6 +107,7 @@ internal fun aUnit(
     heatSink: HeatSink = HeatSink(HeatSinkType.STS, 10),
     armor: ArmorLayout = anArmorLayout(),
     internalStructure: InternalStructureLayout = anInternalStructureLayout(),
+    criticalLayout: CriticalLayout = CriticalLayout.empty(),
 ): CombatUnit = CombatUnit(
     id = UnitId(id),
     owner = owner,
@@ -121,6 +125,7 @@ internal fun aUnit(
     heatSink = heatSink,
     armor = armor,
     internalStructure = internalStructure,
+    criticalLayout = criticalLayout,
 )
 
 internal fun aGameState(

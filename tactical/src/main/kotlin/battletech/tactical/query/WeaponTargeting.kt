@@ -37,7 +37,7 @@ internal class WeaponTargeting(private val state: PublicGameState) {
             val distance = attacker.position.distanceTo(target.position)
 
             val weapons = attacker.weapons.mapIndexed { index, weapon ->
-                if (!weapon.canEngageAt(distance)) {
+                if (!weapon.canEngageAt(distance, attacker)) {
                     WeaponTargetInfo(
                         weaponIndex = index,
                         weaponName = weapon.name,
@@ -82,14 +82,19 @@ internal class WeaponTargeting(private val state: PublicGameState) {
 
     private fun hasEligibleWeapon(attacker: CombatUnit, target: CombatUnit): Boolean {
         val distance = attacker.position.distanceTo(target.position)
-        return attacker.weapons.any { it.canEngageAt(distance) }
+        return attacker.weapons.any { it.canEngageAt(distance, attacker) }
     }
 
     private fun heatPenaltyModifier(actor: CombatUnit): Int =
         HeatScale.toHitPenalty(actor.currentHeat)
 }
 
-private fun Weapon.canEngageAt(distance: Int): Boolean =
+private fun Weapon.canEngageAt(distance: Int, attacker: CombatUnit): Boolean =
     !destroyed &&
-        (ammo?.let { it > 0 } != false) &&
+        hasAmmoRemaining(attacker) &&
         distance <= longRange
+
+private fun Weapon.hasAmmoRemaining(attacker: CombatUnit): Boolean {
+    val type = ammoType ?: return true
+    return attacker.criticalLayout.ammoBins().any { it.third.type == type && it.third.shots > 0 }
+}

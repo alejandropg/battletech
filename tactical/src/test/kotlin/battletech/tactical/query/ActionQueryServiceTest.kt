@@ -6,12 +6,16 @@ import battletech.tactical.attack.weapon.WeaponAttackPreview
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.MechLocation
 import battletech.tactical.movement.MoveActionDefinition
 import battletech.tactical.movement.MovementPreview
 import battletech.tactical.session.RuleRejection
+import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.Weapon
+import battletech.tactical.unit.mechLayout
+import battletech.tactical.unit.withSlot
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -90,10 +94,19 @@ internal class ActionQueryServiceTest {
             shortRange = 3,
             mediumRange = 6,
             longRange = 9,
-            ammo = 0,
+            ammoType = AmmoType.AC20,
             destroyed = true,
         )
-        val actor = aUnit(weapons = listOf(destroyedWeaponNoAmmo), position = HexCoordinates(0, 0))
+        val emptyLayout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
+            .let { layout ->
+                val (location, index, bin) = layout.ammoBins().single()
+                layout.withSlot(location, index, bin.copy(shots = 0))
+            }
+        val actor = aUnit(
+            weapons = listOf(destroyedWeaponNoAmmo),
+            position = HexCoordinates(0, 0),
+            criticalLayout = emptyLayout,
+        )
         val enemy = aUnit(id = "enemy", position = HexCoordinates(3, 0))
         val gameState = aGameState(units = listOf(actor, enemy))
 
@@ -157,9 +170,16 @@ internal class ActionQueryServiceTest {
             shortRange = 3,
             mediumRange = 6,
             longRange = 9,
-            ammo = 0,
+            ammoType = AmmoType.AC20,
             destroyed = true,
         )
+        val atlasLayout = mechLayout {
+            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)
+            ammo(MechLocation.LEFT_TORSO, AmmoType.SRM2, 1)
+        }.layout.let { layout ->
+            val (location, index, bin) = layout.ammoBins().first { it.first == MechLocation.RIGHT_TORSO }
+            layout.withSlot(location, index, bin.copy(shots = 0))
+        }
 
         val atlas = aUnit(
             id = "atlas",
@@ -167,6 +187,7 @@ internal class ActionQueryServiceTest {
             gunnerySkill = 4,
             weapons = listOf(mediumLaser, srm4, destroyedAc20),
             position = HexCoordinates(5, 5),
+            criticalLayout = atlasLayout,
         )
         val hunchback = aUnit(
             id = "hunchback",

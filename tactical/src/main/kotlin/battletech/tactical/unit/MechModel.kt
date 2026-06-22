@@ -10,5 +10,6 @@ public data class MechModel(
     val heatSink: HeatSink = HeatSink(HeatSinkType.STS, 10),
     val armor: ArmorLayout,
     val internalStructure: InternalStructureLayout = InternalStructureTables.forTonnage(tonnage),
-    val weapons: List<() -> Weapon>,
+    public val criticalLayout: CriticalLayout,
+    public val weapons: List<Weapon>,
 )

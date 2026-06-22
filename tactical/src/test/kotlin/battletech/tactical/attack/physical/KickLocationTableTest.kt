@@ -1,7 +1,7 @@
 package battletech.tactical.attack.physical
 
-import battletech.tactical.attack.HitLocation.LEFT_LEG
-import battletech.tactical.attack.HitLocation.RIGHT_LEG
+import battletech.tactical.model.MechLocation.LEFT_LEG
+import battletech.tactical.model.MechLocation.RIGHT_LEG
 import battletech.tactical.attack.physical.AttackDirection.FRONT
 import battletech.tactical.attack.physical.AttackDirection.LEFT
 import battletech.tactical.attack.physical.AttackDirection.REAR

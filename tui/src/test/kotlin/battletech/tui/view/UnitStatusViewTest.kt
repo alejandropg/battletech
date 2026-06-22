@@ -1,9 +1,12 @@
 package battletech.tui.view
 
+import battletech.tactical.model.MechLocation
+import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.Weapon
+import battletech.tactical.unit.mechLayout
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.hex.ammoIcon
@@ -344,9 +347,10 @@ internal class UnitStatusViewTest {
     fun `renders ammo count with ammunition icon right-aligned`() {
         val weapon = Weapon(
             name = "AC/20", damage = 20, heat = 7,
-            shortRange = 3, mediumRange = 6, longRange = 9, ammo = 5,
+            shortRange = 3, mediumRange = 6, longRange = 9, ammoType = AmmoType.AC20,
         )
-        val unit = aUnit(weapons = listOf(weapon))
+        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
+        val unit = aUnit(weapons = listOf(weapon), criticalLayout = layout)
         val view = UnitStatusView(unit)
         val buffer = renderDecorated(view, height = 40)
 
@@ -360,7 +364,7 @@ internal class UnitStatusViewTest {
     fun `renders infinity icon right-aligned for weapons without ammo`() {
         val weapon = Weapon(
             name = "Medium Laser", damage = 5, heat = 3,
-            shortRange = 3, mediumRange = 6, longRange = 9, ammo = null,
+            shortRange = 3, mediumRange = 6, longRange = 9, ammoType = null,
         )
         val unit = aUnit(weapons = listOf(weapon))
         val view = UnitStatusView(unit)

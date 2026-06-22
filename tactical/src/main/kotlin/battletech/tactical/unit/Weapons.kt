@@ -8,6 +8,7 @@ public object Weapons {
         shortRange = 3,
         mediumRange = 6,
         longRange = 9,
+        criticalSlots = 1,
     )
 
     public fun largeLaser(): Weapon = Weapon(
@@ -17,6 +18,7 @@ public object Weapons {
         shortRange = 5,
         mediumRange = 10,
         longRange = 15,
+        criticalSlots = 2,
     )
 
     public fun ac20(): Weapon = Weapon(
@@ -27,7 +29,8 @@ public object Weapons {
         shortRange = 3,
         mediumRange = 6,
         longRange = 9,
-        ammo = 5,
+        criticalSlots = 10,
+        ammoType = AmmoType.AC20,
     )
 
     public fun srm6(): Weapon = Weapon(
@@ -37,7 +40,8 @@ public object Weapons {
         shortRange = 3,
         mediumRange = 6,
         longRange = 9,
-        ammo = 15,
+        criticalSlots = 2,
+        ammoType = AmmoType.SRM6,
     )
 
     public fun smallLaser(): Weapon = Weapon(
@@ -47,6 +51,7 @@ public object Weapons {
         shortRange = 1,
         mediumRange = 2,
         longRange = 3,
+        criticalSlots = 1,
     )
 
     public fun machineGun(): Weapon = Weapon(
@@ -56,7 +61,8 @@ public object Weapons {
         shortRange = 1,
         mediumRange = 2,
         longRange = 3,
-        ammo = 200,
+        criticalSlots = 1,
+        ammoType = AmmoType.MG,
     )
 
     public fun srm2(): Weapon = Weapon(
@@ -66,7 +72,8 @@ public object Weapons {
         shortRange = 3,
         mediumRange = 6,
         longRange = 9,
-        ammo = 50,
+        criticalSlots = 1,
+        ammoType = AmmoType.SRM2,
     )
 
     public fun ppc(): Weapon = Weapon(
@@ -77,6 +84,7 @@ public object Weapons {
         shortRange = 6,
         mediumRange = 12,
         longRange = 18,
+        criticalSlots = 3,
     )
 
     public fun lrm5(): Weapon = Weapon(
@@ -87,7 +95,8 @@ public object Weapons {
         shortRange = 7,
         mediumRange = 14,
         longRange = 21,
-        ammo = 24,
+        criticalSlots = 1,
+        ammoType = AmmoType.LRM5,
     )
 
     public fun lrm10(): Weapon = Weapon(
@@ -98,7 +107,8 @@ public object Weapons {
         shortRange = 7,
         mediumRange = 14,
         longRange = 21,
-        ammo = 12,
+        criticalSlots = 2,
+        ammoType = AmmoType.LRM10,
     )
 
     public fun lrm20(): Weapon = Weapon(
@@ -109,7 +119,8 @@ public object Weapons {
         shortRange = 7,
         mediumRange = 14,
         longRange = 21,
-        ammo = 6,
+        criticalSlots = 5,
+        ammoType = AmmoType.LRM20,
     )
 
     public fun ac5(): Weapon = Weapon(
@@ -120,6 +131,7 @@ public object Weapons {
         shortRange = 6,
         mediumRange = 12,
         longRange = 18,
-        ammo = 20,
+        criticalSlots = 4,
+        ammoType = AmmoType.AC5,
     )
 }

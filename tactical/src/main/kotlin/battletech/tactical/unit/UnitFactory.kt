@@ -18,7 +18,7 @@ public fun MechModel.createUnit(
     tonnage = tonnage,
     gunnerySkill = gunnerySkill,
     pilotingSkill = pilotingSkill,
-    weapons = weapons.map { it() },
+    weapons = weapons,
     position = position,
     facing = facing,
     walkingMP = walkingMP,
@@ -27,4 +27,5 @@ public fun MechModel.createUnit(
     heatSink = heatSink,
     armor = armor,
     internalStructure = internalStructure,
+    criticalLayout = criticalLayout,
 )

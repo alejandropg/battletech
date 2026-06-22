@@ -10,6 +10,7 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.model.MovementMode
+import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.PilotingSkillRoll
 import battletech.tactical.unit.UnitId
 
@@ -95,7 +96,7 @@ public data class UnitRestarted(
 /** A unit's ammunition cooked off from heat, taking internal damage. */
 public data class AmmoExploded(
     public val unitId: UnitId,
-    public val weaponName: String,
+    public val ammoType: AmmoType,
     public val damage: Int,
 ) : GameEvent
 

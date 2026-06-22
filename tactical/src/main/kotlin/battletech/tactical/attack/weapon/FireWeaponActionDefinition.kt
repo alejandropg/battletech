@@ -43,7 +43,7 @@ public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> 
         return WeaponAttackPreview(
             expectedDamage = weapon.damage..weapon.damage,
             heatGenerated = weapon.heat,
-            ammoConsumed = if (weapon.ammo != null) 1 else null,
+            ammoConsumed = if (weapon.ammoType != null) 1 else null,
         )
     }
 

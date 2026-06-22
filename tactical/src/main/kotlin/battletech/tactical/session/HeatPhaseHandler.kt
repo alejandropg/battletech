@@ -8,6 +8,7 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.withSlot
 
 /**
  * System phase. On entry, folds each unit's heat generated this turn into its
@@ -93,31 +94,28 @@ public class HeatPhaseHandler : PhaseHandler {
     }
 
     /**
-     * Simplified ammo explosion: on a failed avoidance roll the ammo-bearing
-     * weapon with the most remaining rounds cooks off for `rounds × damage`,
-     * applied to the center torso through the standard damage path; its ammo is
-     * spent. A located-bin / critical model would refine the location later.
+     * Ammo explosion: on a failed avoidance roll the ammo bin with the greatest
+     * potential damage (`shots × damagePerShot`) cooks off, applying that damage
+     * to the center torso through the standard damage path; the bin is emptied.
      */
     private fun resolveAmmoExplosion(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit, GameEvent?> {
         val target = HeatScale.ammoExplosionAvoidTarget(unit.currentHeat) ?: return unit to null
         val roll = roller.roll2d6()
         if (roll.total >= target) return unit to null
 
-        val worst = unit.weapons.withIndex()
-            .filter { (_, weapon) -> (weapon.ammo ?: 0) > 0 }
-            .maxByOrNull { (_, weapon) -> weapon.ammo ?: 0 }
+        val worst = unit.criticalLayout.ammoBins()
+            .filter { (_, _, bin) -> bin.shots > 0 }
+            .maxByOrNull { (_, _, bin) -> bin.shots * bin.type.damagePerShot }
             ?: return unit to null // nothing to explode
 
-        val weapon = worst.value
-        val damage = (weapon.ammo ?: 0) * weapon.damage
-        val spentWeapons = unit.weapons.mapIndexed { index, w ->
-            if (index == worst.index) w.copy(ammo = 0) else w
-        }
+        val (location, slotIndex, bin) = worst
+        val damage = bin.shots * bin.type.damagePerShot
+        val updatedLayout = unit.criticalLayout.withSlot(location, slotIndex, bin.copy(shots = 0))
         val damaged = applyDamage(
-            unit.copy(weapons = spentWeapons),
+            unit.copy(criticalLayout = updatedLayout),
             HitLocation.CENTER_TORSO,
             damage,
         )
-        return damaged to AmmoExploded(unit.id, weapon.name, damage)
+        return damaged to AmmoExploded(unit.id, bin.type, damage)
     }
 }

@@ -1,12 +1,12 @@
 package battletech.tactical.attack.physical
 
 import battletech.tactical.attack.HitLocation
-import battletech.tactical.attack.HitLocation.CENTER_TORSO
-import battletech.tactical.attack.HitLocation.HEAD
-import battletech.tactical.attack.HitLocation.LEFT_ARM
-import battletech.tactical.attack.HitLocation.LEFT_TORSO
-import battletech.tactical.attack.HitLocation.RIGHT_ARM
-import battletech.tactical.attack.HitLocation.RIGHT_TORSO
+import battletech.tactical.model.MechLocation.CENTER_TORSO
+import battletech.tactical.model.MechLocation.HEAD
+import battletech.tactical.model.MechLocation.LEFT_ARM
+import battletech.tactical.model.MechLocation.LEFT_TORSO
+import battletech.tactical.model.MechLocation.RIGHT_ARM
+import battletech.tactical.model.MechLocation.RIGHT_TORSO
 import battletech.tactical.attack.physical.AttackDirection.FRONT
 import battletech.tactical.attack.physical.AttackDirection.LEFT
 import battletech.tactical.attack.physical.AttackDirection.REAR

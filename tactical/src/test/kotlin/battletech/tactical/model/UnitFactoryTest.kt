@@ -6,7 +6,6 @@ import battletech.tactical.unit.MechModels
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.createUnit
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
@@ -77,7 +76,7 @@ internal class UnitFactoryTest {
     }
 
     @Test
-    fun `each createUnit call returns independent weapon instances`() {
+    fun `each createUnit call returns equivalent weapon loadouts`() {
         val unit1 = MechModels["AS7-D"].createUnit(
             id = UnitId("a"),
             owner = PlayerId.PLAYER_1,
@@ -89,7 +88,7 @@ internal class UnitFactoryTest {
             position = HexCoordinates(1, 1)
         )
 
-        assertNotSame(unit1.weapons[0], unit2.weapons[0])
+        assertEquals(unit1.weapons[0], unit2.weapons[0])
     }
 
     @Test

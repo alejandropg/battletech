@@ -1,12 +1,15 @@
 package battletech.tactical.session
 
 import battletech.tactical.dice.DiceRoller
+import battletech.tactical.model.MechLocation
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
-import battletech.tactical.query.aWeapon
 import battletech.tactical.query.mediumLaser
+import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
+import battletech.tactical.unit.Weapons
+import battletech.tactical.unit.mechLayout
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -67,14 +70,23 @@ internal class HeatPhaseHandlerTest {
     @Test
     fun `ammo explodes on a failed avoidance roll`() {
         // 25 - 10 = 15 -> shutdown target 4 (avoided), ammo target 4 (failed)
-        val ammoWeapon = aWeapon(name = "AC/20", damage = 2, ammo = 5)
-        val unit = aUnit(currentHeat = 25, heatSink = HeatSink(HeatSinkType.STS, 10), weapons = listOf(ammoWeapon))
+        val build = mechLayout {
+            place(MechLocation.RIGHT_TORSO, Weapons::ac20)
+            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)
+        }
+        val unit = aUnit(
+            currentHeat = 25,
+            heatSink = HeatSink(HeatSinkType.STS, 10),
+            weapons = build.weapons,
+            criticalLayout = build.layout,
+        )
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(6, 6, 1, 1))
 
         val exploded = outcome.events.filterIsInstance<AmmoExploded>().single()
-        assertEquals("AC/20", exploded.weaponName)
-        assertEquals(10, exploded.damage) // 5 rounds * 2 damage
-        assertEquals(0, outcome.state.units[0].weapons[0].ammo) // ammo spent
+        assertEquals(AmmoType.AC20, exploded.ammoType)
+        assertEquals(100, exploded.damage) // 5 shots * 20 damage per shot
+        val remainingBin = outcome.state.units[0].criticalLayout.ammoBins().single()
+        assertEquals(0, remainingBin.third.shots)
     }
 }

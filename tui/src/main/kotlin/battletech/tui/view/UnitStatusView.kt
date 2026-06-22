@@ -117,7 +117,12 @@ public class UnitStatusView(
         with(content) {
             writeHeader("WEAPONS")
             for (weapon in unit.weapons) {
-                val right = weapon.ammo?.let { "$it ${ammoIcon()}" } ?: infinityIcon()
+                val right = weapon.ammoType?.let { type ->
+                    val remaining = unit.criticalLayout.ammoBins()
+                        .filter { it.third.type == type }
+                        .sumOf { it.third.shots }
+                    "$remaining ${ammoIcon()}"
+                } ?: infinityIcon()
                 writeRow("  ${weapon.name}", right, Color.WHITE)
             }
         }

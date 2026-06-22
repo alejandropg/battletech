@@ -112,7 +112,7 @@ internal object GameLogFormatter {
 
         is AmmoExploded -> {
             val name = state.unitById(event.unitId)?.name ?: event.unitId.value
-            "$name ammo explosion: ${event.weaponName} (${event.damage} damage)"
+            "$name ammo explosion: ${event.ammoType.name} (${event.damage} damage)"
         }
 
         is TurnEnded -> null

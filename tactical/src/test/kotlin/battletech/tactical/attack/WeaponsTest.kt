@@ -1,5 +1,6 @@
 package battletech.tactical.attack
 
+import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.Weapons
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotSame
@@ -19,7 +20,7 @@ internal class WeaponsTest {
         assertEquals(3, weapon.shortRange)
         assertEquals(6, weapon.mediumRange)
         assertEquals(9, weapon.longRange)
-        assertNull(weapon.ammo)
+        assertNull(weapon.ammoType)
     }
 
     @Test
@@ -33,7 +34,7 @@ internal class WeaponsTest {
         assertEquals(3, weapon.shortRange)
         assertEquals(6, weapon.mediumRange)
         assertEquals(9, weapon.longRange)
-        assertEquals(5, weapon.ammo)
+        assertEquals(AmmoType.AC20, weapon.ammoType)
     }
 
     @Test
@@ -43,7 +44,7 @@ internal class WeaponsTest {
         assertEquals("SRM 6", weapon.name)
         assertEquals(12, weapon.damage)
         assertEquals(4, weapon.heat)
-        assertEquals(15, weapon.ammo)
+        assertEquals(AmmoType.SRM6, weapon.ammoType)
     }
 
     @Test

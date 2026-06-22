@@ -1,8 +1,41 @@
 package battletech.tactical.unit
 
+import battletech.tactical.model.MechLocation.CENTER_TORSO
+import battletech.tactical.model.MechLocation.LEFT_ARM
+import battletech.tactical.model.MechLocation.LEFT_TORSO
+import battletech.tactical.model.MechLocation.RIGHT_ARM
+import battletech.tactical.model.MechLocation.RIGHT_TORSO
+
+private fun mech(
+    variant: String,
+    name: String,
+    tonnage: Int,
+    walkingMP: Int,
+    runningMP: Int,
+    jumpMP: Int = 0,
+    heatSink: HeatSink = HeatSink(HeatSinkType.STS, 10),
+    armor: ArmorLayout,
+    build: CriticalLayoutBuilder.() -> Unit,
+): MechModel {
+    val b = mechLayout(build)
+    return MechModel(
+        variant = variant,
+        name = name,
+        tonnage = tonnage,
+        walkingMP = walkingMP,
+        runningMP = runningMP,
+        jumpMP = jumpMP,
+        heatSink = heatSink,
+        armor = armor,
+        internalStructure = InternalStructureTables.forTonnage(tonnage),
+        criticalLayout = b.layout,
+        weapons = b.weapons,
+    )
+}
+
 public object MechModels {
     private val registry: Map<String, MechModel> = listOf(
-        MechModel(
+        mech(
             variant = "LCT-1V",
             name = "Locust LCT-1V",
             tonnage = 20,
@@ -16,9 +49,13 @@ public object MechModels {
                 leftArm = 4, rightArm = 4,
                 leftLeg = 4, rightLeg = 4,
             ),
-            weapons = listOf(Weapons::mediumLaser, Weapons::machineGun, Weapons::machineGun),
-        ),
-        MechModel(
+        ) {
+            place(CENTER_TORSO, Weapons::mediumLaser)
+            place(LEFT_TORSO, Weapons::machineGun)
+            place(RIGHT_TORSO, Weapons::machineGun)
+            ammo(CENTER_TORSO, AmmoType.MG, 1)
+        },
+        mech(
             variant = "STG-3R",
             name = "Stinger STG-3R",
             tonnage = 20,
@@ -33,9 +70,14 @@ public object MechModels {
                 leftArm = 4, rightArm = 4,
                 leftLeg = 5, rightLeg = 5,
             ),
-            weapons = listOf(Weapons::mediumLaser, Weapons::machineGun, Weapons::machineGun),
-        ),
-        MechModel(
+        ) {
+            place(LEFT_ARM, Weapons::mediumLaser)
+            place(RIGHT_ARM, Weapons::machineGun)
+            place(RIGHT_ARM, Weapons::machineGun)
+            ammo(CENTER_TORSO, AmmoType.MG, 1)
+            jumpJets(6)
+        },
+        mech(
             variant = "WSP-1A",
             name = "Wasp WSP-1A",
             tonnage = 20,
@@ -50,9 +92,13 @@ public object MechModels {
                 leftArm = 4, rightArm = 4,
                 leftLeg = 5, rightLeg = 5,
             ),
-            weapons = listOf(Weapons::mediumLaser, Weapons::srm2),
-        ),
-        MechModel(
+        ) {
+            place(RIGHT_ARM, Weapons::mediumLaser)
+            place(LEFT_ARM, Weapons::srm2)
+            ammo(LEFT_ARM, AmmoType.SRM2, 1)
+            jumpJets(6)
+        },
+        mech(
             variant = "PXH-1",
             name = "Phoenix Hawk PXH-1",
             tonnage = 45,
@@ -68,9 +114,17 @@ public object MechModels {
                 leftArm = 10, rightArm = 10,
                 leftLeg = 15, rightLeg = 15,
             ),
-            weapons = listOf(Weapons::largeLaser, Weapons::mediumLaser, Weapons::mediumLaser, Weapons::machineGun, Weapons::machineGun),
-        ),
-        MechModel(
+        ) {
+            place(RIGHT_ARM, Weapons::largeLaser)
+            place(LEFT_ARM, Weapons::mediumLaser)
+            place(LEFT_ARM, Weapons::mediumLaser)
+            place(RIGHT_TORSO, Weapons::machineGun)
+            place(LEFT_TORSO, Weapons::machineGun)
+            ammo(CENTER_TORSO, AmmoType.MG, 1)
+            heatSinks(3)
+            jumpJets(6)
+        },
+        mech(
             variant = "GRF-1N",
             name = "Griffin GRF-1N",
             tonnage = 55,
@@ -86,9 +140,14 @@ public object MechModels {
                 leftArm = 14, rightArm = 14,
                 leftLeg = 18, rightLeg = 18,
             ),
-            weapons = listOf(Weapons::ppc, Weapons::lrm10),
-        ),
-        MechModel(
+        ) {
+            place(RIGHT_ARM, Weapons::ppc)
+            place(RIGHT_TORSO, Weapons::lrm10)
+            ammo(RIGHT_TORSO, AmmoType.LRM10, 1)
+            heatSinks(2)
+            jumpJets(5)
+        },
+        mech(
             variant = "SHD-2H",
             name = "Shadow Hawk SHD-2H",
             tonnage = 55,
@@ -104,9 +163,18 @@ public object MechModels {
                 leftArm = 16, rightArm = 16,
                 leftLeg = 26, rightLeg = 26,
             ),
-            weapons = listOf(Weapons::ac5, Weapons::lrm5, Weapons::srm2, Weapons::mediumLaser),
-        ),
-        MechModel(
+        ) {
+            place(RIGHT_TORSO, Weapons::ac5)
+            ammo(RIGHT_TORSO, AmmoType.AC5, 1)
+            place(LEFT_TORSO, Weapons::lrm5)
+            ammo(LEFT_TORSO, AmmoType.LRM5, 1)
+            place(LEFT_TORSO, Weapons::srm2)
+            ammo(LEFT_TORSO, AmmoType.SRM2, 1)
+            place(CENTER_TORSO, Weapons::mediumLaser)
+            heatSinks(2)
+            jumpJets(5)
+        },
+        mech(
             variant = "WHM-6R",
             name = "Warhammer WHM-6R",
             tonnage = 70,
@@ -121,15 +189,21 @@ public object MechModels {
                 leftArm = 20, rightArm = 20,
                 leftLeg = 15, rightLeg = 15,
             ),
-            weapons = listOf(
-                Weapons::ppc, Weapons::ppc,
-                Weapons::mediumLaser, Weapons::mediumLaser,
-                Weapons::smallLaser, Weapons::smallLaser,
-                Weapons::machineGun, Weapons::machineGun,
-                Weapons::srm6,
-            ),
-        ),
-        MechModel(
+        ) {
+            place(RIGHT_ARM, Weapons::ppc)
+            place(LEFT_ARM, Weapons::ppc)
+            place(RIGHT_TORSO, Weapons::mediumLaser)
+            place(LEFT_TORSO, Weapons::mediumLaser)
+            place(RIGHT_ARM, Weapons::smallLaser)
+            place(LEFT_ARM, Weapons::smallLaser)
+            place(LEFT_TORSO, Weapons::machineGun)
+            place(LEFT_TORSO, Weapons::machineGun)
+            ammo(LEFT_TORSO, AmmoType.MG, 1)
+            place(RIGHT_TORSO, Weapons::srm6)
+            ammo(RIGHT_TORSO, AmmoType.SRM6, 1)
+            heatSinks(8)
+        },
+        mech(
             variant = "MAD-3R",
             name = "Marauder MAD-3R",
             tonnage = 75,
@@ -144,13 +218,16 @@ public object MechModels {
                 leftArm = 22, rightArm = 22,
                 leftLeg = 18, rightLeg = 18,
             ),
-            weapons = listOf(
-                Weapons::ppc, Weapons::ppc,
-                Weapons::mediumLaser, Weapons::mediumLaser,
-                Weapons::ac5,
-            ),
-        ),
-        MechModel(
+        ) {
+            place(RIGHT_ARM, Weapons::ppc)
+            place(LEFT_ARM, Weapons::ppc)
+            place(RIGHT_ARM, Weapons::mediumLaser)
+            place(LEFT_ARM, Weapons::mediumLaser)
+            place(RIGHT_TORSO, Weapons::ac5)
+            ammo(RIGHT_TORSO, AmmoType.AC5, 1)
+            heatSinks(8)
+        },
+        mech(
             variant = "ARC-2R",
             name = "Archer ARC-2R",
             tonnage = 70,
@@ -165,12 +242,18 @@ public object MechModels {
                 leftArm = 22, rightArm = 22,
                 leftLeg = 26, rightLeg = 26,
             ),
-            weapons = listOf(
-                Weapons::lrm20, Weapons::lrm20,
-                Weapons::mediumLaser, Weapons::mediumLaser, Weapons::mediumLaser, Weapons::mediumLaser,
-            ),
-        ),
-        MechModel(
+        ) {
+            place(RIGHT_TORSO, Weapons::lrm20)
+            place(LEFT_TORSO, Weapons::lrm20)
+            ammo(RIGHT_TORSO, AmmoType.LRM20, 2)
+            ammo(LEFT_TORSO, AmmoType.LRM20, 2)
+            place(CENTER_TORSO, Weapons::mediumLaser)
+            place(CENTER_TORSO, Weapons::mediumLaser)
+            place(RIGHT_TORSO, Weapons::mediumLaser)
+            place(LEFT_TORSO, Weapons::mediumLaser)
+            heatSinks(5)
+        },
+        mech(
             variant = "AS7-D",
             name = "Atlas AS7-D",
             tonnage = 100,
@@ -185,14 +268,20 @@ public object MechModels {
                 leftArm = 34, rightArm = 34,
                 leftLeg = 41, rightLeg = 41,
             ),
-            weapons = listOf(
-                Weapons::ac20,
-                Weapons::lrm20,
-                Weapons::srm6,
-                Weapons::mediumLaser, Weapons::mediumLaser, Weapons::mediumLaser, Weapons::mediumLaser,
-            ),
-        ),
-        MechModel(
+        ) {
+            place(RIGHT_TORSO, Weapons::ac20)
+            ammo(RIGHT_TORSO, AmmoType.AC20, 2)
+            place(LEFT_TORSO, Weapons::lrm20)
+            ammo(LEFT_TORSO, AmmoType.LRM20, 2)
+            place(CENTER_TORSO, Weapons::srm6)
+            ammo(LEFT_TORSO, AmmoType.SRM6, 1)
+            place(LEFT_ARM, Weapons::mediumLaser)
+            place(RIGHT_ARM, Weapons::mediumLaser)
+            place(LEFT_ARM, Weapons::mediumLaser)
+            place(RIGHT_ARM, Weapons::mediumLaser)
+            heatSinks(10)
+        },
+        mech(
             variant = "HBK-4G",
             name = "Hunchback HBK-4G",
             tonnage = 50,
@@ -206,9 +295,11 @@ public object MechModels {
                 leftArm = 10, rightArm = 10,
                 leftLeg = 16, rightLeg = 16,
             ),
-            weapons = listOf(Weapons::ac20),
-        ),
-        MechModel(
+        ) {
+            place(RIGHT_TORSO, Weapons::ac20)
+            ammo(RIGHT_TORSO, AmmoType.AC20, 2)
+        },
+        mech(
             variant = "WVR-6R",
             name = "Wolverine WVR-6R",
             tonnage = 55,
@@ -223,9 +314,17 @@ public object MechModels {
                 leftArm = 14, rightArm = 14,
                 leftLeg = 18, rightLeg = 18,
             ),
-            weapons = listOf(Weapons::srm6, Weapons::mediumLaser),
-        ),
-    ).associateBy { it.variant }
+        ) {
+            place(RIGHT_TORSO, Weapons::srm6)
+            ammo(RIGHT_TORSO, AmmoType.SRM6, 1)
+            place(RIGHT_ARM, Weapons::mediumLaser)
+            jumpJets(5)
+        },
+    ).associateBy { it.variant }.also { registry ->
+        for (model in registry.values) {
+            model.criticalLayout.validate(model.weapons)
+        }
+    }
 
     public operator fun get(variant: String): MechModel =
         registry[variant] ?: error("Unknown mech variant: $variant")

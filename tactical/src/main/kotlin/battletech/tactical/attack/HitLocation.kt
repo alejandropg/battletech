@@ -1,15 +1,8 @@
 package battletech.tactical.attack
 
-public enum class HitLocation {
-    HEAD,
-    CENTER_TORSO,
-    LEFT_TORSO,
-    RIGHT_TORSO,
-    LEFT_ARM,
-    RIGHT_ARM,
-    LEFT_LEG,
-    RIGHT_LEG,
-}
+import battletech.tactical.model.MechLocation
+
+public typealias HitLocation = MechLocation
 
 public object HitLocationTable {
 
