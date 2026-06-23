@@ -13,8 +13,9 @@ internal class ContentWriter(
     }
 
     private fun sectionHeader(label: String): String {
-        val dashes = (width - label.length - 1).coerceAtLeast(0)
-        return "$label ${"─".repeat(dashes)}"
+        val prefix = "── $label "
+        val fill = (width - prefix.length).coerceAtLeast(0)
+        return prefix + "─".repeat(fill)
     }
 
     fun writeln(text: String, fg: Color = Color.DEFAULT, bg: Color = Color.DEFAULT) {
