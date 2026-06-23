@@ -9,6 +9,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.movement.MovementPhaseHandler
 import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerView
+import battletech.tactical.unit.destructionReason
 
 /**
  * The authoritative aggregate for a single match. Holds [GameState] and
@@ -99,6 +100,7 @@ public class BattleSession(
         _gameState = outcome.state
         _turnState = outcome.turn
         val events = outcome.events.toMutableList()
+        events.addAll(runDestructionSweep())
         events.addAll(cascade())
         dispatch(events)
         return CommandResult.Accepted(events)
@@ -116,6 +118,7 @@ public class BattleSession(
         val events = mutableListOf<GameEvent>()
         if (_needsOnEntry) {
             events.addAll(fireOnEntry())
+            events.addAll(runDestructionSweep())
         }
         events.addAll(cascade())
         dispatch(events)
@@ -143,9 +146,10 @@ public class BattleSession(
 
     private fun cascade(): List<GameEvent> {
         val events = mutableListOf<GameEvent>()
-        while (handlers[_currentPhaseIndex].isComplete(_turnState)) {
+        while (!_matchOver && handlers[_currentPhaseIndex].isComplete(_turnState)) {
             events += advanceIndex()
             events.addAll(fireOnEntry())
+            events.addAll(runDestructionSweep())
         }
         return events
     }
@@ -157,6 +161,52 @@ public class BattleSession(
         _turnState = outcome.turn
         _needsOnEntry = false
         return outcome.events
+    }
+
+    /**
+     * Centralized destruction check, run after every state-mutating step
+     * (command application, phase `onEntry`) so kills are caught regardless
+     * of source (weapon/physical damage, ammo cook-off, future crit/pilot
+     * conditions) without duplicating detect+flag+event+match-over logic in
+     * every handler. Flips newly-destroyed units' [battletech.tactical.unit.CombatUnit.isDestroyed],
+     * emits one [UnitDestroyed] per newly destroyed unit, then evaluates
+     * victory: if a player has zero survivors, sets [_matchOver] and emits
+     * [MatchEnded] exactly once. Idempotent — a sweep with nothing newly
+     * destroyed and the match already decided returns an empty list.
+     */
+    private fun runDestructionSweep(): List<GameEvent> {
+        if (_matchOver) return emptyList()
+
+        val events = mutableListOf<GameEvent>()
+        val newlyDestroyed = _gameState.units.filter { !it.isDestroyed && destructionReason(it) != null }
+
+        if (newlyDestroyed.isNotEmpty()) {
+            val destroyedIds = newlyDestroyed.map { it.id }.toSet()
+            _gameState = _gameState.copy(
+                units = _gameState.units.map { unit ->
+                    if (unit.id in destroyedIds) unit.copy(isDestroyed = true) else unit
+                },
+            )
+            for (unit in newlyDestroyed) {
+                events += UnitDestroyed(unit.id, destructionReason(unit)!!)
+            }
+        }
+
+        // Victory is only evaluated for players who actually have units deployed —
+        // an empty roster (e.g. a not-yet-populated match, or a test fixture with
+        // no units) must never be misread as "eliminated".
+        val deployedPlayers = PlayerId.entries.filter { _gameState.unitsOf(it).isNotEmpty() }
+        val survivingPlayers = deployedPlayers.filter { player ->
+            _gameState.unitsOf(player).any { !it.isDestroyed }
+        }
+        if (deployedPlayers.size > 1 && survivingPlayers.size <= 1) {
+            _matchOver = true
+            val winner = survivingPlayers.singleOrNull()
+            events += MatchEnded(winner)
+        }
+
+        logEvents(events)
+        return events
     }
 
     private fun advanceIndex(): GameEvent {

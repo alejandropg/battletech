@@ -35,4 +35,31 @@ internal class GameStateTest {
 
         assertEquals(listOf(u1, u3), state.unitsOf(PlayerId.PLAYER_1))
     }
+
+    @Test
+    fun `activeUnitsOf excludes destroyed units`() {
+        val active = aUnit(id = "active", owner = PlayerId.PLAYER_1)
+        val destroyed = aUnit(id = "destroyed", owner = PlayerId.PLAYER_1, isDestroyed = true)
+        val state = aGameState(units = listOf(active, destroyed))
+
+        assertEquals(listOf(active), state.activeUnitsOf(PlayerId.PLAYER_1))
+    }
+
+    @Test
+    fun `activeUnitsOf excludes shutdown units`() {
+        val active = aUnit(id = "active", owner = PlayerId.PLAYER_1)
+        val shutdown = aUnit(id = "shutdown", owner = PlayerId.PLAYER_1).copy(isShutdown = true)
+        val state = aGameState(units = listOf(active, shutdown))
+
+        assertEquals(listOf(active), state.activeUnitsOf(PlayerId.PLAYER_1))
+    }
+
+    @Test
+    fun `activeUnitsOf excludes units with an unconscious pilot`() {
+        val active = aUnit(id = "active", owner = PlayerId.PLAYER_1)
+        val unconscious = aUnit(id = "unconscious", owner = PlayerId.PLAYER_1, isPilotConscious = false)
+        val state = aGameState(units = listOf(active, unconscious))
+
+        assertEquals(listOf(active), state.activeUnitsOf(PlayerId.PLAYER_1))
+    }
 }

@@ -1,9 +1,15 @@
 package battletech.tactical.query
 
+import battletech.tactical.model.GameMap
+import battletech.tactical.model.Hex
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
+import battletech.tactical.model.Terrain
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.UnitId
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -12,6 +18,19 @@ internal class DefaultPlayerViewTest {
 
     private fun viewFor(vararg units: battletech.tactical.unit.CombatUnit): PlayerView =
         DefaultPlayerView(PlayerId.PLAYER_1, aGameState(units = units.toList()))
+
+    private fun mapWithRadius(center: HexCoordinates, radius: Int): GameMap {
+        val hexes = mutableMapOf<HexCoordinates, Hex>()
+        for (col in (center.col - radius)..(center.col + radius)) {
+            for (row in (center.row - radius)..(center.row + radius)) {
+                val coords = HexCoordinates(col, row)
+                if (center.distanceTo(coords) <= radius) {
+                    hexes[coords] = Hex(coords, Terrain.CLEAR)
+                }
+            }
+        }
+        return GameMap(hexes)
+    }
 
     @Test
     fun `publicUnit returns null for unknown unit id`() {
@@ -70,5 +89,135 @@ internal class DefaultPlayerViewTest {
         val unit = aUnit(id = "u1", name = "Atlas")
         val view: PlayerView = DefaultPlayerView(PlayerId.PLAYER_1, aGameState(units = listOf(unit)))
         assertEquals("Atlas", view.publicUnit(UnitId("u1"))?.name)
+    }
+
+    @Test
+    fun `validTargets excludes a destroyed enemy unit`() {
+        val attacker = aUnit(id = "attacker", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+        val destroyedEnemy = aUnit(
+            id = "destroyed-enemy",
+            owner = PlayerId.PLAYER_2,
+            position = HexCoordinates(0, 1),
+            isDestroyed = true,
+        )
+        val state = aGameState(
+            units = listOf(attacker, destroyedEnemy),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
+        )
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+
+        assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).isEmpty()
+    }
+
+    @Test
+    fun `legalMovementsFor returns empty list for a destroyed unit`() {
+        val destroyed = aUnit(id = "destroyed", isDestroyed = true)
+        val view = viewFor(destroyed)
+
+        assertThat(view.legalMovementsFor(UnitId("destroyed"))).isEmpty()
+    }
+
+    @Test
+    fun `legalMovementsFor returns empty list for a unit with an unconscious pilot`() {
+        val unconscious = aUnit(id = "unconscious", isPilotConscious = false)
+        val view = viewFor(unconscious)
+
+        assertThat(view.legalMovementsFor(UnitId("unconscious"))).isEmpty()
+    }
+
+    @Test
+    fun `validTargets excludes an attacker with an unconscious pilot but still allows it as a target`() {
+        val unconsciousAttacker = aUnit(
+            id = "unconscious-attacker",
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+            isPilotConscious = false,
+        )
+        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, 1))
+        val state = aGameState(
+            units = listOf(unconsciousAttacker, enemy),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
+        )
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+
+        // Cannot act as an attacker.
+        assertThat(view.validTargets(UnitId("unconscious-attacker"), HexDirection.N)).isEmpty()
+
+        // But remains a valid target for the enemy.
+        val enemyView = DefaultPlayerView(PlayerId.PLAYER_2, state)
+        assertThat(enemyView.validTargets(UnitId("enemy"), HexDirection.N))
+            .contains(UnitId("unconscious-attacker"))
+    }
+
+    @Test
+    fun `a unit whose only weapon was critically destroyed is no longer a valid attacker`() {
+        // Stage 4: a crit on a weapon-mount slot sets Weapon.destroyed = true; the query
+        // layer (WeaponTargeting.canEngageAt) already filters !destroyed, so the attacker
+        // should have no eligible weapon left and the enemy should not be a valid target.
+        val attacker = aUnit(
+            id = "attacker",
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+            weapons = listOf(aWeapon(name = "Medium Laser", destroyed = true)),
+        )
+        val enemy = aUnit(
+            id = "enemy",
+            owner = PlayerId.PLAYER_2,
+            position = HexCoordinates(0, 1),
+        )
+        val state = aGameState(
+            units = listOf(attacker, enemy),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
+        )
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+
+        assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).isEmpty()
+        assertThat(view.targetInfos(UnitId("attacker"), HexDirection.N)).isEmpty()
+    }
+
+    @Test
+    fun `a unit with 2 sensor crits is blind and has no valid targets`() {
+        // HEAD framework: Sensors at indices 1 and 4 (docs/rules/armor-damage.md §3).
+        val attacker = aUnit(
+            id = "attacker",
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+        ).copy(criticalHits = mapOf(battletech.tactical.model.MechLocation.HEAD to setOf(1, 4)))
+        val enemy = aUnit(
+            id = "enemy",
+            owner = PlayerId.PLAYER_2,
+            position = HexCoordinates(0, 1),
+        )
+        val state = aGameState(
+            units = listOf(attacker, enemy),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
+        )
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+
+        assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).isEmpty()
+        assertThat(view.targetInfos(UnitId("attacker"), HexDirection.N)).isEmpty()
+    }
+
+    @Test
+    fun `a unit with only 1 sensor crit can still fire`() {
+        val attacker = aUnit(
+            id = "attacker",
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+        ).copy(criticalHits = mapOf(battletech.tactical.model.MechLocation.HEAD to setOf(1)))
+        val enemy = aUnit(
+            id = "enemy",
+            owner = PlayerId.PLAYER_2,
+            position = HexCoordinates(0, -1), // due north of the attacker, within the N firing arc
+        )
+        val state = aGameState(
+            units = listOf(attacker, enemy),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
+        )
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+
+        assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).containsExactly(UnitId("enemy"))
+        val info = view.targetInfos(UnitId("attacker"), HexDirection.N).single()
+        assertThat(info.weapons.single().modifiers).contains("+2 sensors")
     }
 }

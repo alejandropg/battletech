@@ -13,7 +13,12 @@ public data class GameState(
     public fun unitById(id: UnitId): CombatUnit? = units.find { it.id == id }
     public fun unitsOf(player: PlayerId): List<CombatUnit> = units.filter { it.owner == player }
 
-    /** Units a player can still activate this turn — excludes shutdown 'Mechs. */
+    /**
+     * Units a player can still activate this turn — excludes shutdown, destroyed,
+     * and (Stage 7) unconscious-pilot 'Mechs. An unconscious pilot cannot act, but
+     * the unit remains a valid target (see [battletech.tactical.query.WeaponTargeting.validTargets],
+     * which only excludes [CombatUnit.isDestroyed]).
+     */
     public fun activeUnitsOf(player: PlayerId): List<CombatUnit> =
-        unitsOf(player).filter { !it.isShutdown }
+        unitsOf(player).filter { !it.isShutdown && !it.isDestroyed && it.isPilotConscious }
 }

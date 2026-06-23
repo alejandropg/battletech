@@ -89,4 +89,162 @@ internal class HeatPhaseHandlerTest {
         val remainingBin = outcome.state.units[0].criticalLayout.ammoBins().single()
         assertEquals(0, remainingBin.third.shots)
     }
+
+    @Test
+    fun `1 engine crit adds 5 heat during the heat fold`() {
+        // CENTER_TORSO framework: Engine at indices 0,1,2 and 7,8,9.
+        // No dissipation (0 heat sinks) so the +5 engine heat is visible undamped.
+        val unit = aUnit(
+            currentHeat = 0,
+            heatSink = HeatSink(HeatSinkType.STS, 0),
+            weapons = listOf(mediumLaser()),
+        ).copy(criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(0)))
+
+        val outcome = runHeatPhase(unit, DiceRoller.deterministic())
+
+        assertEquals(5, outcome.state.units[0].currentHeat)
+    }
+
+    @Test
+    fun `2 engine crits add 10 heat during the heat fold`() {
+        val unit = aUnit(
+            currentHeat = 0,
+            heatSink = HeatSink(HeatSinkType.STS, 0),
+            weapons = listOf(mediumLaser()),
+        ).copy(criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(0, 1)))
+
+        val outcome = runHeatPhase(unit, DiceRoller.deterministic())
+
+        assertEquals(10, outcome.state.units[0].currentHeat)
+    }
+
+    @Test
+    fun `engine heat can push a unit into a shutdown roll`() {
+        // 2 engine crits = +10 heat; 14 base - 10 dissipation + 10 engine = 14 -> shutdown
+        // roll target 4 (HeatScale.shutdownAvoidTarget(14) == 4); roll 1+1 fails -> shutdown.
+        val unit = aUnit(
+            currentHeat = 14,
+            heatSink = HeatSink(HeatSinkType.STS, 10),
+            weapons = listOf(mediumLaser()),
+        ).copy(criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(0, 1)))
+
+        val outcome = runHeatPhase(unit, DiceRoller.deterministic(1, 1))
+
+        assertEquals(14, outcome.state.units[0].currentHeat)
+        assertTrue(outcome.state.units[0].isShutdown)
+        assertThat(outcome.events).anyMatch { it is UnitShutdown && !it.auto }
+    }
+
+    // -------------------------------------------------------------------------
+    // Stage 7: life-support pilot damage
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `1st life support crit with heat 15 or higher gives the pilot 1 hit`() {
+        // HEAD framework: LifeSupport at indices 0 and 5. currentHeat 15, no
+        // heat sinks so it stays at 15 after the fold; no engine crits so no
+        // extra heat. Heat 15 also requires a shutdown-avoidance roll
+        // (HeatScale.shutdownAvoidTarget(15) == 4); roll (3,3)=6 avoids it.
+        // Pilot hit #1 -> consciousness target 3; roll (3,3)=6 passes. Heat 15
+        // also requires an ammo-explosion-avoidance roll
+        // (HeatScale.ammoExplosionAvoidTarget(15) == 4, rolled even with no
+        // ammo-using weapons aboard); roll (3,3)=6 avoids it (resolved AFTER
+        // the pilot hit, per the documented dice order).
+        val unit = aUnit(
+            currentHeat = 15,
+            heatSink = HeatSink(HeatSinkType.STS, 0),
+            weapons = listOf(mediumLaser()),
+        ).copy(criticalHits = mapOf(MechLocation.HEAD to setOf(0)))
+
+        val outcome = runHeatPhase(unit, DiceRoller.deterministic(3, 3, 3, 3, 3, 3))
+
+        assertEquals(1, outcome.state.units[0].pilotHits)
+        assertThat(outcome.events).anyMatch { it is PilotHit && it.pilotHits == 1 }
+    }
+
+    @Test
+    fun `1st life support crit with heat below 15 gives no pilot hit`() {
+        val unit = aUnit(
+            currentHeat = 10,
+            heatSink = HeatSink(HeatSinkType.STS, 0),
+            weapons = listOf(mediumLaser()),
+        ).copy(criticalHits = mapOf(MechLocation.HEAD to setOf(0)))
+
+        val outcome = runHeatPhase(unit, DiceRoller.deterministic())
+
+        assertEquals(0, outcome.state.units[0].pilotHits)
+        assertThat(outcome.events).noneMatch { it is PilotHit }
+    }
+
+    @Test
+    fun `2nd life support crit gives the pilot 1 hit regardless of heat`() {
+        // HEAD framework: LifeSupport at indices 0 and 5.
+        val unit = aUnit(
+            currentHeat = 0,
+            heatSink = HeatSink(HeatSinkType.STS, 0),
+            weapons = listOf(mediumLaser()),
+        ).copy(criticalHits = mapOf(MechLocation.HEAD to setOf(0, 5)))
+
+        // Pilot hit #1 -> consciousness target 3; roll (3,3)=6 passes.
+        val outcome = runHeatPhase(unit, DiceRoller.deterministic(3, 3))
+
+        assertEquals(1, outcome.state.units[0].pilotHits)
+        assertThat(outcome.events).anyMatch { it is PilotHit && it.pilotHits == 1 }
+    }
+
+    // -------------------------------------------------------------------------
+    // Stage 7: consciousness recovery
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `an unconscious alive pilot with a scripted successful roll wakes up`() {
+        // pilotHits = 1 -> recovery target 3; roll (3,3)=6 passes. No LS crits,
+        // 0 heat, no engine crits -> no other dice consumed.
+        val unit = aUnit(
+            currentHeat = 0,
+            heatSink = HeatSink(HeatSinkType.STS, 0),
+            weapons = listOf(mediumLaser()),
+            pilotHits = 1,
+            isPilotConscious = false,
+        )
+
+        val outcome = runHeatPhase(unit, DiceRoller.deterministic(3, 3))
+
+        assertTrue(outcome.state.units[0].isPilotConscious)
+        assertThat(outcome.events).anyMatch { it is PilotRecoveredConsciousness }
+    }
+
+    @Test
+    fun `an unconscious alive pilot with a scripted failed roll stays unconscious`() {
+        // pilotHits = 1 -> recovery target 3; roll (1,1)=2 fails.
+        val unit = aUnit(
+            currentHeat = 0,
+            heatSink = HeatSink(HeatSinkType.STS, 0),
+            weapons = listOf(mediumLaser()),
+            pilotHits = 1,
+            isPilotConscious = false,
+        )
+
+        val outcome = runHeatPhase(unit, DiceRoller.deterministic(1, 1))
+
+        assertFalse(outcome.state.units[0].isPilotConscious)
+        assertThat(outcome.events).noneMatch { it is PilotRecoveredConsciousness }
+    }
+
+    @Test
+    fun `a conscious unit with no pilot hits and no LS crits rolls no pilot dice`() {
+        // Regression guard: untouched fixtures must not consume extra dice for
+        // the new Stage 7 steps.
+        val unit = aUnit(
+            currentHeat = 0,
+            heatSink = HeatSink(HeatSinkType.STS, 0),
+            weapons = listOf(mediumLaser()),
+        )
+
+        val outcome = runHeatPhase(unit, DiceRoller.deterministic())
+
+        assertThat(outcome.events).noneMatch {
+            it is PilotHit || it is PilotKnockedUnconscious || it is PilotRecoveredConsciousness
+        }
+    }
 }

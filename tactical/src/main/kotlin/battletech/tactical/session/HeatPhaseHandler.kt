@@ -1,22 +1,41 @@
 package battletech.tactical.session
 
 import battletech.tactical.attack.HitLocation
-import battletech.tactical.attack.applyDamage
+import battletech.tactical.attack.applyPilotHit
+import battletech.tactical.attack.attemptConsciousnessRecovery
+import battletech.tactical.attack.detonateAmmoBin
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.unit.CombatUnit
-import battletech.tactical.unit.withSlot
+import battletech.tactical.unit.CriticalComponent
+import battletech.tactical.unit.CritEffect
+import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
+import battletech.tactical.unit.critEffects
 
 /**
  * System phase. On entry, folds each unit's heat generated this turn into its
  * standing heat and dissipates ([GameState.applyHeatPhase]), then walks the
- * units in state order rolling, per unit, a shutdown/startup avoidance roll and
- * then an ammo-explosion roll — each only when the unit's heat reaches the
- * relevant threshold, so seeded tests see no spurious dice. Completes
- * immediately. Accepts no commands.
+ * units in state order rolling, per unit, a fixed sequence of per-unit effects —
+ * each gated so it only consumes dice when the unit's state actually warrants it,
+ * keeping untouched fixtures dice-free:
+ *
+ *  1. [resolvePower] — shutdown/restart avoidance (heat-keyed).
+ *  2. [resolveLifeSupportPilotHit] — Stage 7 life-support pilot damage
+ *     (`docs/rules/armor-damage.md` §3 Life Support), evaluated against *this
+ *     turn's* post-fold heat. Ordered before consciousness recovery because a
+ *     pilot knocked out by life support this turn should not also attempt a
+ *     recovery roll in the same Heat Phase (the recovery in step 3 is reserved
+ *     for pilots who were *already* unconscious coming into this phase).
+ *  3. [resolveConsciousnessRecovery] — Stage 7 recovery attempt for a pilot who
+ *     was already unconscious before this phase ran.
+ *  4. [resolveAmmoExplosion] — heat-driven ammo cook-off (last, since it can
+ *     itself wound the pilot in a later stage and we want LS/recovery settled
+ *     first against this turn's heat).
+ *
+ * Completes immediately. Accepts no commands.
  */
 public class HeatPhaseHandler : PhaseHandler {
 
@@ -46,10 +65,25 @@ public class HeatPhaseHandler : PhaseHandler {
         val events = mutableListOf<GameEvent>(HeatDissipated(before, after))
 
         val processedUnits = folded.units.map { unit ->
+            // Captured before any of this turn's resolution steps mutate consciousness,
+            // so the recovery step below can tell "was already unconscious coming into
+            // this phase" apart from "knocked out by life support just now".
+            val wasUnconsciousBeforePhase = !unit.isPilotConscious
+
             var working = unit
             val (afterPower, powerEvent) = resolvePower(working, roller)
             powerEvent?.let { events += it }
             working = afterPower
+
+            val (afterLifeSupport, lifeSupportEvents) = resolveLifeSupportPilotHit(working, roller)
+            events += lifeSupportEvents
+            working = afterLifeSupport
+
+            val (afterRecovery, recoveryEvent) =
+                resolveConsciousnessRecovery(working, wasUnconsciousBeforePhase, roller)
+            recoveryEvent?.let { events += it }
+            working = afterRecovery
+
             val (afterAmmo, ammoEvent) = resolveAmmoExplosion(working, roller)
             ammoEvent?.let { events += it }
             afterAmmo
@@ -94,9 +128,60 @@ public class HeatPhaseHandler : PhaseHandler {
     }
 
     /**
+     * Life-support pilot damage (`docs/rules/armor-damage.md` §3 Life Support — the
+     * only doc-specified pilot-hit sources): evaluated using [CombatUnit.critEffects]
+     * for [CriticalComponent.LIFE_SUPPORT], the single tier -> effect source.
+     *
+     *  - 0 LS crits: no effect.
+     *  - 1 LS crit ([CritEffect.PilotDamageWhenHeatAtLeast]): the pilot takes 1 hit
+     *    ONLY if [CombatUnit.currentHeat] reaches that threshold **this turn** —
+     *    checked against [unit], which has already been through
+     *    [GameState.applyHeatPhase]'s fold (the heat fold runs before any per-unit
+     *    resolution in [onEntry]), so "this turn's heat" is exactly the standing
+     *    heat we're looking at here.
+     *  - 2+ LS crits ([CritEffect.PilotDamageEachTurn]): the pilot takes 1 hit every
+     *    turn, heat irrelevant.
+     *
+     * Captures whether the pilot was unconscious *before* this hit so the recovery
+     * step ([resolveConsciousnessRecovery]) can skip a pilot newly knocked out here —
+     * a pilot doesn't get a chance to wake up in the same Heat Phase they went down.
+     * Delegates the actual hit/consciousness-check mechanics to [applyPilotHit].
+     */
+    private fun resolveLifeSupportPilotHit(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit, List<GameEvent>> {
+        val effects = unit.critEffects(CriticalComponent.LIFE_SUPPORT)
+        val hitWarranted = effects.any { it is CritEffect.PilotDamageEachTurn } ||
+            effects.filterIsInstance<CritEffect.PilotDamageWhenHeatAtLeast>().any { unit.currentHeat >= it.heat }
+        if (!hitWarranted) return unit to emptyList()
+        return applyPilotHit(unit, roller)
+    }
+
+    /**
+     * Consciousness recovery for a pilot who was ALREADY unconscious entering this
+     * Heat Phase ([wasUnconsciousBeforePhase], captured in [onEntry] before any of this
+     * turn's resolution steps ran) — Stage 7, ASSUMPTION/standard, mirrors
+     * [resolvePower]'s shutdown/restart shape. Skipped entirely — no dice rolled —
+     * when the pilot was conscious entering this phase (a pilot knocked out moments
+     * ago by [resolveLifeSupportPilotHit] already had its one consciousness check
+     * this phase, inside [applyPilotHit], and does not also get a recovery attempt),
+     * is currently conscious, or is dead ([CombatUnit.pilotHits] >= [PILOT_DEATH_THRESHOLD]).
+     */
+    private fun resolveConsciousnessRecovery(
+        unit: CombatUnit,
+        wasUnconsciousBeforePhase: Boolean,
+        roller: DiceRoller,
+    ): Pair<CombatUnit, GameEvent?> {
+        if (!wasUnconsciousBeforePhase) return unit to null
+        if (unit.isPilotConscious) return unit to null
+        if (unit.pilotHits >= PILOT_DEATH_THRESHOLD) return unit to null
+        return attemptConsciousnessRecovery(unit, roller)
+    }
+
+    /**
      * Ammo explosion: on a failed avoidance roll the ammo bin with the greatest
-     * potential damage (`shots × damagePerShot`) cooks off, applying that damage
-     * to the center torso through the standard damage path; the bin is emptied.
+     * potential damage (`shots × damagePerShot`) cooks off into the center torso
+     * (`docs/rules/armor-damage.md` §3), via the shared [detonateAmmoBin] helper —
+     * unlike a critical-hit detonation (which hits the bin's own location), heat
+     * cook-off always routes into [HitLocation.CENTER_TORSO].
      */
     private fun resolveAmmoExplosion(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit, GameEvent?> {
         val target = HeatScale.ammoExplosionAvoidTarget(unit.currentHeat) ?: return unit to null
@@ -109,13 +194,6 @@ public class HeatPhaseHandler : PhaseHandler {
             ?: return unit to null // nothing to explode
 
         val (location, slotIndex, bin) = worst
-        val damage = bin.shots * bin.type.damagePerShot
-        val updatedLayout = unit.criticalLayout.withSlot(location, slotIndex, bin.copy(shots = 0))
-        val damaged = applyDamage(
-            unit.copy(criticalLayout = updatedLayout),
-            HitLocation.CENTER_TORSO,
-            damage,
-        )
-        return damaged to AmmoExploded(unit.id, bin.type, damage)
+        return detonateAmmoBin(unit, location, slotIndex, bin, damageLocation = HitLocation.CENTER_TORSO)
     }
 }

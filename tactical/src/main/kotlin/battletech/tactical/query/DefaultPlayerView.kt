@@ -19,7 +19,7 @@ public class DefaultPlayerView(
 
     override fun legalMovementsFor(unitId: UnitId): List<ReachabilityMap> {
         val unit = state.unitById(unitId) ?: return emptyList()
-        if (unit.isShutdown) return emptyList()
+        if (unit.isShutdown || unit.isDestroyed || !unit.isPilotConscious) return emptyList()
         val calculator = ReachabilityCalculator(state.map, state.units)
         return buildList {
             if (unit.walkingMP > 0) add(calculator.calculate(unit, MovementMode.WALK))
