@@ -2,10 +2,14 @@ package battletech.tui.view
 
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.ComponentCritStatus
+import battletech.tactical.unit.CriticalComponent
 import battletech.tactical.unit.HeatSource
+import battletech.tactical.unit.criticalDamageStatus
 import battletech.tui.game.PanelId
 import battletech.tui.hex.ammoIcon
 import battletech.tui.hex.emptyCircleIcon
+import battletech.tui.hex.filledCircleIcon
 import battletech.tui.hex.infinityIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
@@ -114,12 +118,10 @@ public class UnitStatusView(
             newLine()
             newLine()
 
-            val dot = emptyCircleIcon() + " "
             writeln("Critical hit points", Color.WHITE)
-            writeln("  Engine  : ${dot.repeat(3)}", Color.WHITE)
-            writeln("  Gyro    : ${dot.repeat(2)}", Color.WHITE)
-            writeln("  Sensor  : ${dot.repeat(2)}", Color.WHITE)
-            writeln("  Support : ${dot.repeat(2)}", Color.WHITE)
+            for (status in unit.criticalDamageStatus()) {
+                writeCritDots(content, status)
+            }
             newLine()
 
             val structure = unit.internalStructure
@@ -202,5 +204,43 @@ public class UnitStatusView(
         a == null -> b
         b == null -> a
         else -> maxOf(a, b)
+    }
+
+    /**
+     * Renders a "  Label : ●● ○" row where [status].hits (coerced to [status].capacity) dots are
+     * drawn filled/red and the remainder of capacity are drawn empty/white, reflecting the real
+     * destroyed-slot count against the rules cap. Below the dot row, renders one indented red
+     * line per entry in [status].penalties — both values come straight from
+     * [battletech.tactical.unit.criticalDamageStatus]; the only thing decided here is the
+     * column label for [status].component.
+     */
+    private fun writeCritDots(content: ContentWriter, status: ComponentCritStatus) {
+        val label = componentLabel(status.component)
+        val capacity = status.capacity
+        val destroyedCount = status.hits.coerceIn(0, capacity)
+        val label6 = label.padEnd(7)
+        content.writeStr(2, "$label6: ", Color.WHITE)
+        val dotsStart = 2 + "$label6: ".length
+        var col = dotsStart
+        repeat(destroyedCount) {
+            content.writeStr(col, filledCircleIcon(), Color.RED)
+            col += 2
+        }
+        repeat(capacity - destroyedCount) {
+            content.writeStr(col, emptyCircleIcon(), Color.WHITE)
+            col += 2
+        }
+        content.newLine()
+        for (penalty in status.penalties) {
+            content.writeStr(4, penalty, Color.RED)
+            content.newLine()
+        }
+    }
+
+    private fun componentLabel(component: CriticalComponent): String = when (component) {
+        CriticalComponent.ENGINE -> "Engine"
+        CriticalComponent.GYRO -> "Gyro"
+        CriticalComponent.SENSOR -> "Sensor"
+        CriticalComponent.LIFE_SUPPORT -> "Support"
     }
 }

@@ -11,6 +11,8 @@ import battletech.tactical.unit.mechLayout
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.hex.ammoIcon
+import battletech.tui.hex.emptyCircleIcon
+import battletech.tui.hex.filledCircleIcon
 import battletech.tui.hex.infinityIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
@@ -361,6 +363,54 @@ internal class UnitStatusViewTest {
         val line = (2 until 26).map { buffer.get(it, row).char }.joinToString("")
         assertTrue(line.contains("5"))
         assertEquals(ammoIcon(), buffer.get(25, row).char)
+    }
+
+    @Test
+    fun `renders all-intact critical hit dots as empty circles`() {
+        val unit = aUnit(armor = anArmorLayout())
+        val view = UnitStatusView(unit)
+        val buffer = renderDecorated(view, height = 40)
+
+        val row = rowContaining(buffer, 40, "Engine")
+        val line = (2 until 26).map { buffer.get(it, row).char }.joinToString("")
+        assertEquals(3, line.split(emptyCircleIcon()).size - 1)
+        assertEquals(0, line.split(filledCircleIcon()).size - 1)
+    }
+
+    @Test
+    fun `renders destroyed engine crits as filled red dots`() {
+        val unit = aUnit(armor = anArmorLayout()).copy(
+            criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(0, 1)),
+        )
+        val view = UnitStatusView(unit)
+        val buffer = renderDecorated(view, height = 40)
+
+        val row = rowContaining(buffer, 40, "Engine")
+        val line = (2 until 26).map { buffer.get(it, row).char }.joinToString("")
+        val filledCount = line.split(filledCircleIcon()).size - 1
+        assertEquals(2, filledCount)
+
+        // First dot column should be red (destroyed slot 0 is an Engine slot in CENTER_TORSO).
+        val firstDotCol = (2 until 26).first { buffer.get(it, row).char == filledCircleIcon() }
+        assertEquals(Color.RED, buffer.get(firstDotCol, row).fg)
+    }
+
+    @Test
+    fun `renders destroyed gyro crits independently of engine crits`() {
+        val unit = aUnit(armor = anArmorLayout()).copy(
+            // CENTER_TORSO indices 3,4,5,6 are Gyro slots per the standard framework.
+            criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(3)),
+        )
+        val view = UnitStatusView(unit)
+        val buffer = renderDecorated(view, height = 40)
+
+        val engineRow = rowContaining(buffer, 40, "Engine")
+        val engineLine = (2 until 26).map { buffer.get(it, engineRow).char }.joinToString("")
+        assertEquals(0, engineLine.split(filledCircleIcon()).size - 1)
+
+        val gyroRow = rowContaining(buffer, 40, "Gyro")
+        val gyroLine = (2 until 26).map { buffer.get(it, gyroRow).char }.joinToString("")
+        assertEquals(1, gyroLine.split(filledCircleIcon()).size - 1)
     }
 
     @Test

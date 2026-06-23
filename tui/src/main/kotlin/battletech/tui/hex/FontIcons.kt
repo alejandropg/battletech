@@ -56,3 +56,6 @@ internal fun ammoIcon(): String = NF_MD_AMMUNITION
 internal fun infinityIcon(): String = NF_FA_INFINITY
 
 internal fun emptyCircleIcon(): String = NF_MD_CHECKBOX_BLANK_CIRCLE_OUTLINE
+
+/** Filled circle (destroyed-slot indicator) — plain Unicode, paired visually with [emptyCircleIcon]. */
+internal fun filledCircleIcon(): String = "●"
