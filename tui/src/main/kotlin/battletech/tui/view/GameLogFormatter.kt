@@ -8,18 +8,27 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.session.AmmoExploded
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
+import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
+import battletech.tactical.session.PilotHit
+import battletech.tactical.session.PilotKnockedUnconscious
+import battletech.tactical.session.PilotRecoveredConsciousness
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.UnitFell
 import battletech.tactical.session.UnitRestarted
 import battletech.tactical.session.UnitShutdown
 import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.session.TurnEnded
+import battletech.tactical.session.UnitDestroyed
+import battletech.tactical.session.MatchEnded
 import battletech.tactical.session.UnitMoved
+import battletech.tactical.unit.ActuatorType
+import battletech.tactical.unit.CriticalSlotContent
+import battletech.tactical.unit.DestructionReason
 import battletech.tactical.unit.UnitId
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.movementModeIcon
@@ -123,6 +132,73 @@ internal object GameLogFormatter {
         }
 
         is TurnEnded -> null
+
+        is UnitDestroyed -> {
+            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            "$name destroyed (${destructionReasonLabel(event.reason)})"
+        }
+
+        is MatchEnded -> {
+            val winner = event.winner
+            if (winner == null) "Match over — draw" else "Match over — ${playerLabel(winner)} wins!"
+        }
+
+        is CriticalHit -> {
+            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            val component = criticalSlotContentLabel(event.content, event.unitId, state)
+            "$name critical hit: $component in ${locationLabel(event.location)}"
+        }
+
+        is PilotHit -> {
+            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            "$name pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)"
+        }
+
+        is PilotKnockedUnconscious -> {
+            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            "$name pilot knocked unconscious"
+        }
+
+        is PilotRecoveredConsciousness -> {
+            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            "$name pilot regained consciousness"
+        }
+    }
+
+    private fun destructionReasonLabel(reason: DestructionReason): String = when (reason) {
+        DestructionReason.HEAD_DESTROYED -> "head destroyed"
+        DestructionReason.CENTER_TORSO_DESTROYED -> "center torso destroyed"
+        DestructionReason.BOTH_LEGS_DESTROYED -> "both legs destroyed"
+        DestructionReason.ENGINE_DESTROYED -> "engine destroyed"
+        DestructionReason.PILOT_DEAD -> "pilot dead"
+    }
+
+    private fun criticalSlotContentLabel(content: CriticalSlotContent, unitId: UnitId, state: GameState): String =
+        when (content) {
+            is CriticalSlotContent.Empty -> "empty slot"
+            is CriticalSlotContent.Engine -> "Engine"
+            is CriticalSlotContent.Gyro -> "Gyro"
+            is CriticalSlotContent.Sensors -> "Sensors"
+            is CriticalSlotContent.LifeSupport -> "Life Support"
+            is CriticalSlotContent.Cockpit -> "Cockpit"
+            is CriticalSlotContent.HeatSink -> "Heat Sink"
+            is CriticalSlotContent.JumpJet -> "Jump Jet"
+            is CriticalSlotContent.Actuator -> actuatorLabel(content.type)
+            is CriticalSlotContent.WeaponMount -> {
+                state.unitById(unitId)?.weapons?.find { it.mountId == content.weaponId }?.name ?: "weapon"
+            }
+            is CriticalSlotContent.AmmoBin -> "${content.type} ammo"
+        }
+
+    private fun actuatorLabel(type: ActuatorType): String = when (type) {
+        ActuatorType.SHOULDER -> "Shoulder actuator"
+        ActuatorType.UPPER_ARM -> "Upper arm actuator"
+        ActuatorType.LOWER_ARM -> "Lower arm actuator"
+        ActuatorType.HAND -> "Hand actuator"
+        ActuatorType.HIP -> "Hip actuator"
+        ActuatorType.UPPER_LEG -> "Upper leg actuator"
+        ActuatorType.LOWER_LEG -> "Lower leg actuator"
+        ActuatorType.FOOT -> "Foot actuator"
     }
 
     private fun playerLabel(player: PlayerId): String = when (player) {

@@ -18,17 +18,27 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
+import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.InitiativeRolled
+import battletech.tactical.session.MatchEnded
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
+import battletech.tactical.session.PilotHit
+import battletech.tactical.session.PilotKnockedUnconscious
+import battletech.tactical.session.PilotRecoveredConsciousness
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnEnded
+import battletech.tactical.session.UnitDestroyed
 import battletech.tactical.session.UnitMoved
+import battletech.tactical.unit.ActuatorType
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.CriticalSlotContent
+import battletech.tactical.unit.DestructionReason
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
+import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.WeaponModels
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
@@ -366,6 +376,173 @@ internal class GameLogFormatterTest {
     fun `TurnEnded is not logged`() {
         val text = GameLogFormatter.format(event = TurnEnded(turnNumber = 3), state = emptyState)
         assertThat(text).isNull()
+    }
+
+    @Test
+    fun `UnitDestroyed shows unit name and a readable destruction reason`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyState.copy(units = listOf(locust))
+
+        val text = GameLogFormatter.format(
+            event = UnitDestroyed(unitId = locust.id, reason = DestructionReason.CENTER_TORSO_DESTROYED),
+            state = stateWithLocust,
+        )
+
+        assertThat(text).isEqualTo("Locust destroyed (center torso destroyed)")
+    }
+
+    @Test
+    fun `UnitDestroyed renders every destruction reason readably`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyState.copy(units = listOf(locust))
+
+        val expected = mapOf(
+            DestructionReason.HEAD_DESTROYED to "head destroyed",
+            DestructionReason.CENTER_TORSO_DESTROYED to "center torso destroyed",
+            DestructionReason.BOTH_LEGS_DESTROYED to "both legs destroyed",
+            DestructionReason.ENGINE_DESTROYED to "engine destroyed",
+            DestructionReason.PILOT_DEAD to "pilot dead",
+        )
+
+        for ((reason, label) in expected) {
+            val text = GameLogFormatter.format(
+                event = UnitDestroyed(unitId = locust.id, reason = reason),
+                state = stateWithLocust,
+            )
+            assertThat(text).isEqualTo("Locust destroyed ($label)")
+        }
+    }
+
+    @Test
+    fun `MatchEnded reports the winner`() {
+        val text = GameLogFormatter.format(
+            event = MatchEnded(winner = PlayerId.PLAYER_1),
+            state = emptyState,
+        )
+
+        assertThat(text).isEqualTo("Match over — P1 wins!")
+    }
+
+    @Test
+    fun `MatchEnded reports a draw when winner is null`() {
+        val text = GameLogFormatter.format(
+            event = MatchEnded(winner = null),
+            state = emptyState,
+        )
+
+        assertThat(text).isEqualTo("Match over — draw")
+    }
+
+    @Test
+    fun `CriticalHit on a named component shows unit, component, and location`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyState.copy(units = listOf(locust))
+
+        val text = GameLogFormatter.format(
+            event = CriticalHit(
+                unitId = locust.id,
+                location = MechLocation.CENTER_TORSO,
+                slotIndex = 0,
+                content = CriticalSlotContent.Engine,
+            ),
+            state = stateWithLocust,
+        )
+
+        assertThat(text).isEqualTo("Locust critical hit: Engine in Center Torso")
+    }
+
+    @Test
+    fun `CriticalHit on a weapon mount resolves the weapon's name`() {
+        val weapon = Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0))
+        val locust = aMech(id = "locust", name = "Locust", weapons = listOf(weapon))
+        val stateWithLocust = emptyState.copy(units = listOf(locust))
+
+        val text = GameLogFormatter.format(
+            event = CriticalHit(
+                unitId = locust.id,
+                location = MechLocation.RIGHT_ARM,
+                slotIndex = 5,
+                content = CriticalSlotContent.WeaponMount(WeaponMountId(0)),
+            ),
+            state = stateWithLocust,
+        )
+
+        assertThat(text).isEqualTo("Locust critical hit: Medium Laser in Right Arm")
+    }
+
+    @Test
+    fun `CriticalHit on an ammo bin and an actuator render readably`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyState.copy(units = listOf(locust))
+
+        val ammoText = GameLogFormatter.format(
+            event = CriticalHit(
+                unitId = locust.id,
+                location = MechLocation.LEFT_TORSO,
+                slotIndex = 2,
+                content = CriticalSlotContent.AmmoBin(battletech.tactical.unit.AmmoType.AC20, shots = 5),
+            ),
+            state = stateWithLocust,
+        )
+        assertThat(ammoText).isEqualTo("Locust critical hit: AC20 ammo in Left Torso")
+
+        val actuatorText = GameLogFormatter.format(
+            event = CriticalHit(
+                unitId = locust.id,
+                location = MechLocation.LEFT_ARM,
+                slotIndex = 1,
+                content = CriticalSlotContent.Actuator(ActuatorType.UPPER_ARM),
+            ),
+            state = stateWithLocust,
+        )
+        assertThat(actuatorText).isEqualTo("Locust critical hit: Upper arm actuator in Left Arm")
+    }
+
+    @Test
+    fun `PilotHit shows the running pilot hit total`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyState.copy(units = listOf(locust))
+
+        val text = GameLogFormatter.format(
+            event = PilotHit(unitId = locust.id, pilotHits = 1, consciousnessRoll = null, conscious = true),
+            state = stateWithLocust,
+        )
+
+        assertThat(text).isEqualTo("Locust pilot wounded (1 hit total)")
+    }
+
+    @Test
+    fun `PilotHit pluralizes hits when more than one`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyState.copy(units = listOf(locust))
+
+        val text = GameLogFormatter.format(
+            event = PilotHit(
+                unitId = locust.id, pilotHits = 3,
+                consciousnessRoll = DiceRoll(4, 4), conscious = true,
+            ),
+            state = stateWithLocust,
+        )
+
+        assertThat(text).isEqualTo("Locust pilot wounded (3 hits total)")
+    }
+
+    @Test
+    fun `PilotKnockedUnconscious and PilotRecoveredConsciousness render readably`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyState.copy(units = listOf(locust))
+
+        val unconsciousText = GameLogFormatter.format(
+            event = PilotKnockedUnconscious(unitId = locust.id),
+            state = stateWithLocust,
+        )
+        assertThat(unconsciousText).isEqualTo("Locust pilot knocked unconscious")
+
+        val recoveredText = GameLogFormatter.format(
+            event = PilotRecoveredConsciousness(unitId = locust.id, roll = DiceRoll(5, 5)),
+            state = stateWithLocust,
+        )
+        assertThat(recoveredText).isEqualTo("Locust pilot regained consciousness")
     }
 
     private fun anAttackResult(

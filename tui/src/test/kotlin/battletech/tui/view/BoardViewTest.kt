@@ -69,6 +69,33 @@ internal class BoardViewTest {
     }
 
     @Test
+    fun `renders destroyed unit as a wreck marker instead of its initial`() {
+        val unit = aUnit(name = "Atlas", position = HexCoordinates(0, 0)).copy(isDestroyed = true)
+        val state = aGameState(units = listOf(unit), map = aGameMap())
+        val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
+        val buffer = ScreenBuffer(30, 16)
+
+        view.render(buffer, 0, 0, 30, 16)
+
+        // Unit glyph at hex center: charX=4+2, charY=3+2 (same cell as the initial in the
+        // "renders unit initial on hex" test above).
+        assertEquals("X", buffer.get(6, 5).char)
+        assertEquals(Color.GRAY, buffer.get(6, 5).fg)
+    }
+
+    @Test
+    fun `prone unit still renders its lowercase glyph, distinct from destroyed`() {
+        val unit = aUnit(name = "Atlas", position = HexCoordinates(0, 0)).copy(isProne = true)
+        val state = aGameState(units = listOf(unit), map = aGameMap())
+        val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
+        val buffer = ScreenBuffer(30, 16)
+
+        view.render(buffer, 0, 0, 30, 16)
+
+        assertEquals("a", buffer.get(6, 5).char)
+    }
+
+    @Test
     fun `highlights map with reachable and path overlays`() {
         val state = aGameState(map = aGameMap())
         val highlights = mapOf(
