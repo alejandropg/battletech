@@ -113,6 +113,9 @@ internal fun aUnit(
     armor: ArmorLayout = anArmorLayout(),
     internalStructure: InternalStructureLayout = anInternalStructureLayout(),
     criticalLayout: CriticalLayout = CriticalLayout.empty(),
+    isDestroyed: Boolean = false,
+    pilotHits: Int = 0,
+    isPilotConscious: Boolean = true,
 ): CombatUnit = CombatUnit(
     id = UnitId(id),
     owner = owner,
@@ -131,6 +134,9 @@ internal fun aUnit(
     armor = armor,
     internalStructure = internalStructure,
     criticalLayout = criticalLayout,
+    isDestroyed = isDestroyed,
+    pilotHits = pilotHits,
+    isPilotConscious = isPilotConscious,
 )
 
 internal fun aGameState(

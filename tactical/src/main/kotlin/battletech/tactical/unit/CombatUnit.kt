@@ -2,6 +2,7 @@ package battletech.tactical.unit
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
 
 public data class CombatUnit(
@@ -27,4 +28,8 @@ public data class CombatUnit(
     public val heatGeneratedThisTurn: List<HeatSource> = emptyList(),
     public val isProne: Boolean = false,
     public val isShutdown: Boolean = false,
+    public val isDestroyed: Boolean = false,
+    public val criticalHits: Map<MechLocation, Set<Int>> = emptyMap(),
+    public val pilotHits: Int = 0,
+    public val isPilotConscious: Boolean = true,
 )

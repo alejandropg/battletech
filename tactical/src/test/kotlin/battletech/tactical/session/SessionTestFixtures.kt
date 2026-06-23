@@ -14,7 +14,13 @@ import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModels
 
-internal fun aMech(id: String, owner: PlayerId, position: HexCoordinates): CombatUnit = CombatUnit(
+internal fun aMech(
+    id: String,
+    owner: PlayerId,
+    position: HexCoordinates,
+    pilotHits: Int = 0,
+    isPilotConscious: Boolean = true,
+): CombatUnit = CombatUnit(
     id = UnitId(id),
     owner = owner,
     name = id,
@@ -30,6 +36,8 @@ internal fun aMech(id: String, owner: PlayerId, position: HexCoordinates): Comba
     jumpMP = 0,
     currentHeat = 0,
     heatSink = HeatSink(HeatSinkType.STS, 10),
+    pilotHits = pilotHits,
+    isPilotConscious = isPilotConscious,
     armor = ArmorLayout(
         head = 9,
         centerTorso = 30, centerTorsoRear = 10,

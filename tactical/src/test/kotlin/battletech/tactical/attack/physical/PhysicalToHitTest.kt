@@ -1,6 +1,5 @@
 package battletech.tactical.attack.physical
 
-import battletech.tactical.attack.physical.PhysicalAttackKind.Kick
 import battletech.tactical.attack.physical.PhysicalAttackKind.Punch
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates

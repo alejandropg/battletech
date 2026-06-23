@@ -2,13 +2,17 @@ package battletech.tui.view
 
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.AttackResult
+import battletech.tactical.attack.LocationDamage
 import battletech.tactical.attack.RangeBand
+import battletech.tactical.attack.physical.AttackDirection
+import battletech.tactical.attack.physical.PhysicalAttackResult
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MechLocation
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
@@ -18,6 +22,7 @@ import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.PhaseChanged
+import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitMoved
@@ -132,6 +137,99 @@ internal class GameLogFormatterTest {
         )
 
         assertThat(text).isEqualTo("Attacks: 0 fired, 0 hit, 0 damage")
+    }
+
+    @Test
+    fun `AttacksResolved appends a destroyed-location clause when a location was blown off`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyState.copy(units = listOf(locust))
+        val results = listOf(
+            anAttackResult(
+                hit = true,
+                damage = 24,
+                targetId = locust.id,
+                locationDamage = listOf(
+                    LocationDamage(MechLocation.LEFT_ARM, armorDamage = 20, structureDamage = 6, destroyed = true),
+                    LocationDamage(MechLocation.LEFT_TORSO, armorDamage = 4, structureDamage = 0, destroyed = false),
+                ),
+            ),
+        )
+
+        val text = GameLogFormatter.format(
+            event = AttacksResolved(results),
+            state = stateWithLocust,
+        )
+
+        assertThat(text).isEqualTo("Attacks: 1 fired, 1 hit, 24 damage — Locust Left Arm destroyed")
+    }
+
+    @Test
+    fun `AttacksResolved omits the destroyed-location clause when nothing was destroyed`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyState.copy(units = listOf(locust))
+        val results = listOf(
+            anAttackResult(
+                hit = true,
+                damage = 5,
+                targetId = locust.id,
+                locationDamage = listOf(
+                    LocationDamage(MechLocation.LEFT_ARM, armorDamage = 5, structureDamage = 0, destroyed = false),
+                ),
+            ),
+        )
+
+        val text = GameLogFormatter.format(
+            event = AttacksResolved(results),
+            state = stateWithLocust,
+        )
+
+        assertThat(text).isEqualTo("Attacks: 1 fired, 1 hit, 5 damage")
+    }
+
+    @Test
+    fun `PhysicalAttacksResolved appends a destroyed-location clause when a location was blown off`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyState.copy(units = listOf(locust))
+        val results = listOf(
+            aPhysicalAttackResult(
+                hit = true,
+                damage = 18,
+                targetId = locust.id,
+                locationDamage = listOf(
+                    LocationDamage(MechLocation.RIGHT_LEG, armorDamage = 12, structureDamage = 6, destroyed = true),
+                ),
+            ),
+        )
+
+        val text = GameLogFormatter.format(
+            event = PhysicalAttacksResolved(results),
+            state = stateWithLocust,
+        )
+
+        assertThat(text).isEqualTo("Physical attacks: 1 made, 1 hit, 18 damage — Locust Right Leg destroyed")
+    }
+
+    @Test
+    fun `PhysicalAttacksResolved omits the destroyed-location clause when nothing was destroyed`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyState.copy(units = listOf(locust))
+        val results = listOf(
+            aPhysicalAttackResult(
+                hit = true,
+                damage = 3,
+                targetId = locust.id,
+                locationDamage = listOf(
+                    LocationDamage(MechLocation.RIGHT_LEG, armorDamage = 3, structureDamage = 0, destroyed = false),
+                ),
+            ),
+        )
+
+        val text = GameLogFormatter.format(
+            event = PhysicalAttacksResolved(results),
+            state = stateWithLocust,
+        )
+
+        assertThat(text).isEqualTo("Physical attacks: 1 made, 1 hit, 3 damage")
     }
 
     @Test
@@ -270,10 +368,15 @@ internal class GameLogFormatterTest {
         assertThat(text).isNull()
     }
 
-    private fun anAttackResult(hit: Boolean, damage: Int): AttackResult =
+    private fun anAttackResult(
+        hit: Boolean,
+        damage: Int,
+        targetId: UnitId = UnitId("t"),
+        locationDamage: List<LocationDamage> = emptyList(),
+    ): AttackResult =
         AttackResult(
             attackerId = UnitId("a"),
-            targetId = UnitId("t"),
+            targetId = targetId,
             weaponName = "ML",
             hit = hit,
             hitLocation = null,
@@ -287,6 +390,28 @@ internal class GameLogFormatterTest {
             rangeBand = RangeBand.SHORT,
             heatPenalty = 0,
             secondaryPenalty = 0,
+            damage = locationDamage,
+        )
+
+    private fun aPhysicalAttackResult(
+        hit: Boolean,
+        damage: Int,
+        targetId: UnitId = UnitId("t"),
+        locationDamage: List<LocationDamage> = emptyList(),
+    ): PhysicalAttackResult =
+        PhysicalAttackResult(
+            attackerId = UnitId("a"),
+            targetId = targetId,
+            attackName = "Punch",
+            hit = hit,
+            hitLocation = null,
+            damageApplied = damage,
+            targetNumber = 8,
+            roll = if (hit) 10 else 5,
+            toHitRoll = if (hit) DiceRoll(5, 5) else DiceRoll(2, 3),
+            locationRoll = null,
+            attackDirection = AttackDirection.FRONT,
+            damage = locationDamage,
         )
 
     private fun aMech(

@@ -21,7 +21,7 @@ Key code anchors referenced repeatedly below:
 
 ---
 
-## Damage Transfer Between Locations
+## [x] Damage Transfer Between Locations
 
 When a hit location's internal structure is reduced to 0, that location is destroyed and **excess damage transfers inward** to the next location toward the center — it is not lost. Transfer order: arm → adjacent side torso → center torso; leg → adjacent side torso → center torso; side torso → center torso. Head and center torso do not transfer (overflow there destroys the unit). This is fundamental — without it, a 20-point AC/20 hit to an arm with 4 armor + 6 IS simply wastes 10 damage instead of tearing into the torso.
 

@@ -1,7 +1,9 @@
 package battletech.tui.view
 
+import battletech.tactical.attack.LocationDamage
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
 import battletech.tactical.session.AmmoExploded
 import battletech.tactical.session.AttackDeclarationsRecorded
@@ -18,6 +20,7 @@ import battletech.tactical.session.UnitShutdown
 import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitMoved
+import battletech.tactical.unit.UnitId
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.movementModeIcon
 
@@ -42,7 +45,9 @@ internal object GameLogFormatter {
             val fired = event.results.size
             val hits = event.results.count { it.hit }
             val damage = event.results.sumOf { it.damageApplied }
-            "Attacks: $fired fired, $hits hit, $damage damage"
+            val summary = "Attacks: $fired fired, $hits hit, $damage damage"
+            val destroyed = destroyedClause(event.results.map { it.targetId to it.damage }, state)
+            if (destroyed == null) summary else "$summary — $destroyed"
         }
 
         is AttackDeclarationsRecorded -> {
@@ -87,7 +92,9 @@ internal object GameLogFormatter {
             val made = event.results.size
             val hits = event.results.count { it.hit }
             val damage = event.results.sumOf { it.damageApplied }
-            "Physical attacks: $made made, $hits hit, $damage damage"
+            val summary = "Physical attacks: $made made, $hits hit, $damage damage"
+            val destroyed = destroyedClause(event.results.map { it.targetId to it.damage }, state)
+            if (destroyed == null) summary else "$summary — $destroyed"
         }
 
         is UnitFell -> {
@@ -125,4 +132,27 @@ internal object GameLogFormatter {
 
     private fun hexLabel(coord: HexCoordinates): String =
         "%02d%02d".format(coord.col + 1, coord.row + 1)
+
+    private fun destroyedClause(
+        targetsAndDamage: List<Pair<UnitId, List<LocationDamage>>>,
+        state: GameState,
+    ): String? {
+        val parts = targetsAndDamage.flatMap { (targetId, steps) ->
+            val name = state.unitById(targetId)?.name ?: targetId.value
+            steps.filter { it.destroyed }.map { "$name ${locationLabel(it.location)}" }
+        }
+        if (parts.isEmpty()) return null
+        return "${parts.joinToString(", ")} destroyed"
+    }
+
+    private fun locationLabel(location: MechLocation): String = when (location) {
+        MechLocation.HEAD -> "Head"
+        MechLocation.CENTER_TORSO -> "Center Torso"
+        MechLocation.LEFT_TORSO -> "Left Torso"
+        MechLocation.RIGHT_TORSO -> "Right Torso"
+        MechLocation.LEFT_ARM -> "Left Arm"
+        MechLocation.RIGHT_ARM -> "Right Arm"
+        MechLocation.LEFT_LEG -> "Left Leg"
+        MechLocation.RIGHT_LEG -> "Right Leg"
+    }
 }

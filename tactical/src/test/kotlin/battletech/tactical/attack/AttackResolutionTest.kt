@@ -332,4 +332,214 @@ internal class AttackResolutionTest {
             assertTrue(result.id == target.id)
         }
     }
+
+    @Test
+    fun `applyDamage wrapper returns same unit as resolveDamage for a simple armor-only hit`() {
+        val viaWrapper = applyDamage(target, HitLocation.CENTER_TORSO, 3)
+        val viaResolve = resolveDamage(target, HitLocation.CENTER_TORSO, 3).unit
+        assertEquals(viaResolve, viaWrapper)
+        assertEquals(7, viaWrapper.armor.centerTorso)
+    }
+
+    @Test
+    fun `IS absorbs overflow without reaching zero - no transfer`() {
+        val unit = aUnit(
+            armor = anArmorLayout(leftArm = 2),
+            internalStructure = anInternalStructureLayout(leftArm = 10),
+        )
+        // 5 damage: 2 armor absorbed, 3 to IS, IS 10 -> 7, no destruction, no transfer
+        val resolution = resolveDamage(unit, HitLocation.LEFT_ARM, 5)
+
+        assertEquals(0, resolution.unit.armor.leftArm)
+        assertEquals(7, resolution.unit.internalStructure.leftArm)
+        assertEquals(1, resolution.steps.size)
+        val step = resolution.steps.single()
+        assertEquals(HitLocation.LEFT_ARM, step.location)
+        assertEquals(2, step.armorDamage)
+        assertEquals(3, step.structureDamage)
+        assertFalse(step.destroyed)
+    }
+
+    @Test
+    fun `arm destroyed transfers overflow to same-side torso armor first`() {
+        val unit = aUnit(
+            armor = anArmorLayout(leftArm = 2, leftTorso = 8),
+            internalStructure = anInternalStructureLayout(leftArm = 6, leftTorso = 20),
+        )
+        // 12 damage to left arm: 2 armor, 6 IS (destroyed), excess 4 transfers to left torso armor
+        val resolution = resolveDamage(unit, HitLocation.LEFT_ARM, 12)
+
+        assertEquals(0, resolution.unit.armor.leftArm)
+        assertEquals(0, resolution.unit.internalStructure.leftArm)
+        assertEquals(4, resolution.unit.armor.leftTorso) // 8 - 4
+        assertEquals(20, resolution.unit.internalStructure.leftTorso) // untouched
+
+        assertEquals(2, resolution.steps.size)
+        val armStep = resolution.steps[0]
+        assertEquals(HitLocation.LEFT_ARM, armStep.location)
+        assertEquals(2, armStep.armorDamage)
+        assertEquals(6, armStep.structureDamage)
+        assertTrue(armStep.destroyed)
+
+        val torsoStep = resolution.steps[1]
+        assertEquals(HitLocation.LEFT_TORSO, torsoStep.location)
+        assertEquals(4, torsoStep.armorDamage)
+        assertEquals(0, torsoStep.structureDamage)
+        assertFalse(torsoStep.destroyed)
+    }
+
+    @Test
+    fun `cascade from arm through side torso to center torso when both blow through`() {
+        val unit = aUnit(
+            armor = anArmorLayout(leftArm = 2, leftTorso = 1, centerTorso = 10),
+            internalStructure = anInternalStructureLayout(leftArm = 6, leftTorso = 5, centerTorso = 20),
+        )
+        // 20 damage to left arm:
+        //  arm: 2 armor + 6 IS = 8 absorbed, destroyed, excess 12
+        //  left torso: 1 armor + 5 IS = 6 absorbed, destroyed, excess 6
+        //  center torso: 6 armor absorbed (10 -> 4), no IS damage
+        val resolution = resolveDamage(unit, HitLocation.LEFT_ARM, 20)
+
+        assertEquals(0, resolution.unit.armor.leftArm)
+        assertEquals(0, resolution.unit.internalStructure.leftArm)
+        assertEquals(0, resolution.unit.armor.leftTorso)
+        assertEquals(0, resolution.unit.internalStructure.leftTorso)
+        assertEquals(4, resolution.unit.armor.centerTorso) // 10 - 6
+        assertEquals(20, resolution.unit.internalStructure.centerTorso) // untouched
+
+        assertEquals(3, resolution.steps.size)
+        assertEquals(HitLocation.LEFT_ARM, resolution.steps[0].location)
+        assertTrue(resolution.steps[0].destroyed)
+        assertEquals(HitLocation.LEFT_TORSO, resolution.steps[1].location)
+        assertTrue(resolution.steps[1].destroyed)
+        assertEquals(HitLocation.CENTER_TORSO, resolution.steps[2].location)
+        assertEquals(6, resolution.steps[2].armorDamage)
+        assertEquals(0, resolution.steps[2].structureDamage)
+        assertFalse(resolution.steps[2].destroyed)
+    }
+
+    @Test
+    fun `leg destroyed transfers overflow to same-side torso`() {
+        val unit = aUnit(
+            armor = anArmorLayout(leftLeg = 1, leftTorso = 10),
+            internalStructure = anInternalStructureLayout(leftLeg = 5, leftTorso = 20),
+        )
+        // 10 damage to left leg: 1 armor + 5 IS = 6 absorbed, destroyed, excess 4 to left torso armor
+        val resolution = resolveDamage(unit, HitLocation.LEFT_LEG, 10)
+
+        assertEquals(0, resolution.unit.internalStructure.leftLeg)
+        assertEquals(6, resolution.unit.armor.leftTorso) // 10 - 4
+
+        assertEquals(2, resolution.steps.size)
+        assertEquals(HitLocation.LEFT_LEG, resolution.steps[0].location)
+        assertTrue(resolution.steps[0].destroyed)
+        assertEquals(HitLocation.LEFT_TORSO, resolution.steps[1].location)
+        assertEquals(4, resolution.steps[1].armorDamage)
+    }
+
+    @Test
+    fun `right leg destroyed transfers overflow to right torso`() {
+        val unit = aUnit(
+            armor = anArmorLayout(rightLeg = 1, rightTorso = 10),
+            internalStructure = anInternalStructureLayout(rightLeg = 5, rightTorso = 20),
+        )
+        val resolution = resolveDamage(unit, HitLocation.RIGHT_LEG, 10)
+
+        assertEquals(0, resolution.unit.internalStructure.rightLeg)
+        assertEquals(6, resolution.unit.armor.rightTorso)
+        assertEquals(2, resolution.steps.size)
+        assertEquals(HitLocation.RIGHT_TORSO, resolution.steps[1].location)
+    }
+
+    @Test
+    fun `side torso destroyed transfers overflow to center torso front armor`() {
+        val unit = aUnit(
+            armor = anArmorLayout(leftTorso = 2, centerTorso = 15),
+            internalStructure = anInternalStructureLayout(leftTorso = 6, centerTorso = 20),
+        )
+        // 12 damage front to left torso: 2 armor + 6 IS = 8, destroyed, excess 4 to CT front armor
+        val resolution = resolveDamage(unit, HitLocation.LEFT_TORSO, 12, useRearArmor = false)
+
+        assertTrue(resolution.steps[0].destroyed)
+        assertEquals(HitLocation.CENTER_TORSO, resolution.steps[1].location)
+        assertEquals(4, resolution.steps[1].armorDamage)
+        assertEquals(11, resolution.unit.armor.centerTorso) // 15 - 4 (front)
+        assertEquals(14, resolution.unit.armor.centerTorsoRear) // unchanged
+    }
+
+    @Test
+    fun `side torso destroyed with rear hit transfers overflow to center torso rear armor`() {
+        val unit = aUnit(
+            armor = anArmorLayout(leftTorsoRear = 2, centerTorso = 15, centerTorsoRear = 8),
+            internalStructure = anInternalStructureLayout(leftTorso = 6, centerTorso = 20),
+        )
+        // 12 rear damage to left torso: 2 rear armor + 6 IS = 8, destroyed, excess 4 to CT rear armor
+        val resolution = resolveDamage(unit, HitLocation.LEFT_TORSO, 12, useRearArmor = true)
+
+        assertTrue(resolution.steps[0].destroyed)
+        assertEquals(HitLocation.CENTER_TORSO, resolution.steps[1].location)
+        assertEquals(4, resolution.steps[1].armorDamage)
+        assertEquals(4, resolution.unit.armor.centerTorsoRear) // 8 - 4
+        assertEquals(15, resolution.unit.armor.centerTorso) // unchanged (front untouched)
+    }
+
+    @Test
+    fun `head overflow destroys location with no transfer and drops excess`() {
+        val unit = aUnit(
+            armor = anArmorLayout(head = 2),
+            internalStructure = anInternalStructureLayout(head = 3),
+        )
+        // 10 damage to head: 2 armor + 3 IS = 5 absorbed, destroyed, excess 5 dropped
+        val resolution = resolveDamage(unit, HitLocation.HEAD, 10)
+
+        assertEquals(0, resolution.unit.armor.head)
+        assertEquals(0, resolution.unit.internalStructure.head)
+        assertEquals(1, resolution.steps.size)
+        val step = resolution.steps.single()
+        assertEquals(HitLocation.HEAD, step.location)
+        assertTrue(step.destroyed)
+    }
+
+    @Test
+    fun `center torso overflow destroys location with no transfer`() {
+        val unit = aUnit(
+            armor = anArmorLayout(centerTorso = 2),
+            internalStructure = anInternalStructureLayout(centerTorso = 5),
+        )
+        // 20 damage to CT: 2 armor + 5 IS = 7 absorbed, destroyed, excess 13 dropped
+        val resolution = resolveDamage(unit, HitLocation.CENTER_TORSO, 20)
+
+        assertEquals(0, resolution.unit.armor.centerTorso)
+        assertEquals(0, resolution.unit.internalStructure.centerTorso)
+        assertEquals(1, resolution.steps.size)
+        assertTrue(resolution.steps.single().destroyed)
+    }
+
+    @Test
+    fun `resolveAttacks integration - hit result carries damage steps`() {
+        val unit = aUnit(
+            id = "blowthrough-target",
+            armor = anArmorLayout(centerTorso = 47, leftArm = 2, leftTorso = 8),
+            internalStructure = anInternalStructureLayout(leftArm = 6, leftTorso = 20),
+        )
+        val state = gameState.copy(units = listOf(attacker, unit))
+
+        // Find a seed that hits the left arm.
+        for (seed in 0..2000) {
+            val roller = DiceRoller.seeded(seed.toLong())
+            val declaration = AttackDeclaration(attacker.id, unit.id, 0, true)
+            val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
+            val result = results.single()
+            if (result.hit && result.hitLocation == HitLocation.LEFT_ARM) {
+                // Medium laser does 5 damage: 2 armor + 3 IS, no destruction, single step.
+                assertTrue(result.damage.isNotEmpty())
+                assertEquals(HitLocation.LEFT_ARM, result.damage.first().location)
+                val updatedUnit = newState.unitById(unit.id)!!
+                assertEquals(0, updatedUnit.armor.leftArm)
+                assertEquals(3, updatedUnit.internalStructure.leftArm) // 6 - 3
+                return
+            }
+        }
+        org.junit.jupiter.api.fail("Should have found a seed that hits LEFT_ARM")
+    }
 }

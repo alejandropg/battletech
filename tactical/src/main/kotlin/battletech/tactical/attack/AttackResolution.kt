@@ -1,40 +1,11 @@
 package battletech.tactical.attack
 
-import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.InternalStructureLayout
-import battletech.tactical.unit.UnitId
-
-public enum class RangeBand { SHORT, MEDIUM, LONG, OUT_OF_RANGE }
-
-public data class AttackDeclaration(
-    val attackerId: UnitId,
-    val targetId: UnitId,
-    val weaponIndex: Int,
-    val isPrimary: Boolean,
-)
-
-public data class AttackResult(
-    val attackerId: UnitId,
-    val targetId: UnitId,
-    val weaponName: String,
-    val hit: Boolean,
-    val hitLocation: HitLocation?,
-    val damageApplied: Int,
-    val targetNumber: Int,
-    val roll: Int,
-    val toHitRoll: DiceRoll,
-    val locationRoll: DiceRoll?,
-    val gunnery: Int,
-    val rangeModifier: Int,
-    val rangeBand: RangeBand,
-    val heatPenalty: Int,
-    val secondaryPenalty: Int,
-)
 
 public fun resolveAttacks(
     declarations: List<AttackDeclaration>,
@@ -48,17 +19,24 @@ public fun resolveAttacks(
 
     // Apply all damage to get the final state
     var updatedState = gameState
-    for (result in results) {
+    val finalResults = results.map { result ->
         if (result.hit && result.hitLocation != null) {
-            val target = updatedState.unitById(result.targetId) ?: continue
-            val updatedTarget = applyDamage(target, result.hitLocation, result.damageApplied)
-            updatedState = updatedState.copy(
-                units = updatedState.units.map { if (it.id == result.targetId) updatedTarget else it },
-            )
+            val target = updatedState.unitById(result.targetId)
+            if (target == null) {
+                result
+            } else {
+                val resolution = resolveDamage(target, result.hitLocation, result.damageApplied)
+                updatedState = updatedState.copy(
+                    units = updatedState.units.map { if (it.id == result.targetId) resolution.unit else it },
+                )
+                result.copy(damage = resolution.steps)
+            }
+        } else {
+            result
         }
     }
 
-    return updatedState to results
+    return updatedState to finalResults
 }
 
 public fun applyDamage(
@@ -66,21 +44,69 @@ public fun applyDamage(
     location: HitLocation,
     damage: Int,
     useRearArmor: Boolean = false,
-): CombatUnit {
+): CombatUnit = resolveDamage(unit, location, damage, useRearArmor).unit
+
+/**
+ * Applies [damage] to [location] on [unit]: armor first, then internal structure (IS).
+ * If the location's IS is destroyed (reaches 0), any excess damage transfers inward
+ * per the blow-through rules (`docs/rules/armor-damage.md` §5), hitting the new
+ * location's armor first and preserving [useRearArmor]. Head and Center Torso do not
+ * transfer; excess damage there is dropped.
+ */
+public fun resolveDamage(
+    unit: CombatUnit,
+    location: HitLocation,
+    damage: Int,
+    useRearArmor: Boolean = false,
+): DamageResolution {
+    if (damage <= 0) return DamageResolution(unit, emptyList())
+
     val currentArmor = getArmor(unit.armor, location, useRearArmor)
     val armorAfter = (currentArmor - damage).coerceAtLeast(0)
-    val overflow = (damage - currentArmor).coerceAtLeast(0)
-
+    val armorDamage = minOf(currentArmor, damage)
+    val toStructure = (damage - currentArmor).coerceAtLeast(0)
     val newArmor = setArmor(unit.armor, location, armorAfter, useRearArmor)
-    val newIS = if (overflow > 0) {
-        val currentIS = getInternalStructure(unit.internalStructure, location)
-        val isAfter = (currentIS - overflow).coerceAtLeast(0)
-        setInternalStructure(unit.internalStructure, location, isAfter)
-    } else {
-        unit.internalStructure
+
+    if (toStructure == 0) {
+        val updatedUnit = unit.copy(armor = newArmor)
+        val step = LocationDamage(
+            location = location,
+            armorDamage = armorDamage,
+            structureDamage = 0,
+            destroyed = false,
+        )
+        return DamageResolution(updatedUnit, listOf(step))
     }
 
-    return unit.copy(armor = newArmor, internalStructure = newIS)
+    val currentIS = getInternalStructure(unit.internalStructure, location)
+    val isAfter = (currentIS - toStructure).coerceAtLeast(0)
+    val structureDamage = minOf(currentIS, toStructure)
+    val destroyed = isAfter == 0
+    val excess = (toStructure - currentIS).coerceAtLeast(0)
+    val newIS = setInternalStructure(unit.internalStructure, location, isAfter)
+    val updatedUnit = unit.copy(armor = newArmor, internalStructure = newIS)
+
+    val step = LocationDamage(
+        location = location,
+        armorDamage = armorDamage,
+        structureDamage = structureDamage,
+        destroyed = destroyed,
+    )
+
+    val nextLocation = transferTarget(location)
+    return if (excess > 0 && nextLocation != null) {
+        val inner = resolveDamage(updatedUnit, nextLocation, excess, useRearArmor)
+        DamageResolution(inner.unit, listOf(step) + inner.steps)
+    } else {
+        DamageResolution(updatedUnit, listOf(step))
+    }
+}
+
+private fun transferTarget(location: HitLocation): HitLocation? = when (location) {
+    HitLocation.LEFT_ARM, HitLocation.LEFT_LEG -> HitLocation.LEFT_TORSO
+    HitLocation.RIGHT_ARM, HitLocation.RIGHT_LEG -> HitLocation.RIGHT_TORSO
+    HitLocation.LEFT_TORSO, HitLocation.RIGHT_TORSO -> HitLocation.CENTER_TORSO
+    HitLocation.HEAD, HitLocation.CENTER_TORSO -> null
 }
 
 private fun resolveOneAttack(

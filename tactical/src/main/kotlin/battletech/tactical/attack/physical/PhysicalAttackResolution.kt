@@ -1,37 +1,12 @@
 package battletech.tactical.attack.physical
 
-import battletech.tactical.attack.FallResult
 import battletech.tactical.attack.HitLocation
-import battletech.tactical.attack.applyDamage
 import battletech.tactical.attack.fall
-import battletech.tactical.dice.DiceRoll
+import battletech.tactical.attack.resolveDamage
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.unit.CombatUnit
-import battletech.tactical.unit.PilotingSkillRoll
-import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.pilotingSkillRoll
-
-/** Outcome of resolving one declared physical attack. */
-public data class PhysicalAttackResult(
-    public val attackerId: UnitId,
-    public val targetId: UnitId,
-    public val attackName: String,
-    public val hit: Boolean,
-    public val hitLocation: HitLocation?,
-    public val damageApplied: Int,
-    public val targetNumber: Int,
-    public val roll: Int,
-    public val toHitRoll: DiceRoll,
-    public val locationRoll: Int?,
-    public val attackDirection: AttackDirection,
-    /** Knockdown PSR forced by a kick (target on a hit, attacker on a miss); null for punches. */
-    public val psr: PilotingSkillRoll? = null,
-    /** The fall that resulted from a failed [psr], if any. */
-    public val fall: FallResult? = null,
-    /** Which unit fell as a consequence of this attack, if any. */
-    public val fallenUnitId: UnitId? = null,
-)
 
 /**
  * Resolves [declarations] simultaneously against [gameState]: every attack
@@ -48,21 +23,28 @@ public fun resolvePhysicalAttacks(
 
     // Apply all hit damage simultaneously.
     var updatedState = gameState
-    for ((_, result) in resolved) {
+    val damagedResults = resolved.map { (declaration, result) ->
         if (result.hit && result.hitLocation != null) {
-            val target = updatedState.unitById(result.targetId) ?: continue
-            val updatedTarget = applyDamage(
-                unit = target,
-                location = result.hitLocation,
-                damage = result.damageApplied,
-                useRearArmor = result.attackDirection == AttackDirection.REAR,
-            )
-            updatedState = updatedState.replacing(updatedTarget)
+            val target = updatedState.unitById(result.targetId)
+            if (target == null) {
+                declaration to result
+            } else {
+                val resolution = resolveDamage(
+                    unit = target,
+                    location = result.hitLocation,
+                    damage = result.damageApplied,
+                    useRearArmor = result.attackDirection == AttackDirection.REAR,
+                )
+                updatedState = updatedState.replacing(resolution.unit)
+                declaration to result.copy(damage = resolution.steps)
+            }
+        } else {
+            declaration to result
         }
     }
 
     // Pass 2: kicks force a knockdown PSR — the target on a hit, the attacker on a miss.
-    val finalResults = resolved.map { (declaration, result) ->
+    val finalResults = damagedResults.map { (declaration, result) ->
         if (declaration.kind !is PhysicalAttackKind.Kick) return@map result
 
         val fallerId = if (result.hit) result.targetId else result.attackerId

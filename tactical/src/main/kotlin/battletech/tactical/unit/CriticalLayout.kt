@@ -86,6 +86,71 @@ private val LEG_FRAMEWORK: List<ActuatorType> = listOf(
 
 public fun CriticalLayout.Factory.empty(): CriticalLayout = mechLayout { }.layout
 
+/** True when [unit] has already recorded the slot at [location]/[index] as destroyed. */
+public fun CombatUnit.isSlotDestroyed(location: MechLocation, index: Int): Boolean =
+    criticalHits[location]?.contains(index) == true
+
+/**
+ * Count of slots in [location] whose content matches [predicate] and are recorded as
+ * destroyed in [CombatUnit.criticalHits]. Used by later stages to compare destroyed-slot
+ * counts of a given component type (engine, gyro, …) against their threshold constants.
+ */
+public fun CombatUnit.destroyedSlotCount(
+    location: MechLocation,
+    predicate: (CriticalSlotContent) -> Boolean,
+): Int {
+    val destroyedIndices = criticalHits[location] ?: return 0
+    val slots = criticalLayout.slotsAt(location)
+    return destroyedIndices.count { index -> slots.getOrNull(index)?.let(predicate) == true }
+}
+
+/** Number of destroyed Engine slots in the Center Torso (`docs/rules/armor-damage.md` §3). */
+public fun CombatUnit.engineCritCount(): Int =
+    destroyedSlotCount(MechLocation.CENTER_TORSO) { it is CriticalSlotContent.Engine }
+
+/** Number of destroyed Gyro slots in the Center Torso (`docs/rules/armor-damage.md` §3). */
+public fun CombatUnit.gyroCritCount(): Int =
+    destroyedSlotCount(MechLocation.CENTER_TORSO) { it is CriticalSlotContent.Gyro }
+
+/** Number of destroyed Sensors slots in the Head (`docs/rules/armor-damage.md` §3). */
+public fun CombatUnit.sensorCritCount(): Int =
+    destroyedSlotCount(MechLocation.HEAD) { it is CriticalSlotContent.Sensors }
+
+/**
+ * Number of destroyed Life Support slots in the Head (`docs/rules/armor-damage.md`
+ * §3 Life Support; HEAD framework has 2 LifeSupport slots). Drives the per-turn
+ * pilot-damage sources wired in [battletech.tactical.session.HeatPhaseHandler.onEntry].
+ */
+public fun CombatUnit.lifeSupportCritCount(): Int =
+    destroyedSlotCount(MechLocation.HEAD) { it is CriticalSlotContent.LifeSupport }
+
+/** Engine crit count at which the mech is destroyed (`docs/rules/armor-damage.md` §3). */
+public const val ENGINE_DESTROYED_AT: Int = 3
+
+/** Gyro crit count at which the gyro is destroyed (`docs/rules/armor-damage.md` §3). */
+public const val GYRO_DESTROYED_AT: Int = 2
+
+/** Sensor crit count at which a unit's weapon attacks suffer the +2 to-hit penalty. */
+public const val SENSOR_HIT_TO_HIT_PENALTY_AT: Int = 1
+
+/** Sensor crit count at which a unit is fully blinded and cannot fire any weapons. */
+public const val SENSOR_BLIND_AT: Int = 2
+
+/** Life Support crit count at which the pilot takes a hit every turn, heat irrelevant. */
+public const val LIFE_SUPPORT_FAILURE_AT: Int = 2
+
+/** Heat generated per engine critical hit, added every turn (`docs/rules/armor-damage.md` §3). */
+public const val ENGINE_CRIT_HEAT_PER_HIT: Int = 5
+
+/** PSR modifier applied once a unit has taken at least one gyro critical hit. */
+public const val GYRO_PSR_PENALTY: Int = 3
+
+/** To-hit penalty applied to all of a unit's weapon attacks once it has taken a sensor critical hit. */
+public const val SENSOR_TO_HIT_PENALTY: Int = 2
+
+/** Standing heat at/above which a single Life Support crit causes a pilot hit this turn. */
+public const val LIFE_SUPPORT_HEAT_THRESHOLD: Int = 15
+
 /** Returns a copy of this layout with the slot at [location]/[slotIndex] replaced by [content]. */
 public fun CriticalLayout.withSlot(
     location: MechLocation,
