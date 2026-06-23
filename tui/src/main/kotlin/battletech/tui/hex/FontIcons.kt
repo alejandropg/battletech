@@ -17,6 +17,7 @@ private val NF_MD_TARGET = String(Character.toChars(0xF04FE))
 private val NF_MD_DICE_MULTIPLE_OUTLINE = String(Character.toChars(0xF1156))
 private val NF_MD_CHECKBOX_BLANK_OUTLINE = String(Character.toChars(0xF0131))
 private val NF_MD_CHECKBOX_MARKED_OUTLINE = String(Character.toChars(0xF0135))
+private val NF_MD_CHECKBOX_BLANK_CIRCLE_OUTLINE = String(Character.toChars(0xF0130))
 private val NF_MD_MINUS_BOX_OUTLINE = String(Character.toChars(0xF06F2))
 private val NF_MD_AMMUNITION = String(Character.toChars(0xF0CE8))
 private val NF_FA_INFINITY = String(Character.toChars(0xEDFE))
@@ -53,3 +54,5 @@ internal fun checkboxIcon(state: CheckState): String =
 internal fun ammoIcon(): String = NF_MD_AMMUNITION
 
 internal fun infinityIcon(): String = NF_FA_INFINITY
+
+internal fun emptyCircleIcon(): String = NF_MD_CHECKBOX_BLANK_CIRCLE_OUTLINE

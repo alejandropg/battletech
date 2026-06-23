@@ -355,9 +355,9 @@ internal class UnitStatusViewTest {
         val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
         val unit = aUnit(weapons = listOf(weapon), criticalLayout = layout)
         val view = UnitStatusView(unit)
-        val buffer = renderDecorated(view, height = 40)
+        val buffer = renderDecorated(view, height = 60)
 
-        val row = rowContaining(buffer, 40, "AC/20")
+        val row = rowContaining(buffer, 60, "AC/20")
         val line = (2 until 26).map { buffer.get(it, row).char }.joinToString("")
         assertTrue(line.contains("5"))
         assertEquals(ammoIcon(), buffer.get(25, row).char)
@@ -373,9 +373,9 @@ internal class UnitStatusViewTest {
         )
         val unit = aUnit(weapons = listOf(weapon))
         val view = UnitStatusView(unit)
-        val buffer = renderDecorated(view, height = 40)
+        val buffer = renderDecorated(view, height = 60)
 
-        val row = rowContaining(buffer, 40, "Medium Laser")
+        val row = rowContaining(buffer, 60, "Medium Laser")
         val line = (2 until 26).map { buffer.get(it, row).char }.joinToString("")
         assertFalse(line.contains("["))
         assertEquals(infinityIcon(), buffer.get(25, row).char)

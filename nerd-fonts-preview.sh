@@ -89,6 +89,14 @@ TERRAINS=(
   "Ammunition;nf-md-ammunition;f0ce8;${SLATE};${SLATE_BG}"
   "Infinity;nf-fa-infinity;edfe;${SLATE};${SLATE_BG}"
   "Infinity;nf-md-infinity;f06e4;${SLATE};${SLATE_BG}"
+  "Circle;nf-md-checkbox_blank_circle_outline;f0130;${SLATE};${SLATE_BG}"
+  "Circle;nf-md-circle_half_full;f1396;${SLATE};${SLATE_BG}"
+  "Circle;nf-md-circle_medium;f09de;${SLATE};${SLATE_BG}"
+  "Circle;nf-md-circle_small;f09df;${SLATE};${SLATE_BG}"
+  "Circle;nf-md-circle_slice_2;f0a9f;${SLATE};${SLATE_BG}"
+  "Circle;nf-md-circle_slice_4;f0aa1;${SLATE};${SLATE_BG}"
+  "Circle;nf-md-circle_slice_6;f0aa3;${SLATE};${SLATE_BG}"
+  "Circle;nf-md-circle_slice_8;f0aa5;${SLATE};${SLATE_BG}"
 
 )
 

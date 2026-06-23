@@ -5,6 +5,7 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tui.game.PanelId
 import battletech.tui.hex.ammoIcon
+import battletech.tui.hex.emptyCircleIcon
 import battletech.tui.hex.infinityIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
@@ -110,6 +111,30 @@ public class UnitStatusView(
             newLine()
             writeStr(3, "LL:%2d".format(armor.leftLeg), Color.GREEN)
             writeStr(14, "RL:%2d".format(armor.rightLeg), Color.GREEN)
+            newLine()
+            newLine()
+
+            val dot = emptyCircleIcon() + " "
+            writeln("Critical hit points", Color.WHITE)
+            writeln("  Engine  : ${dot.repeat(3)}", Color.WHITE)
+            writeln("  Gyro    : ${dot.repeat(2)}", Color.WHITE)
+            writeln("  Sensor  : ${dot.repeat(2)}", Color.WHITE)
+            writeln("  Support : ${dot.repeat(2)}", Color.WHITE)
+            newLine()
+
+            val structure = unit.internalStructure
+            writeln("Internal Structure", Color.WHITE)
+            writeStr(9, "HD:%2d".format(structure.head), Color.CYAN)
+            newLine()
+            writeStr(2, "LT:%2d".format(structure.leftTorso), Color.GREEN)
+            writeStr(9, "CT:%2d".format(structure.centerTorso), Color.BRIGHT_YELLOW)
+            writeStr(16, "RT:%2d".format(structure.rightTorso), Color.GREEN)
+            newLine()
+            writeStr(0, "LA:%2d".format(structure.leftArm), Color.GREEN)
+            writeStr(17, "RA:%2d".format(structure.rightArm), Color.GREEN)
+            newLine()
+            writeStr(3, "LL:%2d".format(structure.leftLeg), Color.GREEN)
+            writeStr(14, "RL:%2d".format(structure.rightLeg), Color.GREEN)
             repeat(2) { newLine() }
         }
 
