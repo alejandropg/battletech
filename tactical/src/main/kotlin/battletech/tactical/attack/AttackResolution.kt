@@ -3,22 +3,55 @@ package battletech.tactical.attack
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
+import battletech.tactical.session.CriticalHit
+import battletech.tactical.session.GameEvent
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.InternalStructureLayout
 
+/**
+ * Resolves [declarations] against [gameState] and applies the resulting damage and
+ * critical hits. Canonical dice order (must match seeded test expectations):
+ *
+ *  1. Per declaration, in order: to-hit 2d6, then (if hit) hit-location 2d6 — both in
+ *     [resolveOneAttack]. All attacks roll against the *original* state (simultaneous
+ *     resolution), so these rolls happen before any damage/crit dice are consumed.
+ *  2. Then, in the same declaration order, damage is applied and any crit checks for
+ *     that hit are rolled (2d6 crit table, then 1d6/1d6 slot picks with roll-again) on
+ *     the *evolving* unit — so a later attack's roll-again sees an earlier attack's
+ *     already-destroyed slots. A crit check fires once per [LocationDamage] step that
+ *     dealt structure damage, plus once more for the hit location on a natural-2
+ *     through-armor crit (`docs/rules/armor-damage.md` §3) even when no IS damage
+ *     occurred. `isDestroyed`/`MatchEnded` evaluation is deferred to the session's
+ *     post-volley destruction sweep, not decided here.
+ */
 public fun resolveAttacks(
     declarations: List<AttackDeclaration>,
     gameState: GameState,
     roller: DiceRoller,
 ): Pair<GameState, List<AttackResult>> {
+    val (state, results, _) = resolveAttacksWithCrits(declarations, gameState, roller)
+    return state to results
+}
+
+/**
+ * Same resolution as [resolveAttacks] but also returns the [CriticalHit] events
+ * produced, in volley order, for callers (the weapon-attack phase handler) that need
+ * to surface them alongside [battletech.tactical.session.AttacksResolved].
+ */
+public fun resolveAttacksWithCrits(
+    declarations: List<AttackDeclaration>,
+    gameState: GameState,
+    roller: DiceRoller,
+): Triple<GameState, List<AttackResult>, List<GameEvent>> {
     // All attacks resolve against the original state (simultaneous resolution)
     val results = declarations.map { declaration ->
         resolveOneAttack(declaration, gameState, roller)
     }
 
-    // Apply all damage to get the final state
+    // Apply all damage to get the final state, rolling crit checks in volley order.
     var updatedState = gameState
+    val critEvents = mutableListOf<GameEvent>()
     val finalResults = results.map { result ->
         if (result.hit && result.hitLocation != null) {
             val target = updatedState.unitById(result.targetId)
@@ -26,8 +59,25 @@ public fun resolveAttacks(
                 result
             } else {
                 val resolution = resolveDamage(target, result.hitLocation, result.damageApplied)
+                var updatedTarget = resolution.unit
+
+                val naturalTwo = result.locationRoll?.let { it.d1 == 1 && it.d2 == 1 } == true
+                val critLocations = resolution.steps
+                    .filter { it.structureDamage >= 1 }
+                    .map { it.location }
+                    .toMutableList()
+                if (naturalTwo && result.hitLocation !in critLocations) {
+                    critLocations += result.hitLocation
+                }
+
+                for (critLocation in critLocations) {
+                    val (afterCrit, events) = resolveCriticalHits(updatedTarget, critLocation, roller)
+                    updatedTarget = afterCrit
+                    critEvents += events
+                }
+
                 updatedState = updatedState.copy(
-                    units = updatedState.units.map { if (it.id == result.targetId) resolution.unit else it },
+                    units = updatedState.units.map { if (it.id == result.targetId) updatedTarget else it },
                 )
                 result.copy(damage = resolution.steps)
             }
@@ -36,7 +86,7 @@ public fun resolveAttacks(
         }
     }
 
-    return updatedState to finalResults
+    return Triple(updatedState, finalResults, critEvents)
 }
 
 public fun applyDamage(
@@ -130,8 +180,9 @@ private fun resolveOneAttack(
     val secondaryPenalty = if (declaration.isPrimary) 0 else 1
     val proneModifier = proneTargetToHitModifier(target, distance)
     val immobileModifier = immobileTargetToHitModifier(target)
+    val sensorModifier = sensorToHitModifier(attacker)
     val targetNumber = attacker.gunnerySkill + rangeModifier + heatPenalty +
-        secondaryPenalty + proneModifier + immobileModifier
+        secondaryPenalty + proneModifier + immobileModifier + sensorModifier
 
     val toHitRoll = roller.roll2d6()
 
@@ -154,6 +205,7 @@ private fun resolveOneAttack(
             rangeBand = rangeBand,
             heatPenalty = heatPenalty,
             secondaryPenalty = secondaryPenalty,
+            sensorPenalty = sensorModifier,
         )
     } else {
         AttackResult(
@@ -172,6 +224,7 @@ private fun resolveOneAttack(
             rangeBand = rangeBand,
             heatPenalty = heatPenalty,
             secondaryPenalty = secondaryPenalty,
+            sensorPenalty = sensorModifier,
         )
     }
 }
@@ -211,7 +264,7 @@ private fun setArmor(armor: ArmorLayout, location: HitLocation, value: Int, rear
     }
 }
 
-private fun getInternalStructure(is_: InternalStructureLayout, location: HitLocation): Int = when (location) {
+internal fun getInternalStructure(is_: InternalStructureLayout, location: HitLocation): Int = when (location) {
     HitLocation.HEAD -> is_.head
     HitLocation.CENTER_TORSO -> is_.centerTorso
     HitLocation.LEFT_TORSO -> is_.leftTorso
@@ -222,7 +275,7 @@ private fun getInternalStructure(is_: InternalStructureLayout, location: HitLoca
     HitLocation.RIGHT_LEG -> is_.rightLeg
 }
 
-private fun setInternalStructure(is_: InternalStructureLayout, location: HitLocation, value: Int): InternalStructureLayout = when (location) {
+internal fun setInternalStructure(is_: InternalStructureLayout, location: HitLocation, value: Int): InternalStructureLayout = when (location) {
     HitLocation.HEAD -> is_.copy(head = value)
     HitLocation.CENTER_TORSO -> is_.copy(centerTorso = value)
     HitLocation.LEFT_TORSO -> is_.copy(leftTorso = value)

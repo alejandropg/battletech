@@ -19,5 +19,6 @@ public data class AttackResult(
     val rangeBand: RangeBand,
     val heatPenalty: Int,
     val secondaryPenalty: Int,
+    val sensorPenalty: Int = 0,
     val damage: List<LocationDamage> = emptyList(),
 )

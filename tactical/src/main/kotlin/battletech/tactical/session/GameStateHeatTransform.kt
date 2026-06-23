@@ -3,18 +3,24 @@ package battletech.tactical.session
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.heat.weaponHeatSource
 import battletech.tactical.model.GameState
+import battletech.tactical.unit.engineHeatPerTurn
 
 /**
  * Fold each unit's heat generated this turn into its standing heat and apply
- * dissipation: `newHeat = max(0, current + generated - capacity)`. The per-turn
- * generation list is consumed and cleared (this is also its reset). Shutdown
- * and ammo-explosion consequences are rolled separately in
- * [HeatPhaseHandler] since they require the dice roller.
+ * dissipation: `newHeat = max(0, current + generated + engineHeat - capacity)`. The
+ * per-turn generation list is consumed and cleared (this is also its reset). Engine
+ * critical hits add a flat `5 × engineCritCount()` heat every turn (1st crit +5, 2nd
+ * +10; a 3rd destroys the unit outright via the destruction sweep, so it never
+ * reaches this fold) — it is generated heat for the turn, so it's folded in
+ * alongside weapon/movement heat, before dissipation. Shutdown and ammo-explosion
+ * consequences are rolled separately in [HeatPhaseHandler] since they require the
+ * dice roller.
  */
 public fun GameState.applyHeatPhase(): GameState {
     val updatedUnits = units.map { unit ->
         val generated = unit.heatGeneratedThisTurn.sumOf { it.amount }
-        val newHeat = maxOf(0, unit.currentHeat + generated - unit.heatSink.dissipation())
+        val engineHeat = unit.engineHeatPerTurn()
+        val newHeat = maxOf(0, unit.currentHeat + generated + engineHeat - unit.heatSink.dissipation())
         unit.copy(currentHeat = newHeat, heatGeneratedThisTurn = emptyList())
     }
     return copy(units = updatedUnits)

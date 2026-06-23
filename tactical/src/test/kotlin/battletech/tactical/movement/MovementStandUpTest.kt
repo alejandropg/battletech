@@ -2,6 +2,7 @@ package battletech.tactical.movement
 
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.MechLocation
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
@@ -77,5 +78,34 @@ internal class MovementStandUpTest {
         val rejection = handler.validate(standUp(), state, turn())
 
         assertThat(rejection).isInstanceOf(CommandRejection.UnitNotProne::class.java)
+    }
+
+    @Test
+    fun `a gyro crit raises the stand-up PSR target number by 3`() {
+        val proneWithGyroCrit = prone.copy(
+            criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(3)),
+        )
+        val state = aGameState(units = listOf(proneWithGyroCrit))
+        // 2d6 = 7: passes the base TN (5) but fails the gyro-modified TN (5+3=8).
+        val roller = DiceRoller.deterministic(3, 4)
+
+        val outcome = handler.apply(standUp(), state, turn(), roller)
+
+        val stood = outcome.events.filterIsInstance<UnitStoodUp>().single()
+        assertThat(stood.psr.targetNumber).isEqualTo(8)
+        assertThat(stood.stoodUp).isFalse()
+        assertThat(outcome.state.unitById(prone.id)!!.isProne).isTrue()
+    }
+
+    @Test
+    fun `standing a gyro-destroyed unit is rejected`() {
+        val gyroDestroyed = prone.copy(
+            criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(3, 4)),
+        )
+        val state = aGameState(units = listOf(gyroDestroyed))
+
+        val rejection = handler.validate(standUp(), state, turn())
+
+        assertThat(rejection).isInstanceOf(CommandRejection.GyroDestroyed::class.java)
     }
 }

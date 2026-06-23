@@ -1,7 +1,7 @@
 package battletech.tactical.attack.weapon
 
 import battletech.tactical.attack.ImpulseAttackPhaseHandler
-import battletech.tactical.attack.resolveAttacks
+import battletech.tactical.attack.resolveAttacksWithCrits
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.model.TurnPhase
@@ -49,10 +49,16 @@ public class WeaponAttackPhaseHandler : ImpulseAttackPhaseHandler() {
 
         val accumulated = newAttack.weaponDeclarations
         if (newAttack.isComplete && accumulated.isNotEmpty()) {
-            val (resolvedState, results) = resolveAttacks(accumulated, newState, roller)
+            val stateBeforeCrits = newState
+            val (resolvedState, results, criticalHits) = resolveAttacksWithCrits(accumulated, newState, roller)
             newState = resolvedState
             newAttack = newAttack.clearWeaponDeclarations()
             events += AttacksResolved(results)
+            events += criticalHits
+
+            val (stateAfterGyro, gyroEvents) = applyGyroCritEffects(stateBeforeCrits, newState, roller)
+            newState = stateAfterGyro
+            events += gyroEvents
         }
 
         return PhaseOutcome(newState, turn.copy(attack = newAttack), events)

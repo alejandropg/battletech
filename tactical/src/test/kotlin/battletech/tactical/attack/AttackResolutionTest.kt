@@ -204,6 +204,23 @@ internal class AttackResolutionTest {
     }
 
     @Test
+    fun `1 sensor crit raises the target number by two`() {
+        // HEAD framework: Sensors at indices 1 and 4 (docs/rules/armor-damage.md §3).
+        val blindedAttacker = attacker.copy(
+            criticalHits = mapOf(battletech.tactical.model.MechLocation.HEAD to setOf(1)),
+        )
+        val state = gameState.copy(units = listOf(blindedAttacker, target))
+        val declaration = AttackDeclaration(blindedAttacker.id, target.id, 0, true)
+
+        val roller = DiceRoller.seeded(42)
+        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        val result = results.single()
+        // gunnery 4 + range 0 + 2 (1 sensor crit) = 6
+        assertEquals(6, result.targetNumber)
+        assertEquals(2, result.sensorPenalty)
+    }
+
+    @Test
     fun `medium range adds plus 2 modifier`() {
         val farTarget = target.copy(position = HexCoordinates(5, 0)) // distance 5, medium range for ML
         val state = gameState.copy(units = listOf(attacker, farTarget))

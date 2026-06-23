@@ -51,6 +51,7 @@ public class PhysicalAttackPhaseHandler : ImpulseAttackPhaseHandler() {
 
         val accumulated = newAttack.physicalDeclarations
         if (newAttack.isComplete && accumulated.isNotEmpty()) {
+            val stateBeforeCrits = newState
             val (resolvedState, results) = resolvePhysicalAttacks(accumulated, newState, roller)
             newState = resolvedState
             newAttack = newAttack.clearPhysicalDeclarations()
@@ -62,6 +63,10 @@ public class PhysicalAttackPhaseHandler : ImpulseAttackPhaseHandler() {
                     events += UnitFell(unitId = fallenId, fall = fall)
                 }
             }
+
+            val (stateAfterGyro, gyroEvents) = applyGyroCritEffects(stateBeforeCrits, newState, roller)
+            newState = stateAfterGyro
+            events += gyroEvents
         }
 
         return PhaseOutcome(newState, turn.copy(attack = newAttack), events)

@@ -6,6 +6,7 @@ import battletech.tactical.attack.resolveDamage
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.gyroPsrModifier
 import battletech.tactical.unit.pilotingSkillRoll
 
 /**
@@ -51,7 +52,7 @@ public fun resolvePhysicalAttacks(
         val faller = updatedState.unitById(fallerId)
         if (faller == null || faller.isProne) return@map result
 
-        val psr = pilotingSkillRoll(faller, roller)
+        val psr = pilotingSkillRoll(faller, roller, modifier = gyroPsrModifier(faller))
         if (psr.passed) {
             result.copy(psr = psr)
         } else {

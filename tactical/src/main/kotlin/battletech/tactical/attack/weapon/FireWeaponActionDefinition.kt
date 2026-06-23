@@ -5,6 +5,7 @@ import battletech.tactical.attack.AttackRule
 import battletech.tactical.attack.WeaponAttackContext
 import battletech.tactical.attack.immobileTargetToHitModifier
 import battletech.tactical.attack.proneTargetToHitModifier
+import battletech.tactical.attack.sensorToHitModifier
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
 import battletech.tactical.model.TurnPhase
@@ -63,6 +64,7 @@ public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> 
         targetNumber += heatPenalty
         targetNumber += proneTargetToHitModifier(context.target, distance)
         targetNumber += immobileTargetToHitModifier(context.target)
+        targetNumber += sensorToHitModifier(context.actor)
 
         return TWO_D6_PROBABILITY.getOrElse(targetNumber.coerceAtLeast(2)) { 0 }
     }

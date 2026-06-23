@@ -4,8 +4,11 @@ import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
 import battletech.tactical.query.aGameState
+import battletech.tactical.query.anArmorLayout
+import battletech.tactical.query.anInternalStructureLayout
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.mediumLaser
 import battletech.tactical.session.AttackDeclarationsRecorded
@@ -20,6 +23,8 @@ import battletech.tactical.movement.ReachableHex
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnState
+import battletech.tactical.session.UnitFell
+import battletech.tactical.unit.destructionReason
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -287,5 +292,101 @@ internal class WeaponAttackPhaseHandlerTest {
         val outcome = handler.apply(cmd, gameState, seededTwoImpulseTurn(), noRoller)
 
         assertThat(outcome.events.filterIsInstance<TorsoFacingsApplied>()).isEmpty()
+    }
+
+    // ── gyro 1st-crit immediate PSR ─────────────────────────────────────────────
+
+    // Thin CT (0 armor, 1 IS) so a medium laser hit (5 dmg) blows into IS and
+    // triggers exactly one crit check; pilotingSkill 5 -> gyro-modified PSR TN 8.
+    private val thinCtTarget = aUnit(
+        id = "target",
+        owner = PlayerId.PLAYER_2,
+        weapons = listOf(mediumLaser()),
+        position = HexCoordinates(1, 0),
+        armor = anArmorLayout(centerTorso = 0, centerTorsoRear = 0),
+        internalStructure = anInternalStructureLayout(centerTorso = 1),
+    )
+    private val thinCtGameState = aGameState(units = listOf(attacker, thinCtTarget))
+
+    private fun thinCtTurn(declaration: AttackDeclaration): TurnState = seededTwoImpulseTurn().copy(
+        attack = AttackProgress(
+            sequence = ImpulseSequence(
+                order = listOf(
+                    Impulse(PlayerId.PLAYER_1, 1),
+                    Impulse(PlayerId.PLAYER_2, 1),
+                ),
+                currentIndex = 1,
+            ),
+            weaponDeclarations = listOf(declaration),
+        ),
+    )
+
+    @Test
+    fun `a unit taking its first gyro crit fails its PSR and falls`() {
+        val declaration = AttackDeclaration(attacker.id, thinCtTarget.id, 0, true)
+        val cmd = CommitAttackImpulse(PlayerId.PLAYER_2, emptyList(), emptyMap())
+        // to-hit 4+4=8 (hit, TN 4); location 3+4=7 (CENTER_TORSO).
+        // Medium laser 5 dmg into 0-armor/1-IS CT: 1 structure damage, 4 excess
+        // transfers — but CENTER_TORSO doesn't transfer, so excess is dropped; one
+        // crit check fires on CENTER_TORSO. Crit roll 4+5=9 -> 1 crit; block 1
+        // (upper), slot 4 -> index 3 (Gyro, 1st crit).
+        // Gyro PSR (TN 5+3=8): roll 2+3=5 -> fails -> fall (loc 2+3=5, facing d6=1).
+        val roller = DiceRoller.deterministic(4, 4, 3, 4, 4, 5, 1, 4, 2, 3, 2, 3, 1)
+
+        val outcome = handler.apply(cmd, thinCtGameState, thinCtTurn(declaration), roller)
+
+        val updatedTarget = outcome.state.unitById(thinCtTarget.id)!!
+        assertThat(updatedTarget.criticalHits[MechLocation.CENTER_TORSO]).containsExactly(3)
+        assertThat(updatedTarget.isProne).isTrue()
+        val fell = outcome.events.filterIsInstance<UnitFell>().single()
+        assertThat(fell.unitId).isEqualTo(thinCtTarget.id)
+    }
+
+    @Test
+    fun `a unit taking its first gyro crit passes its PSR and stays up`() {
+        val declaration = AttackDeclaration(attacker.id, thinCtTarget.id, 0, true)
+        val cmd = CommitAttackImpulse(PlayerId.PLAYER_2, emptyList(), emptyMap())
+        // Same crit setup as above, but the gyro PSR roll succeeds: 4+4=8 >= TN 8.
+        val roller = DiceRoller.deterministic(4, 4, 3, 4, 4, 5, 1, 4, 4, 4)
+
+        val outcome = handler.apply(cmd, thinCtGameState, thinCtTurn(declaration), roller)
+
+        val updatedTarget = outcome.state.unitById(thinCtTarget.id)!!
+        assertThat(updatedTarget.criticalHits[MechLocation.CENTER_TORSO]).containsExactly(3)
+        assertThat(updatedTarget.isProne).isFalse()
+        assertThat(outcome.events.filterIsInstance<UnitFell>()).isEmpty()
+    }
+
+    // ── gyro 2nd crit: automatic crash, NOT elimination (rules doc §3) ───────────
+
+    @Test
+    fun `a unit taking its second gyro crit crashes automatically without a PSR and is not eliminated`() {
+        // Target already has its 1st gyro crit (CT slot index 3). CT armor 0, IS 10 so a
+        // 5-dmg laser deals structure damage (firing a crit check) WITHOUT zeroing CT IS.
+        val target = aUnit(
+            id = "target",
+            owner = PlayerId.PLAYER_2,
+            weapons = listOf(mediumLaser()),
+            position = HexCoordinates(1, 0),
+            armor = anArmorLayout(centerTorso = 0, centerTorsoRear = 0),
+            internalStructure = anInternalStructureLayout(centerTorso = 10),
+        ).copy(criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(3)))
+        val state = aGameState(units = listOf(attacker, target))
+        val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
+        val cmd = CommitAttackImpulse(PlayerId.PLAYER_2, emptyList(), emptyMap())
+        // to-hit 4+4=8 (hit); location 3+4=7 (CENTER_TORSO); 5 dmg -> 5 structure damage
+        // (IS 10->5), one crit check: 4+5=9 -> 1 crit; block 1 (upper), slot 5 -> index 4
+        // (Gyro, 2nd crit). gyro crits 1 -> 2 => shattered: automatic crash, NO PSR roll.
+        // fall: location 2+3=5, facing d6=1.
+        val roller = DiceRoller.deterministic(4, 4, 3, 4, 4, 5, 1, 5, 2, 3, 1)
+
+        val outcome = handler.apply(cmd, state, thinCtTurn(declaration), roller)
+
+        val updatedTarget = outcome.state.unitById(target.id)!!
+        assertThat(updatedTarget.criticalHits[MechLocation.CENTER_TORSO]).containsExactlyInAnyOrder(3, 4)
+        assertThat(updatedTarget.isProne).isTrue()
+        assertThat(updatedTarget.isDestroyed).isFalse()
+        assertThat(destructionReason(updatedTarget)).isNull()
+        assertThat(outcome.events.filterIsInstance<UnitFell>().single().unitId).isEqualTo(target.id)
     }
 }

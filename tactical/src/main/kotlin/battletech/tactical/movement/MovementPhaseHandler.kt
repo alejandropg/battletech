@@ -18,6 +18,8 @@ import battletech.tactical.session.StandUp
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitMoved
 import battletech.tactical.session.UnitStoodUp
+import battletech.tactical.unit.cannotStandFromGyroDamage
+import battletech.tactical.unit.gyroPsrModifier
 import battletech.tactical.unit.pilotingSkillRoll
 
 /**
@@ -50,10 +52,11 @@ public class MovementPhaseHandler : PhaseHandler {
             }
 
         is StandUp -> validateActivation(command.unitId, command.playerId, state, turn)
-            ?: if (state.unitById(command.unitId)?.isProne != true) {
-                CommandRejection.UnitNotProne(command.unitId)
-            } else {
-                null
+            ?: when {
+                state.unitById(command.unitId)?.isProne != true -> CommandRejection.UnitNotProne(command.unitId)
+                (state.unitById(command.unitId)?.cannotStandFromGyroDamage() ?: false) ->
+                    CommandRejection.GyroDestroyed(command.unitId)
+                else -> null
             }
 
         else -> null
@@ -93,7 +96,7 @@ public class MovementPhaseHandler : PhaseHandler {
         roller: DiceRoller,
     ): PhaseOutcome {
         val unit = state.unitById(cmd.unitId)!!
-        val psr = pilotingSkillRoll(unit, roller)
+        val psr = pilotingSkillRoll(unit, roller, modifier = gyroPsrModifier(unit))
         return if (psr.passed) {
             // Stood up; activation NOT consumed so the unit may still move this impulse.
             val newState = state.copy(
