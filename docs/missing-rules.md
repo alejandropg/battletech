@@ -61,7 +61,7 @@ The standard game ends when only one side has surviving (non-destroyed, non-fled
 - TUI: surface the game-over banner; stop prompting for input.
 - Tests: eliminate all of one player's units → `GameOver` with the surviving player; mutual elimination in the same resolution → draw.
 
-## Per-Location Weapon Mounting
+## [x] Per-Location Weapon Mounting
 
 In BattleTech every weapon occupies critical slots in a **specific location** (e.g. an AC/20 in the right torso, a medium laser in the left arm). Location matters for: which weapons are lost when a limb/torso is destroyed, critical-hit weapon destruction, and firing-arc nuances. This is a prerequisite for *Critical Hits*, *Location Destruction Consequences*, and correct *Ammo* handling.
 
