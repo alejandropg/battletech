@@ -24,6 +24,7 @@ private val NF_MD_AMMUNITION = String(Character.toChars(0xF0CE8))
 private val NF_FA_INFINITY = String(Character.toChars(0xEDFE))
 private val NF_MD_IMAGE_BROKEN = String(Character.toChars(0xF02ED))
 private val NF_FA_CHAIN_BROKEN = String(Character.toChars(0xF127))
+private val NF_FA_BOMB = String(Character.toChars(0xF1E2))
 private val NF_MD_RADIOACTIVE_CIRCLE = String(Character.toChars(0xF185D))
 private val NF_MD_SYNC_CIRCLE = String(Character.toChars(0xF1378))
 private val NF_MD_EYE_CIRCLE = String(Character.toChars(0xF0B94))
@@ -63,6 +64,9 @@ internal fun criticalHitIcon(content: CriticalSlotContent): String =
 
 /** Marker for a log line where a mech location was blown off. */
 internal fun locationDestroyedIcon(): String = NF_FA_CHAIN_BROKEN
+
+/** Marker for an ammo explosion log line. */
+internal fun ammoExplosionIcon(): String = NF_FA_BOMB
 
 internal fun checkboxIcon(state: CheckState): String =
     when (state) {

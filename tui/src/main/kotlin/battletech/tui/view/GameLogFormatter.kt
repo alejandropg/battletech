@@ -30,6 +30,7 @@ import battletech.tactical.unit.ActuatorType
 import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.DestructionReason
 import battletech.tactical.unit.UnitId
+import battletech.tui.hex.ammoExplosionIcon
 import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.locationDestroyedIcon
@@ -170,6 +171,7 @@ internal object GameLogFormatter {
     fun iconFor(event: GameEvent): String? = when (event) {
         is UnitMoved -> movementModeIcon(event.mode)
         is CriticalHit -> criticalHitIcon(event.content)
+        is AmmoExploded -> ammoExplosionIcon()
         is AttacksResolved ->
             if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
         is PhysicalAttacksResolved ->
