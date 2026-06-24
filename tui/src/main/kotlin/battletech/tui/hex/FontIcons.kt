@@ -1,6 +1,7 @@
 package battletech.tui.hex
 
 import battletech.tactical.model.MovementMode
+import battletech.tactical.unit.CriticalSlotContent
 import battletech.tui.view.CheckState
 
 // Nerd Fonts icons (https://www.nerdfonts.com/cheat-sheet)
@@ -21,6 +22,12 @@ private val NF_MD_CHECKBOX_BLANK_CIRCLE_OUTLINE = String(Character.toChars(0xF01
 private val NF_MD_MINUS_BOX_OUTLINE = String(Character.toChars(0xF06F2))
 private val NF_MD_AMMUNITION = String(Character.toChars(0xF0CE8))
 private val NF_FA_INFINITY = String(Character.toChars(0xEDFE))
+private val NF_MD_IMAGE_BROKEN = String(Character.toChars(0xF02ED))
+private val NF_FA_CHAIN_BROKEN = String(Character.toChars(0xF127))
+private val NF_MD_RADIOACTIVE_CIRCLE = String(Character.toChars(0xF185D))
+private val NF_MD_SYNC_CIRCLE = String(Character.toChars(0xF1378))
+private val NF_MD_EYE_CIRCLE = String(Character.toChars(0xF0B94))
+private val NF_MD_ACCOUNT_CIRCLE = String(Character.toChars(0xF0009))
 
 internal fun diceIcon(value: Int): String =
     when (value) {
@@ -43,6 +50,19 @@ internal fun movementModeIcon(mode: MovementMode): String =
     }
 
 internal fun targetIcon(): String = NF_MD_TARGET
+
+/** Marker for a destroyed critical slot, with a distinct glyph for engine/gyro/sensor/life-support crits. */
+internal fun criticalHitIcon(content: CriticalSlotContent): String =
+    when (content) {
+        is CriticalSlotContent.Engine -> NF_MD_RADIOACTIVE_CIRCLE
+        is CriticalSlotContent.Gyro -> NF_MD_SYNC_CIRCLE
+        is CriticalSlotContent.Sensors -> NF_MD_EYE_CIRCLE
+        is CriticalSlotContent.LifeSupport -> NF_MD_ACCOUNT_CIRCLE
+        else -> NF_MD_IMAGE_BROKEN
+    }
+
+/** Marker for a log line where a mech location was blown off. */
+internal fun locationDestroyedIcon(): String = NF_FA_CHAIN_BROKEN
 
 internal fun checkboxIcon(state: CheckState): String =
     when (state) {

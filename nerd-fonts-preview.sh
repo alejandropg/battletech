@@ -49,6 +49,23 @@ TERRAINS=(
   "Fire;nf-fa-fire;f06d;${RED};${RED_BG}"
   "Fire;nf-md-fire;f0238;${RED};${RED_BG}"
   "Tree Fire;nf-md-pine_tree_fire;f141a;${RED};${RED_BG}"
+  "Explosion;nf-fa-bomb;f1e2;${RED};${RED_BG}"
+  "Explosion;nf-md-bomb;f0691;${RED};${RED_BG}"
+  "Explosion;nf-md-nuke;f06a4;${RED};${RED_BG}"
+  "Explosion;nf-md-firework;f0e30;${RED};${RED_BG}"
+  "Reactor Breach;nf-fa-radiation;ef5a;${RED};${RED_BG}"
+  "Reactor Breach;nf-fa-circle_radiation;ef5b;${RED};${RED_BG}"
+  "Internal Crit Fire;nf-fa-dumpster_fire;ef43;${RED};${RED_BG}"
+  "Smoldering;nf-md-smoke;f1799;${GRAY};${GRAY_BG}"
+  "Destroyed Slot;nf-md-image_broken;f02ed;${GRAY};${GRAY_BG}"
+  "Destroyed Slot;nf-md-image_broken_variant;f02ee;${GRAY};${GRAY_BG}"
+  "Destroyed Slot;nf-md-heart_broken;f02d4;${GRAY};${GRAY_BG}"
+  "Destroyed Slot;nf-md-trophy_broken;f0da4;${GRAY};${GRAY_BG}"
+  "Severed Limb;nf-fa-chain_broken;f127;${GRAY};${GRAY_BG}"
+  "Unit Destroyed;nf-fa-skull;ee15;${GRAY};${GRAY_BG}"
+  "Unit Destroyed;nf-md-skull;f068c;${GRAY};${GRAY_BG}"
+  "Unit Destroyed;nf-fa-skull_crossbones;ef0e;${GRAY};${GRAY_BG}"
+  "Unit Destroyed;nf-md-skull_crossbones;f0bc6;${GRAY};${GRAY_BG}"
   "Direction N;nf-md-arrow_up;f005d;${SLATE};${SLATE_BG}"
   "Direction NE;nf-md-arrow_top_right;f005c;${SLATE};${SLATE_BG}"
   "Direction E;nf-md-arrow_right;f0054;${SLATE};${SLATE_BG}"
@@ -97,12 +114,16 @@ TERRAINS=(
   "Circle;nf-md-circle_slice_4;f0aa1;${SLATE};${SLATE_BG}"
   "Circle;nf-md-circle_slice_6;f0aa3;${SLATE};${SLATE_BG}"
   "Circle;nf-md-circle_slice_8;f0aa5;${SLATE};${SLATE_BG}"
+  "Circle;nf-md-radioactive_circle;f185d;${SLATE};${SLATE_BG}"
+  "Circle;nf-md-sync_circle;f1378;${SLATE};${SLATE_BG}"
+  "Circle;nf-md-eye_circle;f0b94;${SLATE};${SLATE_BG}"
+  "Circle;nf-md-account_circle;f0009;${SLATE};${SLATE_BG}"
 
 )
 
 echo -e "${BOLD}Battletech TUI: Terrain Glyph Preview (ZSH Native)${RESET}"
 echo "------------------------------------------------------------------------------------------"
-printf "%-15s | %-37s | %-7s | %-5s | %-10s\n" "Terrain" "Nerd Font" "Hex" "Icon" "CLI Test"
+printf "%-20s | %-37s | %-7s | %-5s | %-10s\n" "Terrain" "Nerd Font" "Hex" "Icon" "CLI Test"
 echo "------------------------------------------------------------------------------------------"
 
 for terrain in "${TERRAINS[@]}"; do
@@ -114,7 +135,7 @@ for terrain in "${TERRAINS[@]}"; do
   BG="\033[48;2;${bg_r};${bg_g};${bg_b}m"
 
   # Print the result
-  printf "%-15s | %-37s | %-7s |  ${FG}%s${RESET}    | ${BG}${FG} %s ${RESET}\n" "$name" "$nerd_class" "$hex" "$glyph" "$glyph"
+  printf "%-20s | %-37s | %-7s |  ${FG}%s${RESET}    | ${BG}${FG} %s ${RESET}\n" "$name" "$nerd_class" "$hex" "$glyph" "$glyph"
 done
 
 echo "------------------------------------------------------------------------------------------"

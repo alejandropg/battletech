@@ -43,7 +43,9 @@ import battletech.tactical.unit.WeaponModels
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.mediumLaser
+import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.diceIcon
+import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -82,7 +84,7 @@ internal class GameLogFormatterTest {
             state = stateWithAtlas,
         )
 
-        assertThat(text).isEqualTo("Atlas ${movementModeIcon(MovementMode.WALK)} (3 MP) 0301→0302")
+        assertThat(text).isEqualTo("Atlas (3 MP) 0301→0302")
     }
 
     @Test
@@ -101,8 +103,8 @@ internal class GameLogFormatterTest {
             stateWithAtlas,
         )
 
-        assertThat(ran).isEqualTo("Atlas ${movementModeIcon(MovementMode.RUN)} (5 MP) 0101→0102")
-        assertThat(jumped).isEqualTo("Atlas ${movementModeIcon(MovementMode.JUMP)} (4 MP) 0101→0102")
+        assertThat(ran).isEqualTo("Atlas (5 MP) 0101→0102")
+        assertThat(jumped).isEqualTo("Atlas (4 MP) 0101→0102")
     }
 
     @Test
@@ -543,6 +545,45 @@ internal class GameLogFormatterTest {
             state = stateWithLocust,
         )
         assertThat(recoveredText).isEqualTo("Locust pilot regained consciousness")
+    }
+
+    @Test
+    fun `iconFor uses the movement-mode glyph for a move`() {
+        val moved = UnitMoved(
+            unitId = UnitId("atlas"), from = HexCoordinates(0, 0), to = HexCoordinates(0, 1),
+            finalFacing = HexDirection.N, mode = MovementMode.JUMP, mpSpent = 4,
+        )
+
+        assertThat(GameLogFormatter.iconFor(moved)).isEqualTo(movementModeIcon(MovementMode.JUMP))
+    }
+
+    @Test
+    fun `iconFor maps engine, gyro, sensor, and life-support crits to distinct glyphs`() {
+        fun crit(content: CriticalSlotContent) = CriticalHit(
+            unitId = UnitId("locust"), location = MechLocation.CENTER_TORSO, slotIndex = 0, content = content,
+        )
+
+        assertThat(GameLogFormatter.iconFor(crit(CriticalSlotContent.Engine)))
+            .isEqualTo(criticalHitIcon(CriticalSlotContent.Engine))
+        assertThat(GameLogFormatter.iconFor(crit(CriticalSlotContent.Gyro)))
+            .isEqualTo(criticalHitIcon(CriticalSlotContent.Gyro))
+        assertThat(GameLogFormatter.iconFor(crit(CriticalSlotContent.Sensors)))
+            .isEqualTo(criticalHitIcon(CriticalSlotContent.Sensors))
+        assertThat(GameLogFormatter.iconFor(crit(CriticalSlotContent.LifeSupport)))
+            .isEqualTo(criticalHitIcon(CriticalSlotContent.LifeSupport))
+    }
+
+    @Test
+    fun `iconFor marks a destroyed location and omits the icon otherwise`() {
+        val destroyed = AttacksResolved(
+            listOf(anAttackResult(hit = true, damage = 24, locationDamage = listOf(
+                LocationDamage(MechLocation.LEFT_ARM, armorDamage = 20, structureDamage = 6, destroyed = true),
+            ))),
+        )
+        val intact = AttacksResolved(listOf(anAttackResult(hit = true, damage = 5)))
+
+        assertThat(GameLogFormatter.iconFor(destroyed)).isEqualTo(locationDestroyedIcon())
+        assertThat(GameLogFormatter.iconFor(intact)).isNull()
     }
 
     private fun anAttackResult(

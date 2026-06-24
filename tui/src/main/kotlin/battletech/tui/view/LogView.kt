@@ -23,14 +23,16 @@ public class LogView(
 
         for (entry in entries) {
             val text = GameLogFormatter.format(entry.event, gameState) ?: continue
+            val icon = GameLogFormatter.iconFor(entry.event)
+            val line = if (icon != null) "$icon $text" else text
 
             if (entry.turn != lastTurn) {
                 content.writeHeader("TURN ${entry.turn}")
                 lastTurn = entry.turn
             }
 
-            for (line in TextWrap.wrap(text, width)) {
-                content.writeln(line)
+            for (wrapped in TextWrap.wrap(line, width)) {
+                content.writeln(wrapped)
             }
         }
     }

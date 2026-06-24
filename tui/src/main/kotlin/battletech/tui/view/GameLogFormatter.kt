@@ -30,7 +30,9 @@ import battletech.tactical.unit.ActuatorType
 import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.DestructionReason
 import battletech.tactical.unit.UnitId
+import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.diceIcon
+import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
 
 internal object GameLogFormatter {
@@ -46,8 +48,7 @@ internal object GameLogFormatter {
 
         is UnitMoved -> {
             val name = state.unitById(event.unitId)?.name ?: event.unitId.value
-            val icon = movementModeIcon(event.mode)
-            "$name $icon (${event.mpSpent} MP) ${hexLabel(event.from)}→${hexLabel(event.to)}"
+            "$name (${event.mpSpent} MP) ${hexLabel(event.from)}→${hexLabel(event.to)}"
         }
 
         is AttacksResolved -> {
@@ -163,6 +164,17 @@ internal object GameLogFormatter {
             val name = state.unitById(event.unitId)?.name ?: event.unitId.value
             "$name pilot regained consciousness"
         }
+    }
+
+    /** Leading glyph for a log line, or null when the situation has no dedicated marker. */
+    fun iconFor(event: GameEvent): String? = when (event) {
+        is UnitMoved -> movementModeIcon(event.mode)
+        is CriticalHit -> criticalHitIcon(event.content)
+        is AttacksResolved ->
+            if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
+        is PhysicalAttacksResolved ->
+            if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
+        else -> null
     }
 
     private fun destructionReasonLabel(reason: DestructionReason): String = when (reason) {
