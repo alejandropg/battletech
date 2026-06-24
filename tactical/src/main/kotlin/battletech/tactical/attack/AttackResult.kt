@@ -21,4 +21,5 @@ public data class AttackResult(
     val secondaryPenalty: Int,
     val sensorPenalty: Int = 0,
     val damage: List<LocationDamage> = emptyList(),
+    val modifiers: List<ToHitModifier> = emptyList(),
 )

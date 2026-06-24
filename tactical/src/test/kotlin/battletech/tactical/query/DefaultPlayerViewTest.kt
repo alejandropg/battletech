@@ -1,5 +1,7 @@
 package battletech.tactical.query
 
+import battletech.tactical.attack.total
+import battletech.tactical.attack.weaponToHitModifiers
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
@@ -219,5 +221,40 @@ internal class DefaultPlayerViewTest {
         assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).containsExactly(UnitId("enemy"))
         val info = view.targetInfos(UnitId("attacker"), HexDirection.N).single()
         assertThat(info.weapons.single().modifiers).contains("+2 sensors")
+    }
+
+    @Test
+    fun `targetInfos applies the prone modifier so the preview agrees with resolution`() {
+        // Regression test: targetInfos previously omitted the prone modifier, so the
+        // previewed target number disagreed with the resolver's (which already applies
+        // proneTargetToHitModifier via weaponToHitModifiers). Both must now agree.
+        val attacker = aUnit(
+            id = "attacker",
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+        )
+        val proneEnemy = aUnit(
+            id = "enemy",
+            owner = PlayerId.PLAYER_2,
+            position = HexCoordinates(0, -1), // due north of the attacker, within the N firing arc
+        ).copy(isProne = true)
+        val state = aGameState(
+            units = listOf(attacker, proneEnemy),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
+        )
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+
+        val info = view.targetInfos(UnitId("attacker"), HexDirection.N).single()
+        val weaponInfo = info.weapons.single()
+        val weapon = attacker.weapons.single()
+        val distance = attacker.position.distanceTo(proneEnemy.position)
+
+        val expectedTargetNumber = (
+            attacker.gunnerySkill +
+                weaponToHitModifiers(attacker, proneEnemy, weapon, distance, isPrimaryTarget = true).total()
+            ).coerceAtLeast(2)
+
+        assertThat(weaponInfo.targetDiceRoll).isEqualTo(expectedTargetNumber)
+        assertThat(weaponInfo.modifiers).anyMatch { it.endsWith("prone") }
     }
 }

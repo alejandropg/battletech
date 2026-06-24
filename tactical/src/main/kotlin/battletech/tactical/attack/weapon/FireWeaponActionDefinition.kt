@@ -3,10 +3,8 @@ package battletech.tactical.attack.weapon
 import battletech.tactical.attack.AttackDefinition
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.attack.WeaponAttackContext
-import battletech.tactical.attack.immobileTargetToHitModifier
-import battletech.tactical.attack.proneTargetToHitModifier
-import battletech.tactical.attack.sensorToHitModifier
-import battletech.tactical.heat.HeatScale
+import battletech.tactical.attack.total
+import battletech.tactical.attack.weaponToHitModifiers
 import battletech.tactical.model.GameState
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.ActionPreview
@@ -51,29 +49,14 @@ public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> 
     override fun successChance(context: WeaponAttackContext): Int {
         val weapon = context.weapon
         val distance = context.actor.position.distanceTo(context.target.position)
-        val rangeModifier = when {
-            distance <= weapon.shortRange -> 0
-            distance <= weapon.mediumRange -> 2
-            distance <= weapon.longRange -> 4
-            else -> return 0
-        }
-
-        var targetNumber = context.actor.gunnerySkill + rangeModifier
-
-        val heatPenalty = heatPenaltyModifier(context.actor)
-        targetNumber += heatPenalty
-        targetNumber += proneTargetToHitModifier(context.target, distance)
-        targetNumber += immobileTargetToHitModifier(context.target)
-        targetNumber += sensorToHitModifier(context.actor)
-
+        if (distance > weapon.longRange) return 0
+        val modifiers = weaponToHitModifiers(context.actor, context.target, weapon, distance, isPrimaryTarget = true)
+        val targetNumber = context.actor.gunnerySkill + modifiers.total()
         return TWO_D6_PROBABILITY.getOrElse(targetNumber.coerceAtLeast(2)) { 0 }
     }
 
     override fun actionName(context: WeaponAttackContext): String =
         "Fire ${context.weapon.name} at ${context.target.name}"
-
-    private fun heatPenaltyModifier(actor: CombatUnit): Int =
-        HeatScale.toHitPenalty(actor.currentHeat)
 
     private companion object {
         val TWO_D6_PROBABILITY: Map<Int, Int> = mapOf(

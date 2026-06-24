@@ -1,30 +1,44 @@
 package battletech.tactical.attack.physical
 
+import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.attack.heatPenaltyModifier
 import battletech.tactical.attack.proneTargetToHitModifier
+import battletech.tactical.attack.total
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Terrain
 import battletech.tactical.model.MovementMode
 import battletech.tactical.unit.CombatUnit
 
 /**
+ * Ordered breakdown of every contribution to a physical attack's to-hit target
+ * number, excluding the attacker's piloting skill (the base, added separately
+ * like gunnery is for weapons): attacker movement, target movement, terrain,
+ * prone target, heat penalty, and the attack kind's own modifier (kick is −2).
+ */
+public fun physicalToHitModifiers(
+    attacker: CombatUnit,
+    target: CombatUnit,
+    kind: PhysicalAttackKind,
+    gameState: GameState,
+): List<ToHitModifier> = listOf(
+    ToHitModifier("attacker move", attackerMovementModifier(attacker)),
+    ToHitModifier("target move", targetMovementModifier(target)),
+    ToHitModifier("terrain", terrainModifier(target, gameState)),
+    ToHitModifier("prone", proneTargetToHitModifier(target, attacker.position.distanceTo(target.position))),
+    ToHitModifier("heat", heatPenaltyModifier(attacker)),
+    ToHitModifier(attackKindLabel(kind), attackKindModifier(kind)),
+)
+
+/**
  * Total Warfare physical-attack to-hit target number:
- * piloting skill + attacker movement modifier + heat penalty + the attack's
- * own modifier (kick is −2). Target movement, terrain, elevation and prone
- * modifiers are layered in by later slices.
+ * piloting skill + [physicalToHitModifiers].
  */
 public fun physicalToHitTargetNumber(
     attacker: CombatUnit,
     target: CombatUnit,
     kind: PhysicalAttackKind,
     gameState: GameState,
-): Int = attacker.pilotingSkill +
-    attackerMovementModifier(attacker) +
-    targetMovementModifier(target) +
-    terrainModifier(target, gameState) +
-    proneTargetToHitModifier(target, attacker.position.distanceTo(target.position)) +
-    heatPenaltyModifier(attacker) +
-    attackKindModifier(kind)
+): Int = attacker.pilotingSkill + physicalToHitModifiers(attacker, target, kind, gameState).total()
 
 private fun attackerMovementModifier(attacker: CombatUnit): Int = when (attacker.movementThisTurn.mode) {
     null -> 0
@@ -58,5 +72,10 @@ private fun terrainModifier(target: CombatUnit, gameState: GameState): Int =
 private fun attackKindModifier(kind: PhysicalAttackKind): Int = when (kind) {
     is PhysicalAttackKind.Punch -> 0
     is PhysicalAttackKind.Kick -> -2
+}
+
+private fun attackKindLabel(kind: PhysicalAttackKind): String = when (kind) {
+    is PhysicalAttackKind.Punch -> "punch"
+    is PhysicalAttackKind.Kick -> "kick"
 }
 

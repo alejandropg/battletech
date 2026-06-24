@@ -1,11 +1,11 @@
 package battletech.tactical.query
 
-import battletech.tactical.attack.immobileTargetToHitModifier
-import battletech.tactical.attack.sensorToHitModifier
+import battletech.tactical.attack.nonZero
+import battletech.tactical.attack.total
+import battletech.tactical.attack.weaponToHitModifiers
 import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
-import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.unit.CombatUnit
@@ -56,33 +56,23 @@ internal class WeaponTargeting(private val state: PublicGameState) {
                         available = false,
                     )
                 } else {
-                    val rangeModifier = when {
-                        distance <= weapon.shortRange -> 0
-                        distance <= weapon.mediumRange -> 2
-                        else -> 4
+                    val modifiers = weaponToHitModifiers(
+                        attacker = attacker,
+                        target = target,
+                        weapon = weapon,
+                        distance = distance,
+                        isPrimaryTarget = true,
+                    )
+                    val targetNumber = (attacker.gunnerySkill + modifiers.total()).coerceAtLeast(2)
+                    val modifierLabels = modifiers.nonZero().map { (label, amount) ->
+                        "${if (amount > 0) "+" else ""}$amount $label"
                     }
-                    val heatPenalty = heatPenaltyModifier(attacker)
-                    val immobileModifier = immobileTargetToHitModifier(target)
-                    val sensorModifier = sensorToHitModifier(attacker)
-                    val modifiers = mutableListOf<String>()
-                    when {
-                        distance <= weapon.shortRange -> {}
-                        distance <= weapon.mediumRange -> modifiers.add("+2 med")
-                        else -> modifiers.add("+4 long")
-                    }
-                    if (heatPenalty > 0) modifiers.add("+$heatPenalty heat")
-                    if (immobileModifier != 0) modifiers.add("$immobileModifier immobile")
-                    if (sensorModifier != 0) modifiers.add("+$sensorModifier sensors")
-
-                    val targetNumber = (
-                        attacker.gunnerySkill + rangeModifier + heatPenalty + immobileModifier + sensorModifier
-                        ).coerceAtLeast(2)
                     WeaponTargetInfo(
                         weaponIndex = index,
                         weaponName = weapon.name,
                         targetDiceRoll = targetNumber,
                         damage = weapon.damage,
-                        modifiers = modifiers,
+                        modifiers = modifierLabels,
                     )
                 }
             }
@@ -96,9 +86,6 @@ internal class WeaponTargeting(private val state: PublicGameState) {
         val distance = attacker.position.distanceTo(target.position)
         return attacker.weapons.any { it.canEngageAt(distance, attacker) }
     }
-
-    private fun heatPenaltyModifier(actor: CombatUnit): Int =
-        HeatScale.toHitPenalty(actor.currentHeat)
 }
 
 private fun Weapon.canEngageAt(distance: Int, attacker: CombatUnit): Boolean =

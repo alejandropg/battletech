@@ -169,20 +169,13 @@ private fun resolveOneAttack(
     val weapon = attacker.weapons[declaration.weaponIndex]
 
     val distance = attacker.position.distanceTo(target.position)
-    val (rangeModifier, rangeBand) = when {
-        distance <= weapon.shortRange -> 0 to RangeBand.SHORT
-        distance <= weapon.mediumRange -> 2 to RangeBand.MEDIUM
-        distance <= weapon.longRange -> 4 to RangeBand.LONG
-        else -> 99 to RangeBand.OUT_OF_RANGE
-    }
-
-    val heatPenalty = heatPenaltyModifier(attacker)
-    val secondaryPenalty = if (declaration.isPrimary) 0 else 1
-    val proneModifier = proneTargetToHitModifier(target, distance)
-    val immobileModifier = immobileTargetToHitModifier(target)
-    val sensorModifier = sensorToHitModifier(attacker)
-    val targetNumber = attacker.gunnerySkill + rangeModifier + heatPenalty +
-        secondaryPenalty + proneModifier + immobileModifier + sensorModifier
+    val modifiers = weaponToHitModifiers(attacker, target, weapon, distance, declaration.isPrimary)
+    val rangeBand = rangeBandFor(distance, weapon)
+    val rangeModifier = modifiers.first { it.label in RANGE_LABELS }.amount
+    val heatPenalty = modifiers.first { it.label == "heat" }.amount
+    val secondaryPenalty = modifiers.first { it.label == "secondary" }.amount
+    val sensorModifier = modifiers.first { it.label == "sensors" }.amount
+    val targetNumber = attacker.gunnerySkill + modifiers.total()
 
     val toHitRoll = roller.roll2d6()
 
@@ -206,6 +199,7 @@ private fun resolveOneAttack(
             heatPenalty = heatPenalty,
             secondaryPenalty = secondaryPenalty,
             sensorPenalty = sensorModifier,
+            modifiers = modifiers,
         )
     } else {
         AttackResult(
@@ -225,9 +219,12 @@ private fun resolveOneAttack(
             heatPenalty = heatPenalty,
             secondaryPenalty = secondaryPenalty,
             sensorPenalty = sensorModifier,
+            modifiers = modifiers,
         )
     }
 }
+
+private val RANGE_LABELS = setOf("short", "med", "long", "out of range")
 
 public fun heatPenaltyModifier(actor: CombatUnit): Int =
     HeatScale.toHitPenalty(actor.currentHeat)
