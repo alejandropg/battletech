@@ -15,6 +15,7 @@ public object UnitRenderer {
         facing: HexDirection,
         color: Color,
         torsoFacing: HexDirection? = null,
+        isDestroyed: Boolean = false,
     ) {
         val (arrowChar, arrowOffset) = facingArrow(facing)
         val arrowX = x + arrowOffset
@@ -23,6 +24,9 @@ public object UnitRenderer {
         val arrowRow = if (southFacing) 3 else 2
 
         buffer.set(x + 4, y + initialRow, Cell(initial.toString(), color, buffer.get(x + 4, y + initialRow).bg))
+        if (isDestroyed) {
+            buffer.set(x + 5, y + initialRow, Cell(destroyedIcon(), color, buffer.get(x + 5, y + initialRow).bg))
+        }
         buffer.set(arrowX, y + arrowRow, Cell(arrowChar, color, buffer.get(arrowX, y + arrowRow).bg))
 
         if (torsoFacing != null && torsoFacing != facing) {

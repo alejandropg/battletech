@@ -29,6 +29,7 @@ private val NF_MD_RADIOACTIVE_CIRCLE = String(Character.toChars(0xF185D))
 private val NF_MD_SYNC_CIRCLE = String(Character.toChars(0xF1378))
 private val NF_MD_EYE_CIRCLE = String(Character.toChars(0xF0B94))
 private val NF_MD_ACCOUNT_CIRCLE = String(Character.toChars(0xF0009))
+private val NF_MD_SKULL = String(Character.toChars(0xF068C))
 
 internal fun diceIcon(value: Int): String =
     when (value) {
@@ -67,6 +68,9 @@ internal fun locationDestroyedIcon(): String = NF_FA_CHAIN_BROKEN
 
 /** Marker for an ammo explosion log line. */
 internal fun ammoExplosionIcon(): String = NF_FA_BOMB
+
+/** Marker for a destroyed unit, rendered alongside its initial glyph. */
+internal fun destroyedIcon(): String = NF_MD_SKULL
 
 internal fun checkboxIcon(state: CheckState): String =
     when (state) {

@@ -91,10 +91,9 @@ public class BoardView(
                     }
                     val effectiveTorso = torsoFacings[coords] ?: unit.torsoFacing
                     val torsoFacing = if (effectiveTorso != unit.facing) effectiveTorso else null
-                    // Destroyed units render as a wreck marker ('X'); prone units (still active)
-                    // are drawn with a lowercase glyph; otherwise the unit's initial is used.
+                    // Prone units (still active) are drawn with a lowercase glyph;
+                    // otherwise the unit's initial is used.
                     val glyph = when {
-                        unit.isDestroyed -> 'X'
                         unit.isProne -> unit.name.first().lowercaseChar()
                         else -> unit.name.first()
                     }
@@ -105,6 +104,7 @@ public class BoardView(
                         unit.facing,
                         renderColor,
                         torsoFacing = torsoFacing,
+                        isDestroyed = unit.isDestroyed,
                     )
                 }
             }

@@ -22,6 +22,8 @@ internal class UnitRendererTest {
     private val ICON_TORSO_SW = String(Character.toChars(0xF0042))
     private val ICON_TORSO_NW = String(Character.toChars(0xF005B))
 
+    private val ICON_SKULL = String(Character.toChars(0xF068C))
+
     @Test
     fun `renders unit initial at hex center`() {
         val buffer = ScreenBuffer(10, 6)
@@ -30,6 +32,18 @@ internal class UnitRendererTest {
 
         assertEquals("A", buffer.get(4, 3).char)
         assertEquals(Color.CYAN, buffer.get(4, 3).fg)
+    }
+
+    @Test
+    fun `renders skull marker next to initial when destroyed`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.N, Color.CYAN, isDestroyed = true)
+
+        assertEquals("A", buffer.get(4, 3).char)
+        assertEquals(Color.CYAN, buffer.get(4, 3).fg)
+        assertEquals(ICON_SKULL, buffer.get(5, 3).char)
+        assertEquals(Color.CYAN, buffer.get(5, 3).fg)
     }
 
     @Test

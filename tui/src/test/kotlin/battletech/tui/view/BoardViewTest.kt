@@ -4,6 +4,7 @@ import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit
 import battletech.tui.hex.HexHighlight
+import battletech.tui.hex.destroyedIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import battletech.tactical.model.HexCoordinates
@@ -69,7 +70,7 @@ internal class BoardViewTest {
     }
 
     @Test
-    fun `renders destroyed unit as a wreck marker instead of its initial`() {
+    fun `renders destroyed unit with its initial and a skull marker`() {
         val unit = aUnit(name = "Atlas", position = HexCoordinates(0, 0)).copy(isDestroyed = true)
         val state = aGameState(units = listOf(unit), map = aGameMap())
         val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
@@ -77,10 +78,12 @@ internal class BoardViewTest {
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Unit glyph at hex center: charX=4+2, charY=3+2 (same cell as the initial in the
-        // "renders unit initial on hex" test above).
-        assertEquals("X", buffer.get(6, 5).char)
+        // Unit initial at hex center: charX=4+2, charY=3+2 (same cell as the initial in the
+        // "renders unit initial on hex" test above), with a skull marker at the adjacent cell.
+        assertEquals("A", buffer.get(6, 5).char)
         assertEquals(Color.GRAY, buffer.get(6, 5).fg)
+        assertEquals(destroyedIcon(), buffer.get(7, 5).char)
+        assertEquals(Color.GRAY, buffer.get(7, 5).fg)
     }
 
     @Test
