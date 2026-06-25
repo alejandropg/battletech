@@ -319,7 +319,7 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust")
         val stateWithUnits = emptyState.copy(units = listOf(atlas, locust))
 
-        val text = GameLogFormatter.format(
+        val lines = GameLogFormatter.lines(
             event = TorsoFacingsApplied(
                 facings = mapOf(
                     atlas.id to HexDirection.NE,
@@ -329,17 +329,20 @@ internal class GameLogFormatterTest {
             state = stateWithUnits,
         )
 
-        assertThat(text).isEqualTo("Torso facings: Atlas→NE, Locust→S")
+        assertThat(lines).containsExactly(
+            GameLogFormatter.LogLine(torsoArrowIcon(HexDirection.NE).first, "Atlas torso → NE"),
+            GameLogFormatter.LogLine(torsoArrowIcon(HexDirection.S).first, "Locust torso → S"),
+        )
     }
 
     @Test
     fun `TorsoFacingsApplied with no facings says 'no changes'`() {
-        val text = GameLogFormatter.format(
+        val lines = GameLogFormatter.lines(
             event = TorsoFacingsApplied(facings = emptyMap()),
             state = emptyState,
         )
 
-        assertThat(text).isEqualTo("Torso facings: no changes")
+        assertThat(lines).containsExactly(GameLogFormatter.LogLine(null, "Torso facings: no changes"))
     }
 
     @Test
@@ -588,14 +591,16 @@ internal class GameLogFormatterTest {
     }
 
     @Test
-    fun `iconFor uses the torso-arrow glyph for a single facing change and omits it for several`() {
+    fun `lines uses the torso-arrow glyph for every unit, even with several facing changes`() {
         val single = TorsoFacingsApplied(facings = mapOf(UnitId("atlas") to HexDirection.NE))
         val multiple = TorsoFacingsApplied(
             facings = mapOf(UnitId("atlas") to HexDirection.NE, UnitId("locust") to HexDirection.S),
         )
 
-        assertThat(GameLogFormatter.iconFor(single)).isEqualTo(torsoArrowIcon(HexDirection.NE).first)
-        assertThat(GameLogFormatter.iconFor(multiple)).isNull()
+        assertThat(GameLogFormatter.lines(single, emptyState).map { it.icon })
+            .containsExactly(torsoArrowIcon(HexDirection.NE).first)
+        assertThat(GameLogFormatter.lines(multiple, emptyState).map { it.icon })
+            .containsExactly(torsoArrowIcon(HexDirection.NE).first, torsoArrowIcon(HexDirection.S).first)
     }
 
     private fun anAttackResult(

@@ -39,6 +39,14 @@ import battletech.tui.hex.torsoArrowIcon
 
 internal object GameLogFormatter {
 
+    data class LogLine(val icon: String?, val text: String)
+
+    /** Renders an event as one or more log lines, each with its own icon (e.g. one per twisted unit). */
+    fun lines(event: GameEvent, state: GameState): List<LogLine> = when (event) {
+        is TorsoFacingsApplied -> torsoFacingLines(event, state)
+        else -> format(event, state)?.let { listOf(LogLine(iconFor(event), it)) } ?: emptyList()
+    }
+
     fun format(event: GameEvent, state: GameState): String? = when (event) {
         is PhaseChanged -> null
         is InitiativeRolled -> {
@@ -77,17 +85,7 @@ internal object GameLogFormatter {
             "${playerLabel(event.player)} declared: $pairs"
         }
 
-        is TorsoFacingsApplied -> {
-            if (event.facings.isEmpty()) {
-                "Torso facings: no changes"
-            } else {
-                val parts = event.facings.entries.joinToString(", ") { (unitId, dir) ->
-                    val name = state.unitById(unitId)?.name ?: unitId.value
-                    "$name→$dir"
-                }
-                "Torso facings: $parts"
-            }
-        }
+        is TorsoFacingsApplied -> null
 
         is HeatDissipated -> {
             val parts = event.heatBefore
@@ -177,8 +175,15 @@ internal object GameLogFormatter {
             if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
         is PhysicalAttacksResolved ->
             if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
-        is TorsoFacingsApplied -> event.facings.values.singleOrNull()?.let { torsoArrowIcon(it).first }
         else -> null
+    }
+
+    private fun torsoFacingLines(event: TorsoFacingsApplied, state: GameState): List<LogLine> {
+        if (event.facings.isEmpty()) return listOf(LogLine(null, "Torso facings: no changes"))
+        return event.facings.entries.map { (unitId, dir) ->
+            val name = state.unitById(unitId)?.name ?: unitId.value
+            LogLine(torsoArrowIcon(dir).first, "$name torso → $dir")
+        }
     }
 
     private fun destructionReasonLabel(reason: DestructionReason): String = when (reason) {

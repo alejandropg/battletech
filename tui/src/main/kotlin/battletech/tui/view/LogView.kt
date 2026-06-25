@@ -23,18 +23,22 @@ public class LogView(
         var lastTurn: Int? = null
 
         for (entry in entries) {
-            val text = GameLogFormatter.format(entry.event, gameState) ?: continue
-            val icon = GameLogFormatter.iconFor(entry.event) ?: ">"
-            val prefixWidth = CellWidth.of(icon) + 1
-            val indent = " ".repeat(prefixWidth)
+            val logLines = GameLogFormatter.lines(entry.event, gameState)
+            if (logLines.isEmpty()) continue
 
             if (entry.turn != lastTurn) {
                 content.writeHeader("TURN ${entry.turn}")
                 lastTurn = entry.turn
             }
 
-            TextWrap.wrap(text, width - prefixWidth, width - prefixWidth).forEachIndexed { i, wrapped ->
-                content.writeln(if (i == 0) "$icon $wrapped" else "$indent$wrapped")
+            for (line in logLines) {
+                val icon = line.icon ?: ">"
+                val prefixWidth = CellWidth.of(icon) + 1
+                val indent = " ".repeat(prefixWidth)
+
+                TextWrap.wrap(line.text, width - prefixWidth, width - prefixWidth).forEachIndexed { i, wrapped ->
+                    content.writeln(if (i == 0) "$icon $wrapped" else "$indent$wrapped")
+                }
             }
         }
     }
