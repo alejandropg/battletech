@@ -35,6 +35,7 @@ import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
+import battletech.tui.hex.targetIcon
 import battletech.tui.hex.torsoArrowIcon
 
 internal object GameLogFormatter {
@@ -44,6 +45,7 @@ internal object GameLogFormatter {
     /** Renders an event as one or more log lines, each with its own icon (e.g. one per twisted unit). */
     fun lines(event: GameEvent, state: GameState): List<LogLine> = when (event) {
         is TorsoFacingsApplied -> torsoFacingLines(event, state)
+        is AttackDeclarationsRecorded -> attackDeclarationLines(event, state)
         else -> format(event, state)?.let { listOf(LogLine(iconFor(event), it)) } ?: emptyList()
     }
 
@@ -70,20 +72,7 @@ internal object GameLogFormatter {
             if (destroyed == null) summary else "$summary — $destroyed"
         }
 
-        is AttackDeclarationsRecorded -> {
-            val grouped = event.declarations.groupBy { it.attackerId to it.targetId }
-            val pairs = grouped.entries.joinToString(", ") { (key, decls) ->
-                val (attackerId, targetId) = key
-                val attacker = state.unitById(attackerId)
-                val attackerName = attacker?.name ?: attackerId.value
-                val targetName = state.unitById(targetId)?.name ?: targetId.value
-                val weaponNames = decls.joinToString(", ") { decl ->
-                    attacker?.weapons?.getOrNull(decl.weaponIndex)?.name ?: "weapon#${decl.weaponIndex}"
-                }
-                "$attackerName→$targetName ($weaponNames)"
-            }
-            "${playerLabel(event.player)} declared: $pairs"
-        }
+        is AttackDeclarationsRecorded -> null
 
         is TorsoFacingsApplied -> null
 
@@ -185,6 +174,20 @@ internal object GameLogFormatter {
             LogLine(torsoArrowIcon(dir).first, "$name torso → $dir")
         }
     }
+
+    private fun attackDeclarationLines(event: AttackDeclarationsRecorded, state: GameState): List<LogLine> =
+        event.declarations.groupBy { it.attackerId }.entries.map { (attackerId, decls) ->
+            val attacker = state.unitById(attackerId)
+            val attackerName = attacker?.name ?: attackerId.value
+            val perTarget = decls.groupBy { it.targetId }.entries.joinToString(", ") { (targetId, targetDecls) ->
+                val targetName = state.unitById(targetId)?.name ?: targetId.value
+                val weaponNames = targetDecls.joinToString(", ") { decl ->
+                    attacker?.weapons?.getOrNull(decl.weaponIndex)?.name ?: "weapon#${decl.weaponIndex}"
+                }
+                "$targetName ($weaponNames)"
+            }
+            LogLine(targetIcon(), "$attackerName → $perTarget")
+        }
 
     private fun destructionReasonLabel(reason: DestructionReason): String = when (reason) {
         DestructionReason.HEAD_DESTROYED -> "head destroyed"

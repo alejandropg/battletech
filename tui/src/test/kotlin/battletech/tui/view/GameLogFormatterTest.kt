@@ -46,6 +46,7 @@ import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
+import battletech.tui.hex.targetIcon
 import battletech.tui.hex.torsoArrowIcon
 import battletech.tui.mediumLaser
 import org.assertj.core.api.Assertions.assertThat
@@ -251,7 +252,7 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
         val stateWithUnits = emptyState.copy(units = listOf(atlas, locust))
 
-        val text = GameLogFormatter.format(
+        val lines = GameLogFormatter.lines(
             event = AttackDeclarationsRecorded(
                 player = PlayerId.PLAYER_1,
                 declarations = listOf(
@@ -264,7 +265,9 @@ internal class GameLogFormatterTest {
         )
 
         // atlas has one weapon configured: medium laser ("Medium Laser").
-        assertThat(text).isEqualTo("P1 declared: Atlas→Locust (Medium Laser)")
+        assertThat(lines).isEqualTo(
+            listOf(GameLogFormatter.LogLine(targetIcon(), "Atlas → Locust (Medium Laser)")),
+        )
     }
 
     @Test
@@ -278,7 +281,7 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
         val stateWithUnits = emptyState.copy(units = listOf(atlas, locust))
 
-        val text = GameLogFormatter.format(
+        val lines = GameLogFormatter.lines(
             event = AttackDeclarationsRecorded(
                 player = PlayerId.PLAYER_1,
                 declarations = listOf(
@@ -289,17 +292,19 @@ internal class GameLogFormatterTest {
             state = stateWithUnits,
         )
 
-        assertThat(text).isEqualTo("P1 declared: Atlas→Locust (Medium Laser, LRM 5)")
+        assertThat(lines).isEqualTo(
+            listOf(GameLogFormatter.LogLine(targetIcon(), "Atlas → Locust (Medium Laser, LRM 5)")),
+        )
     }
 
     @Test
-    fun `AttackDeclarationsRecorded lists multiple attacker-target pairs separated by commas`() {
+    fun `AttackDeclarationsRecorded puts one attacker's multiple targets on a single line`() {
         val atlas = aMech(id = "atlas", name = "Atlas", owner = PlayerId.PLAYER_1)
         val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
         val marauder = aMech(id = "marauder", name = "Marauder", owner = PlayerId.PLAYER_2)
         val stateWithUnits = emptyState.copy(units = listOf(atlas, locust, marauder))
 
-        val text = GameLogFormatter.format(
+        val lines = GameLogFormatter.lines(
             event = AttackDeclarationsRecorded(
                 player = PlayerId.PLAYER_1,
                 declarations = listOf(
@@ -310,7 +315,35 @@ internal class GameLogFormatterTest {
             state = stateWithUnits,
         )
 
-        assertThat(text).isEqualTo("P1 declared: Atlas→Locust (Medium Laser), Atlas→Marauder (Medium Laser)")
+        assertThat(lines).isEqualTo(
+            listOf(GameLogFormatter.LogLine(targetIcon(), "Atlas → Locust (Medium Laser), Marauder (Medium Laser)")),
+        )
+    }
+
+    @Test
+    fun `AttackDeclarationsRecorded emits one line per attacker`() {
+        val atlas = aMech(id = "atlas", name = "Atlas", owner = PlayerId.PLAYER_1)
+        val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
+        val marauder = aMech(id = "marauder", name = "Marauder", owner = PlayerId.PLAYER_1)
+        val phoenixHawk = aMech(id = "phoenixhawk", name = "Phoenix Hawk", owner = PlayerId.PLAYER_2)
+        val stateWithUnits = emptyState.copy(units = listOf(atlas, locust, marauder, phoenixHawk))
+
+        val lines = GameLogFormatter.lines(
+            event = AttackDeclarationsRecorded(
+                player = PlayerId.PLAYER_1,
+                declarations = listOf(
+                    AttackDeclaration(atlas.id, locust.id, 0, true),
+                    AttackDeclaration(marauder.id, phoenixHawk.id, 0, true),
+                ),
+            ),
+            state = stateWithUnits,
+        )
+
+        assertThat(lines).containsExactlyInAnyOrder(
+            GameLogFormatter.LogLine(targetIcon(), "Atlas → Locust (Medium Laser)"),
+            GameLogFormatter.LogLine(targetIcon(), "Marauder → Phoenix Hawk (Medium Laser)"),
+        )
+        assertThat(lines).hasSize(2)
     }
 
     @Test
