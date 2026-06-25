@@ -1,5 +1,6 @@
 package battletech.tui.hex
 
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.unit.CriticalSlotContent
 import battletech.tui.view.CheckState
@@ -30,6 +31,40 @@ private val NF_MD_SYNC_CIRCLE = String(Character.toChars(0xF1378))
 private val NF_MD_EYE_CIRCLE = String(Character.toChars(0xF0B94))
 private val NF_MD_ACCOUNT_CIRCLE = String(Character.toChars(0xF0009))
 private val NF_MD_SKULL = String(Character.toChars(0xF068C))
+
+// Leg facing arrows (larger arrows)
+private val NF_MD_ARROW_UP_BOLD_OUTLINE = String(Character.toChars(0xF09C7))
+private val NF_MD_ARROW_TOP_RIGHT_BOLD_OUTLINE = String(Character.toChars(0xF09C5))
+private val NF_MD_ARROW_BOTTOM_RIGHT_BOLD_OUTLINE = String(Character.toChars(0xF09B9))
+private val NF_MD_ARROW_DOWN_BOLD_OUTLINE  = String(Character.toChars(0xF09BF))
+private val NF_MD_ARROW_BOTTOM_LEFT_BOLD_OUTLINE = String(Character.toChars(0xF09B7))
+private val NF_MD_ARROW_TOP_LEFT_BOLD_OUTLINE = String(Character.toChars(0xF09C3))
+
+// Torso twist arrows (smaller arrows per design doc)
+private val NF_MD_ARROW_UP  = String(Character.toChars(0xF005D))
+private val NF_MD_ARROW_TOP_RIGHT = String(Character.toChars(0xF005C))
+private val NF_MD_ARROW_BOTTOM_RIGHT = String(Character.toChars(0xF0043))
+private val NF_MD_ARROW_DOWN  = String(Character.toChars(0xF0045))
+private val NF_MD_ARROW_BOTTOM_LEFT = String(Character.toChars(0xF0042))
+private val NF_MD_ARROW_TOP_LEFT = String(Character.toChars(0xF005B))
+
+internal fun facingArrowIcon(direction: HexDirection): Pair<String, Int> = when (direction) {
+    HexDirection.N  -> NF_MD_ARROW_UP_BOLD_OUTLINE  to 4
+    HexDirection.NE -> NF_MD_ARROW_TOP_RIGHT_BOLD_OUTLINE to 5
+    HexDirection.SE -> NF_MD_ARROW_BOTTOM_RIGHT_BOLD_OUTLINE to 5
+    HexDirection.S  -> NF_MD_ARROW_DOWN_BOLD_OUTLINE  to 4
+    HexDirection.SW -> NF_MD_ARROW_BOTTOM_LEFT_BOLD_OUTLINE to 3
+    HexDirection.NW -> NF_MD_ARROW_TOP_LEFT_BOLD_OUTLINE to 3
+}
+
+internal fun torsoArrowIcon(direction: HexDirection): Pair<String, Int> = when (direction) {
+    HexDirection.N  -> NF_MD_ARROW_UP  to 4
+    HexDirection.NE -> NF_MD_ARROW_TOP_RIGHT to 5
+    HexDirection.SE -> NF_MD_ARROW_BOTTOM_RIGHT to 5
+    HexDirection.S  -> NF_MD_ARROW_DOWN  to 4
+    HexDirection.SW -> NF_MD_ARROW_BOTTOM_LEFT to 3
+    HexDirection.NW -> NF_MD_ARROW_TOP_LEFT to 3
+}
 
 internal fun diceIcon(value: Int): String =
     when (value) {

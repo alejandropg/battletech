@@ -1,7 +1,12 @@
 package battletech.tactical.model
 
 public enum class HexDirection {
-    N, NE, SE, S, SW, NW;
+    N,
+    NE,
+    SE,
+    S,
+    SW,
+    NW;
 
     public fun rotateClockwise(): HexDirection = entries[(ordinal + 1) % DIRECTION_COUNT]
 
