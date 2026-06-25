@@ -32,6 +32,7 @@ import battletech.tactical.unit.DestructionReason
 import battletech.tactical.unit.UnitId
 import battletech.tui.hex.ammoExplosionIcon
 import battletech.tui.hex.criticalHitIcon
+import battletech.tui.hex.destroyedIcon
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
@@ -44,38 +45,30 @@ internal object GameLogFormatter {
 
     /** Renders an event as one or more log lines, each with its own icon (e.g. one per twisted unit). */
     fun lines(event: GameEvent, state: GameState): List<LogLine> = when (event) {
+        is PhaseChanged -> emptyList()
+        is TurnEnded -> emptyList()
         is TorsoFacingsApplied -> torsoFacingLines(event, state)
         is AttackDeclarationsRecorded -> attackDeclarationLines(event, state)
-        else -> format(event, state)?.let { listOf(LogLine(iconFor(event), it)) } ?: emptyList()
-    }
-
-    fun format(event: GameEvent, state: GameState): String? = when (event) {
-        is PhaseChanged -> null
         is InitiativeRolled -> {
             val p1 = event.initiative.rolls[PlayerId.PLAYER_1]!!
             val p2 = event.initiative.rolls[PlayerId.PLAYER_2]!!
             val first = playerLabel(event.initiative.loser)
-            "Initiative: P1 ${diceIcon(p1.d1)}+${diceIcon(p1.d2)}=${p1.total}, P2 ${diceIcon(p2.d1)}+${diceIcon(p2.d2)}=${p2.total} — $first moves first"
+            listOf(LogLine(null, "Initiative: P1 ${diceIcon(p1.d1)}+${diceIcon(p1.d2)}=${p1.total}, P2 ${diceIcon(p2.d1)}+${diceIcon(p2.d2)}=${p2.total} — $first moves first"))
         }
-
         is UnitMoved -> {
             val name = event.unitId.value
-            "$name (${event.mpSpent} MP) ${hexLabel(event.from)}→${hexLabel(event.to)}"
+            listOf(LogLine(movementModeIcon(event.mode), "$name (${event.mpSpent} MP) ${hexLabel(event.from)}→${hexLabel(event.to)}"))
         }
-
         is AttacksResolved -> {
             val fired = event.results.size
             val hits = event.results.count { it.hit }
             val damage = event.results.sumOf { it.damageApplied }
             val summary = "Attacks: $fired fired, $hits hit, $damage damage"
             val destroyed = destroyedClause(event.results.map { it.targetId to it.damage }, state)
-            if (destroyed == null) summary else "$summary — $destroyed"
+            val text = if (destroyed == null) summary else "$summary — $destroyed"
+            val icon = if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
+            listOf(LogLine(icon, text))
         }
-
-        is AttackDeclarationsRecorded -> null
-
-        is TorsoFacingsApplied -> null
-
         is HeatDissipated -> {
             val parts = event.heatBefore
                 .filterValues { it > 0 }
@@ -83,88 +76,64 @@ internal object GameLogFormatter {
                     val name = unitId.value
                     "$name $before→${event.heatAfter[unitId] ?: 0}"
                 }
-            if (parts.isEmpty()) "Heat: no heat to dissipate"
-            else "Heat: ${parts.joinToString(", ")}"
+            val text = if (parts.isEmpty()) "Heat: no heat to dissipate" else "Heat: ${parts.joinToString(", ")}"
+            listOf(LogLine(null, text))
         }
-
         is PhysicalAttacksResolved -> {
             val made = event.results.size
             val hits = event.results.count { it.hit }
             val damage = event.results.sumOf { it.damageApplied }
             val summary = "Physical attacks: $made made, $hits hit, $damage damage"
             val destroyed = destroyedClause(event.results.map { it.targetId to it.damage }, state)
-            if (destroyed == null) summary else "$summary — $destroyed"
+            val text = if (destroyed == null) summary else "$summary — $destroyed"
+            val icon = if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
+            listOf(LogLine(icon, text))
         }
-
         is UnitFell -> {
             val name = event.unitId.value
-            "$name fell — ${event.fall.damage} damage"
+            listOf(LogLine(null, "$name fell — ${event.fall.damage} damage"))
         }
-
         is UnitStoodUp -> {
             val name = event.unitId.value
-            if (event.stoodUp) "$name stood up" else "$name failed to stand"
+            listOf(LogLine(null, if (event.stoodUp) "$name stood up" else "$name failed to stand"))
         }
-
         is UnitShutdown -> {
             val name = event.unitId.value
-            if (event.auto) "$name auto-shut down (heat ≥ 30)" else "$name shut down from heat"
+            listOf(LogLine(null, if (event.auto) "$name auto-shut down (heat ≥ 30)" else "$name shut down from heat"))
         }
-
         is UnitRestarted -> {
             val name = event.unitId.value
-            "$name restarted"
+            listOf(LogLine(null, "$name restarted"))
         }
-
         is AmmoExploded -> {
             val name = event.unitId.value
-            "$name ammo explosion: ${event.ammoType.name} (${event.damage} damage)"
+            listOf(LogLine(ammoExplosionIcon(), "$name ammo explosion: ${event.ammoType.name} (${event.damage} damage)"))
         }
-
-        is TurnEnded -> null
-
         is UnitDestroyed -> {
             val name = event.unitId.value
-            "$name destroyed (${destructionReasonLabel(event.reason)})"
+            listOf(LogLine(destroyedIcon(), "$name destroyed (${destructionReasonLabel(event.reason)})"))
         }
-
         is MatchEnded -> {
             val winner = event.winner
-            if (winner == null) "Match over — draw" else "Match over — ${playerLabel(winner)} wins!"
+            listOf(LogLine(null, if (winner == null) "Match over — draw" else "Match over — ${playerLabel(winner)} wins!"))
         }
-
         is CriticalHit -> {
             val name = event.unitId.value
             val component = criticalSlotContentLabel(event.content, event.unitId, state)
-            "$name critical hit: $component in ${locationLabel(event.location)}"
+            listOf(LogLine(criticalHitIcon(event.content), "$name critical hit: $component in ${locationLabel(event.location)}"))
         }
-
         is PilotHit -> {
             val name = event.unitId.value
-            "$name pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)"
+            listOf(LogLine(null, "$name pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)"))
         }
-
         is PilotKnockedUnconscious -> {
             val name = event.unitId.value
-            "$name pilot knocked unconscious"
+            listOf(LogLine(null, "$name pilot knocked unconscious"))
         }
-
         is PilotRecoveredConsciousness -> {
             val name = event.unitId.value
-            "$name pilot regained consciousness"
+            listOf(LogLine(null, "$name pilot regained consciousness"))
         }
-    }
-
-    /** Leading glyph for a log line, or null when the situation has no dedicated marker. */
-    fun iconFor(event: GameEvent): String? = when (event) {
-        is UnitMoved -> movementModeIcon(event.mode)
-        is CriticalHit -> criticalHitIcon(event.content)
-        is AmmoExploded -> ammoExplosionIcon()
-        is AttacksResolved ->
-            if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
-        is PhysicalAttacksResolved ->
-            if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
-        else -> null
     }
 
     private fun torsoFacingLines(event: TorsoFacingsApplied, state: GameState): List<LogLine> {

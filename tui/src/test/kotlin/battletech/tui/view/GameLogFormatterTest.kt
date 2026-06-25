@@ -19,6 +19,7 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.CriticalHit
+import battletech.tactical.session.GameEvent
 import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.InitiativeRolled
@@ -59,14 +60,12 @@ internal class GameLogFormatterTest {
         map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0)))),
     )
 
+    private fun text(e: GameEvent, s: GameState = emptyState) = GameLogFormatter.lines(e, s).single().text
+    private fun icon(e: GameEvent) = GameLogFormatter.lines(e, emptyState).single().icon
+
     @Test
     fun `PhaseChanged is not logged`() {
-        val text = GameLogFormatter.format(
-            event = PhaseChanged(TurnPhase.INITIATIVE, TurnPhase.MOVEMENT),
-            state = emptyState,
-        )
-
-        assertThat(text).isNull()
+        assertThat(GameLogFormatter.lines(PhaseChanged(TurnPhase.INITIATIVE, TurnPhase.MOVEMENT), emptyState)).isEmpty()
     }
 
     @Test
@@ -74,8 +73,8 @@ internal class GameLogFormatterTest {
         val atlas = aMech(id = "atlas", name = "Atlas", position = HexCoordinates(2, 0))
         val stateWithAtlas = emptyState.copy(units = listOf(atlas))
 
-        val text = GameLogFormatter.format(
-            event = UnitMoved(
+        assertThat(text(
+            UnitMoved(
                 unitId = atlas.id,
                 from = HexCoordinates(2, 0),
                 to = HexCoordinates(2, 1),
@@ -83,10 +82,8 @@ internal class GameLogFormatterTest {
                 mode = MovementMode.WALK,
                 mpSpent = 3,
             ),
-            state = stateWithAtlas,
-        )
-
-        assertThat(text).isEqualTo("atlas (3 MP) 0301→0302")
+            stateWithAtlas,
+        )).isEqualTo("atlas (3 MP) 0301→0302")
     }
 
     @Test
@@ -94,14 +91,12 @@ internal class GameLogFormatterTest {
         val atlas = aMech(id = "atlas", name = "Atlas", position = HexCoordinates(0, 0))
         val stateWithAtlas = emptyState.copy(units = listOf(atlas))
 
-        val ran = GameLogFormatter.format(
-            event = UnitMoved(atlas.id, HexCoordinates(0, 0), HexCoordinates(0, 1),
-                HexDirection.N, MovementMode.RUN, 5),
+        val ran = text(
+            UnitMoved(atlas.id, HexCoordinates(0, 0), HexCoordinates(0, 1), HexDirection.N, MovementMode.RUN, 5),
             stateWithAtlas,
         )
-        val jumped = GameLogFormatter.format(
-            event = UnitMoved(atlas.id, HexCoordinates(0, 0), HexCoordinates(0, 1),
-                HexDirection.N, MovementMode.JUMP, 4),
+        val jumped = text(
+            UnitMoved(atlas.id, HexCoordinates(0, 0), HexCoordinates(0, 1), HexDirection.N, MovementMode.JUMP, 4),
             stateWithAtlas,
         )
 
@@ -117,12 +112,7 @@ internal class GameLogFormatterTest {
             winner = PlayerId.PLAYER_1,
         )
 
-        val text = GameLogFormatter.format(
-            event = InitiativeRolled(initiative),
-            state = emptyState,
-        )
-
-        assertThat(text).isEqualTo(
+        assertThat(text(InitiativeRolled(initiative))).isEqualTo(
             "Initiative: P1 ${diceIcon(3)}+${diceIcon(3)}=6, P2 ${diceIcon(1)}+${diceIcon(2)}=3 — P2 moves first"
         )
     }
@@ -135,22 +125,12 @@ internal class GameLogFormatterTest {
             anAttackResult(hit = false, damage = 0),
         )
 
-        val text = GameLogFormatter.format(
-            event = AttacksResolved(results),
-            state = emptyState,
-        )
-
-        assertThat(text).isEqualTo("Attacks: 3 fired, 2 hit, 12 damage")
+        assertThat(text(AttacksResolved(results))).isEqualTo("Attacks: 3 fired, 2 hit, 12 damage")
     }
 
     @Test
     fun `AttacksResolved with no attacks reads gracefully`() {
-        val text = GameLogFormatter.format(
-            event = AttacksResolved(emptyList()),
-            state = emptyState,
-        )
-
-        assertThat(text).isEqualTo("Attacks: 0 fired, 0 hit, 0 damage")
+        assertThat(text(AttacksResolved(emptyList()))).isEqualTo("Attacks: 0 fired, 0 hit, 0 damage")
     }
 
     @Test
@@ -169,12 +149,8 @@ internal class GameLogFormatterTest {
             ),
         )
 
-        val text = GameLogFormatter.format(
-            event = AttacksResolved(results),
-            state = stateWithLocust,
-        )
-
-        assertThat(text).isEqualTo("Attacks: 1 fired, 1 hit, 24 damage — locust Left Arm destroyed")
+        assertThat(text(AttacksResolved(results), stateWithLocust))
+            .isEqualTo("Attacks: 1 fired, 1 hit, 24 damage — locust Left Arm destroyed")
     }
 
     @Test
@@ -192,12 +168,8 @@ internal class GameLogFormatterTest {
             ),
         )
 
-        val text = GameLogFormatter.format(
-            event = AttacksResolved(results),
-            state = stateWithLocust,
-        )
-
-        assertThat(text).isEqualTo("Attacks: 1 fired, 1 hit, 5 damage")
+        assertThat(text(AttacksResolved(results), stateWithLocust))
+            .isEqualTo("Attacks: 1 fired, 1 hit, 5 damage")
     }
 
     @Test
@@ -215,12 +187,8 @@ internal class GameLogFormatterTest {
             ),
         )
 
-        val text = GameLogFormatter.format(
-            event = PhysicalAttacksResolved(results),
-            state = stateWithLocust,
-        )
-
-        assertThat(text).isEqualTo("Physical attacks: 1 made, 1 hit, 18 damage — locust Right Leg destroyed")
+        assertThat(text(PhysicalAttacksResolved(results), stateWithLocust))
+            .isEqualTo("Physical attacks: 1 made, 1 hit, 18 damage — locust Right Leg destroyed")
     }
 
     @Test
@@ -238,12 +206,8 @@ internal class GameLogFormatterTest {
             ),
         )
 
-        val text = GameLogFormatter.format(
-            event = PhysicalAttacksResolved(results),
-            state = stateWithLocust,
-        )
-
-        assertThat(text).isEqualTo("Physical attacks: 1 made, 1 hit, 3 damage")
+        assertThat(text(PhysicalAttacksResolved(results), stateWithLocust))
+            .isEqualTo("Physical attacks: 1 made, 1 hit, 3 damage")
     }
 
     @Test
@@ -384,15 +348,13 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust")
         val stateWithUnits = emptyState.copy(units = listOf(atlas, locust))
 
-        val text = GameLogFormatter.format(
-            event = HeatDissipated(
+        assertThat(text(
+            HeatDissipated(
                 heatBefore = mapOf(atlas.id to 8, locust.id to 0),
                 heatAfter = mapOf(atlas.id to 4, locust.id to 0),
             ),
-            state = stateWithUnits,
-        )
-
-        assertThat(text).isEqualTo("Heat: atlas 8→4")
+            stateWithUnits,
+        )).isEqualTo("Heat: atlas 8→4")
     }
 
     @Test
@@ -400,21 +362,18 @@ internal class GameLogFormatterTest {
         val atlas = aMech(id = "atlas", name = "Atlas")
         val stateWithAtlas = emptyState.copy(units = listOf(atlas))
 
-        val text = GameLogFormatter.format(
-            event = HeatDissipated(
+        assertThat(text(
+            HeatDissipated(
                 heatBefore = mapOf(atlas.id to 0),
                 heatAfter = mapOf(atlas.id to 0),
             ),
-            state = stateWithAtlas,
-        )
-
-        assertThat(text).isEqualTo("Heat: no heat to dissipate")
+            stateWithAtlas,
+        )).isEqualTo("Heat: no heat to dissipate")
     }
 
     @Test
     fun `TurnEnded is not logged`() {
-        val text = GameLogFormatter.format(event = TurnEnded(turnNumber = 3), state = emptyState)
-        assertThat(text).isNull()
+        assertThat(GameLogFormatter.lines(TurnEnded(turnNumber = 3), emptyState)).isEmpty()
     }
 
     @Test
@@ -422,12 +381,10 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust")
         val stateWithLocust = emptyState.copy(units = listOf(locust))
 
-        val text = GameLogFormatter.format(
-            event = UnitDestroyed(unitId = locust.id, reason = DestructionReason.CENTER_TORSO_DESTROYED),
-            state = stateWithLocust,
-        )
-
-        assertThat(text).isEqualTo("locust destroyed (center torso destroyed)")
+        assertThat(text(
+            UnitDestroyed(unitId = locust.id, reason = DestructionReason.CENTER_TORSO_DESTROYED),
+            stateWithLocust,
+        )).isEqualTo("locust destroyed (center torso destroyed)")
     }
 
     @Test
@@ -444,32 +401,19 @@ internal class GameLogFormatterTest {
         )
 
         for ((reason, label) in expected) {
-            val text = GameLogFormatter.format(
-                event = UnitDestroyed(unitId = locust.id, reason = reason),
-                state = stateWithLocust,
-            )
-            assertThat(text).isEqualTo("locust destroyed ($label)")
+            assertThat(text(UnitDestroyed(unitId = locust.id, reason = reason), stateWithLocust))
+                .isEqualTo("locust destroyed ($label)")
         }
     }
 
     @Test
     fun `MatchEnded reports the winner`() {
-        val text = GameLogFormatter.format(
-            event = MatchEnded(winner = PlayerId.PLAYER_1),
-            state = emptyState,
-        )
-
-        assertThat(text).isEqualTo("Match over — P1 wins!")
+        assertThat(text(MatchEnded(winner = PlayerId.PLAYER_1))).isEqualTo("Match over — P1 wins!")
     }
 
     @Test
     fun `MatchEnded reports a draw when winner is null`() {
-        val text = GameLogFormatter.format(
-            event = MatchEnded(winner = null),
-            state = emptyState,
-        )
-
-        assertThat(text).isEqualTo("Match over — draw")
+        assertThat(text(MatchEnded(winner = null))).isEqualTo("Match over — draw")
     }
 
     @Test
@@ -477,17 +421,15 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust")
         val stateWithLocust = emptyState.copy(units = listOf(locust))
 
-        val text = GameLogFormatter.format(
-            event = CriticalHit(
+        assertThat(text(
+            CriticalHit(
                 unitId = locust.id,
                 location = MechLocation.CENTER_TORSO,
                 slotIndex = 0,
                 content = CriticalSlotContent.Engine,
             ),
-            state = stateWithLocust,
-        )
-
-        assertThat(text).isEqualTo("locust critical hit: Engine in Center Torso")
+            stateWithLocust,
+        )).isEqualTo("locust critical hit: Engine in Center Torso")
     }
 
     @Test
@@ -496,17 +438,15 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust", weapons = listOf(weapon))
         val stateWithLocust = emptyState.copy(units = listOf(locust))
 
-        val text = GameLogFormatter.format(
-            event = CriticalHit(
+        assertThat(text(
+            CriticalHit(
                 unitId = locust.id,
                 location = MechLocation.RIGHT_ARM,
                 slotIndex = 5,
                 content = CriticalSlotContent.WeaponMount(WeaponMountId(0)),
             ),
-            state = stateWithLocust,
-        )
-
-        assertThat(text).isEqualTo("locust critical hit: Medium Laser in Right Arm")
+            stateWithLocust,
+        )).isEqualTo("locust critical hit: Medium Laser in Right Arm")
     }
 
     @Test
@@ -514,27 +454,25 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust")
         val stateWithLocust = emptyState.copy(units = listOf(locust))
 
-        val ammoText = GameLogFormatter.format(
-            event = CriticalHit(
+        assertThat(text(
+            CriticalHit(
                 unitId = locust.id,
                 location = MechLocation.LEFT_TORSO,
                 slotIndex = 2,
                 content = CriticalSlotContent.AmmoBin(battletech.tactical.unit.AmmoType.AC20, shots = 5),
             ),
-            state = stateWithLocust,
-        )
-        assertThat(ammoText).isEqualTo("locust critical hit: AC20 ammo in Left Torso")
+            stateWithLocust,
+        )).isEqualTo("locust critical hit: AC20 ammo in Left Torso")
 
-        val actuatorText = GameLogFormatter.format(
-            event = CriticalHit(
+        assertThat(text(
+            CriticalHit(
                 unitId = locust.id,
                 location = MechLocation.LEFT_ARM,
                 slotIndex = 1,
                 content = CriticalSlotContent.Actuator(ActuatorType.UPPER_ARM),
             ),
-            state = stateWithLocust,
-        )
-        assertThat(actuatorText).isEqualTo("locust critical hit: Upper arm actuator in Left Arm")
+            stateWithLocust,
+        )).isEqualTo("locust critical hit: Upper arm actuator in Left Arm")
     }
 
     @Test
@@ -542,12 +480,10 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust")
         val stateWithLocust = emptyState.copy(units = listOf(locust))
 
-        val text = GameLogFormatter.format(
-            event = PilotHit(unitId = locust.id, pilotHits = 1, consciousnessRoll = null, conscious = true),
-            state = stateWithLocust,
-        )
-
-        assertThat(text).isEqualTo("locust pilot wounded (1 hit total)")
+        assertThat(text(
+            PilotHit(unitId = locust.id, pilotHits = 1, consciousnessRoll = null, conscious = true),
+            stateWithLocust,
+        )).isEqualTo("locust pilot wounded (1 hit total)")
     }
 
     @Test
@@ -555,15 +491,13 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust")
         val stateWithLocust = emptyState.copy(units = listOf(locust))
 
-        val text = GameLogFormatter.format(
-            event = PilotHit(
+        assertThat(text(
+            PilotHit(
                 unitId = locust.id, pilotHits = 3,
                 consciousnessRoll = DiceRoll(4, 4), conscious = true,
             ),
-            state = stateWithLocust,
-        )
-
-        assertThat(text).isEqualTo("locust pilot wounded (3 hits total)")
+            stateWithLocust,
+        )).isEqualTo("locust pilot wounded (3 hits total)")
     }
 
     @Test
@@ -571,17 +505,11 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust")
         val stateWithLocust = emptyState.copy(units = listOf(locust))
 
-        val unconsciousText = GameLogFormatter.format(
-            event = PilotKnockedUnconscious(unitId = locust.id),
-            state = stateWithLocust,
-        )
-        assertThat(unconsciousText).isEqualTo("locust pilot knocked unconscious")
+        assertThat(text(PilotKnockedUnconscious(unitId = locust.id), stateWithLocust))
+            .isEqualTo("locust pilot knocked unconscious")
 
-        val recoveredText = GameLogFormatter.format(
-            event = PilotRecoveredConsciousness(unitId = locust.id, roll = DiceRoll(5, 5)),
-            state = stateWithLocust,
-        )
-        assertThat(recoveredText).isEqualTo("locust pilot regained consciousness")
+        assertThat(text(PilotRecoveredConsciousness(unitId = locust.id, roll = DiceRoll(5, 5)), stateWithLocust))
+            .isEqualTo("locust pilot regained consciousness")
     }
 
     @Test
@@ -591,7 +519,7 @@ internal class GameLogFormatterTest {
             finalFacing = HexDirection.N, mode = MovementMode.JUMP, mpSpent = 4,
         )
 
-        assertThat(GameLogFormatter.iconFor(moved)).isEqualTo(movementModeIcon(MovementMode.JUMP))
+        assertThat(icon(moved)).isEqualTo(movementModeIcon(MovementMode.JUMP))
     }
 
     @Test
@@ -600,13 +528,13 @@ internal class GameLogFormatterTest {
             unitId = UnitId("locust"), location = MechLocation.CENTER_TORSO, slotIndex = 0, content = content,
         )
 
-        assertThat(GameLogFormatter.iconFor(crit(CriticalSlotContent.Engine)))
+        assertThat(icon(crit(CriticalSlotContent.Engine)))
             .isEqualTo(criticalHitIcon(CriticalSlotContent.Engine))
-        assertThat(GameLogFormatter.iconFor(crit(CriticalSlotContent.Gyro)))
+        assertThat(icon(crit(CriticalSlotContent.Gyro)))
             .isEqualTo(criticalHitIcon(CriticalSlotContent.Gyro))
-        assertThat(GameLogFormatter.iconFor(crit(CriticalSlotContent.Sensors)))
+        assertThat(icon(crit(CriticalSlotContent.Sensors)))
             .isEqualTo(criticalHitIcon(CriticalSlotContent.Sensors))
-        assertThat(GameLogFormatter.iconFor(crit(CriticalSlotContent.LifeSupport)))
+        assertThat(icon(crit(CriticalSlotContent.LifeSupport)))
             .isEqualTo(criticalHitIcon(CriticalSlotContent.LifeSupport))
     }
 
@@ -619,8 +547,8 @@ internal class GameLogFormatterTest {
         )
         val intact = AttacksResolved(listOf(anAttackResult(hit = true, damage = 5)))
 
-        assertThat(GameLogFormatter.iconFor(destroyed)).isEqualTo(locationDestroyedIcon())
-        assertThat(GameLogFormatter.iconFor(intact)).isNull()
+        assertThat(icon(destroyed)).isEqualTo(locationDestroyedIcon())
+        assertThat(icon(intact)).isNull()
     }
 
     @Test
