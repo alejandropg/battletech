@@ -75,7 +75,6 @@ internal class AttackResultsViewTest {
     private fun makeView(results: List<AttackResult>): AttackResultsView {
         val render = AttackResultsRender(
             results = results,
-            unitNames = mapOf(attackerId to "Atlas", targetId to "Hunchback"),
             unitOwners = mapOf(attackerId to PlayerId.PLAYER_1, targetId to PlayerId.PLAYER_2),
         )
         return AttackResultsView(render)
@@ -179,15 +178,15 @@ internal class AttackResultsViewTest {
     }
 
     @Test
-    fun `attacker name appears in output`() {
+    fun `attacker id appears in output`() {
         val output = renderToString(listOf(aHitResult()))
-        assertTrue(output.contains("Atlas")) { "Expected attacker name Atlas" }
+        assertTrue(output.contains("attacker")) { "Expected attacker id in output" }
     }
 
     @Test
-    fun `target name appears as target line`() {
+    fun `target id appears as target line`() {
         val output = renderToString(listOf(aHitResult()))
-        assertTrue(output.contains("> Hunchback")) { "Expected target line with Hunchback: $output" }
+        assertTrue(output.contains("> target")) { "Expected target line with target id: $output" }
     }
 
     @Test

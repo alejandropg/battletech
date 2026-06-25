@@ -28,11 +28,11 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
             val attackerColor = if (entry.isDraft) Color.DRAFT else playerColor(entry.ownerPlayer)
             val contentColor = if (entry.isDraft) Color.DRAFT else Color.WHITE
 
-            content.writeln(entry.attackerName, attackerColor)
+            content.writeln(entry.attackerId.value, attackerColor)
 
             for (target in entry.targets) {
                 val tag = if (target.isPrimary) "[P]" else "[S]"
-                val targetLine = "> ${target.targetName} $tag"
+                val targetLine = "> ${target.targetId.value} $tag"
                 content.writeln(targetLine, contentColor)
 
                 for (weapon in target.weapons) {

@@ -384,7 +384,7 @@ internal fun buildDeclaredTargetsRender(
                         }
                     val targetInfos = DefaultPlayerView(attackerUnit.owner, gameState)
                         .targetInfos(attackerId, attackerUnit.torsoFacing)
-                    add(attackerEntry(attackerUnit, normalized, isDraft = false, player, gameState, targetInfos))
+                    add(attackerEntry(attackerUnit, normalized, isDraft = false, player, targetInfos))
                 }
 
             if (player == viewingPlayer) {
@@ -401,7 +401,7 @@ internal fun buildDeclaredTargetsRender(
                             }
                         val targetInfos = DefaultPlayerView(attackerUnit.owner, gameState)
                             .targetInfos(attackerId, decl.torsoFacing)
-                        add(attackerEntry(attackerUnit, normalized, isDraft = true, player, gameState, targetInfos))
+                        add(attackerEntry(attackerUnit, normalized, isDraft = true, player, targetInfos))
                     }
             }
         }
@@ -411,22 +411,20 @@ internal fun buildDeclaredTargetsRender(
 }
 
 private fun attackerEntry(
-    attackerUnit: battletech.tactical.unit.CombatUnit,
+    attackerUnit: CombatUnit,
     targets: List<Triple<UnitId, List<Int>, Boolean>>,
     isDraft: Boolean,
     ownerPlayer: PlayerId,
-    gameState: GameState,
-    targetInfos: List<battletech.tactical.attack.weapon.TargetInfo>,
+    targetInfos: List<TargetInfo>,
 ): DeclaredAttackerEntry {
     val targetEntries = targets.map { (targetId, weaponIndices, isPrimary) ->
-        val targetName = gameState.unitById(targetId)?.name ?: targetId.value
         val weaponEntries = weaponIndices.map { weaponIndex ->
             resolveWeaponEntry(attackerUnit, weaponIndex, targetId, targetInfos)
         }
-        DeclaredTargetEntry(targetName = targetName, isPrimary = isPrimary, weapons = weaponEntries)
+        DeclaredTargetEntry(targetId = targetId, isPrimary = isPrimary, weapons = weaponEntries)
     }
     return DeclaredAttackerEntry(
-        attackerName = attackerUnit.name,
+        attackerId = attackerUnit.id,
         ownerPlayer = ownerPlayer,
         isDraft = isDraft,
         targets = targetEntries,

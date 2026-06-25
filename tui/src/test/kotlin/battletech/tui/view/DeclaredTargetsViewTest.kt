@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import battletech.tactical.model.PlayerId
+import battletech.tactical.unit.UnitId
 import battletech.tui.game.phase.DeclaredAttackerEntry
 import battletech.tui.game.phase.DeclaredTargetEntry
 import battletech.tui.game.phase.DeclaredTargetsRender
@@ -16,9 +17,9 @@ internal class DeclaredTargetsViewTest {
     private fun weapon(name: String, chance: Int = 72, targetRoll: Int = 6) =
         DeclaredWeaponEntry(name, chance, targetRoll)
     private fun target(name: String, primary: Boolean, vararg weapons: DeclaredWeaponEntry) =
-        DeclaredTargetEntry(name, primary, weapons.toList())
+        DeclaredTargetEntry(UnitId(name), primary, weapons.toList())
     private fun attacker(name: String, player: PlayerId, draft: Boolean, vararg targets: DeclaredTargetEntry) =
-        DeclaredAttackerEntry(name, player, draft, targets.toList())
+        DeclaredAttackerEntry(UnitId(name), player, draft, targets.toList())
 
     private fun renderToString(view: DeclaredTargetsView, width: Int = 28, height: Int = 30): String {
         val buffer = ScreenBuffer(width, height)

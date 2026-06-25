@@ -59,7 +59,7 @@ internal object GameLogFormatter {
         }
 
         is UnitMoved -> {
-            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            val name = event.unitId.value
             "$name (${event.mpSpent} MP) ${hexLabel(event.from)}→${hexLabel(event.to)}"
         }
 
@@ -80,7 +80,7 @@ internal object GameLogFormatter {
             val parts = event.heatBefore
                 .filterValues { it > 0 }
                 .map { (unitId, before) ->
-                    val name = state.unitById(unitId)?.name ?: unitId.value
+                    val name = unitId.value
                     "$name $before→${event.heatAfter[unitId] ?: 0}"
                 }
             if (parts.isEmpty()) "Heat: no heat to dissipate"
@@ -97,34 +97,34 @@ internal object GameLogFormatter {
         }
 
         is UnitFell -> {
-            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            val name = event.unitId.value
             "$name fell — ${event.fall.damage} damage"
         }
 
         is UnitStoodUp -> {
-            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            val name = event.unitId.value
             if (event.stoodUp) "$name stood up" else "$name failed to stand"
         }
 
         is UnitShutdown -> {
-            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            val name = event.unitId.value
             if (event.auto) "$name auto-shut down (heat ≥ 30)" else "$name shut down from heat"
         }
 
         is UnitRestarted -> {
-            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            val name = event.unitId.value
             "$name restarted"
         }
 
         is AmmoExploded -> {
-            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            val name = event.unitId.value
             "$name ammo explosion: ${event.ammoType.name} (${event.damage} damage)"
         }
 
         is TurnEnded -> null
 
         is UnitDestroyed -> {
-            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            val name = event.unitId.value
             "$name destroyed (${destructionReasonLabel(event.reason)})"
         }
 
@@ -134,23 +134,23 @@ internal object GameLogFormatter {
         }
 
         is CriticalHit -> {
-            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            val name = event.unitId.value
             val component = criticalSlotContentLabel(event.content, event.unitId, state)
             "$name critical hit: $component in ${locationLabel(event.location)}"
         }
 
         is PilotHit -> {
-            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            val name = event.unitId.value
             "$name pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)"
         }
 
         is PilotKnockedUnconscious -> {
-            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            val name = event.unitId.value
             "$name pilot knocked unconscious"
         }
 
         is PilotRecoveredConsciousness -> {
-            val name = state.unitById(event.unitId)?.name ?: event.unitId.value
+            val name = event.unitId.value
             "$name pilot regained consciousness"
         }
     }
@@ -170,7 +170,7 @@ internal object GameLogFormatter {
     private fun torsoFacingLines(event: TorsoFacingsApplied, state: GameState): List<LogLine> {
         if (event.facings.isEmpty()) return listOf(LogLine(null, "Torso facings: no changes"))
         return event.facings.entries.map { (unitId, dir) ->
-            val name = state.unitById(unitId)?.name ?: unitId.value
+            val name = unitId.value
             LogLine(torsoArrowIcon(dir).first, "$name torso → $dir")
         }
     }
@@ -178,9 +178,9 @@ internal object GameLogFormatter {
     private fun attackDeclarationLines(event: AttackDeclarationsRecorded, state: GameState): List<LogLine> =
         event.declarations.groupBy { it.attackerId }.entries.map { (attackerId, decls) ->
             val attacker = state.unitById(attackerId)
-            val attackerName = attacker?.name ?: attackerId.value
+            val attackerName = attackerId.value
             val perTarget = decls.groupBy { it.targetId }.entries.joinToString(", ") { (targetId, targetDecls) ->
-                val targetName = state.unitById(targetId)?.name ?: targetId.value
+                val targetName = targetId.value
                 val weaponNames = targetDecls.joinToString(", ") { decl ->
                     attacker?.weapons?.getOrNull(decl.weaponIndex)?.name ?: "weapon#${decl.weaponIndex}"
                 }
@@ -238,7 +238,7 @@ internal object GameLogFormatter {
         state: GameState,
     ): String? {
         val parts = targetsAndDamage.flatMap { (targetId, steps) ->
-            val name = state.unitById(targetId)?.name ?: targetId.value
+            val name = targetId.value
             steps.filter { it.destroyed }.map { "$name ${locationLabel(it.location)}" }
         }
         if (parts.isEmpty()) return null

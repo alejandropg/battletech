@@ -42,7 +42,6 @@ internal class PanelFrame(private val appState: AppState) {
         appState.lastAttackResults?.let { results ->
             AttackResultsRender(
                 results = results,
-                unitNames = gameState.units.associate { it.id to it.name },
                 unitOwners = gameState.units.associate { it.id to it.owner },
             )
         }

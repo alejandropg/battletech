@@ -24,15 +24,13 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         val byAttacker = data.results.groupBy { it.attackerId }
 
         for ((attackerId, attackerResults) in byAttacker) {
-            val attackerName = data.unitNames[attackerId] ?: attackerId.value
             val attackerColor = playerColor(data.unitOwners[attackerId])
-            content.writeln(attackerName, attackerColor)
+            content.writeln(attackerId.value, attackerColor)
 
             val byTarget = attackerResults.groupBy { it.targetId }
 
             for ((targetId, targetResults) in byTarget) {
-                val targetName = data.unitNames[targetId] ?: targetId.value
-                val targetLine = "> $targetName"
+                val targetLine = "> ${targetId.value}"
                 content.writeln(targetLine, Color.WHITE)
 
                 for (result in targetResults) {

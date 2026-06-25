@@ -70,12 +70,12 @@ internal class DeclaredTargetsRenderTest {
 
         assertEquals(1, result.entries.size)
         val entry = result.entries[0]
-        assertEquals("Wolverine", entry.attackerName)
+        assertEquals("wolf", entry.attackerId.value)
         assertEquals(PlayerId.PLAYER_1, entry.ownerPlayer)
         assertFalse(entry.isDraft)
         assertEquals(1, entry.targets.size)
         assertTrue(entry.targets[0].isPrimary)
-        assertEquals("Atlas", entry.targets[0].targetName)
+        assertEquals("atlas", entry.targets[0].targetId.value)
         assertEquals(1, entry.targets[0].weapons.size)
         assertEquals("Medium Laser", entry.targets[0].weapons[0].weaponName)
     }
@@ -102,7 +102,7 @@ internal class DeclaredTargetsRenderTest {
 
         assertEquals(1, result.entries.size)
         assertTrue(result.entries[0].isDraft)
-        assertEquals("Wolverine", result.entries[0].attackerName)
+        assertEquals("wolf", result.entries[0].attackerId.value)
     }
 
     @Test
@@ -181,8 +181,8 @@ internal class DeclaredTargetsRenderTest {
         )
 
         assertEquals(2, result.entries.size)
-        assertEquals("Atlas", result.entries[0].attackerName)   // P2 first
-        assertEquals("Wolverine", result.entries[1].attackerName) // P1 second
+        assertEquals("atlas", result.entries[0].attackerId.value)   // P2 first
+        assertEquals("wolf", result.entries[1].attackerId.value) // P1 second
     }
 
     @Test
@@ -209,8 +209,8 @@ internal class DeclaredTargetsRenderTest {
 
         assertEquals(1, result.entries.size)
         val targets = result.entries[0].targets
-        val primaryEntry = targets.first { it.targetName == "Primary" }
-        val secondaryEntry = targets.first { it.targetName == "Secondary" }
+        val primaryEntry = targets.first { it.targetId.value == "primary" }
+        val secondaryEntry = targets.first { it.targetId.value == "secondary" }
         assertTrue(primaryEntry.isPrimary)
         assertFalse(secondaryEntry.isPrimary)
     }
@@ -237,7 +237,7 @@ internal class DeclaredTargetsRenderTest {
         )
 
         assertEquals(1, result.entries.size)
-        assertEquals("Wolverine", result.entries[0].attackerName)
+        assertEquals("wolf", result.entries[0].attackerId.value)
     }
 
     @Test

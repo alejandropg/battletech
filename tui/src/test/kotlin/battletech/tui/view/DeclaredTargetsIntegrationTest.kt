@@ -59,10 +59,10 @@ internal class DeclaredTargetsIntegrationTest {
         val rowText = { row: Int ->
             buildString { (0 until 28).forEach { col -> append(buffer.get(col, row).char) } }
         }
-        val wolverineRow = (0 until 30).first { rowText(it).contains("Wolverine") }
-        val colors = (2 until 28).map { col -> buffer.get(col, wolverineRow).fg }.toSet()
+        val wolfRow = (0 until 30).first { rowText(it).contains("wolf") }
+        val colors = (2 until 28).map { col -> buffer.get(col, wolfRow).fg }.toSet()
         assertTrue(colors.contains(Color.GRAY)) {
-            "Expected Wolverine (draft) row to use Color.GRAY, got: $colors"
+            "Expected wolf (draft) row to use Color.GRAY, got: $colors"
         }
     }
 

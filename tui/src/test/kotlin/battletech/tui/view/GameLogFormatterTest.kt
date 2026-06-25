@@ -86,7 +86,7 @@ internal class GameLogFormatterTest {
             state = stateWithAtlas,
         )
 
-        assertThat(text).isEqualTo("Atlas (3 MP) 0301→0302")
+        assertThat(text).isEqualTo("atlas (3 MP) 0301→0302")
     }
 
     @Test
@@ -105,8 +105,8 @@ internal class GameLogFormatterTest {
             stateWithAtlas,
         )
 
-        assertThat(ran).isEqualTo("Atlas (5 MP) 0101→0102")
-        assertThat(jumped).isEqualTo("Atlas (4 MP) 0101→0102")
+        assertThat(ran).isEqualTo("atlas (5 MP) 0101→0102")
+        assertThat(jumped).isEqualTo("atlas (4 MP) 0101→0102")
     }
 
     @Test
@@ -174,7 +174,7 @@ internal class GameLogFormatterTest {
             state = stateWithLocust,
         )
 
-        assertThat(text).isEqualTo("Attacks: 1 fired, 1 hit, 24 damage — Locust Left Arm destroyed")
+        assertThat(text).isEqualTo("Attacks: 1 fired, 1 hit, 24 damage — locust Left Arm destroyed")
     }
 
     @Test
@@ -220,7 +220,7 @@ internal class GameLogFormatterTest {
             state = stateWithLocust,
         )
 
-        assertThat(text).isEqualTo("Physical attacks: 1 made, 1 hit, 18 damage — Locust Right Leg destroyed")
+        assertThat(text).isEqualTo("Physical attacks: 1 made, 1 hit, 18 damage — locust Right Leg destroyed")
     }
 
     @Test
@@ -266,7 +266,7 @@ internal class GameLogFormatterTest {
 
         // atlas has one weapon configured: medium laser ("Medium Laser").
         assertThat(lines).isEqualTo(
-            listOf(GameLogFormatter.LogLine(targetIcon(), "Atlas → Locust (Medium Laser)")),
+            listOf(GameLogFormatter.LogLine(targetIcon(), "atlas → locust (Medium Laser)")),
         )
     }
 
@@ -293,7 +293,7 @@ internal class GameLogFormatterTest {
         )
 
         assertThat(lines).isEqualTo(
-            listOf(GameLogFormatter.LogLine(targetIcon(), "Atlas → Locust (Medium Laser, LRM 5)")),
+            listOf(GameLogFormatter.LogLine(targetIcon(), "atlas → locust (Medium Laser, LRM 5)")),
         )
     }
 
@@ -316,7 +316,7 @@ internal class GameLogFormatterTest {
         )
 
         assertThat(lines).isEqualTo(
-            listOf(GameLogFormatter.LogLine(targetIcon(), "Atlas → Locust (Medium Laser), Marauder (Medium Laser)")),
+            listOf(GameLogFormatter.LogLine(targetIcon(), "atlas → locust (Medium Laser), marauder (Medium Laser)")),
         )
     }
 
@@ -340,8 +340,8 @@ internal class GameLogFormatterTest {
         )
 
         assertThat(lines).containsExactlyInAnyOrder(
-            GameLogFormatter.LogLine(targetIcon(), "Atlas → Locust (Medium Laser)"),
-            GameLogFormatter.LogLine(targetIcon(), "Marauder → Phoenix Hawk (Medium Laser)"),
+            GameLogFormatter.LogLine(targetIcon(), "atlas → locust (Medium Laser)"),
+            GameLogFormatter.LogLine(targetIcon(), "marauder → phoenixhawk (Medium Laser)"),
         )
         assertThat(lines).hasSize(2)
     }
@@ -363,8 +363,8 @@ internal class GameLogFormatterTest {
         )
 
         assertThat(lines).containsExactly(
-            GameLogFormatter.LogLine(torsoArrowIcon(HexDirection.NE).first, "Atlas torso → NE"),
-            GameLogFormatter.LogLine(torsoArrowIcon(HexDirection.S).first, "Locust torso → S"),
+            GameLogFormatter.LogLine(torsoArrowIcon(HexDirection.NE).first, "atlas torso → NE"),
+            GameLogFormatter.LogLine(torsoArrowIcon(HexDirection.S).first, "locust torso → S"),
         )
     }
 
@@ -392,7 +392,7 @@ internal class GameLogFormatterTest {
             state = stateWithUnits,
         )
 
-        assertThat(text).isEqualTo("Heat: Atlas 8→4")
+        assertThat(text).isEqualTo("Heat: atlas 8→4")
     }
 
     @Test
@@ -427,7 +427,7 @@ internal class GameLogFormatterTest {
             state = stateWithLocust,
         )
 
-        assertThat(text).isEqualTo("Locust destroyed (center torso destroyed)")
+        assertThat(text).isEqualTo("locust destroyed (center torso destroyed)")
     }
 
     @Test
@@ -448,7 +448,7 @@ internal class GameLogFormatterTest {
                 event = UnitDestroyed(unitId = locust.id, reason = reason),
                 state = stateWithLocust,
             )
-            assertThat(text).isEqualTo("Locust destroyed ($label)")
+            assertThat(text).isEqualTo("locust destroyed ($label)")
         }
     }
 
@@ -487,7 +487,7 @@ internal class GameLogFormatterTest {
             state = stateWithLocust,
         )
 
-        assertThat(text).isEqualTo("Locust critical hit: Engine in Center Torso")
+        assertThat(text).isEqualTo("locust critical hit: Engine in Center Torso")
     }
 
     @Test
@@ -506,7 +506,7 @@ internal class GameLogFormatterTest {
             state = stateWithLocust,
         )
 
-        assertThat(text).isEqualTo("Locust critical hit: Medium Laser in Right Arm")
+        assertThat(text).isEqualTo("locust critical hit: Medium Laser in Right Arm")
     }
 
     @Test
@@ -523,7 +523,7 @@ internal class GameLogFormatterTest {
             ),
             state = stateWithLocust,
         )
-        assertThat(ammoText).isEqualTo("Locust critical hit: AC20 ammo in Left Torso")
+        assertThat(ammoText).isEqualTo("locust critical hit: AC20 ammo in Left Torso")
 
         val actuatorText = GameLogFormatter.format(
             event = CriticalHit(
@@ -534,7 +534,7 @@ internal class GameLogFormatterTest {
             ),
             state = stateWithLocust,
         )
-        assertThat(actuatorText).isEqualTo("Locust critical hit: Upper arm actuator in Left Arm")
+        assertThat(actuatorText).isEqualTo("locust critical hit: Upper arm actuator in Left Arm")
     }
 
     @Test
@@ -547,7 +547,7 @@ internal class GameLogFormatterTest {
             state = stateWithLocust,
         )
 
-        assertThat(text).isEqualTo("Locust pilot wounded (1 hit total)")
+        assertThat(text).isEqualTo("locust pilot wounded (1 hit total)")
     }
 
     @Test
@@ -563,7 +563,7 @@ internal class GameLogFormatterTest {
             state = stateWithLocust,
         )
 
-        assertThat(text).isEqualTo("Locust pilot wounded (3 hits total)")
+        assertThat(text).isEqualTo("locust pilot wounded (3 hits total)")
     }
 
     @Test
@@ -575,13 +575,13 @@ internal class GameLogFormatterTest {
             event = PilotKnockedUnconscious(unitId = locust.id),
             state = stateWithLocust,
         )
-        assertThat(unconsciousText).isEqualTo("Locust pilot knocked unconscious")
+        assertThat(unconsciousText).isEqualTo("locust pilot knocked unconscious")
 
         val recoveredText = GameLogFormatter.format(
             event = PilotRecoveredConsciousness(unitId = locust.id, roll = DiceRoll(5, 5)),
             state = stateWithLocust,
         )
-        assertThat(recoveredText).isEqualTo("Locust pilot regained consciousness")
+        assertThat(recoveredText).isEqualTo("locust pilot regained consciousness")
     }
 
     @Test
