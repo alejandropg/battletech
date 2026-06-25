@@ -12,20 +12,20 @@ import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.InitiativeRolled
+import battletech.tactical.session.MatchEnded
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.PilotHit
 import battletech.tactical.session.PilotKnockedUnconscious
 import battletech.tactical.session.PilotRecoveredConsciousness
 import battletech.tactical.session.TorsoFacingsApplied
+import battletech.tactical.session.TurnEnded
+import battletech.tactical.session.UnitDestroyed
 import battletech.tactical.session.UnitFell
+import battletech.tactical.session.UnitMoved
 import battletech.tactical.session.UnitRestarted
 import battletech.tactical.session.UnitShutdown
 import battletech.tactical.session.UnitStoodUp
-import battletech.tactical.session.TurnEnded
-import battletech.tactical.session.UnitDestroyed
-import battletech.tactical.session.MatchEnded
-import battletech.tactical.session.UnitMoved
 import battletech.tactical.unit.ActuatorType
 import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.DestructionReason
@@ -35,6 +35,7 @@ import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
+import battletech.tui.hex.torsoArrowIcon
 
 internal object GameLogFormatter {
 
@@ -176,6 +177,7 @@ internal object GameLogFormatter {
             if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
         is PhysicalAttacksResolved ->
             if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
+        is TorsoFacingsApplied -> event.facings.values.singleOrNull()?.let { torsoArrowIcon(it).first }
         else -> null
     }
 

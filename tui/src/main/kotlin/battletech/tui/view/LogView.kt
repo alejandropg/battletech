@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.model.GameState
 import battletech.tactical.session.LogEntry
 import battletech.tui.game.PanelId
+import battletech.tui.screen.CellWidth
 import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.TextWrap
@@ -23,16 +24,17 @@ public class LogView(
 
         for (entry in entries) {
             val text = GameLogFormatter.format(entry.event, gameState) ?: continue
-            val icon = GameLogFormatter.iconFor(entry.event)
-            val line = if (icon != null) "$icon $text" else text
+            val icon = GameLogFormatter.iconFor(entry.event) ?: ">"
+            val prefixWidth = CellWidth.of(icon) + 1
+            val indent = " ".repeat(prefixWidth)
 
             if (entry.turn != lastTurn) {
                 content.writeHeader("TURN ${entry.turn}")
                 lastTurn = entry.turn
             }
 
-            for (wrapped in TextWrap.wrap(line, width)) {
-                content.writeln(wrapped)
+            TextWrap.wrap(text, width - prefixWidth, width - prefixWidth).forEachIndexed { i, wrapped ->
+                content.writeln(if (i == 0) "$icon $wrapped" else "$indent$wrapped")
             }
         }
     }

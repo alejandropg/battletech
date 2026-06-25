@@ -55,17 +55,19 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
     }
 
     /**
-     * Applies torso facings to [state] when [facings] is non-empty, appending
-     * a [TorsoFacingsApplied] event to [events]. Returns the (possibly updated) state.
+     * Applies the subset of [facings] that actually differ from each unit's current torso
+     * facing, appending a [TorsoFacingsApplied] event for those changes to [events].
+     * Declared-but-unchanged facings are dropped silently. Returns the (possibly updated) state.
      */
     protected fun applyTorsoFacingsStep(
         state: GameState,
         facings: Map<UnitId, HexDirection>,
         events: MutableList<GameEvent>,
     ): GameState {
-        if (facings.isEmpty()) return state
-        events += TorsoFacingsApplied(facings)
-        return state.applyTorsoFacings(facings)
+        val changed = facings.filter { (unitId, facing) -> state.unitById(unitId)?.torsoFacing != facing }
+        if (changed.isEmpty()) return state
+        events += TorsoFacingsApplied(changed)
+        return state.applyTorsoFacings(changed)
     }
 
     /**

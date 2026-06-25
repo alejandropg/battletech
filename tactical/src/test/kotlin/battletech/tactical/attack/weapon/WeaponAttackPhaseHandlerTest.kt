@@ -5,11 +5,13 @@ import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MechLocation
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
+import battletech.tactical.movement.ReachableHex
 import battletech.tactical.query.aGameState
+import battletech.tactical.query.aUnit
 import battletech.tactical.query.anArmorLayout
 import battletech.tactical.query.anInternalStructureLayout
-import battletech.tactical.query.aUnit
 import battletech.tactical.query.mediumLaser
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttackProgress
@@ -18,8 +20,6 @@ import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.Impulse
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
-import battletech.tactical.model.MovementMode
-import battletech.tactical.movement.ReachableHex
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnState
@@ -288,6 +288,20 @@ internal class WeaponAttackPhaseHandlerTest {
             playerId = PlayerId.PLAYER_1,
             declarations = emptyList(),
             torsoFacings = emptyMap(),
+        )
+        val outcome = handler.apply(cmd, gameState, seededTwoImpulseTurn(), noRoller)
+
+        assertThat(outcome.events.filterIsInstance<TorsoFacingsApplied>()).isEmpty()
+    }
+
+    @Test
+    fun `apply does not emit TorsoFacingsApplied for a declared facing equal to the unit's current facing`() {
+        // attacker's torsoFacing defaults to its facing (N) — declaring "N" again is a no-op,
+        // not a twist, and must not be echoed back as a change.
+        val cmd = CommitAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = emptyList(),
+            torsoFacings = mapOf(attacker.id to attacker.torsoFacing),
         )
         val outcome = handler.apply(cmd, gameState, seededTwoImpulseTurn(), noRoller)
 

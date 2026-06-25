@@ -38,15 +38,16 @@ import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.DestructionReason
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
-import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.WeaponModels
+import battletech.tactical.unit.WeaponMountId
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
-import battletech.tui.mediumLaser
 import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
+import battletech.tui.hex.torsoArrowIcon
+import battletech.tui.mediumLaser
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -584,6 +585,17 @@ internal class GameLogFormatterTest {
 
         assertThat(GameLogFormatter.iconFor(destroyed)).isEqualTo(locationDestroyedIcon())
         assertThat(GameLogFormatter.iconFor(intact)).isNull()
+    }
+
+    @Test
+    fun `iconFor uses the torso-arrow glyph for a single facing change and omits it for several`() {
+        val single = TorsoFacingsApplied(facings = mapOf(UnitId("atlas") to HexDirection.NE))
+        val multiple = TorsoFacingsApplied(
+            facings = mapOf(UnitId("atlas") to HexDirection.NE, UnitId("locust") to HexDirection.S),
+        )
+
+        assertThat(GameLogFormatter.iconFor(single)).isEqualTo(torsoArrowIcon(HexDirection.NE).first)
+        assertThat(GameLogFormatter.iconFor(multiple)).isNull()
     }
 
     private fun anAttackResult(

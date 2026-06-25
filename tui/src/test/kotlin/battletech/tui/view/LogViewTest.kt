@@ -13,7 +13,6 @@ import battletech.tactical.session.LogEntry
 import battletech.tactical.session.UnitMoved
 import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.unit.PilotingSkillRoll
-import battletech.tactical.unit.UnitId
 import battletech.tui.aUnit
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
@@ -83,7 +82,7 @@ internal class LogViewTest {
         val headerLine = readLine(buffer, x = 2, y = 1, width = 24)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
         val entryLine = readLine(buffer, x = 2, y = 2, width = 24)
-        assertEquals("M stood up", entryLine)
+        assertEquals("> M stood up", entryLine)
     }
 
     @Test
@@ -114,7 +113,7 @@ internal class LogViewTest {
         val headerLine = readLine(buffer, x = 2, y = 1, width = 24)
         assertEquals("── TURN 10 ─────────────", headerLine)
         val entryLine = readLine(buffer, x = 2, y = 2, width = 24)
-        assertEquals("M stood up", entryLine)
+        assertEquals("> M stood up", entryLine)
     }
 
     @Test
@@ -138,7 +137,7 @@ internal class LogViewTest {
     }
 
     @Test
-    fun `wraps long entries to multiple visual lines at full width with no indent`() {
+    fun `wraps long entries with continuation lines indented under the icon column`() {
         val initiative = Initiative(
             rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(3, 3), PlayerId.PLAYER_2 to DiceRoll(1, 2)),
             loser = PlayerId.PLAYER_2,
@@ -154,10 +153,12 @@ internal class LogViewTest {
         assert(readLine(buffer, 2, 1, 24).startsWith("── TURN 2 ")) { "Expected header at row 1" }
         val line1 = readLine(buffer, 2, 2, 24)
         val line2 = readLine(buffer, 2, 3, 24)
-        // No prefix and no indent: both lines start directly with text.
-        assert(line1.startsWith("Initiative: P1")) { "Line 1 should start with the entry text: '$line1'" }
+        // No dedicated icon for InitiativeRolled: falls back to the generic ">" marker.
+        assert(line1.startsWith("> Initiative: P1")) { "Line 1 should start with the generic icon: '$line1'" }
+        // Continuation line is indented two columns to align under the text on line 1.
+        assert(line2.startsWith("  ")) { "Line 2 should be indented under the icon column: '$line2'" }
         // The text content should reassemble (whitespace flexible).
-        val reassembled = (line1 + " " + line2.trim()).replace(Regex("\\s+"), " ").trim()
+        val reassembled = (line1.removePrefix("> ") + " " + line2.trim()).replace(Regex("\\s+"), " ").trim()
         assert(reassembled.startsWith("Initiative: P1")) {
             "Reassembled text didn't start as expected: '$reassembled'"
         }
@@ -173,7 +174,7 @@ internal class LogViewTest {
 
         // The bottom inner row (y = 4, since box bottom is y=5) should be the most recent entry.
         val bottomInnerRow = readLine(buffer, 2, 4, 24)
-        assertEquals("M stood up", bottomInnerRow)
+        assertEquals("> M stood up", bottomInnerRow)
         // The row above is that entry's own header.
         val secondFromBottom = readLine(buffer, 2, 3, 24)
         assert(secondFromBottom.startsWith("── TURN 10 ")) { "Expected header above last entry: '$secondFromBottom'" }
@@ -190,7 +191,7 @@ internal class LogViewTest {
         val firstLine = readLine(buffer, 2, 1, 24)
         assert(firstLine.startsWith("── TURN 1 ")) { "Expected header at row 1: '$firstLine'" }
         val secondLine = readLine(buffer, 2, 2, 24)
-        assertEquals("M stood up", secondLine)
+        assertEquals("> M stood up", secondLine)
     }
 
     @Test
