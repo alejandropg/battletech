@@ -7,6 +7,7 @@ import battletech.tui.game.phase.DeclaredTargetEntry
 import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.game.phase.DeclaredWeaponEntry
 import battletech.tui.hex.diceRoll
+import battletech.tui.hex.targetIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -60,7 +61,7 @@ internal class DeclaredTargetsViewTest {
         )))
         val output = renderToString(view)
         assertTrue(output.contains("Wolverine WVR-6R"))
-        assertTrue(output.contains("> Atlas [P]"))
+        assertTrue(output.contains("${targetIcon()} Atlas [P]"))
         assertTrue(output.contains("SRM 6"))
         assertTrue(output.contains("72%"))
     }

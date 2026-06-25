@@ -7,6 +7,7 @@ import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.phase.AttackResultsRender
+import battletech.tui.hex.targetIcon
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -186,7 +187,7 @@ internal class AttackResultsViewTest {
     @Test
     fun `target id appears as target line`() {
         val output = renderToString(listOf(aHitResult()))
-        assertTrue(output.contains("> target")) { "Expected target line with target id: $output" }
+        assertTrue(output.contains("${targetIcon()} target")) { "Expected target line with target id: $output" }
     }
 
     @Test

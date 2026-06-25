@@ -6,6 +6,7 @@ import battletech.tactical.attack.RangeBand
 import battletech.tactical.model.PlayerId
 import battletech.tui.game.PanelId
 import battletech.tui.game.phase.AttackResultsRender
+import battletech.tui.hex.targetIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
@@ -30,7 +31,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
             val byTarget = attackerResults.groupBy { it.targetId }
 
             for ((targetId, targetResults) in byTarget) {
-                val targetLine = "> ${targetId.value}"
+                val targetLine = "${targetIcon()} ${targetId.value}"
                 content.writeln(targetLine, Color.WHITE)
 
                 for (result in targetResults) {

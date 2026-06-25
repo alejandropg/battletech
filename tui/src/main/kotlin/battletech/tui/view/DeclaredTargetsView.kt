@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.model.PlayerId
 import battletech.tui.game.PanelId
 import battletech.tui.game.phase.DeclaredTargetsRender
+import battletech.tui.hex.targetIcon
 import battletech.tui.screen.CellWidth
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
@@ -32,7 +33,7 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
 
             for (target in entry.targets) {
                 val tag = if (target.isPrimary) "[P]" else "[S]"
-                val targetLine = "> ${target.targetId.value} $tag"
+                val targetLine = "${targetIcon()} ${target.targetId.value} $tag"
                 content.writeln(targetLine, contentColor)
 
                 for (weapon in target.weapons) {
