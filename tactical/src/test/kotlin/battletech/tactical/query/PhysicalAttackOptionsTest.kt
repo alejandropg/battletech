@@ -40,6 +40,12 @@ internal class PhysicalAttackOptionsTest {
     }
 
     @Test
+    fun `a destroyed adjacent enemy yields no physical attack options`() {
+        val destroyedEnemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 0), isDestroyed = true)
+        assertThat(viewWith(attacker, destroyedEnemy).physicalAttackOptions(attacker.id)).isEmpty()
+    }
+
+    @Test
     fun `a destroyed arm makes that punch unavailable`() {
         val maimed = aUnit(
             id = "attacker",

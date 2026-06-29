@@ -17,6 +17,7 @@ public class KickActionDefinition : AttackDefinition<PhysicalAttackContext> {
     override val name: String = "Kick"
 
     override val rules: List<AttackRule<PhysicalAttackContext>> = listOf(
+        TargetAliveRule(),
         AdjacentRule(),
         KickReachRule(),
         KickMovementRule(),

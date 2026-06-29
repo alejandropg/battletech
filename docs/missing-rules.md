@@ -34,7 +34,7 @@ When a hit location's internal structure is reduced to 0, that location is destr
 - Track destroyed locations on the unit (see *Location Destruction Consequences*); a hit rolled against an already-destroyed location transfers immediately.
 - Tests: arm overflow into side torso into center torso; leg overflow; ensure head/CT overflow flags unit destruction rather than transferring.
 
-## Mech Destruction & Unit Elimination
+## [x] Mech Destruction & Unit Elimination
 
 A BattleMech is destroyed (removed from play) when any of these occurs: **head** internal structure destroyed, **center torso** internal structure destroyed, **both legs** destroyed, the **engine** takes 3 critical hits, the **gyro** is destroyed and the mech cannot stand, an **ammo explosion** breaches the center torso, or the **pilot** dies (see *Pilot Hits & Consciousness*). Today nothing ever leaves play, so a game can never be won.
 
@@ -45,7 +45,7 @@ A BattleMech is destroyed (removed from play) when any of these occurs: **head**
 - After every damage application (weapon resolution in `AttackResolution.kt`, fall damage in `Falling.kt`, ammo explosion in `HeatPhaseHandler`, criticals), evaluate destruction conditions and set `isDestroyed`.
 - Add a `UnitDestroyed(unitId, reason)` event to `GameEvent.kt`; emit it from wherever destruction is detected.
 - Exclude destroyed units from all impulse/target queries: movement order, `PlayerView.validTargets`, physical attack options, heat phase. (Mirror the existing `isShutdown` exclusions.)
-- Decide whether a destroyed unit's hex becomes a wreck (blocks/are passable) — for standard play, leave the wreck in the hex as terrain-neutral but non-targetable; document the choice.
+- Decide whether a destroyed unit's hex becomes a wreck (blocks/are passable) — for standard play, leave the wreck in the hex as terrain-neutral but non-targetable; document the choice. Decision: destroyed units' wrecks remain in their hex as terrain-neutral, non-blocking, and non-targetable (excluded from both weapon and physical attack target queries).
 - Tests: head IS → 0 destroys; CT IS → 0 destroys; both legs destroyed destroys; destroyed units drop out of `activeUnitsOf`.
 
 ## Victory / End-of-Game Conditions

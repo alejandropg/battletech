@@ -51,4 +51,7 @@ public sealed interface RuleRejection : RejectionReason {
 
     /** A prone unit tried to make a physical attack. */
     public data object AttackerProne : RuleRejection
+
+    /** The target unit has already been destroyed and cannot be attacked. */
+    public data object TargetDestroyed : RuleRejection
 }

@@ -25,8 +25,9 @@ internal class KickActionDefinitionTest {
     }
 
     @Test
-    fun `rules include adjacent and heat penalty`() {
+    fun `rules include target alive, adjacent and heat penalty`() {
         assertThat(definition.rules.map { it::class }).contains(
+            TargetAliveRule::class,
             AdjacentRule::class,
             HeatPenaltyRule::class,
         )
