@@ -345,13 +345,19 @@ internal class LocationDestructionConsequencesTest {
             walkingMP = 4,
             internalStructure = anInternalStructureLayout(leftLeg = 0),
         )
-        val state = aGameState(units = listOf(unit))
+        // A destroyed leg halves walking MP (4/2 = 2). (0,-1) is one hop north — within budget.
+        val origin = HexCoordinates(0, 0)
+        val north = HexCoordinates(0, -1)
+        val state = aGameState(
+            units = listOf(unit),
+            hexes = mapOf(origin to Hex(origin), north to Hex(north)),
+        )
         val handler = MovementPhaseHandler()
         val dest = ReachableHex(
-            position = HexCoordinates(1, 0),
+            position = north,
             facing = HexDirection.N,
             mpSpent = 1,
-            path = listOf(MovementStep(HexCoordinates(1, 0), HexDirection.N)),
+            path = listOf(MovementStep(north, HexDirection.N)),
         )
         val cmd = MoveUnit(PlayerId.PLAYER_1, unit.id, dest, MovementMode.WALK)
 

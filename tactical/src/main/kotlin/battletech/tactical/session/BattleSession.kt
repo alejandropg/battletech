@@ -92,6 +92,10 @@ public class BattleSession(
         if (!handler.accepts(command, _turnState)) {
             return CommandResult.Rejected(CommandRejection.WrongPhase(handler.phase))
         }
+        val active = handler.activePlayer(_turnState)
+        if (active != null && active != command.playerId) {
+            return CommandResult.Rejected(CommandRejection.NotYourTurn(activePlayer = active, attemptedBy = command.playerId))
+        }
         handler.validate(command, _gameState, _turnState)?.let { reason ->
             return CommandResult.Rejected(reason)
         }

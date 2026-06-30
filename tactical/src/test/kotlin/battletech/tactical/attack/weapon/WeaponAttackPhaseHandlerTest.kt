@@ -2,28 +2,34 @@ package battletech.tactical.attack.weapon
 
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.dice.DiceRoller
+import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
+import battletech.tactical.model.Terrain
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
+import battletech.tactical.query.aWeapon
 import battletech.tactical.query.anArmorLayout
 import battletech.tactical.query.anInternalStructureLayout
 import battletech.tactical.query.mediumLaser
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttackProgress
 import battletech.tactical.session.AttacksResolved
+import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.Impulse
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.MoveUnit
+import battletech.tactical.session.RuleRejection
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitFell
+import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.destructionReason
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -374,6 +380,178 @@ internal class WeaponAttackPhaseHandlerTest {
     }
 
     // ── gyro 2nd crit: automatic crash, NOT elimination (rules doc §3) ───────────
+
+    // ── validate ─────────────────────────────────────────────────────────────
+
+    /** A CommitAttackImpulse that the session would have already accepted (correct player, seeded turn). */
+    private fun validCmd(
+        declarations: List<AttackDeclaration> = emptyList(),
+        torsoFacings: Map<UnitId, HexDirection> = emptyMap(),
+    ) = CommitAttackImpulse(
+        playerId = PlayerId.PLAYER_1,
+        declarations = declarations,
+        torsoFacings = torsoFacings,
+    )
+
+    @Test
+    fun `validate returns null for an empty volley`() {
+        assertThat(handler.validate(validCmd(), gameState, seededOneImpulseTurn())).isNull()
+    }
+
+    @Test
+    fun `validate returns null for a fully legal weapon declaration`() {
+        // attacker (PLAYER_1) at (0,0) firing weapon 0 at target (PLAYER_2) at (1,0) — in range.
+        val decl = AttackDeclaration(attacker.id, target.id, weaponIndex = 0, isPrimary = true)
+        assertThat(handler.validate(validCmd(declarations = listOf(decl)), gameState, seededOneImpulseTurn())).isNull()
+    }
+
+    @Test
+    fun `validate rejects unknown attacker`() {
+        val decl = AttackDeclaration(UnitId("ghost"), target.id, weaponIndex = 0, isPrimary = true)
+        val result = handler.validate(validCmd(declarations = listOf(decl)), gameState, seededOneImpulseTurn())
+        assertThat(result).isEqualTo(CommandRejection.UnknownUnit(UnitId("ghost")))
+    }
+
+    @Test
+    fun `validate rejects attacker owned by different player`() {
+        // target is owned by PLAYER_2; the command is from PLAYER_1 trying to command it.
+        val decl = AttackDeclaration(target.id, attacker.id, weaponIndex = 0, isPrimary = true)
+        val result = handler.validate(validCmd(declarations = listOf(decl)), gameState, seededOneImpulseTurn())
+        assertThat(result).isEqualTo(
+            CommandRejection.NotYourTurn(activePlayer = PlayerId.PLAYER_2, attemptedBy = PlayerId.PLAYER_1),
+        )
+    }
+
+    @Test
+    fun `validate rejects out-of-bounds weapon index`() {
+        val decl = AttackDeclaration(attacker.id, target.id, weaponIndex = 99, isPrimary = true)
+        val result = handler.validate(validCmd(declarations = listOf(decl)), gameState, seededOneImpulseTurn())
+        assertThat(result).isEqualTo(CommandRejection.NoSuchWeapon(attacker.id, 99))
+    }
+
+    @Test
+    fun `validate rejects unknown target`() {
+        val decl = AttackDeclaration(attacker.id, UnitId("ghost"), weaponIndex = 0, isPrimary = true)
+        val result = handler.validate(validCmd(declarations = listOf(decl)), gameState, seededOneImpulseTurn())
+        assertThat(result).isEqualTo(CommandRejection.UnknownUnit(UnitId("ghost")))
+    }
+
+    @Test
+    fun `validate rejects friendly-fire target`() {
+        // Add a second PLAYER_1 unit; attempt to declare it as a target.
+        val ally = aUnit(id = "ally", owner = PlayerId.PLAYER_1, position = HexCoordinates(2, 0))
+        val state = aGameState(units = listOf(attacker, ally, target))
+        val decl = AttackDeclaration(attacker.id, ally.id, weaponIndex = 0, isPrimary = true)
+        val result = handler.validate(validCmd(declarations = listOf(decl)), state, seededOneImpulseTurn())
+        assertThat(result).isEqualTo(CommandRejection.FriendlyFire(ally.id))
+    }
+
+    @Test
+    fun `validate rejects destroyed target`() {
+        val destroyedEnemy = aUnit(id = "dead", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 0), isDestroyed = true)
+        val state = aGameState(units = listOf(attacker, destroyedEnemy))
+        val decl = AttackDeclaration(attacker.id, destroyedEnemy.id, weaponIndex = 0, isPrimary = true)
+        val result = handler.validate(validCmd(declarations = listOf(decl)), state, seededOneImpulseTurn())
+        assertThat(result).isEqualTo(CommandRejection.RuleViolation(RuleRejection.TargetDestroyed))
+    }
+
+    @Test
+    fun `validate rejects out-of-range weapon via RuleViolation`() {
+        // target placed 15 hexes away — beyond medium laser long range (9).
+        val farTarget = aUnit(id = "far", owner = PlayerId.PLAYER_2, position = HexCoordinates(15, 0))
+        val state = aGameState(units = listOf(attacker, farTarget))
+        val decl = AttackDeclaration(attacker.id, farTarget.id, weaponIndex = 0, isPrimary = true)
+        val result = handler.validate(validCmd(declarations = listOf(decl)), state, seededOneImpulseTurn())
+        assertThat(result).isInstanceOf(CommandRejection.RuleViolation::class.java)
+        assertThat((result as CommandRejection.RuleViolation).rule).isInstanceOf(RuleRejection.OutOfRange::class.java)
+    }
+
+    @Test
+    fun `validate rejects blocked LOS via RuleViolation`() {
+        // Heavy woods at (0,-1) and light woods at (0,-2) between attacker (0,0) and enemy (0,-3).
+        val blockedEnemy = aUnit(id = "blocked", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, -3))
+        val hexes = mapOf(
+            HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0), Terrain.CLEAR),
+            HexCoordinates(0, -1) to Hex(HexCoordinates(0, -1), Terrain.HEAVY_WOODS),
+            HexCoordinates(0, -2) to Hex(HexCoordinates(0, -2), Terrain.LIGHT_WOODS),
+            HexCoordinates(0, -3) to Hex(HexCoordinates(0, -3), Terrain.CLEAR),
+        )
+        val state = aGameState(units = listOf(attacker, blockedEnemy), hexes = hexes)
+        val decl = AttackDeclaration(attacker.id, blockedEnemy.id, weaponIndex = 0, isPrimary = true)
+        val result = handler.validate(validCmd(declarations = listOf(decl)), state, seededOneImpulseTurn())
+        assertThat(result).isInstanceOf(CommandRejection.RuleViolation::class.java)
+        assertThat((result as CommandRejection.RuleViolation).rule).isInstanceOf(RuleRejection.NoLineOfSight::class.java)
+    }
+
+    @Test
+    fun `validate rejects critically-destroyed weapon via RuleViolation`() {
+        val destroyedWeaponAttacker = aUnit(
+            id = "attacker",
+            owner = PlayerId.PLAYER_1,
+            weapons = listOf(aWeapon(name = "Broken Laser", destroyed = true)),
+            position = HexCoordinates(0, 0),
+        )
+        val state = aGameState(units = listOf(destroyedWeaponAttacker, target))
+        val decl = AttackDeclaration(destroyedWeaponAttacker.id, target.id, weaponIndex = 0, isPrimary = true)
+        val result = handler.validate(validCmd(declarations = listOf(decl)), state, seededOneImpulseTurn())
+        assertThat(result).isInstanceOf(CommandRejection.RuleViolation::class.java)
+        assertThat((result as CommandRejection.RuleViolation).rule).isInstanceOf(RuleRejection.WeaponDestroyed::class.java)
+    }
+
+    @Test
+    fun `validate rejects torso-facing unit owned by different player`() {
+        // target is PLAYER_2; command is from PLAYER_1.
+        val result = handler.validate(
+            validCmd(torsoFacings = mapOf(target.id to HexDirection.NE)),
+            gameState,
+            seededOneImpulseTurn(),
+        )
+        assertThat(result).isEqualTo(
+            CommandRejection.NotYourTurn(activePlayer = PlayerId.PLAYER_2, attemptedBy = PlayerId.PLAYER_1),
+        )
+    }
+
+    @Test
+    fun `validate rejects unknown unit in torso facings`() {
+        val result = handler.validate(
+            validCmd(torsoFacings = mapOf(UnitId("ghost") to HexDirection.NE)),
+            gameState,
+            seededOneImpulseTurn(),
+        )
+        assertThat(result).isEqualTo(CommandRejection.UnknownUnit(UnitId("ghost")))
+    }
+
+    @Test
+    fun `validate rejects torso twist more than one step from leg facing`() {
+        // attacker has leg facing N (ordinal 0); S (ordinal 3) is 3 steps away → illegal.
+        val result = handler.validate(
+            validCmd(torsoFacings = mapOf(attacker.id to HexDirection.S)),
+            gameState,
+            seededOneImpulseTurn(),
+        )
+        assertThat(result).isEqualTo(CommandRejection.IllegalTorsoTwist(attacker.id, HexDirection.S))
+    }
+
+    @Test
+    fun `validate accepts a legal one-step torso twist`() {
+        // NE is 1 step clockwise from N — legal.
+        val result = handler.validate(
+            validCmd(torsoFacings = mapOf(attacker.id to HexDirection.NE)),
+            gameState,
+            seededOneImpulseTurn(),
+        )
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `validate accepts a torso facing equal to leg facing (no-op twist)`() {
+        val result = handler.validate(
+            validCmd(torsoFacings = mapOf(attacker.id to HexDirection.N)),
+            gameState,
+            seededOneImpulseTurn(),
+        )
+        assertThat(result).isNull()
+    }
 
     @Test
     fun `a unit taking its second gyro crit crashes automatically without a PSR and is not eliminated`() {

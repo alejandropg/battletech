@@ -5,6 +5,8 @@ import battletech.tactical.attack.physical.PhysicalAttackKind.Punch
 import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
@@ -18,6 +20,8 @@ import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.RuleRejection
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitFell
+import battletech.tactical.unit.MovementThisTurn
+import battletech.tactical.unit.UnitId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -92,5 +96,223 @@ internal class PhysicalAttackPhaseHandlerTest {
             .isInstanceOf(CommandRejection.RuleViolation::class.java)
         val rule = (rejection as CommandRejection.RuleViolation).rule
         assertThat(rule).isInstanceOf(RuleRejection.PunchAndKickSameTurn::class.java)
+    }
+
+    // ── validate: per-declaration checks ─────────────────────────────────────
+
+    @Test
+    fun `validate accepts a legal single punch declaration`() {
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(PhysicalAttackDeclaration(attacker.id, target.id, Punch(Side.LEFT))),
+            torsoFacings = emptyMap(),
+        )
+        assertThat(handler.validate(command, gameState, turnWithOneImpulse())).isNull()
+    }
+
+    @Test
+    fun `validate accepts a legal single kick declaration`() {
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(PhysicalAttackDeclaration(attacker.id, target.id, Kick(Side.RIGHT))),
+            torsoFacings = emptyMap(),
+        )
+        assertThat(handler.validate(command, gameState, turnWithOneImpulse())).isNull()
+    }
+
+    @Test
+    fun `validate rejects unknown attacker`() {
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(PhysicalAttackDeclaration(UnitId("ghost"), target.id, Punch(Side.LEFT))),
+            torsoFacings = emptyMap(),
+        )
+        assertThat(handler.validate(command, gameState, turnWithOneImpulse()))
+            .isEqualTo(CommandRejection.UnknownUnit(UnitId("ghost")))
+    }
+
+    @Test
+    fun `validate rejects attacker owned by different player`() {
+        // target is PLAYER_2; command is from PLAYER_1 trying to command it
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(PhysicalAttackDeclaration(target.id, attacker.id, Punch(Side.LEFT))),
+            torsoFacings = emptyMap(),
+        )
+        assertThat(handler.validate(command, gameState, turnWithOneImpulse()))
+            .isEqualTo(
+                CommandRejection.NotYourTurn(
+                    activePlayer = PlayerId.PLAYER_2,
+                    attemptedBy = PlayerId.PLAYER_1,
+                ),
+            )
+    }
+
+    @Test
+    fun `validate rejects unknown target`() {
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(PhysicalAttackDeclaration(attacker.id, UnitId("ghost"), Punch(Side.LEFT))),
+            torsoFacings = emptyMap(),
+        )
+        assertThat(handler.validate(command, gameState, turnWithOneImpulse()))
+            .isEqualTo(CommandRejection.UnknownUnit(UnitId("ghost")))
+    }
+
+    @Test
+    fun `validate rejects friendly fire target`() {
+        val ally = aUnit(id = "ally", owner = PlayerId.PLAYER_1, position = targetPos)
+        val state = aGameState(units = listOf(attacker, ally, target))
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(PhysicalAttackDeclaration(attacker.id, ally.id, Punch(Side.LEFT))),
+            torsoFacings = emptyMap(),
+        )
+        assertThat(handler.validate(command, state, turnWithOneImpulse()))
+            .isEqualTo(CommandRejection.FriendlyFire(ally.id))
+    }
+
+    @Test
+    fun `validate rejects destroyed target`() {
+        val deadTarget = aUnit(id = "dead", owner = PlayerId.PLAYER_2, position = targetPos, isDestroyed = true)
+        val state = aGameState(units = listOf(attacker, deadTarget))
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(PhysicalAttackDeclaration(attacker.id, deadTarget.id, Punch(Side.LEFT))),
+            torsoFacings = emptyMap(),
+        )
+        assertThat(handler.validate(command, state, turnWithOneImpulse()))
+            .isEqualTo(CommandRejection.RuleViolation(RuleRejection.TargetDestroyed))
+    }
+
+    @Test
+    fun `validate rejects punch to non-adjacent target via RuleViolation`() {
+        val farTarget = aUnit(id = "far", owner = PlayerId.PLAYER_2, position = HexCoordinates(5, 0))
+        val state = aGameState(units = listOf(attacker, farTarget))
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(PhysicalAttackDeclaration(attacker.id, farTarget.id, Punch(Side.LEFT))),
+            torsoFacings = emptyMap(),
+        )
+        val result = handler.validate(command, state, turnWithOneImpulse())
+        assertThat(result).isInstanceOf(CommandRejection.RuleViolation::class.java)
+        assertThat((result as CommandRejection.RuleViolation).rule)
+            .isInstanceOf(RuleRejection.NotAdjacent::class.java)
+    }
+
+    @Test
+    fun `validate rejects kick to non-adjacent target via RuleViolation`() {
+        val farTarget = aUnit(id = "far", owner = PlayerId.PLAYER_2, position = HexCoordinates(5, 0))
+        val state = aGameState(units = listOf(attacker, farTarget))
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(PhysicalAttackDeclaration(attacker.id, farTarget.id, Kick(Side.RIGHT))),
+            torsoFacings = emptyMap(),
+        )
+        val result = handler.validate(command, state, turnWithOneImpulse())
+        assertThat(result).isInstanceOf(CommandRejection.RuleViolation::class.java)
+        assertThat((result as CommandRejection.RuleViolation).rule)
+            .isInstanceOf(RuleRejection.NotAdjacent::class.java)
+    }
+
+    @Test
+    fun `validate rejects punch by prone attacker via RuleViolation`() {
+        val proneAttacker = attacker.copy(isProne = true)
+        val state = aGameState(units = listOf(proneAttacker, target))
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(PhysicalAttackDeclaration(proneAttacker.id, target.id, Punch(Side.LEFT))),
+            torsoFacings = emptyMap(),
+        )
+        val result = handler.validate(command, state, turnWithOneImpulse())
+        assertThat(result).isInstanceOf(CommandRejection.RuleViolation::class.java)
+        assertThat((result as CommandRejection.RuleViolation).rule)
+            .isEqualTo(RuleRejection.AttackerProne)
+    }
+
+    @Test
+    fun `validate rejects kick after running via RuleViolation`() {
+        val runningAttacker = attacker.copy(movementThisTurn = MovementThisTurn(MovementMode.RUN, 3))
+        val state = aGameState(units = listOf(runningAttacker, target))
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(PhysicalAttackDeclaration(runningAttacker.id, target.id, Kick(Side.RIGHT))),
+            torsoFacings = emptyMap(),
+        )
+        val result = handler.validate(command, state, turnWithOneImpulse())
+        assertThat(result).isInstanceOf(CommandRejection.RuleViolation::class.java)
+        assertThat((result as CommandRejection.RuleViolation).rule)
+            .isEqualTo(RuleRejection.CannotKickAfterRunningOrJumping)
+    }
+
+    // ── validate: torso facings ───────────────────────────────────────────────
+
+    @Test
+    fun `validate rejects unknown unit in torso facings`() {
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = emptyList(),
+            torsoFacings = mapOf(UnitId("ghost") to HexDirection.NE),
+        )
+        assertThat(handler.validate(command, gameState, turnWithOneImpulse()))
+            .isEqualTo(CommandRejection.UnknownUnit(UnitId("ghost")))
+    }
+
+    @Test
+    fun `validate rejects torso-facing unit owned by different player`() {
+        // target is PLAYER_2; command is from PLAYER_1
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = emptyList(),
+            torsoFacings = mapOf(target.id to HexDirection.NE),
+        )
+        assertThat(handler.validate(command, gameState, turnWithOneImpulse()))
+            .isEqualTo(
+                CommandRejection.NotYourTurn(
+                    activePlayer = PlayerId.PLAYER_2,
+                    attemptedBy = PlayerId.PLAYER_1,
+                ),
+            )
+    }
+
+    @Test
+    fun `validate rejects torso twist more than one step from leg facing`() {
+        // attacker faces N (ordinal 0); S (ordinal 3) is 3 steps away — illegal
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = emptyList(),
+            torsoFacings = mapOf(attacker.id to HexDirection.S),
+        )
+        assertThat(handler.validate(command, gameState, turnWithOneImpulse()))
+            .isEqualTo(CommandRejection.IllegalTorsoTwist(attacker.id, HexDirection.S))
+    }
+
+    @Test
+    fun `validate accepts a legal one-step torso twist`() {
+        // NE is 1 step clockwise from N — legal
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = emptyList(),
+            torsoFacings = mapOf(attacker.id to HexDirection.NE),
+        )
+        assertThat(handler.validate(command, gameState, turnWithOneImpulse())).isNull()
+    }
+
+    // ── validate: limb-limit rejections still work ────────────────────────────
+
+    @Test
+    fun `validate rejects same limb used twice`() {
+        val command = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_1,
+            declarations = listOf(
+                PhysicalAttackDeclaration(attacker.id, target.id, Punch(Side.LEFT)),
+                PhysicalAttackDeclaration(attacker.id, target.id, Punch(Side.LEFT)),
+            ),
+            torsoFacings = emptyMap(),
+        )
+        val result = handler.validate(command, gameState, turnWithOneImpulse())
+        assertThat(result).isInstanceOf(CommandRejection.RuleViolation::class.java)
+        assertThat((result as CommandRejection.RuleViolation).rule)
+            .isInstanceOf(RuleRejection.LimbAlreadyUsed::class.java)
     }
 }

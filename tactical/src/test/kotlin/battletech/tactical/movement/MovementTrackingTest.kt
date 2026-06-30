@@ -5,6 +5,7 @@ import battletech.tactical.unit.MovementThisTurn
 import battletech.tactical.model.MovementMode
 
 import battletech.tactical.dice.DiceRoller
+import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
@@ -29,20 +30,29 @@ internal class MovementTrackingTest {
         movement = MovementProgress(sequence = ImpulseSequence(listOf(Impulse(player, 1)))),
     )
 
+    /**
+     * Small grid around (0,0) that gives the reachability calculator enough room
+     * for a 4-MP walk straight north and a turn-in-place.
+     */
+    private val smallGrid: Map<HexCoordinates, Hex> =
+        (-1..1).flatMap { col -> (-4..1).map { row -> HexCoordinates(col, row) } }
+            .associateWith { Hex(it) }
+
     @Test
     fun `moving records the mode and hexes moved on the unit`() {
         val mover = aUnit(id = "mover", position = HexCoordinates(0, 0))
-        val state = aGameState(units = listOf(mover))
-        // Path of three hexes plus a turn-in-place step (which must NOT count as a hex).
+        val state = aGameState(units = listOf(mover), hexes = smallGrid)
+        // Server-computable path: move N three times (0,-1),(0,-2),(0,-3) then turn NE in-place.
+        // The turn-in-place step must NOT count as a hex entered, giving hexesMoved == 3.
         val destination = ReachableHex(
-            position = HexCoordinates(3, 0),
+            position = HexCoordinates(0, -3),
             facing = HexDirection.NE,
             mpSpent = 4,
             path = listOf(
-                MovementStep(HexCoordinates(1, 0), HexDirection.N),
-                MovementStep(HexCoordinates(2, 0), HexDirection.N),
-                MovementStep(HexCoordinates(3, 0), HexDirection.N),
-                MovementStep(HexCoordinates(3, 0), HexDirection.NE),
+                MovementStep(HexCoordinates(0, -1), HexDirection.N),
+                MovementStep(HexCoordinates(0, -2), HexDirection.N),
+                MovementStep(HexCoordinates(0, -3), HexDirection.N),
+                MovementStep(HexCoordinates(0, -3), HexDirection.NE),
             ),
         )
         val command = MoveUnit(PlayerId.PLAYER_1, mover.id, destination, MovementMode.WALK)

@@ -1,6 +1,7 @@
 package battletech.tactical.attack.weapon
 
 import battletech.tactical.attack.ImpulseAttackPhaseHandler
+import battletech.tactical.attack.WeaponAttackContext
 import battletech.tactical.attack.applyLocationDestructionConsequences
 import battletech.tactical.attack.applyTwentyDamagePsrs
 import battletech.tactical.attack.resolveAttacksWithCrits
@@ -10,10 +11,12 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.applyWeaponHeat
+import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.PhaseOutcome
+import battletech.tactical.session.RuleRejection
 import battletech.tactical.session.TurnState
 
 /**
@@ -29,6 +32,84 @@ public class WeaponAttackPhaseHandler : ImpulseAttackPhaseHandler() {
     override val phase: TurnPhase = TurnPhase.WEAPON_ATTACK
 
     override fun acceptsCommand(command: GameCommand): Boolean = command is CommitAttackImpulse
+
+    /**
+     * Validates every [AttackDeclaration] and torso-facing entry in a
+     * [CommitAttackImpulse] before [apply] runs. Pure — no dice rolls, no mutation.
+     *
+     * Checks (in order, returns first violation):
+     *  1. Attacker exists and is owned by [CommitAttackImpulse.playerId].
+     *  2. Weapon index is valid on that attacker.
+     *  3. Target exists, is not friendly, and is not destroyed.
+     *  4. Tactical legality (range, LOS, ammo, etc.) via [FireWeaponActionDefinition.firstRejection].
+     *  5. Each torso-facing unit exists, is owned by the command player, and the
+     *     requested facing is a legal ±1 twist from the unit's leg facing.
+     *
+     * The active-player check (session-level) is NOT repeated here — [BattleSession]
+     * already rejects mismatched active players before calling [validate].
+     */
+    override fun validate(
+        command: GameCommand,
+        state: GameState,
+        turn: TurnState,
+    ): CommandRejection? {
+        val cmd = command as CommitAttackImpulse
+
+        for (decl in cmd.declarations) {
+            val attacker = state.unitById(decl.attackerId)
+                ?: return CommandRejection.UnknownUnit(decl.attackerId)
+
+            if (attacker.owner != cmd.playerId) {
+                return CommandRejection.NotYourTurn(
+                    activePlayer = attacker.owner,
+                    attemptedBy = cmd.playerId,
+                )
+            }
+
+            if (decl.weaponIndex !in attacker.weapons.indices) {
+                return CommandRejection.NoSuchWeapon(decl.attackerId, decl.weaponIndex)
+            }
+
+            val target = state.unitById(decl.targetId)
+                ?: return CommandRejection.UnknownUnit(decl.targetId)
+
+            if (target.owner == attacker.owner) {
+                return CommandRejection.FriendlyFire(decl.targetId)
+            }
+
+            if (target.isDestroyed) {
+                return CommandRejection.RuleViolation(RuleRejection.TargetDestroyed)
+            }
+
+            val context = WeaponAttackContext(
+                actor = attacker,
+                target = target,
+                weapon = attacker.weapons[decl.weaponIndex],
+                gameState = state,
+            )
+            FireWeaponActionDefinition().firstRejection(context)?.let { rejection ->
+                return CommandRejection.RuleViolation(rejection)
+            }
+        }
+
+        for ((unitId, newFacing) in cmd.torsoFacings) {
+            val unit = state.unitById(unitId)
+                ?: return CommandRejection.UnknownUnit(unitId)
+
+            if (unit.owner != cmd.playerId) {
+                return CommandRejection.NotYourTurn(
+                    activePlayer = unit.owner,
+                    attemptedBy = cmd.playerId,
+                )
+            }
+
+            if (unit.facing.turnCostTo(newFacing) > 1) {
+                return CommandRejection.IllegalTorsoTwist(unitId, newFacing)
+            }
+        }
+
+        return null
+    }
 
     override fun apply(
         command: GameCommand,

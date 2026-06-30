@@ -1,22 +1,22 @@
 package battletech.tactical.query
 
-import battletech.tactical.attack.lineOfSight
+import battletech.tactical.attack.WeaponAttackContext
 import battletech.tactical.attack.nonZero
 import battletech.tactical.attack.total
 import battletech.tactical.attack.weaponToHitModifiers
+import battletech.tactical.attack.weapon.FireWeaponActionDefinition
 import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.unitWaterDepth
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
-import battletech.tactical.unit.Weapon
-import battletech.tactical.unit.availableAmmoBins
 import battletech.tactical.unit.cannotFireFromSensorDamage
 
 internal class WeaponTargeting(private val state: PublicGameState) {
+
+    private val definition = FireWeaponActionDefinition()
 
     fun fireArc(attackerId: UnitId, torsoFacing: HexDirection): Set<HexCoordinates> {
         val attacker = state.unitById(attackerId) ?: return emptySet()
@@ -36,7 +36,6 @@ internal class WeaponTargeting(private val state: PublicGameState) {
             .filter { it.owner != attacker.owner }
             .filter { !it.isDestroyed }
             .filter { it.position in arc }
-            .filter { enemy -> !lineOfSight(attacker, enemy, state.map).blocked }
             .filter { enemy -> hasEligibleWeapon(attacker, enemy) }
             .map { it.id }
             .toSet()
@@ -50,7 +49,13 @@ internal class WeaponTargeting(private val state: PublicGameState) {
             val distance = attacker.position.distanceTo(target.position)
 
             val weapons = attacker.weapons.mapIndexed { index, weapon ->
-                if (!weapon.canEngageAt(distance, attacker, state)) {
+                val context = WeaponAttackContext(
+                    actor = attacker,
+                    target = target,
+                    weapon = weapon,
+                    gameState = state,
+                )
+                if (definition.firstRejection(context) != null) {
                     WeaponTargetInfo(
                         weaponIndex = index,
                         weaponName = weapon.name,
@@ -87,20 +92,19 @@ internal class WeaponTargeting(private val state: PublicGameState) {
         }
     }
 
-    private fun hasEligibleWeapon(attacker: CombatUnit, target: CombatUnit): Boolean {
-        val distance = attacker.position.distanceTo(target.position)
-        return attacker.weapons.any { it.canEngageAt(distance, attacker, state) }
-    }
-}
-
-private fun Weapon.canEngageAt(distance: Int, attacker: CombatUnit, gameState: PublicGameState): Boolean =
-    !destroyed &&
-        hasAmmoRemaining(attacker) &&
-        distance <= longRange &&
-        (underwaterCapable || unitWaterDepth(attacker, gameState) < 2)
-
-private fun Weapon.hasAmmoRemaining(attacker: CombatUnit): Boolean {
-    val type = ammoType ?: return true
-    // Only consider bins in locations whose IS is still > 0.
-    return attacker.availableAmmoBins().any { it.third.type == type && it.third.shots > 0 }
+    /**
+     * Returns true if [attacker] has at least one weapon that passes all tactical
+     * firing rules ([FireWeaponActionDefinition]) against [target]. Used as the
+     * per-target eligibility filter in [validTargets].
+     */
+    private fun hasEligibleWeapon(attacker: CombatUnit, target: CombatUnit): Boolean =
+        attacker.weapons.any { weapon ->
+            val context = WeaponAttackContext(
+                actor = attacker,
+                target = target,
+                weapon = weapon,
+                gameState = state,
+            )
+            definition.firstRejection(context) == null
+        }
 }

@@ -61,7 +61,7 @@ public class MovementPhaseHandler : PhaseHandler {
                 // Cannot run with any destroyed leg; hobble (half walk MP) only.
                 CommandRejection.LegDestroyed(command.unitId)
             } else {
-                null
+                validateDestination(command, state)
             }
 
         is StandUp -> validateActivation(command.unitId, command.playerId, state, turn)
@@ -73,6 +73,38 @@ public class MovementPhaseHandler : PhaseHandler {
             }
 
         else -> null
+    }
+
+    /**
+     * Server-authoritative destination check. Rejects a [MoveUnit] whose
+     * [MoveUnit.destination] is outside the unit's legal reach, or whose
+     * path/mpSpent were tampered to differ from the server-computed value.
+     *
+     * Stationary moves (same position, same facing, 0 MP) are accepted without
+     * running the full Dijkstra — they are always legal once the unit passes
+     * the prior checks (not prone, not destroyed-leg-run/jump, etc.).
+     */
+    private fun validateDestination(
+        cmd: MoveUnit,
+        state: GameState,
+    ): CommandRejection? {
+        val unit = state.unitById(cmd.unitId)!! // non-null guaranteed by validateActivation
+        // Stationary: unit stays at its current position with its current facing, spending 0 MP.
+        if (cmd.destination.position == unit.position &&
+            cmd.destination.facing == unit.facing &&
+            cmd.destination.mpSpent == 0
+        ) {
+            return null
+        }
+        val reachabilityMap = ReachabilityCalculator(state.map, state.units).calculate(unit, cmd.mode)
+        val serverHex = reachabilityMap.destinations.firstOrNull {
+            it.position == cmd.destination.position && it.facing == cmd.destination.facing
+        }
+        return when {
+            serverHex == null -> CommandRejection.DestinationUnreachable(cmd.unitId, cmd.destination.position)
+            serverHex != cmd.destination -> CommandRejection.DestinationUnreachable(cmd.unitId, cmd.destination.position)
+            else -> null
+        }
     }
 
     private fun validateActivation(
@@ -128,20 +160,34 @@ public class MovementPhaseHandler : PhaseHandler {
         state: GameState,
         turn: TurnState,
     ): PhaseOutcome {
-        val from = state.unitById(cmd.unitId)!!.position
-        val hexesMoved = hexesMoved(from, cmd.destination)
+        val unit = state.unitById(cmd.unitId)!!
+        // Use the server-authoritative destination — never trust the client value for MP or path.
+        val serverHex: ReachableHex = if (cmd.destination.mpSpent == 0 &&
+            cmd.destination.position == unit.position &&
+            cmd.destination.facing == unit.facing
+        ) {
+            // Stationary: synthesise a canonical zero-cost hex.
+            ReachableHex(position = unit.position, facing = unit.facing, mpSpent = 0, path = emptyList())
+        } else {
+            ReachabilityCalculator(state.map, state.units)
+                .calculate(unit, cmd.mode)
+                .destinations
+                .first { it.position == cmd.destination.position && it.facing == cmd.destination.facing }
+        }
+        val from = unit.position
+        val hexesMoved = hexesMoved(from, serverHex)
         val heatSource = movementHeatSource(cmd.mode, hexesMoved)
-        val movedState = state.moveUnit(cmd.unitId, cmd.destination)
+        val movedState = state.moveUnit(cmd.unitId, serverHex)
         val newState = movedState.copy(
-            units = movedState.units.map { unit ->
-                if (unit.id == cmd.unitId) {
-                    unit.copy(
+            units = movedState.units.map { u ->
+                if (u.id == cmd.unitId) {
+                    u.copy(
                         movementThisTurn = MovementThisTurn(cmd.mode, hexesMoved),
-                        heatGeneratedThisTurn = unit.heatGeneratedThisTurn +
+                        heatGeneratedThisTurn = u.heatGeneratedThisTurn +
                             listOfNotNull(heatSource),
                     )
                 } else {
-                    unit
+                    u
                 }
             },
         )
@@ -149,10 +195,10 @@ public class MovementPhaseHandler : PhaseHandler {
         val event = UnitMoved(
             unitId = cmd.unitId,
             from = from,
-            to = cmd.destination.position,
-            finalFacing = cmd.destination.facing,
+            to = serverHex.position,
+            finalFacing = serverHex.facing,
             mode = cmd.mode,
-            mpSpent = cmd.destination.mpSpent,
+            mpSpent = serverHex.mpSpent,
         )
         return PhaseOutcome(newState, newTurn, listOf(event))
     }

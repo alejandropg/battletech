@@ -138,13 +138,11 @@ internal class SubscriptionTest {
         initialNeedsOnEntry = false,
     )
 
+    // mech1 is at (0,0) facing N; its N-neighbour (0,-1) costs exactly 1 MP.
     private fun aReachableHex(): ReachableHex = ReachableHex(
-        position = HexCoordinates(1, 0),
+        position = HexCoordinates(0, -1),
         facing = HexDirection.N,
         mpSpent = 1,
-        path = listOf(
-            MovementStep(HexCoordinates(0, 0), HexDirection.N),
-            MovementStep(HexCoordinates(1, 0), HexDirection.NE),
-        ),
+        path = listOf(MovementStep(HexCoordinates(0, -1), HexDirection.N)),
     )
 }

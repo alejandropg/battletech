@@ -1,6 +1,8 @@
 package battletech.tui.game
 
 import battletech.tactical.session.Impulse
+import battletech.tactical.model.GameMap
+import battletech.tactical.model.Hex
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -28,33 +30,43 @@ import org.junit.jupiter.api.Test
 
 internal class MovementPhaseTest {
 
+    // A map large enough for a 4-MP walk north from (0,0): includes rows -4..4.
+    private val bigMap: GameMap = GameMap(
+        (-1..1).flatMap { col -> (-4..4).map { row -> HexCoordinates(col, row) } }
+            .associateWith { Hex(it) },
+    )
+
+    // All three entries are server-computable from (0,0) facing N with walkingMP=4.
+    //
+    // odd-q, even col (col=0): N-neighbour = (0,-1), NE-neighbour = (1,-1), SE-neighbour = (1,0).
+    //
+    //  [0] (0,-1) N  : 1 MP  — move N once                     (multi-facing destination)
+    //  [1] (0,-2) N  : 2 MP  — move N twice                    (single-facing destination)
+    //  [2] (0,-1) SE : 3 MP  — move N, turn CW×NE, turn CW×SE (second facing at [0]'s hex)
     private val reachableHexes = listOf(
         ReachableHex(
-            position = HexCoordinates(1, 0),
+            position = HexCoordinates(0, -1),
             facing = HexDirection.N,
             mpSpent = 1,
-            path = listOf(
-                MovementStep(HexCoordinates(0, 0), HexDirection.N),
-                MovementStep(HexCoordinates(1, 0), HexDirection.N),
-            ),
+            path = listOf(MovementStep(HexCoordinates(0, -1), HexDirection.N)),
         ),
         ReachableHex(
-            position = HexCoordinates(2, 0),
+            position = HexCoordinates(0, -2),
             facing = HexDirection.N,
             mpSpent = 2,
             path = listOf(
-                MovementStep(HexCoordinates(0, 0), HexDirection.N),
-                MovementStep(HexCoordinates(1, 0), HexDirection.N),
-                MovementStep(HexCoordinates(2, 0), HexDirection.N),
+                MovementStep(HexCoordinates(0, -1), HexDirection.N),
+                MovementStep(HexCoordinates(0, -2), HexDirection.N),
             ),
         ),
         ReachableHex(
-            position = HexCoordinates(1, 0),
+            position = HexCoordinates(0, -1),
             facing = HexDirection.SE,
-            mpSpent = 2,
+            mpSpent = 3,
             path = listOf(
-                MovementStep(HexCoordinates(0, 0), HexDirection.N),
-                MovementStep(HexCoordinates(1, 0), HexDirection.SE),
+                MovementStep(HexCoordinates(0, -1), HexDirection.N),
+                MovementStep(HexCoordinates(0, -1), HexDirection.NE),
+                MovementStep(HexCoordinates(0, -1), HexDirection.SE),
             ),
         ),
     )
@@ -69,15 +81,15 @@ internal class MovementPhaseTest {
         mode = MovementMode.RUN,
         maxMP = 6,
         destinations = reachableHexes + listOf(
+            // (0,-3) N: 3 MP — reachable only when running (6 MP budget).
             ReachableHex(
-                position = HexCoordinates(3, 0),
+                position = HexCoordinates(0, -3),
                 facing = HexDirection.N,
                 mpSpent = 3,
                 path = listOf(
-                    MovementStep(HexCoordinates(0, 0), HexDirection.N),
-                    MovementStep(HexCoordinates(1, 0), HexDirection.N),
-                    MovementStep(HexCoordinates(2, 0), HexDirection.N),
-                    MovementStep(HexCoordinates(3, 0), HexDirection.N),
+                    MovementStep(HexCoordinates(0, -1), HexDirection.N),
+                    MovementStep(HexCoordinates(0, -2), HexDirection.N),
+                    MovementStep(HexCoordinates(0, -3), HexDirection.N),
                 ),
             ),
         ),
@@ -118,20 +130,20 @@ internal class MovementPhaseTest {
         @Test
         fun `confirm on single-facing destination completes movement`() {
             val unit = aUnit(walkingMP = 4)
-            val gameState = aGameState(units = listOf(unit))
+            val gameState = aGameState(units = listOf(unit), map = bigMap)
             val phase = MovementPhase.Browsing(
                 unitId = unit.id,
                 modes = listOf(walkReachabilityMap),
                 currentModeIndex = 0,
                 hoveredDestination = reachableHexes[1],
             )
-            val state = anAppState(phase = phase, cursor = HexCoordinates(2, 0), gameState = gameState)
+            val state = anAppState(phase = phase, cursor = HexCoordinates(0, -2), gameState = gameState)
 
             val result = phase.handle(KeyboardEvent("Enter"), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.gameState.units.first { it.id == unit.id }
-            assertEquals(HexCoordinates(2, 0), movedUnit.position)
+            assertEquals(HexCoordinates(0, -2), movedUnit.position)
         }
 
         @Test
@@ -158,36 +170,36 @@ internal class MovementPhaseTest {
         @Test
         fun `SelectFacing during facing selection applies movement`() {
             val unit = aUnit(walkingMP = 4)
-            val gameState = aGameState(units = listOf(unit))
+            val gameState = aGameState(units = listOf(unit), map = bigMap)
             val facingPhase = MovementPhase.SelectingFacing(
                 unitId = unit.id,
                 modes = listOf(walkReachabilityMap),
                 currentModeIndex = 0,
-                hex = HexCoordinates(1, 0),
-                options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
+                hex = HexCoordinates(0, -1),
+                options = reachableHexes.filter { it.position == HexCoordinates(0, -1) },
             )
-            val state = anAppState(phase = facingPhase, cursor = HexCoordinates(1, 0), gameState = gameState)
+            val state = anAppState(phase = facingPhase, cursor = HexCoordinates(0, -1), gameState = gameState)
 
             val result = facingPhase.handle(KeyboardEvent("1"), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.gameState.units.first { it.id == unit.id }
-            assertEquals(HexCoordinates(1, 0), movedUnit.position)
+            assertEquals(HexCoordinates(0, -1), movedUnit.position)
             assertEquals(HexDirection.N, movedUnit.facing)
         }
 
         @Test
         fun `SelectFacing picks correct facing by number`() {
             val unit = aUnit(walkingMP = 4)
-            val gameState = aGameState(units = listOf(unit))
+            val gameState = aGameState(units = listOf(unit), map = bigMap)
             val facingPhase = MovementPhase.SelectingFacing(
                 unitId = unit.id,
                 modes = listOf(walkReachabilityMap),
                 currentModeIndex = 0,
-                hex = HexCoordinates(1, 0),
-                options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
+                hex = HexCoordinates(0, -1),
+                options = reachableHexes.filter { it.position == HexCoordinates(0, -1) },
             )
-            val state = anAppState(phase = facingPhase, cursor = HexCoordinates(1, 0), gameState = gameState)
+            val state = anAppState(phase = facingPhase, cursor = HexCoordinates(0, -1), gameState = gameState)
 
             val result = facingPhase.handle(KeyboardEvent("3"), state)
 
@@ -430,7 +442,7 @@ internal class MovementPhaseTest {
         @Test
         fun `completing movement of last unit transitions to attack phase`() {
             val unit = aUnit(walkingMP = 4)
-            val gameState = aGameState(units = listOf(unit))
+            val gameState = aGameState(units = listOf(unit), map = bigMap)
             val phase = MovementPhase.Browsing(
                 unitId = unit.id,
                 modes = listOf(walkReachabilityMap),
@@ -439,7 +451,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(
                 phase = phase,
-                cursor = HexCoordinates(2, 0),
+                cursor = HexCoordinates(0, -2),
                 gameState = gameState,
                 turnState = aTurnState(movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 1))),
             )

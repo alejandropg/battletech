@@ -36,11 +36,13 @@ internal class BattleSessionTest {
     @Test
     fun `MoveUnit applies and advances turn state`() {
         val session = sessionInMovement()
+        // mech1 is at (0,0) facing N; the N-neighbour is (0,-1).
+        // Server-computable path: move forward one hex, 1 MP, no turns.
         val destination = ReachableHex(
-            position = HexCoordinates(1, 0),
-            facing = HexDirection.NE,
+            position = HexCoordinates(0, -1),
+            facing = HexDirection.N,
             mpSpent = 1,
-            path = listOf(MovementStep(HexCoordinates(0, 0), HexDirection.N), MovementStep(HexCoordinates(1, 0), HexDirection.NE)),
+            path = listOf(MovementStep(HexCoordinates(0, -1), HexDirection.N)),
         )
 
         val result = session.submitCommand(
@@ -52,9 +54,9 @@ internal class BattleSessionTest {
         val moved = accepted.events.filterIsInstance<UnitMoved>().single()
         assertThat(moved.unitId).isEqualTo(mech1.id)
         assertThat(moved.from).isEqualTo(HexCoordinates(0, 0))
-        assertThat(moved.to).isEqualTo(HexCoordinates(1, 0))
+        assertThat(moved.to).isEqualTo(HexCoordinates(0, -1))
         assertThat(moved.mode).isEqualTo(MovementMode.WALK)
-        assertThat(session.gameState.unitById(mech1.id)!!.position).isEqualTo(HexCoordinates(1, 0))
+        assertThat(session.gameState.unitById(mech1.id)!!.position).isEqualTo(HexCoordinates(0, -1))
         assertThat(session.turnState.movement.movedUnitIds).contains(mech1.id)
     }
 

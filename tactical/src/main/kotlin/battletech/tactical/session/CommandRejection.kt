@@ -1,5 +1,7 @@
 package battletech.tactical.session
 
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.unit.UnitId
@@ -30,6 +32,25 @@ public sealed interface CommandRejection : RejectionReason {
 
     /** A unit with a destroyed leg may not jump or run. */
     public data class LegDestroyed(public val unitId: UnitId) : CommandRejection
+
+    /** The requested weapon index does not exist on the unit's weapon list. */
+    public data class NoSuchWeapon(public val unitId: UnitId, public val weaponIndex: Int) : CommandRejection
+
+    /** The declared target is owned by the same player as the attacker. */
+    public data class FriendlyFire(public val targetId: UnitId) : CommandRejection
+
+    /**
+     * The requested torso facing is more than one hex-side away from the unit's
+     * leg facing; torso twists are limited to ±1 facing step.
+     */
+    public data class IllegalTorsoTwist(public val unitId: UnitId, public val facing: HexDirection) : CommandRejection
+
+    /**
+     * The requested movement destination is not reachable by the unit for the
+     * given movement mode, or the client-supplied path/mpSpent does not match
+     * the server-authoritative reachability computation.
+     */
+    public data class DestinationUnreachable(public val unitId: UnitId, public val destination: HexCoordinates) : CommandRejection
 
     public data object MatchOver : CommandRejection
 

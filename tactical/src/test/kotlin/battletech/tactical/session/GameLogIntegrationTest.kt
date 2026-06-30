@@ -48,14 +48,12 @@ internal class GameLogIntegrationTest {
     @Test
     fun `submitCommand appends entries for emitted events`() {
         val session = sessionInMovement()
+        // mech1 is at (0,0) facing N; move one hex north — server-computable in 1 MP.
         val destination = ReachableHex(
-            position = HexCoordinates(1, 0),
+            position = HexCoordinates(0, -1),
             facing = HexDirection.N,
             mpSpent = 1,
-            path = listOf(
-                MovementStep(HexCoordinates(0, 0), HexDirection.N),
-                MovementStep(HexCoordinates(1, 0), HexDirection.N),
-            ),
+            path = listOf(MovementStep(HexCoordinates(0, -1), HexDirection.N)),
         )
 
         session.submitCommand(MoveUnit(PlayerId.PLAYER_1, mech1.id, destination, MovementMode.WALK))
@@ -90,14 +88,12 @@ internal class GameLogIntegrationTest {
         val session = sessionInMovement(
             turn = aMovementTurn().copy(turnNumber = 3),
         )
+        // mech1 is at (0,0) facing N; move one hex north — server-computable in 1 MP.
         val destination = ReachableHex(
-            position = HexCoordinates(1, 0),
+            position = HexCoordinates(0, -1),
             facing = HexDirection.N,
             mpSpent = 1,
-            path = listOf(
-                MovementStep(HexCoordinates(0, 0), HexDirection.N),
-                MovementStep(HexCoordinates(1, 0), HexDirection.N),
-            ),
+            path = listOf(MovementStep(HexCoordinates(0, -1), HexDirection.N)),
         )
 
         session.submitCommand(MoveUnit(PlayerId.PLAYER_1, mech1.id, destination, MovementMode.WALK))

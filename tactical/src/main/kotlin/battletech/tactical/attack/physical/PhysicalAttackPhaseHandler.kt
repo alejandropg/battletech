@@ -1,6 +1,7 @@
 package battletech.tactical.attack.physical
 
 import battletech.tactical.attack.ImpulseAttackPhaseHandler
+import battletech.tactical.attack.PhysicalAttackContext
 import battletech.tactical.attack.applyLocationDestructionConsequences
 import battletech.tactical.attack.applyTwentyDamagePsrs
 import battletech.tactical.dice.DiceRoller
@@ -12,6 +13,7 @@ import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.PhaseOutcome
 import battletech.tactical.session.PhysicalAttacksResolved
+import battletech.tactical.session.RuleRejection
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitFell
 
@@ -28,12 +30,78 @@ public class PhysicalAttackPhaseHandler : ImpulseAttackPhaseHandler() {
 
     override fun acceptsCommand(command: GameCommand): Boolean = command is CommitPhysicalAttackImpulse
 
+    /**
+     * Validates every [PhysicalAttackDeclaration] and torso-facing entry in a
+     * [CommitPhysicalAttackImpulse] before [apply] runs. Pure — no dice rolls, no mutation.
+     *
+     * Checks (in order, returns first violation):
+     *  1. Attacker exists and is owned by [CommitPhysicalAttackImpulse.playerId].
+     *  2. Target exists, is not friendly, and is not destroyed.
+     *  3. Tactical legality (adjacency, reach, movement, attacker-prone, heat) via
+     *     [PunchActionDefinition.firstRejection] or [KickActionDefinition.firstRejection].
+     *  4. Each torso-facing unit exists, is owned by the command player, and the
+     *     requested facing is a legal ±1 twist from the unit's leg facing.
+     *  5. Per-turn physical-attack limits (no punch+kick same turn, no limb reuse)
+     *     via [physicalImpulseViolation].
+     *
+     * The active-player check (session-level) is NOT repeated here — [BattleSession]
+     * already rejects mismatched active players before calling [validate].
+     */
     override fun validate(
         command: GameCommand,
         state: GameState,
         turn: TurnState,
     ): CommandRejection? {
         val cmd = command as CommitPhysicalAttackImpulse
+
+        for (decl in cmd.declarations) {
+            val attacker = state.unitById(decl.attackerId)
+                ?: return CommandRejection.UnknownUnit(decl.attackerId)
+
+            if (attacker.owner != cmd.playerId) {
+                return CommandRejection.NotYourTurn(
+                    activePlayer = attacker.owner,
+                    attemptedBy = cmd.playerId,
+                )
+            }
+
+            val target = state.unitById(decl.targetId)
+                ?: return CommandRejection.UnknownUnit(decl.targetId)
+
+            if (target.owner == attacker.owner) {
+                return CommandRejection.FriendlyFire(decl.targetId)
+            }
+
+            if (target.isDestroyed) {
+                return CommandRejection.RuleViolation(RuleRejection.TargetDestroyed)
+            }
+
+            val definition = when (decl.kind) {
+                is PhysicalAttackKind.Punch -> PunchActionDefinition()
+                is PhysicalAttackKind.Kick -> KickActionDefinition()
+            }
+            val context = PhysicalAttackContext(actor = attacker, target = target, gameState = state)
+            definition.firstRejection(context)?.let { rejection ->
+                return CommandRejection.RuleViolation(rejection)
+            }
+        }
+
+        for ((unitId, newFacing) in cmd.torsoFacings) {
+            val unit = state.unitById(unitId)
+                ?: return CommandRejection.UnknownUnit(unitId)
+
+            if (unit.owner != cmd.playerId) {
+                return CommandRejection.NotYourTurn(
+                    activePlayer = unit.owner,
+                    attemptedBy = cmd.playerId,
+                )
+            }
+
+            if (unit.facing.turnCostTo(newFacing) > 1) {
+                return CommandRejection.IllegalTorsoTwist(unitId, newFacing)
+            }
+        }
+
         return physicalImpulseViolation(cmd.declarations, state)
             ?.let { CommandRejection.RuleViolation(it) }
     }

@@ -8,6 +8,7 @@ import battletech.tactical.query.ActionPreview
 import battletech.tactical.query.AvailableAction
 import battletech.tactical.query.RuleResult
 import battletech.tactical.query.UnavailableAction
+import battletech.tactical.session.RuleRejection
 import battletech.tactical.unit.CombatUnit
 
 public interface AttackDefinition<C : AttackContext> {
@@ -19,6 +20,20 @@ public interface AttackDefinition<C : AttackContext> {
     public fun preview(context: C): ActionPreview
     public fun successChance(context: C): Int
     public fun actionName(context: C): String
+
+    /**
+     * Runs all rules against a single context and returns the first rejection,
+     * or null if the action is legal.
+     *
+     * Used by attack handlers and the query layer to gate execution on a single
+     * context without collecting the full set of reasons.
+     */
+    public fun firstRejection(context: C): RuleRejection? =
+        rules.asSequence()
+            .map { it.evaluate(context) }
+            .filterIsInstance<RuleResult.Unsatisfied>()
+            .map { it.reason }
+            .firstOrNull()
 
     public fun evaluateAll(actor: CombatUnit, gameState: GameState): List<ActionOption> {
         return expand(actor, gameState).map { context ->
