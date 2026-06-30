@@ -221,8 +221,8 @@ internal class TargetsViewTest {
 
         val output = renderToString(view)
 
-        assertTrue(output.contains("[+2 med]"))
-        assertTrue(output.contains("[+4 long]"))
+        assertTrue(output.contains("+2 med"))
+        assertTrue(output.contains("+4 long"))
     }
 
     @Test

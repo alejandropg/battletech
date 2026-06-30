@@ -81,8 +81,10 @@ public class TargetsView(
                 Checkbox.draw(content.buffer, content.x + 2, row, state, checkboxColor)
 
                 if (weapon.modifiers.isNotEmpty()) {
-                    val modLine = "    [${weapon.modifiers.joinToString(", ")}]"
-                    content.writeln(modLine, color)
+                    weapon.modifiers.forEach {
+                        val modLine = "    $it"
+                        content.writeln(modLine, color)
+                    }
                 }
             }
 
