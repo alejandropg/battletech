@@ -27,15 +27,15 @@ When a weapon attack successfully hits a BattleMech, the attacker rolls **2d6** 
 | 2d6 Roll | Front / Rear Arc        | Left Side Arc         | Right Side Arc         |
 |:--------:|:------------------------|:----------------------|:-----------------------|
 |  **2**   | Center Torso [Critical] | Left Torso [Critical] | Right Torso [Critical] |
-|  **3**   | Right Leg               | Left Leg              | Right Leg              |
+|  **3**   | Right Arm               | Left Leg              | Right Leg              |
 |  **4**   | Right Arm               | Left Arm              | Right Arm              |
-|  **5**   | Right Arm               | Left Arm              | Right Arm              |
-|  **6**   | Right Torso             | Left Torso            | Right Torso            |
-|  **7**   | Center Torso            | Center Torso          | Center Torso           |
-|  **8**   | Left Torso              | Left Torso            | Right Torso            |
-|  **9**   | Left Arm                | Left Arm              | Right Arm              |
-|  **10**  | Left Arm                | Left Torso            | Right Torso            |
-|  **11**  | Left Leg                | Left Leg              | Right Leg              |
+|  **5**   | Right Leg               | Left Arm              | Right Arm              |
+|  **6**   | Right Torso             | Left Leg              | Right Leg              |
+|  **7**   | Center Torso            | Left Torso            | Right Torso            |
+|  **8**   | Left Torso              | Center Torso          | Center Torso           |
+|  **9**   | Left Leg                | Right Torso           | Left Torso             |
+|  **10**  | Left Arm                | Right Arm             | Left Arm               |
+|  **11**  | Left Arm                | Right Leg             | Left Leg               |
 |  **12**  | Head                    | Head                  | Head                   |
 
 ### 1. The Natural 2 Rule (Through-Armor Critical)
@@ -52,7 +52,7 @@ If the attacker is standing in the target's **Rear Arc**, you use the first colu
 
 ### 3. Firing Arc Limitations
 
-Attacking from a side flank isolates that half of the Mech. For example, if you attack from the **Left Side Arc**, it is physically impossible to roll a hit against the target's right arm or right leg. Use this tactically to focus fire on an opponent's already weakened side.
+Attacking from a side arc biases hits toward the near half of the Mech. Rolls 2–7 from a side arc land on near-side locations (the near torso, arm, and leg); roll 8 is always Center Torso; and rolls 9, 10, and 11 reach the far-side torso, arm, and leg respectively. The far side is still reachable — just less likely. Use this tactically to focus fire on an opponent's already weakened side while knowing that very high rolls can still touch their opposite flank.
 
 ---
 

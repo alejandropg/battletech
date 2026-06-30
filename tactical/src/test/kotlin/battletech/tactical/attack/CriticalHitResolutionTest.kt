@@ -1,5 +1,6 @@
 package battletech.tactical.attack
 
+import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
@@ -11,9 +12,13 @@ import battletech.tactical.query.anInternalStructureLayout
 import battletech.tactical.query.mediumLaser
 import battletech.tactical.session.AmmoExploded
 import battletech.tactical.session.CriticalHit
+import battletech.tactical.session.PilotHit
 import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.CriticalSlotContent
+import battletech.tactical.unit.DestructionReason
+import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 import battletech.tactical.unit.WeaponModels
+import battletech.tactical.unit.destructionReason
 import battletech.tactical.unit.isSlotDestroyed
 import battletech.tactical.unit.mechLayout
 import battletech.tactical.unit.withSlot
@@ -152,6 +157,7 @@ internal class CriticalHitResolutionTest {
         val target = aUnit(
             id = "target",
             position = HexCoordinates(1, 0),
+            facing = FiringArc.bearingDirection(HexCoordinates(1, 0), HexCoordinates(0, 0)),
             armor = anArmorLayout(centerTorso = 47),
             internalStructure = anInternalStructureLayout(centerTorso = 31),
         )
@@ -185,6 +191,7 @@ internal class CriticalHitResolutionTest {
         val target = aUnit(
             id = "target",
             position = HexCoordinates(1, 0),
+            facing = FiringArc.bearingDirection(HexCoordinates(1, 0), HexCoordinates(0, 0)),
             armor = anArmorLayout(centerTorso = 2),
             internalStructure = anInternalStructureLayout(centerTorso = 31),
         )
@@ -214,12 +221,13 @@ internal class CriticalHitResolutionTest {
         val attacker2 = aUnit(
             id = "attacker2",
             weapons = listOf(mediumLaser()),
-            position = HexCoordinates(0, 1),
+            position = HexCoordinates(0, -1),
             gunnerySkill = 4,
         )
         val target = aUnit(
             id = "target",
             position = HexCoordinates(1, 0),
+            facing = FiringArc.bearingDirection(HexCoordinates(1, 0), HexCoordinates(0, 0)),
             armor = anArmorLayout(centerTorso = 2),
             internalStructure = anInternalStructureLayout(centerTorso = 31),
         )
@@ -351,6 +359,49 @@ internal class CriticalHitResolutionTest {
         assertThat(events.filterIsInstance<AmmoExploded>()).isEmpty()
         assertThat(events.filterIsInstance<CriticalHit>()).hasSize(1)
         assertThat(updated.internalStructure).isEqualTo(originalIS)
+    }
+
+    // --- Cockpit hit -------------------------------------------------------------
+
+    @Test
+    fun `crit on the cockpit slot kills the pilot and the unit is destroyed with PILOT_DEAD reason`() {
+        // HEAD slot index 2 is Cockpit (standard framework).
+        // 2d6 = 9 -> 1 crit. Block 1 (upper, blockStart=0), slot 3 -> index 2 (Cockpit).
+        // No consciousness dice consumed: cockpit = instant death, no check needed.
+        val roller = DiceRoller.deterministic(4, 5, 1, 3)
+        val (updated, events) = resolveCriticalHits(baseUnit, MechLocation.HEAD, roller)
+
+        // The destroyed slot is recorded.
+        assertThat(updated.criticalHits[MechLocation.HEAD]).contains(2)
+
+        // A CriticalHit event is emitted for the cockpit slot.
+        val critEvent = events.filterIsInstance<CriticalHit>().single()
+        assertThat(critEvent.location).isEqualTo(MechLocation.HEAD)
+        assertThat(critEvent.slotIndex).isEqualTo(2)
+        assertThat(critEvent.content).isEqualTo(CriticalSlotContent.Cockpit)
+
+        // A fatal PilotHit event follows: no consciousness roll, pilot hits = death threshold.
+        val pilotEvent = events.filterIsInstance<PilotHit>().single()
+        assertThat(pilotEvent.unitId).isEqualTo(baseUnit.id)
+        assertThat(pilotEvent.pilotHits).isEqualTo(PILOT_DEATH_THRESHOLD)
+        assertThat(pilotEvent.consciousnessRoll).isNull()
+
+        // The unit's pilotHits reaches the death threshold -> PILOT_DEAD destruction reason.
+        assertThat(updated.pilotHits).isEqualTo(PILOT_DEATH_THRESHOLD)
+        assertThat(destructionReason(updated)).isEqualTo(DestructionReason.PILOT_DEAD)
+    }
+
+    @Test
+    fun `cockpit crit on a pilot with existing hits still kills outright`() {
+        // Pilot already has 3 hits; cockpit sets pilotHits directly to PILOT_DEATH_THRESHOLD.
+        val woundedPilot = baseUnit.copy(pilotHits = 3)
+        val roller = DiceRoller.deterministic(4, 5, 1, 3)
+        val (updated, events) = resolveCriticalHits(woundedPilot, MechLocation.HEAD, roller)
+
+        assertThat(updated.pilotHits).isEqualTo(PILOT_DEATH_THRESHOLD)
+        assertThat(destructionReason(updated)).isEqualTo(DestructionReason.PILOT_DEAD)
+        val pilotEvent = events.filterIsInstance<PilotHit>().single()
+        assertThat(pilotEvent.consciousnessRoll).isNull()
     }
 
     private fun splitTotal(total: Int): Pair<Int, Int> {

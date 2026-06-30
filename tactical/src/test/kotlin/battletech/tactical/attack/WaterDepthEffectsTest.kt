@@ -1,5 +1,6 @@
 package battletech.tactical.attack
 
+import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.attack.weapon.SubmergedWeaponRule
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.Hex
@@ -127,6 +128,7 @@ internal class WaterDepthEffectsTest {
         val target = aUnit(
             id = "target",
             position = targetPos,
+            facing = FiringArc.bearingDirection(targetPos, attackerPos),
             armor = anArmorLayout(rightLeg = initialRightLeg),
         )
         val gameState = aGameState(
@@ -168,6 +170,7 @@ internal class WaterDepthEffectsTest {
         val target = aUnit(
             id = "target",
             position = targetPos,
+            facing = FiringArc.bearingDirection(targetPos, attackerPos),
             armor = anArmorLayout(centerTorso = initialCt),
         )
         val gameState = aGameState(

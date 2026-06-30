@@ -1,6 +1,7 @@
 package battletech.tactical.session
 
 import battletech.tactical.attack.AttackDeclaration
+import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
@@ -45,6 +46,7 @@ internal class DestructionSweepTest {
         id = "target",
         owner = PlayerId.PLAYER_2,
         position = HexCoordinates(1, 0),
+        facing = FiringArc.bearingDirection(HexCoordinates(1, 0), HexCoordinates(0, 0)),
         weapons = listOf(mediumLaser()),
         armor = anArmorLayout(centerTorso = 0, centerTorsoRear = 0),
         internalStructure = anInternalStructureLayout(centerTorso = 1),
@@ -64,11 +66,14 @@ internal class DestructionSweepTest {
         roller = roller,
     )
 
-    private fun stayPut(position: HexCoordinates): ReachableHex = ReachableHex(
+    private fun stayPut(
+        position: HexCoordinates,
+        facing: battletech.tactical.model.HexDirection = battletech.tactical.model.HexDirection.N,
+    ): ReachableHex = ReachableHex(
         position = position,
-        facing = battletech.tactical.model.HexDirection.N,
+        facing = facing,
         mpSpent = 0,
-        path = listOf(MovementStep(position, battletech.tactical.model.HexDirection.N)),
+        path = listOf(MovementStep(position, facing)),
     )
 
     /**
@@ -104,12 +109,12 @@ internal class DestructionSweepTest {
 
         check(
             session.submitCommand(
-                MoveUnit(loser, loserUnit.id, stayPut(loserUnit.position), MovementMode.WALK),
+                MoveUnit(loser, loserUnit.id, stayPut(loserUnit.position, loserUnit.facing), MovementMode.WALK),
             ) is CommandResult.Accepted,
         )
         check(
             session.submitCommand(
-                MoveUnit(winner, winnerUnit.id, stayPut(winnerUnit.position), MovementMode.WALK),
+                MoveUnit(winner, winnerUnit.id, stayPut(winnerUnit.position, winnerUnit.facing), MovementMode.WALK),
             ) is CommandResult.Accepted,
         )
 

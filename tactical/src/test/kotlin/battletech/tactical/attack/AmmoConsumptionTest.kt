@@ -1,5 +1,6 @@
 package battletech.tactical.attack
 
+import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.attack.weapon.HasAmmoRule
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
@@ -48,6 +49,7 @@ internal class AmmoConsumptionTest {
     private val toughTarget = aUnit(
         id = "target",
         position = HexCoordinates(1, 0),
+        facing = FiringArc.bearingDirection(HexCoordinates(1, 0), HexCoordinates(0, 0)),
         armor = anArmorLayout(
             centerTorso = 200, centerTorsoRear = 50,
             leftTorso = 200, leftTorsoRear = 50,

@@ -1,5 +1,6 @@
 package battletech.tactical.attack
 
+import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
@@ -40,6 +41,7 @@ internal class ClusterResolutionTest {
     private val target = aUnit(
         id = "target",
         position = HexCoordinates(1, 0), // distance 1 → inside SRM short range, no penalty
+        facing = FiringArc.bearingDirection(HexCoordinates(1, 0), HexCoordinates(0, 0)),
         armor = anArmorLayout(
             head = 9,
             centerTorso = 100, centerTorsoRear = 30,
@@ -54,7 +56,11 @@ internal class ClusterResolutionTest {
         ),
     )
     // LRM-20: minimumRange=6, shortRange=7. At distance 7: minRangeMod=0, rangeMod=0, TN=2.
-    private val lrmTarget = target.copy(id = battletech.tactical.unit.UnitId("target"), position = HexCoordinates(7, 0))
+    private val lrmTarget = target.copy(
+        id = battletech.tactical.unit.UnitId("target"),
+        position = HexCoordinates(7, 0),
+        facing = FiringArc.bearingDirection(HexCoordinates(7, 0), HexCoordinates(0, 0)),
+    )
 
     private val gameState = GameState(listOf(attacker, target), GameMap(emptyMap()))
     private fun lrmState(attUnit: battletech.tactical.unit.CombatUnit): GameState =

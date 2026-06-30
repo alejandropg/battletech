@@ -6,20 +6,13 @@ import org.junit.jupiter.api.assertThrows
 
 /**
  * Verifies the Cluster Hits Table lookup against the canonical table in
- * `docs/missing-rules.md` §Cluster-Hit Weapons.
+ * `docs/rules/cluster-weapons.md` §1 — The Cluster Hits Table.
  *
- * Roll | 2 | 4 | 5 | 6 | 10 | 15 | 20
- *   2  | 1 | 1 | 1 | 2 |  3 |  5 |  6
- *   3  | 1 | 2 | 2 | 2 |  3 |  5 |  6
- *   4  | 1 | 2 | 2 | 3 |  4 |  6 |  9
- *   5  | 1 | 2 | 3 | 3 |  6 |  9 | 12
- *   6  | 1 | 2 | 3 | 4 |  6 |  9 | 12
- *   7  | 1 | 3 | 3 | 4 |  6 |  9 | 12
- *   8  | 2 | 3 | 3 | 4 |  6 |  9 | 12
- *   9  | 2 | 3 | 4 | 5 |  8 | 12 | 16
- *  10  | 2 | 3 | 4 | 5 |  8 | 12 | 16
- *  11  | 2 | 4 | 5 | 6 | 10 | 15 | 20
- *  12  | 2 | 4 | 5 | 6 | 10 | 15 | 20
+ * Representative rows (full table in the doc):
+ * Roll |  2 |  6 | 10 | 15 | 20 | 30 | 40
+ *   2  |  1 |  2 |  3 |  5 |  6 | 10 | 12
+ *   7  |  1 |  4 |  6 |  9 | 12 | 18 | 24
+ *  12  |  2 |  6 | 10 | 15 | 20 | 30 | 40
  */
 internal class ClusterHitsTableTest {
 
@@ -105,7 +98,8 @@ internal class ClusterHitsTableTest {
 
     @Test
     fun `unknown size throws an error`() {
-        assertThrows<IllegalStateException> { ClusterHitsTable.missilesHit(7, 7) }
+        // 31 is between the supported 30 and 40 — never in the table
+        assertThrows<IllegalStateException> { ClusterHitsTable.missilesHit(31, 7) }
     }
 
     @Test
@@ -116,5 +110,76 @@ internal class ClusterHitsTableTest {
     @Test
     fun `roll above 12 throws an error`() {
         assertThrows<IllegalArgumentException> { ClusterHitsTable.missilesHit(6, 13) }
+    }
+
+    // ── Newly added sizes (spot-checked against docs/rules/cluster-weapons.md §1) ──
+
+    @Test
+    fun `size 3 returns correct value for every roll`() {
+        val expected = mapOf(
+            2 to 1, 3 to 1, 4 to 1, 5 to 2, 6 to 2,
+            7 to 2, 8 to 2, 9 to 2, 10 to 3, 11 to 3, 12 to 3,
+        )
+        for ((roll, missiles) in expected) {
+            assertEquals(missiles, ClusterHitsTable.missilesHit(3, roll), "roll=$roll")
+        }
+    }
+
+    @Test
+    fun `size 7 returns correct value for every roll`() {
+        // size 7 was previously missing; now supported
+        val expected = mapOf(
+            2 to 2, 3 to 2, 4 to 3, 5 to 4, 6 to 4,
+            7 to 4, 8 to 4, 9 to 6, 10 to 6, 11 to 7, 12 to 7,
+        )
+        for ((roll, missiles) in expected) {
+            assertEquals(missiles, ClusterHitsTable.missilesHit(7, roll), "roll=$roll")
+        }
+    }
+
+    @Test
+    fun `size 30 roll 2 returns 10`() =
+        assertEquals(10, ClusterHitsTable.missilesHit(30, 2))
+
+    @Test
+    fun `size 30 roll 9 returns 24`() =
+        assertEquals(24, ClusterHitsTable.missilesHit(30, 9))
+
+    @Test
+    fun `size 30 roll 12 returns 30`() =
+        assertEquals(30, ClusterHitsTable.missilesHit(30, 12))
+
+    @Test
+    fun `size 30 returns correct value for every roll`() {
+        val expected = mapOf(
+            2 to 10, 3 to 10, 4 to 12, 5 to 18, 6 to 18,
+            7 to 18, 8 to 18, 9 to 24, 10 to 24, 11 to 30, 12 to 30,
+        )
+        for ((roll, missiles) in expected) {
+            assertEquals(missiles, ClusterHitsTable.missilesHit(30, roll), "roll=$roll")
+        }
+    }
+
+    @Test
+    fun `size 40 roll 2 returns 12`() =
+        assertEquals(12, ClusterHitsTable.missilesHit(40, 2))
+
+    @Test
+    fun `size 40 roll 4 returns 18`() =
+        assertEquals(18, ClusterHitsTable.missilesHit(40, 4))
+
+    @Test
+    fun `size 40 roll 12 returns 40 (absolute maximum)`() =
+        assertEquals(40, ClusterHitsTable.missilesHit(40, 12))
+
+    @Test
+    fun `size 40 returns correct value for every roll`() {
+        val expected = mapOf(
+            2 to 12, 3 to 12, 4 to 18, 5 to 24, 6 to 24,
+            7 to 24, 8 to 24, 9 to 32, 10 to 32, 11 to 40, 12 to 40,
+        )
+        for ((roll, missiles) in expected) {
+            assertEquals(missiles, ClusterHitsTable.missilesHit(40, roll), "roll=$roll")
+        }
     }
 }

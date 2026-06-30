@@ -1,5 +1,7 @@
 package battletech.tactical.attack
 
+import battletech.tactical.attack.physical.AttackDirection
+import battletech.tactical.attack.physical.attackDirection
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
@@ -72,7 +74,7 @@ public fun resolveAttacksWithCrits(
                         locHit.location == HitLocation.RIGHT_LEG
                     if (result.partialCover && isLegLocation) continue
 
-                    val resolution = resolveDamage(updatedTarget, locHit.location, locHit.damage)
+                    val resolution = resolveDamage(updatedTarget, locHit.location, locHit.damage, result.useRearArmor)
                     updatedTarget = resolution.unit
                     allDamageSteps.addAll(resolution.steps)
 
@@ -211,6 +213,8 @@ private fun resolveOneAttack(
     val weapon = attacker.weapons[declaration.weaponIndex]
 
     val distance = attacker.position.distanceTo(target.position)
+    val direction = attackDirection(attacker, target)
+    val useRearArmor = direction == AttackDirection.REAR
     val modifiers = weaponToHitModifiers(attacker, target, weapon, distance, declaration.isPrimary, gameState)
     val los = lineOfSight(attacker, target, gameState.map)
     val rangeBand = rangeBandFor(distance, weapon)
@@ -238,7 +242,7 @@ private fun resolveOneAttack(
             val groupDamages = buildClusterGroups(missiles, weapon.missilesPerGroup, weapon.damagePerMissile)
             val locationHits = groupDamages.map { groupDmg ->
                 val locRoll = roller.roll2d6()
-                LocationHit(HitLocationTable.roll(locRoll.total), groupDmg, locRoll)
+                LocationHit(HitLocationTable.roll(locRoll.total, direction), groupDmg, locRoll)
             }
             val firstHit = locationHits.first()
             AttackResult(
@@ -263,13 +267,14 @@ private fun resolveOneAttack(
                 minRangeModifier = minRangeModifier,
                 modifiers = modifiers,
                 partialCover = los.partialCover,
+                useRearArmor = useRearArmor,
                 locationHits = locationHits,
                 missilesHit = missiles,
             )
         } else {
             // Single-location weapon: one location roll, exactly as before.
             val locationRoll = roller.roll2d6()
-            val hitLocation = HitLocationTable.roll(locationRoll.total)
+            val hitLocation = HitLocationTable.roll(locationRoll.total, direction)
             AttackResult(
                 attackerId = declaration.attackerId,
                 targetId = declaration.targetId,
@@ -292,6 +297,7 @@ private fun resolveOneAttack(
                 minRangeModifier = minRangeModifier,
                 modifiers = modifiers,
                 partialCover = los.partialCover,
+                useRearArmor = useRearArmor,
                 locationHits = listOf(LocationHit(hitLocation, weapon.damage, locationRoll)),
                 missilesHit = null,
             )

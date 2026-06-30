@@ -28,6 +28,8 @@ public data class AttackResult(
     /** True when the target has partial cover (lower body masked by an obstacle).
      *  Leg-location hits under partial cover deal no damage and roll no crit. */
     val partialCover: Boolean = false,
+    /** True when the attack struck the target's rear arc; rear torso hits use the rear armor track. */
+    val useRearArmor: Boolean = false,
     /**
      * Per-group location hits, populated after a successful to-hit roll.
      *

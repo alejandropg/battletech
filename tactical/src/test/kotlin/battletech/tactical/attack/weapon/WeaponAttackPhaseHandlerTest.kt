@@ -317,6 +317,7 @@ internal class WeaponAttackPhaseHandlerTest {
         owner = PlayerId.PLAYER_2,
         weapons = listOf(mediumLaser()),
         position = HexCoordinates(1, 0),
+        facing = FiringArc.bearingDirection(HexCoordinates(1, 0), HexCoordinates(0, 0)),
         armor = anArmorLayout(centerTorso = 0, centerTorsoRear = 0),
         internalStructure = anInternalStructureLayout(centerTorso = 1),
     )
@@ -383,6 +384,7 @@ internal class WeaponAttackPhaseHandlerTest {
             owner = PlayerId.PLAYER_2,
             weapons = listOf(mediumLaser()),
             position = HexCoordinates(1, 0),
+            facing = FiringArc.bearingDirection(HexCoordinates(1, 0), HexCoordinates(0, 0)),
             armor = anArmorLayout(centerTorso = 0, centerTorsoRear = 0),
             internalStructure = anInternalStructureLayout(centerTorso = 10),
         ).copy(criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(3)))

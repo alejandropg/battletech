@@ -5,8 +5,10 @@ import battletech.tactical.model.MechLocation
 import battletech.tactical.session.AmmoExploded
 import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.GameEvent
+import battletech.tactical.session.PilotHit
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.CriticalSlotContent
+import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 import battletech.tactical.unit.SLOT_COUNTS
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponMountId
@@ -134,18 +136,29 @@ internal fun CombatUnit.disableWeaponsIn(location: MechLocation): CombatUnit {
  * Applies the per-component consequence of destroying [content] at [location] on
  * [unit] (`docs/rules/armor-damage.md` §3): a weapon-mount slot disables that
  * [Weapon] (`destroyed = true`); an ammo-bin slot detonates the bin into its own
- * location via [detonateAmmoBin]. Any other content (structure, actuators, engine,
- * gyro, …) has no Stage 4 consequence yet. Returns the updated unit and the
- * [AmmoExploded] event, if a detonation occurred.
+ * location via [detonateAmmoBin]; a cockpit slot kills the pilot outright
+ * (`docs/rules/armor-damage.md` §3, `docs/rules/pilot.md` §1), setting
+ * [CombatUnit.pilotHits] to [PILOT_DEATH_THRESHOLD] and emitting a fatal [PilotHit]
+ * (no consciousness roll). Any other content (structure, actuators, engine, gyro, …)
+ * has no additional consequence. Returns the updated unit and the [GameEvent]s produced,
+ * if any. Callers must check for [AmmoExploded] in the returned list to trigger the
+ * two post-explosion pilot hits.
  */
 private fun CombatUnit.applyCritConsequence(
     location: MechLocation,
     slotIndex: Int,
     content: CriticalSlotContent,
-): Pair<CombatUnit, AmmoExploded?> = when (content) {
-    is CriticalSlotContent.WeaponMount -> withWeaponDestroyed(content.weaponId) to null
-    is CriticalSlotContent.AmmoBin -> detonateAmmoBin(this, location, slotIndex, content)
-    else -> this to null
+): Pair<CombatUnit, List<GameEvent>> = when (content) {
+    is CriticalSlotContent.WeaponMount -> withWeaponDestroyed(content.weaponId) to emptyList()
+    is CriticalSlotContent.AmmoBin -> {
+        val (unit, ammoEvent) = detonateAmmoBin(this, location, slotIndex, content)
+        unit to listOfNotNull(ammoEvent)
+    }
+    is CriticalSlotContent.Cockpit -> {
+        val dead = copy(pilotHits = PILOT_DEATH_THRESHOLD)
+        dead to listOf(PilotHit(id, PILOT_DEATH_THRESHOLD, consciousnessRoll = null, conscious = dead.isPilotConscious))
+    }
+    else -> this to emptyList()
 }
 
 /** Marks every slot in [location] destroyed and zeroes its internal structure (limb blow-off). */
@@ -199,16 +212,18 @@ public fun resolveCriticalHits(
             if (currentUnit.isSlotDestroyed(location, index)) continue
             val content = slots[index]
             events += CriticalHit(currentUnit.id, location, index, content)
-            val (afterConsequence, ammoEvent) = currentUnit.applyCritConsequence(location, index, content)
+            val (afterConsequence, consequenceEvents) = currentUnit.applyCritConsequence(location, index, content)
             currentUnit = afterConsequence
-            ammoEvent?.let {
-                events += it
-                // Ammo explosion: pilot takes 2 hits (standard BT rule). Each hit runs a
-                // consciousness check via applyPilotHit; dice order: hit-1 2d6, hit-2 2d6.
-                repeat(2) {
-                    val (afterHit, hitEvents) = applyPilotHit(currentUnit, roller)
-                    currentUnit = afterHit
-                    events += hitEvents
+            events += consequenceEvents
+            for (event in consequenceEvents) {
+                if (event is AmmoExploded) {
+                    // Ammo explosion: pilot takes 2 hits (standard BT rule). Each hit runs a
+                    // consciousness check via applyPilotHit; dice order: hit-1 2d6, hit-2 2d6.
+                    repeat(2) {
+                        val (afterHit, hitEvents) = applyPilotHit(currentUnit, roller)
+                        currentUnit = afterHit
+                        events += hitEvents
+                    }
                 }
             }
         }
@@ -224,16 +239,18 @@ public fun resolveCriticalHits(
         val pick = pickSlot(currentUnit, location, roller) ?: return@repeat
         currentUnit = currentUnit.withSlotDestroyed(location, pick.index)
         events += CriticalHit(currentUnit.id, location, pick.index, pick.content)
-        val (afterConsequence, ammoEvent) = currentUnit.applyCritConsequence(location, pick.index, pick.content)
+        val (afterConsequence, consequenceEvents) = currentUnit.applyCritConsequence(location, pick.index, pick.content)
         currentUnit = afterConsequence
-        ammoEvent?.let {
-            events += it
-            // Ammo explosion: pilot takes 2 hits (standard BT rule). Each hit runs a
-            // consciousness check via applyPilotHit; dice order: hit-1 2d6, hit-2 2d6.
-            repeat(2) {
-                val (afterHit, hitEvents) = applyPilotHit(currentUnit, roller)
-                currentUnit = afterHit
-                events += hitEvents
+        events += consequenceEvents
+        for (event in consequenceEvents) {
+            if (event is AmmoExploded) {
+                // Ammo explosion: pilot takes 2 hits (standard BT rule). Each hit runs a
+                // consciousness check via applyPilotHit; dice order: hit-1 2d6, hit-2 2d6.
+                repeat(2) {
+                    val (afterHit, hitEvents) = applyPilotHit(currentUnit, roller)
+                    currentUnit = afterHit
+                    events += hitEvents
+                }
             }
         }
     }
