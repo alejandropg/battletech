@@ -10,7 +10,8 @@ public data class GameState(
     public fun unitAt(position: HexCoordinates): CombatUnit? =
         units.find { it.position == position }
 
-    public fun unitById(id: UnitId): CombatUnit? = units.find { it.id == id }
+    public fun unitById(id: UnitId): CombatUnit =
+        units.find { it.id == id } ?: error("No unit with id $id")
     public fun unitsOf(player: PlayerId): List<CombatUnit> = units.filter { it.owner == player }
 
     /**

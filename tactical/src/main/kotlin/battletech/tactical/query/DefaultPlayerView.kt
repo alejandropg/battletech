@@ -3,8 +3,8 @@ package battletech.tactical.query
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.PlayerId
 import battletech.tactical.model.MovementMode
+import battletech.tactical.model.PlayerId
 import battletech.tactical.movement.ReachabilityCalculator
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.unit.UnitId
@@ -18,7 +18,8 @@ public class DefaultPlayerView(
     private val physicalAttackQueries = PhysicalAttackQueries(state)
 
     override fun legalMovementsFor(unitId: UnitId): List<ReachabilityMap> {
-        val unit = state.unitById(unitId) ?: return emptyList()
+        if (state.units.none { it.id == unitId }) return emptyList()
+        val unit = state.unitById(unitId)
         if (unit.isShutdown || unit.isDestroyed || !unit.isPilotConscious) return emptyList()
         val calculator = ReachabilityCalculator(state.map, state.units)
         return buildList {
@@ -41,10 +42,11 @@ public class DefaultPlayerView(
         physicalAttackQueries.physicalAttackOptions(attackerId)
 
     override fun resolveTargetPositions(targetIds: Set<UnitId>): Set<HexCoordinates> =
-        targetIds.mapNotNull { state.unitById(it)?.position }.toSet()
+        targetIds.map { state.unitById(it).position }.toSet()
 
     override fun publicUnit(unitId: UnitId): PublicUnit? {
-        val unit = state.unitById(unitId) ?: return null
+        if (state.units.none { it.id == unitId }) return null
+        val unit = state.unitById(unitId)
         return PublicUnit(
             id = unit.id,
             owner = unit.owner,

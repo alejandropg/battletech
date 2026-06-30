@@ -15,7 +15,7 @@ import battletech.tactical.unit.UnitId
 internal class PhysicalAttackQueries(private val state: PublicGameState) {
 
     fun physicalAttackOptions(attackerId: UnitId): List<PhysicalAttackOption> {
-        val attacker = state.unitById(attackerId) ?: return emptyList()
+        val attacker = state.unitById(attackerId)
         val punchDef = PunchActionDefinition()
         val kickDef = KickActionDefinition()
 

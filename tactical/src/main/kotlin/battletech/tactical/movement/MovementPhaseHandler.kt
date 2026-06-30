@@ -1,14 +1,11 @@
 package battletech.tactical.movement
 
-import battletech.tactical.unit.MovementThisTurn
+import battletech.tactical.dice.DiceRoller
 import battletech.tactical.heat.movementHeatSource
-
+import battletech.tactical.model.GameState
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.session.calculateMovementOrder
-import battletech.tactical.dice.DiceRoller
-import battletech.tactical.model.GameState
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.ImpulseSequence
@@ -19,6 +16,8 @@ import battletech.tactical.session.StandUp
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitMoved
 import battletech.tactical.session.UnitStoodUp
+import battletech.tactical.session.calculateMovementOrder
+import battletech.tactical.unit.MovementThisTurn
 import battletech.tactical.unit.cannotStandFromGyroDamage
 import battletech.tactical.unit.destroyedLegCount
 import battletech.tactical.unit.gyroPsrModifier
@@ -48,15 +47,15 @@ public class MovementPhaseHandler : PhaseHandler {
         turn: TurnState,
     ): CommandRejection? = when (command) {
         is MoveUnit -> validateActivation(command.unitId, command.playerId, state, turn)
-            ?: if (state.unitById(command.unitId)?.isProne == true) {
+            ?: if (state.unitById(command.unitId).isProne) {
                 CommandRejection.UnitProne(command.unitId)
             } else if (command.mode == MovementMode.JUMP &&
-                (state.unitById(command.unitId)?.destroyedLegCount() ?: 0) > 0
+                state.unitById(command.unitId).destroyedLegCount() > 0
             ) {
                 // Cannot jump with any destroyed leg.
                 CommandRejection.LegDestroyed(command.unitId)
             } else if (command.mode == MovementMode.RUN &&
-                (state.unitById(command.unitId)?.destroyedLegCount() ?: 0) > 0
+                state.unitById(command.unitId).destroyedLegCount() > 0
             ) {
                 // Cannot run with any destroyed leg; hobble (half walk MP) only.
                 CommandRejection.LegDestroyed(command.unitId)
@@ -66,8 +65,8 @@ public class MovementPhaseHandler : PhaseHandler {
 
         is StandUp -> validateActivation(command.unitId, command.playerId, state, turn)
             ?: when {
-                state.unitById(command.unitId)?.isProne != true -> CommandRejection.UnitNotProne(command.unitId)
-                (state.unitById(command.unitId)?.cannotStandFromGyroDamage() ?: false) ->
+                !state.unitById(command.unitId).isProne -> CommandRejection.UnitNotProne(command.unitId)
+                state.unitById(command.unitId).cannotStandFromGyroDamage() ->
                     CommandRejection.GyroDestroyed(command.unitId)
                 else -> null
             }
@@ -88,7 +87,7 @@ public class MovementPhaseHandler : PhaseHandler {
         cmd: MoveUnit,
         state: GameState,
     ): CommandRejection? {
-        val unit = state.unitById(cmd.unitId)!! // non-null guaranteed by validateActivation
+        val unit = state.unitById(cmd.unitId) // existence guaranteed by validateActivation
         // Stationary: unit stays at its current position with its current facing, spending 0 MP.
         if (cmd.destination.position == unit.position &&
             cmd.destination.facing == unit.facing &&
@@ -113,7 +112,8 @@ public class MovementPhaseHandler : PhaseHandler {
         state: GameState,
         turn: TurnState,
     ): CommandRejection? {
-        val unit = state.unitById(unitId) ?: return CommandRejection.UnknownUnit(unitId)
+        if (state.units.none { it.id == unitId }) return CommandRejection.UnknownUnit(unitId)
+        val unit = state.unitById(unitId)
         if (unit.owner != playerId) {
             return CommandRejection.NotYourTurn(activePlayer = unit.owner, attemptedBy = playerId)
         }
@@ -140,7 +140,7 @@ public class MovementPhaseHandler : PhaseHandler {
         turn: TurnState,
         roller: DiceRoller,
     ): PhaseOutcome {
-        val unit = state.unitById(cmd.unitId)!!
+        val unit = state.unitById(cmd.unitId)
         val modifier = gyroPsrModifier(unit) + legPsrModifier(unit)
         val psr = pilotingSkillRoll(unit, roller, modifier = modifier)
         return if (psr.passed) {
@@ -160,7 +160,7 @@ public class MovementPhaseHandler : PhaseHandler {
         state: GameState,
         turn: TurnState,
     ): PhaseOutcome {
-        val unit = state.unitById(cmd.unitId)!!
+        val unit = state.unitById(cmd.unitId)
         // Use the server-authoritative destination — never trust the client value for MP or path.
         val serverHex: ReachableHex = if (cmd.destination.mpSpent == 0 &&
             cmd.destination.position == unit.position &&

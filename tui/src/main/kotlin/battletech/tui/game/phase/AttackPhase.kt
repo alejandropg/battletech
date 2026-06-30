@@ -139,8 +139,8 @@ internal sealed interface AttackPhase : Phase {
 
             // Compute view + targets once per event; pass into pure allocation methods.
             val attacker = app.gameState.unitById(unitId)
-            val view = attacker?.let { playerView(it.owner, app.gameState) }
-            val targets = view?.targetInfos(unitId, torsoFacing) ?: emptyList()
+            val view = playerView(attacker.owner, app.gameState)
+            val targets = view.targetInfos(unitId, torsoFacing)
 
             return when (action) {
                 is AttackAction.NextAttacker -> nextAttacker(app)
@@ -153,7 +153,6 @@ internal sealed interface AttackPhase : Phase {
                     Transition(app.copy(phase = copy(allocation = newAllocation)))
                 }
                 is AttackAction.TwistTorso -> {
-                    if (attacker == null || view == null) return Transition(app)
                     val legFacing = attacker.facing
                     val newTorso = if (action.clockwise) torsoFacing.rotateClockwise()
                     else torsoFacing.rotateCounterClockwise()
@@ -168,7 +167,6 @@ internal sealed interface AttackPhase : Phase {
                     Transition(app.copy(phase = copy(allocation = newAllocation)))
                 }
                 is AttackAction.ClickTarget -> {
-                    if (attacker == null || view == null) return Transition(app)
                     val targetUnit = app.gameState.unitAt(app.cursor)
                     val validIds = view.validTargets(unitId, torsoFacing)
                     if (targetUnit == null || targetUnit.id !in validIds) return Transition(app)
@@ -181,7 +179,7 @@ internal sealed interface AttackPhase : Phase {
         override fun prompt(app: AppState): String = DECLARING_PROMPT
 
         override fun render(gameState: GameState): RenderData {
-            val attacker = gameState.unitById(unitId) ?: return RenderData.EMPTY
+            val attacker = gameState.unitById(unitId)
             val view: PlayerView = playerView(attacker.owner, gameState)
             val arc = view.fireArc(unitId, torsoFacing)
             val validIds = view.validTargets(unitId, torsoFacing)
@@ -192,7 +190,7 @@ internal sealed interface AttackPhase : Phase {
             val los = losHighlights(attacker, validIds, gameState)
             val selectedLos = selectedLosHighlights(attacker, this, targets, gameState)
             val selectedTargetPosition = targets.getOrNull(cursorTargetIndex)
-                ?.let { gameState.unitById(it.unitId)?.position }
+                ?.let { gameState.unitById(it.unitId).position }
             return RenderData(
                 hexHighlights = arcHighlights + los + selectedLos,
                 torsoFacings = torsoFacings,
@@ -204,7 +202,7 @@ internal sealed interface AttackPhase : Phase {
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitById(unitId)
 
         override fun pendingHeat(app: AppState): List<battletech.tactical.unit.HeatSource> {
-            val attacker = app.gameState.unitById(unitId) ?: return emptyList()
+            val attacker = app.gameState.unitById(unitId)
             val firedWeaponIndices = weaponAssignments.values.flatten().toSet()
             return firedWeaponIndices.sorted().mapNotNull { index ->
                 attacker.weapons.getOrNull(index)?.let(::weaponHeatSource)
@@ -213,7 +211,6 @@ internal sealed interface AttackPhase : Phase {
 
         override fun attackRender(gameState: GameState): AttackRender {
             val attacker = gameState.unitById(unitId)
-                ?: return AttackRender(emptyList(), weaponAssignments, primaryTargetId, cursorTargetIndex, cursorWeaponIndex)
             val view = playerView(attacker.owner, gameState)
             return AttackRender(
                 targets = targetTable(view),
@@ -225,7 +222,7 @@ internal sealed interface AttackPhase : Phase {
         }
 
         override fun targetStatusUnit(gameState: GameState): PublicUnit? {
-            val attacker = gameState.unitById(unitId) ?: return null
+            val attacker = gameState.unitById(unitId)
             val view = playerView(attacker.owner, gameState)
             val targets = targetTable(view)
             val target = targets.getOrNull(cursorTargetIndex) ?: return null
@@ -364,7 +361,7 @@ internal fun buildDeclaredTargetsRender(
         turnState.attack.weaponDeclarations.groupBy { it.attackerId }
 
     val activeDrafts: Map<UnitId, UnitDeclaration> = drafts.filter { (unitId, decl) ->
-        val unit = gameState.unitById(unitId) ?: return@filter false
+        val unit = gameState.unitById(unitId)
         unit.owner == viewingPlayer && decl.weaponAssignments.values.any { it.isNotEmpty() }
     }
 
@@ -373,10 +370,10 @@ internal fun buildDeclaredTargetsRender(
     val entries = buildList {
         for (player in playerOrder) {
             committedByAttacker.keys
-                .filter { id -> gameState.unitById(id)?.owner == player }
+                .filter { id -> gameState.unitById(id).owner == player }
                 .sortedBy { it.value }
                 .forEach { attackerId ->
-                    val attackerUnit = gameState.unitById(attackerId) ?: return@forEach
+                    val attackerUnit = gameState.unitById(attackerId)
                     val declarations = committedByAttacker[attackerId] ?: return@forEach
                     val normalized = declarations.groupBy { it.targetId }
                         .map { (targetId, decls) ->
@@ -389,11 +386,11 @@ internal fun buildDeclaredTargetsRender(
 
             if (player == viewingPlayer) {
                 activeDrafts.keys
-                    .filter { id -> gameState.unitById(id)?.owner == player }
+                    .filter { id -> gameState.unitById(id).owner == player }
                     .sortedBy { it.value }
                     .forEach { attackerId ->
                         val decl = activeDrafts[attackerId] ?: return@forEach
-                        val attackerUnit = gameState.unitById(attackerId) ?: return@forEach
+                        val attackerUnit = gameState.unitById(attackerId)
                         val normalized = decl.weaponAssignments.entries
                             .filter { (_, weapons) -> weapons.isNotEmpty() }
                             .map { (targetId, weaponIndices) ->

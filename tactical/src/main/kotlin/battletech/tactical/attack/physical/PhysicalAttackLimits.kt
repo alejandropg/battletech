@@ -35,7 +35,7 @@ public fun physicalImpulseViolation(
             if (!usedLimbs.add(isPunch to side)) {
                 return RuleRejection.LimbAlreadyUsed(attackerId)
             }
-            if (attacker != null && limbInternalStructure(attacker, isPunch, side) <= 0) {
+            if (limbInternalStructure(attacker, isPunch, side) <= 0) {
                 return RuleRejection.LimbDestroyed(attackerId)
             }
         }

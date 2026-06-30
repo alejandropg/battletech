@@ -143,7 +143,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
             if (assignments.values.any { it.isNotEmpty() }) drafts + (unitId to assignments) else drafts - unitId
 
         private fun optionsFor(gameState: GameState): List<PhysicalAttackOption> {
-            val owner = gameState.unitById(unitId)?.owner ?: return emptyList()
+            val owner = gameState.unitById(unitId).owner
             return view(owner, gameState).physicalAttackOptions(unitId)
         }
 

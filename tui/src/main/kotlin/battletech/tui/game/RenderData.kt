@@ -33,7 +33,7 @@ internal fun losHighlights(
     gameState: GameState,
 ): Map<HexCoordinates, HexHighlight> =
     validTargetIds.flatMap { targetId ->
-        val target = gameState.unitById(targetId) ?: return@flatMap emptyList()
+        val target = gameState.unitById(targetId)
         losLine(attacker, target, gameState)
     }.associateWith { HexHighlight.LINE_OF_SIGHT }
 
@@ -45,7 +45,7 @@ internal fun selectedLosHighlights(
 ): Map<HexCoordinates, HexHighlight> {
     val idx = declaring.cursorTargetIndex
     if (idx !in targets.indices) return emptyMap()
-    val target = gameState.unitById(targets[idx].unitId) ?: return emptyMap()
+    val target = gameState.unitById(targets[idx].unitId)
     return losLine(attacker, target, gameState).associateWith { HexHighlight.LINE_OF_SIGHT_SELECTED }
 }
 

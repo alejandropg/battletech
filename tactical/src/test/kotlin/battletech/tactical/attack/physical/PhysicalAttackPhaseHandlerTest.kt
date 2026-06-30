@@ -21,7 +21,6 @@ import battletech.tactical.session.RuleRejection
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitFell
 import battletech.tactical.unit.MovementThisTurn
-import battletech.tactical.unit.UnitId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -56,7 +55,7 @@ internal class PhysicalAttackPhaseHandlerTest {
 
         val resolved = outcome.events.filterIsInstance<PhysicalAttacksResolved>().single()
         assertThat(resolved.results.single().hit).isTrue()
-        assertThat(outcome.state.unitById(target.id)!!.armor.leftArm)
+        assertThat(outcome.state.unitById(target.id).armor.leftArm)
             .isEqualTo(target.armor.leftArm - 5)
         assertThat(outcome.turn.attack.physicalDeclarations).isEmpty()
     }
@@ -76,7 +75,7 @@ internal class PhysicalAttackPhaseHandlerTest {
 
         val fell = outcome.events.filterIsInstance<UnitFell>().single()
         assertThat(fell.unitId).isEqualTo(target.id)
-        assertThat(outcome.state.unitById(target.id)!!.isProne).isTrue()
+        assertThat(outcome.state.unitById(target.id).isProne).isTrue()
     }
 
     @Test
@@ -121,17 +120,6 @@ internal class PhysicalAttackPhaseHandlerTest {
     }
 
     @Test
-    fun `validate rejects unknown attacker`() {
-        val command = CommitPhysicalAttackImpulse(
-            playerId = PlayerId.PLAYER_1,
-            declarations = listOf(PhysicalAttackDeclaration(UnitId("ghost"), target.id, Punch(Side.LEFT))),
-            torsoFacings = emptyMap(),
-        )
-        assertThat(handler.validate(command, gameState, turnWithOneImpulse()))
-            .isEqualTo(CommandRejection.UnknownUnit(UnitId("ghost")))
-    }
-
-    @Test
     fun `validate rejects attacker owned by different player`() {
         // target is PLAYER_2; command is from PLAYER_1 trying to command it
         val command = CommitPhysicalAttackImpulse(
@@ -146,17 +134,6 @@ internal class PhysicalAttackPhaseHandlerTest {
                     attemptedBy = PlayerId.PLAYER_1,
                 ),
             )
-    }
-
-    @Test
-    fun `validate rejects unknown target`() {
-        val command = CommitPhysicalAttackImpulse(
-            playerId = PlayerId.PLAYER_1,
-            declarations = listOf(PhysicalAttackDeclaration(attacker.id, UnitId("ghost"), Punch(Side.LEFT))),
-            torsoFacings = emptyMap(),
-        )
-        assertThat(handler.validate(command, gameState, turnWithOneImpulse()))
-            .isEqualTo(CommandRejection.UnknownUnit(UnitId("ghost")))
     }
 
     @Test
@@ -246,17 +223,6 @@ internal class PhysicalAttackPhaseHandlerTest {
     }
 
     // ── validate: torso facings ───────────────────────────────────────────────
-
-    @Test
-    fun `validate rejects unknown unit in torso facings`() {
-        val command = CommitPhysicalAttackImpulse(
-            playerId = PlayerId.PLAYER_1,
-            declarations = emptyList(),
-            torsoFacings = mapOf(UnitId("ghost") to HexDirection.NE),
-        )
-        assertThat(handler.validate(command, gameState, turnWithOneImpulse()))
-            .isEqualTo(CommandRejection.UnknownUnit(UnitId("ghost")))
-    }
 
     @Test
     fun `validate rejects torso-facing unit owned by different player`() {

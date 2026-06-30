@@ -171,7 +171,7 @@ internal object GameLogFormatter {
             val perTarget = decls.groupBy { it.targetId }.entries.joinToString(", ") { (targetId, targetDecls) ->
                 val targetName = targetId.value
                 val weaponNames = targetDecls.joinToString(", ") { decl ->
-                    attacker?.weapons?.getOrNull(decl.weaponIndex)?.name ?: "weapon#${decl.weaponIndex}"
+                    attacker.weapons.getOrNull(decl.weaponIndex)?.name ?: "weapon#${decl.weaponIndex}"
                 }
                 "$targetName ($weaponNames)"
             }
@@ -198,7 +198,7 @@ internal object GameLogFormatter {
             is CriticalSlotContent.JumpJet -> "Jump Jet"
             is CriticalSlotContent.Actuator -> actuatorLabel(content.type)
             is CriticalSlotContent.WeaponMount -> {
-                state.unitById(unitId)?.weapons?.find { it.mountId == content.weaponId }?.name ?: "weapon"
+                state.unitById(unitId).weapons.find { it.mountId == content.weaponId }?.name ?: "weapon"
             }
             is CriticalSlotContent.AmmoBin -> "${content.type} ammo"
         }

@@ -285,7 +285,7 @@ internal class WeaponAttackPhaseHandlerTest {
 
         val event = outcome.events.filterIsInstance<TorsoFacingsApplied>().single()
         assertThat(event.facings).containsEntry(attacker.id, newFacing)
-        assertThat(outcome.state.unitById(attacker.id)!!.torsoFacing).isEqualTo(newFacing)
+        assertThat(outcome.state.unitById(attacker.id).torsoFacing).isEqualTo(newFacing)
     }
 
     @Test
@@ -357,7 +357,7 @@ internal class WeaponAttackPhaseHandlerTest {
 
         val outcome = handler.apply(cmd, thinCtGameState, thinCtTurn(declaration), roller)
 
-        val updatedTarget = outcome.state.unitById(thinCtTarget.id)!!
+        val updatedTarget = outcome.state.unitById(thinCtTarget.id)
         assertThat(updatedTarget.criticalHits[MechLocation.CENTER_TORSO]).containsExactly(3)
         assertThat(updatedTarget.isProne).isTrue()
         val fell = outcome.events.filterIsInstance<UnitFell>().single()
@@ -373,7 +373,7 @@ internal class WeaponAttackPhaseHandlerTest {
 
         val outcome = handler.apply(cmd, thinCtGameState, thinCtTurn(declaration), roller)
 
-        val updatedTarget = outcome.state.unitById(thinCtTarget.id)!!
+        val updatedTarget = outcome.state.unitById(thinCtTarget.id)
         assertThat(updatedTarget.criticalHits[MechLocation.CENTER_TORSO]).containsExactly(3)
         assertThat(updatedTarget.isProne).isFalse()
         assertThat(outcome.events.filterIsInstance<UnitFell>()).isEmpty()
@@ -406,13 +406,6 @@ internal class WeaponAttackPhaseHandlerTest {
     }
 
     @Test
-    fun `validate rejects unknown attacker`() {
-        val decl = AttackDeclaration(UnitId("ghost"), target.id, weaponIndex = 0, isPrimary = true)
-        val result = handler.validate(validCmd(declarations = listOf(decl)), gameState, seededOneImpulseTurn())
-        assertThat(result).isEqualTo(CommandRejection.UnknownUnit(UnitId("ghost")))
-    }
-
-    @Test
     fun `validate rejects attacker owned by different player`() {
         // target is owned by PLAYER_2; the command is from PLAYER_1 trying to command it.
         val decl = AttackDeclaration(target.id, attacker.id, weaponIndex = 0, isPrimary = true)
@@ -427,13 +420,6 @@ internal class WeaponAttackPhaseHandlerTest {
         val decl = AttackDeclaration(attacker.id, target.id, weaponIndex = 99, isPrimary = true)
         val result = handler.validate(validCmd(declarations = listOf(decl)), gameState, seededOneImpulseTurn())
         assertThat(result).isEqualTo(CommandRejection.NoSuchWeapon(attacker.id, 99))
-    }
-
-    @Test
-    fun `validate rejects unknown target`() {
-        val decl = AttackDeclaration(attacker.id, UnitId("ghost"), weaponIndex = 0, isPrimary = true)
-        val result = handler.validate(validCmd(declarations = listOf(decl)), gameState, seededOneImpulseTurn())
-        assertThat(result).isEqualTo(CommandRejection.UnknownUnit(UnitId("ghost")))
     }
 
     @Test
@@ -512,16 +498,6 @@ internal class WeaponAttackPhaseHandlerTest {
     }
 
     @Test
-    fun `validate rejects unknown unit in torso facings`() {
-        val result = handler.validate(
-            validCmd(torsoFacings = mapOf(UnitId("ghost") to HexDirection.NE)),
-            gameState,
-            seededOneImpulseTurn(),
-        )
-        assertThat(result).isEqualTo(CommandRejection.UnknownUnit(UnitId("ghost")))
-    }
-
-    @Test
     fun `validate rejects torso twist more than one step from leg facing`() {
         // attacker has leg facing N (ordinal 0); S (ordinal 3) is 3 steps away → illegal.
         val result = handler.validate(
@@ -578,7 +554,7 @@ internal class WeaponAttackPhaseHandlerTest {
 
         val outcome = handler.apply(cmd, state, thinCtTurn(declaration), roller)
 
-        val updatedTarget = outcome.state.unitById(target.id)!!
+        val updatedTarget = outcome.state.unitById(target.id)
         assertThat(updatedTarget.criticalHits[MechLocation.CENTER_TORSO]).containsExactlyInAnyOrder(3, 4)
         assertThat(updatedTarget.isProne).isTrue()
         assertThat(updatedTarget.isDestroyed).isFalse()

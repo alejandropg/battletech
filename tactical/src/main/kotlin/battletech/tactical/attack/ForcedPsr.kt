@@ -80,7 +80,7 @@ public fun applyTwentyDamagePsrs(
     val events = mutableListOf<GameEvent>()
     for ((unitId, totalDamage) in damageByUnit.entries.sortedBy { it.key.value }) {
         if (totalDamage < 20) continue
-        val unit = currentState.unitById(unitId) ?: continue
+        val unit = currentState.unitById(unitId)
         // Include gyro and leg PSR penalties alongside the base 20-damage modifier.
         val modifier = totalDamage / 20 + gyroPsrModifier(unit) + legPsrModifier(unit)
         val (updated, fallEvents) = forcePsrOrFall(unit, modifier, roller)

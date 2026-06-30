@@ -1,11 +1,11 @@
 package battletech.tui.game.phase
 
+import battletech.tactical.heat.movementHeatSource
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.heat.movementHeatSource
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.movement.hexesMoved
@@ -161,7 +161,7 @@ internal sealed interface MovementPhase : Phase {
 
         override fun pendingHeat(app: AppState): List<HeatSource> {
             val destination = hoveredDestination ?: return emptyList()
-            val unit = app.gameState.unitById(unitId) ?: return emptyList()
+            val unit = app.gameState.unitById(unitId)
             val hexes = hexesMoved(unit.position, destination)
             return listOfNotNull(movementHeatSource(reachability.mode, hexes))
         }
@@ -255,7 +255,7 @@ internal sealed interface MovementPhase : Phase {
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitById(unitId)
 
         override fun pendingHeat(app: AppState): List<HeatSource> {
-            val unit = app.gameState.unitById(unitId) ?: return emptyList()
+            val unit = app.gameState.unitById(unitId)
             val destination = options.minByOrNull { it.mpSpent } ?: return emptyList()
             val hexes = hexesMoved(unit.position, destination)
             return listOfNotNull(movementHeatSource(reachability.mode, hexes))
@@ -311,7 +311,7 @@ private fun submitMove(
     destination: ReachableHex,
     mode: MovementMode,
 ): Transition {
-    val unit = app.gameState.unitById(unitId) ?: return Transition(app)
+    val unit = app.gameState.unitById(unitId)
     app.session.submitCommand(
         MoveUnit(
             playerId = unit.owner,

@@ -62,52 +62,47 @@ public fun resolveAttacksWithCrits(
     val critEvents = mutableListOf<GameEvent>()
     val finalResults = results.map { result ->
         if (result.hit && result.locationHits.isNotEmpty()) {
-            val target = updatedState.unitById(result.targetId)
-            if (target == null) {
-                result
-            } else {
-                var updatedTarget: CombatUnit = target
-                val allDamageSteps = mutableListOf<LocationDamage>()
+            var updatedTarget: CombatUnit = updatedState.unitById(result.targetId)
+            val allDamageSteps = mutableListOf<LocationDamage>()
 
-                for (locHit in result.locationHits) {
-                    val isLegLocation = locHit.location == HitLocation.LEFT_LEG ||
-                        locHit.location == HitLocation.RIGHT_LEG
-                    if (result.partialCover && isLegLocation) continue
+            for (locHit in result.locationHits) {
+                val isLegLocation = locHit.location == HitLocation.LEFT_LEG ||
+                    locHit.location == HitLocation.RIGHT_LEG
+                if (result.partialCover && isLegLocation) continue
 
-                    val resolution = resolveDamage(updatedTarget, locHit.location, locHit.damage, result.useRearArmor)
-                    updatedTarget = resolution.unit
-                    allDamageSteps.addAll(resolution.steps)
+                val resolution = resolveDamage(updatedTarget, locHit.location, locHit.damage, result.useRearArmor)
+                updatedTarget = resolution.unit
+                allDamageSteps.addAll(resolution.steps)
 
-                    // Head-hit pilot damage: any IS penetration to HEAD → 1 pilot hit.
-                    // Canonical dice order: consciousness check 2d6 fires here, before
-                    // the crit-check dice for the same location hit.
-                    if (resolution.steps.any { it.location == MechLocation.HEAD && it.structureDamage >= 1 }) {
-                        val (afterPilotHit, pilotHitEvents) = applyPilotHit(updatedTarget, roller)
-                        updatedTarget = afterPilotHit
-                        critEvents += pilotHitEvents
-                    }
-
-                    val naturalTwo = locHit.locationRoll.d1 == 1 && locHit.locationRoll.d2 == 1
-                    val critLocations = resolution.steps
-                        .filter { it.structureDamage >= 1 }
-                        .map { it.location }
-                        .toMutableList()
-                    if (naturalTwo && locHit.location !in critLocations) {
-                        critLocations += locHit.location
-                    }
-
-                    for (critLocation in critLocations) {
-                        val (afterCrit, events) = resolveCriticalHits(updatedTarget, critLocation, roller)
-                        updatedTarget = afterCrit
-                        critEvents += events
-                    }
+                // Head-hit pilot damage: any IS penetration to HEAD → 1 pilot hit.
+                // Canonical dice order: consciousness check 2d6 fires here, before
+                // the crit-check dice for the same location hit.
+                if (resolution.steps.any { it.location == MechLocation.HEAD && it.structureDamage >= 1 }) {
+                    val (afterPilotHit, pilotHitEvents) = applyPilotHit(updatedTarget, roller)
+                    updatedTarget = afterPilotHit
+                    critEvents += pilotHitEvents
                 }
 
-                updatedState = updatedState.copy(
-                    units = updatedState.units.map { if (it.id == result.targetId) updatedTarget else it },
-                )
-                result.copy(damage = allDamageSteps)
+                val naturalTwo = locHit.locationRoll.d1 == 1 && locHit.locationRoll.d2 == 1
+                val critLocations = resolution.steps
+                    .filter { it.structureDamage >= 1 }
+                    .map { it.location }
+                    .toMutableList()
+                if (naturalTwo && locHit.location !in critLocations) {
+                    critLocations += locHit.location
+                }
+
+                for (critLocation in critLocations) {
+                    val (afterCrit, events) = resolveCriticalHits(updatedTarget, critLocation, roller)
+                    updatedTarget = afterCrit
+                    critEvents += events
+                }
             }
+
+            updatedState = updatedState.copy(
+                units = updatedState.units.map { if (it.id == result.targetId) updatedTarget else it },
+            )
+            result.copy(damage = allDamageSteps)
         } else {
             result
         }
@@ -120,7 +115,7 @@ public fun resolveAttacksWithCrits(
     // an attacker is also a damage target. Draws from updatedState each iteration so
     // a multi-weapon volley chains correctly. No dice consumed.
     for (declaration in declarations) {
-        val attacker = updatedState.unitById(declaration.attackerId) ?: continue
+        val attacker = updatedState.unitById(declaration.attackerId)
         val weapon = attacker.weapons[declaration.weaponIndex]
         val ammoType = weapon.ammoType ?: continue
         // Consume from an available bin (skips bins in IS=0 locations).
@@ -208,8 +203,8 @@ private fun resolveOneAttack(
     gameState: GameState,
     roller: DiceRoller,
 ): AttackResult {
-    val attacker = gameState.unitById(declaration.attackerId)!!
-    val target = gameState.unitById(declaration.targetId)!!
+    val attacker = gameState.unitById(declaration.attackerId)
+    val target = gameState.unitById(declaration.targetId)
     val weapon = attacker.weapons[declaration.weaponIndex]
 
     val distance = attacker.position.distanceTo(target.position)

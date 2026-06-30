@@ -3,11 +3,11 @@ package battletech.tactical.query
 import battletech.tactical.attack.WeaponAttackContext
 import battletech.tactical.attack.nonZero
 import battletech.tactical.attack.total
-import battletech.tactical.attack.weaponToHitModifiers
 import battletech.tactical.attack.weapon.FireWeaponActionDefinition
 import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
+import battletech.tactical.attack.weaponToHitModifiers
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.unit.CombatUnit
@@ -19,12 +19,12 @@ internal class WeaponTargeting(private val state: PublicGameState) {
     private val definition = FireWeaponActionDefinition()
 
     fun fireArc(attackerId: UnitId, torsoFacing: HexDirection): Set<HexCoordinates> {
-        val attacker = state.unitById(attackerId) ?: return emptySet()
+        val attacker = state.unitById(attackerId)
         return FiringArc.forwardArc(attacker.position, torsoFacing, state.map)
     }
 
     fun validTargets(attackerId: UnitId, torsoFacing: HexDirection): Set<UnitId> {
-        val attacker = state.unitById(attackerId) ?: return emptySet()
+        val attacker = state.unitById(attackerId)
         // An unconscious pilot cannot act this turn (Stage 7) — same actor-eligibility
         // treatment as a sensor-blinded unit. Unconscious units remain valid TARGETS
         // (see the `!it.isDestroyed` filter below, which deliberately does not also
@@ -42,10 +42,10 @@ internal class WeaponTargeting(private val state: PublicGameState) {
     }
 
     fun targetInfos(attackerId: UnitId, torsoFacing: HexDirection): List<TargetInfo> {
-        val attacker = state.unitById(attackerId) ?: return emptyList()
+        val attacker = state.unitById(attackerId)
         val targetIds = validTargets(attackerId, torsoFacing)
         return targetIds.mapNotNull { targetId ->
-            val target = state.unitById(targetId) ?: return@mapNotNull null
+            val target = state.unitById(targetId)
             val distance = attacker.position.distanceTo(target.position)
 
             val weapons = attacker.weapons.mapIndexed { index, weapon ->

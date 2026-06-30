@@ -30,18 +30,14 @@ public fun resolvePhysicalAttacks(
     val damagedResults = resolved.map { (declaration, result) ->
         if (result.hit && result.hitLocation != null) {
             val target = updatedState.unitById(result.targetId)
-            if (target == null) {
-                declaration to result
-            } else {
-                val resolution = resolveDamage(
-                    unit = target,
-                    location = result.hitLocation,
-                    damage = result.damageApplied,
-                    useRearArmor = result.attackDirection == AttackDirection.REAR,
-                )
-                updatedState = updatedState.withUnit(resolution.unit)
-                declaration to result.copy(damage = resolution.steps)
-            }
+            val resolution = resolveDamage(
+                unit = target,
+                location = result.hitLocation,
+                damage = result.damageApplied,
+                useRearArmor = result.attackDirection == AttackDirection.REAR,
+            )
+            updatedState = updatedState.withUnit(resolution.unit)
+            declaration to result.copy(damage = resolution.steps)
         } else {
             declaration to result
         }
@@ -53,7 +49,7 @@ public fun resolvePhysicalAttacks(
 
         val fallerId = if (result.hit) result.targetId else result.attackerId
         val faller = updatedState.unitById(fallerId)
-        if (faller == null || faller.isProne) return@map result
+        if (faller.isProne) return@map result
 
         // Include gyro + leg PSR penalties in the knockdown roll.
         val psrModifier = gyroPsrModifier(faller) + legPsrModifier(faller)
@@ -78,8 +74,8 @@ private fun resolveOnePhysicalAttack(
     gameState: GameState,
     roller: DiceRoller,
 ): PhysicalAttackResult {
-    val attacker = gameState.unitById(declaration.attackerId)!!
-    val target = gameState.unitById(declaration.targetId)!!
+    val attacker = gameState.unitById(declaration.attackerId)
+    val target = gameState.unitById(declaration.targetId)
     val direction = attackDirection(attacker, target)
 
     val targetNumber = physicalToHitTargetNumber(attacker, target, declaration.kind, gameState)

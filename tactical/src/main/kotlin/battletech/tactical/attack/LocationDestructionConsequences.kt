@@ -47,9 +47,9 @@ internal fun applyLocationDestructionConsequences(
     val fallPendingUnitIds = mutableListOf<UnitId>()
 
     for (unit in after.units.sortedBy { it.id.value }) {
-        val beforeUnit = before.unitById(unit.id) ?: continue
+        val beforeUnit = before.unitById(unit.id)
         // Use the most-current version of this unit (modified by previous iterations if needed).
-        var updatedUnit = state.unitById(unit.id) ?: continue
+        var updatedUnit = state.unitById(unit.id)
 
         // Find all locations newly destroyed in this pass.
         val newlyDestroyed = MechLocation.entries.filter { location ->
@@ -110,7 +110,7 @@ internal fun applyLocationDestructionConsequences(
     // Each fall also applies 1 pilot hit via forcedFall (canonical dice order per unit:
     // fall location 2d6 + facing 1d6 + consciousness check 2d6).
     for (unitId in fallPendingUnitIds) {
-        val unit = state.unitById(unitId) ?: continue
+        val unit = state.unitById(unitId)
         if (unit.isProne) continue  // already prone (e.g. from gyro fall earlier this pass)
         val (injured, fallEvents) = forcedFall(unit, roller)
         state = state.copy(

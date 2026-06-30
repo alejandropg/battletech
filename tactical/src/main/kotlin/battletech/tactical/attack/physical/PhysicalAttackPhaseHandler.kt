@@ -56,7 +56,6 @@ public class PhysicalAttackPhaseHandler : ImpulseAttackPhaseHandler() {
 
         for (decl in cmd.declarations) {
             val attacker = state.unitById(decl.attackerId)
-                ?: return CommandRejection.UnknownUnit(decl.attackerId)
 
             if (attacker.owner != cmd.playerId) {
                 return CommandRejection.NotYourTurn(
@@ -66,7 +65,6 @@ public class PhysicalAttackPhaseHandler : ImpulseAttackPhaseHandler() {
             }
 
             val target = state.unitById(decl.targetId)
-                ?: return CommandRejection.UnknownUnit(decl.targetId)
 
             if (target.owner == attacker.owner) {
                 return CommandRejection.FriendlyFire(decl.targetId)
@@ -88,7 +86,6 @@ public class PhysicalAttackPhaseHandler : ImpulseAttackPhaseHandler() {
 
         for ((unitId, newFacing) in cmd.torsoFacings) {
             val unit = state.unitById(unitId)
-                ?: return CommandRejection.UnknownUnit(unitId)
 
             if (unit.owner != cmd.playerId) {
                 return CommandRejection.NotYourTurn(

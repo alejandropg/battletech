@@ -63,7 +63,7 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
         facings: Map<UnitId, HexDirection>,
         events: MutableList<GameEvent>,
     ): GameState {
-        val changed = facings.filter { (unitId, facing) -> state.unitById(unitId)?.torsoFacing != facing }
+        val changed = facings.filter { (unitId, facing) -> state.unitById(unitId).torsoFacing != facing }
         if (changed.isEmpty()) return state
         events += TorsoFacingsApplied(changed)
         return state.applyTorsoFacings(changed)
@@ -101,7 +101,7 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
         var state = after
         val events = mutableListOf<GameEvent>()
         for (afterUnit in after.units) {
-            val beforeUnit = before.unitById(afterUnit.id) ?: continue
+            val beforeUnit = before.unitById(afterUnit.id)
             val beforeCrits = beforeUnit.gyroCritCount()
             val afterCrits = afterUnit.gyroCritCount()
             if (afterUnit.isProne) continue

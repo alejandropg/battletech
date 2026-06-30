@@ -10,7 +10,6 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
-import battletech.tactical.session.applyWeaponHeat
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.GameCommand
@@ -18,6 +17,7 @@ import battletech.tactical.session.GameEvent
 import battletech.tactical.session.PhaseOutcome
 import battletech.tactical.session.RuleRejection
 import battletech.tactical.session.TurnState
+import battletech.tactical.session.applyWeaponHeat
 
 /**
  * Weapon-fire attack phase. On entry seeds the attack impulse sequence
@@ -57,7 +57,6 @@ public class WeaponAttackPhaseHandler : ImpulseAttackPhaseHandler() {
 
         for (decl in cmd.declarations) {
             val attacker = state.unitById(decl.attackerId)
-                ?: return CommandRejection.UnknownUnit(decl.attackerId)
 
             if (attacker.owner != cmd.playerId) {
                 return CommandRejection.NotYourTurn(
@@ -71,7 +70,6 @@ public class WeaponAttackPhaseHandler : ImpulseAttackPhaseHandler() {
             }
 
             val target = state.unitById(decl.targetId)
-                ?: return CommandRejection.UnknownUnit(decl.targetId)
 
             if (target.owner == attacker.owner) {
                 return CommandRejection.FriendlyFire(decl.targetId)
@@ -94,7 +92,6 @@ public class WeaponAttackPhaseHandler : ImpulseAttackPhaseHandler() {
 
         for ((unitId, newFacing) in cmd.torsoFacings) {
             val unit = state.unitById(unitId)
-                ?: return CommandRejection.UnknownUnit(unitId)
 
             if (unit.owner != cmd.playerId) {
                 return CommandRejection.NotYourTurn(
