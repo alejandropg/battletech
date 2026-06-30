@@ -134,7 +134,9 @@ If you score a critical hit on the **Right Torso** of two different Mechs, your 
   - **2nd:** All primary targeting suites are completely blinded. **The Mech can no longer fire any of its weapons systems** for the remainder of the match.
  
 - **Weapons:** A critically hit weapon is rendered completely non-functional for the remainder of the game.
-- **Ammunition (Ammo Explosion):** If a critical hit strikes a slot containing live ammunition, the entire remaining payload detonates instantly. The total damage of all remaining shots in that bin is applied directly to that location's Internal Structure and damage transfer rule.
+- **Ammunition (Ammo Explosion):** If a critical hit strikes a slot containing live ammunition, the entire remaining payload detonates instantly. The total damage of all remaining shots in that bin is applied directly to that location's Internal Structure and damage transfer rule. An ammo explosion also injures the MechWarrior (see [`pilot.md`](pilot.md)).
+- **Cockpit:** A cockpit critical hit kills the MechWarrior outright. The Mech is immediately destroyed (see [`pilot.md`](pilot.md) and the *Mech Destruction* section below).
+- **Actuators:** Limbs carry actuators in their critical slots — Shoulder / Upper-Arm / Lower-Arm / Hand in the arms, and Hip / Upper-Leg / Lower-Leg / Foot in the legs. A destroyed actuator degrades that limb's physical attacks and adds piloting/firing modifiers. A **Hip** hit is the most severe: it halves that leg's Movement Points.
 
 
 - Life Support: 2 Critical Hits Max:
@@ -149,6 +151,8 @@ If you score a critical hit on the **Right Torso** of two different Mechs, your 
 | **Gyro**         | +3 to all Piloting Skill Rolls        | **Immobilized** (Cannot stand)    | *N/A*              |
 | **Sensors**      | +2 to-hit on all attacks              | **Cannot fire weapons**           | *N/A*              |
 | **Life Support** | Pilot takes damage if Mech Heat >= 15 | Pilot takes damage **every turn** | *N/A*              |
+| **Cockpit**      | **Pilot killed → Mech Destroyed**     | *N/A*                             | *N/A*              |
+| **Actuator**     | Degrades physical attacks; piloting/firing modifier (Hip: halves leg MP) | — | *N/A* |
 
 ---
 
@@ -190,3 +194,39 @@ To see how these rules interact on a standard record sheet, let's look at an **A
 4. **Critical Check:** Because the internal structure took damage, the player rolls 2d6 on the Critical Hit Table and gets a **9** ($1\text{ Critical Hit}$).
 5. **Determine Slot:** The player rolls a 1d6 to see which item is hit. They roll a **1**.
 6. **Result:** The *Medium Laser* in Slot 1 is critically hit and crossed out. It can no longer be fired. The remaining 7 points of structure hold, and the Mech survives to fight another turn!
+
+---
+
+## 7. Mech Destruction (Unit Elimination)
+
+A BattleMech is destroyed and removed from play the instant **any** of the following occurs:
+
+- **Head** Internal Structure reduced to 0.
+- **Center Torso** Internal Structure reduced to 0.
+- **Both legs** destroyed.
+- The **Engine** takes **3** critical hits.
+- The **Gyro** is destroyed (2 hits) and the Mech can no longer stand.
+- An **ammo explosion** breaches the Center Torso's Internal Structure.
+- The **pilot dies** — 6 pilot hits, or a Cockpit critical (see [`pilot.md`](pilot.md)).
+
+A destroyed Mech leaves a wreck in its hex: the hex remains terrain-neutral and passable, and the
+wreck cannot be targeted by weapon or physical attacks.
+
+> A **head hit that penetrates to Internal Structure** also injures the pilot (see [`pilot.md`](pilot.md)).
+
+---
+
+## 8. Location Destruction Consequences
+
+Destroying a location has cascading effects beyond the loss of its armor and structure:
+
+- **Arm or Leg destroyed** — all weapons, ammo, and actuators mounted in that limb are lost.
+- **Side Torso destroyed** — the **arm attached to that side torso is also destroyed**, taking all of
+  its mounted weapons and ammo with it.
+- **One Leg destroyed** — the Mech immediately **falls** (taking fall damage and a pilot hit), and for
+  the rest of the game it can only "hobble": remaining Movement is **halved**, **jumping is disabled**,
+  and it suffers a piloting penalty.
+- **Both Legs destroyed** — the Mech is destroyed (see *Mech Destruction* above).
+
+These follow directly from the *Damage Transfer Rule* (§5), per-location weapon mounting (the slot
+grid in §3), and the *Critical Hit System* (§3).
