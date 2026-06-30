@@ -27,13 +27,14 @@ internal class FireWeaponActionDefinitionTest {
 
     @Test
     fun `rules include all weapon rules`() {
-        assertThat(definition.rules).hasSize(5)
+        assertThat(definition.rules).hasSize(6)
         assertThat(definition.rules.map { it::class }).containsExactlyInAnyOrder(
             WeaponNotDestroyedRule::class,
             HasAmmoRule::class,
             InRangeRule::class,
             HeatPenaltyRule::class,
             SubmergedWeaponRule::class,
+            LineOfSightRule::class,
         )
     }
 

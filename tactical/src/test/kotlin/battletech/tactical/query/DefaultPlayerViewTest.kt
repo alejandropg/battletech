@@ -224,6 +224,43 @@ internal class DefaultPlayerViewTest {
     }
 
     @Test
+    fun `validTargets excludes enemy in arc and range when line of sight is blocked by woods`() {
+        // Attacker at (0,0) facing N; enemy at (0,-3) — 3 hexes north, within weapon long range.
+        // Intervening: (0,-1) HEAVY_WOODS (2 levels) + (0,-2) LIGHT_WOODS (1 level) = 3 levels >= threshold -> blocked.
+        val attacker = aUnit(id = "attacker", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, -3))
+        val hexes = mapOf(
+            HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0), Terrain.CLEAR),
+            HexCoordinates(0, -1) to Hex(HexCoordinates(0, -1), Terrain.HEAVY_WOODS),
+            HexCoordinates(0, -2) to Hex(HexCoordinates(0, -2), Terrain.LIGHT_WOODS),
+            HexCoordinates(0, -3) to Hex(HexCoordinates(0, -3), Terrain.CLEAR),
+        )
+        val state = aGameState(units = listOf(attacker, enemy), hexes = hexes)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+
+        assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).isEmpty()
+        assertThat(view.targetInfos(UnitId("attacker"), HexDirection.N)).isEmpty()
+    }
+
+    @Test
+    fun `validTargets includes enemy in arc and range when line of sight is clear`() {
+        // Same layout as above but all clear terrain — LOS unobstructed, enemy is valid.
+        val attacker = aUnit(id = "attacker", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+        val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, -3))
+        val hexes = mapOf(
+            HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0), Terrain.CLEAR),
+            HexCoordinates(0, -1) to Hex(HexCoordinates(0, -1), Terrain.CLEAR),
+            HexCoordinates(0, -2) to Hex(HexCoordinates(0, -2), Terrain.CLEAR),
+            HexCoordinates(0, -3) to Hex(HexCoordinates(0, -3), Terrain.CLEAR),
+        )
+        val state = aGameState(units = listOf(attacker, enemy), hexes = hexes)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+
+        assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).containsExactly(UnitId("enemy"))
+        assertThat(view.targetInfos(UnitId("attacker"), HexDirection.N)).hasSize(1)
+    }
+
+    @Test
     fun `targetInfos applies the prone modifier so the preview agrees with resolution`() {
         // Regression test: targetInfos previously omitted the prone modifier, so the
         // previewed target number disagreed with the resolver's (which already applies

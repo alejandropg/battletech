@@ -22,6 +22,7 @@ public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> 
         InRangeRule(),
         HeatPenaltyRule(),
         SubmergedWeaponRule(),
+        LineOfSightRule(),
     )
 
     override fun expand(actor: CombatUnit, gameState: GameState): List<WeaponAttackContext> {

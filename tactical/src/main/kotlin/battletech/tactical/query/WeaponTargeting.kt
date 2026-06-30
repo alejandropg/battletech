@@ -1,5 +1,6 @@
 package battletech.tactical.query
 
+import battletech.tactical.attack.lineOfSight
 import battletech.tactical.attack.nonZero
 import battletech.tactical.attack.total
 import battletech.tactical.attack.weaponToHitModifiers
@@ -35,6 +36,7 @@ internal class WeaponTargeting(private val state: PublicGameState) {
             .filter { it.owner != attacker.owner }
             .filter { !it.isDestroyed }
             .filter { it.position in arc }
+            .filter { enemy -> !lineOfSight(attacker, enemy, state.map).blocked }
             .filter { enemy -> hasEligibleWeapon(attacker, enemy) }
             .map { it.id }
             .toSet()
