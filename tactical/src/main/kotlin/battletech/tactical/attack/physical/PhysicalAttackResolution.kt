@@ -6,6 +6,7 @@ import battletech.tactical.attack.fall
 import battletech.tactical.attack.resolveDamage
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
+import battletech.tactical.model.withUnit
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.gyroPsrModifier
 import battletech.tactical.unit.legPsrModifier
@@ -38,7 +39,7 @@ public fun resolvePhysicalAttacks(
                     damage = result.damageApplied,
                     useRearArmor = result.attackDirection == AttackDirection.REAR,
                 )
-                updatedState = updatedState.replacing(resolution.unit)
+                updatedState = updatedState.withUnit(resolution.unit)
                 declaration to result.copy(damage = resolution.steps)
             }
         } else {
@@ -64,16 +65,13 @@ public fun resolvePhysicalAttacks(
             // Canonical dice order: fall location 2d6, facing 1d6, consciousness check 2d6.
             val (fallen, fallResult) = fall(faller, roller)
             val (injured, pilotEvents) = applyPilotHit(fallen, roller)
-            updatedState = updatedState.replacing(injured)
+            updatedState = updatedState.withUnit(injured)
             result.copy(psr = psr, fall = fallResult, fallenUnitId = fallerId, fallPilotEvents = pilotEvents)
         }
     }
 
     return updatedState to finalResults
 }
-
-private fun GameState.replacing(unit: CombatUnit): GameState =
-    copy(units = units.map { if (it.id == unit.id) unit else it })
 
 private fun resolveOnePhysicalAttack(
     declaration: PhysicalAttackDeclaration,

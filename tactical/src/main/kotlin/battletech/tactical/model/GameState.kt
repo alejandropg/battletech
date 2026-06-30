@@ -22,3 +22,9 @@ public data class GameState(
     public fun activeUnitsOf(player: PlayerId): List<CombatUnit> =
         unitsOf(player).filter { !it.isShutdown && !it.isDestroyed && it.isPilotConscious }
 }
+
+public fun GameState.withUnit(unit: CombatUnit): GameState =
+    copy(units = units.map { if (it.id == unit.id) unit else it })
+
+public fun GameState.mapUnits(transform: (CombatUnit) -> CombatUnit): GameState =
+    copy(units = units.map(transform))

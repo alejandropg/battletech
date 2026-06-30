@@ -4,6 +4,7 @@ import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
+import battletech.tactical.model.withUnit
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.Impulse
@@ -13,7 +14,6 @@ import battletech.tactical.session.PhaseOutcome
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.calculateAttackOrder
-import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.GYRO_DESTROYED_AT
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.gyroCritCount
@@ -120,16 +120,13 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
             }
 
             if (fallEvents.isNotEmpty()) {
-                state = state.replacingUnit(updatedUnit)
+                state = state.withUnit(updatedUnit)
                 events += fallEvents
             }
         }
         return state to events
     }
 }
-
-private fun GameState.replacingUnit(unit: CombatUnit): GameState =
-    copy(units = units.map { if (it.id == unit.id) unit else it })
 
 internal fun attackOrderFor(initiative: Initiative, state: GameState): List<Impulse> {
     val loser = initiative.loser

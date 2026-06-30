@@ -3,6 +3,7 @@ package battletech.tactical.session
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.heat.weaponHeatSource
 import battletech.tactical.model.GameState
+import battletech.tactical.model.mapUnits
 import battletech.tactical.model.submersionDissipationBonus
 import battletech.tactical.unit.engineHeatPerTurn
 
@@ -25,14 +26,13 @@ import battletech.tactical.unit.engineHeatPerTurn
  */
 public fun GameState.applyHeatPhase(): GameState {
     val snapshot = this
-    val updatedUnits = units.map { unit ->
+    return mapUnits { unit ->
         val generated = unit.heatGeneratedThisTurn.sumOf { it.amount }
         val engineHeat = unit.engineHeatPerTurn()
         val waterBonus = submersionDissipationBonus(unit, snapshot)
         val newHeat = maxOf(0, unit.currentHeat + generated + engineHeat - unit.heatSink.dissipation() - waterBonus)
         unit.copy(currentHeat = newHeat, heatGeneratedThisTurn = emptyList())
     }
-    return copy(units = updatedUnits)
 }
 
 /**
@@ -43,12 +43,15 @@ public fun GameState.applyHeatPhase(): GameState {
 public fun GameState.applyWeaponHeat(declarations: List<AttackDeclaration>): GameState {
     if (declarations.isEmpty()) return this
     val declarationsByUnit = declarations.groupBy { it.attackerId }
-    val updatedUnits = units.map { unit ->
-        val unitDeclarations = declarationsByUnit[unit.id] ?: return@map unit
-        val sources = unitDeclarations.mapNotNull { declaration ->
-            unit.weapons.getOrNull(declaration.weaponIndex)?.let(::weaponHeatSource)
+    return mapUnits { unit ->
+        val unitDeclarations = declarationsByUnit[unit.id]
+        if (unitDeclarations == null) {
+            unit
+        } else {
+            val sources = unitDeclarations.mapNotNull { declaration ->
+                unit.weapons.getOrNull(declaration.weaponIndex)?.let(::weaponHeatSource)
+            }
+            unit.copy(heatGeneratedThisTurn = unit.heatGeneratedThisTurn + sources)
         }
-        unit.copy(heatGeneratedThisTurn = unit.heatGeneratedThisTurn + sources)
     }
-    return copy(units = updatedUnits)
 }
