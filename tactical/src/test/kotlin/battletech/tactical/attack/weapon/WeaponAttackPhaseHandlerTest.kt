@@ -345,7 +345,8 @@ internal class WeaponAttackPhaseHandlerTest {
         // crit check fires on CENTER_TORSO. Crit roll 4+5=9 -> 1 crit; block 1
         // (upper), slot 4 -> index 3 (Gyro, 1st crit).
         // Gyro PSR (TN 5+3=8): roll 2+3=5 -> fails -> fall (loc 2+3=5, facing d6=1).
-        val roller = DiceRoller.deterministic(4, 4, 3, 4, 4, 5, 1, 4, 2, 3, 2, 3, 1)
+        // pilot hit 1 consciousness 2d6 (3,3 → 6 ≥ target 3 → conscious).
+        val roller = DiceRoller.deterministic(4, 4, 3, 4, 4, 5, 1, 4, 2, 3, 2, 3, 1, 3, 3)
 
         val outcome = handler.apply(cmd, thinCtGameState, thinCtTurn(declaration), roller)
 
@@ -392,7 +393,8 @@ internal class WeaponAttackPhaseHandlerTest {
         // (IS 10->5), one crit check: 4+5=9 -> 1 crit; block 1 (upper), slot 5 -> index 4
         // (Gyro, 2nd crit). gyro crits 1 -> 2 => shattered: automatic crash, NO PSR roll.
         // fall: location 2+3=5, facing d6=1.
-        val roller = DiceRoller.deterministic(4, 4, 3, 4, 4, 5, 1, 5, 2, 3, 1)
+        // pilot hit 1 consciousness 2d6 (3,3 → 6 ≥ target 3 → conscious).
+        val roller = DiceRoller.deterministic(4, 4, 3, 4, 4, 5, 1, 5, 2, 3, 1, 3, 3)
 
         val outcome = handler.apply(cmd, state, thinCtTurn(declaration), roller)
 

@@ -251,7 +251,7 @@ internal class DefaultPlayerViewTest {
 
         val expectedTargetNumber = (
             attacker.gunnerySkill +
-                weaponToHitModifiers(attacker, proneEnemy, weapon, distance, isPrimaryTarget = true).total()
+                weaponToHitModifiers(attacker, proneEnemy, weapon, distance, isPrimaryTarget = true, gameState = state).total()
             ).coerceAtLeast(2)
 
         assertThat(weaponInfo.targetDiceRoll).isEqualTo(expectedTargetNumber)

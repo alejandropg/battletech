@@ -4,6 +4,7 @@ import battletech.tactical.attack.FallResult
 import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.LocationDamage
 import battletech.tactical.dice.DiceRoll
+import battletech.tactical.session.GameEvent
 import battletech.tactical.unit.PilotingSkillRoll
 import battletech.tactical.unit.UnitId
 
@@ -27,4 +28,11 @@ public data class PhysicalAttackResult(
     /** Which unit fell as a consequence of this attack, if any. */
     public val fallenUnitId: UnitId? = null,
     public val damage: List<LocationDamage> = emptyList(),
+    /**
+     * Pilot-hit events ([battletech.tactical.session.PilotHit] /
+     * [battletech.tactical.session.PilotKnockedUnconscious]) resulting from a kick-knockdown
+     * fall. Empty for punches or kicks where no fall occurred. Emitted by
+     * [battletech.tactical.attack.physical.PhysicalAttackPhaseHandler] alongside [UnitFell].
+     */
+    public val fallPilotEvents: List<GameEvent> = emptyList(),
 )

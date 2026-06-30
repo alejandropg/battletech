@@ -27,7 +27,8 @@ internal class PhysicalKickKnockdownTest {
     fun `a landed kick that fails the target PSR knocks the target down`() {
         // to-hit TN = 5 - 2 = 3; roll 2+2 = 4 (hit); location 1 -> Right Leg.
         // target PSR TN 5; roll 1+1 = 2 (fail). fall: location 3+4 = 7 -> CT; facing 1 -> no change.
-        val roller = DiceRoller.deterministic(2, 2, 1, 1, 1, 3, 4, 1)
+        // pilot hit 1 consciousness 2d6 (3,3 → 6 ≥ target 3 → conscious).
+        val roller = DiceRoller.deterministic(2, 2, 1, 1, 1, 3, 4, 1, 3, 3)
         val (newState, results) = resolvePhysicalAttacks(listOf(kick()), state, roller)
 
         val result = results.single()
@@ -49,7 +50,8 @@ internal class PhysicalKickKnockdownTest {
     fun `a missed kick that fails the attacker PSR knocks the attacker down`() {
         // to-hit TN 3; roll 1+1 = 2 (miss). attacker PSR TN 5; roll 1+1 = 2 (fail).
         // fall: location 3+4 = 7 -> CT; facing 1.
-        val roller = DiceRoller.deterministic(1, 1, 1, 1, 3, 4, 1)
+        // pilot hit 1 consciousness 2d6 (3,3 → 6 ≥ target 3 → conscious).
+        val roller = DiceRoller.deterministic(1, 1, 1, 1, 3, 4, 1, 3, 3)
         val (newState, results) = resolvePhysicalAttacks(listOf(kick()), state, roller)
 
         val result = results.single()

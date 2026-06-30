@@ -64,8 +64,9 @@ internal class PhysicalAttackPhaseHandlerTest {
             declarations = listOf(PhysicalAttackDeclaration(attacker.id, target.id, Kick(Side.RIGHT))),
             torsoFacings = emptyMap(),
         )
-        // hit (2+2, TN 3); location 1; target PSR 1+1 fail; fall 3+4 -> CT; facing 1.
-        val roller = DiceRoller.deterministic(2, 2, 1, 1, 1, 3, 4, 1)
+        // hit (2+2, TN 3); location 1; target PSR 1+1 fail; fall 3+4 -> CT; facing 1;
+        // pilot hit 1 consciousness 2d6 (3,3 → 6 ≥ target 3 → conscious).
+        val roller = DiceRoller.deterministic(2, 2, 1, 1, 1, 3, 4, 1, 3, 3)
 
         val outcome = handler.apply(command, gameState, turnWithOneImpulse(), roller)
 

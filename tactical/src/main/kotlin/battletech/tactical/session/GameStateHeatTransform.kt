@@ -3,24 +3,33 @@ package battletech.tactical.session
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.heat.weaponHeatSource
 import battletech.tactical.model.GameState
+import battletech.tactical.model.submersionDissipationBonus
 import battletech.tactical.unit.engineHeatPerTurn
 
 /**
  * Fold each unit's heat generated this turn into its standing heat and apply
- * dissipation: `newHeat = max(0, current + generated + engineHeat - capacity)`. The
- * per-turn generation list is consumed and cleared (this is also its reset). Engine
+ * dissipation: `newHeat = max(0, current + generated + engineHeat - capacity - waterBonus)`.
+ * The per-turn generation list is consumed and cleared (this is also its reset). Engine
  * critical hits add a flat `5 × engineCritCount()` heat every turn (1st crit +5, 2nd
  * +10; a 3rd destroys the unit outright via the destruction sweep, so it never
  * reaches this fold) — it is generated heat for the turn, so it's folded in
- * alongside weapon/movement heat, before dissipation. Shutdown and ammo-explosion
- * consequences are rolled separately in [HeatPhaseHandler] since they require the
- * dice roller.
+ * alongside weapon/movement heat, before dissipation.
+ *
+ * **Water submersion dissipation bonus**: units standing in water receive extra
+ * dissipation from [submersionDissipationBonus] — +6 at depth 1 (legs submerged),
+ * +12 at depth 2+ (fully submerged). See [battletech.tactical.model.submersionDissipationBonus]
+ * for the ASSUMPTION/simplification rationale.
+ *
+ * Shutdown and ammo-explosion consequences are rolled separately in [HeatPhaseHandler]
+ * since they require the dice roller.
  */
 public fun GameState.applyHeatPhase(): GameState {
+    val snapshot = this
     val updatedUnits = units.map { unit ->
         val generated = unit.heatGeneratedThisTurn.sumOf { it.amount }
         val engineHeat = unit.engineHeatPerTurn()
-        val newHeat = maxOf(0, unit.currentHeat + generated + engineHeat - unit.heatSink.dissipation())
+        val waterBonus = submersionDissipationBonus(unit, snapshot)
+        val newHeat = maxOf(0, unit.currentHeat + generated + engineHeat - unit.heatSink.dissipation() - waterBonus)
         unit.copy(currentHeat = newHeat, heatGeneratedThisTurn = emptyList())
     }
     return copy(units = updatedUnits)

@@ -21,6 +21,7 @@ public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> 
         HasAmmoRule(),
         InRangeRule(),
         HeatPenaltyRule(),
+        SubmergedWeaponRule(),
     )
 
     override fun expand(actor: CombatUnit, gameState: GameState): List<WeaponAttackContext> {
@@ -50,7 +51,7 @@ public class FireWeaponActionDefinition : AttackDefinition<WeaponAttackContext> 
         val weapon = context.weapon
         val distance = context.actor.position.distanceTo(context.target.position)
         if (distance > weapon.longRange) return 0
-        val modifiers = weaponToHitModifiers(context.actor, context.target, weapon, distance, isPrimaryTarget = true)
+        val modifiers = weaponToHitModifiers(context.actor, context.target, weapon, distance, isPrimaryTarget = true, context.gameState)
         val targetNumber = context.actor.gunnerySkill + modifiers.total()
         return TWO_D6_PROBABILITY.getOrElse(targetNumber.coerceAtLeast(2)) { 0 }
     }

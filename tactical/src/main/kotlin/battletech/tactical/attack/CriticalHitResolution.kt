@@ -106,12 +106,29 @@ public fun detonateAmmoBin(
 }
 
 /** Sets `destroyed = true` on the unit's [Weapon] mounted at [weaponId], if any. */
-private fun CombatUnit.withWeaponDestroyed(weaponId: WeaponMountId): CombatUnit =
+internal fun CombatUnit.withWeaponDestroyed(weaponId: WeaponMountId): CombatUnit =
     copy(
         weapons = weapons.map { weapon ->
             if (weapon.mountId == weaponId) weapon.copy(destroyed = true) else weapon
         },
     )
+
+/**
+ * Marks every weapon mounted in [location] as destroyed (`destroyed = true`). Used by
+ * both the crit-driven limb-blow-off path and the raw-damage location-destruction path
+ * so both share a single implementation. Idempotent — already-destroyed weapons are
+ * unchanged. Weapons in other locations are unaffected.
+ */
+internal fun CombatUnit.disableWeaponsIn(location: MechLocation): CombatUnit {
+    val weaponIds = criticalLayout.weaponIdsAt(location)
+    if (weaponIds.isEmpty()) return this
+    return copy(
+        weapons = weapons.map { weapon ->
+            if (weapon.mountId != null && weapon.mountId in weaponIds) weapon.copy(destroyed = true)
+            else weapon
+        },
+    )
+}
 
 /**
  * Applies the per-component consequence of destroying [content] at [location] on
@@ -152,11 +169,19 @@ private fun CombatUnit.withLimbBlownOff(location: MechLocation): CombatUnit {
  * Each newly-destroyed slot's per-component consequence is applied immediately
  * (`docs/rules/armor-damage.md` §3): a weapon-mount slot disables that weapon; an
  * ammo-bin slot detonates ([detonateAmmoBin]) into its own location, which can itself
- * cause further IS damage (caught by the session's later destruction sweep).
+ * cause further IS damage (caught by the session's later destruction sweep). An ammo
+ * explosion also inflicts 2 pilot hits on the unit (each hit runs a consciousness check
+ * 2d6 via [applyPilotHit], immediately after the [AmmoExploded] event).
  *
- * Pure: returns the fully-updated [CombatUnit] alongside the [GameEvent]s produced —
- * one [CriticalHit] per destroyed slot, plus an [AmmoExploded] per ammo detonation —
- * in slot-resolution order. All dice flow through [roller]; no raw `Random`.
+ * **Canonical dice order per crit slot** (for seeded tests):
+ *  - 2d6 crit table, then per scored crit: 1d6 block + 1d6 slot (with roll-again).
+ *  - For an ammo-bin slot: after [AmmoExploded], consciousness check 2d6 (hit 1),
+ *    then consciousness check 2d6 (hit 2).
+ *
+ * Returns the fully-updated [CombatUnit] alongside the [GameEvent]s produced —
+ * one [CriticalHit] per destroyed slot, [AmmoExploded] and [battletech.tactical.session.PilotHit]
+ * events per ammo detonation — in slot-resolution order. All dice flow through [roller];
+ * no raw `Random`.
  */
 public fun resolveCriticalHits(
     unit: CombatUnit,
@@ -176,7 +201,16 @@ public fun resolveCriticalHits(
             events += CriticalHit(currentUnit.id, location, index, content)
             val (afterConsequence, ammoEvent) = currentUnit.applyCritConsequence(location, index, content)
             currentUnit = afterConsequence
-            ammoEvent?.let { events += it }
+            ammoEvent?.let {
+                events += it
+                // Ammo explosion: pilot takes 2 hits (standard BT rule). Each hit runs a
+                // consciousness check via applyPilotHit; dice order: hit-1 2d6, hit-2 2d6.
+                repeat(2) {
+                    val (afterHit, hitEvents) = applyPilotHit(currentUnit, roller)
+                    currentUnit = afterHit
+                    events += hitEvents
+                }
+            }
         }
         return currentUnit.withLimbBlownOff(location) to events
     }
@@ -192,7 +226,16 @@ public fun resolveCriticalHits(
         events += CriticalHit(currentUnit.id, location, pick.index, pick.content)
         val (afterConsequence, ammoEvent) = currentUnit.applyCritConsequence(location, pick.index, pick.content)
         currentUnit = afterConsequence
-        ammoEvent?.let { events += it }
+        ammoEvent?.let {
+            events += it
+            // Ammo explosion: pilot takes 2 hits (standard BT rule). Each hit runs a
+            // consciousness check via applyPilotHit; dice order: hit-1 2d6, hit-2 2d6.
+            repeat(2) {
+                val (afterHit, hitEvents) = applyPilotHit(currentUnit, roller)
+                currentUnit = afterHit
+                events += hitEvents
+            }
+        }
     }
     return currentUnit to events
 }

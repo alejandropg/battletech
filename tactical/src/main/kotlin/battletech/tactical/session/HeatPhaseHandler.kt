@@ -9,10 +9,12 @@ import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.unitWaterDepth
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.CriticalComponent
 import battletech.tactical.unit.CritEffect
 import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
+import battletech.tactical.unit.availableAmmoBins
 import battletech.tactical.unit.critEffects
 
 /**
@@ -34,6 +36,11 @@ import battletech.tactical.unit.critEffects
  *  4. [resolveAmmoExplosion] — heat-driven ammo cook-off (last, since it can
  *     itself wound the pilot in a later stage and we want LS/recovery settled
  *     first against this turn's heat).
+ *  5. [resolveDrowning] — cockpit flooding for a **prone** unit in depth-2+ water.
+ *     A prone unit submerged in deep water takes 1 pilot hit per Heat Phase
+ *     (ASSUMPTION/standard BattleTech). Placed last so all other pilot-damage
+ *     sources are settled before the drowning check runs; a pilot knocked out by
+ *     drowning will not attempt a recovery roll in the same phase.
  *
  * Completes immediately. Accepts no commands.
  */
@@ -84,9 +91,13 @@ public class HeatPhaseHandler : PhaseHandler {
             recoveryEvent?.let { events += it }
             working = afterRecovery
 
-            val (afterAmmo, ammoEvent) = resolveAmmoExplosion(working, roller)
-            ammoEvent?.let { events += it }
-            afterAmmo
+            val (afterAmmo, ammoEvents) = resolveAmmoExplosion(working, roller)
+            events += ammoEvents
+            working = afterAmmo
+
+            val (afterDrowning, drowningEvents) = resolveDrowning(working, folded, roller)
+            events += drowningEvents
+            afterDrowning
         }
 
         return PhaseOutcome(folded.copy(units = processedUnits), turn, events)
@@ -177,23 +188,73 @@ public class HeatPhaseHandler : PhaseHandler {
     }
 
     /**
+     * Cockpit flooding: a **prone** unit standing in depth-2+ water drowns. The pilot
+     * takes 1 hit per Heat Phase while the unit remains prone and submerged
+     * (`docs/missing-rules.md` §Water & Depth — ASSUMPTION/standard BattleTech).
+     *
+     * Only targets prone (`isProne`) units whose pilot is still alive (`pilotHits <
+     * [PILOT_DEATH_THRESHOLD]`). Destroyed units are already swept by
+     * [battletech.tactical.session.BattleSession.runDestructionSweep] before the Heat
+     * Phase begins, so they are skipped via the `isDestroyed` guard.
+     *
+     * Placed last in the Heat Phase sequence so all earlier pilot-damage sources
+     * (life support, ammo cook-off) are settled first; a pilot knocked unconscious by
+     * drowning does not also attempt a recovery roll this same phase.
+     *
+     * **Canonical dice order** (when drowning applies):
+     *  1. Consciousness check 2d6 (from [applyPilotHit])
+     */
+    private fun resolveDrowning(
+        unit: CombatUnit,
+        gameState: GameState,
+        roller: DiceRoller,
+    ): Pair<CombatUnit, List<GameEvent>> {
+        if (unit.isDestroyed) return unit to emptyList()
+        if (!unit.isProne) return unit to emptyList()
+        val depth = unitWaterDepth(unit, gameState)
+        if (depth < 2) return unit to emptyList()
+        return applyPilotHit(unit, roller)
+    }
+
+    /**
      * Ammo explosion: on a failed avoidance roll the ammo bin with the greatest
      * potential damage (`shots × damagePerShot`) cooks off into the center torso
      * (`docs/rules/armor-damage.md` §3), via the shared [detonateAmmoBin] helper —
      * unlike a critical-hit detonation (which hits the bin's own location), heat
-     * cook-off always routes into [HitLocation.CENTER_TORSO].
+     * cook-off always routes into [HitLocation.CENTER_TORSO]. An ammo explosion also
+     * inflicts 2 pilot hits on the unit (each running a consciousness check 2d6 via
+     * [applyPilotHit], immediately after the [AmmoExploded] event).
+     *
+     * **Canonical dice order** (when explosion occurs):
+     *  1. Avoidance 2d6
+     *  2. (no detonation dice — damage is fixed from bin contents)
+     *  3. Consciousness check 2d6 (pilot hit 1)
+     *  4. Consciousness check 2d6 (pilot hit 2)
      */
-    private fun resolveAmmoExplosion(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit, GameEvent?> {
-        val target = HeatScale.ammoExplosionAvoidTarget(unit.currentHeat) ?: return unit to null
+    private fun resolveAmmoExplosion(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit, List<GameEvent>> {
+        val target = HeatScale.ammoExplosionAvoidTarget(unit.currentHeat) ?: return unit to emptyList()
         val roll = roller.roll2d6()
-        if (roll.total >= target) return unit to null
+        if (roll.total >= target) return unit to emptyList()
 
-        val worst = unit.criticalLayout.ammoBins()
+        // Only consider bins in locations whose IS is still positive; destroyed-location
+        // bins are inaccessible (feed mechanism gone) and should not cook off.
+        val worst = unit.availableAmmoBins()
             .filter { (_, _, bin) -> bin.shots > 0 }
             .maxByOrNull { (_, _, bin) -> bin.shots * bin.type.damagePerShot }
-            ?: return unit to null // nothing to explode
+            ?: return unit to emptyList() // nothing to explode
 
         val (location, slotIndex, bin) = worst
-        return detonateAmmoBin(unit, location, slotIndex, bin, damageLocation = HitLocation.CENTER_TORSO)
+        val (afterExplosion, ammoEvent) = detonateAmmoBin(unit, location, slotIndex, bin, damageLocation = HitLocation.CENTER_TORSO)
+        if (ammoEvent == null) return unit to emptyList()
+
+        val allEvents = mutableListOf<GameEvent>(ammoEvent)
+        // Ammo explosion inflicts 2 pilot hits; each runs a consciousness check.
+        var working = afterExplosion
+        repeat(2) {
+            val (afterHit, hitEvents) = applyPilotHit(working, roller)
+            working = afterHit
+            allEvents += hitEvents
+        }
+        return working to allEvents
     }
 }

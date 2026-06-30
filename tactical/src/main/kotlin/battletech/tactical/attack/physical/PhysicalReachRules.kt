@@ -3,6 +3,7 @@ package battletech.tactical.attack.physical
 import battletech.tactical.attack.AttackContext
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.model.GameState
+import battletech.tactical.model.unitWaterDepth
 import battletech.tactical.query.RuleResult
 import battletech.tactical.session.RuleRejection
 import battletech.tactical.unit.CombatUnit
@@ -14,7 +15,7 @@ import kotlin.math.abs
  */
 public class PunchReachRule : AttackRule<AttackContext> {
     override fun evaluate(context: AttackContext): RuleResult {
-        val depth = waterDepth(context.target, context.gameState)
+        val depth = unitWaterDepth(context.target, context.gameState)
         if (depth >= 2) return RuleResult.Unsatisfied(RuleRejection.TargetUnderwater(depth))
 
         val delta = levelOf(context.target, context.gameState) - levelOf(context.actor, context.gameState)
@@ -29,7 +30,7 @@ public class PunchReachRule : AttackRule<AttackContext> {
  */
 public class KickReachRule : AttackRule<AttackContext> {
     override fun evaluate(context: AttackContext): RuleResult {
-        val depth = waterDepth(context.target, context.gameState)
+        val depth = unitWaterDepth(context.target, context.gameState)
         if (depth >= 1) return RuleResult.Unsatisfied(RuleRejection.TargetUnderwater(depth))
 
         val delta = levelOf(context.target, context.gameState) - levelOf(context.actor, context.gameState)
@@ -40,6 +41,3 @@ public class KickReachRule : AttackRule<AttackContext> {
 
 private fun levelOf(unit: CombatUnit, gameState: GameState): Int =
     gameState.map.hexes[unit.position]?.elevation ?: 0
-
-private fun waterDepth(unit: CombatUnit, gameState: GameState): Int =
-    gameState.map.hexes[unit.position]?.depth ?: 0

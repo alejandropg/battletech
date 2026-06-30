@@ -5,6 +5,7 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ComponentCritStatus
 import battletech.tactical.unit.CriticalComponent
 import battletech.tactical.unit.HeatSource
+import battletech.tactical.unit.availableAmmoBins
 import battletech.tactical.unit.criticalDamageStatus
 import battletech.tui.game.PanelId
 import battletech.tui.hex.ammoIcon
@@ -99,22 +100,23 @@ public class UnitStatusView(
         // ARMOR
         with(content) {
             val armor = unit.armor
+            val is_ = unit.internalStructure
             writeHeader("ARMOR")
-            writeStr(9, "HD:%2d".format(armor.head), Color.CYAN)
+            writeStr(9, "HD:%2d".format(armor.head), if (is_.head == 0) Color.RED else Color.CYAN)
             newLine()
-            writeStr(2, "LT:%2d".format(armor.leftTorso), Color.GREEN)
-            writeStr(9, "CT:%2d".format(armor.centerTorso), Color.BRIGHT_YELLOW)
-            writeStr(16, "RT:%2d".format(armor.rightTorso), Color.GREEN)
+            writeStr(2, "LT:%2d".format(armor.leftTorso), if (is_.leftTorso == 0) Color.RED else Color.GREEN)
+            writeStr(9, "CT:%2d".format(armor.centerTorso), if (is_.centerTorso == 0) Color.RED else Color.BRIGHT_YELLOW)
+            writeStr(16, "RT:%2d".format(armor.rightTorso), if (is_.rightTorso == 0) Color.RED else Color.GREEN)
             newLine()
             writeStr(3, "r:%2d".format(armor.leftTorsoRear), Color.DEFAULT)
             writeStr(10, "r:%2d".format(armor.centerTorsoRear), Color.DEFAULT)
             writeStr(17, "r:%2d".format(armor.rightTorsoRear), Color.DEFAULT)
             newLine()
-            writeStr(0, "LA:%2d".format(armor.leftArm), Color.GREEN)
-            writeStr(17, "RA:%2d".format(armor.rightArm), Color.GREEN)
+            writeStr(0, "LA:%2d".format(armor.leftArm), if (is_.leftArm == 0) Color.RED else Color.GREEN)
+            writeStr(17, "RA:%2d".format(armor.rightArm), if (is_.rightArm == 0) Color.RED else Color.GREEN)
             newLine()
-            writeStr(3, "LL:%2d".format(armor.leftLeg), Color.GREEN)
-            writeStr(14, "RL:%2d".format(armor.rightLeg), Color.GREEN)
+            writeStr(3, "LL:%2d".format(armor.leftLeg), if (is_.leftLeg == 0) Color.RED else Color.GREEN)
+            writeStr(14, "RL:%2d".format(armor.rightLeg), if (is_.rightLeg == 0) Color.RED else Color.GREEN)
             newLine()
             newLine()
 
@@ -124,19 +126,18 @@ public class UnitStatusView(
             }
             newLine()
 
-            val structure = unit.internalStructure
             writeln("Internal Structure", Color.WHITE)
-            writeStr(9, "HD:%2d".format(structure.head), Color.CYAN)
+            writeStr(9, "HD:%2d".format(is_.head), if (is_.head == 0) Color.RED else Color.CYAN)
             newLine()
-            writeStr(2, "LT:%2d".format(structure.leftTorso), Color.GREEN)
-            writeStr(9, "CT:%2d".format(structure.centerTorso), Color.BRIGHT_YELLOW)
-            writeStr(16, "RT:%2d".format(structure.rightTorso), Color.GREEN)
+            writeStr(2, "LT:%2d".format(is_.leftTorso), if (is_.leftTorso == 0) Color.RED else Color.GREEN)
+            writeStr(9, "CT:%2d".format(is_.centerTorso), if (is_.centerTorso == 0) Color.RED else Color.BRIGHT_YELLOW)
+            writeStr(16, "RT:%2d".format(is_.rightTorso), if (is_.rightTorso == 0) Color.RED else Color.GREEN)
             newLine()
-            writeStr(0, "LA:%2d".format(structure.leftArm), Color.GREEN)
-            writeStr(17, "RA:%2d".format(structure.rightArm), Color.GREEN)
+            writeStr(0, "LA:%2d".format(is_.leftArm), if (is_.leftArm == 0) Color.RED else Color.GREEN)
+            writeStr(17, "RA:%2d".format(is_.rightArm), if (is_.rightArm == 0) Color.RED else Color.GREEN)
             newLine()
-            writeStr(3, "LL:%2d".format(structure.leftLeg), Color.GREEN)
-            writeStr(14, "RL:%2d".format(structure.rightLeg), Color.GREEN)
+            writeStr(3, "LL:%2d".format(is_.leftLeg), if (is_.leftLeg == 0) Color.RED else Color.GREEN)
+            writeStr(14, "RL:%2d".format(is_.rightLeg), if (is_.rightLeg == 0) Color.RED else Color.GREEN)
             repeat(2) { newLine() }
         }
 
@@ -144,13 +145,15 @@ public class UnitStatusView(
         with(content) {
             writeHeader("WEAPONS")
             for (weapon in unit.weapons) {
+                val color = if (weapon.destroyed) Color.RED else Color.WHITE
                 val right = weapon.ammoType?.let { type ->
-                    val remaining = unit.criticalLayout.ammoBins()
+                    // Only count available ammo (bins in locations with IS > 0).
+                    val remaining = unit.availableAmmoBins()
                         .filter { it.third.type == type }
                         .sumOf { it.third.shots }
                     "$remaining ${ammoIcon()}"
                 } ?: infinityIcon()
-                writeRow("  ${weapon.name}", right, Color.WHITE)
+                writeRow("  ${weapon.name}", right, color)
             }
         }
     }

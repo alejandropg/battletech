@@ -4,7 +4,10 @@ import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
+import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.Terrain
+import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.anArmorLayout
 import battletech.tactical.query.anInternalStructureLayout
@@ -558,5 +561,103 @@ internal class AttackResolutionTest {
             }
         }
         org.junit.jupiter.api.fail("Should have found a seed that hits LEFT_ARM")
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Partial cover — leg hits deal no damage
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Sets up a partial-cover scenario:
+     *   Attacker at (0,0) elevation 1, target at (0,2) elevation 0,
+     *   intervening hex (0,1) at elevation 1 (≤ attacker, > target) → partial cover.
+     *
+     * The target has thin leg armor (2) so any hit would be detectable.
+     * Medium laser (damage 5): short range to (0,2) = distance 2.
+     * TN = gunnery(4) + range(0) + terrain(3) = 7.
+     */
+    private fun partialCoverScenario(): Triple<GameState, HexCoordinates, HexCoordinates> {
+        val attackerPos = HexCoordinates(0, 0)
+        val targetPos = HexCoordinates(0, 2)
+        val interveningPos = HexCoordinates(0, 1)
+
+        val attackerUnit = aUnit(
+            id = "attacker",
+            position = attackerPos,
+            gunnerySkill = 4,
+        )
+        val targetUnit = aUnit(
+            id = "target",
+            position = targetPos,
+            armor = anArmorLayout(leftLeg = 2, rightLeg = 2),
+            internalStructure = anInternalStructureLayout(leftLeg = 10, rightLeg = 10),
+        )
+        val hexes = mapOf(
+            attackerPos to Hex(attackerPos, Terrain.CLEAR, elevation = 1),
+            interveningPos to Hex(interveningPos, Terrain.CLEAR, elevation = 1),
+        )
+        val state = aGameState(units = listOf(attackerUnit, targetUnit), hexes = hexes)
+        return Triple(state, attackerPos, targetPos)
+    }
+
+    @Test
+    fun `partial cover adds 3 to terrain modifier and target number`() {
+        val (state, _, _) = partialCoverScenario()
+        val pcAttacker = state.units.first { it.id.value == "attacker" }
+        val pcTarget = state.units.first { it.id.value == "target" }
+
+        // TN = 4 (gunnery) + 0 (range short) + 3 (terrain / partial cover) = 7
+        val declaration = AttackDeclaration(pcAttacker.id, pcTarget.id, 0, true)
+        val roller = DiceRoller.deterministic(1, 1) // guaranteed miss; just check TN
+        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+
+        assertEquals(7, results.single().targetNumber)
+        assertTrue(results.single().modifiers.any { it.label == "terrain" && it.amount == 3 })
+    }
+
+    @Test
+    fun `partial cover leg hit deals no damage — armor unchanged`() {
+        val (state, _, _) = partialCoverScenario()
+        val pcAttacker = state.units.first { it.id.value == "attacker" }
+        val pcTarget = state.units.first { it.id.value == "target" }
+
+        // TN = 7.  Dice: to-hit = 4+4 = 8 ≥ 7 → hit; location = 2+3 = 5 → RIGHT_LEG.
+        // Under partial cover, RIGHT_LEG hit should deal 0 damage.
+        val declaration = AttackDeclaration(pcAttacker.id, pcTarget.id, 0, true)
+        val roller = DiceRoller.deterministic(4, 4, 2, 3)
+        val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
+
+        val result = results.single()
+        assertTrue(result.hit)
+        assertEquals(HitLocation.RIGHT_LEG, result.hitLocation)
+        assertTrue(result.partialCover)
+
+        // Leg armor should be unchanged — partial cover suppressed the damage.
+        val updatedTarget = newState.unitById(pcTarget.id)!!
+        assertEquals(2, updatedTarget.armor.rightLeg)  // unchanged from initial 2
+        assertEquals(10, updatedTarget.internalStructure.rightLeg) // unchanged
+    }
+
+    @Test
+    fun `partial cover non-leg hit still applies damage normally`() {
+        val (state, _, _) = partialCoverScenario()
+        val pcAttacker = state.units.first { it.id.value == "attacker" }
+        val pcTarget = state.units.first { it.id.value == "target" }
+
+        // TN = 7.  Dice: to-hit = 4+4 = 8 ≥ 7 → hit; location = 3+4 = 7 → CENTER_TORSO.
+        // Center torso is not a leg, so damage should apply normally.
+        val declaration = AttackDeclaration(pcAttacker.id, pcTarget.id, 0, true)
+        val roller = DiceRoller.deterministic(4, 4, 3, 4)
+        val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
+
+        val result = results.single()
+        assertTrue(result.hit)
+        assertEquals(HitLocation.CENTER_TORSO, result.hitLocation)
+        assertTrue(result.partialCover)
+
+        // Center torso armor should have been reduced by 5 (medium laser damage).
+        val initialCT = pcTarget.armor.centerTorso
+        val updatedTarget = newState.unitById(pcTarget.id)!!
+        assertEquals(initialCT - 5, updatedTarget.armor.centerTorso)
     }
 }

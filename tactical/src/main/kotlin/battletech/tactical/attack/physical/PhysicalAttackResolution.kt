@@ -1,12 +1,14 @@
 package battletech.tactical.attack.physical
 
 import battletech.tactical.attack.HitLocation
+import battletech.tactical.attack.applyPilotHit
 import battletech.tactical.attack.fall
 import battletech.tactical.attack.resolveDamage
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.gyroPsrModifier
+import battletech.tactical.unit.legPsrModifier
 import battletech.tactical.unit.pilotingSkillRoll
 
 /**
@@ -52,13 +54,18 @@ public fun resolvePhysicalAttacks(
         val faller = updatedState.unitById(fallerId)
         if (faller == null || faller.isProne) return@map result
 
-        val psr = pilotingSkillRoll(faller, roller, modifier = gyroPsrModifier(faller))
+        // Include gyro + leg PSR penalties in the knockdown roll.
+        val psrModifier = gyroPsrModifier(faller) + legPsrModifier(faller)
+        val psr = pilotingSkillRoll(faller, roller, modifier = psrModifier)
         if (psr.passed) {
             result.copy(psr = psr)
         } else {
+            // Fall applies damage; pilot also takes 1 hit per standard BT rules.
+            // Canonical dice order: fall location 2d6, facing 1d6, consciousness check 2d6.
             val (fallen, fallResult) = fall(faller, roller)
-            updatedState = updatedState.replacing(fallen)
-            result.copy(psr = psr, fall = fallResult, fallenUnitId = fallerId)
+            val (injured, pilotEvents) = applyPilotHit(fallen, roller)
+            updatedState = updatedState.replacing(injured)
+            result.copy(psr = psr, fall = fallResult, fallenUnitId = fallerId, fallPilotEvents = pilotEvents)
         }
     }
 

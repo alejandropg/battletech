@@ -3,6 +3,7 @@ package battletech.tactical.movement
 import battletech.tactical.unit.MovementThisTurn
 import battletech.tactical.heat.movementHeatSource
 
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.calculateMovementOrder
@@ -19,7 +20,9 @@ import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitMoved
 import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.unit.cannotStandFromGyroDamage
+import battletech.tactical.unit.destroyedLegCount
 import battletech.tactical.unit.gyroPsrModifier
+import battletech.tactical.unit.legPsrModifier
 import battletech.tactical.unit.pilotingSkillRoll
 
 /**
@@ -47,6 +50,16 @@ public class MovementPhaseHandler : PhaseHandler {
         is MoveUnit -> validateActivation(command.unitId, command.playerId, state, turn)
             ?: if (state.unitById(command.unitId)?.isProne == true) {
                 CommandRejection.UnitProne(command.unitId)
+            } else if (command.mode == MovementMode.JUMP &&
+                (state.unitById(command.unitId)?.destroyedLegCount() ?: 0) > 0
+            ) {
+                // Cannot jump with any destroyed leg.
+                CommandRejection.LegDestroyed(command.unitId)
+            } else if (command.mode == MovementMode.RUN &&
+                (state.unitById(command.unitId)?.destroyedLegCount() ?: 0) > 0
+            ) {
+                // Cannot run with any destroyed leg; hobble (half walk MP) only.
+                CommandRejection.LegDestroyed(command.unitId)
             } else {
                 null
             }
@@ -96,7 +109,8 @@ public class MovementPhaseHandler : PhaseHandler {
         roller: DiceRoller,
     ): PhaseOutcome {
         val unit = state.unitById(cmd.unitId)!!
-        val psr = pilotingSkillRoll(unit, roller, modifier = gyroPsrModifier(unit))
+        val modifier = gyroPsrModifier(unit) + legPsrModifier(unit)
+        val psr = pilotingSkillRoll(unit, roller, modifier = modifier)
         return if (psr.passed) {
             // Stood up; activation NOT consumed so the unit may still move this impulse.
             val newState = state.copy(

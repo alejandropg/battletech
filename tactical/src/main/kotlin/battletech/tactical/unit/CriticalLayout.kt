@@ -163,6 +163,76 @@ public fun CriticalLayout.withSlot(
     return copy(byLocation = byLocation + (location to updatedLocationSlots))
 }
 
+/**
+ * Returns a copy of this layout with one shot consumed from the first non-empty bin of
+ * [ammoType]. Bin selection mirrors [battletech.tactical.attack.weapon.HasAmmoRule]: the
+ * first entry (in [ammoBins] order) whose `type == ammoType` and `shots > 0` is chosen.
+ *
+ * If no such bin exists (all empty or no bin of that type), this layout is returned
+ * unchanged. Callers should guard with [battletech.tactical.attack.weapon.HasAmmoRule]
+ * before declaration to ensure a bin is available.
+ *
+ * No dice involved — pure state mutation.
+ */
+public fun CriticalLayout.consumeOneRound(ammoType: AmmoType): CriticalLayout {
+    val (location, slotIndex, bin) = ammoBins()
+        .firstOrNull { (_, _, b) -> b.type == ammoType && b.shots > 0 }
+        ?: return this
+    return withSlot(location, slotIndex, bin.copy(shots = bin.shots - 1))
+}
+
+// ---------------------------------------------------------------------------
+// IS-aware ammo helpers: exclude bins whose location has IS = 0.
+// A destroyed location's feed mechanism is gone; that ammo is inaccessible.
+// ---------------------------------------------------------------------------
+
+/**
+ * True when [location]'s internal structure in [is_] is still positive (the location
+ * is not structurally gone). Used to filter ammo bins that are no longer accessible
+ * because their location's IS has reached 0.
+ */
+private fun isLocationIntact(location: MechLocation, is_: InternalStructureLayout): Boolean = when (location) {
+    MechLocation.HEAD -> is_.head > 0
+    MechLocation.CENTER_TORSO -> is_.centerTorso > 0
+    MechLocation.LEFT_TORSO -> is_.leftTorso > 0
+    MechLocation.RIGHT_TORSO -> is_.rightTorso > 0
+    MechLocation.LEFT_ARM -> is_.leftArm > 0
+    MechLocation.RIGHT_ARM -> is_.rightArm > 0
+    MechLocation.LEFT_LEG -> is_.leftLeg > 0
+    MechLocation.RIGHT_LEG -> is_.rightLeg > 0
+}
+
+/**
+ * Ammo bins that are available for use: bins in locations whose internal structure is
+ * still positive. Bins in locations with IS = 0 are excluded because the feed mechanism
+ * is inaccessible once a location is structurally destroyed.
+ *
+ * Use this instead of [CriticalLayout.ammoBins] everywhere availability matters
+ * (weapon firing, ammo-heat cook-off, ammo consumption on fire). [CriticalLayout.ammoBins]
+ * is still appropriate when inspecting the raw layout contents (tests, build validation).
+ */
+public fun CombatUnit.availableAmmoBins(): List<Triple<MechLocation, Int, CriticalSlotContent.AmmoBin>> =
+    criticalLayout.ammoBins().filter { (location, _, _) ->
+        isLocationIntact(location, internalStructure)
+    }
+
+/**
+ * Returns a copy of this unit with one shot consumed from the first non-empty,
+ * non-destroyed-location bin of [ammoType]. Mirrors [CriticalLayout.consumeOneRound]
+ * but skips bins in locations whose IS is 0.
+ *
+ * Returns this unit unchanged if no available bin exists. Callers should guard with
+ * [battletech.tactical.attack.weapon.HasAmmoRule] to ensure a bin is available.
+ */
+public fun CombatUnit.consumeOneRoundFromAvailableBin(ammoType: AmmoType): CombatUnit {
+    val (location, slotIndex, bin) = availableAmmoBins()
+        .firstOrNull { (_, _, b) -> b.type == ammoType && b.shots > 0 }
+        ?: return this
+    return copy(
+        criticalLayout = criticalLayout.withSlot(location, slotIndex, bin.copy(shots = bin.shots - 1)),
+    )
+}
+
 public fun CriticalLayout.validate(weapons: List<Weapon>) {
     for ((location, expectedCount) in SLOT_COUNTS) {
         val locationSlots = byLocation[location]

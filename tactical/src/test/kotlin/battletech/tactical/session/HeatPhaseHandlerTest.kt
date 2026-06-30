@@ -81,7 +81,9 @@ internal class HeatPhaseHandlerTest {
             criticalLayout = build.layout,
         )
 
-        val outcome = runHeatPhase(unit, DiceRoller.deterministic(6, 6, 1, 1))
+        // shutdown avoidance (6+6 → 12 ≥ 4, avoided); ammo avoidance (1+1 → 2 < 4, explodes);
+        // pilot hit 1 consciousness 2d6 (3,3 → 6 ≥ target 3); pilot hit 2 consciousness 2d6 (3,3 → 6 ≥ target 5).
+        val outcome = runHeatPhase(unit, DiceRoller.deterministic(6, 6, 1, 1, 3, 3, 3, 3))
 
         val exploded = outcome.events.filterIsInstance<AmmoExploded>().single()
         assertEquals(AmmoType.AC20, exploded.ammoType)

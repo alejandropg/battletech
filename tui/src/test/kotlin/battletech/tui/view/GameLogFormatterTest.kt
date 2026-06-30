@@ -2,7 +2,9 @@ package battletech.tui.view
 
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.AttackResult
+import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.LocationDamage
+import battletech.tactical.attack.LocationHit
 import battletech.tactical.attack.RangeBand
 import battletech.tactical.attack.physical.AttackDirection
 import battletech.tactical.attack.physical.PhysicalAttackResult
@@ -563,6 +565,118 @@ internal class GameLogFormatterTest {
         assertThat(GameLogFormatter.lines(multiple, emptyState).map { it.icon })
             .containsExactly(torsoArrowIcon(HexDirection.NE).first, torsoArrowIcon(HexDirection.S).first)
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Cluster-hit weapon rendering
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `AttacksResolved with cluster weapon hit adds a detail line`() {
+        val result = aClusterAttackResult(
+            weaponName = "LRM 20",
+            missilesHit = 16,
+            locationHits = listOf(
+                LocationHit(HitLocation.CENTER_TORSO, 5, DiceRoll(3, 4)),
+                LocationHit(HitLocation.RIGHT_TORSO,  5, DiceRoll(4, 4)),
+                LocationHit(HitLocation.LEFT_ARM,     5, DiceRoll(5, 5)),
+                LocationHit(HitLocation.RIGHT_ARM,    1, DiceRoll(1, 2)),
+            ),
+            totalDamage = 16,
+        )
+        val lines = GameLogFormatter.lines(AttacksResolved(listOf(result)), emptyState)
+
+        assertThat(lines).hasSize(2)
+        assertThat(lines[0].text).isEqualTo("Attacks: 1 fired, 1 hit, 16 damage")
+        assertThat(lines[1].text)
+            .isEqualTo("  LRM 20: 16 missiles → 5 Center Torso, 5 Right Torso, 5 Left Arm, 1 Right Arm")
+        assertThat(lines[1].icon).isNull()
+    }
+
+    @Test
+    fun `AttacksResolved with SRM cluster hit shows missile count and per-missile groups`() {
+        val result = aClusterAttackResult(
+            weaponName = "SRM 6",
+            missilesHit = 4,
+            locationHits = listOf(
+                LocationHit(HitLocation.CENTER_TORSO, 2, DiceRoll(3, 4)),
+                LocationHit(HitLocation.LEFT_TORSO,   2, DiceRoll(4, 4)),
+                LocationHit(HitLocation.CENTER_TORSO, 2, DiceRoll(3, 4)),
+                LocationHit(HitLocation.RIGHT_TORSO,  2, DiceRoll(4, 4)),
+            ),
+            totalDamage = 8,
+        )
+        val lines = GameLogFormatter.lines(AttacksResolved(listOf(result)), emptyState)
+
+        assertThat(lines).hasSize(2)
+        assertThat(lines[1].text)
+            .isEqualTo("  SRM 6: 4 missiles → 2 Center Torso, 2 Left Torso, 2 Center Torso, 2 Right Torso")
+    }
+
+    @Test
+    fun `AttacksResolved with mix of cluster and non-cluster hits adds detail only for cluster`() {
+        val clusterResult = aClusterAttackResult(
+            weaponName = "SRM 6",
+            missilesHit = 2,
+            locationHits = listOf(
+                LocationHit(HitLocation.CENTER_TORSO, 2, DiceRoll(3, 4)),
+                LocationHit(HitLocation.LEFT_TORSO,   2, DiceRoll(4, 4)),
+            ),
+            totalDamage = 4,
+        )
+        val plainResult = anAttackResult(hit = true, damage = 5)
+        val lines = GameLogFormatter.lines(AttacksResolved(listOf(clusterResult, plainResult)), emptyState)
+
+        // Summary line + 1 cluster detail line (no detail for the plain weapon)
+        assertThat(lines).hasSize(2)
+        assertThat(lines[0].text).isEqualTo("Attacks: 2 fired, 2 hit, 9 damage")
+        assertThat(lines[1].text).startsWith("  SRM 6:")
+    }
+
+    @Test
+    fun `AttacksResolved cluster miss produces no detail line`() {
+        // A cluster weapon that missed: missilesHit=null (not set), hit=false
+        val missResult = anAttackResult(hit = false, damage = 0)
+        val lines = GameLogFormatter.lines(AttacksResolved(listOf(missResult)), emptyState)
+        assertThat(lines).hasSize(1) // only the summary line
+    }
+
+    @Test
+    fun `AttacksResolved cluster hit with empty locationHits produces no detail line`() {
+        // Legacy/test AttackResult with missilesHit set but empty locationHits → no detail.
+        val result = aClusterAttackResult(
+            weaponName = "LRM 20", missilesHit = 10,
+            locationHits = emptyList(), totalDamage = 10,
+        )
+        val lines = GameLogFormatter.lines(AttacksResolved(listOf(result)), emptyState)
+        assertThat(lines).hasSize(1)
+    }
+
+    private fun aClusterAttackResult(
+        weaponName: String,
+        missilesHit: Int,
+        locationHits: List<LocationHit>,
+        totalDamage: Int,
+        targetId: UnitId = UnitId("t"),
+    ): AttackResult =
+        AttackResult(
+            attackerId = UnitId("a"),
+            targetId = targetId,
+            weaponName = weaponName,
+            hit = true,
+            hitLocation = locationHits.firstOrNull()?.location,
+            damageApplied = totalDamage,
+            targetNumber = 5,
+            roll = 8,
+            toHitRoll = DiceRoll(4, 4),
+            locationRoll = locationHits.firstOrNull()?.locationRoll,
+            gunnery = 2,
+            rangeModifier = 0,
+            rangeBand = RangeBand.SHORT,
+            heatPenalty = 0,
+            secondaryPenalty = 0,
+            locationHits = locationHits,
+            missilesHit = missilesHit,
+        )
 
     private fun anAttackResult(
         hit: Boolean,

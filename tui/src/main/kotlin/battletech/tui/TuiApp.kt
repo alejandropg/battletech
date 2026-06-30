@@ -4,6 +4,7 @@ import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
 import battletech.tactical.session.BattleSession
+import battletech.tactical.session.MatchEnded
 import battletech.tactical.session.TurnState
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
@@ -14,6 +15,7 @@ import battletech.tui.input.InputMapper
 import battletech.tui.loop.UiEvent
 import battletech.tui.loop.resizeEvents
 import battletech.tui.loop.terminalInputEvents
+import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
 import battletech.tui.view.BoardView
@@ -188,6 +190,14 @@ public class TuiApp {
                             return@collect
                         }
 
+                        // Block game input (movement/attacks) once the match is over.
+                        // Scroll and panel-collapse are handled above and remain active.
+                        // Only quit (handled by takeWhile) exits the loop.
+                        if (appState.matchEnded != null) {
+                            frame = renderFrame(size, renderer, appState, activeFlash)
+                            return@collect
+                        }
+
                         val transition = appState.phase.handle(event, appState) ?: run {
                             frame = renderFrame(size, renderer, appState, activeFlash)
                             return@collect
@@ -227,6 +237,9 @@ public class TuiApp {
                     // the extra render is cheap and idempotent. This branch is the
                     // remote-play notification slot — remote clients will see live updates here.
                     is UiEvent.Session -> {
+                        if (ui.event is MatchEnded) {
+                            appState = appState.copy(matchEnded = ui.event)
+                        }
                         frame = renderFrame(size, renderer, appState, activeFlash)
                     }
 
@@ -244,6 +257,38 @@ public class TuiApp {
 
         // Cancel any pending flash job so the coroutineScope can complete cleanly.
         flashJob?.cancel()
+    }
+
+    /**
+     * Renders a centered overlay box in the board area declaring the match result.
+     * Overlays board content — called after the board and panels are drawn so
+     * it appears on top.
+     */
+    private fun renderGameOverBanner(
+        buffer: ScreenBuffer,
+        boardWidth: Int,
+        boardHeight: Int,
+        winner: PlayerId?,
+    ) {
+        val winnerLine = if (winner == null) "Draw" else "${playerName(winner)} wins!"
+        val bannerWidth = maxOf(winnerLine.length + 8, 24)
+        val bannerHeight = 7
+        val bx = (boardWidth - bannerWidth) / 2
+        val by = (boardHeight - bannerHeight) / 2
+        if (bx < 0 || by < 0 || bx + bannerWidth > buffer.width || by + bannerHeight > buffer.height) return
+        buffer.drawBox(
+            bx, by, bannerWidth, bannerHeight,
+            title = "MATCH OVER",
+            borderColor = Color.BRIGHT_YELLOW,
+            titleColor = Color.BRIGHT_YELLOW,
+        )
+        val mx = bx + (bannerWidth - winnerLine.length) / 2
+        buffer.writeString(mx, by + 3, winnerLine, Color.WHITE)
+    }
+
+    private fun playerName(player: PlayerId): String = when (player) {
+        PlayerId.PLAYER_1 -> "P1"
+        PlayerId.PLAYER_2 -> "P2"
     }
 
     private fun currentSize(terminal: Terminal): Size {
@@ -305,10 +350,23 @@ public class TuiApp {
             if (mo != null) maxOffsets[slot.panelIndex] = mo
         }
 
-        val prompt = flash?.text ?: appState.phase.prompt(appState)
-        val activePlayerInfo = appState.phase.activePlayerLabel(appState)
+        val matchEnded = appState.matchEnded
+        val prompt = when {
+            matchEnded != null -> {
+                val winner = matchEnded.winner
+                if (winner == null) "Match over — Draw  |  ctrl+c: quit"
+                else "Match over — ${playerName(winner)} wins!  |  ctrl+c: quit"
+            }
+            flash != null -> flash.text
+            else -> appState.phase.prompt(appState)
+        }
+        val activePlayerInfo = if (matchEnded != null) null else appState.phase.activePlayerLabel(appState)
         val statusBarView = StatusBarView(appState.currentPhase, prompt, activePlayerInfo)
         statusBarView.render(buffer, 0, layout.boardHeight, size.width, FrameLayout.STATUS_BAR_HEIGHT)
+
+        if (matchEnded != null) {
+            renderGameOverBanner(buffer, layout.boardWidth, layout.boardHeight, matchEnded.winner)
+        }
 
         renderer.render(buffer)
         return RenderedFrame(layout, maxOffsets)

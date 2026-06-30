@@ -250,7 +250,9 @@ internal class RenderDataTest {
         }
 
         @Test
-        fun `attack with target in heavy woods produces no LINE_OF_SIGHT`() {
+        fun `attack with target in heavy woods still shows LINE_OF_SIGHT — target hex does not block`() {
+            // The target's own hex terrain never blocks LOS; it only adds a to-hit modifier.
+            // Intervening hexes (0,1) and (0,2) are on the LOS path and get LINE_OF_SIGHT.
             val attacker = aUnit(
                 id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
                 facing = HexDirection.S, weapons = listOf(mediumLaser()),
@@ -264,8 +266,8 @@ internal class RenderDataTest {
 
             val result = phase.render(gameState)
 
-            assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(0, 1)])
-            assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(0, 2)])
+            assertEquals(HexHighlight.LINE_OF_SIGHT, result.hexHighlights[HexCoordinates(0, 1)])
+            assertEquals(HexHighlight.LINE_OF_SIGHT, result.hexHighlights[HexCoordinates(0, 2)])
             assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(0, 3)])
         }
 
@@ -334,7 +336,9 @@ internal class RenderDataTest {
         }
 
         @Test
-        fun `attack with selected target in heavy woods produces no yellow line`() {
+        fun `attack with selected target in heavy woods still shows yellow line — target hex does not block`() {
+            // Target-hex heavy woods adds +2 to-hit but does not block LOS.
+            // Intervening hexes (0,1) and (0,2) get LINE_OF_SIGHT_SELECTED (yellow line).
             val attacker = aUnit(
                 id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
                 facing = HexDirection.S, weapons = listOf(mediumLaser()),
@@ -348,8 +352,8 @@ internal class RenderDataTest {
 
             val result = phase.render(gameState)
 
-            assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(0, 1)])
-            assertEquals(HexHighlight.ATTACK_RANGE, result.hexHighlights[HexCoordinates(0, 2)])
+            assertEquals(HexHighlight.LINE_OF_SIGHT_SELECTED, result.hexHighlights[HexCoordinates(0, 1)])
+            assertEquals(HexHighlight.LINE_OF_SIGHT_SELECTED, result.hexHighlights[HexCoordinates(0, 2)])
         }
 
         @Test

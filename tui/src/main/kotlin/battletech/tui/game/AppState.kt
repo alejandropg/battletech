@@ -2,6 +2,7 @@ package battletech.tui.game
 
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.dice.DiceRoller
+import battletech.tactical.session.MatchEnded
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
@@ -33,6 +34,7 @@ internal data class AppState(
     val collapsedPanels: Set<Int> = emptySet(),
     val lastAttackResults: List<AttackResult>? = null,
     val panelScrollOffsets: Map<Int, Int> = emptyMap(),
+    val matchEnded: MatchEnded? = null,
 ) {
     val gameState: GameState get() = session.gameState
     val turnState: TurnState get() = session.turnState

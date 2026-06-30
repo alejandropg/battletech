@@ -54,4 +54,11 @@ public sealed interface RuleRejection : RejectionReason {
 
     /** The target unit has already been destroyed and cannot be attacked. */
     public data object TargetDestroyed : RuleRejection
+
+    /**
+     * The attacker is fully submerged (water depth ≥ 2) and the weapon is not
+     * [battletech.tactical.unit.Weapon.underwaterCapable]. Standard surface weapons
+     * cannot fire from depth-2+ water.
+     */
+    public data class AttackerSubmerged(val depth: Int) : RuleRejection
 }

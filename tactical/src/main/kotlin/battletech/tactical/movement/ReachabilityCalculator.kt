@@ -7,6 +7,7 @@ import battletech.tactical.model.GameMap
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.destroyedLegCount
 import java.util.PriorityQueue
 import kotlin.math.ceil
 
@@ -16,14 +17,23 @@ public class ReachabilityCalculator(
 ) {
 
     public fun calculate(actor: CombatUnit, mode: MovementMode): ReachabilityMap {
+        // A destroyed leg prevents running and jumping; walking is halved.
+        val hasDestroyedLeg = actor.destroyedLegCount() > 0
+
         // Heat slows walking (and the running derived from it); jump jets are
         // unaffected. See HeatScale.movementPenalty / docs/rules/heat.md.
         val penalty = HeatScale.movementPenalty(actor.currentHeat)
-        val effectiveWalk = (actor.walkingMP - penalty).coerceAtLeast(0)
+        // With a destroyed leg the base walking MP is halved (floor) before the heat
+        // penalty is applied, per the standard "hobble" rule.
+        val baseWalk = if (hasDestroyedLeg) actor.walkingMP / 2 else actor.walkingMP
+        val effectiveWalk = (baseWalk - penalty).coerceAtLeast(0)
         val maxMP = when (mode) {
             MovementMode.WALK -> effectiveWalk
-            MovementMode.RUN -> if (penalty == 0) actor.runningMP else ceil(effectiveWalk * 1.5).toInt()
-            MovementMode.JUMP -> actor.jumpMP
+            // Cannot run or jump with a destroyed leg — maxMP 0 yields an empty map.
+            MovementMode.RUN -> if (hasDestroyedLeg) 0
+                else if (penalty == 0) actor.runningMP
+                else ceil(effectiveWalk * 1.5).toInt()
+            MovementMode.JUMP -> if (hasDestroyedLeg) 0 else actor.jumpMP
         }
 
         val destinations = if (mode == MovementMode.JUMP) {

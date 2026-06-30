@@ -8,9 +8,11 @@ import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.unitWaterDepth
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
+import battletech.tactical.unit.availableAmmoBins
 import battletech.tactical.unit.cannotFireFromSensorDamage
 
 internal class WeaponTargeting(private val state: PublicGameState) {
@@ -46,7 +48,7 @@ internal class WeaponTargeting(private val state: PublicGameState) {
             val distance = attacker.position.distanceTo(target.position)
 
             val weapons = attacker.weapons.mapIndexed { index, weapon ->
-                if (!weapon.canEngageAt(distance, attacker)) {
+                if (!weapon.canEngageAt(distance, attacker, state)) {
                     WeaponTargetInfo(
                         weaponIndex = index,
                         weaponName = weapon.name,
@@ -62,6 +64,7 @@ internal class WeaponTargeting(private val state: PublicGameState) {
                         weapon = weapon,
                         distance = distance,
                         isPrimaryTarget = true,
+                        gameState = state,
                     )
                     val targetNumber = (attacker.gunnerySkill + modifiers.total()).coerceAtLeast(2)
                     val modifierLabels = modifiers.nonZero().map { (label, amount) ->
@@ -84,16 +87,18 @@ internal class WeaponTargeting(private val state: PublicGameState) {
 
     private fun hasEligibleWeapon(attacker: CombatUnit, target: CombatUnit): Boolean {
         val distance = attacker.position.distanceTo(target.position)
-        return attacker.weapons.any { it.canEngageAt(distance, attacker) }
+        return attacker.weapons.any { it.canEngageAt(distance, attacker, state) }
     }
 }
 
-private fun Weapon.canEngageAt(distance: Int, attacker: CombatUnit): Boolean =
+private fun Weapon.canEngageAt(distance: Int, attacker: CombatUnit, gameState: PublicGameState): Boolean =
     !destroyed &&
         hasAmmoRemaining(attacker) &&
-        distance <= longRange
+        distance <= longRange &&
+        (underwaterCapable || unitWaterDepth(attacker, gameState) < 2)
 
 private fun Weapon.hasAmmoRemaining(attacker: CombatUnit): Boolean {
     val type = ammoType ?: return true
-    return attacker.criticalLayout.ammoBins().any { it.third.type == type && it.third.shots > 0 }
+    // Only consider bins in locations whose IS is still > 0.
+    return attacker.availableAmmoBins().any { it.third.type == type && it.third.shots > 0 }
 }

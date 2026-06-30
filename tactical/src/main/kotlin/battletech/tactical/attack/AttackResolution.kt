@@ -3,11 +3,13 @@ package battletech.tactical.attack
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
+import battletech.tactical.model.MechLocation
 import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.GameEvent
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.InternalStructureLayout
+import battletech.tactical.unit.consumeOneRoundFromAvailableBin
 
 /**
  * Resolves [declarations] against [gameState] and applies the resulting damage and
@@ -50,40 +52,80 @@ public fun resolveAttacksWithCrits(
     }
 
     // Apply all damage to get the final state, rolling crit checks in volley order.
+    // For cluster weapons each group in locationHits is processed in order; for single-location
+    // weapons locationHits contains exactly one element (same outcome as the old scalar path).
+    // Partial cover: leg-location groups are skipped (no damage/crit) but location rolls are
+    // already committed in pass-1, so the dice stream is unchanged for seeded tests.
     var updatedState = gameState
     val critEvents = mutableListOf<GameEvent>()
     val finalResults = results.map { result ->
-        if (result.hit && result.hitLocation != null) {
+        if (result.hit && result.locationHits.isNotEmpty()) {
             val target = updatedState.unitById(result.targetId)
             if (target == null) {
                 result
             } else {
-                val resolution = resolveDamage(target, result.hitLocation, result.damageApplied)
-                var updatedTarget = resolution.unit
+                var updatedTarget: CombatUnit = target
+                val allDamageSteps = mutableListOf<LocationDamage>()
 
-                val naturalTwo = result.locationRoll?.let { it.d1 == 1 && it.d2 == 1 } == true
-                val critLocations = resolution.steps
-                    .filter { it.structureDamage >= 1 }
-                    .map { it.location }
-                    .toMutableList()
-                if (naturalTwo && result.hitLocation !in critLocations) {
-                    critLocations += result.hitLocation
-                }
+                for (locHit in result.locationHits) {
+                    val isLegLocation = locHit.location == HitLocation.LEFT_LEG ||
+                        locHit.location == HitLocation.RIGHT_LEG
+                    if (result.partialCover && isLegLocation) continue
 
-                for (critLocation in critLocations) {
-                    val (afterCrit, events) = resolveCriticalHits(updatedTarget, critLocation, roller)
-                    updatedTarget = afterCrit
-                    critEvents += events
+                    val resolution = resolveDamage(updatedTarget, locHit.location, locHit.damage)
+                    updatedTarget = resolution.unit
+                    allDamageSteps.addAll(resolution.steps)
+
+                    // Head-hit pilot damage: any IS penetration to HEAD → 1 pilot hit.
+                    // Canonical dice order: consciousness check 2d6 fires here, before
+                    // the crit-check dice for the same location hit.
+                    if (resolution.steps.any { it.location == MechLocation.HEAD && it.structureDamage >= 1 }) {
+                        val (afterPilotHit, pilotHitEvents) = applyPilotHit(updatedTarget, roller)
+                        updatedTarget = afterPilotHit
+                        critEvents += pilotHitEvents
+                    }
+
+                    val naturalTwo = locHit.locationRoll.d1 == 1 && locHit.locationRoll.d2 == 1
+                    val critLocations = resolution.steps
+                        .filter { it.structureDamage >= 1 }
+                        .map { it.location }
+                        .toMutableList()
+                    if (naturalTwo && locHit.location !in critLocations) {
+                        critLocations += locHit.location
+                    }
+
+                    for (critLocation in critLocations) {
+                        val (afterCrit, events) = resolveCriticalHits(updatedTarget, critLocation, roller)
+                        updatedTarget = afterCrit
+                        critEvents += events
+                    }
                 }
 
                 updatedState = updatedState.copy(
                     units = updatedState.units.map { if (it.id == result.targetId) updatedTarget else it },
                 )
-                result.copy(damage = resolution.steps)
+                result.copy(damage = allDamageSteps)
             }
         } else {
             result
         }
+    }
+
+    // Apply ammo consumption: for each fired declaration whose weapon has ammoType != null,
+    // decrement one round from the first non-empty matching bin on the attacker.
+    // Applied as a final pass over the fully-resolved state so attacker ammo decrements
+    // compose correctly when the same unit fires multiple weapons in one volley or when
+    // an attacker is also a damage target. Draws from updatedState each iteration so
+    // a multi-weapon volley chains correctly. No dice consumed.
+    for (declaration in declarations) {
+        val attacker = updatedState.unitById(declaration.attackerId) ?: continue
+        val weapon = attacker.weapons[declaration.weaponIndex]
+        val ammoType = weapon.ammoType ?: continue
+        // Consume from an available bin (skips bins in IS=0 locations).
+        val updatedAttacker = attacker.consumeOneRoundFromAvailableBin(ammoType)
+        updatedState = updatedState.copy(
+            units = updatedState.units.map { if (it.id == attacker.id) updatedAttacker else it },
+        )
     }
 
     return Triple(updatedState, finalResults, critEvents)
@@ -169,38 +211,91 @@ private fun resolveOneAttack(
     val weapon = attacker.weapons[declaration.weaponIndex]
 
     val distance = attacker.position.distanceTo(target.position)
-    val modifiers = weaponToHitModifiers(attacker, target, weapon, distance, declaration.isPrimary)
+    val modifiers = weaponToHitModifiers(attacker, target, weapon, distance, declaration.isPrimary, gameState)
+    val los = lineOfSight(attacker, target, gameState.map)
     val rangeBand = rangeBandFor(distance, weapon)
     val rangeModifier = modifiers.first { it.label in RANGE_LABELS }.amount
     val heatPenalty = modifiers.first { it.label == "heat" }.amount
     val secondaryPenalty = modifiers.first { it.label == "secondary" }.amount
     val sensorModifier = modifiers.first { it.label == "sensors" }.amount
+    val attackerMoveModifier = modifiers.first { it.label == "attacker move" }.amount
+    val targetMoveModifier = modifiers.first { it.label == "target move" }.amount
+    val minRangeModifier = modifiers.first { it.label == "min range" }.amount
     val targetNumber = attacker.gunnerySkill + modifiers.total()
 
+    // Canonical dice order:
+    //   1. to-hit 2d6
+    //   2. (if hit, non-cluster) location 2d6
+    //   2. (if hit, cluster) cluster-count 2d6, then one location 2d6 per group (in group order)
     val toHitRoll = roller.roll2d6()
 
     return if (toHitRoll.total >= targetNumber) {
-        val locationRoll = roller.roll2d6()
-        val hitLocation = HitLocationTable.roll(locationRoll.total)
-        AttackResult(
-            attackerId = declaration.attackerId,
-            targetId = declaration.targetId,
-            weaponName = weapon.name,
-            hit = true,
-            hitLocation = hitLocation,
-            damageApplied = weapon.damage,
-            targetNumber = targetNumber,
-            roll = toHitRoll.total,
-            toHitRoll = toHitRoll,
-            locationRoll = locationRoll,
-            gunnery = attacker.gunnerySkill,
-            rangeModifier = rangeModifier,
-            rangeBand = rangeBand,
-            heatPenalty = heatPenalty,
-            secondaryPenalty = secondaryPenalty,
-            sensorPenalty = sensorModifier,
-            modifiers = modifiers,
-        )
+        val clusterSize = weapon.clusterSize
+        if (clusterSize != null) {
+            // Cluster weapon: roll cluster table → missiles hit → groups → per-group location roll.
+            val clusterRoll = roller.roll2d6()
+            val missiles = ClusterHitsTable.missilesHit(clusterSize, clusterRoll.total)
+            val groupDamages = buildClusterGroups(missiles, weapon.missilesPerGroup, weapon.damagePerMissile)
+            val locationHits = groupDamages.map { groupDmg ->
+                val locRoll = roller.roll2d6()
+                LocationHit(HitLocationTable.roll(locRoll.total), groupDmg, locRoll)
+            }
+            val firstHit = locationHits.first()
+            AttackResult(
+                attackerId = declaration.attackerId,
+                targetId = declaration.targetId,
+                weaponName = weapon.name,
+                hit = true,
+                hitLocation = firstHit.location,
+                damageApplied = locationHits.sumOf { it.damage },
+                targetNumber = targetNumber,
+                roll = toHitRoll.total,
+                toHitRoll = toHitRoll,
+                locationRoll = firstHit.locationRoll,
+                gunnery = attacker.gunnerySkill,
+                rangeModifier = rangeModifier,
+                rangeBand = rangeBand,
+                heatPenalty = heatPenalty,
+                secondaryPenalty = secondaryPenalty,
+                sensorPenalty = sensorModifier,
+                attackerMoveModifier = attackerMoveModifier,
+                targetMoveModifier = targetMoveModifier,
+                minRangeModifier = minRangeModifier,
+                modifiers = modifiers,
+                partialCover = los.partialCover,
+                locationHits = locationHits,
+                missilesHit = missiles,
+            )
+        } else {
+            // Single-location weapon: one location roll, exactly as before.
+            val locationRoll = roller.roll2d6()
+            val hitLocation = HitLocationTable.roll(locationRoll.total)
+            AttackResult(
+                attackerId = declaration.attackerId,
+                targetId = declaration.targetId,
+                weaponName = weapon.name,
+                hit = true,
+                hitLocation = hitLocation,
+                damageApplied = weapon.damage,
+                targetNumber = targetNumber,
+                roll = toHitRoll.total,
+                toHitRoll = toHitRoll,
+                locationRoll = locationRoll,
+                gunnery = attacker.gunnerySkill,
+                rangeModifier = rangeModifier,
+                rangeBand = rangeBand,
+                heatPenalty = heatPenalty,
+                secondaryPenalty = secondaryPenalty,
+                sensorPenalty = sensorModifier,
+                attackerMoveModifier = attackerMoveModifier,
+                targetMoveModifier = targetMoveModifier,
+                minRangeModifier = minRangeModifier,
+                modifiers = modifiers,
+                partialCover = los.partialCover,
+                locationHits = listOf(LocationHit(hitLocation, weapon.damage, locationRoll)),
+                missilesHit = null,
+            )
+        }
     } else {
         AttackResult(
             attackerId = declaration.attackerId,
@@ -219,9 +314,32 @@ private fun resolveOneAttack(
             heatPenalty = heatPenalty,
             secondaryPenalty = secondaryPenalty,
             sensorPenalty = sensorModifier,
+            attackerMoveModifier = attackerMoveModifier,
+            targetMoveModifier = targetMoveModifier,
+            minRangeModifier = minRangeModifier,
             modifiers = modifiers,
+            partialCover = los.partialCover,
         )
     }
+}
+
+/**
+ * Splits [missilesHit] into damage values per group.
+ *
+ * Full groups of [missilesPerGroup] contribute `missilesPerGroup × damagePerMissile` each.
+ * A final partial group of `remainder` missiles contributes `remainder × damagePerMissile`.
+ */
+private fun buildClusterGroups(
+    missilesHit: Int,
+    missilesPerGroup: Int,
+    damagePerMissile: Int,
+): List<Int> {
+    val fullGroups = missilesHit / missilesPerGroup
+    val remainder = missilesHit % missilesPerGroup
+    val groups = ArrayList<Int>(fullGroups + if (remainder > 0) 1 else 0)
+    repeat(fullGroups) { groups.add(missilesPerGroup * damagePerMissile) }
+    if (remainder > 0) groups.add(remainder * damagePerMissile)
+    return groups
 }
 
 private val RANGE_LABELS = setOf("short", "med", "long", "out of range")

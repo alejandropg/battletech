@@ -67,7 +67,13 @@ internal object GameLogFormatter {
             val destroyed = destroyedClause(event.results.map { it.targetId to it.damage }, state)
             val text = if (destroyed == null) summary else "$summary — $destroyed"
             val icon = if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
-            listOf(LogLine(icon, text))
+            val lines = mutableListOf(LogLine(icon, text))
+            // For cluster weapons that hit, append a detail line showing missiles and per-group locations.
+            event.results.filter { it.hit }.forEach { result ->
+                val clusterLine = clusterDetailLine(result)
+                if (clusterLine != null) lines.add(clusterLine)
+            }
+            lines
         }
         is HeatDissipated -> {
             val parts = event.heatBefore
@@ -134,6 +140,20 @@ internal object GameLogFormatter {
             val name = event.unitId.value
             listOf(LogLine(null, "$name pilot regained consciousness"))
         }
+    }
+
+    /**
+     * Returns a detail line for a cluster-weapon hit, e.g.
+     * "  LRM 20: 16 missiles → 5 CT, 5 RT, 5 LA, 1 RA"
+     *
+     * Returns null for non-cluster weapons (missilesHit == null) or when there are no
+     * location hits to report (empty locationHits — legacy/test AttackResult objects).
+     */
+    private fun clusterDetailLine(result: battletech.tactical.attack.AttackResult): LogLine? {
+        val missiles = result.missilesHit ?: return null
+        if (result.locationHits.isEmpty()) return null
+        val groupParts = result.locationHits.joinToString(", ") { "${it.damage} ${locationLabel(it.location)}" }
+        return LogLine(null, "  ${result.weaponName}: $missiles missiles → $groupParts")
     }
 
     private fun torsoFacingLines(event: TorsoFacingsApplied, state: GameState): List<LogLine> {

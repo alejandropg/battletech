@@ -28,6 +28,9 @@ public sealed interface CommandRejection : RejectionReason {
     /** A unit with a destroyed gyro (2+ crits) can never stand up again. */
     public data class GyroDestroyed(public val unitId: UnitId) : CommandRejection
 
+    /** A unit with a destroyed leg may not jump or run. */
+    public data class LegDestroyed(public val unitId: UnitId) : CommandRejection
+
     public data object MatchOver : CommandRejection
 
     public data class RuleViolation(public val rule: RuleRejection) : CommandRejection

@@ -307,7 +307,8 @@ internal class CriticalHitResolutionTest {
             criticalLayout = build.layout,
         )
         // 2d6 = 9 -> 1 crit. Block 1 (upper), slot 2 -> index 1 (the ammo bin).
-        val roller = DiceRoller.deterministic(4, 5, 1, 2)
+        // Ammo explosion inflicts 2 pilot hits: consciousness 2d6 (hit 1), 2d6 (hit 2).
+        val roller = DiceRoller.deterministic(4, 5, 1, 2, 3, 3, 3, 3)
         val (updated, events) = resolveCriticalHits(unit, MechLocation.RIGHT_TORSO, roller)
 
         val exploded = events.filterIsInstance<AmmoExploded>().single()

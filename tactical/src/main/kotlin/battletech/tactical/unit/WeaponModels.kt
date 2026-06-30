@@ -42,6 +42,9 @@ public object WeaponModels {
         longRange = 9,
         criticalSlots = 2,
         ammoType = AmmoType.SRM6,
+        clusterSize = 6,
+        damagePerMissile = 2,
+        missilesPerGroup = 1,
     )
 
     public val smallLaser: WeaponModel = WeaponModel(
@@ -74,6 +77,9 @@ public object WeaponModels {
         longRange = 9,
         criticalSlots = 1,
         ammoType = AmmoType.SRM2,
+        clusterSize = 2,
+        damagePerMissile = 2,
+        missilesPerGroup = 1,
     )
 
     public val ppc: WeaponModel = WeaponModel(
@@ -97,6 +103,9 @@ public object WeaponModels {
         longRange = 21,
         criticalSlots = 1,
         ammoType = AmmoType.LRM5,
+        clusterSize = 5,
+        damagePerMissile = 1,
+        missilesPerGroup = 5,
     )
 
     public val lrm10: WeaponModel = WeaponModel(
@@ -109,6 +118,9 @@ public object WeaponModels {
         longRange = 21,
         criticalSlots = 2,
         ammoType = AmmoType.LRM10,
+        clusterSize = 10,
+        damagePerMissile = 1,
+        missilesPerGroup = 5,
     )
 
     public val lrm20: WeaponModel = WeaponModel(
@@ -121,6 +133,9 @@ public object WeaponModels {
         longRange = 21,
         criticalSlots = 5,
         ammoType = AmmoType.LRM20,
+        clusterSize = 20,
+        damagePerMissile = 1,
+        missilesPerGroup = 5,
     )
 
     public val ac5: WeaponModel = WeaponModel(

@@ -2,6 +2,7 @@ package battletech.tui
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
+import battletech.tactical.session.MatchEnded
 import battletech.tui.game.AppState
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.loop.UiEvent
@@ -293,6 +294,93 @@ internal class TuiAppLoopTest {
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
         assertTrue(loopJob.isCompleted, "Expected loop to terminate cleanly on Quit after recovering from an exception")
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 6: MatchEnded event causes game-over banner to appear in the render
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `game-over banner renders when MatchEnded event is received with a winner`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+        val loopJob = launch {
+            app.runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = buildAppState(),
+            )
+        }
+
+        internalEvents.send(UiEvent.Session(MatchEnded(PlayerId.PLAYER_1)))
+
+        val output = recorder.output()
+        assertTrue(output.contains("MATCH OVER"), "Expected 'MATCH OVER' banner title in output")
+        assertTrue(output.contains("P1 wins!"), "Expected winner label 'P1 wins!' in output")
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
+    @Test
+    fun `game-over banner shows Draw when MatchEnded has a null winner`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+        val loopJob = launch {
+            app.runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = buildAppState(),
+            )
+        }
+
+        internalEvents.send(UiEvent.Session(MatchEnded(winner = null)))
+
+        val output = recorder.output()
+        assertTrue(output.contains("MATCH OVER"), "Expected 'MATCH OVER' banner title in output")
+        assertTrue(output.contains("Draw"), "Expected 'Draw' in output for null winner")
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 7: Input is blocked after match ends — no phase transitions fire
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `game input is blocked after MatchEnded and no phase transitions fire`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+        val loopJob = launch {
+            app.runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = buildAppState(),
+            )
+        }
+
+        // End the match, then clear recorded output to isolate subsequent renders.
+        internalEvents.send(UiEvent.Session(MatchEnded(PlayerId.PLAYER_1)))
+        recorder.clearOutput()
+
+        // Pressing Enter on the enemy unit at (0,0) would normally produce the
+        // "Not your unit" flash, but input must be blocked after match ends.
+        internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
+
+        assertFalse(
+            recorder.output().contains("Not your unit"),
+            "Phase input should be blocked after MatchEnded — 'Not your unit' flash must not appear",
+        )
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
     }
 
     // ---- helpers ----

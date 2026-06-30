@@ -1,6 +1,8 @@
 package battletech.tactical.attack.physical
 
 import battletech.tactical.attack.ImpulseAttackPhaseHandler
+import battletech.tactical.attack.applyLocationDestructionConsequences
+import battletech.tactical.attack.applyTwentyDamagePsrs
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.model.TurnPhase
@@ -61,12 +63,30 @@ public class PhysicalAttackPhaseHandler : ImpulseAttackPhaseHandler() {
                 val fall = result.fall
                 if (fallenId != null && fall != null) {
                     events += UnitFell(unitId = fallenId, fall = fall)
+                    // Pilot-hit events from the kick knockdown fall (1 hit + consciousness roll).
+                    events += result.fallPilotEvents
                 }
             }
 
             val (stateAfterGyro, gyroEvents) = applyGyroCritEffects(stateBeforeCrits, newState, roller)
             newState = stateAfterGyro
             events += gyroEvents
+
+            // Apply location-destruction consequences (weapon disable, side-torso → arm
+            // cascade, leg-destruction falls) for locations newly destroyed this phase.
+            val (stateAfterDestruction, destructionEvents) =
+                applyLocationDestructionConsequences(stateBeforeCrits, newState, roller)
+            newState = stateAfterDestruction
+            events += destructionEvents
+
+            // 20-damage PSR: any target that took ≥20 total damage this phase must make a PSR
+            // (+1 per full 20, including gyro/leg modifiers). Fail → forced fall + pilot hit.
+            val damageByUnit = results
+                .groupBy { it.targetId }
+                .mapValues { (_, rs) -> rs.sumOf { r -> r.damage.sumOf { s -> s.armorDamage + s.structureDamage } } }
+            val (stateAfter20dmg, twentyDmgEvents) = applyTwentyDamagePsrs(newState, damageByUnit, roller)
+            newState = stateAfter20dmg
+            events += twentyDmgEvents
         }
 
         return PhaseOutcome(newState, turn.copy(attack = newAttack), events)
