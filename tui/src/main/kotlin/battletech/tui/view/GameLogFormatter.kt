@@ -33,7 +33,6 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.hex.ammoExplosionIcon
 import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.destroyedIcon
-import battletech.tui.hex.diceIcon
 import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
 import battletech.tui.hex.targetIcon
@@ -53,7 +52,7 @@ internal object GameLogFormatter {
             val p1 = event.initiative.rolls[PlayerId.PLAYER_1]!!
             val p2 = event.initiative.rolls[PlayerId.PLAYER_2]!!
             val first = playerLabel(event.initiative.loser)
-            listOf(LogLine(null, "Initiative: P1 ${diceIcon(p1.d1)}+${diceIcon(p1.d2)}=${p1.total}, P2 ${diceIcon(p2.d1)}+${diceIcon(p2.d2)}=${p2.total} — $first moves first"))
+            listOf(LogLine(null, "Initiative: P1 ${diceRollLabel(p1)}, P2 ${diceRollLabel(p2)} — $first moves first"))
         }
         is UnitMoved -> {
             val name = event.unitId.value

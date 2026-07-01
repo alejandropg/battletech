@@ -8,6 +8,7 @@ import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.phase.AttackResultsRender
+import battletech.tui.hex.diceIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -159,8 +160,7 @@ internal class AttackResultsViewTest {
     @Test
     fun `roll line shows both faces and total`() {
         val output = renderToString(listOf(aHitResult(toHitRoll = DiceRoll(4, 5))))
-        assertTrue(output.contains("4+5")) { "Expected 4+5 in roll line: $output" }
-        assertTrue(output.contains("= 9")) { "Expected = 9 total: $output" }
+        assertTrue(output.contains("${diceIcon(4)}+${diceIcon(5)}=9")) { "Expected dice icons and total in roll line: $output" }
     }
 
     @Test

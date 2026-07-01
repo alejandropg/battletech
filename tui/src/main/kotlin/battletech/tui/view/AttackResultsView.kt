@@ -7,6 +7,7 @@ import battletech.tactical.dice.twoD6AtLeastProbability
 import battletech.tui.game.PanelId
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.hex.targetIcon
+import battletech.tui.screen.CellWidth
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
@@ -50,8 +51,8 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         val toHit = result.toHitRoll
         val outcomeText = if (result.hit) "HIT" else "MISS"
         val outcomeColor = if (result.hit) Color.GREEN else Color.RED
-        val rollLine = "  roll  ${toHit.d1}+${toHit.d2} = ${toHit.total}"
-        val padding = (content.width - rollLine.length - outcomeText.length).coerceAtLeast(1)
+        val rollLine = "  roll  ${diceRollLabel(toHit)}"
+        val padding = (content.width - CellWidth.of(rollLine) - outcomeText.length).coerceAtLeast(1)
         content.writeln("$rollLine${" ".repeat(padding)}$outcomeText", Color.WHITE)
         val outcomeX = content.x + content.width - outcomeText.length
         if (outcomeX >= content.x) content.buffer.writeString(outcomeX, content.cy - 1, outcomeText, outcomeColor)
