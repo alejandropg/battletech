@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test
 
 internal class DeclaredTargetsViewTest {
 
-    private fun weapon(name: String, chance: Int = 72, targetRoll: Int = 6) =
-        DeclaredWeaponEntry(name, chance, targetRoll)
+    private fun weapon(name: String, chance: Int = 72, targetRoll: Int = 6, modifiers: List<String> = emptyList()) =
+        DeclaredWeaponEntry(name, chance, targetRoll, modifiers)
     private fun target(name: String, primary: Boolean, vararg weapons: DeclaredWeaponEntry) =
         DeclaredTargetEntry(UnitId(name), primary, weapons.toList())
     private fun attacker(name: String, player: PlayerId, draft: Boolean, vararg targets: DeclaredTargetEntry) =

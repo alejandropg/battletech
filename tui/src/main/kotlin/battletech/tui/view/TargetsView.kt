@@ -3,7 +3,6 @@ package battletech.tui.view
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.PanelId
-import battletech.tui.screen.CellWidth
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
@@ -62,9 +61,6 @@ public class TargetsView(
                 val cursor = if (isCursorHere) "▶" else " "
                 // One space placeholder at column 2 is where the checkbox glyph is overlaid below.
                 val left = "$cursor   ${weapon.weaponName}"
-                val right = hitChanceLabel(weapon.targetDiceRoll, weapon.successChance)
-                val padding = (content.width - left.length - CellWidth.of(right)).coerceAtLeast(1)
-                val weaponLine = "$left${" ".repeat(padding)}$right"
 
                 val color = when {
                     isCursorHere -> Color.BRIGHT_YELLOW
@@ -77,15 +73,8 @@ public class TargetsView(
                     else -> Checkbox.intrinsicColor(state)
                 }
                 val row = content.cy
-                content.writeln(weaponLine, color)
+                WeaponHitWidget.draw(content, left, weapon.targetDiceRoll, weapon.successChance, weapon.modifiers, color)
                 Checkbox.draw(content.buffer, content.x + 2, row, state, checkboxColor)
-
-                if (weapon.modifiers.isNotEmpty()) {
-                    weapon.modifiers.forEach {
-                        val modLine = "    $it"
-                        content.writeln(modLine, color)
-                    }
-                }
             }
 
             content.newLine() // blank line between targets

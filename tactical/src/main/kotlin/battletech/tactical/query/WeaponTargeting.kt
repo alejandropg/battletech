@@ -1,7 +1,7 @@
 package battletech.tactical.query
 
 import battletech.tactical.attack.WeaponAttackContext
-import battletech.tactical.attack.nonZero
+import battletech.tactical.attack.displayLabels
 import battletech.tactical.attack.total
 import battletech.tactical.attack.weapon.FireWeaponActionDefinition
 import battletech.tactical.attack.weapon.FiringArc
@@ -74,15 +74,12 @@ internal class WeaponTargeting(private val state: PublicGameState) {
                         gameState = state,
                     )
                     val targetNumber = (attacker.gunnerySkill + modifiers.total()).coerceAtLeast(2)
-                    val modifierLabels = modifiers.nonZero().map { (label, amount) ->
-                        "${if (amount > 0) "+" else ""}$amount $label"
-                    }
                     WeaponTargetInfo(
                         weaponIndex = index,
                         weaponName = weapon.name,
                         targetDiceRoll = targetNumber,
                         damage = weapon.damage,
-                        modifiers = modifierLabels,
+                        modifiers = modifiers.displayLabels(),
                     )
                 }
             }

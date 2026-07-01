@@ -11,3 +11,7 @@ public fun List<ToHitModifier>.total(): Int = sumOf { it.amount }
 
 /** Filters out modifiers that contribute nothing, for display purposes. */
 public fun List<ToHitModifier>.nonZero(): List<ToHitModifier> = filter { it.amount != 0 }
+
+/** Returns formatted modifier strings (e.g. "+2 med", "-1 range") for non-zero modifiers. */
+public fun List<ToHitModifier>.displayLabels(): List<String> =
+    nonZero().map { (label, amount) -> "${if (amount > 0) "+" else ""}$amount $label" }

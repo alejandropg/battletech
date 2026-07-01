@@ -443,5 +443,6 @@ private fun resolveWeaponEntry(
         weaponName = weaponName,
         successChance = weaponInfo?.successChance ?: 0,
         targetDiceRoll = weaponInfo?.targetDiceRoll ?: 13,
+        modifiers = weaponInfo?.modifiers ?: emptyList(),
     )
 }

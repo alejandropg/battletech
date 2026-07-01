@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.RangeBand
+import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
@@ -29,6 +30,7 @@ internal class AttackResultsViewTest {
         locationRoll: DiceRoll = DiceRoll(3, 4),
         hitLocation: HitLocation = HitLocation.CENTER_TORSO,
         damageApplied: Int = 5,
+        modifiers: List<ToHitModifier> = emptyList(),
     ): AttackResult = AttackResult(
         attackerId = attackerId,
         targetId = targetId,
@@ -45,6 +47,7 @@ internal class AttackResultsViewTest {
         rangeBand = rangeBand,
         heatPenalty = heatPenalty,
         secondaryPenalty = secondaryPenalty,
+        modifiers = modifiers,
     )
 
     private fun aMissResult(
@@ -55,6 +58,7 @@ internal class AttackResultsViewTest {
         heatPenalty: Int = 0,
         secondaryPenalty: Int = 0,
         toHitRoll: DiceRoll = DiceRoll(1, 1),
+        modifiers: List<ToHitModifier> = emptyList(),
     ): AttackResult = AttackResult(
         attackerId = attackerId,
         targetId = targetId,
@@ -71,6 +75,7 @@ internal class AttackResultsViewTest {
         rangeBand = rangeBand,
         heatPenalty = heatPenalty,
         secondaryPenalty = secondaryPenalty,
+        modifiers = modifiers,
     )
 
     private fun makeView(results: List<AttackResult>): AttackResultsView {
@@ -103,73 +108,53 @@ internal class AttackResultsViewTest {
     }
 
     @Test
-    fun `miss renders weapon name and MISS but no location lines`() {
+    fun `miss renders weapon name and MISS but no location or damage`() {
         val output = renderToString(listOf(aMissResult()))
         assertTrue(output.contains("PPC")) { "Expected weapon name in output" }
         assertTrue(output.contains("MISS")) { "Expected MISS outcome" }
-        assertTrue(output.contains("to-hit")) { "Expected to-hit line" }
-        assertFalse(output.contains("loc")) { "Expected no loc line for miss: $output" }
+        assertFalse(output.contains("dmg")) { "Expected no damage line for miss: $output" }
+        assertFalse(output.contains("→")) { "Expected no location line for miss: $output" }
     }
 
     @Test
-    fun `hit renders all five lines including location and damage`() {
+    fun `hit renders weapon name, HIT, location and damage`() {
         val output = renderToString(listOf(aHitResult()))
         assertTrue(output.contains("Med Laser")) { "Expected weapon name" }
         assertTrue(output.contains("HIT")) { "Expected HIT outcome" }
-        assertTrue(output.contains("to-hit")) { "Expected to-hit line" }
-        assertTrue(output.contains("loc")) { "Expected loc line for hit" }
         assertTrue(output.contains("Center Torso")) { "Expected hit location name" }
         assertTrue(output.contains("5 dmg")) { "Expected damage amount" }
     }
 
     @Test
-    fun `TN line always includes range band for short range`() {
-        val output = renderToString(listOf(aHitResult(rangeModifier = 0, rangeBand = RangeBand.SHORT)))
-        assertTrue(output.contains("+0sht")) { "Expected +0sht range band: $output" }
+    fun `weapon line shows target number and success percent`() {
+        // gunnery 4, no modifiers -> TN 4 -> 92% on 2d6
+        val output = renderToString(listOf(aHitResult(gunnery = 4, rangeModifier = 0)))
+        assertTrue(output.contains("92%")) { "Expected success percent for TN 4: $output" }
     }
 
     @Test
-    fun `TN line shows medium range band`() {
-        val output = renderToString(listOf(aMissResult(rangeModifier = 2, rangeBand = RangeBand.MEDIUM)))
-        assertTrue(output.contains("+2med")) { "Expected +2med range band: $output" }
+    fun `modifiers render one per line under the weapon`() {
+        val output = renderToString(
+            listOf(aHitResult(modifiers = listOf(ToHitModifier("med", 2), ToHitModifier("heat", 1)))),
+        )
+        assertTrue(output.contains("+2 med")) { "Expected +2 med modifier line: $output" }
+        assertTrue(output.contains("+1 heat")) { "Expected +1 heat modifier line: $output" }
     }
 
     @Test
-    fun `TN line shows long range band`() {
-        val output = renderToString(listOf(aMissResult(rangeModifier = 4, rangeBand = RangeBand.LONG)))
-        assertTrue(output.contains("+4long")) { "Expected +4long range band: $output" }
+    fun `zero-amount modifiers are omitted from the list`() {
+        val output = renderToString(
+            listOf(aHitResult(modifiers = listOf(ToHitModifier("med", 2), ToHitModifier("heat", 0)))),
+        )
+        assertTrue(output.contains("+2 med")) { "Expected non-zero modifier shown: $output" }
+        assertFalse(output.contains("heat")) { "Expected zero-amount modifier omitted: $output" }
     }
 
     @Test
-    fun `TN line omits heat when heat penalty is zero`() {
-        val output = renderToString(listOf(aHitResult(heatPenalty = 0)))
-        assertFalse(output.contains("heat")) { "Expected no heat modifier when penalty is 0: $output" }
-    }
-
-    @Test
-    fun `TN line includes heat when heat penalty is non-zero`() {
-        val output = renderToString(listOf(aHitResult(heatPenalty = 2)))
-        assertTrue(output.contains("+2heat")) { "Expected +2heat in TN line: $output" }
-    }
-
-    @Test
-    fun `TN line includes secondary penalty when non-zero`() {
-        val output = renderToString(listOf(aMissResult(secondaryPenalty = 1)))
-        assertTrue(output.contains("+1sec")) { "Expected +1sec in TN line: $output" }
-    }
-
-    @Test
-    fun `to-hit dice line shows both faces and total`() {
+    fun `roll line shows both faces and total`() {
         val output = renderToString(listOf(aHitResult(toHitRoll = DiceRoll(4, 5))))
-        assertTrue(output.contains("4+5")) { "Expected 4+5 in to-hit line: $output" }
+        assertTrue(output.contains("4+5")) { "Expected 4+5 in roll line: $output" }
         assertTrue(output.contains("= 9")) { "Expected = 9 total: $output" }
-    }
-
-    @Test
-    fun `loc dice line shows both faces and total on hit`() {
-        val output = renderToString(listOf(aHitResult(locationRoll = DiceRoll(3, 4))))
-        assertTrue(output.contains("3+4")) { "Expected 3+4 in loc line: $output" }
-        assertTrue(output.contains("= 7")) { "Expected = 7 total in loc line: $output" }
     }
 
     @Test
