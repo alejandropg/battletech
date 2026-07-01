@@ -261,6 +261,37 @@ internal class DefaultPlayerViewTest {
     }
 
     @Test
+    fun `targetInfos modifier list starts with gunnery base and sums to target number`() {
+        // Normal short-range engagement: attacker gunnery=4 (default), no special conditions.
+        // TN = 4 + Σ(modifiers) and will be well above 2, so coerceAtLeast does not apply.
+        val attacker = aUnit(
+            id = "attacker",
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+        )
+        val enemy = aUnit(
+            id = "enemy",
+            owner = PlayerId.PLAYER_2,
+            position = HexCoordinates(0, -1), // due north, distance 1
+        )
+        val state = aGameState(
+            units = listOf(attacker, enemy),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
+        )
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+
+        val weaponInfo = view.targetInfos(UnitId("attacker"), HexDirection.N).single().weapons.single()
+        val modifiers = weaponInfo.modifiers
+
+        // First line must be the gunnery base.
+        assertThat(modifiers.first()).isEqualTo("+${attacker.gunnerySkill} gunnery")
+
+        // The column must sum exactly to the target number (no clamping in this scenario).
+        val columnSum = modifiers.sumOf { it.substringBefore(' ').toInt() }
+        assertThat(columnSum).isEqualTo(weaponInfo.targetDiceRoll)
+    }
+
+    @Test
     fun `targetInfos applies the prone modifier so the preview agrees with resolution`() {
         // Regression test: targetInfos previously omitted the prone modifier, so the
         // previewed target number disagreed with the resolver's (which already applies

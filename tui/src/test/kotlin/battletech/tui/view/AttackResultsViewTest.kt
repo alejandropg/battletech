@@ -142,6 +142,12 @@ internal class AttackResultsViewTest {
     }
 
     @Test
+    fun `breakdown includes the gunnery base line`() {
+        val output = renderToString(listOf(aHitResult(gunnery = 4)))
+        assertTrue(output.contains("+4 gunnery")) { "Expected gunnery base line in output: $output" }
+    }
+
+    @Test
     fun `zero-amount modifiers are omitted from the list`() {
         val output = renderToString(
             listOf(aHitResult(modifiers = listOf(ToHitModifier("med", 2), ToHitModifier("heat", 0)))),

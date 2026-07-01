@@ -15,3 +15,8 @@ public fun List<ToHitModifier>.nonZero(): List<ToHitModifier> = filter { it.amou
 /** Returns formatted modifier strings (e.g. "+2 med", "-1 range") for non-zero modifiers. */
 public fun List<ToHitModifier>.displayLabels(): List<String> =
     nonZero().map { (label, amount) -> "${if (amount > 0) "+" else ""}$amount $label" }
+
+/** Full to-hit breakdown as display strings: the gunnery base first (so the column sums to the
+ *  target number), then each non-zero modifier. */
+public fun toHitBreakdownLabels(gunnery: Int, modifiers: List<ToHitModifier>): List<String> =
+    listOf("+$gunnery gunnery") + modifiers.displayLabels()

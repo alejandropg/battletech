@@ -2,7 +2,7 @@ package battletech.tui.view
 
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.HitLocation
-import battletech.tactical.attack.displayLabels
+import battletech.tactical.attack.toHitBreakdownLabels
 import battletech.tactical.dice.twoD6AtLeastProbability
 import battletech.tui.game.PanelId
 import battletech.tui.game.phase.AttackResultsRender
@@ -44,7 +44,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
     private fun renderWeaponResult(content: ContentWriter, result: AttackResult) {
         // Block 1: unified hit widget (weapon name, TN, success %, modifiers)
         val successChance = twoD6AtLeastProbability(result.targetNumber)
-        WeaponHitWidget.draw(content, "  ${result.weaponName}", result.targetNumber, successChance, result.modifiers.displayLabels(), Color.WHITE)
+        WeaponHitWidget.draw(content, "  ${result.weaponName}", result.targetNumber, successChance, toHitBreakdownLabels(result.gunnery, result.modifiers), Color.WHITE)
 
         // Block 2: raw roll + outcome (right-aligned, outcome overwritten in color)
         val toHit = result.toHitRoll
