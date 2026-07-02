@@ -2,6 +2,7 @@ package battletech.tui.view
 
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.HitLocation
+import battletech.tactical.attack.LocationHit
 import battletech.tactical.attack.RangeBand
 import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.dice.DiceRoll
@@ -77,6 +78,45 @@ internal class AttackResultsViewTest {
         heatPenalty = heatPenalty,
         secondaryPenalty = secondaryPenalty,
         modifiers = modifiers,
+    )
+
+    private fun aClusterHitResult(
+        weaponName: String = "LRM 20",
+        gunnery: Int = 4,
+        rangeModifier: Int = 0,
+        rangeBand: RangeBand = RangeBand.SHORT,
+        heatPenalty: Int = 0,
+        secondaryPenalty: Int = 0,
+        toHitRoll: DiceRoll = DiceRoll(4, 5),
+        hitLocation: HitLocation = HitLocation.CENTER_TORSO,
+        damageApplied: Int = 16,
+        missilesHit: Int = 16,
+        locationHits: List<LocationHit> = listOf(
+            LocationHit(HitLocation.CENTER_TORSO, 5, DiceRoll(3, 4)),
+            LocationHit(HitLocation.RIGHT_TORSO, 5, DiceRoll(3, 4)),
+            LocationHit(HitLocation.CENTER_TORSO, 5, DiceRoll(3, 4)),
+            LocationHit(HitLocation.LEFT_ARM, 1, DiceRoll(3, 4)),
+        ),
+        modifiers: List<ToHitModifier> = emptyList(),
+    ): AttackResult = AttackResult(
+        attackerId = attackerId,
+        targetId = targetId,
+        weaponName = weaponName,
+        hit = true,
+        hitLocation = hitLocation,
+        damageApplied = damageApplied,
+        targetNumber = gunnery + rangeModifier + heatPenalty + secondaryPenalty,
+        roll = toHitRoll.total,
+        toHitRoll = toHitRoll,
+        locationRoll = locationHits.first().locationRoll,
+        gunnery = gunnery,
+        rangeModifier = rangeModifier,
+        rangeBand = rangeBand,
+        heatPenalty = heatPenalty,
+        secondaryPenalty = secondaryPenalty,
+        modifiers = modifiers,
+        locationHits = locationHits,
+        missilesHit = missilesHit,
     )
 
     private fun makeView(results: List<AttackResult>): AttackResultsView {
@@ -206,5 +246,31 @@ internal class AttackResultsViewTest {
         }
         // With offset=15, lines before row 15 are scrolled away; later weapon entries are visible
         assertTrue(output.contains("Weapon")) { "Expected weapon lines after scroll: $output" }
+    }
+
+    @Test
+    fun `cluster hit renders missiles summary header with total damage`() {
+        val output = renderToString(listOf(aClusterHitResult()))
+        assertTrue(output.contains("16 missiles")) { "Expected missiles summary header: $output" }
+        assertTrue(output.contains("16 dmg")) { "Expected total damage: $output" }
+    }
+
+    @Test
+    fun `cluster hit aggregates repeated locations and lists distinct ones separately`() {
+        val output = renderToString(listOf(aClusterHitResult()))
+        assertTrue(output.contains("Center Torso")) { "Expected Center Torso location line: $output" }
+        assertTrue(output.contains("10 dmg")) { "Expected aggregated Center Torso damage: $output" }
+        assertTrue(output.contains("Left Arm")) { "Expected Left Arm location line: $output" }
+        assertTrue(output.contains("1 dmg")) { "Expected Left Arm damage: $output" }
+        assertTrue(output.contains("Right Torso")) { "Expected Right Torso location line: $output" }
+        assertTrue(output.contains("5 dmg")) { "Expected Right Torso damage: $output" }
+    }
+
+    @Test
+    fun `single-location hit output remains unchanged`() {
+        val output = renderToString(listOf(aHitResult()))
+        assertTrue(output.contains("Center Torso")) { "Expected hit location name" }
+        assertTrue(output.contains("5 dmg")) { "Expected damage amount" }
+        assertFalse(output.contains("missiles")) { "Expected no missiles summary for single-location hit: $output" }
     }
 }

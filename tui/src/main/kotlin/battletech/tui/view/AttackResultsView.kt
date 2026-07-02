@@ -59,11 +59,22 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         if (outcomeX >= content.x) content.buffer.writeString(outcomeX, content.cy - 1, outcomeText, outcomeColor)
 
         // Block 3: location + damage (hit only)
-        val locRoll = result.locationRoll
-        val hitLoc = result.hitLocation
-        if (result.hit && locRoll != null && hitLoc != null) {
-            val locationName = hitLocationName(hitLoc)
-            content.writeln("   → $locationName   ${result.damageApplied} dmg", Color.WHITE)
+        if (result.missilesHit != null) {
+            val total = result.locationHits.sumOf { it.damage }
+            content.writeRow("   ${result.missilesHit} missiles", "$total dmg", Color.WHITE)
+            val byLocation = LinkedHashMap<HitLocation, Int>()
+            for (locationHit in result.locationHits) {
+                byLocation.merge(locationHit.location, locationHit.damage, Int::plus)
+            }
+            for ((loc, dmg) in byLocation) {
+                content.writeRow("   → ${hitLocationName(loc)}", "$dmg dmg", Color.WHITE)
+            }
+        } else {
+            val locRoll = result.locationRoll
+            val hitLoc = result.hitLocation
+            if (result.hit && locRoll != null && hitLoc != null) {
+                content.writeln("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", Color.WHITE)
+            }
         }
     }
 
