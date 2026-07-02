@@ -16,6 +16,8 @@ private val NF_MD_WALK = String(Character.toChars(0xF0583))
 private val NF_MD_RUN_FAST = String(Character.toChars(0xF046E))
 private val NF_MD_ROCKET_LAUNCH = String(Character.toChars(0xF14DE))
 private val NF_MD_TARGET = String(Character.toChars(0xF04FE))
+private val NF_MD_BULLSEYE_ARROW = String(Character.toChars(0xF08C9))
+private val NF_MD_CROSSHAIRS_OFF = String(Character.toChars(0xF0F45))
 private val NF_MD_DICE_MULTIPLE_OUTLINE = String(Character.toChars(0xF1156))
 private val NF_MD_CHECKBOX_BLANK_OUTLINE = String(Character.toChars(0xF0131))
 private val NF_MD_CHECKBOX_MARKED_OUTLINE = String(Character.toChars(0xF0135))
@@ -87,6 +89,9 @@ internal fun movementModeIcon(mode: MovementMode): String =
     }
 
 internal fun targetIcon(): String = NF_MD_TARGET
+
+internal fun attackOutcomeIcon(hit: Boolean): String =
+    if (hit) NF_MD_BULLSEYE_ARROW else NF_MD_CROSSHAIRS_OFF
 
 /** Marker for a destroyed critical slot, with a distinct glyph for engine/gyro/sensor/life-support crits. */
 internal fun criticalHitIcon(content: CriticalSlotContent): String =

@@ -6,6 +6,7 @@ import battletech.tactical.attack.toHitBreakdownLabels
 import battletech.tactical.dice.twoD6AtLeastProbability
 import battletech.tui.game.PanelId
 import battletech.tui.game.phase.AttackResultsRender
+import battletech.tui.hex.attackOutcomeIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.screen.CellWidth
 import battletech.tui.screen.Color
@@ -49,12 +50,12 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
         // Block 2: raw roll + outcome (right-aligned, outcome overwritten in color)
         val toHit = result.toHitRoll
-        val outcomeText = if (result.hit) "HIT" else "MISS"
+        val outcomeText = "${if (result.hit) "HIT" else "MISS"} ${attackOutcomeIcon(result.hit)}"
         val outcomeColor = if (result.hit) Color.GREEN else Color.RED
-        val rollLine = "  roll  ${diceRollLabel(toHit)}"
-        val padding = (content.width - CellWidth.of(rollLine) - outcomeText.length).coerceAtLeast(1)
+        val rollLine = "   ${diceRollLabel(toHit)}"
+        val padding = (content.width - CellWidth.of(rollLine) - CellWidth.of(outcomeText)).coerceAtLeast(1)
         content.writeln("$rollLine${" ".repeat(padding)}$outcomeText", Color.WHITE)
-        val outcomeX = content.x + content.width - outcomeText.length
+        val outcomeX = content.x + content.width - CellWidth.of(outcomeText)
         if (outcomeX >= content.x) content.buffer.writeString(outcomeX, content.cy - 1, outcomeText, outcomeColor)
 
         // Block 3: location + damage (hit only)
