@@ -26,7 +26,6 @@ import battletech.tui.game.pathHighlights
 import battletech.tui.game.reachabilityHighlights
 import battletech.tui.input.BrowsingAction
 import battletech.tui.input.FacingAction
-import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -45,15 +44,17 @@ internal sealed interface MovementPhase : Phase {
     data object SelectingUnit : MovementPhase {
 
         override fun handle(event: InputEvent, app: AppState): Transition? {
-            val action = mapIdleInput(event) ?: return null
-
-            return when (action) {
-                is IdleAction.MoveCursor -> handleCursorMove(app, action)
-                is IdleAction.ClickHex -> trySelect(app.copy(cursor = action.coords))
-                is IdleAction.SelectUnit -> trySelect(app)
-                is IdleAction.CycleUnit -> cycleToNextUnit(app, app.gameState.unitAt(app.cursor)?.id)
-                is IdleAction.CommitDeclarations -> Transition(app)
-            }
+            val turnState = app.turnState
+            return handleUnitSelection(
+                event = event,
+                app = app,
+                activePlayer = { turnState.movement.activePlayer },
+                selectableUnits = { turnState.selectableUnits(app.gameState) },
+                selectGuard = { unit ->
+                    if (unit.id in turnState.movement.movedUnitIds) FlashMessage("Already moved") else null
+                },
+                enterFor = ::enterMovementSubMode,
+            )
         }
 
         override fun prompt(app: AppState): String {
@@ -71,27 +72,6 @@ internal sealed interface MovementPhase : Phase {
             return turnState.movement.activePlayer.displayName
         }
 
-        private fun trySelect(app: AppState): Transition {
-            val turnState = app.turnState
-            return selectOwnUnit(
-                app = app,
-                activePlayer = turnState.movement.activePlayer,
-                extraGuard = { unit ->
-                    if (unit.id in turnState.movement.movedUnitIds) FlashMessage("Already moved") else null
-                },
-                onSelect = { unit ->
-                    if (unit.isProne) {
-                        // A prone unit must stand before it can move.
-                        app.session.submitCommand(StandUp(playerId = unit.owner, unitId = unit.id))
-                        Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)))
-                    } else {
-                        val newPhase = enterBrowsing(unit, app.viewFor(unit.owner))
-                        Transition(app.copy(phase = newPhase))
-                    }
-                },
-            )
-        }
-
     }
 
     public data class Browsing(
@@ -99,7 +79,7 @@ internal sealed interface MovementPhase : Phase {
         val modes: List<ReachabilityMap>,
         val currentModeIndex: Int,
         val hoveredDestination: ReachableHex?,
-    ) : MovementPhase {
+    ) : MovementPhase, CancelableSubPhase {
 
         val reachability: ReachabilityMap get() = modes[currentModeIndex]
 
@@ -137,7 +117,7 @@ internal sealed interface MovementPhase : Phase {
             val updated = app.copy(cursor = newCursor)
 
             return when (action) {
-                is BrowsingAction.Cancel -> Transition(updated.copy(phase = SelectingUnit))
+                is BrowsingAction.Cancel -> onCancel(updated)
                 is BrowsingAction.ConfirmPath -> confirm(updated)
                 is BrowsingAction.SelectFacing -> selectFacing(updated, action.index)
                 is BrowsingAction.MoveCursor, is BrowsingAction.ClickHex ->
@@ -158,6 +138,8 @@ internal sealed interface MovementPhase : Phase {
         )
 
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitById(unitId)
+
+        override fun onCancel(app: AppState): Transition = Transition(app.copy(phase = SelectingUnit))
 
         override fun pendingHeat(app: AppState): List<HeatSource> {
             val destination = hoveredDestination ?: return emptyList()
@@ -214,7 +196,7 @@ internal sealed interface MovementPhase : Phase {
         val currentModeIndex: Int,
         val hex: HexCoordinates,
         val options: List<ReachableHex>,
-    ) : MovementPhase {
+    ) : MovementPhase, CancelableSubPhase {
 
         val reachability: ReachabilityMap get() = modes[currentModeIndex]
 
@@ -238,7 +220,7 @@ internal sealed interface MovementPhase : Phase {
             } ?: return null
 
             return when (action) {
-                is FacingAction.Cancel -> Transition(app.copy(phase = toBrowsing()))
+                is FacingAction.Cancel -> onCancel(app)
                 is FacingAction.SelectFacing -> commitByFacing(app, action.index)
                 is FacingAction.CycleUnit -> cycleToNextUnit(app, unitId)
             }
@@ -253,6 +235,8 @@ internal sealed interface MovementPhase : Phase {
         )
 
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitById(unitId)
+
+        override fun onCancel(app: AppState): Transition = Transition(app.copy(phase = toBrowsing()))
 
         override fun pendingHeat(app: AppState): List<HeatSource> {
             val unit = app.gameState.unitById(unitId)
@@ -289,14 +273,29 @@ internal fun enterBrowsing(unit: CombatUnit, view: PlayerView): MovementPhase.Br
     )
 }
 
+/**
+ * Enter the movement sub-mode for [unit]: a prone unit must stand first (which
+ * re-syncs to whatever phase the session settles in), otherwise browse legal
+ * destinations. Shared by the idle Tab/Enter selection ([handleUnitSelection])
+ * and the in-sub-mode cycle ([cycleToNextUnit]) so all movement selections
+ * treat prone units identically.
+ */
+internal fun enterMovementSubMode(unit: CombatUnit, app: AppState): Transition =
+    if (unit.isProne) {
+        // A prone unit must stand before it can move.
+        app.session.submitCommand(StandUp(playerId = unit.owner, unitId = unit.id))
+        Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)))
+    } else {
+        Transition(app.copy(phase = enterBrowsing(unit, app.viewFor(unit.owner))))
+    }
+
 internal fun cycleToNextUnit(app: AppState, currentUnitId: UnitId?): Transition {
     val units = app.turnState.selectableUnits(app.gameState)
     if (units.isEmpty()) return Transition(app)
     val currentIdx = units.indexOfFirst { it.id == currentUnitId }
     val nextIdx = if (currentIdx == -1) 0 else (currentIdx + 1) % units.size
     val nextUnit = units[nextIdx]
-    val nextPhase = enterBrowsing(nextUnit, app.viewFor(nextUnit.owner))
-    return Transition(app.copy(cursor = nextUnit.position, phase = nextPhase))
+    return enterMovementSubMode(nextUnit, app.copy(cursor = nextUnit.position))
 }
 
 /**

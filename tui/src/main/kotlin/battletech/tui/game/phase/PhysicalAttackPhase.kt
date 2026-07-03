@@ -20,13 +20,12 @@ import battletech.tui.game.attackPlayerLabel
 import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.AttackAction
-import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 
 internal const val PHYSICAL_DECLARING_PROMPT =
-    "↑/↓ navigate | Space: toggle punch/kick | Tab: next attacker | 'c': commit"
+    "↑/↓ navigate | Space: toggle punch/kick | Esc: back | Tab: next attacker | 'c': commit"
 
 /** Chosen physical attacks per attacker: target id -> set of attack kinds. */
 internal typealias PhysicalDrafts = Map<UnitId, Map<UnitId, Set<PhysicalAttackKind>>>
@@ -46,17 +45,15 @@ internal sealed interface PhysicalAttackPhase : Phase {
         override val drafts: PhysicalDrafts = emptyMap(),
     ) : PhysicalAttackPhase {
 
-        override fun handle(event: InputEvent, app: AppState): Transition? {
-            val action = mapIdleInput(event) ?: return null
-
-            return when (action) {
-                is IdleAction.MoveCursor -> handleCursorMove(app, action)
-                is IdleAction.ClickHex -> trySelect(app.copy(cursor = action.coords))
-                is IdleAction.SelectUnit -> trySelect(app)
-                is IdleAction.CycleUnit -> cycleSelectable(app, app.turnState.selectableAttackUnits(app.gameState))
-                is IdleAction.CommitDeclarations -> commitPhysicalImpulse(app, drafts)
-            }
-        }
+        override fun handle(event: InputEvent, app: AppState): Transition? =
+            handleUnitSelection(
+                event = event,
+                app = app,
+                activePlayer = { app.turnState.attack.activePlayer },
+                selectableUnits = { app.turnState.selectableAttackUnits(app.gameState) },
+                onCommit = { a -> commitPhysicalImpulse(a, drafts) },
+                enterFor = { unit, a -> Transition(a.copy(phase = enterPhysicalDeclaring(unit.id, a, drafts))) },
+            )
 
         override fun prompt(app: AppState): String {
             val turnState = app.turnState
@@ -68,15 +65,6 @@ internal sealed interface PhysicalAttackPhase : Phase {
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitAt(app.cursor)
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState)
-
-        private fun trySelect(app: AppState): Transition =
-            selectOwnUnit(
-                app = app,
-                activePlayer = app.turnState.attack.activePlayer,
-                onSelect = { unit ->
-                    Transition(app.copy(phase = enterPhysicalDeclaring(unit.id, app, drafts)))
-                },
-            )
     }
 
     public data class Declaring(
@@ -84,7 +72,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
         val cursorIndex: Int,
         val assignments: Map<UnitId, Set<PhysicalAttackKind>>,
         override val drafts: PhysicalDrafts = emptyMap(),
-    ) : PhysicalAttackPhase {
+    ) : PhysicalAttackPhase, CancelableSubPhase {
 
         override fun handle(event: InputEvent, app: AppState): Transition? {
             val action = (event as? KeyboardEvent)?.let { InputMapper.mapAttackEvent(it) } ?: return null
@@ -93,7 +81,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
                 is AttackAction.ToggleWeapon -> toggle(app)
                 is AttackAction.NextAttacker -> nextAttacker(app)
                 is AttackAction.Commit -> commitPhysicalImpulse(app, allDrafts())
-                is AttackAction.Cancel -> Transition(app.copy(phase = SelectingAttacker(allDrafts())))
+                is AttackAction.Cancel -> onCancel(app)
                 is AttackAction.TwistTorso -> Transition(app) // physical attacks don't twist
                 is AttackAction.ClickTarget -> Transition(app)
             }
@@ -102,6 +90,8 @@ internal sealed interface PhysicalAttackPhase : Phase {
         override fun prompt(app: AppState): String = PHYSICAL_DECLARING_PROMPT
 
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitById(unitId)
+
+        override fun onCancel(app: AppState): Transition = Transition(app.copy(phase = SelectingAttacker(allDrafts())))
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState, requireSeeded = false)
 

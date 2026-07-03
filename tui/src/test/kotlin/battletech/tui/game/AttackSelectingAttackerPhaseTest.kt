@@ -28,6 +28,7 @@ internal class AttackSelectingAttackerPhaseTest {
 
     private fun enterKey(): KeyboardEvent = KeyboardEvent("Enter")
     private fun cKey(): KeyboardEvent = KeyboardEvent("c")
+    private fun tabKey(): KeyboardEvent = KeyboardEvent("Tab")
 
     @Nested
     inner class TrySelectUnitTest {
@@ -105,6 +106,51 @@ internal class AttackSelectingAttackerPhaseTest {
             val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), state)
             assertNotNull(result)
             assertNull(result!!.flash)
+        }
+    }
+
+    @Nested
+    inner class CycleUnitTest {
+        // Tab is unified with the movement phase: it cycles to the next
+        // selectable attacker AND enters Declaring for it (previously it only
+        // moved the cursor).
+        @Test
+        fun `cycles to next selectable attacker and enters Declaring`() {
+            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+            val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(2, 2))
+            val gameState = aGameState(units = listOf(u1, u2))
+            val state = anAppState(cursor = HexCoordinates(0, 0), gameState = gameState, turnState = aTurnState())
+
+            val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(tabKey(), state)
+
+            assertNotNull(result)
+            assertEquals(HexCoordinates(2, 2), result!!.app.cursor)
+            val declaring = assertInstanceOf(AttackPhase.Declaring::class.java, result.app.phase)
+            assertEquals(u2.id, declaring.unitId)
+        }
+
+        @Test
+        fun `Tab with cursor on empty hex enters Declaring for the first attacker`() {
+            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(2, 2))
+            val gameState = aGameState(units = listOf(u1))
+            val state = anAppState(cursor = HexCoordinates(0, 0), gameState = gameState, turnState = aTurnState())
+
+            val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(tabKey(), state)
+
+            assertNotNull(result)
+            assertEquals(HexCoordinates(2, 2), result!!.app.cursor)
+            val declaring = assertInstanceOf(AttackPhase.Declaring::class.java, result.app.phase)
+            assertEquals(u1.id, declaring.unitId)
+        }
+
+        @Test
+        fun `Tab with no selectable attackers is a no-op`() {
+            val state = anAppState(cursor = HexCoordinates(0, 0), gameState = aGameState(), turnState = aTurnState())
+
+            val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(tabKey(), state)
+
+            assertNotNull(result)
+            assertEquals(state, result!!.app)
         }
     }
 }

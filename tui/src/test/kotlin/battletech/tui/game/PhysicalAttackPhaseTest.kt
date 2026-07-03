@@ -67,6 +67,15 @@ internal class PhysicalAttackPhaseTest {
     }
 
     @Test
+    fun `escape cancels back to SelectingAttacker`() {
+        val declaring = enterPhysicalDeclaring(attacker.id, appWith(PhysicalAttackPhase.SelectingAttacker()), emptyMap())
+        val app = appWith(declaring)
+        val transition = declaring.handle(KeyboardEvent("Escape"), app)!!
+
+        assertThat(transition.app.phase).isInstanceOf(PhysicalAttackPhase.SelectingAttacker::class.java)
+    }
+
+    @Test
     fun `committing a punch resolves it against the session`() {
         val declaring = PhysicalAttackPhase.Declaring(
             unitId = attacker.id,

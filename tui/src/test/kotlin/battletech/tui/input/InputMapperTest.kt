@@ -209,8 +209,8 @@ internal class InputMapperTest {
         }
 
         @Test
-        fun `escape returns null`() {
-            assertNull(InputMapper.mapAttackEvent(key("Escape")))
+        fun `escape maps to Cancel`() {
+            assertEquals(AttackAction.Cancel, InputMapper.mapAttackEvent(key("Escape")))
         }
 
         @Test

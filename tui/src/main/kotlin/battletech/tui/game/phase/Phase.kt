@@ -63,3 +63,13 @@ internal sealed interface Phase {
 
     fun activePlayerLabel(app: AppState): String? = null
 }
+
+/**
+ * A sub-mode entered from an idle unit-selection state (destination browsing,
+ * facing, weapon/physical declaration). Pressing Esc backs out one level via
+ * [onCancel], which returns to the parent phase — usually the idle selecting
+ * state, or the previous sub-mode in a multi-step flow.
+ */
+internal interface CancelableSubPhase {
+    fun onCancel(app: AppState): Transition
+}

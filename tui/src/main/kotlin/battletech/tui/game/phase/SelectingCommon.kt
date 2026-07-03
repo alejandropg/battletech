@@ -59,20 +59,72 @@ internal fun selectOwnUnit(
 }
 
 /**
- * Advance the cursor to the next unit in [units] by position, cycling
- * through the list.
+ * Shared input handler for every "select a unit" idle state
+ * ([MovementPhase.SelectingUnit], [AttackPhase.SelectingAttacker], and
+ * [PhysicalAttackPhase.SelectingAttacker]). All three share the same
+ * interaction vocabulary:
  *
- * - Empty list → `Transition(app)`.
- * - Cursor not on any listed unit (index == -1) → moves to `units[0]`.
- * - Otherwise → moves to `units[(idx + 1) % units.size]`.
+ * - arrow/wasd/qe → move the cursor,
+ * - Enter / click → select the unit under the cursor (subject to ownership and
+ *   [selectGuard]) and enter the phase's sub-mode via [enterFor],
+ * - Tab → cycle to the next unit in [selectableUnits] and *also* enter the
+ *   sub-mode for it, so Tab and Enter land in the same place,
+ * - 'c' → run [onCommit] (a no-op by default, as in movement).
  *
- * This covers the identical cycle logic in [AttackPhase.SelectingAttacker]
- * and [PhysicalAttackPhase.SelectingAttacker]. The movement-phase cycle
- * ([cycleToNextUnit]) is intentionally kept separate because it also enters
- * [MovementPhase.Browsing] and uses unit-id lookup rather than position.
+ * Returns null when the event maps to no idle action, matching [mapIdleInput].
  */
-internal fun cycleSelectable(app: AppState, units: List<CombatUnit>): Transition {
-    if (units.isEmpty()) return Transition(app)
-    val idx = units.indexOfFirst { it.position == app.cursor }
-    return Transition(app.copy(cursor = units[(idx + 1) % units.size].position))
+internal fun handleUnitSelection(
+    event: InputEvent,
+    app: AppState,
+    activePlayer: () -> PlayerId,
+    selectableUnits: () -> List<CombatUnit>,
+    selectGuard: (CombatUnit) -> FlashMessage? = { null },
+    onCommit: (AppState) -> Transition = { Transition(it) },
+    enterFor: (CombatUnit, AppState) -> Transition,
+): Transition? {
+    val action = mapIdleInput(event) ?: return null
+    // [activePlayer] and [selectableUnits] are evaluated lazily: cursor moves
+    // and commits must not touch turn-state fields that may be absent (e.g.
+    // TurnState.NULL) when no unit selection is actually happening.
+    return when (action) {
+        is IdleAction.MoveCursor -> handleCursorMove(app, action)
+        is IdleAction.ClickHex ->
+            selectUnitAt(app.copy(cursor = action.coords), activePlayer(), selectGuard, enterFor)
+        is IdleAction.SelectUnit -> selectUnitAt(app, activePlayer(), selectGuard, enterFor)
+        is IdleAction.CycleUnit -> cycleAndEnter(app, selectableUnits(), enterFor)
+        is IdleAction.CommitDeclarations -> onCommit(app)
+    }
+}
+
+private fun selectUnitAt(
+    app: AppState,
+    activePlayer: PlayerId,
+    selectGuard: (CombatUnit) -> FlashMessage?,
+    enterFor: (CombatUnit, AppState) -> Transition,
+): Transition = selectOwnUnit(app, activePlayer, selectGuard) { unit -> enterFor(unit, app) }
+
+/**
+ * Advance the cursor to the next unit in [selectableUnits] and enter the
+ * phase's sub-mode for it via [enterFor].
+ *
+ * - Empty list → `Transition(app)` (no-op).
+ * - Cursor not on any listed unit → enters the first unit.
+ * - Otherwise → enters `selectableUnits[(idx + 1) % size]`.
+ *
+ * The current unit is identified by the unit under the cursor, which is always
+ * correct in an idle selecting state. The in-sub-mode cyclers
+ * ([cycleToNextUnit], `AttackPhase.Declaring.nextAttacker`) stay separate:
+ * there the cursor may sit on a destination/target hex rather than the active
+ * unit, and they also carry per-unit draft state.
+ */
+private fun cycleAndEnter(
+    app: AppState,
+    selectableUnits: List<CombatUnit>,
+    enterFor: (CombatUnit, AppState) -> Transition,
+): Transition {
+    if (selectableUnits.isEmpty()) return Transition(app)
+    val currentId = app.gameState.unitAt(app.cursor)?.id
+    val idx = selectableUnits.indexOfFirst { it.id == currentId }
+    val next = selectableUnits[if (idx == -1) 0 else (idx + 1) % selectableUnits.size]
+    return enterFor(next, app.copy(cursor = next.position))
 }

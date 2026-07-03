@@ -28,14 +28,13 @@ import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.selectedLosHighlights
 import battletech.tui.hex.HexHighlight
 import battletech.tui.input.AttackAction
-import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 
 internal const val DECLARING_PROMPT =
-    "←/→ twist torso | ↑/↓ navigate weapons | Space: toggle | Tab: next attacker | 'c': commit"
+    "←/→ twist torso | ↑/↓ navigate weapons | Space: toggle | Esc: back | Tab: next attacker | 'c': commit"
 
 internal sealed interface AttackPhase : Phase {
     public val attackTurnPhase: TurnPhase
@@ -64,17 +63,17 @@ internal sealed interface AttackPhase : Phase {
         override val drafts: Map<UnitId, UnitDeclaration> = emptyMap(),
     ) : AttackPhase {
 
-        override fun handle(event: InputEvent, app: AppState): Transition? {
-            val action = mapIdleInput(event) ?: return null
-
-            return when (action) {
-                is IdleAction.MoveCursor -> handleCursorMove(app, action)
-                is IdleAction.ClickHex -> trySelect(app.copy(cursor = action.coords))
-                is IdleAction.SelectUnit -> trySelect(app)
-                is IdleAction.CycleUnit -> cycleSelectable(app, app.turnState.selectableAttackUnits(app.gameState))
-                is IdleAction.CommitDeclarations -> commitAttackImpulse(app, attackTurnPhase, drafts)
-            }
-        }
+        override fun handle(event: InputEvent, app: AppState): Transition? =
+            handleUnitSelection(
+                event = event,
+                app = app,
+                activePlayer = { app.turnState.attack.activePlayer },
+                selectableUnits = { app.turnState.selectableAttackUnits(app.gameState) },
+                onCommit = { a -> commitAttackImpulse(a, attackTurnPhase, drafts) },
+                enterFor = { unit, a ->
+                    Transition(a.copy(phase = enterDeclaring(unit, attackTurnPhase, a.viewFor(unit.owner), drafts)))
+                },
+            )
 
         override fun prompt(app: AppState): String {
             val turnState = app.turnState
@@ -92,16 +91,6 @@ internal sealed interface AttackPhase : Phase {
             turnState: TurnState,
             viewingPlayer: PlayerId,
         ): DeclaredTargetsRender = buildDeclaredTargetsRender(gameState, turnState, viewingPlayer, drafts)
-
-        private fun trySelect(app: AppState): Transition =
-            selectOwnUnit(
-                app = app,
-                activePlayer = app.turnState.attack.activePlayer,
-                onSelect = { unit ->
-                    val newPhase = enterDeclaring(unit, attackTurnPhase, app.viewFor(unit.owner), drafts)
-                    Transition(app.copy(phase = newPhase))
-                },
-            )
     }
 
     public data class Declaring(
@@ -109,7 +98,7 @@ internal sealed interface AttackPhase : Phase {
         val unitId: UnitId,
         val allocation: WeaponAllocation,
         override val drafts: Map<UnitId, UnitDeclaration> = emptyMap(),
-    ) : AttackPhase {
+    ) : AttackPhase, CancelableSubPhase {
 
         /** Convenience accessors forwarded from [allocation]. */
         val torsoFacing: HexDirection get() = allocation.torsoFacing
@@ -145,9 +134,7 @@ internal sealed interface AttackPhase : Phase {
             return when (action) {
                 is AttackAction.NextAttacker -> nextAttacker(app)
                 is AttackAction.Commit -> commitAttackImpulse(app, attackTurnPhase, allDrafts())
-                is AttackAction.Cancel -> Transition(
-                    app.copy(phase = SelectingAttacker(attackTurnPhase, allDrafts())),
-                )
+                is AttackAction.Cancel -> onCancel(app)
                 is AttackAction.ToggleWeapon -> {
                     val newAllocation = allocation.toggle(targets)
                     Transition(app.copy(phase = copy(allocation = newAllocation)))
@@ -200,6 +187,9 @@ internal sealed interface AttackPhase : Phase {
         }
 
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitById(unitId)
+
+        override fun onCancel(app: AppState): Transition =
+            Transition(app.copy(phase = SelectingAttacker(attackTurnPhase, allDrafts())))
 
         override fun pendingHeat(app: AppState): List<battletech.tactical.unit.HeatSource> {
             val attacker = app.gameState.unitById(unitId)

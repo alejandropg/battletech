@@ -238,6 +238,24 @@ internal class AttackPhaseTest {
         }
 
         @Test
+        fun `escape cancels back to SelectingAttacker preserving draft`() {
+            val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
+            val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
+            val gameState = GameState(listOf(unit, enemy), map5x5)
+            val turnState = baseTurnState()
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
+            val state = anAppState(phase, gameState, turnState, cursor = enemy.position)
+
+            val toggled = phase.handle(KeyboardEvent(" "), state)!!
+            val toggledPhase = toggled.app.phase as AttackPhase.Declaring
+            assertTrue(toggledPhase.weaponAssignments[enemy.id]?.contains(0) == true)
+
+            val cancelled = toggledPhase.handle(KeyboardEvent("Escape"), toggled.app)!!
+            val selecting = cancelled.app.phase as AttackPhase.SelectingAttacker
+            assertTrue(selecting.drafts[unit.id]?.weaponAssignments?.get(enemy.id)?.contains(0) == true)
+        }
+
+        @Test
         fun `toggle off last weapon on primary promotes secondary to primary`() {
             val unit = aUnit(
                 weapons = listOf(mediumLaser(), mediumLaser()),
