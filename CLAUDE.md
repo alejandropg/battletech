@@ -6,12 +6,12 @@ BattleTech Rules Engine is a multi-module project implementing BattleTech, hexag
 
 ## Technology Stack
 
-- **Gradle**: 9.3.1
+- **Gradle**: 9.6
   - Kotlin DSL
   - modular architecture and convention plugins for build configuration in `buildSrc/`
-- **Kotlin**: 2.3.0
+- **Kotlin**: 2.4
 - **JVM**: 25
-- **JUnit**: 6.0.2 with Jupiter API/Engine for testing
+- **JUnit**: with Jupiter API/Engine for testing
 
 ## Essential Commands
 
