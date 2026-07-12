@@ -2,8 +2,10 @@ package battletech.tactical.unit
 
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
+import kotlinx.serialization.Serializable
 
 /** Outcome of a Piloting Skill Roll: a 2d6 [roll] compared to a [targetNumber]. */
+@Serializable
 public data class PilotingSkillRoll(
     public val targetNumber: Int,
     public val roll: DiceRoll,

@@ -1,6 +1,8 @@
 package battletech.tui.game.phase
 
 import battletech.tactical.model.PlayerId
+import battletech.tactical.session.CommandRejection
+import battletech.tactical.session.CommandResult
 import battletech.tactical.unit.CombatUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
@@ -14,6 +16,21 @@ import com.github.ajalt.mordant.input.MouseEvent
 /** Board-origin constants used by all idle-selecting states. */
 internal const val BOARD_ORIGIN_X = 2
 internal const val BOARD_ORIGIN_Y = 2
+
+/**
+ * A short flash for a rejected command, or null if [result] was accepted.
+ * Shared by the three `submitCommand` call sites (movement, weapon-attack
+ * impulse, physical-attack impulse) so a rejection is never silently
+ * swallowed — most visibly needed for the remote-play disconnect freeze
+ * ([CommandRejection.OpponentUnavailable]), but useful for any rejection.
+ */
+internal fun rejectionFlash(result: CommandResult): FlashMessage? = when (result) {
+    is CommandResult.Accepted -> null
+    is CommandResult.Rejected -> when (result.reason) {
+        is CommandRejection.OpponentUnavailable -> FlashMessage("Opponent not connected")
+        else -> FlashMessage("Command rejected")
+    }
+}
 
 /**
  * Map an [InputEvent] to an [IdleAction], or return null if the event is not
@@ -36,9 +53,38 @@ internal fun handleCursorMove(app: AppState, action: IdleAction.MoveCursor): Tra
     Transition(app.copy(cursor = moveCursor(app.cursor, action.direction, app.gameState.map)))
 
 /**
+ * Guard against acting outside this client's seat in remote play.
+ *
+ * [AppState.localPlayer] is set once a session is remote (host = PLAYER_1,
+ * joiner = PLAYER_2); hot-seat play leaves it `null` and this guard is always
+ * a no-op. Returns `Transition(app, FlashMessage("Waiting for opponent"))`
+ * when [app.localPlayer] is set and differs from [activePlayer], else `null`
+ * so the caller can fall through to the real handling via `?:`.
+ *
+ * [activePlayer] is itself lazy and only invoked when [app.localPlayer] is
+ * non-null: hot-seat play never touches turn-state fields via this guard, so
+ * it stays safe to call from branches (like commit) whose turn state may be
+ * unseeded ([TurnState.NULL]) when nothing is actually in progress.
+ *
+ * This is the single source of truth for the seat check: [selectOwnUnit]
+ * calls it for the Enter/click select path, and [handleUnitSelection] calls
+ * it directly (before [selectOwnUnit] would otherwise run) for Tab and
+ * commit, which never reach [selectOwnUnit].
+ */
+private fun localTurnGuard(app: AppState, activePlayer: () -> PlayerId): Transition? {
+    val localPlayer = app.localPlayer ?: return null
+    return if (activePlayer() != localPlayer) Transition(app, FlashMessage("Waiting for opponent")) else null
+}
+
+/**
  * Try to select the unit at the cursor as the active player's unit.
  *
  * - No unit at cursor → `Transition(app)` (no-op).
+ * - [app.localPlayer] is set and differs from [activePlayer] (remote play,
+ *   not this client's turn) → `Transition(app, FlashMessage("Waiting for opponent"))`
+ *   (see [localTurnGuard]; kept here too as defense in depth for any direct
+ *   caller of this function, though [handleUnitSelection] now also checks
+ *   this before calling in).
  * - Unit owned by someone other than [activePlayer] → `Transition(app, FlashMessage("Not your unit"))`.
  * - [extraGuard] returns a non-null [FlashMessage] → `Transition(app, that message)`.
  * - Otherwise → `onSelect(unit)`.
@@ -53,6 +99,7 @@ internal fun selectOwnUnit(
     onSelect: (CombatUnit) -> Transition,
 ): Transition {
     val unit = app.gameState.unitAt(app.cursor) ?: return Transition(app)
+    localTurnGuard(app) { activePlayer }?.let { return it }
     if (unit.owner != activePlayer) return Transition(app, FlashMessage("Not your unit"))
     extraGuard(unit)?.let { return Transition(app, it) }
     return onSelect(unit)
@@ -64,12 +111,18 @@ internal fun selectOwnUnit(
  * [PhysicalAttackPhase.SelectingAttacker]). All three share the same
  * interaction vocabulary:
  *
- * - arrow/wasd/qe → move the cursor,
- * - Enter / click → select the unit under the cursor (subject to ownership and
- *   [selectGuard]) and enter the phase's sub-mode via [enterFor],
+ * - arrow/wasd/qe → move the cursor (never seat-guarded — always legal),
+ * - Enter / click → select the unit under the cursor (subject to the seat
+ *   guard, ownership, and [selectGuard]) and enter the phase's sub-mode via
+ *   [enterFor],
  * - Tab → cycle to the next unit in [selectableUnits] and *also* enter the
  *   sub-mode for it, so Tab and Enter land in the same place,
  * - 'c' → run [onCommit] (a no-op by default, as in movement).
+ *
+ * Click, Enter, Tab, and 'c' are all acting moves, so each is gated by
+ * [localTurnGuard] first — it's not enough to guard the Enter/click path via
+ * [selectOwnUnit], since Tab ([cycleAndEnter]) and 'c' ([onCommit]) never go
+ * through it and would otherwise let a remote client act as the opponent.
  *
  * Returns null when the event maps to no idle action, matching [mapIdleInput].
  */
@@ -84,15 +137,20 @@ internal fun handleUnitSelection(
 ): Transition? {
     val action = mapIdleInput(event) ?: return null
     // [activePlayer] and [selectableUnits] are evaluated lazily: cursor moves
-    // and commits must not touch turn-state fields that may be absent (e.g.
-    // TurnState.NULL) when no unit selection is actually happening.
+    // must not touch turn-state fields that may be absent (e.g. TurnState.NULL)
+    // when no unit selection is actually happening. Every other branch is an
+    // acting move, so it runs [localTurnGuard] (which itself only calls
+    // [activePlayer] when [AppState.localPlayer] is set — see its KDoc) before
+    // doing anything else, so a still-unseeded turn state under hot-seat play
+    // (e.g. a pre-commit no-op) stays exactly as lazy as before this guard existed.
     return when (action) {
         is IdleAction.MoveCursor -> handleCursorMove(app, action)
         is IdleAction.ClickHex ->
-            selectUnitAt(app.copy(cursor = action.coords), activePlayer(), selectGuard, enterFor)
-        is IdleAction.SelectUnit -> selectUnitAt(app, activePlayer(), selectGuard, enterFor)
-        is IdleAction.CycleUnit -> cycleAndEnter(app, selectableUnits(), enterFor)
-        is IdleAction.CommitDeclarations -> onCommit(app)
+            localTurnGuard(app, activePlayer) ?: selectUnitAt(app.copy(cursor = action.coords), activePlayer(), selectGuard, enterFor)
+        is IdleAction.SelectUnit ->
+            localTurnGuard(app, activePlayer) ?: selectUnitAt(app, activePlayer(), selectGuard, enterFor)
+        is IdleAction.CycleUnit -> localTurnGuard(app, activePlayer) ?: cycleAndEnter(app, selectableUnits(), enterFor)
+        is IdleAction.CommitDeclarations -> localTurnGuard(app, activePlayer) ?: onCommit(app)
     }
 }
 

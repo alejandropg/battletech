@@ -4,7 +4,9 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
+import kotlinx.serialization.Serializable
 
+@Serializable
 public data class CombatUnit(
     public val id: UnitId,
     public val owner: PlayerId,

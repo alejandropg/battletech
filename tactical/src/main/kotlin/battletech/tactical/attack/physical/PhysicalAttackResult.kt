@@ -7,8 +7,10 @@ import battletech.tactical.dice.DiceRoll
 import battletech.tactical.session.GameEvent
 import battletech.tactical.unit.PilotingSkillRoll
 import battletech.tactical.unit.UnitId
+import kotlinx.serialization.Serializable
 
 /** Outcome of resolving one declared physical attack. */
+@Serializable
 public data class PhysicalAttackResult(
     public val attackerId: UnitId,
     public val targetId: UnitId,

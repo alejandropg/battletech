@@ -31,6 +31,7 @@ import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.PilotHit
 import battletech.tactical.session.PilotKnockedUnconscious
 import battletech.tactical.session.PilotRecoveredConsciousness
+import battletech.tactical.session.SessionNotice
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitDestroyed
@@ -49,6 +50,7 @@ import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
+import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.hex.torsoArrowIcon
 import battletech.tui.mediumLaser
@@ -512,6 +514,13 @@ internal class GameLogFormatterTest {
 
         assertThat(text(PilotRecoveredConsciousness(unitId = locust.id, roll = DiceRoll(5, 5)), stateWithLocust))
             .isEqualTo("locust pilot regained consciousness")
+    }
+
+    @Test
+    fun `SessionNotice renders its text with the lan-connect icon`() {
+        val lines = GameLogFormatter.lines(SessionNotice("Opponent connected"), emptyState)
+
+        assertThat(lines).containsExactly(GameLogFormatter.LogLine(sessionNoticeIcon(), "Opponent connected"))
     }
 
     @Test

@@ -1,5 +1,7 @@
 package battletech.tactical.session
 
+import kotlinx.serialization.Serializable
+
 /**
  * Umbrella marker for anything that can cause a player intent to be rejected
  * by the domain. Two branches:
@@ -11,4 +13,5 @@ package battletech.tactical.session
  * Sealed so deliveries can exhaustively pattern-match and decide their own
  * presentation (TUI flash, web 4xx, remote protocol code).
  */
+@Serializable
 public sealed interface RejectionReason

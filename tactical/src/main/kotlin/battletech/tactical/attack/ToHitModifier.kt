@@ -1,9 +1,12 @@
 package battletech.tactical.attack
 
+import kotlinx.serialization.Serializable
+
 /**
  * A single named contribution to a weapon or physical attack's to-hit target number
  * (e.g. range, heat, secondary target, prone target). Negative [amount]s are bonuses.
  */
+@Serializable
 public data class ToHitModifier(public val label: String, public val amount: Int)
 
 /** Sums all modifier amounts into the total adjustment to the base gunnery skill. */

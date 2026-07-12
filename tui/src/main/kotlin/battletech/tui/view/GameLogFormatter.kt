@@ -18,6 +18,7 @@ import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.PilotHit
 import battletech.tactical.session.PilotKnockedUnconscious
 import battletech.tactical.session.PilotRecoveredConsciousness
+import battletech.tactical.session.SessionNotice
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitDestroyed
@@ -35,6 +36,7 @@ import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.destroyedIcon
 import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
+import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.hex.torsoArrowIcon
 
@@ -139,6 +141,7 @@ internal object GameLogFormatter {
             val name = event.unitId.value
             listOf(LogLine(null, "$name pilot regained consciousness"))
         }
+        is SessionNotice -> listOf(LogLine(sessionNoticeIcon(), event.text))
     }
 
     /**

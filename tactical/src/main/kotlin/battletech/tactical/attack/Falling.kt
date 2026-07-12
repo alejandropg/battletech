@@ -4,9 +4,11 @@ import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.HexDirection
 import battletech.tactical.unit.CombatUnit
+import kotlinx.serialization.Serializable
 import kotlin.math.ceil
 
 /** What happened when a unit fell: the damage it took and the facing it ended up in. */
+@Serializable
 public data class FallResult(
     public val damage: Int,
     public val hitLocation: HitLocation,

@@ -1,5 +1,8 @@
 package battletech.tactical.unit
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 public data class WeaponModel(
     public val name: String,
     public val damage: Int,

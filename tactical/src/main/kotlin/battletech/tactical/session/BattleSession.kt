@@ -40,7 +40,7 @@ public class BattleSession(
     private val handlers: List<PhaseHandler> = standardHandlers(),
     initialPhase: battletech.tactical.model.TurnPhase = handlers.first().phase,
     initialNeedsOnEntry: Boolean = true,
-) {
+) : GameSession {
 
     private var _gameState: GameState = initialGameState
     private var _turnState: TurnState = initialTurnState
@@ -54,16 +54,16 @@ public class BattleSession(
 
     private val _gameLog: GameLog = GameLog()
 
-    public val gameLog: GameLog get() = _gameLog
-    public val gameState: GameState get() = _gameState
-    public val turnState: TurnState get() = _turnState
-    public val currentPhase: battletech.tactical.model.TurnPhase
+    public override val gameLog: GameLog get() = _gameLog
+    public override val gameState: GameState get() = _gameState
+    public override val turnState: TurnState get() = _turnState
+    public override val currentPhase: battletech.tactical.model.TurnPhase
         get() = handlers[_currentPhaseIndex].phase
-    public val activePlayer: PlayerId?
+    public override val activePlayer: PlayerId?
         get() = handlers[_currentPhaseIndex].activePlayer(_turnState)
-    public val isMatchOver: Boolean get() = _matchOver
+    public override val isMatchOver: Boolean get() = _matchOver
 
-    public fun viewFor(playerId: PlayerId): PlayerView = DefaultPlayerView(playerId, _gameState)
+    public override fun viewFor(playerId: PlayerId): PlayerView = DefaultPlayerView(playerId, _gameState)
 
     /**
      * Register [listener] to receive events emitted by this session,
@@ -76,7 +76,7 @@ public class BattleSession(
      * that called [submitCommand] / [advance]; long-running work should
      * be deferred to another thread by the listener.
      */
-    public fun subscribe(playerId: PlayerId, listener: (GameEvent) -> Unit): Subscription {
+    public override fun subscribe(playerId: PlayerId, listener: (GameEvent) -> Unit): Subscription {
         val perPlayer = listeners.getOrPut(playerId) { mutableListOf() }
         perPlayer += listener
         return object : Subscription {
@@ -86,7 +86,7 @@ public class BattleSession(
         }
     }
 
-    public fun submitCommand(command: GameCommand): CommandResult {
+    public override fun submitCommand(command: GameCommand): CommandResult {
         if (_matchOver) return CommandResult.Rejected(CommandRejection.MatchOver)
         val handler = handlers[_currentPhaseIndex]
         if (!handler.accepts(command, _turnState)) {
@@ -108,6 +108,18 @@ public class BattleSession(
         events.addAll(cascade())
         dispatch(events)
         return CommandResult.Accepted(events)
+    }
+
+    /**
+     * Records [event] in the log at the current turn number and dispatches
+     * it to subscribers, without touching game/turn state or the phase
+     * cascade. For out-of-band happenings (e.g. a network server annotating
+     * a connect/disconnect) that deliveries want to land in the same
+     * chronological log subscribers already see everything else through.
+     */
+    public fun annotate(event: GameEvent) {
+        _gameLog.append(LogEntry(_turnState.turnNumber, event))
+        dispatch(listOf(event))
     }
 
     /**

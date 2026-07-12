@@ -200,14 +200,14 @@ internal fun commitPhysicalImpulse(app: AppState, drafts: PhysicalDrafts): Trans
     val declarations = drafts.flatMap { (attackerId, byTarget) ->
         byTarget.flatMap { (targetId, kinds) -> kinds.map { PhysicalAttackDeclaration(attackerId, targetId, it) } }
     }
-    app.session.submitCommand(
+    val result = app.session.submitCommand(
         CommitPhysicalAttackImpulse(
             playerId = turnState.attack.activePlayer,
             declarations = declarations,
             torsoFacings = emptyMap(),
         ),
     )
-    return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)))
+    return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)), flash = rejectionFlash(result))
 }
 
 private fun view(player: PlayerId, gameState: GameState): PlayerView =

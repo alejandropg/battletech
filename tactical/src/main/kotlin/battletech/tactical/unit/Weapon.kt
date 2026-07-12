@@ -1,7 +1,9 @@
 package battletech.tactical.unit
 
 import battletech.tactical.model.MechLocation
+import kotlinx.serialization.Serializable
 
+@Serializable
 public data class Weapon(
     public val model: WeaponModel,
     public val mountId: WeaponMountId? = null,

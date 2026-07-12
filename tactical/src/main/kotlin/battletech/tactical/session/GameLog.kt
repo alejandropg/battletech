@@ -1,5 +1,8 @@
 package battletech.tactical.session
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 public data class LogEntry(
     public val turn: Int,
     public val event: GameEvent,

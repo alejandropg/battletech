@@ -1,12 +1,24 @@
 package battletech.tui
 
+import battletech.tactical.attack.AttackResult
+import battletech.tactical.attack.RangeBand
+import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.session.AttacksResolved
+import battletech.tactical.session.BattleSession
 import battletech.tactical.session.MatchEnded
+import battletech.tactical.session.SessionNotice
+import battletech.tactical.session.TurnEnded
+import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
+import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
+import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.loop.UiEvent
 import battletech.tui.screen.ScreenRenderer
+import battletech.tui.view.AttackResultsView
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.Size
@@ -383,7 +395,179 @@ internal class TuiAppLoopTest {
         loopJob.join()
     }
 
+    // -------------------------------------------------------------------------
+    // Test 8: passive side (remote play) — Session(AttacksResolved) must
+    // populate lastAttackResults just like the submitter's own Transition
+    // does, so the ATTACK RESULTS panel appears on both terminals.
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `Session AttacksResolved populates lastAttackResults so the results panel appears`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+        val loopJob = launch {
+            app.runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = buildAppState(),
+            )
+        }
+
+        recorder.clearOutput()
+        internalEvents.send(UiEvent.Session(AttacksResolved(listOf(aResult()))))
+
+        assertTrue(
+            recorder.output().contains(AttackResultsView.TITLE),
+            "Expected ATTACK RESULTS panel to appear after a passive-side AttacksResolved event",
+        )
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 9: resync into WEAPON_ATTACK clears a pre-set lastAttackResults —
+    // mirrors commitAttackImpulse's isNewWeaponAttackPhase -> null so a new
+    // turn's weapon phase starts clean on the passive side too.
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `resync into WEAPON_ATTACK clears a pre-set lastAttackResults`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+        // Session is constructed already sitting at WEAPON_ATTACK while the TUI
+        // phase below is MovementPhase — a deliberate mismatch so the first
+        // Session event triggers the resync branch.
+        val base = AppState(
+            gameState = aGameState(),
+            turnState = aTurnState(),
+            phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK),
+            cursor = HexCoordinates(0, 0),
+        )
+        val initialState = base.copy(
+            phase = MovementPhase.SelectingUnit,
+            lastAttackResults = listOf(aResult()),
+        )
+
+        val loopJob = launch {
+            app.runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = initialState,
+            )
+        }
+
+        assertTrue(
+            recorder.output().contains(AttackResultsView.TITLE),
+            "Precondition: results panel should be visible before the resync",
+        )
+        recorder.clearOutput()
+
+        internalEvents.send(UiEvent.Session(TurnEnded(1)))
+
+        assertFalse(
+            recorder.output().contains(AttackResultsView.TITLE),
+            "Resync into WEAPON_ATTACK must clear lastAttackResults so the panel disappears",
+        )
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 10: hot-seat regression — when the TUI phase already matches the
+    // session phase (no resync), a Session event must NOT clear a pre-set
+    // lastAttackResults.
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `Session event does not clear lastAttackResults when phase already matches (no resync)`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+        val initialState = buildAppState().copy(lastAttackResults = listOf(aResult()))
+
+        val loopJob = launch {
+            app.runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = initialState,
+            )
+        }
+
+        recorder.clearOutput()
+        internalEvents.send(UiEvent.Session(TurnEnded(1)))
+
+        assertTrue(
+            recorder.output().contains(AttackResultsView.TITLE),
+            "No-resync Session event must not clear a pre-set lastAttackResults",
+        )
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 11: SessionNotice is just another gameLog entry now (the old
+    // parallel UI-notice mechanism is gone) — it renders in the LOG panel
+    // with its lan-connect icon at its true chronological log position. Mirrors production: a
+    // BattleSession.annotate call appends to the log and dispatches through
+    // subscribers, which the TUI turns into UiEvent.Session for a re-render.
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `SessionNotice recorded in the gameLog renders in the LOG panel with the lan-connect icon`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+        val initialState = buildAppState()
+        val session = initialState.session as BattleSession
+
+        val loopJob = launch {
+            app.runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = initialState,
+            )
+        }
+
+        recorder.clearOutput()
+        val notice = SessionNotice("Opponent connected")
+        session.annotate(notice)
+        internalEvents.send(UiEvent.Session(notice))
+
+        assertTrue(
+            recorder.output().contains("${sessionNoticeIcon()} Opponent connected"),
+            "Expected the SessionNotice to render in the LOG panel at its log position with the lan-connect icon",
+        )
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
     // ---- helpers ----
+
+    private fun aResult() = AttackResult(
+        attackerId = UnitId("a"),
+        targetId = UnitId("b"),
+        weaponName = "Med Laser",
+        hit = false,
+        hitLocation = null,
+        damageApplied = 0,
+        targetNumber = 7,
+        roll = 5,
+        toHitRoll = DiceRoll(2, 3),
+        locationRoll = null,
+        gunnery = 4,
+        rangeModifier = 0,
+        rangeBand = RangeBand.SHORT,
+        heatPenalty = 0,
+        secondaryPenalty = 0,
+    )
 
     private fun String.countOccurrences(sub: String): Int {
         if (sub.isEmpty()) return 0

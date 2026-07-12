@@ -1,6 +1,7 @@
 package battletech.tactical.unit
 
 import battletech.tactical.model.MechLocation
+import kotlinx.serialization.Serializable
 
 public val SLOT_COUNTS: Map<MechLocation, Int> = mapOf(
     MechLocation.HEAD to 6,
@@ -13,11 +14,13 @@ public val SLOT_COUNTS: Map<MechLocation, Int> = mapOf(
     MechLocation.RIGHT_LEG to 6,
 )
 
+@Serializable
 public data class LocationSlots(
     public val location: MechLocation,
     public val slots: List<CriticalSlotContent>,
 )
 
+@Serializable
 public data class CriticalLayout(public val byLocation: Map<MechLocation, LocationSlots>) {
     public companion object Factory
 

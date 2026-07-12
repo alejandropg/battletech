@@ -6,8 +6,10 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
+import kotlinx.serialization.Serializable
 
 /** Movement-phase progress: who has moved, impulse position. All updates go through [afterUnitMoved]. */
+@Serializable
 public data class MovementProgress(
     val sequence: ImpulseSequence = ImpulseSequence(emptyList()),
     val movedUnitIds: Set<UnitId> = emptySet(),
@@ -39,6 +41,7 @@ public data class MovementProgress(
  * Attack-phase progress. ONE shared [sequence] serves both attack phases:
  * the weapon phase completes it, then the physical phase's onEntry re-seeds it.
  */
+@Serializable
 public data class AttackProgress(
     val sequence: ImpulseSequence = ImpulseSequence(emptyList()),
     val weaponDeclarations: List<AttackDeclaration> = emptyList(),
@@ -80,6 +83,7 @@ public data class AttackProgress(
     public fun clearPhysicalDeclarations(): AttackProgress = copy(physicalDeclarations = emptyList())
 }
 
+@Serializable
 public data class TurnState(
     val initiative: Initiative,
     val movement: MovementProgress = MovementProgress(),

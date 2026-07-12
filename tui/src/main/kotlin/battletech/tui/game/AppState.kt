@@ -2,7 +2,6 @@ package battletech.tui.game
 
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.dice.DiceRoller
-import battletech.tactical.session.MatchEnded
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
@@ -12,6 +11,8 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.PlayerView
 import battletech.tactical.session.BattleSession
+import battletech.tactical.session.GameSession
+import battletech.tactical.session.MatchEnded
 import battletech.tactical.session.TurnState
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
@@ -19,22 +20,22 @@ import battletech.tui.game.phase.Phase
 import battletech.tui.game.phase.PhysicalAttackPhase
 
 /**
- * The TUI's UI-shell state. Holds a reference to the authoritative
- * [BattleSession] (the source of truth for gameState and turnState) plus
- * pure UI state: which [Phase] sub-state machine is active and where the
- * cursor sits.
+ * The TUI's UI-shell state. Holds a reference to the [GameSession] (the
+ * source of truth for gameState and turnState) plus pure UI state: which
+ * [Phase] sub-state machine is active and where the cursor sits.
  *
  * The [gameState] and [turnState] accessors read through the session;
  * mutations flow via `session.submitCommand(...)`.
  */
 internal data class AppState(
-    val session: BattleSession,
+    val session: GameSession,
     val phase: Phase,
     val cursor: HexCoordinates,
     val collapsedPanels: Set<Int> = emptySet(),
     val lastAttackResults: List<AttackResult>? = null,
     val panelScrollOffsets: Map<Int, Int> = emptyMap(),
     val matchEnded: MatchEnded? = null,
+    val localPlayer: PlayerId? = null,
 ) {
     val gameState: GameState get() = session.gameState
     val turnState: TurnState get() = session.turnState

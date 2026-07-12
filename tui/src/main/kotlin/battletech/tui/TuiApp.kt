@@ -3,7 +3,10 @@ package battletech.tui
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
+import battletech.tactical.model.TurnPhase
+import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.BattleSession
+import battletech.tactical.session.GameSession
 import battletech.tactical.session.MatchEnded
 import battletech.tactical.session.TurnState
 import battletech.tui.game.AppState
@@ -45,7 +48,10 @@ import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
-public class TuiApp {
+public class TuiApp(
+    private val providedSession: GameSession? = null,
+    private val localPlayer: PlayerId? = null,
+) {
 
     private data class RenderedFrame(
         val layout: FrameLayout,
@@ -55,6 +61,13 @@ public class TuiApp {
     /**
      * Entry point. Sets up the session, wires subscriptions for every player into
      * [internalEvents], merges all event sources, and drives [runLoop].
+     *
+     * When [providedSession] is null (hot-seat, the default) this builds a local
+     * [BattleSession] and fires the [BattleSession.advance] kickstart itself, exactly
+     * as before remote play existed. When non-null (host/join modes) the caller
+     * owns session construction/kickstart — a host's [BattleSession] wrapped in
+     * `GameServer` fires its own kickstart once a client joins; a joining client's
+     * `RemoteGameSession` never kickstarts at all.
      *
      * ### Single-thread confinement
      * All session mutations, AppState updates, and rendering run on the single
@@ -70,18 +83,19 @@ public class TuiApp {
         val terminal = Terminal()
         val renderer = ScreenRenderer(terminal)
 
-        val session = BattleSession(
+        val session = providedSession ?: BattleSession(
             initialGameState = GameStateFactory().sampleGameState(),
             initialTurnState = TurnState.NULL,
-        )
-
-        // Kickstart cascades INITIATIVE → MOVEMENT; the session's gameLog
-        // captures the cascade events and the LOG panel renders them.
-        session.advance()
+        ).also {
+            // Kickstart cascades INITIATIVE → MOVEMENT; the session's gameLog
+            // captures the cascade events and the LOG panel renders them.
+            it.advance()
+        }
         val appState = AppState(
             session = session,
             phase = mapToTuiPhase(session.currentPhase),
             cursor = HexCoordinates(0, 0),
+            localPlayer = localPlayer,
         )
 
         renderer.clear()
@@ -234,12 +248,22 @@ public class TuiApp {
 
                     // Re-render only: the renderer re-reads state through the session.
                     // Locally these events arrive synchronously during submitCommand so
-                    // the extra render is cheap and idempotent. This branch is the
-                    // remote-play notification slot — remote clients will see live updates here.
+                    // the extra render is cheap and idempotent. For remote play the
+                    // opponent's commands land here asynchronously (via the session's
+                    // subscription) without a local Transition ever having run, so the
+                    // TUI phase can go stale — the resync below catches it up.
                     is UiEvent.Session -> {
-                        if (ui.event is MatchEnded) {
-                            appState = appState.copy(matchEnded = ui.event)
-                        }
+                        val resynced = mapToTuiPhase(appState.session.currentPhase)
+                        val isResync = resynced.turnPhase != appState.phase.turnPhase
+                        appState = appState.copy(
+                            matchEnded = (ui.event as? MatchEnded) ?: appState.matchEnded,
+                            phase = if (isResync) resynced else appState.phase,
+                            lastAttackResults = when {
+                                ui.event is AttacksResolved -> ui.event.results
+                                isResync && resynced.turnPhase == TurnPhase.WEAPON_ATTACK -> null
+                                else -> appState.lastAttackResults
+                            },
+                        )
                         frame = renderFrame(size, renderer, appState, activeFlash)
                     }
 

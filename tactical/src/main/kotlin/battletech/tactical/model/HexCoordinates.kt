@@ -1,5 +1,6 @@
 package battletech.tactical.model
 
+import kotlinx.serialization.Serializable
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -18,6 +19,7 @@ import kotlin.math.max
  *         \___/   \___/   \___/
  * ```
  */
+@Serializable
 public data class HexCoordinates(
     public val col: Int,
     public val row: Int

@@ -10,6 +10,8 @@ import com.github.ajalt.mordant.rendering.Size
  * - [Resized]: the terminal window changed size.
  * - [FlashExpired]: a timed flash message should be dismissed; [generation] identifies which one.
  * - [Session]: a game-session event (e.g. phase change, unit moved) — wired for remote-play preparation.
+ *   A [battletech.tactical.session.SessionNotice] (network join/disconnect/session-id happenings) arrives
+ *   through this same branch, since it's just another [GameEvent] recorded in the game log.
  * - [Quit]: the user has requested to quit; the loop should drain and exit.
  */
 internal sealed interface UiEvent {

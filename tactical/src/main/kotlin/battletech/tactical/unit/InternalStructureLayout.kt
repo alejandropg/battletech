@@ -1,5 +1,8 @@
 package battletech.tactical.unit
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 public data class InternalStructureLayout(
     val head: Int,
     val centerTorso: Int,

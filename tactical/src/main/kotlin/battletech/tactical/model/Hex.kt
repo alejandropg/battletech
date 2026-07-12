@@ -1,5 +1,8 @@
 package battletech.tactical.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 public data class Hex(
     public val coordinates: HexCoordinates,
     public val terrain: Terrain = Terrain.CLEAR,

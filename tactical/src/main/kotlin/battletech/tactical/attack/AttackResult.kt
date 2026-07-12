@@ -2,7 +2,9 @@ package battletech.tactical.attack
 
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.unit.UnitId
+import kotlinx.serialization.Serializable
 
+@Serializable
 public data class AttackResult(
     val attackerId: UnitId,
     val targetId: UnitId,

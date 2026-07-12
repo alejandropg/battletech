@@ -3,10 +3,11 @@ package battletech.tactical.session
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.physical.PhysicalAttackDeclaration
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.PlayerId
 import battletech.tactical.model.MovementMode
+import battletech.tactical.model.PlayerId
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.unit.UnitId
+import kotlinx.serialization.Serializable
 
 /**
  * A player intent submitted to a [BattleSession].
@@ -19,6 +20,7 @@ import battletech.tactical.unit.UnitId
  * Every concrete command carries [playerId] so the session can enforce
  * active-player authorization centrally without inspecting subtypes.
  */
+@Serializable
 public sealed interface GameCommand {
     public val playerId: PlayerId
 }
@@ -27,6 +29,7 @@ public sealed interface GameCommand {
  * Move a unit along its chosen path to [destination], spending the MP encoded
  * by [destination] (a [ReachableHex] carries path + facing + MP cost).
  */
+@Serializable
 public data class MoveUnit(
     override val playerId: PlayerId,
     public val unitId: UnitId,
@@ -39,6 +42,7 @@ public data class MoveUnit(
  * Skill Roll. On success the unit is no longer prone and may still move this
  * impulse; on failure it remains prone and its activation is spent.
  */
+@Serializable
 public data class StandUp(
     override val playerId: PlayerId,
     public val unitId: UnitId,
@@ -51,6 +55,7 @@ public data class StandUp(
  * accumulated declarations on the final impulse; PhysicalAttackPhaseHandler
  * just records them.
  */
+@Serializable
 public data class CommitAttackImpulse(
     override val playerId: PlayerId,
     public val declarations: List<AttackDeclaration>,
@@ -64,6 +69,7 @@ public data class CommitAttackImpulse(
  * [PhysicalAttackPhaseHandler] resolves accumulated declarations on the final
  * impulse and applies damage.
  */
+@Serializable
 public data class CommitPhysicalAttackImpulse(
     override val playerId: PlayerId,
     public val declarations: List<PhysicalAttackDeclaration>,

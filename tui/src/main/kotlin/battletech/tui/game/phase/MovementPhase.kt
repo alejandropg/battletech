@@ -26,6 +26,7 @@ import battletech.tui.game.pathHighlights
 import battletech.tui.game.reachabilityHighlights
 import battletech.tui.input.BrowsingAction
 import battletech.tui.input.FacingAction
+import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -45,6 +46,14 @@ internal sealed interface MovementPhase : Phase {
 
         override fun handle(event: InputEvent, app: AppState): Transition? {
             val turnState = app.turnState
+            // Host mode renders (and accepts input) before the session's advance() kickstart
+            // fires — the movement impulse sequence is empty until a client joins. Every other
+            // field this phase touches (activePlayer, selectableUnits) indexes into that
+            // sequence and would throw, so only cursor movement is safe here.
+            if (turnState.movement.isComplete) {
+                val action = mapIdleInput(event) ?: return null
+                return if (action is IdleAction.MoveCursor) handleCursorMove(app, action) else Transition(app)
+            }
             return handleUnitSelection(
                 event = event,
                 app = app,
@@ -59,6 +68,10 @@ internal sealed interface MovementPhase : Phase {
 
         override fun prompt(app: AppState): String {
             val turnState = app.turnState
+            // Host mode renders before the session's advance() kickstart fires (it waits for
+            // the opponent to join), so the movement impulse sequence can still be empty here —
+            // isComplete is true in that case (0 >= 0), same as a normally-finished sequence.
+            if (turnState.movement.isComplete) return "Waiting for game to start…"
             val playerName = turnState.movement.activePlayer.displayName
             val remaining = turnState.movement.remainingInImpulse
             return "$playerName: select a unit to move ($remaining remaining)"
@@ -283,8 +296,8 @@ internal fun enterBrowsing(unit: CombatUnit, view: PlayerView): MovementPhase.Br
 internal fun enterMovementSubMode(unit: CombatUnit, app: AppState): Transition =
     if (unit.isProne) {
         // A prone unit must stand before it can move.
-        app.session.submitCommand(StandUp(playerId = unit.owner, unitId = unit.id))
-        Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)))
+        val result = app.session.submitCommand(StandUp(playerId = unit.owner, unitId = unit.id))
+        Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)), flash = rejectionFlash(result))
     } else {
         Transition(app.copy(phase = enterBrowsing(unit, app.viewFor(unit.owner))))
     }
@@ -311,7 +324,7 @@ private fun submitMove(
     mode: MovementMode,
 ): Transition {
     val unit = app.gameState.unitById(unitId)
-    app.session.submitCommand(
+    val result = app.session.submitCommand(
         MoveUnit(
             playerId = unit.owner,
             unitId = unitId,
@@ -319,7 +332,7 @@ private fun submitMove(
             mode = mode,
         ),
     )
-    return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)))
+    return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)), flash = rejectionFlash(result))
 }
 
 internal fun modePrompt(reachability: ReachabilityMap?): String {

@@ -1,6 +1,7 @@
 package battletech.tactical.attack
 
 import battletech.tactical.dice.DiceRoll
+import kotlinx.serialization.Serializable
 
 /**
  * One group's resolved hit for a cluster or single-location attack.
@@ -9,6 +10,7 @@ import battletech.tactical.dice.DiceRoll
  * with its own 2d6 location roll. For standard single-location weapons there is exactly one
  * [LocationHit] per attack (when it hits).
  */
+@Serializable
 public data class LocationHit(
     /** Location struck by this group. */
     val location: HitLocation,

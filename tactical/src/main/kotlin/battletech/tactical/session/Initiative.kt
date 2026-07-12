@@ -4,7 +4,9 @@ import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.PlayerId
+import kotlinx.serialization.Serializable
 
+@Serializable
 public data class Initiative(
     val rolls: Map<PlayerId, DiceRoll>,
     val loser: PlayerId,

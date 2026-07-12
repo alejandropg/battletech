@@ -1,6 +1,8 @@
 package battletech.tactical.session
 import battletech.tactical.model.PlayerId
+import kotlinx.serialization.Serializable
 
+@Serializable
 public data class Impulse(
     val player: PlayerId,
     val unitCount: Int,

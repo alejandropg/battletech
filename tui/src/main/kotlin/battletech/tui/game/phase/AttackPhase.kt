@@ -329,7 +329,7 @@ internal fun commitAttackImpulse(
             else -> app.lastAttackResults
         },
     )
-    return Transition(updatedApp)
+    return Transition(updatedApp, flash = rejectionFlash(result))
 }
 
 private fun playerView(player: PlayerId, gameState: GameState): PlayerView =

@@ -1,8 +1,9 @@
 package battletech.tactical.session
 
-import battletech.tactical.session.Impulse
 import battletech.tactical.model.PlayerId
+import kotlinx.serialization.Serializable
 
+@Serializable
 public data class ImpulseSequence(
     val order: List<Impulse>,
     val currentIndex: Int = 0,

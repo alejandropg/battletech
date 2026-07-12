@@ -2,7 +2,9 @@ package battletech.tactical.model
 
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
+import kotlinx.serialization.Serializable
 
+@Serializable
 public data class GameState(
     public val units: List<CombatUnit>,
     public val map: GameMap,
