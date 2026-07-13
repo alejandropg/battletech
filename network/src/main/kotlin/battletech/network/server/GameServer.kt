@@ -33,37 +33,49 @@ import kotlin.concurrent.thread
 
 /**
  * Host-side network endpoint: wraps an authoritative [BattleSession] and
- * exposes it to a single remote client (always seated [PlayerId.PLAYER_2])
- * over newline-delimited JSON on a TCP socket.
+ * exposes it to a configurable set of remote seats ([remoteSeats]) over
+ * newline-delimited JSON on a TCP socket.
  *
- * Also implements [GameSession] itself, so the **host's own UI drives the
- * wrapped session through this class** — that is how host-side command
- * serialisation happens: every touch of [session], whether from the host UI
- * thread, the connected client's reader thread, or the join-time
- * [BattleSession.advance] kickstart, goes through [lock].
+ * Two configurations share this class:
+ * - **Host-embedded** (the default: `remoteSeats = {PLAYER_2}`): the host's
+ *   own UI drives the wrapped session through [submitCommand] as
+ *   [PlayerId.PLAYER_1], and exactly one remote client connects and plays
+ *   [PlayerId.PLAYER_2]. Every touch of [session] — host UI thread,
+ *   connected client's reader thread, or the join-time
+ *   [BattleSession.advance] kickstart — goes through [lock].
+ * - **Headless** (`remoteSeats = {PLAYER_1, PLAYER_2}`): nobody drives the
+ *   host [GameSession] surface directly; both players connect remotely and
+ *   [submitCommand] simply stays frozen (no local seat to serve).
  *
  * Seat enforcement is symmetric: [submitCommand] (the host UI path) rejects
  * with [CommandRejection.NotYourTurn] unless `command.playerId` is
  * [PlayerId.PLAYER_1], and the reader loop in [runReaderLoop] applies the
- * mirror-image check for [PlayerId.PLAYER_2] on whatever the connected
- * client sends — neither side can act as the other's seat, active-turn or
+ * mirror-image check for whichever seat was assigned to that connection at
+ * handshake time — neither side can act as another seat's, active-turn or
  * not.
  *
  * [snapshotFor] is the single seam every outbound [GameSnapshot] (join
  * acceptance and pushes alike) is built through; future hidden-info
  * redaction lands there without touching call sites.
  *
- * Disconnects freeze the host: [submitCommand] rejects with
- * [CommandRejection.OpponentUnavailable] while no client is connected. The
- * accept loop keeps listening, so a rejoin (same session id) is just another
- * successful handshake — it resends the full log but never re-runs the
- * join-time kickstart, which fires at most once per server lifetime.
+ * Disconnects freeze the whole session: both [submitCommand] and the remote
+ * reader loop reject with [CommandRejection.OpponentUnavailable] whenever
+ * any seat in [remoteSeats] is vacant. The accept loop keeps listening, so a
+ * rejoin (same session id) is just another successful handshake — it
+ * resends the full log but never re-runs the join-time kickstart, which
+ * fires at most once per server lifetime (the moment every remote seat has
+ * connected for the first time).
  */
 public class GameServer(
     private val session: BattleSession,
     private val sessionId: String,
     port: Int,
+    private val remoteSeats: Set<PlayerId> = setOf(PlayerId.PLAYER_2),
 ) : GameSession, AutoCloseable {
+
+    init {
+        require(remoteSeats.isNotEmpty()) { "remoteSeats must not be empty" }
+    }
 
     private val lock: Any = Any()
     private val serverSocket: ServerSocket = ServerSocket(port)
@@ -71,8 +83,8 @@ public class GameServer(
     @Volatile
     private var running: Boolean = true
 
-    private var client: ConnectedClient? = null
-    private var everJoined: Boolean = false
+    private val clients: MutableMap<PlayerId, ConnectedClient> = mutableMapOf()
+    private var everStarted: Boolean = false
 
     /** The actual bound port — meaningful even when constructed with port 0. */
     public val boundPort: Int get() = serverSocket.localPort
@@ -107,14 +119,14 @@ public class GameServer(
 
     /**
      * Listener bodies must be thread-safe on the caller's side: dispatch may
-     * occur on the client's reader thread (in response to a remote command)
-     * as well as on whichever thread calls [submitCommand].
+     * occur on a client's reader thread (in response to a remote command) as
+     * well as on whichever thread calls [submitCommand].
      */
     public override fun subscribe(playerId: PlayerId, listener: (GameEvent) -> Unit): Subscription =
         session.subscribe(playerId, listener)
 
     public override fun submitCommand(command: GameCommand): CommandResult = synchronized(lock) {
-        if (client == null) {
+        if (!clients.keys.containsAll(remoteSeats)) {
             CommandResult.Rejected(CommandRejection.OpponentUnavailable)
         } else if (command.playerId != PlayerId.PLAYER_1) {
             CommandResult.Rejected(
@@ -128,25 +140,25 @@ public class GameServer(
     public override fun close() {
         running = false
         serverSocket.close()
-        disconnect()
+        val connected = synchronized(lock) { clients.values.toList() }
+        connected.forEach { disconnect(it) }
     }
 
     // ---------- shared submit path ----------
 
     /**
      * Applies [command] to [session] and, if accepted, enqueues the
-     * resulting log delta + fresh snapshot to the connected client — must be
-     * called under [lock] with a non-null [client]. Callers enqueue their own
+     * resulting log delta + a fresh per-seat snapshot to EVERY connected
+     * client — must be called under [lock]. Callers enqueue their own
      * [ServerMessage.CommandReply] afterwards; the push always precedes the
      * reply (the wire ordering invariant documented on [ServerMessage]).
      */
     private fun submitAndPush(command: GameCommand): CommandResult {
-        val current = checkNotNull(client) { "submitAndPush requires a connected client" }
         val mark = session.gameLog.snapshot().size
         val result = session.submitCommand(command)
         if (result is CommandResult.Accepted) {
-            val push = ServerMessage.StatePush(session.gameLog.snapshot().drop(mark), snapshotFor(PlayerId.PLAYER_2))
-            current.outbound.put(push)
+            val delta = session.gameLog.snapshot().drop(mark)
+            clients.values.forEach { it.outbound.put(ServerMessage.StatePush(delta, snapshotFor(it.seat))) }
         }
         return result
     }
@@ -206,7 +218,7 @@ public class GameServer(
 
         val rejection = synchronized(lock) {
             when {
-                client != null -> JoinRejectionReason.SEAT_TAKEN
+                clients.keys.containsAll(remoteSeats) -> JoinRejectionReason.SEAT_TAKEN
                 !SessionId.matches(join.sessionId, sessionId) -> JoinRejectionReason.UNKNOWN_SESSION
                 join.protocolVersion != PROTOCOL_VERSION -> JoinRejectionReason.INCOMPATIBLE_PROTOCOL
                 else -> null
@@ -222,18 +234,35 @@ public class GameServer(
 
         onJoinAccepted()
 
-        val connected = ConnectedClient(output = output, onDisconnect = onDisconnect)
-        synchronized(lock) {
-            session.annotate(SessionNotice("Opponent connected"))
-            client = connected
-            startWriterThread(connected)
-            connected.outbound.put(ServerMessage.JoinAccepted(PlayerId.PLAYER_2, snapshotFor(PlayerId.PLAYER_2), session.gameLog.snapshot()))
-            if (!everJoined) {
-                everJoined = true
-                val mark = session.gameLog.snapshot().size
+        val connected = synchronized(lock) {
+            val seat = (remoteSeats - clients.keys).min()
+            val client = ConnectedClient(seat = seat, output = output, onDisconnect = onDisconnect)
+            val alreadyConnected = clients.values.toList()
+
+            // Everything from here up to (and including) the connect notice is new to
+            // alreadyConnected clients, but the joiner gets it all for free via JoinAccepted.log below.
+            val markBeforeConnectNotice = session.gameLog.snapshot().size
+            session.annotate(SessionNotice("${seatLabel(seat)} connected"))
+            clients[seat] = client
+            startWriterThread(client)
+            val markBeforeKickstart = session.gameLog.snapshot().size
+            client.outbound.put(ServerMessage.JoinAccepted(seat, snapshotFor(seat), session.gameLog.snapshot()))
+
+            val kickstarted = !everStarted && clients.keys == remoteSeats
+            if (kickstarted) {
+                everStarted = true
                 session.advance()
-                connected.outbound.put(ServerMessage.StatePush(session.gameLog.snapshot().drop(mark), snapshotFor(PlayerId.PLAYER_2)))
             }
+
+            // Already-connected clients missed the connect notice (and the kickstart, if it just
+            // fired) entirely — push them the combined delta. The joiner already has the connect
+            // notice via JoinAccepted.log above, so it only needs the kickstart delta, if any.
+            val finalLog = session.gameLog.snapshot()
+            alreadyConnected.forEach { it.outbound.put(ServerMessage.StatePush(finalLog.drop(markBeforeConnectNotice), snapshotFor(it.seat))) }
+            if (kickstarted) {
+                client.outbound.put(ServerMessage.StatePush(finalLog.drop(markBeforeKickstart), snapshotFor(seat)))
+            }
+            client
         }
 
         runReaderLoop(input, connected)
@@ -245,12 +274,17 @@ public class GameServer(
                 val line = input.readLine() ?: break
                 val message = WireJson.decodeClientMessage(line) as? ClientMessage.SubmitCommand ?: continue
                 synchronized(lock) {
-                    val result = if (message.command.playerId != PlayerId.PLAYER_2) {
-                        CommandResult.Rejected(
-                            CommandRejection.NotYourTurn(activePlayer = PlayerId.PLAYER_2, attemptedBy = message.command.playerId),
-                        )
-                    } else {
-                        submitAndPush(message.command)
+                    val result = when {
+                        !clients.keys.containsAll(remoteSeats) ->
+                            CommandResult.Rejected(CommandRejection.OpponentUnavailable)
+                        message.command.playerId != connected.seat ->
+                            CommandResult.Rejected(
+                                CommandRejection.NotYourTurn(
+                                    activePlayer = connected.seat,
+                                    attemptedBy = message.command.playerId,
+                                ),
+                            )
+                        else -> submitAndPush(message.command)
                     }
                     connected.outbound.put(ServerMessage.CommandReply(message.requestId, result))
                 }
@@ -258,7 +292,7 @@ public class GameServer(
         } catch (e: IOException) {
             // fall through to disconnect
         } finally {
-            disconnect()
+            disconnect(connected)
         }
     }
 
@@ -273,27 +307,35 @@ public class GameServer(
             } catch (e: InterruptedException) {
                 // shutting down
             } catch (e: IOException) {
-                disconnect()
+                disconnect(connected)
             }
         }
     }
 
-    /** Idempotent: a no-op if no client is currently connected. */
-    private fun disconnect() {
+    /**
+     * Idempotent: a no-op unless [connected] is still the client currently
+     * occupying its seat — identity-checked (not just seat-checked) so a
+     * stale disconnect from a superseded connection object can never evict a
+     * newer connection that has since reclaimed the same seat.
+     */
+    private fun disconnect(connected: ConnectedClient) {
         synchronized(lock) {
-            val current = client ?: return
-            client = null
-            current.writerThread?.interrupt()
+            if (clients[connected.seat] !== connected) return
+            clients.remove(connected.seat)
+            connected.writerThread?.interrupt()
             try {
-                current.onDisconnect()
+                connected.onDisconnect()
             } catch (e: IOException) {
                 // already gone
             }
-            session.annotate(SessionNotice("Opponent disconnected — waiting for rejoin…"))
+            session.annotate(SessionNotice("${seatLabel(connected.seat)} disconnected — waiting for rejoin…"))
         }
     }
 
+    private fun seatLabel(seat: PlayerId): String = "Player ${seat.ordinal + 1}"
+
     private class ConnectedClient(
+        internal val seat: PlayerId,
         internal val output: Writer,
         internal val onDisconnect: () -> Unit,
     ) {

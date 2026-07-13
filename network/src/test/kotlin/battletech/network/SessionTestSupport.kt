@@ -81,12 +81,44 @@ internal fun PipedConnection.join(sessionId: String, protocolVersion: Int = PROT
  * successful join produces: [ServerMessage.JoinAccepted] followed by the
  * kickstart's [ServerMessage.StatePush] (see [GameServer] KDoc — the
  * kickstart fires at most once per server lifetime).
+ *
+ * Host-config only (a single remote seat): the very first join already
+ * completes [remoteSeats][GameServer], so it always kickstarts. For a
+ * multi-seat (headless) server use [joinBothSeats] instead.
  */
 internal fun PipedConnection.joinAndConsumeKickstart(sessionId: String): Pair<ServerMessage.JoinAccepted, ServerMessage.StatePush> {
     val joinAccepted = join(sessionId) as ServerMessage.JoinAccepted
     val push = WireJson.decodeServerMessage(clientInput.readLine()) as ServerMessage.StatePush
     return joinAccepted to push
 }
+
+/**
+ * Two-seat join dance for a headless-config [GameServer] (`remoteSeats =
+ * {PLAYER_1, PLAYER_2}`): joins [first] then [second], asserting the first
+ * joiner is seated PLAYER_1 with a pre-kickstart snapshot and no push, and
+ * the second is seated PLAYER_2 and receives the kickstart's
+ * [ServerMessage.StatePush] — which also arrives on [first]'s connection,
+ * since the kickstart fans out to every connected client.
+ */
+internal fun joinBothSeats(
+    sessionId: String,
+    first: PipedConnection,
+    second: PipedConnection,
+): TwoSeatJoin {
+    val firstAccepted = first.join(sessionId) as ServerMessage.JoinAccepted
+    val secondAccepted = second.join(sessionId) as ServerMessage.JoinAccepted
+    val firstPush = WireJson.decodeServerMessage(first.clientInput.readLine()) as ServerMessage.StatePush
+    val secondPush = WireJson.decodeServerMessage(second.clientInput.readLine()) as ServerMessage.StatePush
+    return TwoSeatJoin(firstAccepted, firstPush, secondAccepted, secondPush)
+}
+
+/** Result of [joinBothSeats]: both joiners' handshake acceptance plus the kickstart push each received. */
+internal data class TwoSeatJoin(
+    val firstAccepted: ServerMessage.JoinAccepted,
+    val firstKickstartPush: ServerMessage.StatePush,
+    val secondAccepted: ServerMessage.JoinAccepted,
+    val secondKickstartPush: ServerMessage.StatePush,
+)
 
 /** Polls [condition] until it's true, failing after [timeoutMs] instead of hanging forever. */
 internal fun awaitTrue(timeoutMs: Long = 2_000, intervalMs: Long = 10, condition: () -> Boolean) {

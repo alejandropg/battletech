@@ -49,6 +49,17 @@ internal class RemoteGameSessionTest {
     }
 
     @Test
+    fun `playerId is the seat assigned by the server's JoinAccepted`() {
+        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+
+        val remote = connectRemoteOverPipes(sessionId, connection)
+
+        assertThat(remote.playerId).isEqualTo(PlayerId.PLAYER_2)
+    }
+
+    @Test
     fun `viewFor legalMovementsFor works against locally-held snapshot data`() {
         val server = GameServer(aSampleSession(), sessionId, port = 0)
         val connection = PipedConnection()

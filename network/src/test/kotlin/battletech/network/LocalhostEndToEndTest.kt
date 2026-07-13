@@ -44,10 +44,12 @@ internal class LocalhostEndToEndTest {
 
     private var server: GameServer? = null
     private var client: RemoteGameSession? = null
+    private var client2: RemoteGameSession? = null
 
     @AfterEach
     fun tearDown() {
         client?.close()
+        client2?.close()
         server?.close()
     }
 
@@ -88,6 +90,129 @@ internal class LocalhostEndToEndTest {
         assertThat(host.gameLog.snapshot().map { it.event })
             .anyMatch { it is TurnEnded && it.turnNumber == 1 }
         assertConverged(host, remote)
+    }
+
+    @Test
+    fun `headless config - two real-socket RemoteGameSessions converge with the server after every accepted command`() {
+        val gameServer = GameServer(
+            aSampleSession(),
+            sessionId,
+            port = 0,
+            remoteSeats = setOf(PlayerId.PLAYER_1, PlayerId.PLAYER_2),
+        )
+        server = gameServer
+        gameServer.start()
+
+        val remote1 = RemoteGameSession.connect("127.0.0.1", gameServer.boundPort, sessionId)
+        client = remote1
+        val remote2 = RemoteGameSession.connect("127.0.0.1", gameServer.boundPort, sessionId)
+        client2 = remote2
+
+        assertThat(remote1.playerId).isEqualTo(PlayerId.PLAYER_1)
+        assertThat(remote2.playerId).isEqualTo(PlayerId.PLAYER_2)
+
+        // The join-time advance() kickstart runs on the server's accept thread and its
+        // StatePush reaches both clients asynchronously — poll rather than assert immediately.
+        awaitTrue { gameServer.currentPhase == TurnPhase.MOVEMENT }
+        awaitHeadlessConvergence(gameServer, remote1, remote2)
+
+        playHeadlessMovementPhase(gameServer, remote1, remote2)
+        playHeadlessAttackImpulses(gameServer, remote1, remote2, TurnPhase.WEAPON_ATTACK) { active ->
+            CommitAttackImpulse(active, emptyList(), emptyMap())
+        }
+        playHeadlessAttackImpulses(gameServer, remote1, remote2, TurnPhase.PHYSICAL_ATTACK) { active ->
+            CommitPhysicalAttackImpulse(active, emptyList(), emptyMap())
+        }
+
+        // The final physical impulse cascades HEAT -> END -> INITIATIVE -> MOVEMENT
+        // (all system phases; no further commands needed) and the turn number advances.
+        assertThat(gameServer.currentPhase).isEqualTo(TurnPhase.MOVEMENT)
+        assertThat(gameServer.turnState.turnNumber).isEqualTo(2)
+        assertThat(gameServer.gameLog.snapshot().map { it.event })
+            .anyMatch { it is TurnEnded && it.turnNumber == 1 }
+        assertHeadlessConverged(gameServer, remote1, remote2)
+    }
+
+    // ---------- headless-config phase scripts (both seats remote; no host.submitCommand path) ----------
+
+    /**
+     * Mirrors [playMovementPhase] but for the headless config: whichever
+     * [RemoteGameSession] owns the active seat submits, and BOTH remotes are
+     * checked for convergence with the server afterwards (unlike the
+     * host-embedded scripts, there is no local host seat that's trivially
+     * up to date).
+     */
+    private fun playHeadlessMovementPhase(gameServer: GameServer, remote1: RemoteGameSession, remote2: RemoteGameSession) {
+        while (gameServer.currentPhase == TurnPhase.MOVEMENT) {
+            val active = gameServer.turnState.movement.activePlayer
+            val actor = if (active == PlayerId.PLAYER_1) remote1 else remote2
+            val unit = actor.turnState.selectableUnits(actor.gameState).first()
+            val reachability = actor.viewFor(active).legalMovementsFor(unit.id).first()
+            val command = MoveUnit(active, unit.id, reachability.destinations.first(), reachability.mode)
+            submitAndVerifyHeadless(gameServer, remote1, remote2, active, command)
+        }
+    }
+
+    private fun playHeadlessAttackImpulses(
+        gameServer: GameServer,
+        remote1: RemoteGameSession,
+        remote2: RemoteGameSession,
+        phase: TurnPhase,
+        command: (PlayerId) -> GameCommand,
+    ) {
+        while (gameServer.currentPhase == phase) {
+            val active = gameServer.turnState.attack.activePlayer
+            submitAndVerifyHeadless(gameServer, remote1, remote2, active, command(active))
+        }
+    }
+
+    /**
+     * Submits [command] via whichever remote owns [actingSide], asserts
+     * acceptance, then polls for convergence: the submitting remote and the
+     * server are already up to date synchronously (per the ordering
+     * invariant on [RemoteGameSession]), but the OTHER remote only catches
+     * up once its own reader thread applies the fan-out [StatePush] — so
+     * every headless-config submit is polled, unlike the host-embedded
+     * scripts where a host-originated command needs polling but a
+     * remote-originated one doesn't.
+     */
+    private fun submitAndVerifyHeadless(
+        gameServer: GameServer,
+        remote1: RemoteGameSession,
+        remote2: RemoteGameSession,
+        actingSide: PlayerId,
+        command: GameCommand,
+    ) {
+        val actor = if (actingSide == PlayerId.PLAYER_1) remote1 else remote2
+        val result = actor.submitCommand(command)
+        assertThat(result).isInstanceOf(CommandResult.Accepted::class.java)
+        awaitHeadlessConvergence(gameServer, remote1, remote2)
+    }
+
+    private fun awaitHeadlessConvergence(gameServer: GameServer, remote1: RemoteGameSession, remote2: RemoteGameSession) {
+        awaitTrue { headlessConverged(gameServer, remote1, remote2) }
+        assertHeadlessConverged(gameServer, remote1, remote2)
+    }
+
+    private fun headlessConverged(gameServer: GameServer, remote1: RemoteGameSession, remote2: RemoteGameSession): Boolean =
+        remote1.gameState == gameServer.gameState &&
+            remote2.gameState == gameServer.gameState &&
+            remote1.turnState == gameServer.turnState &&
+            remote2.turnState == gameServer.turnState &&
+            remote1.currentPhase == gameServer.currentPhase &&
+            remote2.currentPhase == gameServer.currentPhase &&
+            remote1.gameLog.snapshot().size == gameServer.gameLog.snapshot().size &&
+            remote2.gameLog.snapshot().size == gameServer.gameLog.snapshot().size
+
+    private fun assertHeadlessConverged(gameServer: GameServer, remote1: RemoteGameSession, remote2: RemoteGameSession) {
+        assertThat(remote1.gameState).isEqualTo(gameServer.gameState)
+        assertThat(remote2.gameState).isEqualTo(gameServer.gameState)
+        assertThat(remote1.turnState).isEqualTo(gameServer.turnState)
+        assertThat(remote2.turnState).isEqualTo(gameServer.turnState)
+        assertThat(remote1.currentPhase).isEqualTo(gameServer.currentPhase)
+        assertThat(remote2.currentPhase).isEqualTo(gameServer.currentPhase)
+        assertThat(remote1.gameLog.snapshot()).hasSize(gameServer.gameLog.snapshot().size)
+        assertThat(remote2.gameLog.snapshot()).hasSize(gameServer.gameLog.snapshot().size)
     }
 
     // ---------- setup ----------

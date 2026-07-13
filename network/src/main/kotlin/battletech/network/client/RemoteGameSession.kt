@@ -39,9 +39,9 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
 
 /**
  * Client-side network endpoint: a read-only replica of a host's
- * [battletech.tactical.session.BattleSession], always seated
- * [PlayerId.PLAYER_2], kept fresh by a background reader thread that applies
- * [ServerMessage.StatePush]es as they arrive.
+ * [battletech.tactical.session.BattleSession], seated at whichever [playerId]
+ * the server assigned at join time, kept fresh by a background reader
+ * thread that applies [ServerMessage.StatePush]es as they arrive.
  *
  * **Ordering invariant** (see [ServerMessage] KDoc): for an accepted command
  * the [ServerMessage.StatePush] carrying the change arrives on the wire
@@ -60,6 +60,9 @@ public class RemoteGameSession internal constructor(
     initial: ServerMessage.JoinAccepted,
     private val onClose: () -> Unit = {},
 ) : GameSession, AutoCloseable {
+
+    /** The seat the server assigned this connection at join time. */
+    public val playerId: PlayerId = initial.playerId
 
     @Volatile
     private var snapshot: GameSnapshot = initial.snapshot

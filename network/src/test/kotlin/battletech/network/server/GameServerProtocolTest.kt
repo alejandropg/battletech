@@ -7,6 +7,7 @@ import battletech.network.attachInBackground
 import battletech.network.awaitTrue
 import battletech.network.join
 import battletech.network.joinAndConsumeKickstart
+import battletech.network.joinBothSeats
 import battletech.network.wire.ClientMessage
 import battletech.network.wire.JoinRejectionReason
 import battletech.network.wire.PROTOCOL_VERSION
@@ -43,7 +44,7 @@ internal class GameServerProtocolTest {
         val (joinAccepted, push) = connection.joinAndConsumeKickstart(sessionId)
 
         assertThat(joinAccepted.playerId).isEqualTo(PlayerId.PLAYER_2)
-        assertThat(joinAccepted.log).containsExactly(LogEntry(turn = 1, event = SessionNotice("Opponent connected")))
+        assertThat(joinAccepted.log).containsExactly(LogEntry(turn = 1, event = SessionNotice("Player 2 connected")))
         assertThat(joinAccepted.snapshot.currentPhase).isEqualTo(TurnPhase.INITIATIVE)
         assertThat(joinAccepted.snapshot.gameState).isEqualTo(GameStateFactory().sampleGameState())
 
@@ -200,12 +201,12 @@ internal class GameServerProtocolTest {
         server.attachInBackground(firstConnection)
         firstConnection.joinAndConsumeKickstart(sessionId)
         val logSizeBeforeRejoin = server.gameLog.snapshot().size
-        assertThat(server.gameLog.snapshot().map { it.event }).contains(SessionNotice("Opponent connected"))
+        assertThat(server.gameLog.snapshot().map { it.event }).contains(SessionNotice("Player 2 connected"))
 
         firstConnection.closeClientSide()
         awaitTrue {
             server.gameLog.snapshot().map { it.event }
-                .contains(SessionNotice("Opponent disconnected — waiting for rejoin…"))
+                .contains(SessionNotice("Player 2 disconnected — waiting for rejoin…"))
         }
 
         val unit = server.gameState.unitsOf(PlayerId.PLAYER_1).first()
@@ -222,14 +223,182 @@ internal class GameServerProtocolTest {
         assertThat(rejoinAccepted.log).hasSize(logSizeBeforeRejoin + 2)
         val noticeTexts = rejoinAccepted.log.map { it.event }.filterIsInstance<SessionNotice>().map { it.text }
         assertThat(noticeTexts).containsExactly(
-            "Opponent connected",
-            "Opponent disconnected — waiting for rejoin…",
-            "Opponent connected",
+            "Player 2 connected",
+            "Player 2 disconnected — waiting for rejoin…",
+            "Player 2 connected",
         )
 
         // No second kickstart: give any wrongful push a generous window to arrive, then confirm none did.
         Thread.sleep(200)
         assertThat(server.gameLog.snapshot().size).isEqualTo(logSizeBeforeRejoin + 2)
         assertThat(secondConnection.clientInput.ready()).isFalse()
+    }
+
+    // ---------- headless config: both seats remote ----------
+
+    private fun twoSeatServer(): GameServer =
+        GameServer(aSampleSession(), sessionId, port = 0, remoteSeats = setOf(PlayerId.PLAYER_1, PlayerId.PLAYER_2))
+
+    @Test
+    fun `two-seat config - first join seats PLAYER_1 without a kickstart, second seats PLAYER_2 and the kickstart pushes to both`() {
+        val server = twoSeatServer()
+        val first = PipedConnection()
+        server.attachInBackground(first)
+
+        val firstAccepted = first.join(sessionId) as ServerMessage.JoinAccepted
+        assertThat(firstAccepted.playerId).isEqualTo(PlayerId.PLAYER_1)
+        assertThat(firstAccepted.snapshot.currentPhase).isEqualTo(TurnPhase.INITIATIVE)
+
+        // No kickstart yet: give a wrongful push a generous window, then confirm none arrived.
+        Thread.sleep(200)
+        assertThat(first.clientInput.ready()).isFalse()
+        assertThat(server.currentPhase).isEqualTo(TurnPhase.INITIATIVE)
+
+        val second = PipedConnection()
+        server.attachInBackground(second)
+        val secondAccepted = second.join(sessionId) as ServerMessage.JoinAccepted
+        assertThat(secondAccepted.playerId).isEqualTo(PlayerId.PLAYER_2)
+
+        val firstPush = WireJson.decodeServerMessage(first.clientInput.readLine()) as ServerMessage.StatePush
+        val secondPush = WireJson.decodeServerMessage(second.clientInput.readLine()) as ServerMessage.StatePush
+        assertThat(firstPush.snapshot.currentPhase).isEqualTo(TurnPhase.MOVEMENT)
+        assertThat(secondPush.snapshot.currentPhase).isEqualTo(TurnPhase.MOVEMENT)
+        assertThat(server.currentPhase).isEqualTo(TurnPhase.MOVEMENT)
+    }
+
+    @Test
+    fun `two-seat config - a third join attempt is rejected with SEAT_TAKEN`() {
+        val server = twoSeatServer()
+        val first = PipedConnection()
+        val second = PipedConnection()
+        server.attachInBackground(first)
+        server.attachInBackground(second)
+        joinBothSeats(sessionId, first, second)
+
+        val third = PipedConnection()
+        server.attachInBackground(third)
+        val rejection = third.join(sessionId) as ServerMessage.JoinRejected
+
+        assertThat(rejection.reason).isEqualTo(JoinRejectionReason.SEAT_TAKEN)
+    }
+
+    @Test
+    fun `two-seat config - a command from the lone first joiner is rejected with OpponentUnavailable and leaves the session untouched`() {
+        val server = twoSeatServer()
+        val first = PipedConnection()
+        server.attachInBackground(first)
+        first.join(sessionId)
+        val logSizeBefore = server.gameLog.snapshot().size
+
+        val unit = server.gameState.unitsOf(PlayerId.PLAYER_1).first()
+        val reachability = server.viewFor(PlayerId.PLAYER_1).legalMovementsFor(unit.id).first()
+        val destination = reachability.destinations.first()
+        val command = MoveUnit(PlayerId.PLAYER_1, unit.id, destination, reachability.mode)
+
+        first.clientOutput.write(WireJson.encodeToLine(ClientMessage.SubmitCommand(1L, command)) + "\n")
+        first.clientOutput.flush()
+        val reply = WireJson.decodeServerMessage(first.clientInput.readLine()) as ServerMessage.CommandReply
+
+        assertThat(reply.result).isEqualTo(CommandResult.Rejected(CommandRejection.OpponentUnavailable))
+        assertThat(server.gameLog.snapshot().size).isEqualTo(logSizeBefore)
+    }
+
+    @Test
+    fun `two-seat config - a client seated PLAYER_1 sending a command as PLAYER_2 is rejected with NotYourTurn`() {
+        val server = twoSeatServer()
+        val first = PipedConnection()
+        val second = PipedConnection()
+        server.attachInBackground(first)
+        server.attachInBackground(second)
+        joinBothSeats(sessionId, first, second)
+
+        val unit = server.gameState.unitsOf(PlayerId.PLAYER_2).first()
+        val reachability = server.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id).first()
+        val destination = reachability.destinations.first()
+        val command = MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode)
+
+        first.clientOutput.write(WireJson.encodeToLine(ClientMessage.SubmitCommand(9L, command)) + "\n")
+        first.clientOutput.flush()
+        val reply = WireJson.decodeServerMessage(first.clientInput.readLine()) as ServerMessage.CommandReply
+
+        val rejected = reply.result as CommandResult.Rejected
+        assertThat(rejected.reason).isInstanceOf(CommandRejection.NotYourTurn::class.java)
+        val notYourTurn = rejected.reason as CommandRejection.NotYourTurn
+        assertThat(notYourTurn.activePlayer).isEqualTo(PlayerId.PLAYER_1)
+        assertThat(notYourTurn.attemptedBy).isEqualTo(PlayerId.PLAYER_2)
+    }
+
+    @Test
+    fun `two-seat config - an accepted command from one client pushes state to both clients, push before reply to the submitter`() {
+        val server = twoSeatServer()
+        val first = PipedConnection()
+        val second = PipedConnection()
+        server.attachInBackground(first)
+        server.attachInBackground(second)
+        joinBothSeats(sessionId, first, second)
+
+        val active = server.turnState.movement.activePlayer
+        val submitter = if (active == PlayerId.PLAYER_1) first else second
+        val other = if (active == PlayerId.PLAYER_1) second else first
+        val unit = server.turnState.selectableUnits(server.gameState).first()
+        val reachability = server.viewFor(active).legalMovementsFor(unit.id).first()
+        val destination = reachability.destinations.first()
+        val command = MoveUnit(active, unit.id, destination, reachability.mode)
+
+        submitter.clientOutput.write(WireJson.encodeToLine(ClientMessage.SubmitCommand(1L, command)) + "\n")
+        submitter.clientOutput.flush()
+
+        val submitterFirstLine = WireJson.decodeServerMessage(submitter.clientInput.readLine())
+        val submitterSecondLine = WireJson.decodeServerMessage(submitter.clientInput.readLine())
+        assertThat(submitterFirstLine).isInstanceOf(ServerMessage.StatePush::class.java)
+        assertThat(submitterSecondLine).isInstanceOf(ServerMessage.CommandReply::class.java)
+        assertThat((submitterSecondLine as ServerMessage.CommandReply).result).isInstanceOf(CommandResult.Accepted::class.java)
+
+        val otherPush = WireJson.decodeServerMessage(other.clientInput.readLine())
+        assertThat(otherPush).isInstanceOf(ServerMessage.StatePush::class.java)
+    }
+
+    @Test
+    fun `two-seat config - disconnecting one seat freezes the other, and rejoin on a new connection reclaims the vacant seat without a second kickstart`() {
+        val server = twoSeatServer()
+        val first = PipedConnection()
+        val second = PipedConnection()
+        server.attachInBackground(first)
+        server.attachInBackground(second)
+        val bothJoined = joinBothSeats(sessionId, first, second)
+        assertThat(bothJoined.firstAccepted.playerId).isEqualTo(PlayerId.PLAYER_1)
+        val logSizeBeforeDisconnect = server.gameLog.snapshot().size
+
+        first.closeClientSide()
+        awaitTrue {
+            server.gameLog.snapshot().map { it.event }
+                .contains(SessionNotice("Player 1 disconnected — waiting for rejoin…"))
+        }
+
+        val unit = server.gameState.unitsOf(PlayerId.PLAYER_2).first()
+        val reachability = server.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id).first()
+        val destination = reachability.destinations.first()
+        val command = MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode)
+        second.clientOutput.write(WireJson.encodeToLine(ClientMessage.SubmitCommand(2L, command)) + "\n")
+        second.clientOutput.flush()
+        val reply = WireJson.decodeServerMessage(second.clientInput.readLine()) as ServerMessage.CommandReply
+        assertThat(reply.result).isEqualTo(CommandResult.Rejected(CommandRejection.OpponentUnavailable))
+
+        val rejoin = PipedConnection()
+        server.attachInBackground(rejoin)
+        val rejoinAccepted = rejoin.join(sessionId) as ServerMessage.JoinAccepted
+
+        assertThat(rejoinAccepted.playerId).isEqualTo(PlayerId.PLAYER_1)
+        // +1 for the disconnect notice, +1 for the rejoin's own "Player 1 connected" notice.
+        assertThat(rejoinAccepted.log).hasSize(logSizeBeforeDisconnect + 2)
+        val noticeTexts = rejoinAccepted.log.map { it.event }.filterIsInstance<SessionNotice>().map { it.text }
+        assertThat(noticeTexts).containsSequence(
+            "Player 1 disconnected — waiting for rejoin…",
+            "Player 1 connected",
+        )
+
+        // No second kickstart: give any wrongful push a generous window to arrive, then confirm none did.
+        Thread.sleep(200)
+        assertThat(rejoin.clientInput.ready()).isFalse()
     }
 }

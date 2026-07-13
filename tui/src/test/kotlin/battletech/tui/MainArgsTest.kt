@@ -103,6 +103,42 @@ internal class MainArgsTest {
     }
 
     @Nested
+    inner class ServerMode {
+        @Test
+        fun `--server with no port uses the default port`() {
+            val mode = parseArgs(arrayOf("--server"))
+            assertEquals(Mode.Server(port = DEFAULT_PORT), mode)
+        }
+
+        @Test
+        fun `--server --port N uses the given port`() {
+            val mode = parseArgs(arrayOf("--server", "--port", "9000"))
+            assertEquals(Mode.Server(port = 9000), mode)
+        }
+
+        @Test
+        fun `--server --port with a non-integer value throws`() {
+            assertThrows(ArgsException::class.java) {
+                parseArgs(arrayOf("--server", "--port", "nope"))
+            }
+        }
+
+        @Test
+        fun `--server --port with no value throws`() {
+            assertThrows(ArgsException::class.java) {
+                parseArgs(arrayOf("--server", "--port"))
+            }
+        }
+
+        @Test
+        fun `--server with an unknown trailing flag throws`() {
+            assertThrows(ArgsException::class.java) {
+                parseArgs(arrayOf("--server", "--bogus"))
+            }
+        }
+    }
+
+    @Nested
     inner class MalformedGlobal {
         @Test
         fun `unknown leading flag throws`() {
