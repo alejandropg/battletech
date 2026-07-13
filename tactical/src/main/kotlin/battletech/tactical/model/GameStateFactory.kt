@@ -1,27 +1,13 @@
 package battletech.tactical.model
 
+import battletech.tactical.model.map.MapCatalog
 import battletech.tactical.unit.MechModels
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.createUnit
 
 public class GameStateFactory {
 
-    public fun sampleGameState(): GameState {
-        val hexes = mutableMapOf<HexCoordinates, Hex>()
-        for (col in 0..9) {
-            for (row in 0..9) {
-                val coords = HexCoordinates(col, row)
-                val terrain = when {
-                    col == 3 && row in 2..5 -> Terrain.LIGHT_WOODS
-                    col == 4 && row in 3..4 -> Terrain.HEAVY_WOODS
-                    col == 6 && row in 1..3 -> Terrain.WATER
-                    else -> Terrain.CLEAR
-                }
-                val elevation = if (col == 5 && row in 2..4) 1 else 0
-                hexes[coords] = Hex(coords, terrain, elevation)
-            }
-        }
-
+    public fun sampleGameState(map: GameMap = MapCatalog.defaultMap()): GameState {
         val units = listOf(
             MechModels["AS7-D"].createUnit(
                 id = UnitId("A1"),
@@ -47,6 +33,6 @@ public class GameStateFactory {
             ),
         )
 
-        return GameState(units, GameMap(hexes))
+        return GameState(units, map)
     }
 }

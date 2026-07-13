@@ -1,5 +1,6 @@
 package battletech.tui
 
+import battletech.tactical.model.GameState
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
@@ -51,6 +52,7 @@ import kotlinx.coroutines.runBlocking
 public class TuiApp(
     private val providedSession: GameSession? = null,
     private val localPlayer: PlayerId? = null,
+    private val initialGameState: GameState? = null,
 ) {
 
     private data class RenderedFrame(
@@ -84,7 +86,7 @@ public class TuiApp(
         val renderer = ScreenRenderer(terminal)
 
         val session = providedSession ?: BattleSession(
-            initialGameState = GameStateFactory().sampleGameState(),
+            initialGameState = initialGameState ?: GameStateFactory().sampleGameState(),
             initialTurnState = TurnState.NULL,
         ).also {
             // Kickstart cascades INITIATIVE → MOVEMENT; the session's gameLog

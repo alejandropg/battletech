@@ -1,0 +1,18 @@
+{
+  "width": 10,
+  "height": 10,
+  "hexes": [
+    { "col": 3, "row": 2, "terrain": "LIGHT_WOODS" },
+    { "col": 3, "row": 3, "terrain": "LIGHT_WOODS" },
+    { "col": 3, "row": 4, "terrain": "LIGHT_WOODS" },
+    { "col": 3, "row": 5, "terrain": "LIGHT_WOODS" },
+    { "col": 4, "row": 3, "terrain": "HEAVY_WOODS" },
+    { "col": 4, "row": 4, "terrain": "HEAVY_WOODS" },
+    { "col": 6, "row": 1, "terrain": "WATER" },
+    { "col": 6, "row": 2, "terrain": "WATER" },
+    { "col": 6, "row": 3, "terrain": "WATER" },
+    { "col": 5, "row": 2, "elevation": 1 },
+    { "col": 5, "row": 3, "elevation": 1 },
+    { "col": 5, "row": 4, "elevation": 1 }
+  ]
+}

@@ -4,9 +4,12 @@ import battletech.network.client.JoinRejectedException
 import battletech.network.client.RemoteGameSession
 import battletech.network.server.GameServer
 import battletech.network.wire.SessionId
+import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.PlayerId
+import battletech.tactical.model.map.MapLoadException
+import battletech.tactical.model.map.resolveMap
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.SessionNotice
@@ -18,6 +21,9 @@ import java.util.concurrent.CountDownLatch
 /** Default TCP port for `--host`/`--join`/`--server` when `--port`/an explicit port is not supplied. */
 internal const val DEFAULT_PORT: Int = 2470
 
+/** Built-in map id used when `--map` is not supplied. */
+internal const val DEFAULT_MAP_NAME: String = "default"
+
 /**
  * The four ways the TUI can be launched, resolved from CLI args by [parseArgs].
  * [Local] is today's hot-seat behavior (both players share one terminal).
@@ -26,10 +32,10 @@ internal const val DEFAULT_PORT: Int = 2470
  * [Server] starts a headless dedicated server — no TUI — and both players connect via [Join].
  */
 internal sealed interface Mode {
-    data object Local : Mode
-    data class Host(val port: Int = DEFAULT_PORT) : Mode
+    data class Local(val mapName: String? = null) : Mode
+    data class Host(val port: Int = DEFAULT_PORT, val mapName: String? = null) : Mode
     data class Join(val host: String, val port: Int = DEFAULT_PORT, val sessionId: String) : Mode
-    data class Server(val port: Int = DEFAULT_PORT) : Mode
+    data class Server(val port: Int = DEFAULT_PORT, val mapName: String? = null) : Mode
 }
 
 /** Thrown by [parseArgs] for any unrecognized or malformed argument combination. */
@@ -43,22 +49,42 @@ internal class ArgsException(message: String) : Exception(message)
  *
  * Syntax:
  * - (no args): [Mode.Local]
- * - `--host [--port N]`: [Mode.Host]
+ * - `--host [--port N] [--map <name|path>]`: [Mode.Host]
  * - `--join <ip[:port]> --session <id>`: [Mode.Join]
- * - `--server [--port N]`: [Mode.Server]
+ * - `--server [--port N] [--map <name|path>]`: [Mode.Server]
+ * - `[--map <name|path>]` may additionally appear anywhere for hot-seat/host/server (invalid with `--join`).
  */
 internal fun parseArgs(args: Array<String>): Mode {
-    if (args.isEmpty()) return Mode.Local
+    val (mapName, rest) = extractMapArg(args)
 
-    return when (args[0]) {
-        "--host" -> parseHost(args)
-        "--join" -> parseJoin(args)
-        "--server" -> parseServer(args)
-        else -> throw ArgsException("Unknown argument: ${args[0]}")
+    if (rest.isEmpty()) return Mode.Local(mapName = mapName)
+
+    return when (rest[0]) {
+        "--host" -> parseHost(rest, mapName)
+        "--join" -> {
+            if (mapName != null) throw ArgsException("--map cannot be combined with --join")
+            parseJoin(rest)
+        }
+        "--server" -> parseServer(rest, mapName)
+        else -> throw ArgsException("Unknown argument: ${rest[0]}")
     }
 }
 
-private fun parseHost(args: Array<String>): Mode.Host {
+/**
+ * Pulls the first `--map <value>` pair out of [args], wherever it appears, returning the map
+ * name (or null if absent) alongside the remaining args in their original relative order.
+ * Throws [ArgsException] if `--map` is present with no following value.
+ */
+private fun extractMapArg(args: Array<String>): Pair<String?, Array<String>> {
+    val index = args.indexOf("--map")
+    if (index == -1) return null to args
+
+    val value = args.getOrNull(index + 1) ?: throw ArgsException("--map requires a value")
+    val remaining = args.filterIndexed { i, _ -> i != index && i != index + 1 }.toTypedArray()
+    return value to remaining
+}
+
+private fun parseHost(args: Array<String>, mapName: String?): Mode.Host {
     var port = DEFAULT_PORT
     var i = 1
     while (i < args.size) {
@@ -71,10 +97,10 @@ private fun parseHost(args: Array<String>): Mode.Host {
             else -> throw ArgsException("Unknown argument: ${args[i]}")
         }
     }
-    return Mode.Host(port = port)
+    return Mode.Host(port = port, mapName = mapName)
 }
 
-private fun parseServer(args: Array<String>): Mode.Server {
+private fun parseServer(args: Array<String>, mapName: String?): Mode.Server {
     var port = DEFAULT_PORT
     var i = 1
     while (i < args.size) {
@@ -87,7 +113,7 @@ private fun parseServer(args: Array<String>): Mode.Server {
             else -> throw ArgsException("Unknown argument: ${args[i]}")
         }
     }
-    return Mode.Server(port = port)
+    return Mode.Server(port = port, mapName = mapName)
 }
 
 private fun parseJoin(args: Array<String>): Mode.Join {
@@ -125,12 +151,27 @@ private fun printUsageAndExit(message: String): Nothing {
     System.err.println(
         """
         Usage:
-          battletech-tui                                  hot-seat (both players share this terminal)
-          battletech-tui --host [--port N]                host a session (default port $DEFAULT_PORT)
-          battletech-tui --join <ip[:port]> --session <id> join a hosted session
-          battletech-tui --server [--port N]               headless dedicated server (both players join remotely)
+          battletech-tui [--map <name|path>]                        hot-seat (both players share this terminal)
+          battletech-tui --host [--port N] [--map <name|path>]      host a session (default port $DEFAULT_PORT)
+          battletech-tui --join <ip[:port]> --session <id>          join a hosted session
+          battletech-tui --server [--port N] [--map <name|path>]    headless dedicated server (both players join remotely)
+
+          --map <name|path>  built-in map id (e.g. "$DEFAULT_MAP_NAME") or a path to a map file;
+                              default is "$DEFAULT_MAP_NAME". Invalid with --join (the map comes from the host).
         """.trimIndent(),
     )
+    kotlin.system.exitProcess(2)
+}
+
+/**
+ * Resolves a `--map` name (or [DEFAULT_MAP_NAME] when absent) to a [battletech.tactical.model.GameMap],
+ * mirroring the arg-error exit style: on [MapLoadException], print the message to stderr and exit(2)
+ * with no stack trace.
+ */
+private fun resolveMapOrExit(mapName: String?) = try {
+    resolveMap(mapName ?: DEFAULT_MAP_NAME)
+} catch (e: MapLoadException) {
+    System.err.println(e.message)
     kotlin.system.exitProcess(2)
 }
 
@@ -146,11 +187,15 @@ public fun main(args: Array<String>) {
     }
 
     when (mode) {
-        is Mode.Local -> TuiApp().run()
+        is Mode.Local -> {
+            val map = resolveMapOrExit(mode.mapName)
+            TuiApp(initialGameState = GameStateFactory().sampleGameState(map)).run()
+        }
 
         is Mode.Host -> {
+            val map = resolveMapOrExit(mode.mapName)
             val session = BattleSession(
-                initialGameState = GameStateFactory().sampleGameState(),
+                initialGameState = GameStateFactory().sampleGameState(map),
                 initialTurnState = TurnState.NULL,
             )
             val sessionId = SessionId.generate()
@@ -185,7 +230,7 @@ public fun main(args: Array<String>) {
             }
         }
 
-        is Mode.Server -> runHeadlessServer(mode.port)
+        is Mode.Server -> runHeadlessServer(mode.port, resolveMapOrExit(mode.mapName))
     }
 }
 
@@ -194,9 +239,9 @@ public fun main(args: Array<String>) {
  * remotely via `--join`. Runs until Ctrl-C (or another SIGTERM), printing every game
  * event to stdout as it happens; the process stays up after [battletech.tactical.session.MatchEnded].
  */
-private fun runHeadlessServer(port: Int) {
+private fun runHeadlessServer(port: Int, map: GameMap) {
     val session = BattleSession(
-        initialGameState = GameStateFactory().sampleGameState(),
+        initialGameState = GameStateFactory().sampleGameState(map),
         initialTurnState = TurnState.NULL,
     )
     val sessionId = SessionId.generate()

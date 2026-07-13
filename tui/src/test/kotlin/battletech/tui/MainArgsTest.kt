@@ -12,7 +12,20 @@ internal class MainArgsTest {
     inner class LocalMode {
         @Test
         fun `no args resolves to Local`() {
-            assertEquals(Mode.Local, parseArgs(emptyArray()))
+            assertEquals(Mode.Local(), parseArgs(emptyArray()))
+        }
+
+        @Test
+        fun `--map name resolves to Local with mapName`() {
+            val mode = parseArgs(arrayOf("--map", "name"))
+            assertEquals(Mode.Local(mapName = "name"), mode)
+        }
+
+        @Test
+        fun `--map with no value throws`() {
+            assertThrows(ArgsException::class.java) {
+                parseArgs(arrayOf("--map"))
+            }
         }
     }
 
@@ -49,6 +62,18 @@ internal class MainArgsTest {
             assertThrows(ArgsException::class.java) {
                 parseArgs(arrayOf("--host", "--bogus"))
             }
+        }
+
+        @Test
+        fun `--host --map name resolves to Host with mapName`() {
+            val mode = parseArgs(arrayOf("--host", "--map", "name"))
+            assertEquals(Mode.Host(port = DEFAULT_PORT, mapName = "name"), mode)
+        }
+
+        @Test
+        fun `--map name --host resolves to Host with mapName`() {
+            val mode = parseArgs(arrayOf("--map", "name", "--host"))
+            assertEquals(Mode.Host(port = DEFAULT_PORT, mapName = "name"), mode)
         }
     }
 
@@ -100,6 +125,13 @@ internal class MainArgsTest {
                 parseArgs(arrayOf("--join", ":9999", "--session", "ABC123"))
             }
         }
+
+        @Test
+        fun `--join with --map throws`() {
+            assertThrows(ArgsException::class.java) {
+                parseArgs(arrayOf("--join", "192.168.1.5", "--session", "s", "--map", "x"))
+            }
+        }
     }
 
     @Nested
@@ -135,6 +167,18 @@ internal class MainArgsTest {
             assertThrows(ArgsException::class.java) {
                 parseArgs(arrayOf("--server", "--bogus"))
             }
+        }
+
+        @Test
+        fun `--server --map name resolves to Server with mapName`() {
+            val mode = parseArgs(arrayOf("--server", "--map", "name"))
+            assertEquals(Mode.Server(port = DEFAULT_PORT, mapName = "name"), mode)
+        }
+
+        @Test
+        fun `--map name --server resolves to Server with mapName`() {
+            val mode = parseArgs(arrayOf("--map", "name", "--server"))
+            assertEquals(Mode.Server(port = DEFAULT_PORT, mapName = "name"), mode)
         }
     }
 
