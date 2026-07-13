@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import battletech.tactical.attack.LocationDamage
+import battletech.tactical.attack.physical.PhysicalAttackResult
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MechLocation
@@ -32,6 +33,7 @@ import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.DestructionReason
 import battletech.tactical.unit.UnitId
 import battletech.tui.hex.ammoExplosionIcon
+import battletech.tui.hex.attackOutcomeIcon
 import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.destroyedIcon
 import battletech.tui.hex.locationDestroyedIcon
@@ -69,10 +71,10 @@ internal object GameLogFormatter {
             val text = if (destroyed == null) summary else "$summary — $destroyed"
             val icon = if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
             val lines = mutableListOf(LogLine(icon, text))
-            // For cluster weapons that hit, append a detail line showing missiles and per-group locations.
+            // For every hit, append a detail line showing the location(s) struck (and missile count for clusters).
             event.results.filter { it.hit }.forEach { result ->
-                val clusterLine = clusterDetailLine(result)
-                if (clusterLine != null) lines.add(clusterLine)
+                val detailLine = hitDetailLine(result)
+                if (detailLine != null) lines.add(detailLine)
             }
             lines
         }
@@ -94,7 +96,12 @@ internal object GameLogFormatter {
             val destroyed = destroyedClause(event.results.map { it.targetId to it.damage }, state)
             val text = if (destroyed == null) summary else "$summary — $destroyed"
             val icon = if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
-            listOf(LogLine(icon, text))
+            val lines = mutableListOf(LogLine(icon, text))
+            event.results.filter { it.hit }.forEach { result ->
+                val detailLine = physicalDetailLine(result)
+                if (detailLine != null) lines.add(detailLine)
+            }
+            lines
         }
         is UnitFell -> {
             val name = event.unitId.value
@@ -145,17 +152,33 @@ internal object GameLogFormatter {
     }
 
     /**
-     * Returns a detail line for a cluster-weapon hit, e.g.
-     * "  LRM 20: 16 missiles → 5 CT, 5 RT, 5 LA, 1 RA"
+     * Returns a per-hit detail line for a weapon attack, e.g.
+     * "LRM 20: 16 missiles (16 dmg) → Center Torso (5 dmg), Right Torso (5 dmg), Left Arm (5 dmg), Right Arm (1 dmg)"
+     * for a cluster weapon, or "Medium Laser → Center Torso (5 dmg)" for a single-shot weapon.
      *
-     * Returns null for non-cluster weapons (missilesHit == null) or when there are no
-     * location hits to report (empty locationHits — legacy/test AttackResult objects).
+     * Returns null when there are no location hits to report (empty locationHits — legacy/test
+     * AttackResult objects, or summary-only results).
      */
-    private fun clusterDetailLine(result: battletech.tactical.attack.AttackResult): LogLine? {
-        val missiles = result.missilesHit ?: return null
+    private fun hitDetailLine(result: battletech.tactical.attack.AttackResult): LogLine? {
         if (result.locationHits.isEmpty()) return null
-        val groupParts = result.locationHits.joinToString(", ") { "${it.damage} ${locationLabel(it.location)}" }
-        return LogLine(null, "  ${result.weaponName}: $missiles missiles → $groupParts")
+        val total = result.locationHits.sumOf { it.damage }
+        val missiles = result.missilesHit
+        if (missiles != null) {
+            val groupParts = result.locationHits.joinToString(", ") { "${locationLabel(it.location)} (${it.damage} dmg)" }
+            return LogLine(attackOutcomeIcon(hit = true), "${result.weaponName}: $missiles missiles ($total dmg) → $groupParts")
+        }
+        val hit = result.locationHits.first()
+        return LogLine(attackOutcomeIcon(hit = true), "${result.weaponName} → ${locationLabel(hit.location)} (${hit.damage} dmg)")
+    }
+
+    /**
+     * Returns a detail line for a physical attack hit, e.g. "Punch → Right Torso (8 dmg)".
+     * Returns null when there is no hit location to report (legacy/test PhysicalAttackResult
+     * objects, or summary-only results).
+     */
+    private fun physicalDetailLine(result: PhysicalAttackResult): LogLine? {
+        val location = result.hitLocation ?: return null
+        return LogLine(attackOutcomeIcon(hit = true), "${result.attackName} → ${locationLabel(location)} (${result.damageApplied} dmg)")
     }
 
     private fun torsoFacingLines(event: TorsoFacingsApplied, state: GameState): List<LogLine> {

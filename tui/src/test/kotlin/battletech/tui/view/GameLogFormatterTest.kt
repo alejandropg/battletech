@@ -46,6 +46,7 @@ import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.WeaponMountId
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
+import battletech.tui.hex.attackOutcomeIcon
 import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.locationDestroyedIcon
@@ -212,6 +213,17 @@ internal class GameLogFormatterTest {
 
         assertThat(text(PhysicalAttacksResolved(results), stateWithLocust))
             .isEqualTo("Physical attacks: 1 made, 1 hit, 3 damage")
+    }
+
+    @Test
+    fun `PhysicalAttacksResolved with a hit location adds a detail line`() {
+        val result = aPhysicalAttackResult(hit = true, damage = 8, hitLocation = MechLocation.RIGHT_TORSO)
+        val lines = GameLogFormatter.lines(PhysicalAttacksResolved(listOf(result)), emptyState)
+
+        assertThat(lines).hasSize(2)
+        assertThat(lines[0].text).isEqualTo("Physical attacks: 1 made, 1 hit, 8 damage")
+        assertThat(lines[1].text).isEqualTo("Punch → Right Torso (8 dmg)")
+        assertThat(lines[1].icon).isEqualTo(attackOutcomeIcon(hit = true))
     }
 
     @Test
@@ -597,8 +609,8 @@ internal class GameLogFormatterTest {
         assertThat(lines).hasSize(2)
         assertThat(lines[0].text).isEqualTo("Attacks: 1 fired, 1 hit, 16 damage")
         assertThat(lines[1].text)
-            .isEqualTo("  LRM 20: 16 missiles → 5 Center Torso, 5 Right Torso, 5 Left Arm, 1 Right Arm")
-        assertThat(lines[1].icon).isNull()
+            .isEqualTo("LRM 20: 16 missiles (16 dmg) → Center Torso (5 dmg), Right Torso (5 dmg), Left Arm (5 dmg), Right Arm (1 dmg)")
+        assertThat(lines[1].icon).isEqualTo(attackOutcomeIcon(hit = true))
     }
 
     @Test
@@ -618,11 +630,26 @@ internal class GameLogFormatterTest {
 
         assertThat(lines).hasSize(2)
         assertThat(lines[1].text)
-            .isEqualTo("  SRM 6: 4 missiles → 2 Center Torso, 2 Left Torso, 2 Center Torso, 2 Right Torso")
+            .isEqualTo("SRM 6: 4 missiles (8 dmg) → Center Torso (2 dmg), Left Torso (2 dmg), Center Torso (2 dmg), Right Torso (2 dmg)")
     }
 
     @Test
-    fun `AttacksResolved with mix of cluster and non-cluster hits adds detail only for cluster`() {
+    fun `AttacksResolved with a single-shot hit adds a detail line`() {
+        val result = anAttackResult(
+            hit = true,
+            damage = 5,
+            locationHits = listOf(LocationHit(HitLocation.CENTER_TORSO, 5, DiceRoll(3, 4))),
+        )
+        val lines = GameLogFormatter.lines(AttacksResolved(listOf(result)), emptyState)
+
+        assertThat(lines).hasSize(2)
+        assertThat(lines[0].text).isEqualTo("Attacks: 1 fired, 1 hit, 5 damage")
+        assertThat(lines[1].text).isEqualTo("ML → Center Torso (5 dmg)")
+        assertThat(lines[1].icon).isEqualTo(attackOutcomeIcon(hit = true))
+    }
+
+    @Test
+    fun `AttacksResolved with mix of cluster and non-cluster hits adds a detail line for both cluster and single-shot hits`() {
         val clusterResult = aClusterAttackResult(
             weaponName = "SRM 6",
             missilesHit = 2,
@@ -632,13 +659,18 @@ internal class GameLogFormatterTest {
             ),
             totalDamage = 4,
         )
-        val plainResult = anAttackResult(hit = true, damage = 5)
+        val plainResult = anAttackResult(
+            hit = true,
+            damage = 5,
+            locationHits = listOf(LocationHit(HitLocation.RIGHT_ARM, 5, DiceRoll(3, 4))),
+        )
         val lines = GameLogFormatter.lines(AttacksResolved(listOf(clusterResult, plainResult)), emptyState)
 
-        // Summary line + 1 cluster detail line (no detail for the plain weapon)
-        assertThat(lines).hasSize(2)
+        // Summary line + 1 cluster detail line + 1 single-shot detail line
+        assertThat(lines).hasSize(3)
         assertThat(lines[0].text).isEqualTo("Attacks: 2 fired, 2 hit, 9 damage")
-        assertThat(lines[1].text).startsWith("  SRM 6:")
+        assertThat(lines[1].text).startsWith("SRM 6:")
+        assertThat(lines[2].text).isEqualTo("ML → Right Arm (5 dmg)")
     }
 
     @Test
@@ -692,24 +724,26 @@ internal class GameLogFormatterTest {
         damage: Int,
         targetId: UnitId = UnitId("t"),
         locationDamage: List<LocationDamage> = emptyList(),
+        locationHits: List<LocationHit> = emptyList(),
     ): AttackResult =
         AttackResult(
             attackerId = UnitId("a"),
             targetId = targetId,
             weaponName = "ML",
             hit = hit,
-            hitLocation = null,
+            hitLocation = locationHits.firstOrNull()?.location,
             damageApplied = damage,
             targetNumber = 8,
             roll = if (hit) 10 else 5,
             toHitRoll = if (hit) DiceRoll(5, 5) else DiceRoll(2, 3),
-            locationRoll = null,
+            locationRoll = locationHits.firstOrNull()?.locationRoll,
             gunnery = 4,
             rangeModifier = 0,
             rangeBand = RangeBand.SHORT,
             heatPenalty = 0,
             secondaryPenalty = 0,
             damage = locationDamage,
+            locationHits = locationHits,
         )
 
     private fun aPhysicalAttackResult(
@@ -717,13 +751,14 @@ internal class GameLogFormatterTest {
         damage: Int,
         targetId: UnitId = UnitId("t"),
         locationDamage: List<LocationDamage> = emptyList(),
+        hitLocation: HitLocation? = null,
     ): PhysicalAttackResult =
         PhysicalAttackResult(
             attackerId = UnitId("a"),
             targetId = targetId,
             attackName = "Punch",
             hit = hit,
-            hitLocation = null,
+            hitLocation = hitLocation,
             damageApplied = damage,
             targetNumber = 8,
             roll = if (hit) 10 else 5,
