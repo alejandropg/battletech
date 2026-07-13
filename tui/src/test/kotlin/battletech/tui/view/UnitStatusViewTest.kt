@@ -1,15 +1,20 @@
 package battletech.tui.view
 
 import battletech.tactical.model.MechLocation
+import battletech.tactical.model.PlayerId
+import battletech.tactical.query.PublicUnit
+import battletech.tactical.query.PublicWeapon
 import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.HeatSource
+import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModel
 import battletech.tactical.unit.mechLayout
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
+import battletech.tui.game.UnitStatusSubject
 import battletech.tui.hex.ammoIcon
 import battletech.tui.hex.emptyCircleIcon
 import battletech.tui.hex.filledCircleIcon
@@ -35,6 +40,23 @@ internal class UnitStatusViewTest {
         decorated.render(buffer, 0, 0, width, height)
         return buffer
     }
+
+    private fun aPublicUnit(
+        name: String = "Hunchback",
+        walkingMP: Int = 4,
+        runningMP: Int = 6,
+        jumpMP: Int = 0,
+        weapons: List<PublicWeapon> = listOf(PublicWeapon("AC/20")),
+    ): PublicUnit = PublicUnit(
+        id = UnitId("u1"),
+        owner = PlayerId.PLAYER_2,
+        name = name,
+        walkingMP = walkingMP,
+        runningMP = runningMP,
+        jumpMP = jumpMP,
+        armor = anArmorLayout(),
+        weapons = weapons,
+    )
 
     @Test
     fun `renders unit name`() {
@@ -126,7 +148,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders with no unit selected shows empty`() {
-        val view = UnitStatusView(null)
+        val view = UnitStatusView(unit = null)
         val buffer = renderDecorated(view, height = 14)
 
         val text = (2 until 18).map { buffer.get(it, 2).char }.joinToString("")
@@ -135,7 +157,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders box border`() {
-        val view = UnitStatusView(null)
+        val view = UnitStatusView(unit = null)
         val buffer = renderDecorated(view, height = 14)
 
         assertEquals("╭", buffer.get(0, 0).char)
@@ -429,5 +451,91 @@ internal class UnitStatusViewTest {
         val line = (2 until 26).map { buffer.get(it, row).char }.joinToString("")
         assertFalse(line.contains("["))
         assertEquals(infinityIcon(), buffer.get(25, row).char)
+    }
+
+    @Test
+    fun `renders public subject unit name`() {
+        val view = UnitStatusView(UnitStatusSubject.Public(aPublicUnit(name = "Hunchback")))
+        val buffer = renderDecorated(view)
+
+        val line = (2 until 11).map { buffer.get(it, 2).char }.joinToString("")
+        assertEquals("Hunchback", line)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 2).fg)
+    }
+
+    @Test
+    fun `renders public subject MOVEMENT section with walk and run values`() {
+        val view = UnitStatusView(UnitStatusSubject.Public(aPublicUnit(walkingMP = 4, runningMP = 6)))
+        val buffer = renderDecorated(view)
+
+        val headerRow = (2 until 26).map { buffer.get(it, 4).char }.joinToString("")
+        assertTrue(headerRow.contains("MOVEMENT"))
+        val walkRunRow = (2 until 26).map { buffer.get(it, 5).char }.joinToString("")
+        assertTrue(walkRunRow.contains("Walk"))
+        assertTrue(walkRunRow.contains("Run"))
+        assertTrue(walkRunRow.contains("4"))
+        assertTrue(walkRunRow.contains("6"))
+    }
+
+    @Test
+    fun `renders public subject jump movement points only when nonzero`() {
+        val viewWithoutJump = UnitStatusView(UnitStatusSubject.Public(aPublicUnit(jumpMP = 0)))
+        val bufferWithoutJump = renderDecorated(viewWithoutJump)
+        val jumpRow = (2 until 26).map { bufferWithoutJump.get(it, 6).char }.joinToString("")
+        assertFalse(jumpRow.contains("Jump"))
+
+        val viewWithJump = UnitStatusView(UnitStatusSubject.Public(aPublicUnit(jumpMP = 5)))
+        val bufferWithJump = renderDecorated(viewWithJump)
+        val jumpRowPresent = (2 until 26).map { bufferWithJump.get(it, 6).char }.joinToString("")
+        assertTrue(jumpRowPresent.contains("Jump"))
+        assertTrue(jumpRowPresent.contains("5"))
+    }
+
+    @Test
+    fun `renders public subject ARMOR section with HD CT and LL values`() {
+        val view = UnitStatusView(UnitStatusSubject.Public(aPublicUnit()))
+        val buffer = renderDecorated(view)
+
+        val armorHeader = (2 until 26).map { buffer.get(it, 7).char }.joinToString("")
+        assertTrue(armorHeader.contains("ARMOR"))
+        val hdRow = (2 until 26).map { buffer.get(it, 8).char }.joinToString("")
+        assertTrue(hdRow.contains("HD"))
+        assertTrue(hdRow.contains("9"))
+        val ctRow = (2 until 26).map { buffer.get(it, 9).char }.joinToString("")
+        assertTrue(ctRow.contains("CT"))
+        assertTrue(ctRow.contains("47"))
+        val llRow = (2 until 26).map { buffer.get(it, 12).char }.joinToString("")
+        assertTrue(llRow.contains("LL"))
+        assertTrue(llRow.contains("41"))
+    }
+
+    @Test
+    fun `renders public subject WEAPONS section with weapon names`() {
+        val view = UnitStatusView(
+            UnitStatusSubject.Public(aPublicUnit(weapons = listOf(PublicWeapon("AC/20"), PublicWeapon("Medium Laser")))),
+        )
+        val buffer = renderDecorated(view)
+
+        val weaponsHeader = (2 until 26).map { buffer.get(it, 14).char }.joinToString("")
+        assertTrue(weaponsHeader.contains("WEAPONS"))
+        val weapon1Row = (2 until 26).map { buffer.get(it, 15).char }.joinToString("")
+        assertTrue(weapon1Row.contains("AC/20"))
+        val weapon2Row = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
+        assertTrue(weapon2Row.contains("Medium Laser"))
+    }
+
+    @Test
+    fun `does not render private-only sections for public subject`() {
+        val view = UnitStatusView(UnitStatusSubject.Public(aPublicUnit()))
+        val buffer = renderDecorated(view, height = 30)
+
+        val allText = (0 until 30).flatMap { row ->
+            (0 until 28).map { col -> buffer.get(col, row).char }
+        }.joinToString("")
+        assertFalse(allText.contains("PILOT"))
+        assertFalse(allText.contains("Gunnery"))
+        assertFalse(allText.contains("HEAT"))
+        assertFalse(allText.contains("Internal Structure"))
+        assertFalse(allText.contains("Critical hit points"))
     }
 }

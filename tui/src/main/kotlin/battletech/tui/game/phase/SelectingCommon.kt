@@ -6,6 +6,7 @@ import battletech.tactical.session.CommandResult
 import battletech.tactical.unit.CombatUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
+import battletech.tui.game.UnitStatusSubject
 import battletech.tui.game.moveCursor
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
@@ -152,6 +153,26 @@ internal fun handleUnitSelection(
         is IdleAction.CycleUnit -> localTurnGuard(app, activePlayer) ?: cycleAndEnter(app, selectableUnits(), enterFor)
         is IdleAction.CommitDeclarations -> localTurnGuard(app, activePlayer) ?: onCommit(app)
     }
+}
+
+/**
+ * The [UnitStatusSubject] for the unit under the cursor in an idle
+ * selecting state: full [UnitStatusSubject.Owned] detail for the viewer's
+ * own units, redacted [UnitStatusSubject.Public] for anyone else's — the
+ * same seam [PlayerView.publicUnit] already provides for TARGET STATUS.
+ *
+ * [viewer] is [AppState.localPlayer] when set (remote play: the local
+ * seat always sees enemy units redacted, even on the opponent's turn), or
+ * else falls back to [activePlayer] (hot-seat: the acting player is the
+ * viewer). A null [viewer] (both are null — the turn hasn't been seeded
+ * yet) falls back to [UnitStatusSubject.Owned] so the transient pre-start
+ * window keeps today's behavior.
+ */
+internal fun cursorUnitStatus(app: AppState, activePlayer: PlayerId?): UnitStatusSubject? {
+    val unit = app.gameState.unitAt(app.cursor) ?: return null
+    val viewer = app.localPlayer ?: activePlayer
+    return if (viewer == null || unit.owner == viewer) UnitStatusSubject.Owned(unit)
+    else UnitStatusSubject.Public(app.viewFor(viewer).publicUnit(unit.id)!!)
 }
 
 private fun selectUnitAt(

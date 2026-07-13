@@ -176,4 +176,33 @@ internal class MovementSelectingUnitPhaseTest {
             assertEquals(state, result!!.app)
         }
     }
+
+    @Nested
+    inner class UnitStatusTest {
+        @Test
+        fun `unitStatus is Owned when cursor is over the active player's own unit`() {
+            val p1Unit = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+            val p2Unit = aUnit(id = "u2", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 1))
+            val gameState = aGameState(units = listOf(p1Unit, p2Unit))
+            val state = anAppState(cursor = HexCoordinates(0, 0), gameState = gameState, turnState = aTurnState())
+
+            val subject = MovementPhase.SelectingUnit.unitStatus(state)
+
+            assertInstanceOf(UnitStatusSubject.Owned::class.java, subject)
+            assertEquals(p1Unit.id, (subject as UnitStatusSubject.Owned).unit.id)
+        }
+
+        @Test
+        fun `unitStatus is Public when cursor is over an enemy unit`() {
+            val p1Unit = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+            val p2Unit = aUnit(id = "u2", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 1))
+            val gameState = aGameState(units = listOf(p1Unit, p2Unit))
+            val state = anAppState(cursor = HexCoordinates(1, 1), gameState = gameState, turnState = aTurnState())
+
+            val subject = MovementPhase.SelectingUnit.unitStatus(state)
+
+            assertInstanceOf(UnitStatusSubject.Public::class.java, subject)
+            assertEquals(p2Unit.id, (subject as UnitStatusSubject.Public).unit.id)
+        }
+    }
 }

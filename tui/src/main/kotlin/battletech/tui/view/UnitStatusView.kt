@@ -8,6 +8,7 @@ import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.availableAmmoBins
 import battletech.tactical.unit.criticalDamageStatus
 import battletech.tui.game.PanelId
+import battletech.tui.game.UnitStatusSubject
 import battletech.tui.hex.ammoIcon
 import battletech.tui.hex.emptyCircleIcon
 import battletech.tui.hex.filledCircleIcon
@@ -17,9 +18,14 @@ import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
 
 public class UnitStatusView(
-    private val unit: CombatUnit?,
+    private val subject: UnitStatusSubject?,
     private val pendingHeat: List<HeatSource> = emptyList(),
 ) : View {
+
+    public constructor(
+        unit: CombatUnit?,
+        pendingHeat: List<HeatSource> = emptyList(),
+    ) : this(unit?.let { UnitStatusSubject.Owned(it) }, pendingHeat)
 
     public companion object {
         public val INDEX: Int = PanelId.UNIT_STATUS.index
@@ -30,10 +36,19 @@ public class UnitStatusView(
         // One blank row for pixel parity with the decorator's y+1 inner-content start
         val content = ContentWriter(buffer, x, y + 1, width)
 
-        if (unit == null) {
-            content.writeln("No unit selected", Color.WHITE)
-            return
+        when (subject) {
+            null -> {
+                content.writeln("No unit selected", Color.WHITE)
+                return
+            }
+            is UnitStatusSubject.Public -> {
+                PublicUnitPanel.render(content, subject.unit)
+                return
+            }
+            is UnitStatusSubject.Owned -> Unit
         }
+
+        val unit = subject.unit
 
         // UNIT
         with(content) {

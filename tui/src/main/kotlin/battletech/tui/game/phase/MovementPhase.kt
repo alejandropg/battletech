@@ -19,6 +19,7 @@ import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.RenderData
+import battletech.tui.game.UnitStatusSubject
 import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.moveCursor
@@ -78,6 +79,11 @@ internal sealed interface MovementPhase : Phase {
         }
 
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitAt(app.cursor)
+
+        override fun unitStatus(app: AppState): UnitStatusSubject? {
+            val ts = app.turnState
+            return cursorUnitStatus(app, if (ts.movement.isComplete) null else ts.movement.activePlayer)
+        }
 
         override fun activePlayerLabel(app: AppState): String? {
             val turnState = app.turnState

@@ -12,6 +12,7 @@ import battletech.tactical.unit.HeatSource
 import battletech.tui.game.AppState
 import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData
+import battletech.tui.game.UnitStatusSubject
 import com.github.ajalt.mordant.input.InputEvent
 
 /**
@@ -31,6 +32,9 @@ internal sealed interface Phase {
     fun prompt(app: AppState): String
 
     fun selectedUnit(app: AppState): CombatUnit? = null
+
+    fun unitStatus(app: AppState): UnitStatusSubject? =
+        selectedUnit(app)?.let { UnitStatusSubject.Owned(it) }
 
     /**
      * Heat the [selectedUnit] *would* generate if the in-progress declaration

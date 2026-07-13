@@ -21,6 +21,7 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData
+import battletech.tui.game.UnitStatusSubject
 import battletech.tui.game.attackPlayerLabel
 import battletech.tui.game.displayName
 import battletech.tui.game.losHighlights
@@ -83,6 +84,11 @@ internal sealed interface AttackPhase : Phase {
         }
 
         override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitAt(app.cursor)
+
+        override fun unitStatus(app: AppState): UnitStatusSubject? {
+            val ts = app.turnState
+            return cursorUnitStatus(app, if (ts.attack.isComplete) null else ts.attack.activePlayer)
+        }
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState)
 
