@@ -86,6 +86,29 @@ internal class DeclaredTargetsRenderTest {
     }
 
     @Test
+    fun `committed P1 declaration is visible to P2 viewer too`() {
+        val attacker = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
+            position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
+        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
+            position = HexCoordinates(2, 1))
+        val gameState = GameState(listOf(attacker, target), map)
+
+        val decl = AttackDeclaration(
+            attackerId = attacker.id, targetId = target.id,
+            weaponIndex = 0, isPrimary = true,
+        )
+        val turnState = turnState(attackDeclarations = listOf(decl))
+
+        val result = buildDeclaredTargetsRender(
+            anApp(gameState, turnState), PlayerId.PLAYER_2, emptyMap(),
+        )
+
+        assertEquals(1, result.entries.size)
+        assertEquals("wolf", result.entries[0].attackerId.value)
+        assertFalse(result.entries[0].isDraft)
+    }
+
+    @Test
     fun `draft with weapons produces isDraft=true entry`() {
         val attacker = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
