@@ -8,8 +8,7 @@ import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.model.withUnit
 import battletech.tactical.unit.CombatUnit
-import battletech.tactical.unit.gyroPsrModifier
-import battletech.tactical.unit.legPsrModifier
+import battletech.tactical.unit.basePsrModifier
 import battletech.tactical.unit.pilotingSkillRoll
 
 /**
@@ -52,7 +51,7 @@ public fun resolvePhysicalAttacks(
         if (faller.isProne) return@map result
 
         // Include gyro + leg PSR penalties in the knockdown roll.
-        val psrModifier = gyroPsrModifier(faller) + legPsrModifier(faller)
+        val psrModifier = faller.basePsrModifier()
         val psr = pilotingSkillRoll(faller, roller, modifier = psrModifier)
         val knockdown = if (psr.passed) {
             Knockdown.Resisted(psr)

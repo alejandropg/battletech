@@ -412,7 +412,7 @@ internal class WeaponAttackPhaseHandlerTest {
         val decl = AttackDeclaration(target.id, attacker.id, weaponIndex = 0, isPrimary = true)
         val result = handler.validate(validCmd(declarations = listOf(decl)), gameState, seededOneImpulseTurn())
         assertThat(result).isEqualTo(
-            CommandRejection.NotYourTurn(activePlayer = PlayerId.PLAYER_2, attemptedBy = PlayerId.PLAYER_1),
+            CommandRejection.NotYourUnit(unitId = target.id, owner = PlayerId.PLAYER_2, attemptedBy = PlayerId.PLAYER_1),
         )
     }
 
@@ -494,7 +494,7 @@ internal class WeaponAttackPhaseHandlerTest {
             seededOneImpulseTurn(),
         )
         assertThat(result).isEqualTo(
-            CommandRejection.NotYourTurn(activePlayer = PlayerId.PLAYER_2, attemptedBy = PlayerId.PLAYER_1),
+            CommandRejection.NotYourUnit(unitId = target.id, owner = PlayerId.PLAYER_2, attemptedBy = PlayerId.PLAYER_1),
         )
     }
 

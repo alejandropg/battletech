@@ -217,13 +217,11 @@ public fun resolveCriticalHits(
             events += consequenceEvents
             for (event in consequenceEvents) {
                 if (event is AmmoExploded) {
-                    // Ammo explosion: pilot takes 2 hits (standard BT rule). Each hit runs a
-                    // consciousness check via applyPilotHit; dice order: hit-1 2d6, hit-2 2d6.
-                    repeat(2) {
-                        val (afterHit, hitEvents) = applyPilotHit(currentUnit, roller)
-                        currentUnit = afterHit
-                        events += hitEvents
-                    }
+                    // Ammo explosion: pilot takes 2 hits (standard BT rule); dice order:
+                    // hit-1 2d6, hit-2 2d6.
+                    val (afterHits, hitEvents) = applyAmmoExplosionPilotHits(currentUnit, roller)
+                    currentUnit = afterHits
+                    events += hitEvents
                 }
             }
         }
@@ -244,13 +242,11 @@ public fun resolveCriticalHits(
         events += consequenceEvents
         for (event in consequenceEvents) {
             if (event is AmmoExploded) {
-                // Ammo explosion: pilot takes 2 hits (standard BT rule). Each hit runs a
-                // consciousness check via applyPilotHit; dice order: hit-1 2d6, hit-2 2d6.
-                repeat(2) {
-                    val (afterHit, hitEvents) = applyPilotHit(currentUnit, roller)
-                    currentUnit = afterHit
-                    events += hitEvents
-                }
+                // Ammo explosion: pilot takes 2 hits (standard BT rule); dice order:
+                // hit-1 2d6, hit-2 2d6.
+                val (afterHits, hitEvents) = applyAmmoExplosionPilotHits(currentUnit, roller)
+                currentUnit = afterHits
+                events += hitEvents
             }
         }
     }

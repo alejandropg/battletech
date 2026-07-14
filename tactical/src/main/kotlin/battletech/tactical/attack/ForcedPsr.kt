@@ -6,8 +6,7 @@ import battletech.tactical.session.GameEvent
 import battletech.tactical.session.UnitFell
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
-import battletech.tactical.unit.gyroPsrModifier
-import battletech.tactical.unit.legPsrModifier
+import battletech.tactical.unit.basePsrModifier
 import battletech.tactical.unit.pilotingSkillRoll
 
 /**
@@ -82,7 +81,7 @@ public fun applyTwentyDamagePsrs(
         if (totalDamage < 20) continue
         val unit = currentState.unitById(unitId)
         // Include gyro and leg PSR penalties alongside the base 20-damage modifier.
-        val modifier = totalDamage / 20 + gyroPsrModifier(unit) + legPsrModifier(unit)
+        val modifier = totalDamage / 20 + unit.basePsrModifier()
         val (updated, fallEvents) = forcePsrOrFall(unit, modifier, roller)
         if (fallEvents.isNotEmpty()) {
             currentState = currentState.copy(

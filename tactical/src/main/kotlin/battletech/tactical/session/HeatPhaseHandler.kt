@@ -1,13 +1,13 @@
 package battletech.tactical.session
 
 import battletech.tactical.attack.HitLocation
+import battletech.tactical.attack.applyAmmoExplosionPilotHits
 import battletech.tactical.attack.applyPilotHit
 import battletech.tactical.attack.attemptConsciousnessRecovery
 import battletech.tactical.attack.detonateAmmoBin
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
-import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.model.unitWaterDepth
 import battletech.tactical.unit.CombatUnit
@@ -44,22 +44,9 @@ import battletech.tactical.unit.critEffects
  *
  * Completes immediately. Accepts no commands.
  */
-public class HeatPhaseHandler : PhaseHandler {
+public class HeatPhaseHandler : SystemPhaseHandler() {
 
     override val phase: TurnPhase = TurnPhase.HEAT
-
-    override fun activePlayer(turn: TurnState): PlayerId? = null
-
-    override fun accepts(command: GameCommand, turn: TurnState): Boolean = false
-
-    override fun apply(
-        command: GameCommand,
-        state: GameState,
-        turn: TurnState,
-        roller: DiceRoller,
-    ): PhaseOutcome = PhaseOutcome(state, turn, emptyList())
-
-    override fun isComplete(turn: TurnState): Boolean = true
 
     override fun onEntry(
         state: GameState,
@@ -249,12 +236,8 @@ public class HeatPhaseHandler : PhaseHandler {
 
         val allEvents = mutableListOf<GameEvent>(ammoEvent)
         // Ammo explosion inflicts 2 pilot hits; each runs a consciousness check.
-        var working = afterExplosion
-        repeat(2) {
-            val (afterHit, hitEvents) = applyPilotHit(working, roller)
-            working = afterHit
-            allEvents += hitEvents
-        }
+        val (working, hitEvents) = applyAmmoExplosionPilotHits(afterExplosion, roller)
+        allEvents += hitEvents
         return working to allEvents
     }
 }

@@ -84,3 +84,22 @@ public fun attemptConsciousnessRecovery(unit: CombatUnit, roller: DiceRoller): P
     if (roll.total < target) return unit to null
     return unit.copy(isPilotConscious = true) to PilotRecoveredConsciousness(unit.id, roll)
 }
+
+/**
+ * Applies the 2 pilot hits an ammo explosion inflicts on [unit] (standard BT rule): each hit
+ * runs its own consciousness check via [applyPilotHit]. Shared by [CriticalHitResolution]'s two
+ * detonation sites (limb blow-off, ordinary crit) and [battletech.tactical.session.HeatPhaseHandler]'s
+ * heat-driven cook-off.
+ *
+ * **Canonical dice order:** consciousness check 2d6 (hit 1), then consciousness check 2d6 (hit 2).
+ */
+public fun applyAmmoExplosionPilotHits(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit, List<GameEvent>> {
+    var working = unit
+    val events = mutableListOf<GameEvent>()
+    repeat(2) {
+        val (afterHit, hitEvents) = applyPilotHit(working, roller)
+        working = afterHit
+        events += hitEvents
+    }
+    return working to events
+}

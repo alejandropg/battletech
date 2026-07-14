@@ -18,6 +18,16 @@ public sealed interface CommandRejection : RejectionReason {
     @Serializable
     public data class NotYourTurn(public val activePlayer: PlayerId, public val attemptedBy: PlayerId) : CommandRejection
 
+    /**
+     * A command referenced a unit not owned by [attemptedBy]. Distinct from [NotYourTurn]
+     * (the session-level active-player check in [BattleSession.submitCommand]): this is a
+     * per-unit ownership check a handler runs on units named inside its own command payload
+     * (e.g. a torso-facing entry, or an attacker/declaration that isn't the impulse's overall
+     * active player but is still named by the command).
+     */
+    @Serializable
+    public data class NotYourUnit(public val unitId: UnitId, public val owner: PlayerId, public val attemptedBy: PlayerId) : CommandRejection
+
     @Serializable
     public data class WrongPhase(public val actual: TurnPhase) : CommandRejection
 

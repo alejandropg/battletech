@@ -45,7 +45,7 @@ public sealed interface AttackResult {
      * [SingleHit], one per connecting missile group for [ClusterHit].
      */
     @Serializable
-    public sealed interface Hit : AttackResult {
+    public sealed interface Hit : AttackResult, ResolvedAttack {
         /** True when the attack struck the target's rear arc; rear torso hits use the rear armor track. */
         public val useRearArmor: Boolean
 
@@ -59,7 +59,7 @@ public sealed interface AttackResult {
         public val locationHits: List<LocationHit>
 
         /** Damage steps actually applied (armor/IS/destroyed) — populated by pass-2 resolution via [withDamage]. */
-        public val damage: List<LocationDamage>
+        override val damage: List<LocationDamage>
 
         /** Total damage this attack dealt, summed from [locationHits]. */
         public val damageApplied: Int get() = locationHits.sumOf { it.damage }

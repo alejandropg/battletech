@@ -3,6 +3,7 @@ package battletech.tactical.attack.physical
 import battletech.tactical.attack.FallResult
 import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.LocationDamage
+import battletech.tactical.attack.ResolvedAttack
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.session.GameEvent
 import battletech.tactical.unit.PilotingSkillRoll
@@ -49,9 +50,9 @@ public sealed interface PhysicalAttackResult {
         /** Physical attacks roll a single 1d6 for hit location — deliberately not [DiceRoll] (2d6), unlike weapon fire. */
         public val locationRoll: Int,
         public val damageApplied: Int,
-        public val damage: List<LocationDamage> = emptyList(),
+        override val damage: List<LocationDamage> = emptyList(),
         override val knockdown: Knockdown = Knockdown.None,
-    ) : PhysicalAttackResult {
+    ) : PhysicalAttackResult, ResolvedAttack {
         public fun withDamage(damage: List<LocationDamage>): Hit = copy(damage = damage)
     }
 }

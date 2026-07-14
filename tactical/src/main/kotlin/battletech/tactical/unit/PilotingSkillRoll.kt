@@ -31,3 +31,10 @@ public fun pilotingSkillRoll(unit: CombatUnit, roller: DiceRoller, modifier: Int
  */
 public fun gyroPsrModifier(unit: CombatUnit): Int =
     unit.critEffects(CriticalComponent.GYRO).filterIsInstance<CritEffect.PsrPenalty>().sumOf { it.amount }
+
+/**
+ * The two PSR penalties that apply to almost every piloting-skill roll a unit makes:
+ * [gyroPsrModifier] (gyro crits) plus [legPsrModifier] (destroyed legs). Callers that need
+ * additional situational modifiers (20-damage PSR's `totalDamage / 20`, etc.) add them on top.
+ */
+public fun CombatUnit.basePsrModifier(): Int = gyroPsrModifier(this) + legPsrModifier(this)

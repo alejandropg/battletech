@@ -129,8 +129,9 @@ internal class PhysicalAttackPhaseHandlerTest {
         )
         assertThat(handler.validate(command, gameState, turnWithOneImpulse()))
             .isEqualTo(
-                CommandRejection.NotYourTurn(
-                    activePlayer = PlayerId.PLAYER_2,
+                CommandRejection.NotYourUnit(
+                    unitId = target.id,
+                    owner = PlayerId.PLAYER_2,
                     attemptedBy = PlayerId.PLAYER_1,
                 ),
             )
@@ -234,8 +235,9 @@ internal class PhysicalAttackPhaseHandlerTest {
         )
         assertThat(handler.validate(command, gameState, turnWithOneImpulse()))
             .isEqualTo(
-                CommandRejection.NotYourTurn(
-                    activePlayer = PlayerId.PLAYER_2,
+                CommandRejection.NotYourUnit(
+                    unitId = target.id,
+                    owner = PlayerId.PLAYER_2,
                     attemptedBy = PlayerId.PLAYER_1,
                 ),
             )

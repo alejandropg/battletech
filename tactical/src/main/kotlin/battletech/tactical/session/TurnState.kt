@@ -8,17 +8,26 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import kotlinx.serialization.Serializable
 
+/**
+ * Read surface shared by [MovementProgress] and [AttackProgress]: both drive an underlying
+ * [sequence] and expose the same three derived views of it. Default-implemented so the two
+ * implementers only need to supply [sequence] itself.
+ */
+public interface ImpulseProgress {
+    public val sequence: ImpulseSequence
+    public val currentImpulse: Impulse get() = sequence.current
+    public val activePlayer: PlayerId get() = sequence.activePlayer
+    public val isComplete: Boolean get() = sequence.isComplete
+}
+
 /** Movement-phase progress: who has moved, impulse position. All updates go through [afterUnitMoved]. */
 @Serializable
 public data class MovementProgress(
-    val sequence: ImpulseSequence = ImpulseSequence(emptyList()),
+    override val sequence: ImpulseSequence = ImpulseSequence(emptyList()),
     val movedUnitIds: Set<UnitId> = emptySet(),
     val movedInCurrentImpulse: Int = 0,
-) {
-    public val currentImpulse: Impulse get() = sequence.current
-    public val activePlayer: PlayerId get() = sequence.activePlayer
+) : ImpulseProgress {
     public val remainingInImpulse: Int get() = currentImpulse.unitCount - movedInCurrentImpulse
-    public val isComplete: Boolean get() = sequence.isComplete
 
     /** Records the move and advances the impulse when its unit quota is reached. */
     public fun afterUnitMoved(unitId: UnitId): MovementProgress {
@@ -43,13 +52,10 @@ public data class MovementProgress(
  */
 @Serializable
 public data class AttackProgress(
-    val sequence: ImpulseSequence = ImpulseSequence(emptyList()),
+    override val sequence: ImpulseSequence = ImpulseSequence(emptyList()),
     val weaponDeclarations: List<AttackDeclaration> = emptyList(),
     val physicalDeclarations: List<PhysicalAttackDeclaration> = emptyList(),
-) {
-    public val currentImpulse: Impulse get() = sequence.current
-    public val activePlayer: PlayerId get() = sequence.activePlayer
-    public val isComplete: Boolean get() = sequence.isComplete
+) : ImpulseProgress {
     public val inProgress: Boolean get() = sequence.order.isNotEmpty() && !sequence.isComplete
 
     public fun seed(impulses: List<Impulse>): AttackProgress = copy(sequence = ImpulseSequence(impulses))

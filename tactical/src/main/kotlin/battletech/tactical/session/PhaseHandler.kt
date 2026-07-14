@@ -29,8 +29,18 @@ public interface PhaseHandler {
 
     /** Command-specific validation run after [accepts] passes but before
      *  [apply]. Return null to accept; return a [CommandRejection] to
-     *  reject with that reason (e.g., UnknownUnit, NotYourTurn,
-     *  UnitAlreadyActed). Default: no validation. */
+     *  reject with that reason (e.g., UnknownUnit, NotYourUnit,
+     *  UnitAlreadyActed). Default: no validation.
+     *
+     *  [BattleSession.submitCommand] is the ONLY active-player check
+     *  ([CommandRejection.NotYourTurn]) — it runs before [validate] is ever
+     *  called, comparing [activePlayer] against the command's `playerId`.
+     *  Implementations must not re-check active player here. A handler that
+     *  needs to check ownership of a *specific unit* named inside its own
+     *  command payload (e.g. a torso-facing entry naming a unit that isn't
+     *  necessarily the impulse's active player) should reject with
+     *  [CommandRejection.NotYourUnit] instead — that is a distinct,
+     *  legitimate per-unit check, not a repeat of the session's check. */
     public fun validate(
         command: GameCommand,
         state: GameState,

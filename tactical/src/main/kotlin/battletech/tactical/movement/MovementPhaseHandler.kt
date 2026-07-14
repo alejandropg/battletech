@@ -18,10 +18,9 @@ import battletech.tactical.session.UnitMoved
 import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.session.calculateMovementOrder
 import battletech.tactical.unit.MovementThisTurn
+import battletech.tactical.unit.basePsrModifier
 import battletech.tactical.unit.cannotStandFromGyroDamage
 import battletech.tactical.unit.destroyedLegCount
-import battletech.tactical.unit.gyroPsrModifier
-import battletech.tactical.unit.legPsrModifier
 import battletech.tactical.unit.pilotingSkillRoll
 
 /**
@@ -140,7 +139,7 @@ public class MovementPhaseHandler : PhaseHandler {
         roller: DiceRoller,
     ): PhaseOutcome {
         val unit = state.unitById(cmd.unitId)
-        val modifier = gyroPsrModifier(unit) + legPsrModifier(unit)
+        val modifier = unit.basePsrModifier()
         val psr = pilotingSkillRoll(unit, roller, modifier = modifier)
         return if (psr.passed) {
             // Stood up; activation NOT consumed so the unit may still move this impulse.

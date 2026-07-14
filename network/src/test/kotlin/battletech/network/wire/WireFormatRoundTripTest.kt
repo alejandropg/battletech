@@ -29,6 +29,7 @@ import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.session.AmmoExploded
 import battletech.tactical.session.AttackDeclarationsRecorded
+import battletech.tactical.session.AttackImpulseCommand
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.CommandRejection
@@ -103,6 +104,21 @@ internal class WireFormatRoundTripTest {
     fun `every GameCommand subtype has a fixture`() {
         assertThat(gameCommandFixtures.keys)
             .containsExactlyInAnyOrderElementsOf(GameCommand::class.sealedSubclasses)
+    }
+
+    // `gameCommandFixtures` above covers one leaf per direct GameCommand subtype
+    // (CommitAttackImpulse for the nested AttackImpulseCommand). This round-trips
+    // the sibling leaf, CommitPhysicalAttackImpulse.
+
+    @Test
+    fun `CommitPhysicalAttackImpulse round-trips`() {
+        val command: GameCommand = CommitPhysicalAttackImpulse(
+            playerId = PlayerId.PLAYER_2,
+            declarations = listOf(PhysicalAttackDeclaration(attackerId = unitB, targetId = unitA, kind = PhysicalAttackKind.Kick(Side.LEFT))),
+            torsoFacings = emptyMap(),
+        )
+        val line = WireJson.json.encodeToString(command)
+        assertThat(WireJson.json.decodeFromString<GameCommand>(line)).isEqualTo(command)
     }
 
     // ---------- GameEvent ----------
@@ -423,15 +439,10 @@ internal class WireFormatRoundTripTest {
                 mode = MovementMode.WALK,
             ),
             StandUp::class to StandUp(playerId = PlayerId.PLAYER_1, unitId = unitA),
-            CommitAttackImpulse::class to CommitAttackImpulse(
+            AttackImpulseCommand::class to CommitAttackImpulse(
                 playerId = PlayerId.PLAYER_1,
                 declarations = listOf(AttackDeclaration(attackerId = unitA, targetId = unitB, weaponIndex = 0, isPrimary = true)),
                 torsoFacings = mapOf(unitA to HexDirection.NE),
-            ),
-            CommitPhysicalAttackImpulse::class to CommitPhysicalAttackImpulse(
-                playerId = PlayerId.PLAYER_2,
-                declarations = listOf(PhysicalAttackDeclaration(attackerId = unitB, targetId = unitA, kind = PhysicalAttackKind.Kick(Side.LEFT))),
-                torsoFacings = emptyMap(),
             ),
         )
 
@@ -494,6 +505,7 @@ internal class WireFormatRoundTripTest {
 
         private val commandRejectionFixtures: Map<KClass<out CommandRejection>, CommandRejection> = mapOf(
             CommandRejection.NotYourTurn::class to CommandRejection.NotYourTurn(activePlayer = PlayerId.PLAYER_1, attemptedBy = PlayerId.PLAYER_2),
+            CommandRejection.NotYourUnit::class to CommandRejection.NotYourUnit(unitId = unitA, owner = PlayerId.PLAYER_1, attemptedBy = PlayerId.PLAYER_2),
             CommandRejection.WrongPhase::class to CommandRejection.WrongPhase(actual = TurnPhase.HEAT),
             CommandRejection.UnitAlreadyActed::class to CommandRejection.UnitAlreadyActed(unitId = unitA),
             CommandRejection.UnknownUnit::class to CommandRejection.UnknownUnit(unitId = UnitId("ghost")),
