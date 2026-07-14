@@ -24,12 +24,12 @@ internal class WeaponToHitModifiersTest {
     private val attackerPos = HexCoordinates(0, 0)
     private val targetPos = HexCoordinates(1, 0) // distance 1
 
-    private fun baseAttacker(movement: MovementThisTurn = MovementThisTurn.STATIONARY) =
+    private fun baseAttacker(movement: MovementThisTurn = MovementThisTurn.Stationary) =
         aUnit(id = "attacker", gunnerySkill = 4, position = attackerPos)
             .copy(movementThisTurn = movement)
 
     private fun baseTarget(
-        movement: MovementThisTurn = MovementThisTurn.STATIONARY,
+        movement: MovementThisTurn = MovementThisTurn.Stationary,
         position: HexCoordinates = targetPos,
     ) = aUnit(id = "target", position = position).copy(movementThisTurn = movement)
 
@@ -47,21 +47,21 @@ internal class WeaponToHitModifiersTest {
 
     @Test
     fun `stationary attacker contributes zero to attacker move modifier`() {
-        val mods = modifiersFor(attacker = baseAttacker(MovementThisTurn.STATIONARY))
+        val mods = modifiersFor(attacker = baseAttacker(MovementThisTurn.Stationary))
 
         assertEquals(0, mods.first { it.label == "attacker move" }.amount)
     }
 
     @Test
     fun `running attacker adds two to attacker move modifier`() {
-        val mods = modifiersFor(attacker = baseAttacker(MovementThisTurn(MovementMode.RUN, 5)))
+        val mods = modifiersFor(attacker = baseAttacker(MovementThisTurn.Moved(MovementMode.RUN, 5)))
 
         assertEquals(2, mods.first { it.label == "attacker move" }.amount)
     }
 
     @Test
     fun `jumping attacker adds three to attacker move modifier`() {
-        val mods = modifiersFor(attacker = baseAttacker(MovementThisTurn(MovementMode.JUMP, 3)))
+        val mods = modifiersFor(attacker = baseAttacker(MovementThisTurn.Moved(MovementMode.JUMP, 3)))
 
         assertEquals(3, mods.first { it.label == "attacker move" }.amount)
     }
@@ -72,14 +72,14 @@ internal class WeaponToHitModifiersTest {
 
     @Test
     fun `stationary target contributes zero to target move modifier`() {
-        val mods = modifiersFor(target = baseTarget(MovementThisTurn.STATIONARY))
+        val mods = modifiersFor(target = baseTarget(MovementThisTurn.Stationary))
 
         assertEquals(0, mods.first { it.label == "target move" }.amount)
     }
 
     @Test
     fun `target that ran five hexes adds two to target move modifier`() {
-        val mods = modifiersFor(target = baseTarget(MovementThisTurn(MovementMode.RUN, 5)))
+        val mods = modifiersFor(target = baseTarget(MovementThisTurn.Moved(MovementMode.RUN, 5)))
 
         assertEquals(2, mods.first { it.label == "target move" }.amount)
     }
@@ -87,7 +87,7 @@ internal class WeaponToHitModifiersTest {
     @Test
     fun `target that jumped four hexes adds two to target move modifier`() {
         // 4 hexes → band +1, jump bonus +1 = +2
-        val mods = modifiersFor(target = baseTarget(MovementThisTurn(MovementMode.JUMP, 4)))
+        val mods = modifiersFor(target = baseTarget(MovementThisTurn.Moved(MovementMode.JUMP, 4)))
 
         assertEquals(2, mods.first { it.label == "target move" }.amount)
     }
@@ -153,9 +153,9 @@ internal class WeaponToHitModifiersTest {
         //   Expected TN = 4 + 0 (range short) + 0 (heat) + 0 (secondary) + 0 (prone) + 0 (immobile)
         //                   + 0 (sensors) + 0 (attacker move) + 2 (target move) + 5 (min range) = 11
         val lrm = Weapon(model = WeaponModels.lrm5)
-        val attacker = baseAttacker(MovementThisTurn.STATIONARY)
+        val attacker = baseAttacker(MovementThisTurn.Stationary)
         val target = baseTarget(
-            movement = MovementThisTurn(MovementMode.RUN, 5),
+            movement = MovementThisTurn.Moved(MovementMode.RUN, 5),
             position = HexCoordinates(2, 0),
         )
 
@@ -175,10 +175,10 @@ internal class WeaponToHitModifiersTest {
     @Test
     fun `attack result carries attacker move target move and min range fields`() {
         val lrm = Weapon(model = WeaponModels.lrm5)
-        val attacker = baseAttacker(MovementThisTurn(MovementMode.RUN, 5))
+        val attacker = baseAttacker(MovementThisTurn.Moved(MovementMode.RUN, 5))
             .copy(weapons = listOf(lrm))
         val target = baseTarget(
-            movement = MovementThisTurn(MovementMode.JUMP, 4),
+            movement = MovementThisTurn.Moved(MovementMode.JUMP, 4),
             position = HexCoordinates(2, 0),
         )
         val state = aGameState(units = listOf(attacker, target))

@@ -26,7 +26,7 @@ public data class CombatUnit(
     public val armor: ArmorLayout,
     public val internalStructure: InternalStructureLayout,
     public val criticalLayout: CriticalLayout = CriticalLayout.empty(),
-    public val movementThisTurn: MovementThisTurn = MovementThisTurn.STATIONARY,
+    public val movementThisTurn: MovementThisTurn = MovementThisTurn.Stationary,
     public val heatGeneratedThisTurn: List<HeatSource> = emptyList(),
     public val isProne: Boolean = false,
     public val isShutdown: Boolean = false,

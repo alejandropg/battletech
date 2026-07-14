@@ -17,11 +17,11 @@ internal class PhysicalToHitTest {
     private val attackerPos = HexCoordinates(0, 0)
     private val targetPos = HexCoordinates(1, 0)
 
-    private fun attacker(piloting: Int = 4, movement: MovementThisTurn = MovementThisTurn.STATIONARY) =
+    private fun attacker(piloting: Int = 4, movement: MovementThisTurn = MovementThisTurn.Stationary) =
         aUnit(id = "attacker", pilotingSkill = piloting, position = attackerPos)
             .copy(movementThisTurn = movement)
 
-    private fun target(movement: MovementThisTurn = MovementThisTurn.STATIONARY) =
+    private fun target(movement: MovementThisTurn = MovementThisTurn.Stationary) =
         aUnit(id = "target", position = targetPos).copy(movementThisTurn = movement)
 
     private fun punchTn(attacker: CombatUnit, target: CombatUnit, hexes: Map<HexCoordinates, Hex> = emptyMap()): Int =
@@ -34,27 +34,27 @@ internal class PhysicalToHitTest {
 
     @Test
     fun `a walking attacker adds one`() {
-        assertEquals(5, punchTn(attacker(movement = MovementThisTurn(MovementMode.WALK, 2)), target()))
+        assertEquals(5, punchTn(attacker(movement = MovementThisTurn.Moved(MovementMode.WALK, 2)), target()))
     }
 
     @Test
     fun `a running attacker adds two`() {
-        assertEquals(6, punchTn(attacker(movement = MovementThisTurn(MovementMode.RUN, 5)), target()))
+        assertEquals(6, punchTn(attacker(movement = MovementThisTurn.Moved(MovementMode.RUN, 5)), target()))
     }
 
     @Test
     fun `target movement modifier follows the standard hex bands`() {
-        assertEquals(4, punchTn(attacker(), target(MovementThisTurn(MovementMode.WALK, 2)))) // 0-2 -> +0
-        assertEquals(5, punchTn(attacker(), target(MovementThisTurn(MovementMode.WALK, 4)))) // 3-4 -> +1
-        assertEquals(6, punchTn(attacker(), target(MovementThisTurn(MovementMode.RUN, 6)))) // 5-6 -> +2
-        assertEquals(7, punchTn(attacker(), target(MovementThisTurn(MovementMode.RUN, 9)))) // 7-9 -> +3
-        assertEquals(8, punchTn(attacker(), target(MovementThisTurn(MovementMode.RUN, 17)))) // 10-17 -> +4
+        assertEquals(4, punchTn(attacker(), target(MovementThisTurn.Moved(MovementMode.WALK, 2)))) // 0-2 -> +0
+        assertEquals(5, punchTn(attacker(), target(MovementThisTurn.Moved(MovementMode.WALK, 4)))) // 3-4 -> +1
+        assertEquals(6, punchTn(attacker(), target(MovementThisTurn.Moved(MovementMode.RUN, 6)))) // 5-6 -> +2
+        assertEquals(7, punchTn(attacker(), target(MovementThisTurn.Moved(MovementMode.RUN, 9)))) // 7-9 -> +3
+        assertEquals(8, punchTn(attacker(), target(MovementThisTurn.Moved(MovementMode.RUN, 17)))) // 10-17 -> +4
     }
 
     @Test
     fun `a jumping target adds one on top of its hex-based modifier`() {
         // 4 hexes -> +1 band, +1 for jumping = +2.
-        assertEquals(6, punchTn(attacker(), target(MovementThisTurn(MovementMode.JUMP, 4))))
+        assertEquals(6, punchTn(attacker(), target(MovementThisTurn.Moved(MovementMode.JUMP, 4))))
     }
 
     @Test

@@ -1,5 +1,7 @@
 package battletech.tactical.unit
 
+import battletech.tactical.model.MechLocation
+
 /**
  * Number of legs whose internal structure has reached 0 on this unit (0, 1, or 2).
  *
@@ -9,8 +11,8 @@ package battletech.tactical.unit
  */
 public fun CombatUnit.destroyedLegCount(): Int {
     var count = 0
-    if (internalStructure.leftLeg == 0) count++
-    if (internalStructure.rightLeg == 0) count++
+    if (!internalStructure.isIntact(MechLocation.LEFT_LEG)) count++
+    if (!internalStructure.isIntact(MechLocation.RIGHT_LEG)) count++
     return count
 }
 

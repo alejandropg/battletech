@@ -9,6 +9,7 @@ import battletech.tactical.attack.physical.Side
 import battletech.tactical.attack.physical.kickDamage
 import battletech.tactical.attack.physical.physicalToHitTargetNumber
 import battletech.tactical.attack.physical.punchDamage
+import battletech.tactical.model.MechLocation
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 
@@ -77,8 +78,8 @@ internal class PhysicalAttackQueries(private val state: PublicGameState) {
         if (structure > 0) emptyList() else listOf(battletech.tactical.session.RuleRejection.LimbDestroyed(attackerId))
 
     private fun armStructure(unit: CombatUnit, arm: Side): Int =
-        if (arm == Side.LEFT) unit.internalStructure.leftArm else unit.internalStructure.rightArm
+        unit.internalStructure.at(if (arm == Side.LEFT) MechLocation.LEFT_ARM else MechLocation.RIGHT_ARM)
 
     private fun legStructure(unit: CombatUnit, leg: Side): Int =
-        if (leg == Side.LEFT) unit.internalStructure.leftLeg else unit.internalStructure.rightLeg
+        unit.internalStructure.at(if (leg == Side.LEFT) MechLocation.LEFT_LEG else MechLocation.RIGHT_LEG)
 }

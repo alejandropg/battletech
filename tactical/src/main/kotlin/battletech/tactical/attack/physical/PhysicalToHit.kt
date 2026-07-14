@@ -26,7 +26,7 @@ public fun physicalToHitModifiers(
     kind: PhysicalAttackKind,
     gameState: GameState,
 ): List<ToHitModifier> = listOf(
-    ToHitModifier("attacker move", attackerMovementModifier(attacker.movementThisTurn.mode)),
+    ToHitModifier("attacker move", attackerMovementModifier(attacker.movementThisTurn)),
     ToHitModifier("target move", targetMovementModifier(target.movementThisTurn)),
     ToHitModifier("terrain", terrainModifier(attacker, target, gameState)),
     ToHitModifier("prone", proneTargetToHitModifier(target, attacker.position.distanceTo(target.position))),

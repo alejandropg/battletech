@@ -68,7 +68,7 @@ public fun weaponToHitModifiers(
         ToHitModifier("prone", proneTargetToHitModifier(target, distance)),
         ToHitModifier("immobile", immobileTargetToHitModifier(target)),
         ToHitModifier("sensors", sensorToHitModifier(attacker)),
-        ToHitModifier("attacker move", attackerMovementModifier(attacker.movementThisTurn.mode)),
+        ToHitModifier("attacker move", attackerMovementModifier(attacker.movementThisTurn)),
         ToHitModifier("target move", targetMovementModifier(target.movementThisTurn)),
         ToHitModifier("min range", minimumRangeModifier(distance, weapon.minimumRange)),
         ToHitModifier("terrain", terrainMod),

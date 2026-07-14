@@ -49,10 +49,10 @@ public class ReachabilityCalculator(
         val enemyPositions = units.filter { it.id != actor.id }.map { it.position }.toSet()
         val friendlyPositions = units.filter { it.id != actor.id }.map { it.position }.toSet()
 
-        val best = mutableMapOf<MovementState, Pair<Int, List<MovementStep>>>()
+        val best = mutableMapOf<MovementStep, Pair<Int, List<MovementStep>>>()
         val queue = PriorityQueue<Node>(compareBy { it.cost })
 
-        val startState = MovementState(actor.position, actor.facing)
+        val startState = MovementStep(actor.position, actor.facing)
         queue.add(Node(state = startState, cost = 0, path = emptyList()))
 
         while (queue.isNotEmpty()) {
@@ -93,7 +93,7 @@ public class ReachabilityCalculator(
         val cwFacing = facing.rotateClockwise()
         transitions.add(
             Transition(
-                state = MovementState(position, cwFacing),
+                state = MovementStep(position, cwFacing),
                 cost = 1,
                 path = node.path + MovementStep(position, cwFacing),
             )
@@ -103,7 +103,7 @@ public class ReachabilityCalculator(
         val ccwFacing = facing.rotateCounterClockwise()
         transitions.add(
             Transition(
-                state = MovementState(position, ccwFacing),
+                state = MovementStep(position, ccwFacing),
                 cost = 1,
                 path = node.path + MovementStep(position, ccwFacing),
             )
@@ -117,7 +117,7 @@ public class ReachabilityCalculator(
             val moveCost = MovementCost.enterHexCost(fromHex, toHex)
             transitions.add(
                 Transition(
-                    state = MovementState(nextPosition, facing),
+                    state = MovementStep(nextPosition, facing),
                     cost = moveCost,
                     path = node.path + MovementStep(nextPosition, facing),
                 )
@@ -148,13 +148,13 @@ public class ReachabilityCalculator(
     }
 
     private data class Node(
-        val state: MovementState,
+        val state: MovementStep,
         val cost: Int,
         val path: List<MovementStep>,
     )
 
     private data class Transition(
-        val state: MovementState,
+        val state: MovementStep,
         val cost: Int,
         val path: List<MovementStep>,
     )

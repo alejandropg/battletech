@@ -1,5 +1,7 @@
 package battletech.tactical.unit
 
+import battletech.tactical.model.MechLocation
+
 /**
  * Reasons a [CombatUnit] is eliminated from play (`docs/rules/armor-damage.md` §5).
  *
@@ -45,9 +47,10 @@ public const val PILOT_DEATH_THRESHOLD: Int = 6
 public fun destructionReason(unit: CombatUnit): DestructionReason? {
     val internalStructure = unit.internalStructure
     return when {
-        internalStructure.head == 0 -> DestructionReason.HEAD_DESTROYED
-        internalStructure.centerTorso == 0 -> DestructionReason.CENTER_TORSO_DESTROYED
-        internalStructure.leftLeg == 0 && internalStructure.rightLeg == 0 -> DestructionReason.BOTH_LEGS_DESTROYED
+        !internalStructure.isIntact(MechLocation.HEAD) -> DestructionReason.HEAD_DESTROYED
+        !internalStructure.isIntact(MechLocation.CENTER_TORSO) -> DestructionReason.CENTER_TORSO_DESTROYED
+        !internalStructure.isIntact(MechLocation.LEFT_LEG) &&
+            !internalStructure.isIntact(MechLocation.RIGHT_LEG) -> DestructionReason.BOTH_LEGS_DESTROYED
         unit.engineCritCount() >= ENGINE_DESTROYED_AT -> DestructionReason.ENGINE_DESTROYED
         unit.pilotHits >= PILOT_DEATH_THRESHOLD -> DestructionReason.PILOT_DEAD
         else -> null

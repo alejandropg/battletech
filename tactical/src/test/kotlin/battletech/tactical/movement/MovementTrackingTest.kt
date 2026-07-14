@@ -60,19 +60,18 @@ internal class MovementTrackingTest {
         val outcome = handler.apply(command, state, turnFor(PlayerId.PLAYER_1), roller)
 
         val moved = outcome.state.unitById(mover.id)!!
-        assertThat(moved.movementThisTurn.mode).isEqualTo(MovementMode.WALK)
-        assertThat(moved.movementThisTurn.hexesMoved).isEqualTo(3)
+        assertThat(moved.movementThisTurn).isEqualTo(MovementThisTurn.Moved(MovementMode.WALK, 3))
     }
 
     @Test
     fun `entering the movement phase resets movement records to stationary`() {
         val mover = aUnit(id = "mover", position = HexCoordinates(0, 0))
-            .copy(movementThisTurn = MovementThisTurn(MovementMode.RUN, 6))
+            .copy(movementThisTurn = MovementThisTurn.Moved(MovementMode.RUN, 6))
         val state = aGameState(units = listOf(mover))
 
         val outcome = handler.onEntry(state, turnFor(PlayerId.PLAYER_1), roller)
 
         val reset = outcome.state.unitById(mover.id)!!
-        assertThat(reset.movementThisTurn).isEqualTo(MovementThisTurn.STATIONARY)
+        assertThat(reset.movementThisTurn).isEqualTo(MovementThisTurn.Stationary)
     }
 }

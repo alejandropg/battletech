@@ -53,8 +53,8 @@ internal fun applyLocationDestructionConsequences(
 
         // Find all locations newly destroyed in this pass.
         val newlyDestroyed = MechLocation.entries.filter { location ->
-            getInternalStructure(beforeUnit.internalStructure, location) > 0 &&
-                getInternalStructure(updatedUnit.internalStructure, location) == 0
+            beforeUnit.internalStructure.isIntact(location) &&
+                !updatedUnit.internalStructure.isIntact(location)
         }
 
         if (newlyDestroyed.isEmpty()) continue
@@ -68,20 +68,16 @@ internal fun applyLocationDestructionConsequences(
             // 2. Side-torso cascade: destroy the same-side arm if still intact.
             when (location) {
                 MechLocation.LEFT_TORSO -> {
-                    if (getInternalStructure(updatedUnit.internalStructure, MechLocation.LEFT_ARM) > 0) {
+                    if (updatedUnit.internalStructure.isIntact(MechLocation.LEFT_ARM)) {
                         updatedUnit = updatedUnit.copy(
-                            internalStructure = setInternalStructure(
-                                updatedUnit.internalStructure, MechLocation.LEFT_ARM, 0,
-                            ),
+                            internalStructure = updatedUnit.internalStructure.with(MechLocation.LEFT_ARM, 0),
                         ).disableWeaponsIn(MechLocation.LEFT_ARM)
                     }
                 }
                 MechLocation.RIGHT_TORSO -> {
-                    if (getInternalStructure(updatedUnit.internalStructure, MechLocation.RIGHT_ARM) > 0) {
+                    if (updatedUnit.internalStructure.isIntact(MechLocation.RIGHT_ARM)) {
                         updatedUnit = updatedUnit.copy(
-                            internalStructure = setInternalStructure(
-                                updatedUnit.internalStructure, MechLocation.RIGHT_ARM, 0,
-                            ),
+                            internalStructure = updatedUnit.internalStructure.with(MechLocation.RIGHT_ARM, 0),
                         ).disableWeaponsIn(MechLocation.RIGHT_ARM)
                     }
                 }

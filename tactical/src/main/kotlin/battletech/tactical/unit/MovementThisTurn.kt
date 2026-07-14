@@ -6,14 +6,27 @@ import kotlinx.serialization.Serializable
 /**
  * How a unit moved during the current turn's movement phase, used to compute
  * attacker movement modifiers and the target movement modifier (TMM) in the
- * attack phases. [mode] is null when the unit stayed stationary.
+ * attack phases.
+ *
+ * [Stationary] means the unit never submitted a [battletech.tactical.session.MoveUnit]
+ * command this turn (e.g. it starts each movement phase reset to [Stationary]). A
+ * unit that *did* submit [battletech.tactical.session.MoveUnit] — even a no-op
+ * declaration at 0 MP, or a turn-in-place that only changes facing — is [Moved] with
+ * `hexesMoved = 0`; that distinction matters because the attacker-movement +1 to-hit
+ * modifier applies to any [Moved], including a 0-hex one.
  */
 @Serializable
-public data class MovementThisTurn(
-    public val mode: MovementMode?,
-    public val hexesMoved: Int,
-) {
-    public companion object {
-        public val STATIONARY: MovementThisTurn = MovementThisTurn(mode = null, hexesMoved = 0)
+public sealed interface MovementThisTurn {
+    public val hexesMoved: Int
+
+    @Serializable
+    public data object Stationary : MovementThisTurn {
+        override val hexesMoved: Int get() = 0
     }
+
+    @Serializable
+    public data class Moved(
+        public val mode: MovementMode,
+        override val hexesMoved: Int,
+    ) : MovementThisTurn
 }

@@ -165,7 +165,7 @@ private fun CombatUnit.applyCritConsequence(
 private fun CombatUnit.withLimbBlownOff(location: MechLocation): CombatUnit {
     val slotCount = SLOT_COUNTS.getValue(location)
     val allIndices = (0 until slotCount).toSet()
-    val newInternalStructure = setInternalStructure(internalStructure, location, 0)
+    val newInternalStructure = internalStructure.with(location, 0)
     return copy(
         criticalHits = criticalHits + (location to allIndices),
         internalStructure = newInternalStructure,

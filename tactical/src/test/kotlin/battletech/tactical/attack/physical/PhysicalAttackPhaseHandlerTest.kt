@@ -209,7 +209,7 @@ internal class PhysicalAttackPhaseHandlerTest {
 
     @Test
     fun `validate rejects kick after running via RuleViolation`() {
-        val runningAttacker = attacker.copy(movementThisTurn = MovementThisTurn(MovementMode.RUN, 3))
+        val runningAttacker = attacker.copy(movementThisTurn = MovementThisTurn.Moved(MovementMode.RUN, 3))
         val state = aGameState(units = listOf(runningAttacker, target))
         val command = CommitPhysicalAttackImpulse(
             playerId = PlayerId.PLAYER_1,

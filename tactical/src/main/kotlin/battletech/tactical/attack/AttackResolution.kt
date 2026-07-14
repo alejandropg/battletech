@@ -8,9 +8,7 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.MechLocation
 import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.GameEvent
-import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
-import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.consumeOneRoundFromAvailableBin
 
 /**
@@ -150,11 +148,11 @@ public fun resolveDamage(
 ): DamageResolution {
     if (damage <= 0) return DamageResolution(unit, emptyList())
 
-    val currentArmor = getArmor(unit.armor, location, useRearArmor)
+    val currentArmor = unit.armor.at(location, useRearArmor)
     val armorAfter = (currentArmor - damage).coerceAtLeast(0)
     val armorDamage = minOf(currentArmor, damage)
     val toStructure = (damage - currentArmor).coerceAtLeast(0)
-    val newArmor = setArmor(unit.armor, location, armorAfter, useRearArmor)
+    val newArmor = unit.armor.with(location, armorAfter, useRearArmor)
 
     if (toStructure == 0) {
         val updatedUnit = unit.copy(armor = newArmor)
@@ -167,12 +165,12 @@ public fun resolveDamage(
         return DamageResolution(updatedUnit, listOf(step))
     }
 
-    val currentIS = getInternalStructure(unit.internalStructure, location)
+    val currentIS = unit.internalStructure.at(location)
     val isAfter = (currentIS - toStructure).coerceAtLeast(0)
     val structureDamage = minOf(currentIS, toStructure)
     val destroyed = isAfter == 0
     val excess = (toStructure - currentIS).coerceAtLeast(0)
-    val newIS = setInternalStructure(unit.internalStructure, location, isAfter)
+    val newIS = unit.internalStructure.with(location, isAfter)
     val updatedUnit = unit.copy(armor = newArmor, internalStructure = newIS)
 
     val step = LocationDamage(
@@ -347,57 +345,3 @@ private val RANGE_LABELS = setOf("short", "med", "long", "out of range")
 
 public fun heatPenaltyModifier(actor: CombatUnit): Int =
     HeatScale.toHitPenalty(actor.currentHeat)
-
-private fun getArmor(armor: ArmorLayout, location: HitLocation, rear: Boolean): Int = when {
-    rear && location == HitLocation.CENTER_TORSO -> armor.centerTorsoRear
-    rear && location == HitLocation.LEFT_TORSO -> armor.leftTorsoRear
-    rear && location == HitLocation.RIGHT_TORSO -> armor.rightTorsoRear
-    else -> when (location) {
-        HitLocation.HEAD -> armor.head
-        HitLocation.CENTER_TORSO -> armor.centerTorso
-        HitLocation.LEFT_TORSO -> armor.leftTorso
-        HitLocation.RIGHT_TORSO -> armor.rightTorso
-        HitLocation.LEFT_ARM -> armor.leftArm
-        HitLocation.RIGHT_ARM -> armor.rightArm
-        HitLocation.LEFT_LEG -> armor.leftLeg
-        HitLocation.RIGHT_LEG -> armor.rightLeg
-    }
-}
-
-private fun setArmor(armor: ArmorLayout, location: HitLocation, value: Int, rear: Boolean): ArmorLayout = when {
-    rear && location == HitLocation.CENTER_TORSO -> armor.copy(centerTorsoRear = value)
-    rear && location == HitLocation.LEFT_TORSO -> armor.copy(leftTorsoRear = value)
-    rear && location == HitLocation.RIGHT_TORSO -> armor.copy(rightTorsoRear = value)
-    else -> when (location) {
-        HitLocation.HEAD -> armor.copy(head = value)
-        HitLocation.CENTER_TORSO -> armor.copy(centerTorso = value)
-        HitLocation.LEFT_TORSO -> armor.copy(leftTorso = value)
-        HitLocation.RIGHT_TORSO -> armor.copy(rightTorso = value)
-        HitLocation.LEFT_ARM -> armor.copy(leftArm = value)
-        HitLocation.RIGHT_ARM -> armor.copy(rightArm = value)
-        HitLocation.LEFT_LEG -> armor.copy(leftLeg = value)
-        HitLocation.RIGHT_LEG -> armor.copy(rightLeg = value)
-    }
-}
-
-internal fun getInternalStructure(is_: InternalStructureLayout, location: HitLocation): Int = when (location) {
-    HitLocation.HEAD -> is_.head
-    HitLocation.CENTER_TORSO -> is_.centerTorso
-    HitLocation.LEFT_TORSO -> is_.leftTorso
-    HitLocation.RIGHT_TORSO -> is_.rightTorso
-    HitLocation.LEFT_ARM -> is_.leftArm
-    HitLocation.RIGHT_ARM -> is_.rightArm
-    HitLocation.LEFT_LEG -> is_.leftLeg
-    HitLocation.RIGHT_LEG -> is_.rightLeg
-}
-
-internal fun setInternalStructure(is_: InternalStructureLayout, location: HitLocation, value: Int): InternalStructureLayout = when (location) {
-    HitLocation.HEAD -> is_.copy(head = value)
-    HitLocation.CENTER_TORSO -> is_.copy(centerTorso = value)
-    HitLocation.LEFT_TORSO -> is_.copy(leftTorso = value)
-    HitLocation.RIGHT_TORSO -> is_.copy(rightTorso = value)
-    HitLocation.LEFT_ARM -> is_.copy(leftArm = value)
-    HitLocation.RIGHT_ARM -> is_.copy(rightArm = value)
-    HitLocation.LEFT_LEG -> is_.copy(leftLeg = value)
-    HitLocation.RIGHT_LEG -> is_.copy(rightLeg = value)
-}

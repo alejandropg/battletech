@@ -43,7 +43,7 @@ internal class PhysicalAttackResolutionTest {
     @Test
     fun `resolution to-hit reflects attacker movement`() {
         val attacker = aUnit(id = "attacker", tonnage = 50, pilotingSkill = 5, position = attackerPos)
-            .copy(movementThisTurn = MovementThisTurn(MovementMode.WALK, 2))
+            .copy(movementThisTurn = MovementThisTurn.Moved(MovementMode.WALK, 2))
         val target = aUnit(id = "target", position = targetPos, facing = bearing)
         val state = aGameState(units = listOf(attacker, target))
         val declaration = PhysicalAttackDeclaration(attacker.id, target.id, Punch(Side.LEFT))

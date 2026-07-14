@@ -182,7 +182,7 @@ public class MovementPhaseHandler : PhaseHandler {
             units = movedState.units.map { u ->
                 if (u.id == cmd.unitId) {
                     u.copy(
-                        movementThisTurn = MovementThisTurn(cmd.mode, hexesMoved),
+                        movementThisTurn = MovementThisTurn.Moved(cmd.mode, hexesMoved),
                         heatGeneratedThisTurn = u.heatGeneratedThisTurn +
                             listOfNotNull(heatSource),
                     )
@@ -220,7 +220,7 @@ public class MovementPhaseHandler : PhaseHandler {
         // Clear last turn's movement so attacker/target movement modifiers
         // reflect only this turn's movement.
         val resetState = state.copy(
-            units = state.units.map { it.copy(movementThisTurn = MovementThisTurn.STATIONARY) },
+            units = state.units.map { it.copy(movementThisTurn = MovementThisTurn.Stationary) },
         )
         return PhaseOutcome(
             resetState,

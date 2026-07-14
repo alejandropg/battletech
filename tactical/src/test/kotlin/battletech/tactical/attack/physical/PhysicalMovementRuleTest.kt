@@ -21,7 +21,7 @@ internal class PhysicalMovementRuleTest {
 
     @Test
     fun `a kick is illegal after running`() {
-        val result = KickMovementRule().evaluate(context(MovementThisTurn(MovementMode.RUN, 5)))
+        val result = KickMovementRule().evaluate(context(MovementThisTurn.Moved(MovementMode.RUN, 5)))
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
         assertThat((result as RuleResult.Unsatisfied).reason)
             .isInstanceOf(RuleRejection.CannotKickAfterRunningOrJumping::class.java)
@@ -29,21 +29,21 @@ internal class PhysicalMovementRuleTest {
 
     @Test
     fun `a kick is illegal after jumping`() {
-        val result = KickMovementRule().evaluate(context(MovementThisTurn(MovementMode.JUMP, 3)))
+        val result = KickMovementRule().evaluate(context(MovementThisTurn.Moved(MovementMode.JUMP, 3)))
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
     }
 
     @Test
     fun `a kick is legal after walking or standing still`() {
-        assertThat(KickMovementRule().evaluate(context(MovementThisTurn(MovementMode.WALK, 2))))
+        assertThat(KickMovementRule().evaluate(context(MovementThisTurn.Moved(MovementMode.WALK, 2))))
             .isEqualTo(RuleResult.Satisfied)
-        assertThat(KickMovementRule().evaluate(context(MovementThisTurn.STATIONARY)))
+        assertThat(KickMovementRule().evaluate(context(MovementThisTurn.Stationary)))
             .isEqualTo(RuleResult.Satisfied)
     }
 
     @Test
     fun `a punch is illegal after jumping`() {
-        val result = PunchMovementRule().evaluate(context(MovementThisTurn(MovementMode.JUMP, 3)))
+        val result = PunchMovementRule().evaluate(context(MovementThisTurn.Moved(MovementMode.JUMP, 3)))
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
         assertThat((result as RuleResult.Unsatisfied).reason)
             .isInstanceOf(RuleRejection.CannotPunchAfterJumping::class.java)
@@ -51,7 +51,7 @@ internal class PhysicalMovementRuleTest {
 
     @Test
     fun `a punch is legal after running`() {
-        assertThat(PunchMovementRule().evaluate(context(MovementThisTurn(MovementMode.RUN, 5))))
+        assertThat(PunchMovementRule().evaluate(context(MovementThisTurn.Moved(MovementMode.RUN, 5))))
             .isEqualTo(RuleResult.Satisfied)
     }
 }

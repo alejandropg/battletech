@@ -190,22 +190,6 @@ public fun CriticalLayout.consumeOneRound(ammoType: AmmoType): CriticalLayout {
 // ---------------------------------------------------------------------------
 
 /**
- * True when [location]'s internal structure in [is_] is still positive (the location
- * is not structurally gone). Used to filter ammo bins that are no longer accessible
- * because their location's IS has reached 0.
- */
-private fun isLocationIntact(location: MechLocation, is_: InternalStructureLayout): Boolean = when (location) {
-    MechLocation.HEAD -> is_.head > 0
-    MechLocation.CENTER_TORSO -> is_.centerTorso > 0
-    MechLocation.LEFT_TORSO -> is_.leftTorso > 0
-    MechLocation.RIGHT_TORSO -> is_.rightTorso > 0
-    MechLocation.LEFT_ARM -> is_.leftArm > 0
-    MechLocation.RIGHT_ARM -> is_.rightArm > 0
-    MechLocation.LEFT_LEG -> is_.leftLeg > 0
-    MechLocation.RIGHT_LEG -> is_.rightLeg > 0
-}
-
-/**
  * Ammo bins that are available for use: bins in locations whose internal structure is
  * still positive. Bins in locations with IS = 0 are excluded because the feed mechanism
  * is inaccessible once a location is structurally destroyed.
@@ -216,7 +200,7 @@ private fun isLocationIntact(location: MechLocation, is_: InternalStructureLayou
  */
 public fun CombatUnit.availableAmmoBins(): List<Triple<MechLocation, Int, CriticalSlotContent.AmmoBin>> =
     criticalLayout.ammoBins().filter { (location, _, _) ->
-        isLocationIntact(location, internalStructure)
+        internalStructure.isIntact(location)
     }
 
 /**
