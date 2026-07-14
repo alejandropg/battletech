@@ -1,7 +1,6 @@
-package battletech.tactical.session
+package battletech.tactical.heat
 
 import battletech.tactical.attack.AttackDeclaration
-import battletech.tactical.heat.weaponHeatSource
 import battletech.tactical.model.GameState
 import battletech.tactical.model.mapUnits
 import battletech.tactical.model.submersionDissipationBonus
@@ -21,8 +20,8 @@ import battletech.tactical.unit.engineHeatPerTurn
  * +12 at depth 2+ (fully submerged). See [battletech.tactical.model.submersionDissipationBonus]
  * for the ASSUMPTION/simplification rationale.
  *
- * Shutdown and ammo-explosion consequences are rolled separately in [HeatPhaseHandler]
- * since they require the dice roller.
+ * Shutdown and ammo-explosion consequences are rolled separately in
+ * [battletech.tactical.session.HeatPhaseHandler] since they require the dice roller.
  */
 public fun GameState.applyHeatPhase(): GameState {
     val snapshot = this

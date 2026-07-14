@@ -3,6 +3,7 @@ package battletech.tactical.attack
 import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.attack.weapon.SubmergedWeaponRule
 import battletech.tactical.dice.DiceRoller
+import battletech.tactical.heat.applyHeatPhase
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MechLocation
@@ -13,7 +14,6 @@ import battletech.tactical.query.aUnit
 import battletech.tactical.query.aWeapon
 import battletech.tactical.query.anArmorLayout
 import battletech.tactical.session.HeatPhaseHandler
-import battletech.tactical.session.applyHeatPhase
 import battletech.tactical.session.PilotHit
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.HeatSink
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test
  * Tests for all water and depth effects:
  *   - depth-1 partial cover (+3 to-hit, leg hits suppressed) via [lineOfSight]
  *   - depth-2 weapon restriction via [SubmergedWeaponRule]
- *   - submerged heat-sink dissipation bonus via [battletech.tactical.session.GameStateHeatTransform]
+ *   - submerged heat-sink dissipation bonus via [battletech.tactical.heat.GameStateHeatTransform]
  *   - drowning (prone in depth-2 water → 1 pilot hit per Heat Phase) via [HeatPhaseHandler]
  *   - [unitWaterDepth] shared query
  */

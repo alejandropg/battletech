@@ -2,8 +2,8 @@ package battletech.tactical.model
 
 import battletech.tactical.attack.applyTorsoFacings
 import battletech.tactical.attack.resetTorsoFacings
+import battletech.tactical.heat.applyHeatPhase
 import battletech.tactical.heat.movementHeatSources
-import battletech.tactical.session.applyHeatPhase
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSink

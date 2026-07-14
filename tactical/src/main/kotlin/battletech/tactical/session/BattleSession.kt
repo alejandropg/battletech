@@ -5,8 +5,9 @@ import battletech.tactical.attack.weapon.WeaponAttackPhaseHandler
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.GameState
-import battletech.tactical.model.MatchOutcome
+import battletech.tactical.model.MatchStatus
 import battletech.tactical.model.PlayerId
+import battletech.tactical.model.victoryStatus
 import battletech.tactical.movement.MovementPhaseHandler
 import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerView
@@ -186,9 +187,9 @@ public class BattleSession(
      * of source (weapon/physical damage, ammo cook-off, future crit/pilot
      * conditions) without duplicating detect+flag+event+match-over logic in
      * every handler. Flips newly-destroyed units' [battletech.tactical.unit.CombatUnit.isDestroyed],
-     * emits one [UnitDestroyed] per newly destroyed unit, then evaluates
-     * victory: if a player has zero survivors, sets [_matchOver] and emits
-     * [MatchEnded] exactly once. Idempotent — a sweep with nothing newly
+     * emits one [UnitDestroyed] per newly destroyed unit, then asks the pure
+     * [battletech.tactical.model.victoryStatus] rule whether the match just ended; if so, sets
+     * [_matchOver] and emits [MatchEnded] exactly once. Idempotent — a sweep with nothing newly
      * destroyed and the match already decided returns an empty list.
      */
     private fun runDestructionSweep(): List<GameEvent> {
@@ -209,18 +210,10 @@ public class BattleSession(
             }
         }
 
-        // Victory is only evaluated for players who actually have units deployed —
-        // an empty roster (e.g. a not-yet-populated match, or a test fixture with
-        // no units) must never be misread as "eliminated".
-        val deployedPlayers = PlayerId.entries.filter { _gameState.unitsOf(it).isNotEmpty() }
-        val survivingPlayers = deployedPlayers.filter { player ->
-            _gameState.unitsOf(player).any { !it.isDestroyed }
-        }
-        if (deployedPlayers.size > 1 && survivingPlayers.size <= 1) {
+        val status = victoryStatus(_gameState)
+        if (status is MatchStatus.Ended) {
             _matchOver = true
-            val winner = survivingPlayers.singleOrNull()
-            val outcome = if (winner != null) MatchOutcome.Victory(winner) else MatchOutcome.Draw
-            events += MatchEnded(outcome)
+            events += MatchEnded(status.outcome)
         }
 
         logEvents(events)

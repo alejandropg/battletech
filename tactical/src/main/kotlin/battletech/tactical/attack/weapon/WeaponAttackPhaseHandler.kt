@@ -5,6 +5,7 @@ import battletech.tactical.attack.ImpulseAttackPhaseHandler
 import battletech.tactical.attack.WeaponAttackContext
 import battletech.tactical.attack.resolveAttacksWithCrits
 import battletech.tactical.dice.DiceRoller
+import battletech.tactical.heat.applyWeaponHeat
 import battletech.tactical.model.GameState
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttackDeclarationsRecorded
@@ -15,7 +16,6 @@ import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.PhaseOutcome
 import battletech.tactical.session.TurnState
-import battletech.tactical.session.applyWeaponHeat
 
 /**
  * Weapon-fire attack phase. On entry seeds the attack impulse sequence
