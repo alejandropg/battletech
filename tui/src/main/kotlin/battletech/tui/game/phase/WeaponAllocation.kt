@@ -4,7 +4,18 @@ import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.model.HexDirection
 import battletech.tactical.unit.UnitId
 
-/** Pure draft state for one attacker's weapon-target assignments during declaration. */
+/**
+ * Pure draft state for one attacker's weapon-target assignments during declaration.
+ *
+ * This — and its uniqueness/primary-election rules ([toggle], [twist]) — stays client-side
+ * deliberately, not as a stopgap: it operates on a draft that doesn't exist server-side until
+ * [CommitAttackImpulse][battletech.tactical.session.CommitAttackImpulse] is submitted, which is
+ * exactly the "transient UI workflow" carve-out documented on
+ * [battletech.tactical.session.GameCommand]. There is no server-side equivalent to keep this in
+ * sync with; see the plan's Follow-ups section for the one related hardening gap
+ * (`WeaponAttackPhaseHandler.validate` doesn't itself reject a duplicate `weaponIndex` per
+ * attacker within one commit).
+ */
 internal data class WeaponAllocation(
     val torsoFacing: HexDirection,
     val weaponAssignments: Map<UnitId, Set<Int>> = emptyMap(),
