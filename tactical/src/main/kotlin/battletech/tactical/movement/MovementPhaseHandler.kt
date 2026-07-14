@@ -1,9 +1,7 @@
 package battletech.tactical.movement
 
 import battletech.tactical.dice.DiceRoller
-import battletech.tactical.heat.movementHeatSources
 import battletech.tactical.model.GameState
-import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.CommandRejection
@@ -18,9 +16,8 @@ import battletech.tactical.session.UnitMoved
 import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.session.calculateMovementOrder
 import battletech.tactical.unit.MovementThisTurn
+import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.basePsrModifier
-import battletech.tactical.unit.cannotStandFromGyroDamage
-import battletech.tactical.unit.destroyedLegCount
 import battletech.tactical.unit.pilotingSkillRoll
 
 /**
@@ -46,29 +43,11 @@ public class MovementPhaseHandler : PhaseHandler {
         turn: TurnState,
     ): CommandRejection? = when (command) {
         is MoveUnit -> validateActivation(command.unitId, command.playerId, state, turn)
-            ?: if (state.unitById(command.unitId).isProne) {
-                CommandRejection.UnitProne(command.unitId)
-            } else if (command.mode == MovementMode.JUMP &&
-                state.unitById(command.unitId).destroyedLegCount() > 0
-            ) {
-                // Cannot jump with any destroyed leg.
-                CommandRejection.LegDestroyed(command.unitId)
-            } else if (command.mode == MovementMode.RUN &&
-                state.unitById(command.unitId).destroyedLegCount() > 0
-            ) {
-                // Cannot run with any destroyed leg; hobble (half walk MP) only.
-                CommandRejection.LegDestroyed(command.unitId)
-            } else {
-                validateDestination(command, state)
-            }
+            ?: MovementRules.moveRejection(state.unitById(command.unitId), command.mode)
+            ?: validateDestination(command, state)
 
         is StandUp -> validateActivation(command.unitId, command.playerId, state, turn)
-            ?: when {
-                !state.unitById(command.unitId).isProne -> CommandRejection.UnitNotProne(command.unitId)
-                state.unitById(command.unitId).cannotStandFromGyroDamage() ->
-                    CommandRejection.GyroDestroyed(command.unitId)
-                else -> null
-            }
+            ?: MovementRules.standUpRejection(state.unitById(command.unitId))
 
         else -> null
     }
@@ -77,43 +56,30 @@ public class MovementPhaseHandler : PhaseHandler {
      * Server-authoritative destination check. Rejects a [MoveUnit] whose
      * [MoveUnit.destination] is outside the unit's legal reach, or whose
      * path/mpSpent were tampered to differ from the server-computed value.
-     *
-     * Stationary moves (same position, same facing, 0 MP) are accepted without
-     * running the full Dijkstra — they are always legal once the unit passes
-     * the prior checks (not prone, not destroyed-leg-run/jump, etc.).
+     * This is the ONLY place the reachability Dijkstra runs for a given move —
+     * [applyMove] trusts the already-validated command instead of re-deriving it
+     * (see that method's doc for why the check has to live here, not there).
      */
     private fun validateDestination(
         cmd: MoveUnit,
         state: GameState,
     ): CommandRejection? {
         val unit = state.unitById(cmd.unitId) // existence guaranteed by validateActivation
-        // Stationary: unit stays at its current position with its current facing, spending 0 MP.
-        if (cmd.destination.position == unit.position &&
-            cmd.destination.facing == unit.facing &&
-            cmd.destination.mpSpent == 0
-        ) {
-            return null
-        }
-        val reachabilityMap = ReachabilityCalculator(state.map, state.units).calculate(unit, cmd.mode)
-        val serverHex = reachabilityMap.destinations.firstOrNull {
-            it.position == cmd.destination.position && it.facing == cmd.destination.facing
-        }
-        return when {
-            serverHex == null -> CommandRejection.DestinationUnreachable(cmd.unitId, cmd.destination.position)
-            serverHex != cmd.destination -> CommandRejection.DestinationUnreachable(cmd.unitId, cmd.destination.position)
-            else -> null
+        return when (val destination = MovementRules.authoritativeDestination(unit, cmd.mode, cmd.destination, state)) {
+            is AuthoritativeDestination.Legal -> null
+            is AuthoritativeDestination.Illegal -> destination.rejection
         }
     }
 
     private fun validateActivation(
-        unitId: battletech.tactical.unit.UnitId,
+        unitId: UnitId,
         playerId: PlayerId,
         state: GameState,
         turn: TurnState,
     ): CommandRejection? {
         val unit = state.findUnit(unitId) ?: return CommandRejection.UnknownUnit(unitId)
         if (unit.owner != playerId) {
-            return CommandRejection.NotYourTurn(activePlayer = unit.owner, attemptedBy = playerId)
+            return CommandRejection.NotYourUnit(unitId, owner = unit.owner, attemptedBy = playerId)
         }
         if (unitId in turn.movement.movedUnitIds) {
             return CommandRejection.UnitAlreadyActed(unitId)
@@ -153,41 +119,31 @@ public class MovementPhaseHandler : PhaseHandler {
         }
     }
 
+    /**
+     * [validate] has already run [MovementRules.authoritativeDestination] and only
+     * reached here because it returned `Legal` — meaning `cmd.destination` is either
+     * the stationary shortcut (position/facing match, 0 MP; path not checked, so it's
+     * re-derived here rather than trusted) or was proven byte-for-byte equal to the
+     * server-computed reachable hex (full equality, including path). Either way the
+     * canonical hex is cheap to obtain without re-running the Dijkstra, so it doesn't:
+     * one move command spends exactly one Dijkstra, in [validateDestination].
+     */
     private fun applyMove(
         cmd: MoveUnit,
         state: GameState,
         turn: TurnState,
     ): PhaseOutcome {
         val unit = state.unitById(cmd.unitId)
-        // Use the server-authoritative destination — never trust the client value for MP or path.
+        val from = unit.position
         val serverHex: ReachableHex = if (cmd.destination.mpSpent == 0 &&
             cmd.destination.position == unit.position &&
             cmd.destination.facing == unit.facing
         ) {
-            // Stationary: synthesise a canonical zero-cost hex.
-            ReachableHex(position = unit.position, facing = unit.facing, mpSpent = 0, path = emptyList())
+            MovementRules.stationaryHex(unit)
         } else {
-            ReachabilityCalculator(state.map, state.units)
-                .calculate(unit, cmd.mode)
-                .destinations
-                .first { it.position == cmd.destination.position && it.facing == cmd.destination.facing }
+            cmd.destination
         }
-        val from = unit.position
-        val hexesMoved = hexesMoved(from, serverHex)
-        val heatSources = movementHeatSources(cmd.mode, hexesMoved)
-        val movedState = state.moveUnit(cmd.unitId, serverHex)
-        val newState = movedState.copy(
-            units = movedState.units.map { u ->
-                if (u.id == cmd.unitId) {
-                    u.copy(
-                        movementThisTurn = MovementThisTurn.Moved(cmd.mode, hexesMoved),
-                        heatGeneratedThisTurn = u.heatGeneratedThisTurn + heatSources,
-                    )
-                } else {
-                    u
-                }
-            },
-        )
+        val newState = state.applyMove(cmd.unitId, cmd.mode, serverHex)
         val newTurn = turn.copy(movement = turn.movement.afterUnitMoved(cmd.unitId))
         val event = UnitMoved(
             unitId = cmd.unitId,
@@ -225,10 +181,4 @@ public class MovementPhaseHandler : PhaseHandler {
             emptyList(),
         )
     }
-}
-
-/** Hexes actually entered along [destination]'s path (turn-in-place steps excluded). */
-public fun hexesMoved(from: battletech.tactical.model.HexCoordinates, destination: ReachableHex): Int {
-    val positions = listOf(from) + destination.path.map { it.position }
-    return positions.zipWithNext().count { (previous, next) -> previous != next }
 }

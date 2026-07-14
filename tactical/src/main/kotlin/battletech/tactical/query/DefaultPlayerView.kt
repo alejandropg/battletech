@@ -3,8 +3,8 @@ package battletech.tactical.query
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
+import battletech.tactical.movement.MovementRules
 import battletech.tactical.movement.ReachabilityCalculator
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.unit.UnitId
@@ -19,13 +19,8 @@ public class DefaultPlayerView(
 
     override fun legalMovementsFor(unitId: UnitId): List<ReachabilityMap> {
         val unit = state.findUnit(unitId) ?: return emptyList()
-        if (unit.isShutdown || unit.isDestroyed || !unit.isPilotConscious) return emptyList()
         val calculator = ReachabilityCalculator(state.map, state.units)
-        return buildList {
-            if (unit.walkingMP > 0) add(calculator.calculate(unit, MovementMode.WALK))
-            if (unit.runningMP > 0) add(calculator.calculate(unit, MovementMode.RUN))
-            if (unit.jumpMP > 0) add(calculator.calculate(unit, MovementMode.JUMP))
-        }
+        return MovementRules.availableModes(unit).map { mode -> calculator.calculate(unit, mode) }
     }
 
     override fun fireArc(attackerId: UnitId, torsoFacing: HexDirection): Set<HexCoordinates> =
