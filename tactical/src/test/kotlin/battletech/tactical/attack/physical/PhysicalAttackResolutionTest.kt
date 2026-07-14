@@ -32,7 +32,8 @@ internal class PhysicalAttackResolutionTest {
         val (newState, results) = resolvePhysicalAttacks(listOf(declaration), state, roller)
 
         val result = results.single()
-        assertThat(result.hit).isTrue()
+        assertThat(result).isInstanceOf(PhysicalAttackResult.Hit::class.java)
+        result as PhysicalAttackResult.Hit
         assertThat(result.hitLocation).isEqualTo(HitLocation.LEFT_ARM)
         assertThat(result.damageApplied).isEqualTo(5)
 
@@ -67,9 +68,7 @@ internal class PhysicalAttackResolutionTest {
         val (newState, results) = resolvePhysicalAttacks(listOf(declaration), state, roller)
 
         val result = results.single()
-        assertThat(result.hit).isFalse()
-        assertThat(result.damageApplied).isEqualTo(0)
-        assertThat(result.hitLocation).isNull()
+        assertThat(result).isInstanceOf(PhysicalAttackResult.Miss::class.java)
         assertThat(newState.unitById(target.id)!!.armor).isEqualTo(target.armor)
     }
 
@@ -86,7 +85,7 @@ internal class PhysicalAttackResolutionTest {
         val roller = DiceRoller.deterministic(3, 3, 3)
         val (newState, results) = resolvePhysicalAttacks(listOf(declaration), state, roller)
 
-        assertThat(results.single().hitLocation).isEqualTo(HitLocation.CENTER_TORSO)
+        assertThat((results.single() as PhysicalAttackResult.Hit).hitLocation).isEqualTo(HitLocation.CENTER_TORSO)
         val damaged = newState.unitById(target.id)!!
         assertThat(damaged.armor.centerTorsoRear).isEqualTo(target.armor.centerTorsoRear - 5)
         assertThat(damaged.armor.centerTorso).isEqualTo(target.armor.centerTorso)

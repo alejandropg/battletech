@@ -9,6 +9,7 @@ import battletech.tactical.attack.RangeBand
 import battletech.tactical.attack.ToHitFactor
 import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.attack.physical.AttackDirection
+import battletech.tactical.attack.physical.Knockdown
 import battletech.tactical.attack.physical.PhysicalAttackDeclaration
 import battletech.tactical.attack.physical.PhysicalAttackKind
 import battletech.tactical.attack.physical.PhysicalAttackResult
@@ -356,23 +357,23 @@ internal class WireFormatRoundTripTest {
             locationHits = listOf(LocationHit(MechLocation.CENTER_TORSO, damage = 5, locationRoll = DiceRoll(3, 4))),
         )
 
-        private fun aPhysicalAttackResult(): PhysicalAttackResult = PhysicalAttackResult(
+        private fun aPhysicalAttackResult(): PhysicalAttackResult = PhysicalAttackResult.Hit(
             attackerId = unitA,
             targetId = unitB,
             attackName = "Kick",
-            hit = true,
             hitLocation = MechLocation.LEFT_LEG,
             damageApplied = 4,
             targetNumber = 6,
-            roll = 8,
             toHitRoll = DiceRoll(4, 4),
             locationRoll = 5,
             attackDirection = AttackDirection.FRONT,
-            psr = aPilotingSkillRoll(),
-            fall = aFallResult(),
-            fallenUnitId = unitB,
             damage = listOf(LocationDamage(MechLocation.LEFT_LEG, armorDamage = 4, structureDamage = 0, destroyed = false)),
-            fallPilotEvents = listOf(PilotHit(unitB, pilotHits = 1, consciousnessRoll = DiceRoll(3, 3), conscious = true)),
+            knockdown = Knockdown.Fell(
+                unitId = unitB,
+                psr = aPilotingSkillRoll(),
+                fall = aFallResult(),
+                pilotEvents = listOf(PilotHit(unitB, pilotHits = 1, consciousnessRoll = DiceRoll(3, 3), conscious = true)),
+            ),
         )
 
         private val gameCommandFixtures: Map<KClass<out GameCommand>, GameCommand> = mapOf(

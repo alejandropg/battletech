@@ -28,7 +28,7 @@ public fun resolvePhysicalAttacks(
     // Apply all hit damage simultaneously.
     var updatedState = gameState
     val damagedResults = resolved.map { (declaration, result) ->
-        if (result.hit && result.hitLocation != null) {
+        if (result is PhysicalAttackResult.Hit) {
             val target = updatedState.unitById(result.targetId)
             val resolution = resolveDamage(
                 unit = target,
@@ -37,7 +37,7 @@ public fun resolvePhysicalAttacks(
                 useRearArmor = result.attackDirection == AttackDirection.REAR,
             )
             updatedState = updatedState.withUnit(resolution.unit)
-            declaration to result.copy(damage = resolution.steps)
+            declaration to result.withDamage(resolution.steps)
         } else {
             declaration to result
         }
@@ -47,26 +47,32 @@ public fun resolvePhysicalAttacks(
     val finalResults = damagedResults.map { (declaration, result) ->
         if (declaration.kind !is PhysicalAttackKind.Kick) return@map result
 
-        val fallerId = if (result.hit) result.targetId else result.attackerId
+        val fallerId = if (result is PhysicalAttackResult.Hit) result.targetId else result.attackerId
         val faller = updatedState.unitById(fallerId)
         if (faller.isProne) return@map result
 
         // Include gyro + leg PSR penalties in the knockdown roll.
         val psrModifier = gyroPsrModifier(faller) + legPsrModifier(faller)
         val psr = pilotingSkillRoll(faller, roller, modifier = psrModifier)
-        if (psr.passed) {
-            result.copy(psr = psr)
+        val knockdown = if (psr.passed) {
+            Knockdown.Resisted(psr)
         } else {
             // Fall applies damage; pilot also takes 1 hit per standard BT rules.
             // Canonical dice order: fall location 2d6, facing 1d6, consciousness check 2d6.
             val (fallen, fallResult) = fall(faller, roller)
             val (injured, pilotEvents) = applyPilotHit(fallen, roller)
             updatedState = updatedState.withUnit(injured)
-            result.copy(psr = psr, fall = fallResult, fallenUnitId = fallerId, fallPilotEvents = pilotEvents)
+            Knockdown.Fell(unitId = fallerId, psr = psr, fall = fallResult, pilotEvents = pilotEvents)
         }
+        withKnockdown(result, knockdown)
     }
 
     return updatedState to finalResults
+}
+
+private fun withKnockdown(result: PhysicalAttackResult, knockdown: Knockdown): PhysicalAttackResult = when (result) {
+    is PhysicalAttackResult.Miss -> result.copy(knockdown = knockdown)
+    is PhysicalAttackResult.Hit -> result.copy(knockdown = knockdown)
 }
 
 private fun resolveOnePhysicalAttack(
@@ -82,35 +88,28 @@ private fun resolveOnePhysicalAttack(
     val toHitRoll = roller.roll2d6()
 
     if (toHitRoll.total < targetNumber) {
-        return PhysicalAttackResult(
+        return PhysicalAttackResult.Miss(
             attackerId = declaration.attackerId,
             targetId = declaration.targetId,
             attackName = attackName(declaration),
-            hit = false,
-            hitLocation = null,
-            damageApplied = 0,
             targetNumber = targetNumber,
-            roll = toHitRoll.total,
             toHitRoll = toHitRoll,
-            locationRoll = null,
             attackDirection = direction,
         )
     }
 
     val locationRoll = roller.d6()
     val hitLocation = locationFor(declaration, locationRoll, direction)
-    return PhysicalAttackResult(
+    return PhysicalAttackResult.Hit(
         attackerId = declaration.attackerId,
         targetId = declaration.targetId,
         attackName = attackName(declaration),
-        hit = true,
-        hitLocation = hitLocation,
-        damageApplied = damageFor(declaration, attacker),
         targetNumber = targetNumber,
-        roll = toHitRoll.total,
         toHitRoll = toHitRoll,
-        locationRoll = locationRoll,
         attackDirection = direction,
+        hitLocation = hitLocation,
+        locationRoll = locationRoll,
+        damageApplied = damageFor(declaration, attacker),
     )
 }
 

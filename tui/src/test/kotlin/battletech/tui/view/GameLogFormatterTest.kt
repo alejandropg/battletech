@@ -195,7 +195,7 @@ internal class GameLogFormatterTest {
             ),
         )
 
-        assertThat(text(PhysicalAttacksResolved(results), stateWithLocust))
+        assertThat(GameLogFormatter.lines(PhysicalAttacksResolved(results), stateWithLocust).first().text)
             .isEqualTo("Physical attacks: 1 made, 1 hit, 18 damage — locust Right Leg destroyed")
     }
 
@@ -214,7 +214,7 @@ internal class GameLogFormatterTest {
             ),
         )
 
-        assertThat(text(PhysicalAttacksResolved(results), stateWithLocust))
+        assertThat(GameLogFormatter.lines(PhysicalAttacksResolved(results), stateWithLocust).first().text)
             .isEqualTo("Physical attacks: 1 made, 1 hit, 3 damage")
     }
 
@@ -754,22 +754,31 @@ internal class GameLogFormatterTest {
         damage: Int,
         targetId: UnitId = UnitId("t"),
         locationDamage: List<LocationDamage> = emptyList(),
-        hitLocation: HitLocation? = null,
+        hitLocation: HitLocation = locationDamage.firstOrNull()?.location ?: HitLocation.CENTER_TORSO,
     ): PhysicalAttackResult =
-        PhysicalAttackResult(
-            attackerId = UnitId("a"),
-            targetId = targetId,
-            attackName = "Punch",
-            hit = hit,
-            hitLocation = hitLocation,
-            damageApplied = damage,
-            targetNumber = 8,
-            roll = if (hit) 10 else 5,
-            toHitRoll = if (hit) DiceRoll(5, 5) else DiceRoll(2, 3),
-            locationRoll = null,
-            attackDirection = AttackDirection.FRONT,
-            damage = locationDamage,
-        )
+        if (hit) {
+            PhysicalAttackResult.Hit(
+                attackerId = UnitId("a"),
+                targetId = targetId,
+                attackName = "Punch",
+                hitLocation = hitLocation,
+                locationRoll = 3,
+                damageApplied = damage,
+                targetNumber = 8,
+                toHitRoll = DiceRoll(5, 5),
+                attackDirection = AttackDirection.FRONT,
+                damage = locationDamage,
+            )
+        } else {
+            PhysicalAttackResult.Miss(
+                attackerId = UnitId("a"),
+                targetId = targetId,
+                attackName = "Punch",
+                targetNumber = 8,
+                toHitRoll = DiceRoll(2, 3),
+                attackDirection = AttackDirection.FRONT,
+            )
+        }
 
     private fun aMech(
         id: String,

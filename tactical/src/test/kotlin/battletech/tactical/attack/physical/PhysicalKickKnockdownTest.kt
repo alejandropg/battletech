@@ -32,18 +32,19 @@ internal class PhysicalKickKnockdownTest {
         val (newState, results) = resolvePhysicalAttacks(listOf(kick()), state, roller)
 
         val result = results.single()
-        assertThat(result.hit).isTrue()
-        assertThat(result.psr).isNotNull()
-        assertThat(result.psr!!.passed).isFalse()
-        assertThat(result.fall).isNotNull()
-        assertThat(result.fallenUnitId).isEqualTo(target.id)
+        assertThat(result).isInstanceOf(PhysicalAttackResult.Hit::class.java)
+        val knockdown = result.knockdown
+        assertThat(knockdown).isInstanceOf(Knockdown.Fell::class.java)
+        knockdown as Knockdown.Fell
+        assertThat(knockdown.psr.passed).isFalse()
+        assertThat(knockdown.unitId).isEqualTo(target.id)
 
         val fallenTarget = newState.unitById(target.id)!!
         assertThat(fallenTarget.isProne).isTrue()
         // kick damage (ceil(50/5)=10) to Right Leg, plus fall damage (ceil(50/10)=5) to Center Torso.
         assertThat(fallenTarget.armor.rightLeg).isEqualTo(target.armor.rightLeg - 10)
         assertThat(fallenTarget.armor.centerTorso).isEqualTo(target.armor.centerTorso - 5)
-        assertThat(result.hitLocation).isEqualTo(HitLocation.RIGHT_LEG)
+        assertThat((result as PhysicalAttackResult.Hit).hitLocation).isEqualTo(HitLocation.RIGHT_LEG)
     }
 
     @Test
@@ -55,8 +56,10 @@ internal class PhysicalKickKnockdownTest {
         val (newState, results) = resolvePhysicalAttacks(listOf(kick()), state, roller)
 
         val result = results.single()
-        assertThat(result.hit).isFalse()
-        assertThat(result.fallenUnitId).isEqualTo(attacker.id)
+        assertThat(result).isInstanceOf(PhysicalAttackResult.Miss::class.java)
+        val knockdown = result.knockdown
+        assertThat(knockdown).isInstanceOf(Knockdown.Fell::class.java)
+        assertThat((knockdown as Knockdown.Fell).unitId).isEqualTo(attacker.id)
 
         val fallenAttacker = newState.unitById(attacker.id)!!
         assertThat(fallenAttacker.isProne).isTrue()
@@ -70,9 +73,9 @@ internal class PhysicalKickKnockdownTest {
         val (newState, results) = resolvePhysicalAttacks(listOf(kick()), state, roller)
 
         val result = results.single()
-        assertThat(result.psr!!.passed).isTrue()
-        assertThat(result.fall).isNull()
-        assertThat(result.fallenUnitId).isNull()
+        val knockdown = result.knockdown
+        assertThat(knockdown).isInstanceOf(Knockdown.Resisted::class.java)
+        assertThat((knockdown as Knockdown.Resisted).psr.passed).isTrue()
         assertThat(newState.unitById(target.id)!!.isProne).isFalse()
     }
 
@@ -82,7 +85,6 @@ internal class PhysicalKickKnockdownTest {
         val roller = DiceRoller.deterministic(3, 3, 1)
         val (_, results) = resolvePhysicalAttacks(listOf(punch), state, roller)
 
-        assertThat(results.single().psr).isNull()
-        assertThat(results.single().fallenUnitId).isNull()
+        assertThat(results.single().knockdown).isEqualTo(Knockdown.None)
     }
 }

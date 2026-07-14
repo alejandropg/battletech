@@ -54,7 +54,7 @@ internal class PhysicalAttackPhaseHandlerTest {
         val outcome = handler.apply(command, gameState, turnWithOneImpulse(), roller)
 
         val resolved = outcome.events.filterIsInstance<PhysicalAttacksResolved>().single()
-        assertThat(resolved.results.single().hit).isTrue()
+        assertThat(resolved.results.single()).isInstanceOf(PhysicalAttackResult.Hit::class.java)
         assertThat(outcome.state.unitById(target.id).armor.leftArm)
             .isEqualTo(target.armor.leftArm - 5)
         assertThat(outcome.turn.attack.physicalDeclarations).isEmpty()

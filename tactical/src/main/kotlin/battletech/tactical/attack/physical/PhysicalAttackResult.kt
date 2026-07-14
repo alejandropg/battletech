@@ -11,30 +11,74 @@ import kotlinx.serialization.Serializable
 
 /** Outcome of resolving one declared physical attack. */
 @Serializable
-public data class PhysicalAttackResult(
-    public val attackerId: UnitId,
-    public val targetId: UnitId,
-    public val attackName: String,
-    public val hit: Boolean,
-    public val hitLocation: HitLocation?,
-    public val damageApplied: Int,
-    public val targetNumber: Int,
-    public val roll: Int,
-    public val toHitRoll: DiceRoll,
-    public val locationRoll: Int?,
-    public val attackDirection: AttackDirection,
-    /** Knockdown PSR forced by a kick (target on a hit, attacker on a miss); null for punches. */
-    public val psr: PilotingSkillRoll? = null,
-    /** The fall that resulted from a failed [psr], if any. */
-    public val fall: FallResult? = null,
-    /** Which unit fell as a consequence of this attack, if any. */
-    public val fallenUnitId: UnitId? = null,
-    public val damage: List<LocationDamage> = emptyList(),
+public sealed interface PhysicalAttackResult {
+    public val attackerId: UnitId
+    public val targetId: UnitId
+    public val attackName: String
+    public val targetNumber: Int
+    public val toHitRoll: DiceRoll
+    public val attackDirection: AttackDirection
+
     /**
-     * Pilot-hit events ([battletech.tactical.session.PilotHit] /
-     * [battletech.tactical.session.PilotKnockedUnconscious]) resulting from a kick-knockdown
-     * fall. Empty for punches or kicks where no fall occurred. Emitted by
-     * [battletech.tactical.attack.physical.PhysicalAttackPhaseHandler] alongside [UnitFell].
+     * Outcome of the knockdown piloting-skill roll a kick forces — on the target when the kick
+     * hit, on the attacker when it missed (a whiffed kick can topple the kicker). [Knockdown.None]
+     * for punches, which never force a PSR.
      */
-    public val fallPilotEvents: List<GameEvent> = emptyList(),
-)
+    public val knockdown: Knockdown
+
+    @Serializable
+    public data class Miss(
+        override val attackerId: UnitId,
+        override val targetId: UnitId,
+        override val attackName: String,
+        override val targetNumber: Int,
+        override val toHitRoll: DiceRoll,
+        override val attackDirection: AttackDirection,
+        override val knockdown: Knockdown = Knockdown.None,
+    ) : PhysicalAttackResult
+
+    @Serializable
+    public data class Hit(
+        override val attackerId: UnitId,
+        override val targetId: UnitId,
+        override val attackName: String,
+        override val targetNumber: Int,
+        override val toHitRoll: DiceRoll,
+        override val attackDirection: AttackDirection,
+        public val hitLocation: HitLocation,
+        /** Physical attacks roll a single 1d6 for hit location — deliberately not [DiceRoll] (2d6), unlike weapon fire. */
+        public val locationRoll: Int,
+        public val damageApplied: Int,
+        public val damage: List<LocationDamage> = emptyList(),
+        override val knockdown: Knockdown = Knockdown.None,
+    ) : PhysicalAttackResult {
+        public fun withDamage(damage: List<LocationDamage>): Hit = copy(damage = damage)
+    }
+}
+
+/** Outcome of a kick's knockdown piloting-skill roll. */
+@Serializable
+public sealed interface Knockdown {
+    /** No PSR was forced — always the case for punches. */
+    @Serializable
+    public data object None : Knockdown
+
+    /** The PSR was made; no fall resulted. */
+    @Serializable
+    public data class Resisted(public val psr: PilotingSkillRoll) : Knockdown
+
+    /** The PSR failed; [unitId] fell, taking [fall] damage and (per standard rules) a pilot hit. */
+    @Serializable
+    public data class Fell(
+        public val unitId: UnitId,
+        public val psr: PilotingSkillRoll,
+        public val fall: FallResult,
+        /**
+         * Pilot-hit events ([battletech.tactical.session.PilotHit] /
+         * [battletech.tactical.session.PilotKnockedUnconscious]) resulting from this fall.
+         * Emitted by [battletech.tactical.attack.physical.PhysicalAttackPhaseHandler] alongside
+         * [battletech.tactical.session.UnitFell].
+         */
+        public val pilotEvents: List<GameEvent> = emptyList(),
+    ) : Knockdown
+}

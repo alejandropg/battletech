@@ -124,12 +124,13 @@ public class PhysicalAttackPhaseHandler : ImpulseAttackPhaseHandler() {
             newAttack = newAttack.clearPhysicalDeclarations()
             events += PhysicalAttacksResolved(results)
             for (result in results) {
-                val fallenId = result.fallenUnitId
-                val fall = result.fall
-                if (fallenId != null && fall != null) {
-                    events += UnitFell(unitId = fallenId, fall = fall)
-                    // Pilot-hit events from the kick knockdown fall (1 hit + consciousness roll).
-                    events += result.fallPilotEvents
+                when (val knockdown = result.knockdown) {
+                    is Knockdown.Fell -> {
+                        events += UnitFell(unitId = knockdown.unitId, fall = knockdown.fall)
+                        // Pilot-hit events from the kick knockdown fall (1 hit + consciousness roll).
+                        events += knockdown.pilotEvents
+                    }
+                    is Knockdown.Resisted, Knockdown.None -> Unit
                 }
             }
 
@@ -148,7 +149,10 @@ public class PhysicalAttackPhaseHandler : ImpulseAttackPhaseHandler() {
             // (+1 per full 20, including gyro/leg modifiers). Fail → forced fall + pilot hit.
             val damageByUnit = results
                 .groupBy { it.targetId }
-                .mapValues { (_, rs) -> rs.sumOf { r -> r.damage.sumOf { s -> s.armorDamage + s.structureDamage } } }
+                .mapValues { (_, rs) ->
+                    rs.filterIsInstance<PhysicalAttackResult.Hit>()
+                        .sumOf { r -> r.damage.sumOf { s -> s.armorDamage + s.structureDamage } }
+                }
             val (stateAfter20dmg, twentyDmgEvents) = applyTwentyDamagePsrs(newState, damageByUnit, roller)
             newState = stateAfter20dmg
             events += twentyDmgEvents

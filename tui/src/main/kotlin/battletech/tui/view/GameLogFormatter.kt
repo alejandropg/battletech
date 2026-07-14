@@ -88,17 +88,14 @@ internal object GameLogFormatter {
         }
         is PhysicalAttacksResolved -> {
             val made = event.results.size
-            val hits = event.results.count { it.hit }
-            val damage = event.results.sumOf { it.damageApplied }
-            val summary = "Physical attacks: $made made, $hits hit, $damage damage"
-            val destroyed = destroyedClause(event.results.map { it.targetId to it.damage }, state)
+            val hits = event.results.filterIsInstance<PhysicalAttackResult.Hit>()
+            val damage = hits.sumOf { it.damageApplied }
+            val summary = "Physical attacks: $made made, ${hits.size} hit, $damage damage"
+            val destroyed = destroyedClause(hits.map { it.targetId to it.damage }, state)
             val text = if (destroyed == null) summary else "$summary — $destroyed"
-            val icon = if (event.results.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
+            val icon = if (hits.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
             val lines = mutableListOf(LogLine(icon, text))
-            event.results.filter { it.hit }.forEach { result ->
-                val detailLine = physicalDetailLine(result)
-                if (detailLine != null) lines.add(detailLine)
-            }
+            hits.forEach { result -> lines.add(physicalDetailLine(result)) }
             lines
         }
         is UnitFell -> {
@@ -164,15 +161,9 @@ internal object GameLogFormatter {
         return LogLine(attackOutcomeIcon(hit = true), "${result.weaponName} → ${locationLabel(hit.location)} (${hit.damage} dmg)")
     }
 
-    /**
-     * Returns a detail line for a physical attack hit, e.g. "Punch → Right Torso (8 dmg)".
-     * Returns null when there is no hit location to report (legacy/test PhysicalAttackResult
-     * objects, or summary-only results).
-     */
-    private fun physicalDetailLine(result: PhysicalAttackResult): LogLine? {
-        val location = result.hitLocation ?: return null
-        return LogLine(attackOutcomeIcon(hit = true), "${result.attackName} → ${locationLabel(location)} (${result.damageApplied} dmg)")
-    }
+    /** Returns a detail line for a physical attack hit, e.g. "Punch → Right Torso (8 dmg)". */
+    private fun physicalDetailLine(result: PhysicalAttackResult.Hit): LogLine =
+        LogLine(attackOutcomeIcon(hit = true), "${result.attackName} → ${locationLabel(result.hitLocation)} (${result.damageApplied} dmg)")
 
     private fun torsoFacingLines(event: TorsoFacingsApplied, state: GameState): List<LogLine> {
         if (event.facings.isEmpty()) return listOf(LogLine(null, "Torso facings: no changes"))
