@@ -1,5 +1,6 @@
 package battletech.tactical.query
 
+import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.total
 import battletech.tactical.attack.weaponToHitModifiers
 import battletech.tactical.model.GameMap
@@ -8,6 +9,11 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.Terrain
+import battletech.tactical.session.AttackProgress
+import battletech.tactical.session.Impulse
+import battletech.tactical.session.ImpulseSequence
+import battletech.tactical.session.Initiative
+import battletech.tactical.session.TurnState
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.UnitId
@@ -340,5 +346,76 @@ internal class DefaultPlayerViewTest {
         val view = viewFor(aUnit(id = "u1"))
 
         assertThat(view.legalTorsoFacings(UnitId("unknown"))).isEmpty()
+    }
+
+    @Test
+    fun `declaredWeaponAttacks is empty with no committed declarations`() {
+        val view = viewFor(aUnit(id = "u1"))
+
+        assertThat(view.declaredWeaponAttacks()).isEmpty()
+    }
+
+    @Test
+    fun `declaredWeaponAttacks reflects a committed declaration grouped by attacker and target`() {
+        val attacker = aUnit(
+            id = "attacker", owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+        )
+        val target = aUnit(
+            id = "target", owner = PlayerId.PLAYER_2,
+            position = HexCoordinates(0, -1),
+        )
+        val state = aGameState(
+            units = listOf(attacker, target),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
+        )
+        val decl = AttackDeclaration(
+            attackerId = attacker.id, targetId = target.id,
+            weaponIndex = 0, isPrimary = true,
+        )
+        val turnState = TurnState(
+            initiative = Initiative(emptyMap(), PlayerId.PLAYER_1, PlayerId.PLAYER_2),
+            attack = AttackProgress(
+                sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+                weaponDeclarations = listOf(decl),
+            ),
+        )
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state, turnState)
+
+        val attacks = view.declaredWeaponAttacks()
+
+        assertThat(attacks).hasSize(1)
+        val attack = attacks.single()
+        assertThat(attack.attackerId).isEqualTo(attacker.id)
+        assertThat(attack.targetId).isEqualTo(target.id)
+        assertThat(attack.isPrimary).isTrue()
+        assertThat(attack.weapons).hasSize(1)
+        assertThat(attack.weapons.single().weaponName).isEqualTo(attacker.weapons.single().name)
+        assertThat(attack.weapons.single().weaponIndex).isEqualTo(0)
+    }
+
+    @Test
+    fun `declaredWeaponAttacks orders attackers by impulse-commit player order`() {
+        val p1Unit = aUnit(id = "p1unit", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+        val p2Unit = aUnit(id = "p2unit", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, -3))
+        val state = aGameState(
+            units = listOf(p1Unit, p2Unit),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
+        )
+        val p1Decl = AttackDeclaration(p1Unit.id, p2Unit.id, weaponIndex = 0, isPrimary = true)
+        val p2Decl = AttackDeclaration(p2Unit.id, p1Unit.id, weaponIndex = 0, isPrimary = true)
+        val turnState = TurnState(
+            initiative = Initiative(emptyMap(), PlayerId.PLAYER_1, PlayerId.PLAYER_2),
+            attack = AttackProgress(
+                // P2 committed first this sequence.
+                sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_2, 1), Impulse(PlayerId.PLAYER_1, 1))),
+                weaponDeclarations = listOf(p1Decl, p2Decl),
+            ),
+        )
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state, turnState)
+
+        val attacks = view.declaredWeaponAttacks()
+
+        assertThat(attacks.map { it.attackerId }).containsExactly(p2Unit.id, p1Unit.id)
     }
 }

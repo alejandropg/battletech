@@ -88,7 +88,8 @@ public class RemoteGameSession internal constructor(
     public override val isMatchOver: Boolean get() = snapshot.isMatchOver
     public override val gameLog: GameLog get() = log
 
-    public override fun viewFor(playerId: PlayerId): PlayerView = DefaultPlayerView(playerId, snapshot.gameState)
+    public override fun viewFor(playerId: PlayerId): PlayerView =
+        DefaultPlayerView(playerId, snapshot.gameState, snapshot.turnState)
 
     public override fun subscribe(playerId: PlayerId, listener: (GameEvent) -> Unit): Subscription {
         val perPlayer = listeners.getOrPut(playerId) { mutableListOf() }

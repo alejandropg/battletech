@@ -45,6 +45,15 @@ public interface PlayerView {
      */
     public fun legalTorsoFacings(unitId: UnitId): Set<HexDirection>
 
+    /**
+     * Committed weapon-attack declarations for the current attack impulse sequence, across both
+     * players, grouped one entry per (attacker, target) pair and ordered by impulse-commit
+     * player order then attacker id — the projection the DECLARED TARGETS panel renders
+     * alongside the viewing player's own in-progress (uncommitted) drafts, which stay
+     * client-side (see [battletech.tactical.session.GameCommand]'s transient-UI-workflow carve-out).
+     */
+    public fun declaredWeaponAttacks(): List<DeclaredWeaponAttack>
+
     /** Positions of the given unit IDs on the board. */
     public fun resolveTargetPositions(targetIds: Set<UnitId>): Set<HexCoordinates>
 

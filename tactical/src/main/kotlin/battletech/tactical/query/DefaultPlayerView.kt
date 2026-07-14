@@ -8,11 +8,14 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.movement.MovementRules
 import battletech.tactical.movement.ReachabilityCalculator
 import battletech.tactical.movement.ReachabilityMap
+import battletech.tactical.session.TurnState
+import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 
 public class DefaultPlayerView(
     override val playerId: PlayerId,
     override val state: PublicGameState,
+    private val turnState: TurnState = TurnState.NULL,
 ) : PlayerView {
 
     private val weaponTargeting = WeaponTargeting(state)
@@ -39,6 +42,57 @@ public class DefaultPlayerView(
     override fun legalTorsoFacings(unitId: UnitId): Set<HexDirection> {
         val unit = state.findUnit(unitId) ?: return emptySet()
         return torsoTwistOptions(unit.facing)
+    }
+
+    override fun declaredWeaponAttacks(): List<DeclaredWeaponAttack> {
+        val playerOrder: List<PlayerId> = if (turnState.attack.sequence.order.isNotEmpty()) {
+            turnState.attack.sequence.order.map { it.player }.distinct()
+        } else {
+            listOf(PlayerId.PLAYER_1, PlayerId.PLAYER_2)
+        }
+
+        val committedByAttacker = turnState.attack.weaponDeclarations.groupBy { it.attackerId }
+
+        return buildList {
+            for (player in playerOrder) {
+                committedByAttacker.keys
+                    .filter { id -> state.unitById(id).owner == player }
+                    .sortedBy { it.value }
+                    .forEach { attackerId ->
+                        val attackerUnit = state.unitById(attackerId)
+                        val declarations = committedByAttacker[attackerId] ?: return@forEach
+                        val targetInfos = targetInfos(attackerId, attackerUnit.torsoFacing)
+                        declarations.groupBy { it.targetId }.forEach { (targetId, decls) ->
+                            val weaponIndices = decls.sortedBy { it.weaponIndex }.map { it.weaponIndex }
+                            val isPrimary = decls.any { it.isPrimary }
+                            val weapons = weaponIndices.map { weaponIndex ->
+                                declaredWeaponLine(attackerUnit, weaponIndex, targetId, targetInfos)
+                            }
+                            add(DeclaredWeaponAttack(attackerId, targetId, isPrimary, weapons))
+                        }
+                    }
+            }
+        }
+    }
+
+    private fun declaredWeaponLine(
+        attackerUnit: CombatUnit,
+        weaponIndex: Int,
+        targetId: UnitId,
+        targetInfos: List<TargetInfo>,
+    ): DeclaredWeaponLine {
+        val weaponName = attackerUnit.weapons.getOrNull(weaponIndex)?.name ?: "Unknown"
+        val weaponInfo = targetInfos
+            .firstOrNull { it.unitId == targetId }
+            ?.weapons
+            ?.firstOrNull { it.weaponIndex == weaponIndex }
+        return DeclaredWeaponLine(
+            weaponIndex = weaponIndex,
+            weaponName = weaponName,
+            targetNumber = weaponInfo?.targetDiceRoll ?: 13,
+            successChance = weaponInfo?.successChance ?: 0,
+            modifierLabels = weaponInfo?.modifiers ?: emptyList(),
+        )
     }
 
     override fun resolveTargetPositions(targetIds: Set<UnitId>): Set<HexCoordinates> =

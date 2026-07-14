@@ -65,7 +65,7 @@ public class BattleSession(
         get() = handlers[_currentPhaseIndex].activePlayer(_turnState)
     public override val isMatchOver: Boolean get() = _matchOver
 
-    public override fun viewFor(playerId: PlayerId): PlayerView = DefaultPlayerView(playerId, _gameState)
+    public override fun viewFor(playerId: PlayerId): PlayerView = DefaultPlayerView(playerId, _gameState, _turnState)
 
     /**
      * Register [listener] to receive events emitted by this session,
