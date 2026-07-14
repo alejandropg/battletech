@@ -6,6 +6,7 @@ import battletech.tactical.attack.FallResult
 import battletech.tactical.attack.LocationDamage
 import battletech.tactical.attack.LocationHit
 import battletech.tactical.attack.RangeBand
+import battletech.tactical.attack.ToHitFactor
 import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.attack.physical.AttackDirection
 import battletech.tactical.attack.physical.PhysicalAttackDeclaration
@@ -358,7 +359,10 @@ internal class WireFormatRoundTripTest {
             targetMoveModifier = 2,
             minRangeModifier = 0,
             damage = listOf(LocationDamage(MechLocation.CENTER_TORSO, armorDamage = 5, structureDamage = 0, destroyed = false)),
-            modifiers = listOf(ToHitModifier("range", 2), ToHitModifier("heat", 0)),
+            modifiers = listOf(
+                ToHitModifier(ToHitFactor.RANGE, "range", 2),
+                ToHitModifier(ToHitFactor.HEAT, "heat", 0),
+            ),
             partialCover = false,
             useRearArmor = false,
             locationHits = listOf(LocationHit(MechLocation.CENTER_TORSO, damage = 5, locationRoll = DiceRoll(3, 4))),

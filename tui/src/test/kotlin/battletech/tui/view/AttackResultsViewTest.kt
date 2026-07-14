@@ -4,6 +4,7 @@ import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.LocationHit
 import battletech.tactical.attack.RangeBand
+import battletech.tactical.attack.ToHitFactor
 import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.PlayerId
@@ -176,7 +177,14 @@ internal class AttackResultsViewTest {
     @Test
     fun `modifiers render one per line under the weapon`() {
         val output = renderToString(
-            listOf(aHitResult(modifiers = listOf(ToHitModifier("med", 2), ToHitModifier("heat", 1)))),
+            listOf(
+                aHitResult(
+                    modifiers = listOf(
+                        ToHitModifier(ToHitFactor.RANGE, "med", 2),
+                        ToHitModifier(ToHitFactor.HEAT, "heat", 1),
+                    ),
+                ),
+            ),
         )
         assertTrue(output.contains("+2 med")) { "Expected +2 med modifier line: $output" }
         assertTrue(output.contains("+1 heat")) { "Expected +1 heat modifier line: $output" }
@@ -191,7 +199,14 @@ internal class AttackResultsViewTest {
     @Test
     fun `zero-amount modifiers are omitted from the list`() {
         val output = renderToString(
-            listOf(aHitResult(modifiers = listOf(ToHitModifier("med", 2), ToHitModifier("heat", 0)))),
+            listOf(
+                aHitResult(
+                    modifiers = listOf(
+                        ToHitModifier(ToHitFactor.RANGE, "med", 2),
+                        ToHitModifier(ToHitFactor.HEAT, "heat", 0),
+                    ),
+                ),
+            ),
         )
         assertTrue(output.contains("+2 med")) { "Expected non-zero modifier shown: $output" }
         assertFalse(output.contains("heat")) { "Expected zero-amount modifier omitted: $output" }

@@ -62,18 +62,27 @@ public fun weaponToHitModifiers(
     val los = lineOfSight(attacker, target, gameState.map)
     val terrainMod = los.woodsModifier + if (los.partialCover) 3 else 0
     return listOf(
-        ToHitModifier(rangeLabelFor(band), rangeModifierFor(band)),
-        ToHitModifier("heat", heatPenaltyModifier(attacker)),
-        ToHitModifier("secondary", if (!isPrimaryTarget) 1 else 0),
-        ToHitModifier("prone", proneTargetToHitModifier(target, distance)),
-        ToHitModifier("immobile", immobileTargetToHitModifier(target)),
-        ToHitModifier("sensors", sensorToHitModifier(attacker)),
-        ToHitModifier("attacker move", attackerMovementModifier(attacker.movementThisTurn)),
-        ToHitModifier("target move", targetMovementModifier(target.movementThisTurn)),
-        ToHitModifier("min range", minimumRangeModifier(distance, weapon.minimumRange)),
-        ToHitModifier("terrain", terrainMod),
+        ToHitModifier(ToHitFactor.RANGE, rangeLabelFor(band), rangeModifierFor(band)),
+        ToHitModifier(ToHitFactor.HEAT, "heat", heatPenaltyModifier(attacker)),
+        ToHitModifier(ToHitFactor.SECONDARY_TARGET, "secondary", if (!isPrimaryTarget) 1 else 0),
+        ToHitModifier(ToHitFactor.PRONE_TARGET, "prone", proneTargetToHitModifier(target, distance)),
+        ToHitModifier(ToHitFactor.IMMOBILE_TARGET, "immobile", immobileTargetToHitModifier(target)),
+        ToHitModifier(ToHitFactor.SENSORS, "sensors", sensorToHitModifier(attacker)),
+        ToHitModifier(ToHitFactor.ATTACKER_MOVEMENT, "attacker move", attackerMovementModifier(attacker.movementThisTurn)),
+        ToHitModifier(ToHitFactor.TARGET_MOVEMENT, "target move", targetMovementModifier(target.movementThisTurn)),
+        ToHitModifier(ToHitFactor.MINIMUM_RANGE, "min range", minimumRangeModifier(distance, weapon.minimumRange)),
+        ToHitModifier(ToHitFactor.TERRAIN, "terrain", terrainMod),
     )
 }
 
 private fun minimumRangeModifier(distance: Int, minimumRange: Int): Int =
     if (distance < minimumRange) minimumRange - distance + 1 else 0
+
+/**
+ * Shared weapon-attack target number predictor: gunnery base + [modifiers] total, with no
+ * clamp. Used by both attack resolution (never clamps) and
+ * [battletech.tactical.query.WeaponTargeting.targetInfos], which applies its own
+ * `.coerceAtLeast(2)` display clamp at the call site.
+ */
+public fun weaponTargetNumber(attacker: CombatUnit, modifiers: List<ToHitModifier>): Int =
+    attacker.gunnerySkill + modifiers.total()

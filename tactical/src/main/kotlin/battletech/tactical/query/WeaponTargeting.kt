@@ -2,11 +2,11 @@ package battletech.tactical.query
 
 import battletech.tactical.attack.WeaponAttackContext
 import battletech.tactical.attack.toHitBreakdownLabels
-import battletech.tactical.attack.total
 import battletech.tactical.attack.weapon.FireWeaponActionDefinition
 import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
+import battletech.tactical.attack.weaponTargetNumber
 import battletech.tactical.attack.weaponToHitModifiers
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -73,7 +73,7 @@ internal class WeaponTargeting(private val state: PublicGameState) {
                         isPrimaryTarget = true,
                         gameState = state,
                     )
-                    val targetNumber = (attacker.gunnerySkill + modifiers.total()).coerceAtLeast(2)
+                    val targetNumber = weaponTargetNumber(attacker, modifiers).coerceAtLeast(2)
                     WeaponTargetInfo(
                         weaponIndex = index,
                         weaponName = weapon.name,

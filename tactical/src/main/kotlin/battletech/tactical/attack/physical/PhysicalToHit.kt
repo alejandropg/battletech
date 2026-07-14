@@ -1,5 +1,6 @@
 package battletech.tactical.attack.physical
 
+import battletech.tactical.attack.ToHitFactor
 import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.attack.attackerMovementModifier
 import battletech.tactical.attack.heatPenaltyModifier
@@ -26,12 +27,16 @@ public fun physicalToHitModifiers(
     kind: PhysicalAttackKind,
     gameState: GameState,
 ): List<ToHitModifier> = listOf(
-    ToHitModifier("attacker move", attackerMovementModifier(attacker.movementThisTurn)),
-    ToHitModifier("target move", targetMovementModifier(target.movementThisTurn)),
-    ToHitModifier("terrain", terrainModifier(attacker, target, gameState)),
-    ToHitModifier("prone", proneTargetToHitModifier(target, attacker.position.distanceTo(target.position))),
-    ToHitModifier("heat", heatPenaltyModifier(attacker)),
-    ToHitModifier(attackKindLabel(kind), attackKindModifier(kind)),
+    ToHitModifier(ToHitFactor.ATTACKER_MOVEMENT, "attacker move", attackerMovementModifier(attacker.movementThisTurn)),
+    ToHitModifier(ToHitFactor.TARGET_MOVEMENT, "target move", targetMovementModifier(target.movementThisTurn)),
+    ToHitModifier(ToHitFactor.TERRAIN, "terrain", terrainModifier(attacker, target, gameState)),
+    ToHitModifier(
+        ToHitFactor.PRONE_TARGET,
+        "prone",
+        proneTargetToHitModifier(target, attacker.position.distanceTo(target.position)),
+    ),
+    ToHitModifier(ToHitFactor.HEAT, "heat", heatPenaltyModifier(attacker)),
+    ToHitModifier(ToHitFactor.ATTACK_KIND, attackKindLabel(kind), attackKindModifier(kind)),
 )
 
 /**

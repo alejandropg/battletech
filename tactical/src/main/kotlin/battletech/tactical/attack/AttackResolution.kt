@@ -211,14 +211,14 @@ private fun resolveOneAttack(
     val modifiers = weaponToHitModifiers(attacker, target, weapon, distance, declaration.isPrimary, gameState)
     val los = lineOfSight(attacker, target, gameState.map)
     val rangeBand = rangeBandFor(distance, weapon)
-    val rangeModifier = modifiers.first { it.label in RANGE_LABELS }.amount
-    val heatPenalty = modifiers.first { it.label == "heat" }.amount
-    val secondaryPenalty = modifiers.first { it.label == "secondary" }.amount
-    val sensorModifier = modifiers.first { it.label == "sensors" }.amount
-    val attackerMoveModifier = modifiers.first { it.label == "attacker move" }.amount
-    val targetMoveModifier = modifiers.first { it.label == "target move" }.amount
-    val minRangeModifier = modifiers.first { it.label == "min range" }.amount
-    val targetNumber = attacker.gunnerySkill + modifiers.total()
+    val rangeModifier = modifiers.amountOf(ToHitFactor.RANGE)
+    val heatPenalty = modifiers.amountOf(ToHitFactor.HEAT)
+    val secondaryPenalty = modifiers.amountOf(ToHitFactor.SECONDARY_TARGET)
+    val sensorModifier = modifiers.amountOf(ToHitFactor.SENSORS)
+    val attackerMoveModifier = modifiers.amountOf(ToHitFactor.ATTACKER_MOVEMENT)
+    val targetMoveModifier = modifiers.amountOf(ToHitFactor.TARGET_MOVEMENT)
+    val minRangeModifier = modifiers.amountOf(ToHitFactor.MINIMUM_RANGE)
+    val targetNumber = weaponTargetNumber(attacker, modifiers)
 
     // Canonical dice order:
     //   1. to-hit 2d6
@@ -340,8 +340,6 @@ private fun buildClusterGroups(
     if (remainder > 0) groups.add(remainder * damagePerMissile)
     return groups
 }
-
-private val RANGE_LABELS = setOf("short", "med", "long", "out of range")
 
 public fun heatPenaltyModifier(actor: CombatUnit): Int =
     HeatScale.toHitPenalty(actor.currentHeat)
