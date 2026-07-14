@@ -11,9 +11,11 @@ import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 import battletech.tactical.unit.SLOT_COUNTS
 import battletech.tactical.unit.Weapon
-import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.isSlotDestroyed
+import battletech.tactical.unit.withLimbBlownOff
 import battletech.tactical.unit.withSlot
+import battletech.tactical.unit.withSlotDestroyed
+import battletech.tactical.unit.withWeaponDestroyed
 
 private val ARM_OR_LEG_LOCATIONS: Set<MechLocation> = setOf(
     MechLocation.LEFT_ARM,
@@ -74,12 +76,6 @@ private fun pickSlot(unit: CombatUnit, location: MechLocation, roller: DiceRolle
     }
 }
 
-/** Marks the slot at [location]/[index] destroyed in [unit]'s [CombatUnit.criticalHits]. */
-private fun CombatUnit.withSlotDestroyed(location: MechLocation, index: Int): CombatUnit {
-    val existing = criticalHits[location] ?: emptySet()
-    return copy(criticalHits = criticalHits + (location to (existing + index)))
-}
-
 /**
  * Detonates the ammo bin at [binLocation]/[slotIndex] on [unit]: the total damage of
  * [bin]'s remaining shots (`shots × type.damagePerShot`, `docs/rules/armor-damage.md`
@@ -105,31 +101,6 @@ public fun detonateAmmoBin(
     val emptiedLayout = unit.criticalLayout.withSlot(binLocation, slotIndex, bin.copy(shots = 0))
     val damaged = applyDamage(unit.copy(criticalLayout = emptiedLayout), damageLocation, damage)
     return damaged to AmmoExploded(unit.id, bin.type, damage)
-}
-
-/** Sets `destroyed = true` on the unit's [Weapon] mounted at [weaponId], if any. */
-internal fun CombatUnit.withWeaponDestroyed(weaponId: WeaponMountId): CombatUnit =
-    copy(
-        weapons = weapons.map { weapon ->
-            if (weapon.mountId == weaponId) weapon.copy(destroyed = true) else weapon
-        },
-    )
-
-/**
- * Marks every weapon mounted in [location] as destroyed (`destroyed = true`). Used by
- * both the crit-driven limb-blow-off path and the raw-damage location-destruction path
- * so both share a single implementation. Idempotent — already-destroyed weapons are
- * unchanged. Weapons in other locations are unaffected.
- */
-internal fun CombatUnit.disableWeaponsIn(location: MechLocation): CombatUnit {
-    val weaponIds = criticalLayout.weaponIdsAt(location)
-    if (weaponIds.isEmpty()) return this
-    return copy(
-        weapons = weapons.map { weapon ->
-            if (weapon.mountId != null && weapon.mountId in weaponIds) weapon.copy(destroyed = true)
-            else weapon
-        },
-    )
 }
 
 /**
@@ -159,17 +130,6 @@ private fun CombatUnit.applyCritConsequence(
         dead to listOf(PilotHit.Fatal(id, PILOT_DEATH_THRESHOLD))
     }
     else -> this to emptyList()
-}
-
-/** Marks every slot in [location] destroyed and zeroes its internal structure (limb blow-off). */
-private fun CombatUnit.withLimbBlownOff(location: MechLocation): CombatUnit {
-    val slotCount = SLOT_COUNTS.getValue(location)
-    val allIndices = (0 until slotCount).toSet()
-    val newInternalStructure = internalStructure.with(location, 0)
-    return copy(
-        criticalHits = criticalHits + (location to allIndices),
-        internalStructure = newInternalStructure,
-    )
 }
 
 /**

@@ -73,6 +73,11 @@ internal class WeaponTargeting(private val state: PublicGameState) {
                         isPrimaryTarget = true,
                         gameState = state,
                     )
+                    // C4: the only to-hit-number math here is the shared predictor
+                    // (battletech.tactical.attack.weaponTargetNumber), also used by
+                    // AttackResolution.resolveOneAttack — read and apply can't drift.
+                    // The .coerceAtLeast(2) display clamp is query-only (resolution doesn't
+                    // clamp; see AttackResolution.kt).
                     val targetNumber = weaponTargetNumber(attacker, modifiers).coerceAtLeast(2)
                     WeaponTargetInfo(
                         weaponIndex = index,

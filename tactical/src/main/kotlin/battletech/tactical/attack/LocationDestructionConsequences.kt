@@ -6,6 +6,7 @@ import battletech.tactical.model.MechLocation
 import battletech.tactical.session.GameEvent
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.destroyedLegCount
+import battletech.tactical.unit.disableWeaponsIn
 
 /**
  * Applies location-destruction consequences after a damage + crit resolution pass,

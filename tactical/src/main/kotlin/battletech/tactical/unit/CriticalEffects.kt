@@ -48,25 +48,6 @@ public fun criticalEffects(component: CriticalComponent, hits: Int): List<CritEf
     }
 }
 
-/** Convenience: effects for [component] given this unit's current crit count for it. */
-public fun CombatUnit.critEffects(component: CriticalComponent): List<CritEffect> {
-    val hits = when (component) {
-        CriticalComponent.ENGINE -> engineCritCount()
-        CriticalComponent.GYRO -> gyroCritCount()
-        CriticalComponent.SENSOR -> sensorCritCount()
-        CriticalComponent.LIFE_SUPPORT -> lifeSupportCritCount()
-    }
-    return criticalEffects(component, hits)
-}
-
-/** Sum of this unit's active engine [CritEffect.HeatPerTurn] amounts (0 when no engine crits). */
-public fun CombatUnit.engineHeatPerTurn(): Int =
-    critEffects(CriticalComponent.ENGINE).filterIsInstance<CritEffect.HeatPerTurn>().sumOf { it.amount }
-
-/** True when sensor damage has blinded this unit ([CritEffect.CannotFire] tier reached). */
-public fun CombatUnit.cannotFireFromSensorDamage(): Boolean =
-    critEffects(CriticalComponent.SENSOR).any { it is CritEffect.CannotFire }
-
-/** True when gyro damage prevents this unit from standing ([CritEffect.CannotStand] tier reached). */
-public fun CombatUnit.cannotStandFromGyroDamage(): Boolean =
-    critEffects(CriticalComponent.GYRO).any { it is CritEffect.CannotStand }
+// The CombatUnit-facing extensions that consume this mapping (critEffects,
+// engineHeatPerTurn, cannotFireFromSensorDamage, cannotStandFromGyroDamage) live in
+// CriticalDamage.kt, alongside the rest of CombatUnit's critical-damage behavior.

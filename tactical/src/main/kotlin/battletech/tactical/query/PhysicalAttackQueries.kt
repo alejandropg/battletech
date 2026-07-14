@@ -29,6 +29,9 @@ internal class PhysicalAttackQueries(private val state: PublicGameState) {
             val context = PhysicalAttackContext(actor = attacker, gameState = state, target = enemy)
 
             val punchReasons = unsatisfiedReasons(punchDef.rules, context)
+            // C4: the only to-hit-number math here is the shared predictor
+            // (battletech.tactical.attack.physical.physicalToHitTargetNumber), also used by
+            // PhysicalAttackResolution — read and apply can't drift.
             val punchTargetNumber = physicalToHitTargetNumber(attacker, enemy, PhysicalAttackKind.Punch(Side.LEFT), state)
             val punchOptions = listOf(Side.LEFT, Side.RIGHT).map { arm ->
                 val limbReasons = punchReasons + limbDestroyedReason(armStructure(attacker, arm), attackerId)
@@ -65,6 +68,12 @@ internal class PhysicalAttackQueries(private val state: PublicGameState) {
         }
     }
 
+    /**
+     * All unsatisfied rule reasons (not just the first) — [PhysicalAttackOption.unavailableReasons]
+     * displays every reason an option is unavailable, so this evaluates [rules] directly rather
+     * than [battletech.tactical.attack.AttackDefinition.firstRejection], which short-circuits on
+     * the first hit. Not a to-hit-number duplication: no target-number math happens here.
+     */
     private fun unsatisfiedReasons(
         rules: List<AttackRule<PhysicalAttackContext>>,
         context: PhysicalAttackContext,

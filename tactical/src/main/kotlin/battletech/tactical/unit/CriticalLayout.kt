@@ -89,43 +89,10 @@ private val LEG_FRAMEWORK: List<ActuatorType> = listOf(
 
 public fun CriticalLayout.Factory.empty(): CriticalLayout = mechLayout { }.layout
 
-/** True when [unit] has already recorded the slot at [location]/[index] as destroyed. */
-public fun CombatUnit.isSlotDestroyed(location: MechLocation, index: Int): Boolean =
-    criticalHits[location]?.contains(index) == true
-
-/**
- * Count of slots in [location] whose content matches [predicate] and are recorded as
- * destroyed in [CombatUnit.criticalHits]. Used by later stages to compare destroyed-slot
- * counts of a given component type (engine, gyro, …) against their threshold constants.
- */
-public fun CombatUnit.destroyedSlotCount(
-    location: MechLocation,
-    predicate: (CriticalSlotContent) -> Boolean,
-): Int {
-    val destroyedIndices = criticalHits[location] ?: return 0
-    val slots = criticalLayout.slotsAt(location)
-    return destroyedIndices.count { index -> slots.getOrNull(index)?.let(predicate) == true }
-}
-
-/** Number of destroyed Engine slots in the Center Torso (`docs/rules/armor-damage.md` §3). */
-public fun CombatUnit.engineCritCount(): Int =
-    destroyedSlotCount(MechLocation.CENTER_TORSO) { it is CriticalSlotContent.Engine }
-
-/** Number of destroyed Gyro slots in the Center Torso (`docs/rules/armor-damage.md` §3). */
-public fun CombatUnit.gyroCritCount(): Int =
-    destroyedSlotCount(MechLocation.CENTER_TORSO) { it is CriticalSlotContent.Gyro }
-
-/** Number of destroyed Sensors slots in the Head (`docs/rules/armor-damage.md` §3). */
-public fun CombatUnit.sensorCritCount(): Int =
-    destroyedSlotCount(MechLocation.HEAD) { it is CriticalSlotContent.Sensors }
-
-/**
- * Number of destroyed Life Support slots in the Head (`docs/rules/armor-damage.md`
- * §3 Life Support; HEAD framework has 2 LifeSupport slots). Drives the per-turn
- * pilot-damage sources wired in [battletech.tactical.session.HeatPhaseHandler.onEntry].
- */
-public fun CombatUnit.lifeSupportCritCount(): Int =
-    destroyedSlotCount(MechLocation.HEAD) { it is CriticalSlotContent.LifeSupport }
+// Slot/component crit counts (isSlotDestroyed, destroyedSlotCount, engineCritCount,
+// gyroCritCount, sensorCritCount, lifeSupportCritCount) live in CriticalDamage.kt,
+// alongside the rest of CombatUnit's critical-damage behavior. The threshold
+// constants below stay here with the layout framework they describe.
 
 /** Engine crit count at which the mech is destroyed (`docs/rules/armor-damage.md` §3). */
 public const val ENGINE_DESTROYED_AT: Int = 3
