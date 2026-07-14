@@ -385,9 +385,9 @@ internal class CriticalHitResolutionTest {
 
         // A fatal PilotHit event follows: no consciousness roll, pilot hits = death threshold.
         val pilotEvent = events.filterIsInstance<PilotHit>().single()
+        assertThat(pilotEvent).isInstanceOf(PilotHit.Fatal::class.java)
         assertThat(pilotEvent.unitId).isEqualTo(baseUnit.id)
         assertThat(pilotEvent.pilotHits).isEqualTo(PILOT_DEATH_THRESHOLD)
-        assertThat(pilotEvent.consciousnessRoll).isNull()
 
         // The unit's pilotHits reaches the death threshold -> PILOT_DEAD destruction reason.
         assertThat(updated.pilotHits).isEqualTo(PILOT_DEATH_THRESHOLD)
@@ -404,7 +404,7 @@ internal class CriticalHitResolutionTest {
         assertThat(updated.pilotHits).isEqualTo(PILOT_DEATH_THRESHOLD)
         assertThat(destructionReason(updated)).isEqualTo(DestructionReason.PILOT_DEAD)
         val pilotEvent = events.filterIsInstance<PilotHit>().single()
-        assertThat(pilotEvent.consciousnessRoll).isNull()
+        assertThat(pilotEvent).isInstanceOf(PilotHit.Fatal::class.java)
     }
 
     private fun splitTotal(total: Int): Pair<Int, Int> {

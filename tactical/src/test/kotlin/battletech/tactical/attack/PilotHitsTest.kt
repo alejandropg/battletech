@@ -28,7 +28,7 @@ internal class PilotHitsTest {
         val (updated, events) = applyPilotHit(unit, DiceRoller.deterministic(1, 1))
 
         assertThat(updated.isPilotConscious).isFalse()
-        val hitEvent = events.filterIsInstance<PilotHit>().single()
+        val hitEvent = events.filterIsInstance<PilotHit>().single() as PilotHit.Checked
         assertThat(hitEvent.pilotHits).isEqualTo(1)
         assertThat(hitEvent.conscious).isFalse()
         assertThat(events.filterIsInstance<PilotKnockedUnconscious>()).hasSize(1)
@@ -43,7 +43,7 @@ internal class PilotHitsTest {
 
         assertThat(updated.isPilotConscious).isTrue()
         assertThat(events.filterIsInstance<PilotKnockedUnconscious>()).isEmpty()
-        val hitEvent = events.filterIsInstance<PilotHit>().single()
+        val hitEvent = events.filterIsInstance<PilotHit>().single() as PilotHit.Checked
         assertThat(hitEvent.conscious).isTrue()
     }
 
@@ -55,7 +55,7 @@ internal class PilotHitsTest {
 
         assertThat(updated.pilotHits).isEqualTo(6)
         val hitEvent = events.filterIsInstance<PilotHit>().single()
-        assertThat(hitEvent.consciousnessRoll).isNull()
+        assertThat(hitEvent).isInstanceOf(PilotHit.Fatal::class.java)
     }
 
     @Test

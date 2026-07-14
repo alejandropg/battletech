@@ -3,6 +3,7 @@ package battletech.tui
 import battletech.tactical.model.GameState
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttacksResolved
@@ -294,9 +295,12 @@ public class TuiApp(
         buffer: ScreenBuffer,
         boardWidth: Int,
         boardHeight: Int,
-        winner: PlayerId?,
+        outcome: MatchOutcome,
     ) {
-        val winnerLine = if (winner == null) "Draw" else "${playerName(winner)} wins!"
+        val winnerLine = when (outcome) {
+            is MatchOutcome.Draw -> "Draw"
+            is MatchOutcome.Victory -> "${playerName(outcome.winner)} wins!"
+        }
         val bannerWidth = maxOf(winnerLine.length + 8, 24)
         val bannerHeight = 7
         val bx = (boardWidth - bannerWidth) / 2
@@ -379,9 +383,11 @@ public class TuiApp(
         val matchEnded = appState.matchEnded
         val prompt = when {
             matchEnded != null -> {
-                val winner = matchEnded.winner
-                if (winner == null) "Match over — Draw  |  ctrl+c: quit"
-                else "Match over — ${playerName(winner)} wins!  |  ctrl+c: quit"
+                val outcomeText = when (val outcome = matchEnded.outcome) {
+                    is MatchOutcome.Draw -> "Draw"
+                    is MatchOutcome.Victory -> "${playerName(outcome.winner)} wins!"
+                }
+                "Match over — $outcomeText  |  ctrl+c: quit"
             }
             flash != null -> flash.text
             else -> appState.phase.prompt(appState)
@@ -391,7 +397,7 @@ public class TuiApp(
         statusBarView.render(buffer, 0, layout.boardHeight, size.width, FrameLayout.STATUS_BAR_HEIGHT)
 
         if (matchEnded != null) {
-            renderGameOverBanner(buffer, layout.boardWidth, layout.boardHeight, matchEnded.winner)
+            renderGameOverBanner(buffer, layout.boardWidth, layout.boardHeight, matchEnded.outcome)
         }
 
         renderer.render(buffer)

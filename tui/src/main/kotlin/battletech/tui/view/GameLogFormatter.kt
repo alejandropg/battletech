@@ -5,6 +5,7 @@ import battletech.tactical.attack.LocationDamage
 import battletech.tactical.attack.physical.PhysicalAttackResult
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
 import battletech.tactical.session.AmmoExploded
@@ -108,7 +109,11 @@ internal object GameLogFormatter {
         }
         is UnitShutdown -> {
             val name = event.unitId.value
-            listOf(LogLine(null, if (event.auto) "$name auto-shut down (heat ≥ 30)" else "$name shut down from heat"))
+            val text = when (event) {
+                is UnitShutdown.Automatic -> "$name auto-shut down (heat ≥ 30)"
+                is UnitShutdown.AvoidFailed -> "$name shut down from heat"
+            }
+            listOf(LogLine(null, text))
         }
         is UnitRestarted -> {
             val name = event.unitId.value
@@ -123,8 +128,11 @@ internal object GameLogFormatter {
             listOf(LogLine(destroyedIcon(), "$name destroyed (${destructionReasonLabel(event.reason)})"))
         }
         is MatchEnded -> {
-            val winner = event.winner
-            listOf(LogLine(null, if (winner == null) "Match over — draw" else "Match over — ${playerLabel(winner)} wins!"))
+            val text = when (val outcome = event.outcome) {
+                is MatchOutcome.Draw -> "Match over — draw"
+                is MatchOutcome.Victory -> "Match over — ${playerLabel(outcome.winner)} wins!"
+            }
+            listOf(LogLine(null, text))
         }
         is CriticalHit -> {
             val name = event.unitId.value

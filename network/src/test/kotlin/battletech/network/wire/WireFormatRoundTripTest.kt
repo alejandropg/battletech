@@ -19,6 +19,7 @@ import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
@@ -119,6 +120,39 @@ internal class WireFormatRoundTripTest {
     fun `every GameEvent subtype has a fixture`() {
         assertThat(gameEventFixtures.keys)
             .containsExactlyInAnyOrderElementsOf(GameEvent::class.sealedSubclasses)
+    }
+
+    // `gameEventFixtures` above covers one leaf per direct GameEvent subtype
+    // (UnitShutdown.AvoidFailed, UnitRestarted.RollPassed, PilotHit.Checked,
+    // MatchEnded(Victory)). These round-trip the sibling leaves those nested
+    // sealed types (UnitShutdown, UnitRestarted, PilotHit, MatchOutcome) permit.
+
+    @Test
+    fun `UnitShutdown Automatic round-trips`() {
+        val event: GameEvent = UnitShutdown.Automatic(unitId = unitA)
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
+    }
+
+    @Test
+    fun `UnitRestarted Automatic round-trips`() {
+        val event: GameEvent = UnitRestarted.Automatic(unitId = unitA)
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
+    }
+
+    @Test
+    fun `PilotHit Fatal round-trips`() {
+        val event: GameEvent = PilotHit.Fatal(unitId = unitA, pilotHits = 6)
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
+    }
+
+    @Test
+    fun `MatchEnded with a Draw outcome round-trips`() {
+        val event: GameEvent = MatchEnded(outcome = MatchOutcome.Draw)
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
     }
 
     // ---------- CommandRejection ----------
@@ -372,7 +406,7 @@ internal class WireFormatRoundTripTest {
                 unitId = unitB,
                 psr = aPilotingSkillRoll(),
                 fall = aFallResult(),
-                pilotEvents = listOf(PilotHit(unitB, pilotHits = 1, consciousnessRoll = DiceRoll(3, 3), conscious = true)),
+                pilotEvents = listOf(PilotHit.Checked(unitB, pilotHits = 1, consciousnessRoll = DiceRoll(3, 3), conscious = true)),
             ),
         )
 
@@ -422,19 +456,19 @@ internal class WireFormatRoundTripTest {
             PhaseChanged::class to PhaseChanged(from = TurnPhase.MOVEMENT, to = TurnPhase.WEAPON_ATTACK),
             InitiativeRolled::class to InitiativeRolled(initiative = anInitiativeFixture()),
             HeatDissipated::class to HeatDissipated(heatBefore = mapOf(unitA to 5), heatAfter = mapOf(unitA to 3)),
-            UnitShutdown::class to UnitShutdown(unitId = unitA, roll = DiceRoll(3, 4), auto = false),
-            UnitRestarted::class to UnitRestarted(unitId = unitA, roll = null),
+            UnitShutdown::class to UnitShutdown.AvoidFailed(unitId = unitA, roll = DiceRoll(3, 4)),
+            UnitRestarted::class to UnitRestarted.RollPassed(unitId = unitA, roll = DiceRoll(5, 6)),
             AmmoExploded::class to AmmoExploded(unitId = unitA, ammoType = AmmoType.SRM6, damage = 12),
             TurnEnded::class to TurnEnded(turnNumber = 2),
             UnitDestroyed::class to UnitDestroyed(unitId = unitA, reason = DestructionReason.ENGINE_DESTROYED),
-            MatchEnded::class to MatchEnded(winner = PlayerId.PLAYER_2),
+            MatchEnded::class to MatchEnded(outcome = MatchOutcome.Victory(PlayerId.PLAYER_2)),
             CriticalHit::class to CriticalHit(
                 unitId = unitA,
                 location = MechLocation.LEFT_TORSO,
                 slotIndex = 3,
                 content = CriticalSlotContent.AmmoBin(type = AmmoType.LRM10, shots = 6),
             ),
-            PilotHit::class to PilotHit(unitId = unitA, pilotHits = 2, consciousnessRoll = DiceRoll(3, 3), conscious = true),
+            PilotHit::class to PilotHit.Checked(unitId = unitA, pilotHits = 2, consciousnessRoll = DiceRoll(3, 3), conscious = true),
             PilotKnockedUnconscious::class to PilotKnockedUnconscious(unitId = unitA),
             PilotRecoveredConsciousness::class to PilotRecoveredConsciousness(unitId = unitA, roll = DiceRoll(5, 6)),
             SessionNotice::class to SessionNotice(text = "Opponent connected"),

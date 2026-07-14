@@ -6,6 +6,7 @@ import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
@@ -159,7 +160,7 @@ internal class DestructionSweepTest {
 
         val matchEnded = result.events.filterIsInstance<MatchEnded>()
         assertThat(matchEnded).hasSize(1)
-        assertThat(matchEnded.single().winner).isEqualTo(PlayerId.PLAYER_1)
+        assertThat(matchEnded.single().outcome).isEqualTo(MatchOutcome.Victory(PlayerId.PLAYER_1))
         assertThat(session.isMatchOver).isTrue()
 
         // Further commands are rejected once the match is over.
@@ -279,7 +280,7 @@ internal class DestructionSweepTest {
 
         val matchEnded = finalResult.events.filterIsInstance<MatchEnded>()
         assertThat(matchEnded).hasSize(1)
-        assertThat(matchEnded.single().winner).isEqualTo(other.owner)
+        assertThat(matchEnded.single().outcome).isEqualTo(MatchOutcome.Victory(other.owner))
         assertThat(session.isMatchOver).isTrue()
     }
 

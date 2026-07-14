@@ -482,7 +482,7 @@ internal class WaterDepthEffectsTest {
         val finalOutcome = heatHandler.onEntry(gameState, TurnState.NULL, DiceRoller.deterministic())
         val finalUnit = finalOutcome.state.units[0]
         assertEquals(6, finalUnit.pilotHits)
-        // PilotHit is still emitted (with null consciousnessRoll).
-        assertThat(finalOutcome.events).anyMatch { it is PilotHit && it.pilotHits == 6 && it.consciousnessRoll == null }
+        // PilotHit is still emitted, as the fatal variant (no consciousness roll).
+        assertThat(finalOutcome.events).anyMatch { it is PilotHit.Fatal && it.pilotHits == 6 }
     }
 }

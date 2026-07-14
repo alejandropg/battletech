@@ -49,7 +49,7 @@ public fun applyPilotHit(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit,
 
     if (newHits >= PILOT_DEATH_THRESHOLD) {
         val dead = unit.copy(pilotHits = newHits)
-        return dead to listOf(PilotHit(unit.id, newHits, consciousnessRoll = null, conscious = dead.isPilotConscious))
+        return dead to listOf(PilotHit.Fatal(unit.id, newHits))
     }
 
     val target = CONSCIOUSNESS_TARGET.getValue(newHits)
@@ -57,7 +57,7 @@ public fun applyPilotHit(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit,
     val staysConscious = unit.isPilotConscious && roll.total >= target
     val updated = unit.copy(pilotHits = newHits, isPilotConscious = staysConscious)
 
-    val events = mutableListOf<GameEvent>(PilotHit(unit.id, newHits, roll, staysConscious))
+    val events = mutableListOf<GameEvent>(PilotHit.Checked(unit.id, newHits, roll, staysConscious))
     if (unit.isPilotConscious && !staysConscious) {
         events += PilotKnockedUnconscious(unit.id)
     }

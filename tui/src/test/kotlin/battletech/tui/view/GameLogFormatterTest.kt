@@ -14,6 +14,7 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
@@ -427,12 +428,12 @@ internal class GameLogFormatterTest {
 
     @Test
     fun `MatchEnded reports the winner`() {
-        assertThat(text(MatchEnded(winner = PlayerId.PLAYER_1))).isEqualTo("Match over — P1 wins!")
+        assertThat(text(MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1)))).isEqualTo("Match over — P1 wins!")
     }
 
     @Test
-    fun `MatchEnded reports a draw when winner is null`() {
-        assertThat(text(MatchEnded(winner = null))).isEqualTo("Match over — draw")
+    fun `MatchEnded reports a draw`() {
+        assertThat(text(MatchEnded(MatchOutcome.Draw))).isEqualTo("Match over — draw")
     }
 
     @Test
@@ -500,7 +501,7 @@ internal class GameLogFormatterTest {
         val stateWithLocust = emptyState.copy(units = listOf(locust))
 
         assertThat(text(
-            PilotHit(unitId = locust.id, pilotHits = 1, consciousnessRoll = null, conscious = true),
+            PilotHit.Fatal(unitId = locust.id, pilotHits = 1),
             stateWithLocust,
         )).isEqualTo("locust pilot wounded (1 hit total)")
     }
@@ -511,7 +512,7 @@ internal class GameLogFormatterTest {
         val stateWithLocust = emptyState.copy(units = listOf(locust))
 
         assertThat(text(
-            PilotHit(
+            PilotHit.Checked(
                 unitId = locust.id, pilotHits = 3,
                 consciousnessRoll = DiceRoll(4, 4), conscious = true,
             ),

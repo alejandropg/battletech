@@ -7,6 +7,7 @@ import battletech.tactical.attack.physical.PhysicalAttackResult
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
@@ -89,26 +90,33 @@ public data class HeatDissipated(
     public val heatAfter: Map<UnitId, Int>
 ) : GameEvent
 
-/**
- * A unit powered down in the Heat Phase. [roll] is null for an automatic
- * shutdown (heat ≥ 30); otherwise it is the failed 2D6 avoidance roll.
- */
+/** A unit powered down in the Heat Phase. */
 @Serializable
-public data class UnitShutdown(
-    public val unitId: UnitId,
-    public val roll: DiceRoll?,
-    public val auto: Boolean,
-) : GameEvent
+public sealed interface UnitShutdown : GameEvent {
+    public val unitId: UnitId
 
-/**
- * A shut-down unit came back online in the Heat Phase. [roll] is null for an
- * automatic restart (heat below the lowest shutdown threshold).
- */
+    /** Automatic shutdown — heat reached the auto-shutdown threshold (≥ 30); no avoidance roll. */
+    @Serializable
+    public data class Automatic(override val unitId: UnitId) : UnitShutdown
+
+    /** The unit failed its 2d6 shutdown-avoidance [roll]. */
+    @Serializable
+    public data class AvoidFailed(override val unitId: UnitId, public val roll: DiceRoll) : UnitShutdown
+}
+
+/** A shut-down unit came back online in the Heat Phase. */
 @Serializable
-public data class UnitRestarted(
-    public val unitId: UnitId,
-    public val roll: DiceRoll?,
-) : GameEvent
+public sealed interface UnitRestarted : GameEvent {
+    public val unitId: UnitId
+
+    /** Automatic restart — heat fell below the lowest shutdown threshold; no roll needed. */
+    @Serializable
+    public data class Automatic(override val unitId: UnitId) : UnitRestarted
+
+    /** The unit passed its 2d6 restart [roll]. */
+    @Serializable
+    public data class RollPassed(override val unitId: UnitId, public val roll: DiceRoll) : UnitRestarted
+}
 
 /** A unit's ammunition cooked off from heat, taking internal damage. */
 @Serializable
@@ -130,10 +138,10 @@ public data class UnitDestroyed(
     public val reason: DestructionReason,
 ) : GameEvent
 
-/** The match has concluded. [winner] is null when neither side has survivors (draw). */
+/** The match has concluded. */
 @Serializable
 public data class MatchEnded(
-    public val winner: PlayerId?,
+    public val outcome: MatchOutcome,
 ) : GameEvent
 
 /**
@@ -152,18 +160,29 @@ public data class CriticalHit(
 
 /**
  * [unitId]'s pilot took a hit (life support, ASSUMPTION: head/fall/ammo sources in
- * future stages), bringing the running total to [pilotHits]. [consciousnessRoll] is
- * null when no consciousness check was needed (death threshold reached — see
- * [battletech.tactical.unit.PILOT_DEATH_THRESHOLD] / [DestructionReason.PILOT_DEAD]);
- * otherwise it is the scripted 2d6 roll, and [conscious] reports the outcome.
+ * future stages), bringing the running total to [pilotHits].
  */
 @Serializable
-public data class PilotHit(
-    public val unitId: UnitId,
-    public val pilotHits: Int,
-    public val consciousnessRoll: DiceRoll?,
-    public val conscious: Boolean,
-) : GameEvent
+public sealed interface PilotHit : GameEvent {
+    public val unitId: UnitId
+    public val pilotHits: Int
+
+    /**
+     * The hit reached [battletech.tactical.unit.PILOT_DEATH_THRESHOLD] — the pilot is dead, so
+     * no consciousness roll is made (see [DestructionReason.PILOT_DEAD]).
+     */
+    @Serializable
+    public data class Fatal(override val unitId: UnitId, override val pilotHits: Int) : PilotHit
+
+    /** The pilot survived; [consciousnessRoll] is the scripted 2d6 roll and [conscious] its outcome. */
+    @Serializable
+    public data class Checked(
+        override val unitId: UnitId,
+        override val pilotHits: Int,
+        public val consciousnessRoll: DiceRoll,
+        public val conscious: Boolean,
+    ) : PilotHit
+}
 
 /** [unitId]'s pilot failed a consciousness check (following a [PilotHit]) and blacked out. */
 @Serializable

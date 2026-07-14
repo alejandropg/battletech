@@ -5,6 +5,7 @@ import battletech.tactical.attack.weapon.WeaponAttackPhaseHandler
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.GameState
+import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.PlayerId
 import battletech.tactical.movement.MovementPhaseHandler
 import battletech.tactical.query.DefaultPlayerView
@@ -218,7 +219,8 @@ public class BattleSession(
         if (deployedPlayers.size > 1 && survivingPlayers.size <= 1) {
             _matchOver = true
             val winner = survivingPlayers.singleOrNull()
-            events += MatchEnded(winner)
+            val outcome = if (winner != null) MatchOutcome.Victory(winner) else MatchOutcome.Draw
+            events += MatchEnded(outcome)
         }
 
         logEvents(events)

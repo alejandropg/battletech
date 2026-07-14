@@ -4,6 +4,7 @@ import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.RangeBand
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttacksResolved
@@ -326,7 +327,7 @@ internal class TuiAppLoopTest {
             )
         }
 
-        internalEvents.send(UiEvent.Session(MatchEnded(PlayerId.PLAYER_1)))
+        internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1))))
 
         val output = recorder.output()
         assertTrue(output.contains("MATCH OVER"), "Expected 'MATCH OVER' banner title in output")
@@ -337,7 +338,7 @@ internal class TuiAppLoopTest {
     }
 
     @Test
-    fun `game-over banner shows Draw when MatchEnded has a null winner`() = runTest(UnconfinedTestDispatcher()) {
+    fun `game-over banner shows Draw when MatchEnded has a Draw outcome`() = runTest(UnconfinedTestDispatcher()) {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -350,7 +351,7 @@ internal class TuiAppLoopTest {
             )
         }
 
-        internalEvents.send(UiEvent.Session(MatchEnded(winner = null)))
+        internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Draw)))
 
         val output = recorder.output()
         assertTrue(output.contains("MATCH OVER"), "Expected 'MATCH OVER' banner title in output")
@@ -379,7 +380,7 @@ internal class TuiAppLoopTest {
         }
 
         // End the match, then clear recorded output to isolate subsequent renders.
-        internalEvents.send(UiEvent.Session(MatchEnded(PlayerId.PLAYER_1)))
+        internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1))))
         recorder.clearOutput()
 
         // Pressing Enter on the enemy unit at (0,0) would normally produce the

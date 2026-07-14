@@ -156,7 +156,7 @@ private fun CombatUnit.applyCritConsequence(
     }
     is CriticalSlotContent.Cockpit -> {
         val dead = copy(pilotHits = PILOT_DEATH_THRESHOLD)
-        dead to listOf(PilotHit(id, PILOT_DEATH_THRESHOLD, consciousnessRoll = null, conscious = dead.isPilotConscious))
+        dead to listOf(PilotHit.Fatal(id, PILOT_DEATH_THRESHOLD))
     }
     else -> this to emptyList()
 }

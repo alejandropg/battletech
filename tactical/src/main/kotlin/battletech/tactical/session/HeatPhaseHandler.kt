@@ -110,12 +110,12 @@ public class HeatPhaseHandler : PhaseHandler {
             when {
                 HeatScale.isAutoShutdown(heat) -> unit to null // pinned down, no restart
                 HeatScale.shutdownAvoidTarget(heat) == null ->
-                    unit.copy(isShutdown = false) to UnitRestarted(unit.id, null)
+                    unit.copy(isShutdown = false) to UnitRestarted.Automatic(unit.id)
                 else -> {
                     val target = HeatScale.shutdownAvoidTarget(heat)!!
                     val roll = roller.roll2d6()
                     if (roll.total >= target) {
-                        unit.copy(isShutdown = false) to UnitRestarted(unit.id, roll)
+                        unit.copy(isShutdown = false) to UnitRestarted.RollPassed(unit.id, roll)
                     } else {
                         unit to null // restart failed; still down
                     }
@@ -124,14 +124,14 @@ public class HeatPhaseHandler : PhaseHandler {
         } else {
             when {
                 HeatScale.isAutoShutdown(heat) ->
-                    unit.copy(isShutdown = true) to UnitShutdown(unit.id, roll = null, auto = true)
+                    unit.copy(isShutdown = true) to UnitShutdown.Automatic(unit.id)
                 else -> {
                     val target = HeatScale.shutdownAvoidTarget(heat) ?: return unit to null
                     val roll = roller.roll2d6()
                     if (roll.total >= target) {
                         unit to null // avoided
                     } else {
-                        unit.copy(isShutdown = true) to UnitShutdown(unit.id, roll, auto = false)
+                        unit.copy(isShutdown = true) to UnitShutdown.AvoidFailed(unit.id, roll)
                     }
                 }
             }

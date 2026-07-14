@@ -31,7 +31,7 @@ internal class HeatPhaseHandlerTest {
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(6, 6))
 
         assertTrue(outcome.state.units[0].isShutdown)
-        assertThat(outcome.events).anyMatch { it is UnitShutdown && it.auto }
+        assertThat(outcome.events).anyMatch { it is UnitShutdown.Automatic }
     }
 
     @Test
@@ -42,7 +42,7 @@ internal class HeatPhaseHandlerTest {
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(1, 1))
 
         assertTrue(outcome.state.units[0].isShutdown)
-        assertThat(outcome.events).anyMatch { it is UnitShutdown && !it.auto }
+        assertThat(outcome.events).anyMatch { it is UnitShutdown.AvoidFailed }
     }
 
     @Test
@@ -134,7 +134,7 @@ internal class HeatPhaseHandlerTest {
 
         assertEquals(14, outcome.state.units[0].currentHeat)
         assertTrue(outcome.state.units[0].isShutdown)
-        assertThat(outcome.events).anyMatch { it is UnitShutdown && !it.auto }
+        assertThat(outcome.events).anyMatch { it is UnitShutdown.AvoidFailed }
     }
 
     // -------------------------------------------------------------------------
