@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import battletech.tactical.heat.HeatScale
+import battletech.tactical.heat.projectHeat
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ComponentCritStatus
 import battletech.tactical.unit.CriticalComponent
@@ -79,30 +80,26 @@ public class UnitStatusView(
             val heatBar = HeatBarWidget(barWidth = 20, maxValue = 30)
             content.cy = heatBar.draw(buffer, content.x, content.cy, unit.currentHeat)
 
-            for (source in unit.heatGeneratedThisTurn) {
+            val projection = projectHeat(unit, pendingHeat)
+
+            for (source in projection.committed) {
                 writeln("  ${source.label} +${source.amount}")
             }
-            for (source in pendingHeat) {
+            for (source in projection.pending) {
                 writeln("  ${source.label} +${source.amount}", Color.DRAFT)
             }
 
-            val committedGenerated = unit.heatGeneratedThisTurn.sumOf { it.amount }
-            val previewGenerated = pendingHeat.sumOf { it.amount }
-
             val sink = unit.heatSink
-            val dissipation = sink.dissipation()
             val sinkSuffix =
-                if (sink.type.sinkRatio == 1) "${sink.type.name} $dissipation"
-                else "${sink.type.name} ${sink.units}($dissipation)"
-            val dissipated = minOf(unit.currentHeat + committedGenerated + previewGenerated, dissipation)
-            content.cy = HeatBarWidget(barWidth = 10, maxValue = dissipation, suffix = sinkSuffix)
-                .draw(buffer, content.x, content.cy, dissipated)
+                if (sink.type.sinkRatio == 1) "${sink.type.name} ${projection.dissipation}"
+                else "${sink.type.name} ${sink.units}(${projection.dissipation})"
+            content.cy = HeatBarWidget(barWidth = 10, maxValue = projection.dissipation, suffix = sinkSuffix)
+                .draw(buffer, content.x, content.cy, projection.dissipated)
 
             writeln("Projected")
-            val projected = (unit.currentHeat + committedGenerated + previewGenerated - dissipation).coerceAtLeast(0)
-            content.cy = heatBar.draw(buffer, content.x, content.cy, projected)
+            content.cy = heatBar.draw(buffer, content.x, content.cy, projection.projected)
 
-            val penalties = penaltyLines(unit.currentHeat, projected)
+            val penalties = penaltyLines(unit.currentHeat, projection.projected)
             if (penalties.isNotEmpty()) {
                 writeln("Penalties")
                 for ((text, fg) in penalties) {
