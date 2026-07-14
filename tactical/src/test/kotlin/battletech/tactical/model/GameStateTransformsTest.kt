@@ -2,7 +2,7 @@ package battletech.tactical.model
 
 import battletech.tactical.attack.applyTorsoFacings
 import battletech.tactical.attack.resetTorsoFacings
-import battletech.tactical.heat.movementHeatSource
+import battletech.tactical.heat.movementHeatSources
 import battletech.tactical.session.applyHeatPhase
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
@@ -85,10 +85,8 @@ internal class GameStateTransformsTest {
         fun `folds generated heat before dissipating and clears the list`() {
             val unit = aUnit(currentHeat = 5, heatSink = HeatSink(HeatSinkType.STS, 10)).copy(
                 // walking + medium laser = +1 +3 = +4
-                heatGeneratedThisTurn = listOf(
-                    movementHeatSource(MovementMode.WALK, 2)!!,
+                heatGeneratedThisTurn = movementHeatSources(MovementMode.WALK, 2) +
                     HeatSource("Medium Laser", 3),
-                ),
             )
             val gameState = GameState(listOf(unit), map)
 

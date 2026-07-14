@@ -1,6 +1,6 @@
 package battletech.tui.game.phase
 
-import battletech.tactical.heat.movementHeatSource
+import battletech.tactical.heat.movementHeatSources
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -164,7 +164,7 @@ internal sealed interface MovementPhase : Phase {
             val destination = hoveredDestination ?: return emptyList()
             val unit = app.gameState.unitById(unitId)
             val hexes = hexesMoved(unit.position, destination)
-            return listOfNotNull(movementHeatSource(reachability.mode, hexes))
+            return movementHeatSources(reachability.mode, hexes)
         }
 
         override fun pathDestination(): HexCoordinates? = hoveredPath?.lastOrNull()
@@ -261,7 +261,7 @@ internal sealed interface MovementPhase : Phase {
             val unit = app.gameState.unitById(unitId)
             val destination = options.minByOrNull { it.mpSpent } ?: return emptyList()
             val hexes = hexesMoved(unit.position, destination)
-            return listOfNotNull(movementHeatSource(reachability.mode, hexes))
+            return movementHeatSources(reachability.mode, hexes)
         }
 
         override fun pathDestination(): HexCoordinates? = path.lastOrNull()

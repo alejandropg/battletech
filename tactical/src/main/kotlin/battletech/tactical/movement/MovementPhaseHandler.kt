@@ -1,7 +1,7 @@
 package battletech.tactical.movement
 
 import battletech.tactical.dice.DiceRoller
-import battletech.tactical.heat.movementHeatSource
+import battletech.tactical.heat.movementHeatSources
 import battletech.tactical.model.GameState
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
@@ -112,8 +112,7 @@ public class MovementPhaseHandler : PhaseHandler {
         state: GameState,
         turn: TurnState,
     ): CommandRejection? {
-        if (state.units.none { it.id == unitId }) return CommandRejection.UnknownUnit(unitId)
-        val unit = state.unitById(unitId)
+        val unit = state.findUnit(unitId) ?: return CommandRejection.UnknownUnit(unitId)
         if (unit.owner != playerId) {
             return CommandRejection.NotYourTurn(activePlayer = unit.owner, attemptedBy = playerId)
         }
@@ -176,15 +175,14 @@ public class MovementPhaseHandler : PhaseHandler {
         }
         val from = unit.position
         val hexesMoved = hexesMoved(from, serverHex)
-        val heatSource = movementHeatSource(cmd.mode, hexesMoved)
+        val heatSources = movementHeatSources(cmd.mode, hexesMoved)
         val movedState = state.moveUnit(cmd.unitId, serverHex)
         val newState = movedState.copy(
             units = movedState.units.map { u ->
                 if (u.id == cmd.unitId) {
                     u.copy(
                         movementThisTurn = MovementThisTurn.Moved(cmd.mode, hexesMoved),
-                        heatGeneratedThisTurn = u.heatGeneratedThisTurn +
-                            listOfNotNull(heatSource),
+                        heatGeneratedThisTurn = u.heatGeneratedThisTurn + heatSources,
                     )
                 } else {
                     u

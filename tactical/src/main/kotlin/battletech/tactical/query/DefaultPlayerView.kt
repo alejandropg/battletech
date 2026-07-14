@@ -18,8 +18,7 @@ public class DefaultPlayerView(
     private val physicalAttackQueries = PhysicalAttackQueries(state)
 
     override fun legalMovementsFor(unitId: UnitId): List<ReachabilityMap> {
-        if (state.units.none { it.id == unitId }) return emptyList()
-        val unit = state.unitById(unitId)
+        val unit = state.findUnit(unitId) ?: return emptyList()
         if (unit.isShutdown || unit.isDestroyed || !unit.isPilotConscious) return emptyList()
         val calculator = ReachabilityCalculator(state.map, state.units)
         return buildList {
@@ -45,8 +44,7 @@ public class DefaultPlayerView(
         targetIds.map { state.unitById(it).position }.toSet()
 
     override fun publicUnit(unitId: UnitId): PublicUnit? {
-        if (state.units.none { it.id == unitId }) return null
-        val unit = state.unitById(unitId)
+        val unit = state.findUnit(unitId) ?: return null
         return PublicUnit(
             id = unit.id,
             owner = unit.owner,
