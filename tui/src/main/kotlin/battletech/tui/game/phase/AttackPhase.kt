@@ -3,11 +3,9 @@ package battletech.tui.game.phase
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.heat.weaponHeatSource
-import battletech.tactical.model.GameState
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerView
 import battletech.tactical.query.PublicUnit
 import battletech.tactical.session.AttacksResolved
@@ -48,15 +46,15 @@ internal sealed interface AttackPhase : Phase {
     public val drafts: Map<UnitId, UnitDeclaration>
     override val turnPhase: TurnPhase get() = attackTurnPhase
 
-    override fun visiblePanels(gameState: GameState): Set<PanelId> = buildSet {
+    override fun visiblePanels(app: AppState): Set<PanelId> = buildSet {
         // The declared-targets panel belongs to the weapon-attack declaration
         // flow only; the physical-attack flow leaves it empty (see
         // PhysicalAttackPhase), so reserving its column there would render as a
         // blank gap. Targets/TargetStatus follow whatever the active sub-phase
         // populates — SelectingAttacker has neither, Declaring has both.
         if (attackTurnPhase == TurnPhase.WEAPON_ATTACK) add(PanelId.DECLARED_TARGETS)
-        if (attackRender(gameState)?.targets?.isNotEmpty() == true) add(PanelId.TARGETS)
-        if (targetStatusUnit(gameState) != null) add(PanelId.TARGET_STATUS)
+        if (attackRender(app)?.targets?.isNotEmpty() == true) add(PanelId.TARGETS)
+        if (targetStatusUnit(app) != null) add(PanelId.TARGET_STATUS)
     }
 
     public data class SelectingAttacker(
@@ -92,11 +90,8 @@ internal sealed interface AttackPhase : Phase {
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState)
 
-        override fun declaredTargetsRender(
-            gameState: GameState,
-            turnState: TurnState,
-            viewingPlayer: PlayerId,
-        ): DeclaredTargetsRender = buildDeclaredTargetsRender(gameState, turnState, viewingPlayer, drafts)
+        override fun declaredTargetsRender(app: AppState): DeclaredTargetsRender =
+            buildDeclaredTargetsRender(app, declaredTargetsViewingPlayer(app.turnState), drafts)
     }
 
     public data class Declaring(
@@ -134,7 +129,7 @@ internal sealed interface AttackPhase : Phase {
 
             // Compute view + targets once per event; pass into pure allocation methods.
             val attacker = app.gameState.unitById(unitId)
-            val view = playerView(attacker.owner, app.gameState)
+            val view = app.viewFor(attacker.owner)
             val targets = view.targetInfos(unitId, torsoFacing)
 
             return when (action) {
@@ -146,10 +141,9 @@ internal sealed interface AttackPhase : Phase {
                     Transition(app.copy(phase = copy(allocation = newAllocation)))
                 }
                 is AttackAction.TwistTorso -> {
-                    val legFacing = attacker.facing
                     val newTorso = if (action.clockwise) torsoFacing.rotateClockwise()
                     else torsoFacing.rotateCounterClockwise()
-                    if (legFacing.turnCostTo(newTorso) > 1) return Transition(app)
+                    if (newTorso !in view.legalTorsoFacings(unitId)) return Transition(app)
                     val newValidIds = view.validTargets(unitId, newTorso)
                     val newTargets = view.targetInfos(unitId, newTorso)
                     val newAllocation = allocation.twist(newTorso, newTargets, newValidIds)
@@ -171,9 +165,10 @@ internal sealed interface AttackPhase : Phase {
 
         override fun prompt(app: AppState): String = DECLARING_PROMPT
 
-        override fun render(gameState: GameState): RenderData {
+        override fun render(app: AppState): RenderData {
+            val gameState = app.gameState
             val attacker = gameState.unitById(unitId)
-            val view: PlayerView = playerView(attacker.owner, gameState)
+            val view: PlayerView = app.viewFor(attacker.owner)
             val arc = view.fireArc(unitId, torsoFacing)
             val validIds = view.validTargets(unitId, torsoFacing)
             val targets = targetTable(view)
@@ -205,9 +200,9 @@ internal sealed interface AttackPhase : Phase {
             }
         }
 
-        override fun attackRender(gameState: GameState): AttackRender {
-            val attacker = gameState.unitById(unitId)
-            val view = playerView(attacker.owner, gameState)
+        override fun attackRender(app: AppState): AttackRender {
+            val attacker = app.gameState.unitById(unitId)
+            val view = app.viewFor(attacker.owner)
             return AttackRender(
                 targets = targetTable(view),
                 weaponAssignments = weaponAssignments,
@@ -217,9 +212,9 @@ internal sealed interface AttackPhase : Phase {
             )
         }
 
-        override fun targetStatusUnit(gameState: GameState): PublicUnit? {
-            val attacker = gameState.unitById(unitId)
-            val view = playerView(attacker.owner, gameState)
+        override fun targetStatusUnit(app: AppState): PublicUnit? {
+            val attacker = app.gameState.unitById(unitId)
+            val view = app.viewFor(attacker.owner)
             val targets = targetTable(view)
             val target = targets.getOrNull(cursorTargetIndex) ?: return null
             return view.publicUnit(target.unitId)
@@ -227,11 +222,8 @@ internal sealed interface AttackPhase : Phase {
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState, requireSeeded = false)
 
-        override fun declaredTargetsRender(
-            gameState: GameState,
-            turnState: TurnState,
-            viewingPlayer: PlayerId,
-        ): DeclaredTargetsRender = buildDeclaredTargetsRender(gameState, turnState, viewingPlayer, allDrafts())
+        override fun declaredTargetsRender(app: AppState): DeclaredTargetsRender =
+            buildDeclaredTargetsRender(app, declaredTargetsViewingPlayer(app.turnState), allDrafts())
 
         /** Query target infos for this attacker's current torso facing — one call per render entry point. */
         private fun targetTable(view: PlayerView): List<battletech.tactical.attack.weapon.TargetInfo> =
@@ -338,15 +330,26 @@ internal fun commitAttackImpulse(
     return Transition(updatedApp, flash = rejectionFlash(result))
 }
 
-private fun playerView(player: PlayerId, gameState: GameState): PlayerView =
-    battletech.tactical.query.DefaultPlayerView(player, gameState)
+/**
+ * The player whose in-progress drafts [buildDeclaredTargetsRender] should mix in alongside
+ * committed declarations: the active attacker once the impulse sequence is seeded and still
+ * running, else a stable default (PLAYER_1) so the panel renders sensibly before the sequence
+ * seeds or after all attacks are declared.
+ */
+internal fun declaredTargetsViewingPlayer(turnState: TurnState): PlayerId =
+    if (turnState.attack.sequence.order.isEmpty() || turnState.attack.isComplete) {
+        PlayerId.PLAYER_1
+    } else {
+        turnState.attack.activePlayer
+    }
 
 internal fun buildDeclaredTargetsRender(
-    gameState: GameState,
-    turnState: TurnState,
+    app: AppState,
     viewingPlayer: PlayerId,
     drafts: Map<UnitId, UnitDeclaration>,
 ): DeclaredTargetsRender {
+    val gameState = app.gameState
+    val turnState = app.turnState
     val playerOrder: List<PlayerId> = if (turnState.attack.sequence.order.isNotEmpty()) {
         turnState.attack.sequence.order.map { it.player }.distinct()
     } else {
@@ -375,7 +378,7 @@ internal fun buildDeclaredTargetsRender(
                         .map { (targetId, decls) ->
                             Triple(targetId, decls.sortedBy { it.weaponIndex }.map { it.weaponIndex }, decls.any { it.isPrimary })
                         }
-                    val targetInfos = DefaultPlayerView(attackerUnit.owner, gameState)
+                    val targetInfos = app.viewFor(attackerUnit.owner)
                         .targetInfos(attackerId, attackerUnit.torsoFacing)
                     add(attackerEntry(attackerUnit, normalized, isDraft = false, player, targetInfos))
                 }
@@ -392,7 +395,7 @@ internal fun buildDeclaredTargetsRender(
                             .map { (targetId, weaponIndices) ->
                                 Triple(targetId, weaponIndices.sorted(), decl.primaryTargetId == targetId)
                             }
-                        val targetInfos = DefaultPlayerView(attackerUnit.owner, gameState)
+                        val targetInfos = app.viewFor(attackerUnit.owner)
                             .targetInfos(attackerId, decl.torsoFacing)
                         add(attackerEntry(attackerUnit, normalized, isDraft = true, player, targetInfos))
                     }

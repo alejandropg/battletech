@@ -8,6 +8,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.Terrain
+import battletech.tactical.query.PlayerView
 import battletech.tactical.session.AttackProgress
 import battletech.tactical.session.Impulse
 import battletech.tactical.session.ImpulseSequence
@@ -26,6 +27,7 @@ import battletech.tactical.unit.WeaponModel
 import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.empty
 import battletech.tui.game.AppState
+import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.Phase
 
 internal fun mediumLaser(): Weapon = Weapon(model = WeaponModels.mediumLaser)
@@ -64,6 +66,14 @@ internal fun anAppState(
     gameState: GameState = aGameState(),
     turnState: TurnState = aTurnState(),
 ): AppState = AppState(gameState, turnState, phase, cursor)
+
+/**
+ * A [PlayerView] for [player] over [gameState], routed through a throwaway [AppState]/session
+ * instead of constructing `DefaultPlayerView` directly — keeps test code on the same
+ * `session.viewFor` path production code uses (see Stage 7 plan D1).
+ */
+internal fun viewFor(player: PlayerId, gameState: GameState): PlayerView =
+    anAppState(MovementPhase.SelectingUnit, gameState = gameState).viewFor(player)
 
 internal fun aHex(
     col: Int = 0,

@@ -1,12 +1,9 @@
 package battletech.tui.game.phase
 
-import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MovementMode
-import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.PublicUnit
-import battletech.tactical.session.TurnState
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tui.game.AppState
@@ -27,7 +24,7 @@ internal sealed interface Phase {
 
     fun handle(event: InputEvent, app: AppState): Transition? = null
 
-    fun render(gameState: GameState): RenderData = RenderData.EMPTY
+    fun render(app: AppState): RenderData = RenderData.EMPTY
 
     fun prompt(app: AppState): String
 
@@ -45,9 +42,9 @@ internal sealed interface Phase {
 
     fun pathDestination(): HexCoordinates? = null
 
-    fun attackRender(gameState: GameState): AttackRender? = null
+    fun attackRender(app: AppState): AttackRender? = null
 
-    fun targetStatusUnit(gameState: GameState): PublicUnit? = null
+    fun targetStatusUnit(app: AppState): PublicUnit? = null
 
     /**
      * Phase-local side panels the active phase wants visible. The always-on
@@ -55,13 +52,9 @@ internal sealed interface Phase {
      * [battletech.tui.game.PanelVisibility], not here — a phase only declares
      * the panels that belong to its own workflow.
      */
-    fun visiblePanels(gameState: GameState): Set<PanelId> = emptySet()
+    fun visiblePanels(app: AppState): Set<PanelId> = emptySet()
 
-    fun declaredTargetsRender(
-        gameState: GameState,
-        turnState: TurnState,
-        viewingPlayer: PlayerId,
-    ): DeclaredTargetsRender? = null
+    fun declaredTargetsRender(app: AppState): DeclaredTargetsRender? = null
 
     fun movementMode(): MovementMode? = null
 

@@ -5,11 +5,8 @@ import battletech.tactical.attack.physical.PhysicalAttackKind
 import battletech.tactical.attack.physical.physicalImpulseViolation
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
-import battletech.tactical.model.GameState
-import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.PhysicalAttackOption
-import battletech.tactical.query.PlayerView
 import battletech.tactical.session.CommitPhysicalAttackImpulse
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
@@ -36,10 +33,10 @@ internal sealed interface PhysicalAttackPhase : Phase {
 
     val drafts: PhysicalDrafts
 
-    override fun visiblePanels(gameState: GameState): Set<PanelId> = buildSet {
+    override fun visiblePanels(app: AppState): Set<PanelId> = buildSet {
         // Physical attacks reuse the TARGETS panel (Declaring populates it) but
         // never the declared-targets column. The freed width goes to the map.
-        if (attackRender(gameState)?.targets?.isNotEmpty() == true) add(PanelId.TARGETS)
+        if (attackRender(app)?.targets?.isNotEmpty() == true) add(PanelId.TARGETS)
     }
 
     data class SelectingAttacker(
@@ -101,8 +98,8 @@ internal sealed interface PhysicalAttackPhase : Phase {
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState, requireSeeded = false)
 
-        override fun attackRender(gameState: GameState): AttackRender {
-            val options = optionsFor(gameState)
+        override fun attackRender(app: AppState): AttackRender {
+            val options = optionsFor(app)
             val byTarget = options.groupBy { it.targetId }
             val targets = byTarget.map { (targetId, opts) ->
                 TargetInfo(
@@ -138,9 +135,9 @@ internal sealed interface PhysicalAttackPhase : Phase {
         internal fun allDrafts(): PhysicalDrafts =
             if (assignments.values.any { it.isNotEmpty() }) drafts + (unitId to assignments) else drafts - unitId
 
-        private fun optionsFor(gameState: GameState): List<PhysicalAttackOption> {
-            val owner = gameState.unitById(unitId).owner
-            return view(owner, gameState).physicalAttackOptions(unitId)
+        private fun optionsFor(app: AppState): List<PhysicalAttackOption> {
+            val owner = app.gameState.unitById(unitId).owner
+            return app.viewFor(owner).physicalAttackOptions(unitId)
         }
 
         private fun cursorPosition(options: List<PhysicalAttackOption>): Pair<Int, Int> {
@@ -155,14 +152,14 @@ internal sealed interface PhysicalAttackPhase : Phase {
         }
 
         private fun navigate(delta: Int, app: AppState): Declaring {
-            val options = optionsFor(app.gameState)
+            val options = optionsFor(app)
             if (options.isEmpty()) return this
             val next = (cursorIndex + delta + options.size) % options.size
             return copy(cursorIndex = next)
         }
 
         private fun toggle(app: AppState): Transition {
-            val options = optionsFor(app.gameState)
+            val options = optionsFor(app)
             val option = options.getOrNull(cursorIndex) ?: return Transition(app)
             if (!option.available) return Transition(app, FlashMessage("Not available"))
 
@@ -215,6 +212,3 @@ internal fun commitPhysicalImpulse(app: AppState, drafts: PhysicalDrafts): Trans
     )
     return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)), flash = rejectionFlash(result))
 }
-
-private fun view(player: PlayerId, gameState: GameState): PlayerView =
-    battletech.tactical.query.DefaultPlayerView(player, gameState)

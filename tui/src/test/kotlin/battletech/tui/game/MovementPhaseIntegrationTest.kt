@@ -5,10 +5,10 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Terrain
-import battletech.tactical.query.DefaultPlayerView
 import battletech.tui.aUnit
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.enterBrowsing
+import battletech.tui.viewFor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test
@@ -29,7 +29,7 @@ internal class MovementPhaseIntegrationTest {
 
     @Test
     fun `enter produces reachable hexes via PlayerView`() {
-        val view = DefaultPlayerView(unit.owner, gameState)
+        val view = viewFor(unit.owner, gameState)
 
         val phase = enterBrowsing(unit, view)
 

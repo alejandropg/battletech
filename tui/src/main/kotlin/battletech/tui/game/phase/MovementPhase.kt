@@ -1,7 +1,6 @@
 package battletech.tui.game.phase
 
 import battletech.tactical.heat.movementHeatSources
-import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
@@ -151,7 +150,7 @@ internal sealed interface MovementPhase : Phase {
 
         override fun prompt(app: AppState): String = modePrompt(reachability)
 
-        override fun render(gameState: GameState): RenderData = RenderData(
+        override fun render(app: AppState): RenderData = RenderData(
             hexHighlights = reachabilityHighlights(reachability) + pathHighlights(hoveredPath),
             reachableFacings = reachability.facingsByPosition(),
         )
@@ -247,7 +246,7 @@ internal sealed interface MovementPhase : Phase {
 
         override fun prompt(app: AppState): String = SELECT_FACING_PROMPT
 
-        override fun render(gameState: GameState): RenderData = RenderData(
+        override fun render(app: AppState): RenderData = RenderData(
             hexHighlights = reachabilityHighlights(reachability) + pathHighlights(path),
             facingSelection = FacingSelection(hex, options.map { it.facing }.toSet()),
             reachableFacings = reachability.facingsByPosition(),

@@ -1,5 +1,6 @@
 package battletech.tactical.query
 
+import battletech.tactical.attack.torsoTwistOptions
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -34,6 +35,11 @@ public class DefaultPlayerView(
 
     override fun physicalAttackOptions(attackerId: UnitId): List<PhysicalAttackOption> =
         physicalAttackQueries.physicalAttackOptions(attackerId)
+
+    override fun legalTorsoFacings(unitId: UnitId): Set<HexDirection> {
+        val unit = state.findUnit(unitId) ?: return emptySet()
+        return torsoTwistOptions(unit.facing)
+    }
 
     override fun resolveTargetPositions(targetIds: Set<UnitId>): Set<HexCoordinates> =
         targetIds.map { state.unitById(it).position }.toSet()

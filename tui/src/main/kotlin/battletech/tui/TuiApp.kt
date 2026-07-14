@@ -346,7 +346,7 @@ public class TuiApp(
         val buffer = ScreenBuffer(size.width, size.height)
         val frame = PanelFrame(appState)
 
-        val renderData = appState.phase.render(appState.gameState)
+        val renderData = appState.phase.render(appState)
         val viewport = Viewport(0, 0, layout.boardWidth - 4, layout.boardHeight - 4)
         val boardView = BoardView(
             appState.gameState,

@@ -25,6 +25,6 @@ internal object PanelVisibility {
             add(PanelId.ATTACK_RESULTS.index)
         }
 
-        appState.phase.visiblePanels(appState.gameState).forEach { add(it.index) }
+        appState.phase.visiblePanels(appState).forEach { add(it.index) }
     }
 }

@@ -35,6 +35,16 @@ public interface PlayerView {
     /** Physical-attack options (punch per arm, kick) against each adjacent enemy. */
     public fun physicalAttackOptions(attackerId: UnitId): List<PhysicalAttackOption>
 
+    /**
+     * Legal torso facings for [unitId]: its leg facing (no twist) or ±1
+     * hexside either way. Empty if the unit doesn't exist. Single source
+     * shared with the impulse-commit validation
+     * ([battletech.tactical.attack.ImpulseAttackPhaseHandler.validateTorsoFacings])
+     * via [battletech.tactical.attack.torsoTwistOptions] so the TUI's twist
+     * input handling can never drift from what the server will accept.
+     */
+    public fun legalTorsoFacings(unitId: UnitId): Set<HexDirection>
+
     /** Positions of the given unit IDs on the board. */
     public fun resolveTargetPositions(targetIds: Set<UnitId>): Set<HexCoordinates>
 

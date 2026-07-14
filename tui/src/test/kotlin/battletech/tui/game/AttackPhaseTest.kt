@@ -5,7 +5,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.query.DefaultPlayerView
+import battletech.tactical.query.PlayerView
 import battletech.tactical.session.Impulse
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.CombatUnit
@@ -16,6 +16,7 @@ import battletech.tui.mediumLaser
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.commitAttackImpulse
 import battletech.tui.game.phase.enterDeclaring
+import battletech.tui.viewFor
 import com.github.ajalt.mordant.input.KeyboardEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -40,8 +41,8 @@ internal class AttackPhaseTest {
         cursor: HexCoordinates = HexCoordinates(0, 0),
     ) = AppState(gameState, turnState, phase, cursor)
 
-    private fun viewFor(unit: CombatUnit, gameState: GameState): DefaultPlayerView =
-        DefaultPlayerView(unit.owner, gameState)
+    private fun viewFor(unit: CombatUnit, gameState: GameState): PlayerView =
+        viewFor(unit.owner, gameState)
 
     @Nested
     inner class EnterDeclaringTest {
@@ -295,7 +296,7 @@ internal class AttackPhaseTest {
             val phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
             val gameState = GameState(emptyList(), aGameMap())
 
-            assertNull(phase.targetStatusUnit(gameState))
+            assertNull(phase.targetStatusUnit(anAppState(phase, gameState, baseTurnState())))
         }
 
         @Test
@@ -309,7 +310,7 @@ internal class AttackPhaseTest {
             val gameState = GameState(listOf(unit, enemy), map5x5)
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
 
-            assertNull(phase.targetStatusUnit(gameState))
+            assertNull(phase.targetStatusUnit(anAppState(phase, gameState, baseTurnState())))
         }
 
         @Test
@@ -323,7 +324,7 @@ internal class AttackPhaseTest {
             val gameState = GameState(listOf(unit, enemy), map5x5)
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
 
-            val result = phase.targetStatusUnit(gameState)
+            val result = phase.targetStatusUnit(anAppState(phase, gameState, baseTurnState()))
 
             assertNotNull(result)
             assertEquals("Centurion", result!!.name)

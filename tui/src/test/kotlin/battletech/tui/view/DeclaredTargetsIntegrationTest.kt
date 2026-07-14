@@ -7,6 +7,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.Impulse
 import battletech.tui.aGameMap
+import battletech.tui.anAppState
 import battletech.tui.aTurnState
 import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackPhase
@@ -52,7 +53,7 @@ internal class DeclaredTargetsIntegrationTest {
             drafts = emptyMap(),
         )
 
-        val renderData = phase.declaredTargetsRender(gameState, turnState, PlayerId.PLAYER_1)
+        val renderData = phase.declaredTargetsRender(anAppState(phase, gameState = gameState, turnState = turnState))
         val buffer = ScreenBuffer(28, 30)
         DeclaredTargetsView(renderData).render(buffer, 0, 0, 28, 30)
 
@@ -71,7 +72,7 @@ internal class DeclaredTargetsIntegrationTest {
         val gameState = GameState(emptyList(), map)
         val phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
 
-        val renderData = phase.declaredTargetsRender(gameState, turnState, PlayerId.PLAYER_1)
+        val renderData = phase.declaredTargetsRender(anAppState(phase, gameState = gameState, turnState = turnState))
         val buffer = ScreenBuffer(28, 20)
         DeclaredTargetsView(renderData).render(buffer, 0, 0, 28, 20)
 

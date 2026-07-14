@@ -13,9 +13,11 @@ import battletech.tactical.session.Initiative
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
 import battletech.tui.aGameMap
+import battletech.tui.anAppState
 import battletech.tui.aUnit
 import battletech.tui.mediumLaser
 import battletech.tui.srm6
+import battletech.tui.game.AppState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -24,6 +26,9 @@ import org.junit.jupiter.api.Test
 internal class DeclaredTargetsRenderTest {
 
     private val map = aGameMap(cols = 7, rows = 7)
+
+    private fun anApp(gameState: GameState, turnState: TurnState): AppState =
+        anAppState(MovementPhase.SelectingUnit, gameState = gameState, turnState = turnState)
 
     private fun initiative() = Initiative(
         rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(2, 3), PlayerId.PLAYER_2 to DiceRoll(4, 4)),
@@ -65,7 +70,7 @@ internal class DeclaredTargetsRenderTest {
         val turnState = turnState(attackDeclarations = listOf(decl))
 
         val result = buildDeclaredTargetsRender(
-            gameState, turnState, PlayerId.PLAYER_1, emptyMap(),
+            anApp(gameState, turnState), PlayerId.PLAYER_1, emptyMap(),
         )
 
         assertEquals(1, result.entries.size)
@@ -97,7 +102,7 @@ internal class DeclaredTargetsRenderTest {
         )
 
         val result = buildDeclaredTargetsRender(
-            gameState, turnState, PlayerId.PLAYER_1, mapOf(attacker.id to draft),
+            anApp(gameState, turnState), PlayerId.PLAYER_1, mapOf(attacker.id to draft),
         )
 
         assertEquals(1, result.entries.size)
@@ -120,7 +125,7 @@ internal class DeclaredTargetsRenderTest {
         )
 
         val result = buildDeclaredTargetsRender(
-            gameState, turnState, PlayerId.PLAYER_1, mapOf(attacker.id to emptyDraft),
+            anApp(gameState, turnState), PlayerId.PLAYER_1, mapOf(attacker.id to emptyDraft),
         )
 
         assertTrue(result.entries.isEmpty())
@@ -143,7 +148,7 @@ internal class DeclaredTargetsRenderTest {
         )
 
         val result = buildDeclaredTargetsRender(
-            gameState, turnState, PlayerId.PLAYER_1, mapOf(attacker.id to emptyDraft),
+            anApp(gameState, turnState), PlayerId.PLAYER_1, mapOf(attacker.id to emptyDraft),
         )
 
         assertTrue(result.entries.isEmpty())
@@ -177,7 +182,7 @@ internal class DeclaredTargetsRenderTest {
         )
 
         val result = buildDeclaredTargetsRender(
-            gameState, turnState, PlayerId.PLAYER_1, emptyMap(),
+            anApp(gameState, turnState), PlayerId.PLAYER_1, emptyMap(),
         )
 
         assertEquals(2, result.entries.size)
@@ -204,7 +209,7 @@ internal class DeclaredTargetsRenderTest {
         val turnState = turnState(attackDeclarations = decls)
 
         val result = buildDeclaredTargetsRender(
-            gameState, turnState, PlayerId.PLAYER_1, emptyMap(),
+            anApp(gameState, turnState), PlayerId.PLAYER_1, emptyMap(),
         )
 
         assertEquals(1, result.entries.size)
@@ -233,7 +238,7 @@ internal class DeclaredTargetsRenderTest {
         )
 
         val result = buildDeclaredTargetsRender(
-            gameState, turnState, PlayerId.PLAYER_1, emptyMap(),
+            anApp(gameState, turnState), PlayerId.PLAYER_1, emptyMap(),
         )
 
         assertEquals(1, result.entries.size)
@@ -264,7 +269,7 @@ internal class DeclaredTargetsRenderTest {
         )
 
         val result = buildDeclaredTargetsRender(
-            gameState, turnState, PlayerId.PLAYER_1, mapOf(attacker.id to draft),
+            anApp(gameState, turnState), PlayerId.PLAYER_1, mapOf(attacker.id to draft),
         )
 
         assertEquals(2, result.entries.size)
@@ -290,7 +295,7 @@ internal class DeclaredTargetsRenderTest {
 
         // viewingPlayer = P1, so P2's draft should NOT appear
         val result = buildDeclaredTargetsRender(
-            gameState, turnState, PlayerId.PLAYER_1, mapOf(p2Attacker.id to p2Draft),
+            anApp(gameState, turnState), PlayerId.PLAYER_1, mapOf(p2Attacker.id to p2Draft),
         )
 
         assertTrue(result.entries.isEmpty())
@@ -318,7 +323,7 @@ internal class DeclaredTargetsRenderTest {
             drafts = emptyMap(),
         )
 
-        val result = declaring.declaredTargetsRender(gameState, turnState, PlayerId.PLAYER_1)
+        val result = declaring.declaredTargetsRender(anApp(gameState, turnState))
 
         assertEquals(1, result.entries.size)
         assertTrue(result.entries[0].isDraft)

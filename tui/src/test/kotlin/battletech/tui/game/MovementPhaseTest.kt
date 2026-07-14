@@ -10,7 +10,6 @@ import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
-import battletech.tactical.query.DefaultPlayerView
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aTurnState
@@ -19,6 +18,7 @@ import battletech.tui.anAppState
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.enterBrowsing
+import battletech.tui.viewFor
 import com.github.ajalt.mordant.input.KeyboardEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -101,7 +101,7 @@ internal class MovementPhaseTest {
         fun `enter produces Browsing state with reachability`() {
             val unit = aUnit(walkingMP = 3)
             val gameState = aGameState(units = listOf(unit))
-            val view = DefaultPlayerView(unit.owner, gameState)
+            val view = viewFor(unit.owner, gameState)
 
             val state = enterBrowsing(unit, view)
 
@@ -114,7 +114,7 @@ internal class MovementPhaseTest {
         fun `enter populates modes with all movement modes`() {
             val unit = aUnit(walkingMP = 3, runningMP = 5)
             val gameState = aGameState(units = listOf(unit))
-            val view = DefaultPlayerView(unit.owner, gameState)
+            val view = viewFor(unit.owner, gameState)
 
             val state = enterBrowsing(unit, view)
 
@@ -335,7 +335,7 @@ internal class MovementPhaseTest {
             val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0), walkingMP = 3)
             val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2), walkingMP = 3)
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
-            val view = DefaultPlayerView(u1.owner, gameState)
+            val view = viewFor(u1.owner, gameState)
             val phase = enterBrowsing(u1, view)
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
@@ -351,7 +351,7 @@ internal class MovementPhaseTest {
             val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0), walkingMP = 3)
             val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2), walkingMP = 3)
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
-            val view = DefaultPlayerView(u1.owner, gameState)
+            val view = viewFor(u1.owner, gameState)
             val phase = enterBrowsing(u1, view)
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
@@ -365,7 +365,7 @@ internal class MovementPhaseTest {
             val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0), walkingMP = 3)
             val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2), walkingMP = 3)
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
-            val view = DefaultPlayerView(u2.owner, gameState)
+            val view = viewFor(u2.owner, gameState)
             val phase = enterBrowsing(u2, view)
             val state = anAppState(phase = phase, cursor = HexCoordinates(2, 2), gameState = gameState)
 
@@ -381,7 +381,7 @@ internal class MovementPhaseTest {
         fun `Tab from Browsing with one selectable unit re-enters fresh Browsing`() {
             val u1 = aUnit(id = "u1", position = HexCoordinates(0, 0), walkingMP = 3, runningMP = 5)
             val gameState = aGameState(units = listOf(u1))
-            val view = DefaultPlayerView(u1.owner, gameState)
+            val view = viewFor(u1.owner, gameState)
             val phase = enterBrowsing(u1, view).copy(
                 currentModeIndex = 1,
                 hoveredDestination = reachableHexes[0],
@@ -403,7 +403,7 @@ internal class MovementPhaseTest {
             val u2 = aUnit(id = "u2", position = HexCoordinates(2, 2), walkingMP = 3)
             val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
             val turnState = aTurnState()
-            val view = DefaultPlayerView(u1.owner, gameState)
+            val view = viewFor(u1.owner, gameState)
             val phase = enterBrowsing(u1, view)
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState, turnState = turnState)
 

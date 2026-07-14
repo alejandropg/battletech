@@ -1,6 +1,5 @@
 package battletech.tui.view
 
-import battletech.tactical.model.PlayerId
 import battletech.tui.game.AppState
 import battletech.tui.game.phase.AttackResultsRender
 
@@ -17,9 +16,9 @@ internal class PanelFrame(private val appState: AppState) {
 
     val gameState get() = appState.gameState
 
-    val attackRender by lazy { appState.phase.attackRender(gameState) }
+    val attackRender by lazy { appState.phase.attackRender(appState) }
 
-    val targetStatusUnit by lazy { appState.phase.targetStatusUnit(gameState) }
+    val targetStatusUnit by lazy { appState.phase.targetStatusUnit(appState) }
 
     val unitStatus by lazy { appState.phase.unitStatus(appState) }
 
@@ -27,16 +26,7 @@ internal class PanelFrame(private val appState: AppState) {
 
     val logEntries by lazy { appState.session.gameLog.snapshot() }
 
-    val declaredTargets by lazy {
-        val turnState = appState.turnState
-        val viewingPlayer =
-            if (turnState.attack.sequence.order.isEmpty() || turnState.attack.isComplete) {
-                PlayerId.PLAYER_1
-            } else {
-                turnState.attack.activePlayer
-            }
-        appState.phase.declaredTargetsRender(gameState, turnState, viewingPlayer)
-    }
+    val declaredTargets by lazy { appState.phase.declaredTargetsRender(appState) }
 
     val attackResults: AttackResultsRender? by lazy {
         appState.lastAttackResults?.let { results ->

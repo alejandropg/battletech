@@ -175,7 +175,7 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
             if (unit.owner != cmd.playerId) {
                 return CommandRejection.NotYourUnit(unitId, owner = unit.owner, attemptedBy = cmd.playerId)
             }
-            if (unit.facing.turnCostTo(newFacing) > 1) {
+            if (newFacing !in torsoTwistOptions(unit.facing)) {
                 return CommandRejection.IllegalTorsoTwist(unitId, newFacing)
             }
         }

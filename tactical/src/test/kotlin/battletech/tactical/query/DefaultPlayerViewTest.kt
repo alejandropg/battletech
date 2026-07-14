@@ -325,4 +325,20 @@ internal class DefaultPlayerViewTest {
         assertThat(weaponInfo.targetDiceRoll).isEqualTo(expectedTargetNumber)
         assertThat(weaponInfo.modifiers).anyMatch { it.endsWith("prone") }
     }
+
+    @Test
+    fun `legalTorsoFacings returns leg facing and both adjacent hexsides`() {
+        val unit = aUnit(id = "u1", facing = HexDirection.N)
+        val view = viewFor(unit)
+
+        assertThat(view.legalTorsoFacings(UnitId("u1")))
+            .containsExactlyInAnyOrder(HexDirection.N, HexDirection.NE, HexDirection.NW)
+    }
+
+    @Test
+    fun `legalTorsoFacings returns empty set for an unknown unit`() {
+        val view = viewFor(aUnit(id = "u1"))
+
+        assertThat(view.legalTorsoFacings(UnitId("unknown"))).isEmpty()
+    }
 }
