@@ -4,15 +4,8 @@ import battletech.tactical.attack.AttackDefinition
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.attack.PhysicalAttackContext
 import battletech.tactical.attack.weapon.HeatPenaltyRule
-import battletech.tactical.dice.twoD6AtLeastProbability
-import battletech.tactical.model.GameState
-import battletech.tactical.model.TurnPhase
-import battletech.tactical.query.ActionPreview
-import battletech.tactical.unit.CombatUnit
 
 public class PunchActionDefinition : AttackDefinition<PhysicalAttackContext> {
-
-    override val phase: TurnPhase = TurnPhase.PHYSICAL_ATTACK
 
     override val name: String = "Punch"
 
@@ -24,33 +17,4 @@ public class PunchActionDefinition : AttackDefinition<PhysicalAttackContext> {
         ProneAttackerRule(),
         HeatPenaltyRule(),
     )
-
-    override fun expand(actor: CombatUnit, gameState: GameState): List<PhysicalAttackContext> {
-        val enemies = gameState.units.filter { it.id != actor.id }
-        return enemies.map { target ->
-            PhysicalAttackContext(
-                actor = actor,
-                target = target,
-                gameState = gameState,
-            )
-        }
-    }
-
-    override fun preview(context: PhysicalAttackContext): ActionPreview {
-        val damage = punchDamage(context.actor)
-        return PhysicalAttackPreview(expectedDamage = damage..damage)
-    }
-
-    override fun successChance(context: PhysicalAttackContext): Int =
-        twoD6AtLeastProbability(
-            physicalToHitTargetNumber(
-                context.actor,
-                context.target,
-                PhysicalAttackKind.Punch(Side.LEFT),
-                context.gameState
-            ),
-        )
-
-    override fun actionName(context: PhysicalAttackContext): String =
-        "Punch ${context.target.name}"
 }
