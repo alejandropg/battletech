@@ -16,8 +16,6 @@ import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -56,11 +54,11 @@ internal class AttackResolutionTest {
         val (newState, results) = resolveAttacks(listOf(declaration), gameState, roller)
 
         val result = results.single()
-        if (result.hit) {
+        if (result is AttackResult.Hit) {
             val updatedTarget = newState.unitById(result.targetId)!!
             // Damage should have been applied somewhere
             assertTrue(result.damageApplied > 0)
-            assertTrue(result.hitLocation != null)
+            assertTrue(result.locationHits.isNotEmpty())
         }
     }
 
@@ -82,10 +80,7 @@ internal class AttackResolutionTest {
             val roller = DiceRoller.seeded(seed.toLong())
             val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
             val result = results.single()
-            if (!result.hit) {
-                assertFalse(result.hit)
-                assertNull(result.hitLocation)
-                assertEquals(0, result.damageApplied)
+            if (result is AttackResult.Miss) {
                 // Target should be unchanged
                 assertEquals(target, newState.unitById(target.id))
                 foundMiss = true
@@ -115,7 +110,7 @@ internal class AttackResolutionTest {
             val declaration = AttackDeclaration(attacker.id, thinTarget.id, 0, true)
             val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
             val result = results.single()
-            if (result.hit && result.hitLocation == HitLocation.CENTER_TORSO) {
+            if (result is AttackResult.Hit && result.locationHits.first().location == HitLocation.CENTER_TORSO) {
                 val updatedTarget = newState.unitById(thinTarget.id)!!
                 // Medium laser does 5 damage, 2 armor absorbs 2, 3 overflows to IS
                 assertEquals(0, updatedTarget.armor.centerTorso)
@@ -220,7 +215,7 @@ internal class AttackResolutionTest {
         val result = results.single()
         // gunnery 4 + range 0 + 2 (1 sensor crit) = 6
         assertEquals(6, result.targetNumber)
-        assertEquals(2, result.sensorPenalty)
+        assertEquals(2, result.modifiers.amountOf(ToHitFactor.SENSORS))
     }
 
     @Test
@@ -273,10 +268,10 @@ internal class AttackResolutionTest {
         val roller = DiceRoller.deterministic(4, 5, 3, 4)
         val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
         val result = results.single()
-        assertTrue(result.hit)
-        assertNotNull(result.locationRoll)
-        assertEquals(DiceRoll(3, 4), result.locationRoll)
-        assertEquals(7, result.locationRoll!!.total)
+        assertTrue(result is AttackResult.Hit)
+        val locationRoll = (result as AttackResult.Hit).locationHits.first().locationRoll
+        assertEquals(DiceRoll(3, 4), locationRoll)
+        assertEquals(7, locationRoll.total)
     }
 
     @Test
@@ -286,8 +281,7 @@ internal class AttackResolutionTest {
         val roller = DiceRoller.deterministic(1, 1)
         val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
         val result = results.single()
-        assertFalse(result.hit)
-        assertNull(result.locationRoll)
+        assertTrue(result is AttackResult.Miss)
     }
 
     @Test
@@ -297,10 +291,10 @@ internal class AttackResolutionTest {
         val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
         val result = results.single()
         assertEquals(4, result.gunnery)
-        assertEquals(0, result.rangeModifier)
+        assertEquals(0, result.modifiers.amountOf(ToHitFactor.RANGE))
         assertEquals(RangeBand.SHORT, result.rangeBand)
-        assertEquals(0, result.heatPenalty)
-        assertEquals(0, result.secondaryPenalty)
+        assertEquals(0, result.modifiers.amountOf(ToHitFactor.HEAT))
+        assertEquals(0, result.modifiers.amountOf(ToHitFactor.SECONDARY_TARGET))
     }
 
     @Test
@@ -314,10 +308,10 @@ internal class AttackResolutionTest {
         val (_, results) = resolveAttacks(listOf(declaration), state, roller)
         val result = results.single()
         assertEquals(4, result.gunnery)
-        assertEquals(2, result.rangeModifier)
+        assertEquals(2, result.modifiers.amountOf(ToHitFactor.RANGE))
         assertEquals(RangeBand.MEDIUM, result.rangeBand)
-        assertEquals(2, result.heatPenalty)
-        assertEquals(1, result.secondaryPenalty)
+        assertEquals(2, result.modifiers.amountOf(ToHitFactor.HEAT))
+        assertEquals(1, result.modifiers.amountOf(ToHitFactor.SECONDARY_TARGET))
     }
 
     @Test
@@ -550,7 +544,7 @@ internal class AttackResolutionTest {
             val declaration = AttackDeclaration(attacker.id, unit.id, 0, true)
             val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
             val result = results.single()
-            if (result.hit && result.hitLocation == HitLocation.LEFT_ARM) {
+            if (result is AttackResult.Hit && result.locationHits.first().location == HitLocation.LEFT_ARM) {
                 // Medium laser does 5 damage: 2 armor + 3 IS, no destruction, single step.
                 assertTrue(result.damage.isNotEmpty())
                 assertEquals(HitLocation.LEFT_ARM, result.damage.first().location)
@@ -628,8 +622,8 @@ internal class AttackResolutionTest {
         val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
 
         val result = results.single()
-        assertTrue(result.hit)
-        assertEquals(HitLocation.RIGHT_LEG, result.hitLocation)
+        assertTrue(result is AttackResult.Hit)
+        assertEquals(HitLocation.RIGHT_LEG, (result as AttackResult.Hit).locationHits.first().location)
         assertTrue(result.partialCover)
 
         // Leg armor should be unchanged — partial cover suppressed the damage.
@@ -651,8 +645,8 @@ internal class AttackResolutionTest {
         val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
 
         val result = results.single()
-        assertTrue(result.hit)
-        assertEquals(HitLocation.CENTER_TORSO, result.hitLocation)
+        assertTrue(result is AttackResult.Hit)
+        assertEquals(HitLocation.CENTER_TORSO, (result as AttackResult.Hit).locationHits.first().location)
         assertTrue(result.partialCover)
 
         // Center torso armor should have been reduced by 5 (medium laser damage).

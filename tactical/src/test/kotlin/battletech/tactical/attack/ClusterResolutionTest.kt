@@ -14,7 +14,6 @@ import battletech.tactical.query.anInternalStructureLayout
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModels
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -80,11 +79,11 @@ internal class ClusterResolutionTest {
         val (_, results) = resolveAttacks(listOf(decl), state, roller)
         val result = results.single()
 
-        assertTrue(result.hit)
-        assertEquals(HitLocation.CENTER_TORSO, result.hitLocation)
-        assertEquals(DiceRoll(3, 4), result.locationRoll)
+        assertTrue(result is AttackResult.SingleHit)
+        result as AttackResult.SingleHit
+        assertEquals(HitLocation.CENTER_TORSO, result.locationHits.first().location)
+        assertEquals(DiceRoll(3, 4), result.locationHits.first().locationRoll)
         assertEquals(5, result.damageApplied)
-        assertNull(result.missilesHit)
         assertEquals(1, result.locationHits.size)
         val lh = result.locationHits.single()
         assertEquals(HitLocation.CENTER_TORSO, lh.location)
@@ -102,11 +101,7 @@ internal class ClusterResolutionTest {
         val (_, results) = resolveAttacks(listOf(decl), state, roller)
         val result = results.single()
 
-        assertTrue(!result.hit)
-        assertNull(result.hitLocation)
-        assertNull(result.locationRoll)
-        assertNull(result.missilesHit)
-        assertTrue(result.locationHits.isEmpty())
+        assertTrue(result is AttackResult.Miss)
     }
 
     @Test
@@ -121,8 +116,10 @@ internal class ClusterResolutionTest {
         val result = results.single()
 
         assertEquals(DiceRoll(4, 5), result.toHitRoll)
-        assertEquals(DiceRoll(3, 4), result.locationRoll)
-        assertEquals(HitLocation.CENTER_TORSO, result.hitLocation)
+        assertTrue(result is AttackResult.SingleHit)
+        result as AttackResult.SingleHit
+        assertEquals(DiceRoll(3, 4), result.locationHits.first().locationRoll)
+        assertEquals(HitLocation.CENTER_TORSO, result.locationHits.first().location)
         assertEquals(5, result.damageApplied)
     }
 
@@ -140,9 +137,7 @@ internal class ClusterResolutionTest {
         val (_, results) = resolveAttacks(listOf(decl), state, roller)
         val result = results.single()
 
-        assertTrue(!result.hit)
-        assertTrue(result.locationHits.isEmpty())
-        assertNull(result.missilesHit)
+        assertTrue(result is AttackResult.Miss)
     }
 
     @Test
@@ -173,7 +168,8 @@ internal class ClusterResolutionTest {
         val (_, results) = resolveAttacks(listOf(decl), state, roller)
         val result = results.single()
 
-        assertTrue(result.hit)
+        assertTrue(result is AttackResult.ClusterHit)
+        result as AttackResult.ClusterHit
         assertEquals(6, result.missilesHit)
         assertEquals(6, result.locationHits.size)
         assertEquals(12, result.damageApplied)
@@ -188,9 +184,9 @@ internal class ClusterResolutionTest {
         assertEquals(HitLocation.RIGHT_ARM,    result.locationHits[4].location)
         assertEquals(HitLocation.LEFT_ARM,     result.locationHits[5].location)
 
-        // Legacy scalar fields mirror first group
-        assertEquals(HitLocation.CENTER_TORSO, result.hitLocation)
-        assertEquals(DiceRoll(3, 4), result.locationRoll)
+        // First group mirrors the legacy scalar fields
+        assertEquals(HitLocation.CENTER_TORSO, result.locationHits.first().location)
+        assertEquals(DiceRoll(3, 4), result.locationHits.first().locationRoll)
     }
 
     @Test
@@ -208,7 +204,8 @@ internal class ClusterResolutionTest {
         val (_, results) = resolveAttacks(listOf(decl), state, roller)
         val result = results.single()
 
-        assertTrue(result.hit)
+        assertTrue(result is AttackResult.ClusterHit)
+        result as AttackResult.ClusterHit
         assertEquals(2, result.missilesHit)
         assertEquals(2, result.locationHits.size)
         assertEquals(4, result.damageApplied)
@@ -244,7 +241,8 @@ internal class ClusterResolutionTest {
         val (newState, results) = resolveAttacks(listOf(decl), state, roller)
         val result = results.single()
 
-        assertTrue(result.hit)
+        assertTrue(result is AttackResult.ClusterHit)
+        result as AttackResult.ClusterHit
         assertEquals(4, result.missilesHit)
         assertEquals(8, result.damageApplied)
         assertTrue(result.damage.isNotEmpty())
@@ -284,7 +282,8 @@ internal class ClusterResolutionTest {
         val (_, results) = resolveAttacks(listOf(decl), state, roller)
         val result = results.single()
 
-        assertTrue(result.hit)
+        assertTrue(result is AttackResult.ClusterHit)
+        result as AttackResult.ClusterHit
         assertEquals(16, result.missilesHit)
         assertEquals(4, result.locationHits.size)
         assertEquals(16, result.damageApplied) // 5+5+5+1
@@ -304,9 +303,9 @@ internal class ClusterResolutionTest {
         assertEquals(DiceRoll(5, 5), result.locationHits[2].locationRoll)
         assertEquals(DiceRoll(1, 2), result.locationHits[3].locationRoll)
 
-        // Legacy scalar fields mirror first group
-        assertEquals(HitLocation.CENTER_TORSO, result.hitLocation)
-        assertEquals(DiceRoll(3, 4), result.locationRoll)
+        // First group mirrors the legacy scalar fields
+        assertEquals(HitLocation.CENTER_TORSO, result.locationHits.first().location)
+        assertEquals(DiceRoll(3, 4), result.locationHits.first().locationRoll)
     }
 
     @Test
@@ -327,6 +326,8 @@ internal class ClusterResolutionTest {
         val (_, results) = resolveAttacks(listOf(decl), state, roller)
         val result = results.single()
 
+        assertTrue(result is AttackResult.ClusterHit)
+        result as AttackResult.ClusterHit
         assertEquals(20, result.missilesHit)
         assertEquals(4, result.locationHits.size)
         assertEquals(20, result.damageApplied)
@@ -349,6 +350,8 @@ internal class ClusterResolutionTest {
         val (_, results) = resolveAttacks(listOf(decl), state, roller)
         val result = results.single()
 
+        assertTrue(result is AttackResult.ClusterHit)
+        result as AttackResult.ClusterHit
         assertEquals(6, result.missilesHit)
         assertEquals(2, result.locationHits.size)
         assertEquals(5, result.locationHits[0].damage)
@@ -386,8 +389,8 @@ internal class ClusterResolutionTest {
         val (newState, results) = resolveAttacks(listOf(decl), state, roller)
         val result = results.single()
 
-        assertTrue(result.hit)
-        assertEquals(16, result.damageApplied)
+        assertTrue(result is AttackResult.Hit)
+        assertEquals(16, (result as AttackResult.Hit).damageApplied)
 
         val updatedTarget = newState.unitById(thinTarget.id)!!
         assertEquals(0, updatedTarget.armor.centerTorso)
@@ -437,7 +440,8 @@ internal class ClusterResolutionTest {
         val (newState, results) = resolveAttacks(listOf(decl), pcState, roller)
         val result = results.single()
 
-        assertTrue(result.hit)
+        assertTrue(result is AttackResult.ClusterHit)
+        result as AttackResult.ClusterHit
         assertTrue(result.partialCover)
         assertEquals(4, result.missilesHit)
         assertEquals(4, result.locationHits.size)
@@ -470,6 +474,8 @@ internal class ClusterResolutionTest {
         val (_, results) = resolveAttacks(listOf(decl), state, roller)
         val result = results.single()
 
+        assertTrue(result is AttackResult.ClusterHit)
+        result as AttackResult.ClusterHit
         assertEquals(2, result.missilesHit)
         assertEquals(2, result.locationHits.size)
         result.locationHits.forEach { assertEquals(2, it.damage) }
@@ -490,6 +496,8 @@ internal class ClusterResolutionTest {
         val (_, results) = resolveAttacks(listOf(decl), state, roller)
         val result = results.single()
 
+        assertTrue(result is AttackResult.ClusterHit)
+        result as AttackResult.ClusterHit
         assertEquals(1, result.missilesHit)
         assertEquals(1, result.locationHits.size)
         assertEquals(2, result.locationHits.single().damage)

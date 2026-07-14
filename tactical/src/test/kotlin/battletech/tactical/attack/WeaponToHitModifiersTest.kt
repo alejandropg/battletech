@@ -194,11 +194,11 @@ internal class WeaponToHitModifiersTest {
         val result = results.single()
 
         // attacker ran → +2
-        assertEquals(2, result.attackerMoveModifier)
+        assertEquals(2, result.modifiers.amountOf(ToHitFactor.ATTACKER_MOVEMENT))
         // target jumped 4 hexes → band +1, jump +1 = +2
-        assertEquals(2, result.targetMoveModifier)
+        assertEquals(2, result.modifiers.amountOf(ToHitFactor.TARGET_MOVEMENT))
         // LRM min range 6, distance 2 → 6 - 2 + 1 = 5
-        assertEquals(5, result.minRangeModifier)
+        assertEquals(5, result.modifiers.amountOf(ToHitFactor.MINIMUM_RANGE))
     }
 
     // -------------------------------------------------------------------------

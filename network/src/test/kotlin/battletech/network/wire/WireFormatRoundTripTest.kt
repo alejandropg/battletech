@@ -338,26 +338,14 @@ internal class WireFormatRoundTripTest {
             facingRoll = 3,
         )
 
-        private fun anAttackResult(): AttackResult = AttackResult(
+        private fun anAttackResult(): AttackResult = AttackResult.SingleHit(
             attackerId = unitA,
             targetId = unitB,
             weaponName = "Medium Laser",
-            hit = true,
-            hitLocation = MechLocation.CENTER_TORSO,
-            damageApplied = 5,
             targetNumber = 7,
-            roll = 8,
             toHitRoll = DiceRoll(4, 4),
-            locationRoll = DiceRoll(3, 4),
             gunnery = 4,
-            rangeModifier = 2,
             rangeBand = RangeBand.MEDIUM,
-            heatPenalty = 0,
-            secondaryPenalty = 0,
-            sensorPenalty = 1,
-            attackerMoveModifier = 1,
-            targetMoveModifier = 2,
-            minRangeModifier = 0,
             damage = listOf(LocationDamage(MechLocation.CENTER_TORSO, armorDamage = 5, structureDamage = 0, destroyed = false)),
             modifiers = listOf(
                 ToHitModifier(ToHitFactor.RANGE, "range", 2),
@@ -366,7 +354,6 @@ internal class WireFormatRoundTripTest {
             partialCover = false,
             useRearArmor = false,
             locationHits = listOf(LocationHit(MechLocation.CENTER_TORSO, damage = 5, locationRoll = DiceRoll(3, 4))),
-            missilesHit = null,
         )
 
         private fun aPhysicalAttackResult(): PhysicalAttackResult = PhysicalAttackResult(

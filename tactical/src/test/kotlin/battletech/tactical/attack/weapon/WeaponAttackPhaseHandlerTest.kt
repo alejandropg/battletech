@@ -1,6 +1,7 @@
 package battletech.tactical.attack.weapon
 
 import battletech.tactical.attack.AttackDeclaration
+import battletech.tactical.attack.AttackResult
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
@@ -268,7 +269,7 @@ internal class WeaponAttackPhaseHandlerTest {
         assertThat(outcome.turn.attack.weaponDeclarations).isEmpty()
         val resolved = outcome.events.filterIsInstance<AttacksResolved>().single()
         assertThat(resolved.results).hasSize(1)
-        assertThat(resolved.results.single().hit).isTrue()
+        assertThat(resolved.results.single()).isInstanceOf(AttackResult.Hit::class.java)
     }
 
     // ── torso facings ────────────────────────────────────────────────────────

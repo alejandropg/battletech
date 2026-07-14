@@ -2,6 +2,7 @@ package battletech.tactical.attack
 
 import battletech.tactical.attack.physical.AttackDirection
 import battletech.tactical.attack.physical.attackDirection
+import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
@@ -9,6 +10,7 @@ import battletech.tactical.model.MechLocation
 import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.GameEvent
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.consumeOneRoundFromAvailableBin
 
 /**
@@ -59,7 +61,7 @@ public fun resolveAttacksWithCrits(
     var updatedState = gameState
     val critEvents = mutableListOf<GameEvent>()
     val finalResults = results.map { result ->
-        if (result.hit && result.locationHits.isNotEmpty()) {
+        if (result is AttackResult.Hit) {
             var updatedTarget: CombatUnit = updatedState.unitById(result.targetId)
             val allDamageSteps = mutableListOf<LocationDamage>()
 
@@ -100,7 +102,7 @@ public fun resolveAttacksWithCrits(
             updatedState = updatedState.copy(
                 units = updatedState.units.map { if (it.id == result.targetId) updatedTarget else it },
             )
-            result.copy(damage = allDamageSteps)
+            result.withDamage(allDamageSteps)
         } else {
             result
         }
@@ -211,13 +213,6 @@ private fun resolveOneAttack(
     val modifiers = weaponToHitModifiers(attacker, target, weapon, distance, declaration.isPrimary, gameState)
     val los = lineOfSight(attacker, target, gameState.map)
     val rangeBand = rangeBandFor(distance, weapon)
-    val rangeModifier = modifiers.amountOf(ToHitFactor.RANGE)
-    val heatPenalty = modifiers.amountOf(ToHitFactor.HEAT)
-    val secondaryPenalty = modifiers.amountOf(ToHitFactor.SECONDARY_TARGET)
-    val sensorModifier = modifiers.amountOf(ToHitFactor.SENSORS)
-    val attackerMoveModifier = modifiers.amountOf(ToHitFactor.ATTACKER_MOVEMENT)
-    val targetMoveModifier = modifiers.amountOf(ToHitFactor.TARGET_MOVEMENT)
-    val minRangeModifier = modifiers.amountOf(ToHitFactor.MINIMUM_RANGE)
     val targetNumber = weaponTargetNumber(attacker, modifiers)
 
     // Canonical dice order:
@@ -229,97 +224,103 @@ private fun resolveOneAttack(
     return if (toHitRoll.total >= targetNumber) {
         val clusterSize = weapon.clusterSize
         if (clusterSize != null) {
-            // Cluster weapon: roll cluster table → missiles hit → groups → per-group location roll.
-            val clusterRoll = roller.roll2d6()
-            val missiles = ClusterHitsTable.missilesHit(clusterSize, clusterRoll.total)
-            val groupDamages = buildClusterGroups(missiles, weapon.missilesPerGroup, weapon.damagePerMissile)
-            val locationHits = groupDamages.map { groupDmg ->
-                val locRoll = roller.roll2d6()
-                LocationHit(HitLocationTable.roll(locRoll.total, direction), groupDmg, locRoll)
-            }
-            val firstHit = locationHits.first()
-            AttackResult(
-                attackerId = declaration.attackerId,
-                targetId = declaration.targetId,
-                weaponName = weapon.name,
-                hit = true,
-                hitLocation = firstHit.location,
-                damageApplied = locationHits.sumOf { it.damage },
-                targetNumber = targetNumber,
-                roll = toHitRoll.total,
-                toHitRoll = toHitRoll,
-                locationRoll = firstHit.locationRoll,
-                gunnery = attacker.gunnerySkill,
-                rangeModifier = rangeModifier,
-                rangeBand = rangeBand,
-                heatPenalty = heatPenalty,
-                secondaryPenalty = secondaryPenalty,
-                sensorPenalty = sensorModifier,
-                attackerMoveModifier = attackerMoveModifier,
-                targetMoveModifier = targetMoveModifier,
-                minRangeModifier = minRangeModifier,
-                modifiers = modifiers,
-                partialCover = los.partialCover,
-                useRearArmor = useRearArmor,
-                locationHits = locationHits,
-                missilesHit = missiles,
-            )
+            clusterHit(declaration, attacker, weapon, direction, useRearArmor, targetNumber, toHitRoll, rangeBand, modifiers, los.partialCover, roller)
         } else {
-            // Single-location weapon: one location roll, exactly as before.
-            val locationRoll = roller.roll2d6()
-            val hitLocation = HitLocationTable.roll(locationRoll.total, direction)
-            AttackResult(
-                attackerId = declaration.attackerId,
-                targetId = declaration.targetId,
-                weaponName = weapon.name,
-                hit = true,
-                hitLocation = hitLocation,
-                damageApplied = weapon.damage,
-                targetNumber = targetNumber,
-                roll = toHitRoll.total,
-                toHitRoll = toHitRoll,
-                locationRoll = locationRoll,
-                gunnery = attacker.gunnerySkill,
-                rangeModifier = rangeModifier,
-                rangeBand = rangeBand,
-                heatPenalty = heatPenalty,
-                secondaryPenalty = secondaryPenalty,
-                sensorPenalty = sensorModifier,
-                attackerMoveModifier = attackerMoveModifier,
-                targetMoveModifier = targetMoveModifier,
-                minRangeModifier = minRangeModifier,
-                modifiers = modifiers,
-                partialCover = los.partialCover,
-                useRearArmor = useRearArmor,
-                locationHits = listOf(LocationHit(hitLocation, weapon.damage, locationRoll)),
-                missilesHit = null,
-            )
+            singleHit(declaration, attacker, weapon, direction, useRearArmor, targetNumber, toHitRoll, rangeBand, modifiers, los.partialCover, roller)
         }
     } else {
-        AttackResult(
-            attackerId = declaration.attackerId,
-            targetId = declaration.targetId,
-            weaponName = weapon.name,
-            hit = false,
-            hitLocation = null,
-            damageApplied = 0,
-            targetNumber = targetNumber,
-            roll = toHitRoll.total,
-            toHitRoll = toHitRoll,
-            locationRoll = null,
-            gunnery = attacker.gunnerySkill,
-            rangeModifier = rangeModifier,
-            rangeBand = rangeBand,
-            heatPenalty = heatPenalty,
-            secondaryPenalty = secondaryPenalty,
-            sensorPenalty = sensorModifier,
-            attackerMoveModifier = attackerMoveModifier,
-            targetMoveModifier = targetMoveModifier,
-            minRangeModifier = minRangeModifier,
-            modifiers = modifiers,
-            partialCover = los.partialCover,
-        )
+        missResult(declaration, attacker, weapon, targetNumber, toHitRoll, rangeBand, modifiers, los.partialCover)
     }
+}
+
+private fun missResult(
+    declaration: AttackDeclaration,
+    attacker: CombatUnit,
+    weapon: Weapon,
+    targetNumber: Int,
+    toHitRoll: DiceRoll,
+    rangeBand: RangeBand,
+    modifiers: List<ToHitModifier>,
+    partialCover: Boolean,
+): AttackResult.Miss = AttackResult.Miss(
+    attackerId = declaration.attackerId,
+    targetId = declaration.targetId,
+    weaponName = weapon.name,
+    targetNumber = targetNumber,
+    toHitRoll = toHitRoll,
+    gunnery = attacker.gunnerySkill,
+    rangeBand = rangeBand,
+    modifiers = modifiers,
+    partialCover = partialCover,
+)
+
+/** Single-location weapon: one location roll. */
+private fun singleHit(
+    declaration: AttackDeclaration,
+    attacker: CombatUnit,
+    weapon: Weapon,
+    direction: AttackDirection,
+    useRearArmor: Boolean,
+    targetNumber: Int,
+    toHitRoll: DiceRoll,
+    rangeBand: RangeBand,
+    modifiers: List<ToHitModifier>,
+    partialCover: Boolean,
+    roller: DiceRoller,
+): AttackResult.SingleHit {
+    val locationRoll = roller.roll2d6()
+    val hitLocation = HitLocationTable.roll(locationRoll.total, direction)
+    return AttackResult.SingleHit(
+        attackerId = declaration.attackerId,
+        targetId = declaration.targetId,
+        weaponName = weapon.name,
+        targetNumber = targetNumber,
+        toHitRoll = toHitRoll,
+        gunnery = attacker.gunnerySkill,
+        rangeBand = rangeBand,
+        modifiers = modifiers,
+        partialCover = partialCover,
+        useRearArmor = useRearArmor,
+        locationHits = listOf(LocationHit(hitLocation, weapon.damage, locationRoll)),
+    )
+}
+
+/** Cluster weapon (SRM/LRM): roll cluster table → missiles hit → groups → per-group location roll. */
+private fun clusterHit(
+    declaration: AttackDeclaration,
+    attacker: CombatUnit,
+    weapon: Weapon,
+    direction: AttackDirection,
+    useRearArmor: Boolean,
+    targetNumber: Int,
+    toHitRoll: DiceRoll,
+    rangeBand: RangeBand,
+    modifiers: List<ToHitModifier>,
+    partialCover: Boolean,
+    roller: DiceRoller,
+): AttackResult.ClusterHit {
+    val clusterSize = requireNotNull(weapon.clusterSize) { "clusterHit requires a cluster weapon" }
+    val clusterRoll = roller.roll2d6()
+    val missiles = ClusterHitsTable.missilesHit(clusterSize, clusterRoll.total)
+    val groupDamages = buildClusterGroups(missiles, weapon.missilesPerGroup, weapon.damagePerMissile)
+    val locationHits = groupDamages.map { groupDmg ->
+        val locRoll = roller.roll2d6()
+        LocationHit(HitLocationTable.roll(locRoll.total, direction), groupDmg, locRoll)
+    }
+    return AttackResult.ClusterHit(
+        attackerId = declaration.attackerId,
+        targetId = declaration.targetId,
+        weaponName = weapon.name,
+        targetNumber = targetNumber,
+        toHitRoll = toHitRoll,
+        gunnery = attacker.gunnerySkill,
+        rangeBand = rangeBand,
+        modifiers = modifiers,
+        partialCover = partialCover,
+        useRearArmor = useRearArmor,
+        locationHits = locationHits,
+        missilesHit = missiles,
+    )
 }
 
 /**

@@ -147,9 +147,9 @@ internal class WaterDepthEffectsTest {
         val (newState, results) = resolveAttacks(listOf(declaration), gameState, roller)
 
         val result = results.single()
-        assertTrue(result.hit)
+        assertTrue(result is AttackResult.Hit)
+        assertEquals(MechLocation.RIGHT_LEG, (result as AttackResult.Hit).locationHits.first().location)
         assertTrue(result.partialCover)
-        assertEquals(MechLocation.RIGHT_LEG, result.hitLocation)
 
         // Leg hit is suppressed: right leg armor must be unchanged.
         val updatedTarget = newState.unitById(target.id)!!
@@ -189,9 +189,9 @@ internal class WaterDepthEffectsTest {
         val (newState, results) = resolveAttacks(listOf(declaration), gameState, roller)
 
         val result = results.single()
-        assertTrue(result.hit)
+        assertTrue(result is AttackResult.Hit)
+        assertEquals(MechLocation.CENTER_TORSO, (result as AttackResult.Hit).locationHits.first().location)
         assertTrue(result.partialCover)
-        assertEquals(MechLocation.CENTER_TORSO, result.hitLocation)
 
         // CT is NOT a leg — damage applies normally. Weapon damage = 5.
         val updatedTarget = newState.unitById(target.id)!!

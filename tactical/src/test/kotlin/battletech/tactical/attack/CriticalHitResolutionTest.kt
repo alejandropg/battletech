@@ -171,7 +171,9 @@ internal class CriticalHitResolutionTest {
         val (newState, results, criticalHits) = resolveAttacksWithCrits(listOf(declaration), state, roller)
 
         val result = results.single()
-        assertThat(result.hitLocation).isEqualTo(HitLocation.CENTER_TORSO)
+        assertThat(result).isInstanceOf(AttackResult.Hit::class.java)
+        result as AttackResult.Hit
+        assertThat(result.locationHits.first().location).isEqualTo(HitLocation.CENTER_TORSO)
         assertThat(result.damage.first().structureDamage).isEqualTo(0)
         assertThat(criticalHits).hasSize(1)
         val updatedTarget = newState.unitById(target.id)!!
@@ -205,7 +207,8 @@ internal class CriticalHitResolutionTest {
         val (newState, results, criticalHits) = resolveAttacksWithCrits(listOf(declaration), state, roller)
 
         val result = results.single()
-        assertThat(result.damage.first().structureDamage).isEqualTo(3)
+        assertThat(result).isInstanceOf(AttackResult.Hit::class.java)
+        assertThat((result as AttackResult.Hit).damage.first().structureDamage).isEqualTo(3)
         assertThat(criticalHits).isEmpty()
         assertThat(newState.unitById(target.id)!!.criticalHits).isEmpty()
     }

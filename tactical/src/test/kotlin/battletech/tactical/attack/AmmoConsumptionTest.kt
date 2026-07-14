@@ -139,7 +139,7 @@ internal class AmmoConsumptionTest {
         // Roll 1+1 = 2 < TN → miss. Ammo should still be decremented.
         val (newState, results) = resolveAttacks(listOf(decl), state, DiceRoller.deterministic(1, 1))
 
-        assertEquals(false, results.single().hit, "Should have missed")
+        assertInstanceOf(AttackResult.Miss::class.java, results.single(), "Should have missed")
         val shots = newState.unitById(attacker.id)!!
             .criticalLayout.ammoBins().sumOf { it.third.shots }
         assertEquals(AmmoType.AC20.shotsPerTon - 1, shots, "Miss should still consume a round")
@@ -167,7 +167,7 @@ internal class AmmoConsumptionTest {
             listOf(decl), state, DiceRoller.deterministic(6, 6, 3, 4),
         )
 
-        assertEquals(true, results.single().hit, "Should have hit")
+        assertInstanceOf(AttackResult.Hit::class.java, results.single(), "Should have hit")
         val shots = newState.unitById(attacker.id)!!
             .criticalLayout.ammoBins().sumOf { it.third.shots }
         assertEquals(AmmoType.AC20.shotsPerTon - 1, shots, "Hit should consume exactly one round")
@@ -200,8 +200,8 @@ internal class AmmoConsumptionTest {
             DiceRoller.deterministic(3, 3, 6, 5, 3, 4, 4, 4),
         )
 
-        assertEquals(true, results.single().hit, "LRM should have hit")
-        assertEquals(10, results.single().missilesHit, "Expect 10 missiles hit")
+        assertInstanceOf(AttackResult.ClusterHit::class.java, results.single(), "LRM should have hit")
+        assertEquals(10, (results.single() as AttackResult.ClusterHit).missilesHit, "Expect 10 missiles hit")
         val shots = newState.unitById(attacker.id)!!
             .criticalLayout.ammoBins().sumOf { it.third.shots }
         assertEquals(AmmoType.LRM10.shotsPerTon - 1, shots,
@@ -224,7 +224,7 @@ internal class AmmoConsumptionTest {
             listOf(decl), state, DiceRoller.deterministic(1, 1),
         )
 
-        assertEquals(false, results.single().hit)
+        assertInstanceOf(AttackResult.Miss::class.java, results.single())
         val shots = newState.unitById(attacker.id)!!
             .criticalLayout.ammoBins().sumOf { it.third.shots }
         assertEquals(AmmoType.LRM10.shotsPerTon - 1, shots,
@@ -253,8 +253,8 @@ internal class AmmoConsumptionTest {
             DiceRoller.deterministic(3, 3, 6, 5, 3, 4, 4, 4, 5, 5, 1, 2, 2, 2, 5, 6),
         )
 
-        assertEquals(true, results.single().hit)
-        assertEquals(6, results.single().missilesHit)
+        assertInstanceOf(AttackResult.ClusterHit::class.java, results.single())
+        assertEquals(6, (results.single() as AttackResult.ClusterHit).missilesHit)
         val shots = newState.unitById(attacker.id)!!
             .criticalLayout.ammoBins().sumOf { it.third.shots }
         assertEquals(AmmoType.SRM6.shotsPerTon - 1, shots,
@@ -381,8 +381,8 @@ internal class AmmoConsumptionTest {
         )
 
         assertEquals(2, results.size)
-        assertTrue(results[0].hit, "AC/20 should hit")
-        assertTrue(results[1].hit, "SRM-6 should hit")
+        assertInstanceOf(AttackResult.Hit::class.java, results[0], "AC/20 should hit")
+        assertInstanceOf(AttackResult.Hit::class.java, results[1], "SRM-6 should hit")
 
         val bins = newState.unitById(attacker.id)!!.criticalLayout.ammoBins()
         val ac20Bin = bins.first { it.third.type == AmmoType.AC20 }
@@ -447,9 +447,11 @@ internal class AmmoConsumptionTest {
         // Verify dice stream: to-hit = (4,5)=9, location = (3,4)=7→CENTER_TORSO
         assertEquals(battletech.tactical.dice.DiceRoll(4, 5), result.toHitRoll,
             "to-hit roll should be (4,5) — ammo decrement must not consume dice")
-        assertEquals(battletech.tactical.dice.DiceRoll(3, 4), result.locationRoll,
+        assertInstanceOf(AttackResult.Hit::class.java, result)
+        val hit = result as AttackResult.Hit
+        assertEquals(battletech.tactical.dice.DiceRoll(3, 4), hit.locationHits.first().locationRoll,
             "location roll should be (3,4) — ammo decrement must not consume dice")
-        assertEquals(HitLocation.CENTER_TORSO, result.hitLocation)
+        assertEquals(HitLocation.CENTER_TORSO, hit.locationHits.first().location)
 
         // Also verify the ammo was decremented
         val shots = newState.unitById(attacker.id)!!

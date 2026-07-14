@@ -125,12 +125,13 @@ internal class GameLogFormatterTest {
     @Test
     fun `AttacksResolved summarizes fired, hit, and damage`() {
         val results = listOf(
-            anAttackResult(hit = true, damage = 5),
-            anAttackResult(hit = true, damage = 7),
+            anAttackResult(hit = true, damage = 5, locationHits = listOf(LocationHit(HitLocation.CENTER_TORSO, 5, DiceRoll(3, 4)))),
+            anAttackResult(hit = true, damage = 7, locationHits = listOf(LocationHit(HitLocation.LEFT_TORSO, 7, DiceRoll(4, 4)))),
             anAttackResult(hit = false, damage = 0),
         )
 
-        assertThat(text(AttacksResolved(results))).isEqualTo("Attacks: 3 fired, 2 hit, 12 damage")
+        assertThat(GameLogFormatter.lines(AttacksResolved(results), emptyState).first().text)
+            .isEqualTo("Attacks: 3 fired, 2 hit, 12 damage")
     }
 
     @Test
@@ -151,10 +152,11 @@ internal class GameLogFormatterTest {
                     LocationDamage(MechLocation.LEFT_ARM, armorDamage = 20, structureDamage = 6, destroyed = true),
                     LocationDamage(MechLocation.LEFT_TORSO, armorDamage = 4, structureDamage = 0, destroyed = false),
                 ),
+                locationHits = listOf(LocationHit(HitLocation.LEFT_ARM, 24, DiceRoll(3, 4))),
             ),
         )
 
-        assertThat(text(AttacksResolved(results), stateWithLocust))
+        assertThat(GameLogFormatter.lines(AttacksResolved(results), stateWithLocust).first().text)
             .isEqualTo("Attacks: 1 fired, 1 hit, 24 damage — locust Left Arm destroyed")
     }
 
@@ -170,10 +172,11 @@ internal class GameLogFormatterTest {
                 locationDamage = listOf(
                     LocationDamage(MechLocation.LEFT_ARM, armorDamage = 5, structureDamage = 0, destroyed = false),
                 ),
+                locationHits = listOf(LocationHit(HitLocation.LEFT_ARM, 5, DiceRoll(3, 4))),
             ),
         )
 
-        assertThat(text(AttacksResolved(results), stateWithLocust))
+        assertThat(GameLogFormatter.lines(AttacksResolved(results), stateWithLocust).first().text)
             .isEqualTo("Attacks: 1 fired, 1 hit, 5 damage")
     }
 
@@ -564,14 +567,29 @@ internal class GameLogFormatterTest {
     @Test
     fun `iconFor marks a destroyed location and omits the icon otherwise`() {
         val destroyed = AttacksResolved(
-            listOf(anAttackResult(hit = true, damage = 24, locationDamage = listOf(
-                LocationDamage(MechLocation.LEFT_ARM, armorDamage = 20, structureDamage = 6, destroyed = true),
-            ))),
+            listOf(
+                anAttackResult(
+                    hit = true,
+                    damage = 24,
+                    locationDamage = listOf(
+                        LocationDamage(MechLocation.LEFT_ARM, armorDamage = 20, structureDamage = 6, destroyed = true),
+                    ),
+                    locationHits = listOf(LocationHit(HitLocation.LEFT_ARM, 24, DiceRoll(3, 4))),
+                ),
+            ),
         )
-        val intact = AttacksResolved(listOf(anAttackResult(hit = true, damage = 5)))
+        val intact = AttacksResolved(
+            listOf(
+                anAttackResult(
+                    hit = true,
+                    damage = 5,
+                    locationHits = listOf(LocationHit(HitLocation.CENTER_TORSO, 5, DiceRoll(3, 4))),
+                ),
+            ),
+        )
 
-        assertThat(icon(destroyed)).isEqualTo(locationDestroyedIcon())
-        assertThat(icon(intact)).isNull()
+        assertThat(GameLogFormatter.lines(destroyed, emptyState).first().icon).isEqualTo(locationDestroyedIcon())
+        assertThat(GameLogFormatter.lines(intact, emptyState).first().icon).isNull()
     }
 
     @Test
@@ -681,17 +699,6 @@ internal class GameLogFormatterTest {
         assertThat(lines).hasSize(1) // only the summary line
     }
 
-    @Test
-    fun `AttacksResolved cluster hit with empty locationHits produces no detail line`() {
-        // Legacy/test AttackResult with missilesHit set but empty locationHits → no detail.
-        val result = aClusterAttackResult(
-            weaponName = "LRM 20", missilesHit = 10,
-            locationHits = emptyList(), totalDamage = 10,
-        )
-        val lines = GameLogFormatter.lines(AttacksResolved(listOf(result)), emptyState)
-        assertThat(lines).hasSize(1)
-    }
-
     private fun aClusterAttackResult(
         weaponName: String,
         missilesHit: Int,
@@ -699,22 +706,14 @@ internal class GameLogFormatterTest {
         totalDamage: Int,
         targetId: UnitId = UnitId("t"),
     ): AttackResult =
-        AttackResult(
+        AttackResult.ClusterHit(
             attackerId = UnitId("a"),
             targetId = targetId,
             weaponName = weaponName,
-            hit = true,
-            hitLocation = locationHits.firstOrNull()?.location,
-            damageApplied = totalDamage,
             targetNumber = 5,
-            roll = 8,
             toHitRoll = DiceRoll(4, 4),
-            locationRoll = locationHits.firstOrNull()?.locationRoll,
             gunnery = 2,
-            rangeModifier = 0,
             rangeBand = RangeBand.SHORT,
-            heatPenalty = 0,
-            secondaryPenalty = 0,
             locationHits = locationHits,
             missilesHit = missilesHit,
         )
@@ -726,25 +725,29 @@ internal class GameLogFormatterTest {
         locationDamage: List<LocationDamage> = emptyList(),
         locationHits: List<LocationHit> = emptyList(),
     ): AttackResult =
-        AttackResult(
-            attackerId = UnitId("a"),
-            targetId = targetId,
-            weaponName = "ML",
-            hit = hit,
-            hitLocation = locationHits.firstOrNull()?.location,
-            damageApplied = damage,
-            targetNumber = 8,
-            roll = if (hit) 10 else 5,
-            toHitRoll = if (hit) DiceRoll(5, 5) else DiceRoll(2, 3),
-            locationRoll = locationHits.firstOrNull()?.locationRoll,
-            gunnery = 4,
-            rangeModifier = 0,
-            rangeBand = RangeBand.SHORT,
-            heatPenalty = 0,
-            secondaryPenalty = 0,
-            damage = locationDamage,
-            locationHits = locationHits,
-        )
+        if (hit) {
+            AttackResult.SingleHit(
+                attackerId = UnitId("a"),
+                targetId = targetId,
+                weaponName = "ML",
+                targetNumber = 8,
+                toHitRoll = DiceRoll(5, 5),
+                gunnery = 4,
+                rangeBand = RangeBand.SHORT,
+                damage = locationDamage,
+                locationHits = locationHits,
+            )
+        } else {
+            AttackResult.Miss(
+                attackerId = UnitId("a"),
+                targetId = targetId,
+                weaponName = "ML",
+                targetNumber = 8,
+                toHitRoll = DiceRoll(2, 3),
+                gunnery = 4,
+                rangeBand = RangeBand.SHORT,
+            )
+        }
 
     private fun aPhysicalAttackResult(
         hit: Boolean,

@@ -49,9 +49,10 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         WeaponHitWidget.draw(content, "  ${result.weaponName}", result.targetNumber, successChance, toHitBreakdownLabels(result.gunnery, result.modifiers), Color.WHITE)
 
         // Block 2: raw roll + outcome (right-aligned, outcome overwritten in color)
+        val hit = result is AttackResult.Hit
         val toHit = result.toHitRoll
-        val outcomeText = "${if (result.hit) "HIT" else "MISS"} ${attackOutcomeIcon(result.hit)}"
-        val outcomeColor = if (result.hit) Color.GREEN else Color.RED
+        val outcomeText = "${if (hit) "HIT" else "MISS"} ${attackOutcomeIcon(hit)}"
+        val outcomeColor = if (hit) Color.GREEN else Color.RED
         val rollLine = "   ${diceRollLabel(toHit)}"
         val padding = (content.width - CellWidth.of(rollLine) - CellWidth.of(outcomeText)).coerceAtLeast(1)
         content.writeln("$rollLine${" ".repeat(padding)}$outcomeText", Color.WHITE)
@@ -59,7 +60,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         if (outcomeX >= content.x) content.buffer.writeString(outcomeX, content.cy - 1, outcomeText, outcomeColor)
 
         // Block 3: location + damage (hit only)
-        if (result.missilesHit != null) {
+        if (result is AttackResult.ClusterHit) {
             val total = result.locationHits.sumOf { it.damage }
             content.writeRow("   ${result.missilesHit} missiles", "$total dmg", Color.WHITE)
             val byLocation = LinkedHashMap<HitLocation, Int>()
@@ -69,12 +70,9 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
             for ((loc, dmg) in byLocation) {
                 content.writeRow("   → ${hitLocationName(loc)}", "$dmg dmg", Color.WHITE)
             }
-        } else {
-            val locRoll = result.locationRoll
-            val hitLoc = result.hitLocation
-            if (result.hit && locRoll != null && hitLoc != null) {
-                content.writeln("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", Color.WHITE)
-            }
+        } else if (result is AttackResult.SingleHit) {
+            val hitLoc = result.locationHits.first().location
+            content.writeln("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", Color.WHITE)
         }
     }
 

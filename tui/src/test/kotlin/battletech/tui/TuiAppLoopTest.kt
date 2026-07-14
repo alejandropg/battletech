@@ -551,22 +551,14 @@ internal class TuiAppLoopTest {
 
     // ---- helpers ----
 
-    private fun aResult() = AttackResult(
+    private fun aResult() = AttackResult.Miss(
         attackerId = UnitId("a"),
         targetId = UnitId("b"),
         weaponName = "Med Laser",
-        hit = false,
-        hitLocation = null,
-        damageApplied = 0,
         targetNumber = 7,
-        roll = 5,
         toHitRoll = DiceRoll(2, 3),
-        locationRoll = null,
         gunnery = 4,
-        rangeModifier = 0,
         rangeBand = RangeBand.SHORT,
-        heatPenalty = 0,
-        secondaryPenalty = 0,
     )
 
     private fun String.countOccurrences(sub: String): Int {
