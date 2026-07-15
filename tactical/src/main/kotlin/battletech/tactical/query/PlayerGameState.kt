@@ -46,23 +46,14 @@ public data class PlayerGameState(
     public fun unitsOf(player: PlayerId): List<VisibleUnit> = units.filter { it.owner == player }
 
     /**
-     * Units [player] can still activate this turn — excludes shutdown and destroyed
-     * units, mirroring [GameState.activeUnitsOf]. Unlike that method, this canNOT also
-     * exclude an unconscious pilot for a [ForeignUnit]: pilot consciousness is private
-     * and simply absent from the projection for units the viewer doesn't own, so a
-     * [ForeignUnit] is never excluded on that basis here. This method is only
-     * meaningful for `player == ` the viewer that produced this [PlayerGameState] (own
-     * units project as [OwnUnit], where the full exclusion applies); calling it for the
-     * opponent silently loses the pilot-consciousness filter rather than guessing.
+     * Units [player] can still activate this turn — excludes shutdown, destroyed, and
+     * unconscious-pilot units. Mirrors [GameState.activeUnitsOf] exactly, for own and
+     * foreign units alike: every field it tests ([VisibleUnit.isShutdown],
+     * [VisibleUnit.isDestroyed], [VisibleUnit.isPilotConscious]) is observable and so is
+     * present on both projections.
      */
     public fun activeUnitsOf(player: PlayerId): List<VisibleUnit> =
-        unitsOf(player).filter { unit ->
-            !unit.isShutdown && !unit.isDestroyed &&
-                when (unit) {
-                    is OwnUnit -> unit.unit.isPilotConscious
-                    is ForeignUnit -> true
-                }
-        }
+        unitsOf(player).filter { !it.isShutdown && !it.isDestroyed && it.isPilotConscious }
 }
 
 /**

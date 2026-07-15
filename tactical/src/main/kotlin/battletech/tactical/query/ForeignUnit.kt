@@ -12,9 +12,9 @@ import kotlinx.serialization.Serializable
 /**
  * A unit the viewer does NOT own: only the fields declared on [VisibleUnit], nothing
  * else. There is no gunnery skill, piloting skill, current heat, heat sink, internal
- * structure, critical hit layout, heat generated this turn, pilot hits, or
- * pilot-consciousness field on this type — that data is simply absent, so exposing it
- * through this projection is a compile error, not a discipline problem.
+ * structure, critical hit layout, heat generated this turn, or pilot hits field on this
+ * type — that data is simply absent, so exposing it through this projection is a compile
+ * error, not a discipline problem.
  */
 @Serializable
 public data class ForeignUnit(
@@ -33,6 +33,7 @@ public data class ForeignUnit(
     override val isProne: Boolean,
     override val isShutdown: Boolean,
     override val isDestroyed: Boolean,
+    override val isPilotConscious: Boolean,
     override val movementThisTurn: MovementThisTurn,
 ) : VisibleUnit {
     public companion object {
@@ -53,6 +54,7 @@ public data class ForeignUnit(
             isProne = unit.isProne,
             isShutdown = unit.isShutdown,
             isDestroyed = unit.isDestroyed,
+            isPilotConscious = unit.isPilotConscious,
             movementThisTurn = unit.movementThisTurn,
         )
     }

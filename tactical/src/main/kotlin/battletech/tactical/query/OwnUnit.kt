@@ -33,5 +33,6 @@ public data class OwnUnit(public val unit: CombatUnit) : VisibleUnit {
     override val isProne: Boolean get() = unit.isProne
     override val isShutdown: Boolean get() = unit.isShutdown
     override val isDestroyed: Boolean get() = unit.isDestroyed
+    override val isPilotConscious: Boolean get() = unit.isPilotConscious
     override val movementThisTurn: MovementThisTurn get() = unit.movementThisTurn
 }
