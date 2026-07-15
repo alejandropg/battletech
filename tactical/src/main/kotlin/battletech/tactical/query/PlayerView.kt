@@ -1,6 +1,7 @@
 package battletech.tactical.query
 
 import battletech.tactical.attack.weapon.TargetInfo
+import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
@@ -10,14 +11,16 @@ import battletech.tactical.unit.UnitId
 /**
  * Read-side surface scoped to one [PlayerId]. Deliveries (TUI, web, remote
  * client) consume this to answer "what is legal right now?" without
- * reaching into raw [battletech.tactical.model.GameState].
+ * reaching into raw [GameState].
  *
- * Today every implementation returns the same data regardless of [playerId];
- * the hidden-info redaction kicks in with PR8 once subscribers exist.
+ * The game is open-information: every implementation returns the same data
+ * for any [playerId]. `playerId` is the view's identity for convenience
+ * (whose turn is this, whose units are "mine" for display purposes), not an
+ * access boundary — there is no hidden information being withheld.
  */
 public interface PlayerView {
     public val playerId: PlayerId
-    public val state: PublicGameState
+    public val state: GameState
 
     /** Reachability map for each available movement mode, in WALK→RUN→JUMP
      *  order, skipping modes the unit cannot perform. */

@@ -9,11 +9,12 @@ import battletech.tactical.attack.physical.Side
 import battletech.tactical.attack.physical.kickDamage
 import battletech.tactical.attack.physical.physicalToHitTargetNumber
 import battletech.tactical.attack.physical.punchDamage
+import battletech.tactical.model.GameState
 import battletech.tactical.model.MechLocation
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 
-internal class PhysicalAttackQueries(private val state: PublicGameState) {
+internal class PhysicalAttackQueries(private val state: GameState) {
 
     fun physicalAttackOptions(attackerId: UnitId): List<PhysicalAttackOption> {
         val attacker = state.unitById(attackerId)

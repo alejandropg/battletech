@@ -8,13 +8,14 @@ import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.attack.weaponTargetNumber
 import battletech.tactical.attack.weaponToHitModifiers
+import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.cannotFireFromSensorDamage
 
-internal class WeaponTargeting(private val state: PublicGameState) {
+internal class WeaponTargeting(private val state: GameState) {
 
     private val definition = FireWeaponActionDefinition()
 

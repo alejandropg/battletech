@@ -2,6 +2,7 @@ package battletech.tactical.query
 
 import battletech.tactical.attack.torsoTwistOptions
 import battletech.tactical.attack.weapon.TargetInfo
+import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
@@ -14,7 +15,7 @@ import battletech.tactical.unit.UnitId
 
 public class DefaultPlayerView(
     override val playerId: PlayerId,
-    override val state: PublicGameState,
+    override val state: GameState,
     private val turnState: TurnState = TurnState.NULL,
 ) : PlayerView {
 
