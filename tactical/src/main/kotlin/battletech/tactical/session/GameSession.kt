@@ -48,10 +48,13 @@ public interface GameSession {
     public fun logFor(viewer: PlayerId?): List<LogEntry>
 
     /**
-     * Register [listener] to receive every event emitted by this session.
-     * Open-information: there is no per-player filtering — every subscriber
-     * sees everything. Returns a [Subscription] whose
-     * [Subscription.unsubscribe] detaches the listener.
+     * Register [listener] to receive every raw event emitted by this session — session-wide
+     * and unfiltered, every subscriber sees everything. This is not because the game is
+     * open-information (it has real hidden information); it's because this is not the
+     * redaction seam. Per-player enforcement happens once, at [stateFor]/[logFor], and a
+     * listener rendering directly from an event delivered here bypasses that seam the same
+     * way a raw [battletech.tactical.model.GameState] read would. Returns a [Subscription]
+     * whose [Subscription.unsubscribe] detaches the listener.
      */
     public fun subscribe(listener: (GameEvent) -> Unit): Subscription
 

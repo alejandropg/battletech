@@ -103,7 +103,8 @@ internal class SubscriptionTest {
             MoveUnit(PlayerId.PLAYER_1, mech1.id, aReachableHex(), MovementMode.WALK),
         )
 
-        // The game is open-information — both observers see the event.
+        // subscribe() is a raw, unfiltered feed, not the redaction seam — both observers
+        // see the same event. Per-player redaction happens at stateFor/logFor instead.
         assertThat(first.filterIsInstance<UnitMoved>()).hasSize(1)
         assertThat(second.filterIsInstance<UnitMoved>()).hasSize(1)
     }

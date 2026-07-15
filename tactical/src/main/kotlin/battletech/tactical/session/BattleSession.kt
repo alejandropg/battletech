@@ -104,8 +104,12 @@ public class BattleSession(
         }
 
     /**
-     * Register [listener] to receive every event emitted by this session:
-     * a session-wide feed, not scoped to any player (open-information).
+     * Register [listener] to receive every event emitted by this session: a raw,
+     * session-wide feed, not scoped to any player. That is not because the game is
+     * open-information — it has real hidden information — but because per-player
+     * redaction happens once, at [stateFor]/[logFor] (see [GameEvent.redactFor]), not by
+     * filtering this feed. A listener that renders directly from an event delivered here
+     * bypasses that seam; deliveries must go through the projection instead.
      *
      * Returns a [Subscription] whose [Subscription.unsubscribe] detaches
      * the listener. Listeners are invoked synchronously on the thread
