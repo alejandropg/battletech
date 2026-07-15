@@ -248,11 +248,6 @@ private fun runHeadlessServer(port: Int, map: GameMap) {
 
     val printer = GameEventPrinter(System.out)
     // Subscribed before any annotation so the printer sees the whole log from the start.
-    // EventVisibility.filterFor is currently a passthrough (it returns every event
-    // unchanged for every player), so a single PLAYER_1 subscription happens to see both
-    // players' events. A future hidden-info redaction pass on EventVisibility must revisit
-    // this printer — once filterFor actually redacts, PLAYER_1's view will stop being "the
-    // whole game" and this stdout console will need its own non-player-scoped feed.
     session.subscribe(PlayerId.PLAYER_1) { event ->
         printer.print(event, session.gameState, session.turnState.turnNumber)
     }

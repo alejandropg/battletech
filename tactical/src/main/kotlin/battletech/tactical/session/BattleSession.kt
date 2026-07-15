@@ -69,9 +69,7 @@ public class BattleSession(
 
     /**
      * Register [listener] to receive events emitted by this session,
-     * scoped to [playerId]'s view. Each event is run through
-     * [EventVisibility.filterFor] before delivery; the listener never
-     * sees a raw event the player isn't entitled to.
+     * scoped to [playerId]'s view.
      *
      * Returns a [Subscription] whose [Subscription.unsubscribe] detaches
      * the listener. Listeners are invoked synchronously on the thread
@@ -154,10 +152,9 @@ public class BattleSession(
         // Iterate over a snapshot so listeners that unsubscribe themselves
         // mid-dispatch don't trip a ConcurrentModificationException.
         val snapshot = listeners.mapValues { (_, list) -> list.toList() }
-        for ((playerId, perPlayer) in snapshot) {
+        for ((_, perPlayer) in snapshot) {
             for (event in events) {
-                val visible = EventVisibility.filterFor(playerId, event) ?: continue
-                for (listener in perPlayer) listener(visible)
+                for (listener in perPlayer) listener(event)
             }
         }
     }

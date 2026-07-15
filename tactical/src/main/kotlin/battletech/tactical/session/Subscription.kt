@@ -8,10 +8,7 @@ package battletech.tactical.session
  * Subscriptions exist so deliveries other than the command submitter
  * (the inactive player in hot-seat play, a spectator socket, a logger)
  * can receive [battletech.tactical.event.GameEvent]s as the session
- * produces them. Each subscriber is associated with a
- * [battletech.tactical.action.PlayerId], and events are run through
- * [EventVisibility.filterFor] before delivery so hidden-info redaction
- * can later kick in without subscriber-side changes.
+ * produces them.
  */
 public interface Subscription {
     public fun unsubscribe()

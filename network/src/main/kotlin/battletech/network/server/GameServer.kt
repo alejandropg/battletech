@@ -165,9 +165,8 @@ public class GameServer(
 
     /**
      * The single redaction seam: every [ServerMessage.JoinAccepted] and
-     * [ServerMessage.StatePush] is built through here. Currently permissive
-     * (mirrors [battletech.tactical.session.EventVisibility]); hidden-info
-     * rules land here without touching call sites.
+     * [ServerMessage.StatePush] is built through here. Currently permissive;
+     * hidden-info rules land here without touching call sites.
      */
     private fun snapshotFor(player: PlayerId): GameSnapshot = GameSnapshot(
         gameState = session.gameState,

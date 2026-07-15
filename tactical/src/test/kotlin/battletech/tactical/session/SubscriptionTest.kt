@@ -103,7 +103,7 @@ internal class SubscriptionTest {
             MoveUnit(PlayerId.PLAYER_1, mech1.id, aReachableHex(), MovementMode.WALK),
         )
 
-        // EventVisibility is permissive by default — both observers see the event.
+        // The game is open-information — both observers see the event.
         assertThat(p1.filterIsInstance<UnitMoved>()).hasSize(1)
         assertThat(p2.filterIsInstance<UnitMoved>()).hasSize(1)
     }

@@ -14,7 +14,6 @@ import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerView
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
-import battletech.tactical.session.EventVisibility
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.GameLog
@@ -170,9 +169,8 @@ public class RemoteGameSession internal constructor(
 
     private fun dispatch(event: GameEvent) {
         val snapshotOfListeners = listeners.mapValues { (_, perPlayer) -> perPlayer.toList() }
-        for ((playerId, perPlayer) in snapshotOfListeners) {
-            val visible = EventVisibility.filterFor(playerId, event) ?: continue
-            for (listener in perPlayer) listener(visible)
+        for ((_, perPlayer) in snapshotOfListeners) {
+            for (listener in perPlayer) listener(event)
         }
     }
 
