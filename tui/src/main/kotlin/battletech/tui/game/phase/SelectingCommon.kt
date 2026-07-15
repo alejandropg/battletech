@@ -158,15 +158,17 @@ internal fun handleUnitSelection(
 /**
  * The [UnitStatusSubject] for the unit under the cursor in an idle
  * selecting state: full [UnitStatusSubject.Owned] detail for the viewer's
- * own units, redacted [UnitStatusSubject.Public] for anyone else's — the
- * same seam [PlayerView.publicUnit] already provides for TARGET STATUS.
+ * own units, the condensed [UnitStatusSubject.Public] summary for anyone
+ * else's — matching what TARGET STATUS shows via [PlayerView.publicUnit].
+ * Presentational only, not access control: the game is open-information
+ * (see `PublicUnit`'s KDoc).
  *
- * [viewer] is [AppState.localPlayer] when set (remote play: the local
- * seat always sees enemy units redacted, even on the opponent's turn), or
- * else falls back to [activePlayer] (hot-seat: the acting player is the
- * viewer). A null [viewer] (both are null — the turn hasn't been seeded
- * yet) falls back to [UnitStatusSubject.Owned] so the transient pre-start
- * window keeps today's behavior.
+ * [viewer] is [AppState.localPlayer] when set (remote play: the local seat
+ * keeps the summary form for units it doesn't own, even on the opponent's
+ * turn), or else falls back to [activePlayer] (hot-seat: the acting player
+ * is the viewer). A null [viewer] (both are null — the turn hasn't been
+ * seeded yet) falls back to [UnitStatusSubject.Owned] so the transient
+ * pre-start window keeps today's behavior.
  */
 internal fun cursorUnitStatus(app: AppState, activePlayer: PlayerId?): UnitStatusSubject? {
     val unit = app.gameState.unitAt(app.cursor) ?: return null
