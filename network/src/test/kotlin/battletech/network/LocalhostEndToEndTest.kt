@@ -22,8 +22,8 @@ import org.junit.jupiter.api.Test
  * HEAT → END → INITIATIVE cascade into turn 2's MOVEMENT) driven entirely
  * through [GameServer] (PLAYER_1, the host) and [RemoteGameSession]
  * (PLAYER_2, the joiner), asserting after every accepted command that the
- * remote replica has converged with the host on game state, turn state,
- * phase, and log length.
+ * remote replica has converged with the host on projected state, turn
+ * state, phase, and log length.
  *
  * Convergence timing differs by which side submitted, per the wire ordering
  * invariant documented on [RemoteGameSession]: a command submitted BY the
@@ -32,6 +32,14 @@ import org.junit.jupiter.api.Test
  * host reaches the remote asynchronously via a
  * [battletech.network.wire.ServerMessage.StatePush] on the remote's reader
  * thread, so convergence there is polled with a short deadline.
+ *
+ * Movement reachability for PLAYER_2's moves is computed via the HOST's
+ * [GameServer.viewFor] rather than the remote's own — [RemoteGameSession.viewFor]
+ * is unsupported by design (see its KDoc): it would need raw
+ * [battletech.tactical.model.GameState] to compute a reachability map, and a remote
+ * replica only ever holds its own projected [battletech.tactical.query.PlayerGameState].
+ * The remote side is still proven independently queryable for what it DOES hold — its
+ * own unit id/position via [RemoteGameSession.stateFor].
  *
  * No unit in [battletech.tactical.model.GameStateFactory.sampleGameState] is
  * ever prone during this test — falls only follow combat damage, and every
@@ -140,14 +148,15 @@ internal class LocalhostEndToEndTest {
      * [RemoteGameSession] owns the active seat submits, and BOTH remotes are
      * checked for convergence with the server afterwards (unlike the
      * host-embedded scripts, there is no local host seat that's trivially
-     * up to date).
+     * up to date). Reachability still comes from the server's [GameServer.viewFor]
+     * (see class KDoc) — the remotes are read only for their own unit id/position.
      */
     private fun playHeadlessMovementPhase(gameServer: GameServer, remote1: RemoteGameSession, remote2: RemoteGameSession) {
         while (gameServer.currentPhase == TurnPhase.MOVEMENT) {
             val active = gameServer.turnState.movement.activePlayer
             val actor = if (active == PlayerId.PLAYER_1) remote1 else remote2
-            val unit = actor.turnState.selectableUnits(actor.gameState).first()
-            val reachability = actor.viewFor(active).legalMovementsFor(unit.id).first()
+            val unit = actor.turnState.selectableUnits(actor.stateFor(actor.playerId)).first()
+            val reachability = gameServer.viewFor(active).legalMovementsFor(unit.id).first()
             val command = MoveUnit(active, unit.id, reachability.destinations.first(), reachability.mode)
             submitAndVerifyHeadless(gameServer, remote1, remote2, active, command)
         }
@@ -195,8 +204,8 @@ internal class LocalhostEndToEndTest {
     }
 
     private fun headlessConverged(gameServer: GameServer, remote1: RemoteGameSession, remote2: RemoteGameSession): Boolean =
-        remote1.gameState == gameServer.gameState &&
-            remote2.gameState == gameServer.gameState &&
+        remote1.stateFor(remote1.playerId) == gameServer.stateFor(remote1.playerId) &&
+            remote2.stateFor(remote2.playerId) == gameServer.stateFor(remote2.playerId) &&
             remote1.turnState == gameServer.turnState &&
             remote2.turnState == gameServer.turnState &&
             remote1.currentPhase == gameServer.currentPhase &&
@@ -205,8 +214,8 @@ internal class LocalhostEndToEndTest {
             remote2.gameLog.snapshot().size == gameServer.gameLog.snapshot().size
 
     private fun assertHeadlessConverged(gameServer: GameServer, remote1: RemoteGameSession, remote2: RemoteGameSession) {
-        assertThat(remote1.gameState).isEqualTo(gameServer.gameState)
-        assertThat(remote2.gameState).isEqualTo(gameServer.gameState)
+        assertThat(remote1.stateFor(remote1.playerId)).isEqualTo(gameServer.stateFor(remote1.playerId))
+        assertThat(remote2.stateFor(remote2.playerId)).isEqualTo(gameServer.stateFor(remote2.playerId))
         assertThat(remote1.turnState).isEqualTo(gameServer.turnState)
         assertThat(remote2.turnState).isEqualTo(gameServer.turnState)
         assertThat(remote1.currentPhase).isEqualTo(gameServer.currentPhase)
@@ -236,10 +245,10 @@ internal class LocalhostEndToEndTest {
      * Drives one [MoveUnit] per movement impulse until the phase advances.
      * Who is active is read from the host's authoritative [GameServer.turnState]
      * (both sides agree once converged, which they are at the top of every
-     * iteration); PLAYER_2's move is built from the REMOTE's OWN
-     * [RemoteGameSession.turnState]/[RemoteGameSession.viewFor] rather than the
-     * host's, so the replica is proven independently queryable, not just a
-     * pass-through.
+     * iteration); PLAYER_2's move picks its own unit from the REMOTE's OWN
+     * [RemoteGameSession.stateFor] rather than the host's (proving the replica
+     * independently knows its own units), but the reachability MAP itself comes
+     * from the host's [GameServer.viewFor] — see class KDoc for why.
      */
     private fun playMovementPhase(host: GameServer, remote: RemoteGameSession) {
         while (host.currentPhase == TurnPhase.MOVEMENT) {
@@ -249,8 +258,8 @@ internal class LocalhostEndToEndTest {
                 val reachability = host.viewFor(active).legalMovementsFor(unit.id).first()
                 MoveUnit(active, unit.id, reachability.destinations.first(), reachability.mode)
             } else {
-                val unit = remote.turnState.selectableUnits(remote.gameState).first()
-                val reachability = remote.viewFor(active).legalMovementsFor(unit.id).first()
+                val unit = remote.turnState.selectableUnits(remote.stateFor(remote.playerId)).first()
+                val reachability = host.viewFor(active).legalMovementsFor(unit.id).first()
                 MoveUnit(active, unit.id, reachability.destinations.first(), reachability.mode)
             }
             submitAndVerify(host, remote, active, command)
@@ -290,13 +299,13 @@ internal class LocalhostEndToEndTest {
     }
 
     private fun converged(host: GameServer, remote: RemoteGameSession): Boolean =
-        remote.gameState == host.gameState &&
+        remote.stateFor(remote.playerId) == host.stateFor(remote.playerId) &&
             remote.turnState == host.turnState &&
             remote.currentPhase == host.currentPhase &&
             remote.gameLog.snapshot().size == host.gameLog.snapshot().size
 
     private fun assertConverged(host: GameServer, remote: RemoteGameSession) {
-        assertThat(remote.gameState).isEqualTo(host.gameState)
+        assertThat(remote.stateFor(remote.playerId)).isEqualTo(host.stateFor(remote.playerId))
         assertThat(remote.turnState).isEqualTo(host.turnState)
         assertThat(remote.currentPhase).isEqualTo(host.currentPhase)
         assertThat(remote.gameLog.snapshot()).hasSize(host.gameLog.snapshot().size)

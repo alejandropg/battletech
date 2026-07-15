@@ -23,6 +23,7 @@ import battletech.tactical.session.LogEntry
 import battletech.tactical.session.SessionNotice
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
+import battletech.tactical.session.redactFor
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -56,9 +57,11 @@ import kotlin.concurrent.thread
  * handshake time — neither side can act as another seat's, active-turn or
  * not.
  *
- * [snapshot] is the one seam every outbound [GameSnapshot] (join acceptance
- * and pushes alike) is built through — see its KDoc for why it does not
- * redact anything.
+ * [snapshotFor] is the one seam every outbound [GameSnapshot] (join
+ * acceptance and pushes alike) is built through — see its KDoc for how
+ * redaction happens there, and why the log traveling alongside it
+ * ([ServerMessage.JoinAccepted.log], [ServerMessage.StatePush.entries]) must
+ * redact in lockstep.
  *
  * Disconnects freeze the whole session: both [submitCommand] and the remote
  * reader loop reject with [CommandRejection.OpponentUnavailable] whenever
@@ -110,7 +113,14 @@ public class GameServer(
 
     // ---------- GameSession overrides (host UI path) ----------
 
-    public override val gameState: GameState get() = synchronized(lock) { session.gameState }
+    /**
+     * The authoritative, unredacted state — NOT part of [GameSession] (a remote client has
+     * no equivalent). Legitimate here because [GameServer] runs in-process with [session]:
+     * this never crosses the wire itself, only the per-seat projections built from it do
+     * (see [snapshotFor]). Used by this class's own outbound-message building and by tests
+     * that need to inspect/drive the authoritative state directly.
+     */
+    public val gameState: GameState get() = synchronized(lock) { session.gameState }
     public override val turnState: TurnState get() = synchronized(lock) { session.turnState }
     public override val currentPhase: TurnPhase get() = synchronized(lock) { session.currentPhase }
     public override val activePlayer: PlayerId? get() = synchronized(lock) { session.activePlayer }
@@ -155,16 +165,22 @@ public class GameServer(
     /**
      * Applies [command] to [session] and, if accepted, enqueues the
      * resulting log delta + a fresh per-seat snapshot to EVERY connected
-     * client — must be called under [lock]. Callers enqueue their own
-     * [ServerMessage.CommandReply] afterwards; the push always precedes the
-     * reply (the wire ordering invariant documented on [ServerMessage]).
+     * client — must be called under [lock]. Each client gets its OWN
+     * redaction: [snapshotFor] projects state for that client's seat, and
+     * [redactedDeltaFor] filters the same log delta the same way, so the two
+     * halves of the push never disagree about what that seat may see.
+     * Callers enqueue their own [ServerMessage.CommandReply] afterwards; the
+     * push always precedes the reply (the wire ordering invariant documented
+     * on [ServerMessage]).
      */
     private fun submitAndPush(command: GameCommand): CommandResult {
         val mark = session.gameLog.snapshot().size
         val result = session.submitCommand(command)
         if (result is CommandResult.Accepted) {
             val delta = session.gameLog.snapshot().drop(mark)
-            clients.values.forEach { it.outbound.put(ServerMessage.StatePush(delta, snapshot())) }
+            clients.values.forEach { client ->
+                client.outbound.put(ServerMessage.StatePush(redactedDeltaFor(delta, client.seat), snapshotFor(client.seat)))
+            }
         }
         return result
     }
@@ -173,43 +189,43 @@ public class GameServer(
      * The one place a real trust boundary exists in this codebase: server ->
      * wire -> client. Everything on the [session] side is in-process, same
      * JVM, no adversary; this is where bytes leave for a socket a remote
-     * client controls.
+     * client controls — and, per this stage, a client that may be modified
+     * or actively cheating.
      *
-     * No redaction is performed here, by decision. BattleTech is played
-     * open-information: positions and damage sit on the table, loadouts are
-     * published in the Technical Readouts, and fog of war is an optional
-     * rule this project doesn't implement. The threat model is hot-seat and
-     * trusted remote play — a modified/cheating client is explicitly out of
-     * scope. A prior redaction seam, sketched across a public/redacted
-     * [GameState] typealias, a per-event visibility filter, and a per-player
-     * overload of `subscribe`, was deleted because it was placed by
-     * symmetry, not by a threat model, and could never have worked as
-     * designed.
-     *
-     * If that decision ever changes, redact HERE — but note this is not the
-     * only outbound path: [ServerMessage.JoinAccepted] also carries
-     * `session.gameLog.snapshot()` directly (see [attachTransport]), and
-     * every [ServerMessage.StatePush] carries a log delta alongside this
-     * snapshot. Redacting only this snapshot and leaving the log
-     * un-redacted leaks everything through the other channel — that
-     * mismatch is exactly why the old design was theater. Prefer a
-     * differently-shaped projection type for the redacted view over
-     * sentinel/fake values threaded into [GameState]; fakes would
-     * reintroduce the nullable proliferation the July 2026 design sweep
-     * removed.
-     *
-     * Also worth knowing: redacting this snapshot would propagate
-     * automatically to [battletech.network.client.RemoteGameSession.gameState]
-     * and from there to the TUI's ~40 raw `GameState` reads — those call
-     * sites would not need to change.
+     * [seat] gets [session]'s state PROJECTED for it, via [GameSession.stateFor]
+     * — the same seam [BattleSession.stateFor] uses for the in-process TUI, so a
+     * connected seat can see no more of another seat's units than a hot-seat
+     * viewer could. This is only ONE of three outbound paths that must agree:
+     * [ServerMessage.JoinAccepted] carries [GameSession.logFor] (not the raw
+     * [session]`.gameLog.snapshot()`), and every [ServerMessage.StatePush]
+     * carries a log delta run through [redactedDeltaFor] — see [attachTransport]
+     * and [submitAndPush]. Redacting only this snapshot and leaving either log
+     * channel un-redacted leaks everything through that other channel; that
+     * mismatch is exactly why the previous (deleted) redaction attempt never
+     * worked. No sentinel/fake values are used anywhere in this path — a
+     * [PlayerGameState] simply doesn't have a field to leak for units [seat]
+     * doesn't own ([battletech.tactical.query.ForeignUnit] has no
+     * gunnery/heat/internals field at all).
      */
-    private fun snapshot(): GameSnapshot = GameSnapshot(
-        gameState = session.gameState,
+    private fun snapshotFor(seat: PlayerId): GameSnapshot = GameSnapshot(
+        gameState = session.stateFor(seat),
         turnState = session.turnState,
         currentPhase = session.currentPhase,
         activePlayer = session.activePlayer,
         isMatchOver = session.isMatchOver,
     )
+
+    /**
+     * Redacts a game-log SLICE (a [ServerMessage.StatePush] delta, rather than the whole
+     * log [GameSession.logFor] redacts) for [seat], entry by entry via
+     * [battletech.tactical.session.redactFor] — same rule, same [session]`.gameState` used
+     * for ownership lookups, same [GameSession.isMatchOver] reveal, just scoped to the
+     * entries that changed since the last push instead of the full history.
+     */
+    private fun redactedDeltaFor(entries: List<LogEntry>, seat: PlayerId): List<LogEntry> =
+        entries.mapNotNull { entry ->
+            entry.event.redactFor(seat, session.gameState, revealAll = session.isMatchOver)?.let { entry.copy(event = it) }
+        }
 
     // ---------- transport ----------
 
@@ -280,7 +296,9 @@ public class GameServer(
             clients[seat] = client
             startWriterThread(client)
             val markBeforeKickstart = session.gameLog.snapshot().size
-            client.outbound.put(ServerMessage.JoinAccepted(seat, snapshot(), session.gameLog.snapshot()))
+            // logFor(seat), not gameLog.snapshot() — the joiner's very first message must
+            // already be redacted, same as every later push (see snapshotFor's KDoc).
+            client.outbound.put(ServerMessage.JoinAccepted(seat, snapshotFor(seat), session.logFor(seat)))
 
             val kickstarted = !everStarted && clients.keys == remoteSeats
             if (kickstarted) {
@@ -289,12 +307,15 @@ public class GameServer(
             }
 
             // Already-connected clients missed the connect notice (and the kickstart, if it just
-            // fired) entirely — push them the combined delta. The joiner already has the connect
-            // notice via JoinAccepted.log above, so it only needs the kickstart delta, if any.
+            // fired) entirely — push them the combined delta, redacted for THEIR OWN seat (not the
+            // joiner's). The joiner already has the connect notice via JoinAccepted.log above, so
+            // it only needs the kickstart delta, if any.
             val finalLog = session.gameLog.snapshot()
-            alreadyConnected.forEach { it.outbound.put(ServerMessage.StatePush(finalLog.drop(markBeforeConnectNotice), snapshot())) }
+            alreadyConnected.forEach { c ->
+                c.outbound.put(ServerMessage.StatePush(redactedDeltaFor(finalLog.drop(markBeforeConnectNotice), c.seat), snapshotFor(c.seat)))
+            }
             if (kickstarted) {
-                client.outbound.put(ServerMessage.StatePush(finalLog.drop(markBeforeKickstart), snapshot()))
+                client.outbound.put(ServerMessage.StatePush(redactedDeltaFor(finalLog.drop(markBeforeKickstart), seat), snapshotFor(seat)))
             }
             client
         }

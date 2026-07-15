@@ -27,6 +27,7 @@ import battletech.tactical.model.Terrain
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
+import battletech.tactical.query.projectFor
 import battletech.tactical.session.AmmoExploded
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttackImpulseCommand
@@ -393,7 +394,7 @@ internal class WireFormatRoundTripTest {
         session.advance()
 
         val snapshot = GameSnapshot(
-            gameState = session.gameState,
+            gameState = session.stateFor(PlayerId.PLAYER_1),
             turnState = session.turnState,
             currentPhase = session.currentPhase,
             activePlayer = session.activePlayer,
@@ -414,7 +415,7 @@ internal class WireFormatRoundTripTest {
         val push = ServerMessage.StatePush(
             entries = session.gameLog.snapshot(),
             snapshot = GameSnapshot(
-                gameState = session.gameState,
+                gameState = session.stateFor(PlayerId.PLAYER_1),
                 turnState = session.turnState,
                 currentPhase = session.currentPhase,
                 activePlayer = session.activePlayer,
@@ -462,7 +463,7 @@ internal class WireFormatRoundTripTest {
         )
 
         private fun aGameSnapshot(): GameSnapshot = GameSnapshot(
-            gameState = GameStateFactory().sampleGameState(),
+            gameState = GameStateFactory().sampleGameState().projectFor(PlayerId.PLAYER_1),
             turnState = aTurnStateFixture(),
             currentPhase = TurnPhase.MOVEMENT,
             activePlayer = PlayerId.PLAYER_1,

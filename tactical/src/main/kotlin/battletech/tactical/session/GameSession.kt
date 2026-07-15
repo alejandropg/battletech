@@ -1,6 +1,5 @@
 package battletech.tactical.session
 
-import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.PlayerGameState
@@ -19,10 +18,17 @@ import battletech.tactical.query.PlayerView
  * written once against [GameSession] and swapped between local and remote
  * play without change.
  *
+ * Deliberately absent: raw [battletech.tactical.model.GameState]. A remote
+ * client only ever holds [stateFor]'s projection (what the wire actually
+ * carried), so this interface cannot expose a field a remote implementation
+ * couldn't honestly serve — see [battletech.network.client.RemoteGameSession].
+ * [BattleSession], the authoritative in-process implementation, keeps a
+ * concrete `gameState` of its own (not part of this interface) for the
+ * server-side and headless-printer call sites that legitimately need it.
+ *
  * Threading: not internally synchronised. Callers must serialise commands.
  */
 public interface GameSession {
-    public val gameState: GameState
     public val turnState: TurnState
     public val currentPhase: TurnPhase
     public val activePlayer: PlayerId?

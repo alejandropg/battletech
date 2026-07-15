@@ -7,13 +7,10 @@ import battletech.network.wire.PROTOCOL_VERSION
 import battletech.network.wire.ServerMessage
 import battletech.network.wire.SessionId
 import battletech.network.wire.WireJson
-import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
-import battletech.tactical.query.projectFor
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.GameCommand
@@ -24,7 +21,6 @@ import battletech.tactical.session.LogEntry
 import battletech.tactical.session.SessionNotice
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
-import battletech.tactical.session.redactFor
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -50,11 +46,32 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
  * before the corresponding [ServerMessage.CommandReply]. The single reader
  * thread applies both in that order — swaps [snapshot], appends to [log],
  * then dispatches events — so by the time a blocked [submitCommand] call
- * returns, [gameState]/[turnState]/[currentPhase] already reflect the
- * accepted command. Callers may read post-submit state immediately.
+ * returns, [turnState]/[currentPhase] already reflect the accepted command.
+ * Callers may read post-submit state immediately.
  *
- * Queries ([viewFor]) run locally against the last-received [snapshot] —
- * no round trip to the host.
+ * **What this class does NOT have, on purpose:** raw [battletech.tactical.model.GameState].
+ * [snapshot]`.gameState` is already [PlayerGameState] — [playerId]'s own projection, exactly
+ * as the host computed and sent it (see [battletech.network.server.GameServer.snapshotFor])
+ * — so [stateFor] and [logFor] can serve [playerId] locally with no re-projection, but they
+ * have no way to honestly answer for a DIFFERENT viewer (there is no raw state left to
+ * re-project from) and refuse rather than guess; see their KDoc. [viewFor] goes further:
+ * [battletech.tactical.query.DefaultPlayerView] and its query engine
+ * ([battletech.tactical.movement.ReachabilityCalculator], [battletech.tactical.query.WeaponTargeting],
+ * [battletech.tactical.query.PhysicalAttackQueries]) are typed against raw
+ * [battletech.tactical.model.GameState]/[battletech.tactical.unit.CombatUnit] throughout —
+ * that dependency was never migrated to the projection (Stage 2 of the redaction work kept
+ * it as-is: "PlayerView's query methods already return computed results, not raw units").
+ * A remote client has no raw [battletech.tactical.model.GameState] to build one from, and
+ * fabricating one for foreign units (defaulted gunnery/heat/criticals) would be exactly the
+ * sentinel-value anti-pattern this design forbids — so [viewFor] throws rather than lie.
+ * **This is a known, reported gap, not a silent decision**: it regresses local move/attack
+ * legality queries for a `--join`ed remote seat (the in-process host path — [BattleSession]/
+ * [battletech.network.server.GameServer] — is unaffected, since it still holds real state).
+ * Closing it needs either (a) teaching the query engine to accept a viewer's own raw unit
+ * plus [battletech.tactical.query.VisibleUnit]-shaped others — verified feasible; every
+ * "other unit" field the engine reads (position, prone, shutdown, movement-this-turn — see
+ * e.g. [battletech.tactical.attack.LineOfSight]'s own "position-only" doc) is already public
+ * — or (b) a round-trip query message. Neither is implemented here.
  */
 public class RemoteGameSession internal constructor(
     private val input: BufferedReader,
@@ -83,23 +100,62 @@ public class RemoteGameSession internal constructor(
         readerThread = thread(isDaemon = true, name = "remote-session-reader") { readLoop() }
     }
 
-    public override val gameState: GameState get() = snapshot.gameState
     public override val turnState: TurnState get() = snapshot.turnState
     public override val currentPhase: TurnPhase get() = snapshot.currentPhase
     public override val activePlayer: PlayerId? get() = snapshot.activePlayer
     public override val isMatchOver: Boolean get() = snapshot.isMatchOver
     public override val gameLog: GameLog get() = log
 
+    /**
+     * Not supported: [battletech.tactical.query.DefaultPlayerView] (and the
+     * [battletech.tactical.movement.ReachabilityCalculator]/[battletech.tactical.query.WeaponTargeting]/
+     * [battletech.tactical.query.PhysicalAttackQueries] it composes) needs raw
+     * [battletech.tactical.model.GameState] to compute reachability/targeting, and this
+     * class holds none — [snapshot]`.gameState` is [playerId]'s own projection, not raw
+     * state, and fabricating a stand-in for foreign units is exactly the sentinel-value
+     * anti-pattern this design forbids. See the class KDoc for what closing this gap needs.
+     * Throws for every [playerId], not just a mismatched seat — there is no raw state to
+     * build a view from regardless of whose seat is asked for.
+     */
     public override fun viewFor(playerId: PlayerId): PlayerView =
-        DefaultPlayerView(playerId, snapshot.gameState, snapshot.turnState)
+        throw UnsupportedOperationException(
+            "RemoteGameSession.viewFor: no raw GameState on the client to build a PlayerView from " +
+                "(see this class's KDoc) — query the host's own GameSession.viewFor instead, " +
+                "or use stateFor($playerId) for the projected units/board.",
+        )
 
-    public override fun stateFor(viewer: PlayerId?): PlayerGameState =
-        snapshot.gameState.projectFor(viewer, revealAll = snapshot.isMatchOver)
-
-    public override fun logFor(viewer: PlayerId?): List<LogEntry> =
-        log.snapshot().mapNotNull { entry ->
-            entry.event.redactFor(viewer, snapshot.gameState, revealAll = snapshot.isMatchOver)?.let { entry.copy(event = it) }
+    /**
+     * Serves ONLY [playerId] (this connection's own seat): [snapshot]`.gameState` already
+     * IS that projection, exactly as the host built and sent it, so no re-projection
+     * happens here. Any other [viewer] — including `null` — throws rather than guess: this
+     * class holds no raw state to re-project from, so returning [snapshot]`.gameState`
+     * unchanged for a different viewer would silently hand back the wrong player's shape
+     * under a false label, and returning it for `null` would misrepresent "I don't know who
+     * is looking" as "here is player X's view" — both are the "return the wrong thing
+     * silently" this design explicitly rules out.
+     */
+    public override fun stateFor(viewer: PlayerId?): PlayerGameState {
+        require(viewer == playerId) {
+            "RemoteGameSession.stateFor: this replica only holds $playerId's own projection " +
+                "(from the host's snapshot); it cannot serve viewer=$viewer without raw state to re-project from."
         }
+        return snapshot.gameState
+    }
+
+    /**
+     * Serves ONLY [playerId], same rule as [stateFor]: [log] already holds the host's
+     * [battletech.tactical.session.GameEvent.redactFor]-filtered entries for THIS seat
+     * (see [battletech.network.server.GameServer.snapshotFor]'s KDoc for the outbound
+     * paths that redact it before it ever reaches [readLoop]), so it's returned as-is
+     * rather than re-redacted for a viewer this class has no raw state to check against.
+     */
+    public override fun logFor(viewer: PlayerId?): List<LogEntry> {
+        require(viewer == playerId) {
+            "RemoteGameSession.logFor: this replica only holds $playerId's own redacted log; " +
+                "it cannot serve viewer=$viewer without raw state to re-redact against."
+        }
+        return log.snapshot()
+    }
 
     public override fun subscribe(listener: (GameEvent) -> Unit): Subscription {
         listeners += listener

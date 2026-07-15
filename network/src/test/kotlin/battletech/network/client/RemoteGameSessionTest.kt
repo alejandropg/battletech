@@ -12,6 +12,8 @@ import battletech.network.wire.ServerMessage
 import battletech.network.wire.WireJson
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.query.ForeignUnit
+import battletech.tactical.query.OwnUnit
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.GameEvent
@@ -19,6 +21,7 @@ import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.SessionNotice
 import battletech.tactical.session.UnitMoved
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
 /**
@@ -26,14 +29,16 @@ import org.junit.jupiter.api.Test
  * [GameServer] (via its [GameServer.attachTransport] testability seam) — no
  * real sockets. Covers post-join state, local queries against the snapshot,
  * event dispatch, the push-before-reply ordering invariant from the client
- * side, and connection-loss handling.
+ * side, connection-loss handling, and — the point of this stage — that the
+ * snapshot/log this replica holds is already redacted for [RemoteGameSession.playerId],
+ * never PLAYER_1's private fields.
  */
 internal class RemoteGameSessionTest {
 
     private val sessionId = "TESTID"
 
     @Test
-    fun `after join, gameState turnState and currentPhase reflect the post-kickstart snapshot`() {
+    fun `after join, stateFor turnState and currentPhase reflect the post-kickstart snapshot`() {
         val server = GameServer(aSampleSession(), sessionId, port = 0)
         val connection = PipedConnection()
         server.attachInBackground(connection)
@@ -42,7 +47,7 @@ internal class RemoteGameSessionTest {
         awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
 
         assertThat(remote.currentPhase).isEqualTo(server.currentPhase)
-        assertThat(remote.gameState).isEqualTo(server.gameState)
+        assertThat(remote.stateFor(remote.playerId)).isEqualTo(server.stateFor(PlayerId.PLAYER_2))
         assertThat(remote.turnState).isEqualTo(server.turnState)
         assertThat(remote.activePlayer).isEqualTo(server.activePlayer)
         assertThat(remote.isMatchOver).isFalse()
@@ -59,8 +64,10 @@ internal class RemoteGameSessionTest {
         assertThat(remote.playerId).isEqualTo(PlayerId.PLAYER_2)
     }
 
+    // ---------- the payoff: what this client actually holds is already redacted ----------
+
     @Test
-    fun `viewFor legalMovementsFor works against locally-held snapshot data`() {
+    fun `stateFor(playerId) shows PLAYER_1's units as ForeignUnit and this seat's own as OwnUnit`() {
         val server = GameServer(aSampleSession(), sessionId, port = 0)
         val connection = PipedConnection()
         server.attachInBackground(connection)
@@ -68,11 +75,35 @@ internal class RemoteGameSessionTest {
         val remote = connectRemoteOverPipes(sessionId, connection)
         awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
 
-        val unit = remote.gameState.unitsOf(PlayerId.PLAYER_2).first()
-        val reachability = remote.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id)
+        val units = remote.stateFor(remote.playerId).units
+        assertThat(units).isNotEmpty
+        units.filter { it.owner == PlayerId.PLAYER_1 }.forEach { assertThat(it).isInstanceOf(ForeignUnit::class.java) }
+        units.filter { it.owner == PlayerId.PLAYER_2 }.forEach { assertThat(it).isInstanceOf(OwnUnit::class.java) }
+    }
 
-        assertThat(reachability).isNotEmpty
-        assertThat(reachability.first().destinations).isNotEmpty
+    @Test
+    fun `stateFor and logFor refuse a viewer other than this replica's own seat`() {
+        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+        val remote = connectRemoteOverPipes(sessionId, connection)
+        awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
+
+        assertThatThrownBy { remote.stateFor(PlayerId.PLAYER_1) }.isInstanceOf(IllegalArgumentException::class.java)
+        assertThatThrownBy { remote.stateFor(null) }.isInstanceOf(IllegalArgumentException::class.java)
+        assertThatThrownBy { remote.logFor(PlayerId.PLAYER_1) }.isInstanceOf(IllegalArgumentException::class.java)
+        assertThatThrownBy { remote.logFor(null) }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `viewFor is not supported on a remote replica — no raw GameState to compute from`() {
+        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+        val remote = connectRemoteOverPipes(sessionId, connection)
+        awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
+
+        assertThatThrownBy { remote.viewFor(remote.playerId) }.isInstanceOf(UnsupportedOperationException::class.java)
     }
 
     @Test
@@ -107,8 +138,12 @@ internal class RemoteGameSessionTest {
         server.advanceMovementUntilActivePlayerIs(PlayerId.PLAYER_2)
         awaitTrue { remote.turnState.movement.activePlayer == PlayerId.PLAYER_2 }
 
-        val unit = remote.turnState.selectableUnits(remote.gameState).first()
-        val reachability = remote.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id).first()
+        // The replica still knows its OWN units (stateFor(remote.playerId) — OwnUnit, full
+        // fidelity id/position); the reachability MAP itself has to come from the host's
+        // viewFor, since RemoteGameSession.viewFor no longer has raw state to compute one
+        // (see that method's KDoc) — a known, reported limitation of this stage.
+        val unit = remote.turnState.selectableUnits(remote.stateFor(remote.playerId)).first()
+        val reachability = server.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val command = MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode)
 
@@ -118,7 +153,7 @@ internal class RemoteGameSessionTest {
         // The StatePush for this command is applied by the same reader thread before the
         // CommandReply that unblocks submitCommand — so the snapshot is already fresh here,
         // synchronously, with no further waiting.
-        assertThat(remote.gameState.unitById(unit.id).position).isEqualTo(destination.position)
+        assertThat(remote.stateFor(remote.playerId).unitById(unit.id).position).isEqualTo(destination.position)
         assertThat(remote.turnState.movement.movedUnitIds).contains(unit.id)
     }
 
@@ -137,8 +172,8 @@ internal class RemoteGameSessionTest {
         awaitTrue { events.contains(expectedNotice) }
         assertThat(remote.gameLog.snapshot().map { it.event }).contains(expectedNotice)
 
-        val unit = remote.gameState.unitsOf(PlayerId.PLAYER_2).first()
-        val reachability = remote.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id).first()
+        val unit = remote.stateFor(remote.playerId).unitsOf(PlayerId.PLAYER_2).first()
+        val reachability = server.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val result = remote.submitCommand(MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode))
 

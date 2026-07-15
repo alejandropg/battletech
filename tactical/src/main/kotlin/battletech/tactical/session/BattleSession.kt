@@ -59,7 +59,15 @@ public class BattleSession(
     private val _gameLog: GameLog = GameLog()
 
     public override val gameLog: GameLog get() = _gameLog
-    public override val gameState: GameState get() = _gameState
+
+    /**
+     * The authoritative, unredacted state. NOT part of [GameSession] — this is a concrete
+     * member only [BattleSession] exposes, for the server-side call sites that legitimately
+     * need raw state in-process ([battletech.network.server.GameServer] building outbound
+     * [battletech.network.wire.GameSnapshot]s, the headless printer in `Main.kt`). Every
+     * delivery-facing read goes through [stateFor] instead.
+     */
+    public val gameState: GameState get() = _gameState
     public override val turnState: TurnState get() = _turnState
     public override val currentPhase: battletech.tactical.model.TurnPhase
         get() = handlers[_currentPhaseIndex].phase

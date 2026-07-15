@@ -13,14 +13,18 @@ import battletech.network.wire.JoinRejectionReason
 import battletech.network.wire.PROTOCOL_VERSION
 import battletech.network.wire.ServerMessage
 import battletech.network.wire.WireJson
-import battletech.tactical.model.GameStateFactory
+import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.query.ForeignUnit
+import battletech.tactical.query.OwnUnit
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
+import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.LogEntry
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.SessionNotice
+import battletech.tactical.unit.CriticalSlotContent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -46,11 +50,53 @@ internal class GameServerProtocolTest {
         assertThat(joinAccepted.playerId).isEqualTo(PlayerId.PLAYER_2)
         assertThat(joinAccepted.log).containsExactly(LogEntry(turn = 1, event = SessionNotice("Player 2 connected")))
         assertThat(joinAccepted.snapshot.currentPhase).isEqualTo(TurnPhase.INITIATIVE)
-        assertThat(joinAccepted.snapshot.gameState).isEqualTo(GameStateFactory().sampleGameState())
+        assertThat(joinAccepted.snapshot.gameState).isEqualTo(server.stateFor(PlayerId.PLAYER_2))
 
         assertThat(push.entries).isNotEmpty
         assertThat(push.snapshot.currentPhase).isEqualTo(TurnPhase.MOVEMENT)
         assertThat(server.currentPhase).isEqualTo(TurnPhase.MOVEMENT)
+    }
+
+    // ---------- the payoff: what a PLAYER_2 client actually receives on the wire ----------
+
+    @Test
+    fun `JoinAccepted's snapshot shows PLAYER_1's units as ForeignUnit and PLAYER_2's own as OwnUnit`() {
+        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+
+        val (joinAccepted, _) = connection.joinAndConsumeKickstart(sessionId)
+
+        val units = joinAccepted.snapshot.gameState.units
+        assertThat(units).isNotEmpty
+        units.filter { it.owner == PlayerId.PLAYER_1 }.forEach { assertThat(it).isInstanceOf(ForeignUnit::class.java) }
+        units.filter { it.owner == PlayerId.PLAYER_2 }.forEach { assertThat(it).isInstanceOf(OwnUnit::class.java) }
+    }
+
+    @Test
+    fun `JoinAccepted's log carries Undisclosed, not Detailed, for a PLAYER_1 CriticalHit`() {
+        val session = aSampleSession()
+        val player1Unit = session.gameState.unitsOf(PlayerId.PLAYER_1).first()
+        // annotate() lands this in the same gameLog session.logFor (and this stage's
+        // GameServer.snapshotFor/attachTransport) redact through — no gameplay needed to
+        // prove the redaction seam itself.
+        session.annotate(
+            CriticalHit.Detailed(
+                unitId = player1Unit.id,
+                location = MechLocation.LEFT_TORSO,
+                slotIndex = 0,
+                content = CriticalSlotContent.Empty,
+            ),
+        )
+        val server = GameServer(session, sessionId, port = 0)
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+
+        val (joinAccepted, _) = connection.joinAndConsumeKickstart(sessionId)
+
+        val criticalEvents = joinAccepted.log.map { it.event }.filterIsInstance<CriticalHit>()
+        assertThat(criticalEvents).hasSize(1)
+        assertThat(criticalEvents.single()).isEqualTo(CriticalHit.Undisclosed(player1Unit.id))
     }
 
     @Test
