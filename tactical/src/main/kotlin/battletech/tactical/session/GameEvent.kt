@@ -55,12 +55,31 @@ public data class UnitFell(
     public val fall: FallResult,
 ) : GameEvent
 
+/**
+ * Whether [unitId] stood up (or failed to) is observable — you watch the miniature rise
+ * or stay down. The [PilotingSkillRoll] behind it reveals `pilotingSkill` (its
+ * `targetNumber` is `pilotingSkill + modifier`), so it is withheld from foreign viewers
+ * via [Undisclosed] — see [battletech.tactical.session.redactFor].
+ */
 @Serializable
-public data class UnitStoodUp(
-    public val unitId: UnitId,
-    public val psr: PilotingSkillRoll,
-    public val stoodUp: Boolean,
-) : GameEvent
+public sealed interface UnitStoodUp : GameEvent {
+    public val unitId: UnitId
+    public val stoodUp: Boolean
+
+    @Serializable
+    public data class Detailed(
+        override val unitId: UnitId,
+        public val psr: PilotingSkillRoll,
+        override val stoodUp: Boolean,
+    ) : UnitStoodUp
+
+    /** Foreign-viewer redaction of [Detailed]: [stoodUp] stays, the PSR does not. */
+    @Serializable
+    public data class Undisclosed(
+        override val unitId: UnitId,
+        override val stoodUp: Boolean,
+    ) : UnitStoodUp
+}
 
 @Serializable
 public data class AttackDeclarationsRecorded(
@@ -90,7 +109,13 @@ public data class HeatDissipated(
     public val heatAfter: Map<UnitId, Int>
 ) : GameEvent
 
-/** A unit powered down in the Heat Phase. */
+/**
+ * A unit powered down in the Heat Phase. The shutdown itself is observable (the 'Mech goes
+ * visibly inert), but WHICH sub-case fired tells a foreign viewer which heat band the unit
+ * is in ([Automatic] means heat ≥ 30; [AvoidFailed] means a lower, roll-dependent band) —
+ * [currentHeat] is record-sheet data, so foreign viewers get [Undisclosed] instead, which
+ * reports only that the unit shut down — see [battletech.tactical.session.redactFor].
+ */
 @Serializable
 public sealed interface UnitShutdown : GameEvent {
     public val unitId: UnitId
@@ -102,9 +127,16 @@ public sealed interface UnitShutdown : GameEvent {
     /** The unit failed its 2d6 shutdown-avoidance [roll]. */
     @Serializable
     public data class AvoidFailed(override val unitId: UnitId, public val roll: DiceRoll) : UnitShutdown
+
+    /** Foreign-viewer redaction of [Automatic] or [AvoidFailed]: the mechanism is withheld. */
+    @Serializable
+    public data class Undisclosed(override val unitId: UnitId) : UnitShutdown
 }
 
-/** A shut-down unit came back online in the Heat Phase. */
+/**
+ * A shut-down unit came back online in the Heat Phase. Same reasoning as [UnitShutdown]:
+ * which sub-case fired reveals a heat band, so foreign viewers get [Undisclosed].
+ */
 @Serializable
 public sealed interface UnitRestarted : GameEvent {
     public val unitId: UnitId
@@ -116,15 +148,37 @@ public sealed interface UnitRestarted : GameEvent {
     /** The unit passed its 2d6 restart [roll]. */
     @Serializable
     public data class RollPassed(override val unitId: UnitId, public val roll: DiceRoll) : UnitRestarted
+
+    /** Foreign-viewer redaction of [Automatic] or [RollPassed]: the mechanism is withheld. */
+    @Serializable
+    public data class Undisclosed(override val unitId: UnitId) : UnitRestarted
 }
 
-/** A unit's ammunition cooked off from heat, taking internal damage. */
+/**
+ * A unit's ammunition cooked off from heat, taking internal damage. The explosion itself
+ * and its damage are observable (armor/structure damage is applied openly); which [ammoType]
+ * cooked off is record-sheet loadout detail, withheld from foreign viewers via [Undisclosed]
+ * — see [battletech.tactical.session.redactFor].
+ */
 @Serializable
-public data class AmmoExploded(
-    public val unitId: UnitId,
-    public val ammoType: AmmoType,
-    public val damage: Int,
-) : GameEvent
+public sealed interface AmmoExploded : GameEvent {
+    public val unitId: UnitId
+    public val damage: Int
+
+    @Serializable
+    public data class Detailed(
+        override val unitId: UnitId,
+        public val ammoType: AmmoType,
+        override val damage: Int,
+    ) : AmmoExploded
+
+    /** Foreign-viewer redaction of [Detailed]: the damage is observable, the ammo type is not. */
+    @Serializable
+    public data class Undisclosed(
+        override val unitId: UnitId,
+        override val damage: Int,
+    ) : AmmoExploded
+}
 
 @Serializable
 public data class TurnEnded(
@@ -145,43 +199,65 @@ public data class MatchEnded(
 ) : GameEvent
 
 /**
- * A critical hit destroyed [content] at [location]/[slotIndex] on [unitId]
- * (`docs/rules/armor-damage.md` §3). This stage only records the destroyed slot;
- * per-component consequences (engine heat, gyro PSR, weapon disable, ammo
- * detonation, …) are wired in later stages.
+ * A critical hit destroyed a component at [Detailed.location]/[Detailed.slotIndex] on
+ * [unitId] (`docs/rules/armor-damage.md` §3). *That* a crit landed is observable at the
+ * table; WHICH component ([Detailed.content]) is record-sheet detail, withheld from
+ * foreign viewers via [Undisclosed] — see [battletech.tactical.session.redactFor].
  */
 @Serializable
-public data class CriticalHit(
-    public val unitId: UnitId,
-    public val location: MechLocation,
-    public val slotIndex: Int,
-    public val content: CriticalSlotContent,
-) : GameEvent
+public sealed interface CriticalHit : GameEvent {
+    public val unitId: UnitId
+
+    /** This stage only records the destroyed slot; per-component consequences (engine
+     * heat, gyro PSR, weapon disable, ammo detonation, …) are wired in later stages. */
+    @Serializable
+    public data class Detailed(
+        override val unitId: UnitId,
+        public val location: MechLocation,
+        public val slotIndex: Int,
+        public val content: CriticalSlotContent,
+    ) : CriticalHit
+
+    /** Foreign-viewer redaction of [Detailed]: only that a crit landed on [unitId]. */
+    @Serializable
+    public data class Undisclosed(override val unitId: UnitId) : CriticalHit
+}
 
 /**
  * [unitId]'s pilot took a hit (life support, ASSUMPTION: head/fall/ammo sources in
- * future stages), bringing the running total to [pilotHits].
+ * future stages). The running hit total ([Fatal.pilotHits]/[Checked.pilotHits]) is
+ * record-sheet data, withheld from foreign viewers via [Undisclosed] — see
+ * [battletech.tactical.session.redactFor].
  */
 @Serializable
 public sealed interface PilotHit : GameEvent {
     public val unitId: UnitId
-    public val pilotHits: Int
 
     /**
      * The hit reached [battletech.tactical.unit.PILOT_DEATH_THRESHOLD] — the pilot is dead, so
      * no consciousness roll is made (see [DestructionReason.PILOT_DEAD]).
      */
     @Serializable
-    public data class Fatal(override val unitId: UnitId, override val pilotHits: Int) : PilotHit
+    public data class Fatal(override val unitId: UnitId, public val pilotHits: Int) : PilotHit
 
     /** The pilot survived; [consciousnessRoll] is the scripted 2d6 roll and [conscious] its outcome. */
     @Serializable
     public data class Checked(
         override val unitId: UnitId,
-        override val pilotHits: Int,
+        public val pilotHits: Int,
         public val consciousnessRoll: DiceRoll,
         public val conscious: Boolean,
     ) : PilotHit
+
+    /**
+     * Foreign-viewer redaction of [Fatal] or [Checked]: the pilot was wounded, but the
+     * running hit count, the consciousness roll, and whether it passed are all
+     * record-sheet data. Whether the pilot is subsequently conscious is public through
+     * a separate, unredacted [PilotKnockedUnconscious]/[PilotRecoveredConsciousness] —
+     * this event only needs to say a hit landed.
+     */
+    @Serializable
+    public data class Undisclosed(override val unitId: UnitId) : PilotHit
 }
 
 /** [unitId]'s pilot failed a consciousness check (following a [PilotHit]) and blacked out. */

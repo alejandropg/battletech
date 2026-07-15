@@ -91,7 +91,7 @@ internal class MovementStandUpTest {
 
         val outcome = handler.apply(standUp(), state, turn(), roller)
 
-        val stood = outcome.events.filterIsInstance<UnitStoodUp>().single()
+        val stood = outcome.events.filterIsInstance<UnitStoodUp.Detailed>().single()
         assertThat(stood.psr.targetNumber).isEqualTo(8)
         assertThat(stood.stoodUp).isFalse()
         assertThat(outcome.state.unitById(prone.id)!!.isProne).isTrue()

@@ -24,6 +24,7 @@ import battletech.tactical.session.LogEntry
 import battletech.tactical.session.SessionNotice
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
+import battletech.tactical.session.redactFor
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -94,6 +95,11 @@ public class RemoteGameSession internal constructor(
 
     public override fun stateFor(viewer: PlayerId?): PlayerGameState =
         snapshot.gameState.projectFor(viewer, revealAll = snapshot.isMatchOver)
+
+    public override fun logFor(viewer: PlayerId?): List<LogEntry> =
+        log.snapshot().mapNotNull { entry ->
+            entry.event.redactFor(viewer, snapshot.gameState, revealAll = snapshot.isMatchOver)?.let { entry.copy(event = it) }
+        }
 
     public override fun subscribe(listener: (GameEvent) -> Unit): Subscription {
         listeners += listener

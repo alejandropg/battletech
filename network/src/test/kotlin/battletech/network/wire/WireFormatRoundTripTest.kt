@@ -140,12 +140,23 @@ internal class WireFormatRoundTripTest {
 
     // `gameEventFixtures` above covers one leaf per direct GameEvent subtype
     // (UnitShutdown.AvoidFailed, UnitRestarted.RollPassed, PilotHit.Checked,
-    // MatchEnded(Victory)). These round-trip the sibling leaves those nested
-    // sealed types (UnitShutdown, UnitRestarted, PilotHit, MatchOutcome) permit.
+    // MatchEnded(Victory), CriticalHit.Detailed, AmmoExploded.Detailed,
+    // UnitStoodUp.Detailed). These round-trip the sibling leaves those nested
+    // sealed types (UnitShutdown, UnitRestarted, PilotHit, MatchOutcome,
+    // CriticalHit, AmmoExploded, UnitStoodUp) permit — including Stage 3's
+    // `Undisclosed` redaction leaves, which ride the wire just like their
+    // `Detailed` siblings.
 
     @Test
     fun `UnitShutdown Automatic round-trips`() {
         val event: GameEvent = UnitShutdown.Automatic(unitId = unitA)
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
+    }
+
+    @Test
+    fun `UnitShutdown Undisclosed round-trips`() {
+        val event: GameEvent = UnitShutdown.Undisclosed(unitId = unitA)
         val line = WireJson.json.encodeToString(event)
         assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
     }
@@ -158,6 +169,13 @@ internal class WireFormatRoundTripTest {
     }
 
     @Test
+    fun `UnitRestarted Undisclosed round-trips`() {
+        val event: GameEvent = UnitRestarted.Undisclosed(unitId = unitA)
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
+    }
+
+    @Test
     fun `PilotHit Fatal round-trips`() {
         val event: GameEvent = PilotHit.Fatal(unitId = unitA, pilotHits = 6)
         val line = WireJson.json.encodeToString(event)
@@ -165,8 +183,82 @@ internal class WireFormatRoundTripTest {
     }
 
     @Test
+    fun `PilotHit Undisclosed round-trips`() {
+        val event: GameEvent = PilotHit.Undisclosed(unitId = unitA)
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
+    }
+
+    @Test
+    fun `CriticalHit Undisclosed round-trips`() {
+        val event: GameEvent = CriticalHit.Undisclosed(unitId = unitA)
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
+    }
+
+    @Test
+    fun `AmmoExploded Undisclosed round-trips`() {
+        val event: GameEvent = AmmoExploded.Undisclosed(unitId = unitA, damage = 12)
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
+    }
+
+    @Test
+    fun `UnitStoodUp Undisclosed round-trips`() {
+        val event: GameEvent = UnitStoodUp.Undisclosed(unitId = unitA, stoodUp = true)
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
+    }
+
+    @Test
     fun `MatchEnded with a Draw outcome round-trips`() {
         val event: GameEvent = MatchEnded(outcome = MatchOutcome.Draw)
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
+    }
+
+    // ---------- Knockdown (nested in PhysicalAttackResult, not a top-level GameEvent —
+    // not covered by the completeness guard above, but still rides the wire embedded in
+    // PhysicalAttacksResolved, so its Stage 3 redaction leaves get the same treatment) ----------
+
+    @Test
+    fun `PhysicalAttacksResolved with a Knockdown Resisted Undisclosed round-trips`() {
+        val event: GameEvent = PhysicalAttacksResolved(
+            results = listOf(
+                PhysicalAttackResult.Miss(
+                    attackerId = unitA,
+                    targetId = unitB,
+                    attackName = "Kick",
+                    targetNumber = 6,
+                    toHitRoll = DiceRoll(2, 3),
+                    attackDirection = AttackDirection.FRONT,
+                    knockdown = Knockdown.Resisted.Undisclosed,
+                ),
+            ),
+        )
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
+    }
+
+    @Test
+    fun `PhysicalAttacksResolved with a Knockdown Fell Undisclosed round-trips`() {
+        val event: GameEvent = PhysicalAttacksResolved(
+            results = listOf(
+                PhysicalAttackResult.Hit(
+                    attackerId = unitA,
+                    targetId = unitB,
+                    attackName = "Kick",
+                    hitLocation = MechLocation.LEFT_LEG,
+                    damageApplied = 4,
+                    targetNumber = 6,
+                    toHitRoll = DiceRoll(4, 4),
+                    locationRoll = 5,
+                    attackDirection = AttackDirection.FRONT,
+                    damage = listOf(LocationDamage(MechLocation.LEFT_LEG, armorDamage = 4, structureDamage = 0, destroyed = false)),
+                    knockdown = Knockdown.Fell.Undisclosed(unitId = unitB, fall = aFallResult()),
+                ),
+            ),
+        )
         val line = WireJson.json.encodeToString(event)
         assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
     }
@@ -418,7 +510,7 @@ internal class WireFormatRoundTripTest {
             locationRoll = 5,
             attackDirection = AttackDirection.FRONT,
             damage = listOf(LocationDamage(MechLocation.LEFT_LEG, armorDamage = 4, structureDamage = 0, destroyed = false)),
-            knockdown = Knockdown.Fell(
+            knockdown = Knockdown.Fell.Detailed(
                 unitId = unitB,
                 psr = aPilotingSkillRoll(),
                 fall = aFallResult(),
@@ -458,7 +550,7 @@ internal class WireFormatRoundTripTest {
             AttacksResolved::class to AttacksResolved(results = listOf(anAttackResult())),
             PhysicalAttacksResolved::class to PhysicalAttacksResolved(results = listOf(aPhysicalAttackResult())),
             UnitFell::class to UnitFell(unitId = unitA, fall = aFallResult()),
-            UnitStoodUp::class to UnitStoodUp(unitId = unitA, psr = aPilotingSkillRoll(), stoodUp = true),
+            UnitStoodUp::class to UnitStoodUp.Detailed(unitId = unitA, psr = aPilotingSkillRoll(), stoodUp = true),
             AttackDeclarationsRecorded::class to AttackDeclarationsRecorded(
                 player = PlayerId.PLAYER_1,
                 declarations = listOf(AttackDeclaration(unitA, unitB, 0, true)),
@@ -469,11 +561,11 @@ internal class WireFormatRoundTripTest {
             HeatDissipated::class to HeatDissipated(heatBefore = mapOf(unitA to 5), heatAfter = mapOf(unitA to 3)),
             UnitShutdown::class to UnitShutdown.AvoidFailed(unitId = unitA, roll = DiceRoll(3, 4)),
             UnitRestarted::class to UnitRestarted.RollPassed(unitId = unitA, roll = DiceRoll(5, 6)),
-            AmmoExploded::class to AmmoExploded(unitId = unitA, ammoType = AmmoType.SRM6, damage = 12),
+            AmmoExploded::class to AmmoExploded.Detailed(unitId = unitA, ammoType = AmmoType.SRM6, damage = 12),
             TurnEnded::class to TurnEnded(turnNumber = 2),
             UnitDestroyed::class to UnitDestroyed(unitId = unitA, reason = DestructionReason.ENGINE_DESTROYED),
             MatchEnded::class to MatchEnded(outcome = MatchOutcome.Victory(PlayerId.PLAYER_2)),
-            CriticalHit::class to CriticalHit(
+            CriticalHit::class to CriticalHit.Detailed(
                 unitId = unitA,
                 location = MechLocation.LEFT_TORSO,
                 slotIndex = 3,

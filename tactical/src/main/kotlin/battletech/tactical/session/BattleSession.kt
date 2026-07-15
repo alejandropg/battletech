@@ -78,6 +78,15 @@ public class BattleSession(
         _gameState.projectFor(viewer, revealAll = _matchOver)
 
     /**
+     * The log counterpart of [stateFor]: same viewer, same [_matchOver] reveal, applied
+     * per-entry via [GameEvent.redactFor] instead of per-unit via [battletech.tactical.query.projectFor].
+     */
+    public override fun logFor(viewer: PlayerId?): List<LogEntry> =
+        _gameLog.snapshot().mapNotNull { entry ->
+            entry.event.redactFor(viewer, _gameState, revealAll = _matchOver)?.let { entry.copy(event = it) }
+        }
+
+    /**
      * Register [listener] to receive every event emitted by this session:
      * a session-wide feed, not scoped to any player (open-information).
      *

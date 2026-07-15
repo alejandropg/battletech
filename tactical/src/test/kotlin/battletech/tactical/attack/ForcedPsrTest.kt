@@ -42,7 +42,7 @@ internal class ForcedPsrTest {
 
         assertThat(fallen.pilotHits).isEqualTo(1)
         assertThat(events.filterIsInstance<PilotHit>()).hasSize(1)
-        assertThat(events.filterIsInstance<PilotHit>().single().pilotHits).isEqualTo(1)
+        assertThat(events.filterIsInstance<PilotHit.Checked>().single().pilotHits).isEqualTo(1)
     }
 
     @Test

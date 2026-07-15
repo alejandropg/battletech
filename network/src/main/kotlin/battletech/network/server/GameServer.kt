@@ -19,6 +19,7 @@ import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.GameLog
 import battletech.tactical.session.GameSession
+import battletech.tactical.session.LogEntry
 import battletech.tactical.session.SessionNotice
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
@@ -119,6 +120,8 @@ public class GameServer(
     public override fun viewFor(playerId: PlayerId): PlayerView = synchronized(lock) { session.viewFor(playerId) }
 
     public override fun stateFor(viewer: PlayerId?): PlayerGameState = synchronized(lock) { session.stateFor(viewer) }
+
+    public override fun logFor(viewer: PlayerId?): List<LogEntry> = synchronized(lock) { session.logFor(viewer) }
 
     /**
      * Listener bodies must be thread-safe on the caller's side: dispatch may

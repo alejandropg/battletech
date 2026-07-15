@@ -85,7 +85,7 @@ internal class HeatPhaseHandlerTest {
         // pilot hit 1 consciousness 2d6 (3,3 → 6 ≥ target 3); pilot hit 2 consciousness 2d6 (3,3 → 6 ≥ target 5).
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(6, 6, 1, 1, 3, 3, 3, 3))
 
-        val exploded = outcome.events.filterIsInstance<AmmoExploded>().single()
+        val exploded = outcome.events.filterIsInstance<AmmoExploded.Detailed>().single()
         assertEquals(AmmoType.AC20, exploded.ammoType)
         assertEquals(100, exploded.damage) // 5 shots * 20 damage per shot
         val remainingBin = outcome.state.units[0].criticalLayout.ammoBins().single()
@@ -161,7 +161,7 @@ internal class HeatPhaseHandlerTest {
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(3, 3, 3, 3, 3, 3))
 
         assertEquals(1, outcome.state.units[0].pilotHits)
-        assertThat(outcome.events).anyMatch { it is PilotHit && it.pilotHits == 1 }
+        assertThat(outcome.events).anyMatch { it is PilotHit.Checked && it.pilotHits == 1 }
     }
 
     @Test
@@ -191,7 +191,7 @@ internal class HeatPhaseHandlerTest {
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(3, 3))
 
         assertEquals(1, outcome.state.units[0].pilotHits)
-        assertThat(outcome.events).anyMatch { it is PilotHit && it.pilotHits == 1 }
+        assertThat(outcome.events).anyMatch { it is PilotHit.Checked && it.pilotHits == 1 }
     }
 
     // -------------------------------------------------------------------------

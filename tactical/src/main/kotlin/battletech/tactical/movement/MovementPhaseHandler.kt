@@ -112,10 +112,10 @@ public class MovementPhaseHandler : PhaseHandler {
             val newState = state.copy(
                 units = state.units.map { if (it.id == cmd.unitId) it.copy(isProne = false) else it },
             )
-            PhaseOutcome(newState, turn, listOf(UnitStoodUp(cmd.unitId, psr, stoodUp = true)))
+            PhaseOutcome(newState, turn, listOf(UnitStoodUp.Detailed(cmd.unitId, psr, stoodUp = true)))
         } else {
             // Failed to rise; remains prone and its activation is spent.
-            PhaseOutcome(state, turn.copy(movement = turn.movement.afterUnitMoved(cmd.unitId)), listOf(UnitStoodUp(cmd.unitId, psr, stoodUp = false)))
+            PhaseOutcome(state, turn.copy(movement = turn.movement.afterUnitMoved(cmd.unitId)), listOf(UnitStoodUp.Detailed(cmd.unitId, psr, stoodUp = false)))
         }
     }
 

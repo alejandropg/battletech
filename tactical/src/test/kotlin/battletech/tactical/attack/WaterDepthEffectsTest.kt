@@ -387,7 +387,7 @@ internal class WaterDepthEffectsTest {
 
         assertEquals(1, outcome.state.units[0].pilotHits)
         assertFalse(outcome.state.units[0].isPilotConscious)
-        assertThat(outcome.events).anyMatch { it is PilotHit && it.pilotHits == 1 }
+        assertThat(outcome.events).anyMatch { it is PilotHit.Checked && it.pilotHits == 1 }
     }
 
     @Test

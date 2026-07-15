@@ -100,7 +100,7 @@ public fun detonateAmmoBin(
     val damage = bin.shots * bin.type.damagePerShot
     val emptiedLayout = unit.criticalLayout.withSlot(binLocation, slotIndex, bin.copy(shots = 0))
     val damaged = applyDamage(unit.copy(criticalLayout = emptiedLayout), damageLocation, damage)
-    return damaged to AmmoExploded(unit.id, bin.type, damage)
+    return damaged to AmmoExploded.Detailed(unit.id, bin.type, damage)
 }
 
 /**
@@ -171,7 +171,7 @@ public fun resolveCriticalHits(
         for (index in slots.indices) {
             if (currentUnit.isSlotDestroyed(location, index)) continue
             val content = slots[index]
-            events += CriticalHit(currentUnit.id, location, index, content)
+            events += CriticalHit.Detailed(currentUnit.id, location, index, content)
             val (afterConsequence, consequenceEvents) = currentUnit.applyCritConsequence(location, index, content)
             currentUnit = afterConsequence
             events += consequenceEvents
@@ -196,7 +196,7 @@ public fun resolveCriticalHits(
     repeat(critCount) {
         val pick = pickSlot(currentUnit, location, roller) ?: return@repeat
         currentUnit = currentUnit.withSlotDestroyed(location, pick.index)
-        events += CriticalHit(currentUnit.id, location, pick.index, pick.content)
+        events += CriticalHit.Detailed(currentUnit.id, location, pick.index, pick.content)
         val (afterConsequence, consequenceEvents) = currentUnit.applyCritConsequence(location, pick.index, pick.content)
         currentUnit = afterConsequence
         events += consequenceEvents

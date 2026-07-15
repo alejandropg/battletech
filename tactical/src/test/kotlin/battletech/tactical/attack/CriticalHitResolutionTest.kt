@@ -108,7 +108,7 @@ internal class CriticalHitResolutionTest {
         // 2d6 = 9 -> 1 crit. Block 4 (lower half, start at 6), slot 2 -> index 7 (Engine).
         val roller = DiceRoller.deterministic(4, 5, 4, 2)
         val (updated, events) = resolveCriticalHits(baseUnit, MechLocation.CENTER_TORSO, roller)
-        val event = events.single() as CriticalHit
+        val event = events.single() as CriticalHit.Detailed
         assertThat(event.location).isEqualTo(MechLocation.CENTER_TORSO)
         assertThat(event.slotIndex).isEqualTo(7)
         assertThat(event.content).isEqualTo(CriticalSlotContent.Engine)
@@ -123,7 +123,7 @@ internal class CriticalHitResolutionTest {
         // Re-roll: block 1, slot 1 -> index 0 (LifeSupport).
         val roller = DiceRoller.deterministic(4, 5, 1, 4, 1, 1)
         val (updated, events) = resolveCriticalHits(baseUnit, MechLocation.HEAD, roller)
-        val event = events.single() as CriticalHit
+        val event = events.single() as CriticalHit.Detailed
         assertThat(event.slotIndex).isEqualTo(0)
         assertThat(event.content).isEqualTo(CriticalSlotContent.LifeSupport)
         assertThat(updated.isSlotDestroyed(MechLocation.HEAD, 3)).isFalse()
@@ -138,7 +138,7 @@ internal class CriticalHitResolutionTest {
         // Re-roll: block 1, slot 2 -> index 1 (Sensors).
         val roller = DiceRoller.deterministic(4, 5, 1, 1, 1, 2)
         val (updated, events) = resolveCriticalHits(alreadyHit, MechLocation.HEAD, roller)
-        val event = events.single() as CriticalHit
+        val event = events.single() as CriticalHit.Detailed
         assertThat(event.slotIndex).isEqualTo(1)
         assertThat(event.content).isEqualTo(CriticalSlotContent.Sensors)
         assertThat(updated.criticalHits[MechLocation.HEAD]).containsExactlyInAnyOrder(0, 1)
@@ -276,7 +276,7 @@ internal class CriticalHitResolutionTest {
         val roller = DiceRoller.deterministic(4, 5, 1, 1)
         val (updated, events) = resolveCriticalHits(unit, MechLocation.RIGHT_TORSO, roller)
 
-        val criticalHit = events.filterIsInstance<CriticalHit>().single()
+        val criticalHit = events.filterIsInstance<CriticalHit.Detailed>().single()
         assertThat(criticalHit.content).isEqualTo(CriticalSlotContent.WeaponMount(build.weapons.single().mountId!!))
         assertThat(updated.weapons.single().destroyed).isTrue()
     }
@@ -297,7 +297,7 @@ internal class CriticalHitResolutionTest {
         val roller = DiceRoller.deterministic(4, 5, 1, 2)
         val (updated, events) = resolveCriticalHits(unit, MechLocation.RIGHT_TORSO, roller)
 
-        val criticalHit = events.filterIsInstance<CriticalHit>().single()
+        val criticalHit = events.filterIsInstance<CriticalHit.Detailed>().single()
         assertThat(criticalHit.slotIndex).isEqualTo(1)
         assertThat(updated.weapons.single().destroyed).isTrue()
     }
@@ -322,7 +322,7 @@ internal class CriticalHitResolutionTest {
         val roller = DiceRoller.deterministic(4, 5, 1, 2, 3, 3, 3, 3)
         val (updated, events) = resolveCriticalHits(unit, MechLocation.RIGHT_TORSO, roller)
 
-        val exploded = events.filterIsInstance<AmmoExploded>().single()
+        val exploded = events.filterIsInstance<AmmoExploded.Detailed>().single()
         assertThat(exploded.unitId).isEqualTo(unit.id)
         assertThat(exploded.ammoType).isEqualTo(AmmoType.AC20)
         assertThat(exploded.damage).isEqualTo(100) // 5 shots * 20 damage per shot
@@ -378,14 +378,13 @@ internal class CriticalHitResolutionTest {
         assertThat(updated.criticalHits[MechLocation.HEAD]).contains(2)
 
         // A CriticalHit event is emitted for the cockpit slot.
-        val critEvent = events.filterIsInstance<CriticalHit>().single()
+        val critEvent = events.filterIsInstance<CriticalHit.Detailed>().single()
         assertThat(critEvent.location).isEqualTo(MechLocation.HEAD)
         assertThat(critEvent.slotIndex).isEqualTo(2)
         assertThat(critEvent.content).isEqualTo(CriticalSlotContent.Cockpit)
 
         // A fatal PilotHit event follows: no consciousness roll, pilot hits = death threshold.
-        val pilotEvent = events.filterIsInstance<PilotHit>().single()
-        assertThat(pilotEvent).isInstanceOf(PilotHit.Fatal::class.java)
+        val pilotEvent = events.filterIsInstance<PilotHit.Fatal>().single()
         assertThat(pilotEvent.unitId).isEqualTo(baseUnit.id)
         assertThat(pilotEvent.pilotHits).isEqualTo(PILOT_DEATH_THRESHOLD)
 
@@ -403,8 +402,8 @@ internal class CriticalHitResolutionTest {
 
         assertThat(updated.pilotHits).isEqualTo(PILOT_DEATH_THRESHOLD)
         assertThat(destructionReason(updated)).isEqualTo(DestructionReason.PILOT_DEAD)
-        val pilotEvent = events.filterIsInstance<PilotHit>().single()
-        assertThat(pilotEvent).isInstanceOf(PilotHit.Fatal::class.java)
+        val pilotEvent = events.filterIsInstance<PilotHit.Fatal>().single()
+        assertThat(pilotEvent.pilotHits).isEqualTo(PILOT_DEATH_THRESHOLD)
     }
 
     private fun splitTotal(total: Int): Pair<Int, Int> {

@@ -57,7 +57,13 @@ public sealed interface PhysicalAttackResult {
     }
 }
 
-/** Outcome of a kick's knockdown piloting-skill roll. */
+/**
+ * Outcome of a kick's knockdown piloting-skill roll. Whether the faller (target on a hit,
+ * attacker on a miss — see [battletech.tactical.attack.physical.resolvePhysicalAttacks])
+ * fell or resisted is observable; the [PilotingSkillRoll] behind either outcome reveals
+ * `pilotingSkill`, so it is withheld from foreign viewers via each case's `Undisclosed`
+ * leaf — see [battletech.tactical.session.redactFor].
+ */
 @Serializable
 public sealed interface Knockdown {
     /** No PSR was forced — always the case for punches. */
@@ -66,20 +72,43 @@ public sealed interface Knockdown {
 
     /** The PSR was made; no fall resulted. */
     @Serializable
-    public data class Resisted(public val psr: PilotingSkillRoll) : Knockdown
+    public sealed interface Resisted : Knockdown {
+        @Serializable
+        public data class Detailed(public val psr: PilotingSkillRoll) : Resisted
+
+        /** Foreign-viewer redaction of [Detailed]: only that the faller resisted. */
+        @Serializable
+        public data object Undisclosed : Resisted
+    }
 
     /** The PSR failed; [unitId] fell, taking [fall] damage and (per standard rules) a pilot hit. */
     @Serializable
-    public data class Fell(
-        public val unitId: UnitId,
-        public val psr: PilotingSkillRoll,
-        public val fall: FallResult,
+    public sealed interface Fell : Knockdown {
+        public val unitId: UnitId
+        public val fall: FallResult
+
         /**
          * Pilot-hit events ([battletech.tactical.session.PilotHit] /
          * [battletech.tactical.session.PilotKnockedUnconscious]) resulting from this fall.
          * Emitted by [battletech.tactical.attack.physical.PhysicalAttackPhaseHandler] alongside
          * [battletech.tactical.session.UnitFell].
          */
-        public val pilotEvents: List<GameEvent> = emptyList(),
-    ) : Knockdown
+        public val pilotEvents: List<GameEvent>
+
+        @Serializable
+        public data class Detailed(
+            override val unitId: UnitId,
+            public val psr: PilotingSkillRoll,
+            override val fall: FallResult,
+            override val pilotEvents: List<GameEvent> = emptyList(),
+        ) : Fell
+
+        /** Foreign-viewer redaction of [Detailed]: the fall (and its damage) stays observable, the PSR does not. */
+        @Serializable
+        public data class Undisclosed(
+            override val unitId: UnitId,
+            override val fall: FallResult,
+            override val pilotEvents: List<GameEvent> = emptyList(),
+        ) : Fell
+    }
 }

@@ -35,6 +35,13 @@ public interface GameSession {
     public fun stateFor(viewer: PlayerId?): PlayerGameState
 
     /**
+     * The log counterpart of [stateFor]: every [gameLog] entry redacted for [viewer] via
+     * [GameEvent.redactFor], with suppressed entries (redaction returning `null`) dropped.
+     * Order is preserved. Null viewer => everything foreign (fails closed), same as [stateFor].
+     */
+    public fun logFor(viewer: PlayerId?): List<LogEntry>
+
+    /**
      * Register [listener] to receive every event emitted by this session.
      * Open-information: there is no per-player filtering — every subscriber
      * sees everything. Returns a [Subscription] whose

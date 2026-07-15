@@ -54,14 +54,14 @@ public fun resolvePhysicalAttacks(
         val psrModifier = faller.basePsrModifier()
         val psr = pilotingSkillRoll(faller, roller, modifier = psrModifier)
         val knockdown = if (psr.passed) {
-            Knockdown.Resisted(psr)
+            Knockdown.Resisted.Detailed(psr)
         } else {
             // Fall applies damage; pilot also takes 1 hit per standard BT rules.
             // Canonical dice order: fall location 2d6, facing 1d6, consciousness check 2d6.
             val (fallen, fallResult) = fall(faller, roller)
             val (injured, pilotEvents) = applyPilotHit(fallen, roller)
             updatedState = updatedState.withUnit(injured)
-            Knockdown.Fell(unitId = fallerId, psr = psr, fall = fallResult, pilotEvents = pilotEvents)
+            Knockdown.Fell.Detailed(unitId = fallerId, psr = psr, fall = fallResult, pilotEvents = pilotEvents)
         }
         withKnockdown(result, knockdown)
     }

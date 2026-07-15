@@ -34,8 +34,8 @@ internal class PhysicalKickKnockdownTest {
         val result = results.single()
         assertThat(result).isInstanceOf(PhysicalAttackResult.Hit::class.java)
         val knockdown = result.knockdown
-        assertThat(knockdown).isInstanceOf(Knockdown.Fell::class.java)
-        knockdown as Knockdown.Fell
+        assertThat(knockdown).isInstanceOf(Knockdown.Fell.Detailed::class.java)
+        knockdown as Knockdown.Fell.Detailed
         assertThat(knockdown.psr.passed).isFalse()
         assertThat(knockdown.unitId).isEqualTo(target.id)
 
@@ -58,8 +58,8 @@ internal class PhysicalKickKnockdownTest {
         val result = results.single()
         assertThat(result).isInstanceOf(PhysicalAttackResult.Miss::class.java)
         val knockdown = result.knockdown
-        assertThat(knockdown).isInstanceOf(Knockdown.Fell::class.java)
-        assertThat((knockdown as Knockdown.Fell).unitId).isEqualTo(attacker.id)
+        assertThat(knockdown).isInstanceOf(Knockdown.Fell.Detailed::class.java)
+        assertThat((knockdown as Knockdown.Fell.Detailed).unitId).isEqualTo(attacker.id)
 
         val fallenAttacker = newState.unitById(attacker.id)!!
         assertThat(fallenAttacker.isProne).isTrue()
@@ -74,8 +74,8 @@ internal class PhysicalKickKnockdownTest {
 
         val result = results.single()
         val knockdown = result.knockdown
-        assertThat(knockdown).isInstanceOf(Knockdown.Resisted::class.java)
-        assertThat((knockdown as Knockdown.Resisted).psr.passed).isTrue()
+        assertThat(knockdown).isInstanceOf(Knockdown.Resisted.Detailed::class.java)
+        assertThat((knockdown as Knockdown.Resisted.Detailed).psr.passed).isTrue()
         assertThat(newState.unitById(target.id)!!.isProne).isFalse()
     }
 
