@@ -2,6 +2,7 @@ package battletech.tui.game
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
+import battletech.tactical.session.Impulse
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.UnitId
 import battletech.tui.aGameMap
@@ -203,6 +204,48 @@ internal class MovementSelectingUnitPhaseTest {
 
             assertInstanceOf(UnitStatusSubject.Public::class.java, subject)
             assertEquals(p2Unit.id, (subject as UnitStatusSubject.Public).unit.id)
+        }
+
+        @Test
+        fun `unitStatus is Public for an enemy unit when the viewer is unknown (fails closed)`() {
+            // Movement complete -> MovementPhase.unitStatus passes activePlayer = null; combined
+            // with the default anAppState() localPlayer = null, cursorUnitStatus's viewer is
+            // unknown. This is the match-over-parked scenario: "I don't know who is looking" must
+            // redact, not reveal. This test reproduces the bug: it fails on the old fail-open code
+            // (which returned Owned whenever viewer == null).
+            val p1Unit = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+            val p2Unit = aUnit(id = "u2", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 1))
+            val gameState = aGameState(units = listOf(p1Unit, p2Unit))
+            val completedTurnState = aTurnState(
+                movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 1)),
+                currentImpulseIndex = 1,
+            )
+            val state = anAppState(cursor = HexCoordinates(1, 1), gameState = gameState, turnState = completedTurnState)
+
+            val subject = MovementPhase.SelectingUnit.unitStatus(state)
+
+            assertInstanceOf(UnitStatusSubject.Public::class.java, subject)
+            assertEquals(p2Unit.id, (subject as UnitStatusSubject.Public).unit.id)
+        }
+
+        @Test
+        fun `unitStatus is Public for the viewer's own unit when the viewer is unknown (fails closed)`() {
+            // Same unknown-viewer scenario as above, but the cursor sits on the unit that would be
+            // "own" under any active player. With no known viewer there is no "own" to compare
+            // against, so it must still redact.
+            val p1Unit = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+            val p2Unit = aUnit(id = "u2", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 1))
+            val gameState = aGameState(units = listOf(p1Unit, p2Unit))
+            val completedTurnState = aTurnState(
+                movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 1)),
+                currentImpulseIndex = 1,
+            )
+            val state = anAppState(cursor = HexCoordinates(0, 0), gameState = gameState, turnState = completedTurnState)
+
+            val subject = MovementPhase.SelectingUnit.unitStatus(state)
+
+            assertInstanceOf(UnitStatusSubject.Public::class.java, subject)
+            assertEquals(p1Unit.id, (subject as UnitStatusSubject.Public).unit.id)
         }
     }
 }

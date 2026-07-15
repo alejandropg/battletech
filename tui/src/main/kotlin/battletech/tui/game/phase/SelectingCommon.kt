@@ -160,21 +160,26 @@ internal fun handleUnitSelection(
  * selecting state: full [UnitStatusSubject.Owned] detail for the viewer's
  * own units, the condensed [UnitStatusSubject.Public] summary for anyone
  * else's — matching what TARGET STATUS shows via [PlayerView.publicUnit].
- * Presentational only, not access control: the game is open-information
- * (see `PublicUnit`'s KDoc).
  *
- * [viewer] is [AppState.localPlayer] when set (remote play: the local seat
- * keeps the summary form for units it doesn't own, even on the opponent's
- * turn), or else falls back to [activePlayer] (hot-seat: the acting player
- * is the viewer). A null [viewer] (both are null — the turn hasn't been
- * seeded yet) falls back to [UnitStatusSubject.Owned] so the transient
- * pre-start window keeps today's behavior.
+ * This fails **closed**: [viewer] is [AppState.localPlayer] when set (remote
+ * play: the local seat keeps the summary form for units it doesn't own, even
+ * on the opponent's turn), or else falls back to [activePlayer] (hot-seat:
+ * the acting player is the viewer). When neither is known — [viewer] is null,
+ * e.g. the session has parked past match-over and [activePlayer] is passed
+ * as null — there is no identity to compare against "own", so every unit,
+ * including the caller's own, renders as [UnitStatusSubject.Public]. "I don't
+ * know who is looking" is exactly when redaction must be maximal, not
+ * minimal.
+ *
+ * [publicUnit] is called with an arbitrary valid [PlayerId] when [viewer] is
+ * null ([unit.owner], since one is guaranteed to exist): its projection does
+ * not depend on which player's view it was built from.
  */
 internal fun cursorUnitStatus(app: AppState, activePlayer: PlayerId?): UnitStatusSubject? {
     val unit = app.gameState.unitAt(app.cursor) ?: return null
     val viewer = app.localPlayer ?: activePlayer
-    return if (viewer == null || unit.owner == viewer) UnitStatusSubject.Owned(unit)
-    else UnitStatusSubject.Public(app.viewFor(viewer).publicUnit(unit.id)!!)
+    return if (viewer != null && unit.owner == viewer) UnitStatusSubject.Owned(unit)
+    else UnitStatusSubject.Public(app.viewFor(viewer ?: unit.owner).publicUnit(unit.id)!!)
 }
 
 private fun selectUnitAt(
