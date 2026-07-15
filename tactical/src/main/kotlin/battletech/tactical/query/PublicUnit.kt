@@ -3,7 +3,9 @@ package battletech.tactical.query
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.UnitId
+import kotlinx.serialization.Serializable
 
+@Serializable
 public data class PublicWeapon(val name: String)
 
 /**
