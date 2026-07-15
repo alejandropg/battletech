@@ -23,7 +23,6 @@ import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
-import battletech.tactical.unit.WeaponModel
 import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.empty
 import battletech.tui.game.AppState
@@ -32,12 +31,7 @@ import battletech.tui.game.phase.Phase
 
 internal fun mediumLaser(): Weapon = Weapon(model = WeaponModels.mediumLaser)
 
-internal fun srm6(): Weapon = Weapon(
-    model = WeaponModel(
-        name = "SRM 6", damage = 12, heat = 4,
-        shortRange = 3, mediumRange = 6, longRange = 9,
-    ),
-)
+internal fun srm6(): Weapon = Weapon(model = WeaponModels.srm6)
 
 internal fun aTurnState(
     movementOrder: List<Impulse> = listOf(Impulse(PlayerId.PLAYER_1, 1)),

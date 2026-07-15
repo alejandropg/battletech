@@ -21,18 +21,6 @@ import battletech.tactical.unit.empty
 
 internal fun mediumLaser(): Weapon = Weapon(model = WeaponModels.mediumLaser)
 
-internal fun srm4(): Weapon = Weapon(
-    model = WeaponModel(
-        name = "SRM-4",
-        damage = 8,
-        heat = 3,
-        shortRange = 3,
-        mediumRange = 6,
-        longRange = 9,
-        ammoType = AmmoType.SRM2,
-    ),
-)
-
 internal fun ac20(): Weapon = Weapon(model = WeaponModels.ac20)
 
 internal fun aWeapon(
