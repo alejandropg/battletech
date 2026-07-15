@@ -10,6 +10,7 @@ import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
+import battletech.tactical.query.projectFor
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aTurnState
@@ -142,7 +143,7 @@ internal class MovementPhaseTest {
             val result = phase.handle(KeyboardEvent("Enter"), state)
 
             assertNotNull(result)
-            val movedUnit = result!!.app.session.gameState.units.first { it.id == unit.id }
+            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
             assertEquals(HexCoordinates(0, -2), movedUnit.position)
         }
 
@@ -183,7 +184,7 @@ internal class MovementPhaseTest {
             val result = facingPhase.handle(KeyboardEvent("1"), state)
 
             assertNotNull(result)
-            val movedUnit = result!!.app.session.gameState.units.first { it.id == unit.id }
+            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
             assertEquals(HexCoordinates(0, -1), movedUnit.position)
             assertEquals(HexDirection.N, movedUnit.facing)
         }
@@ -204,7 +205,7 @@ internal class MovementPhaseTest {
             val result = facingPhase.handle(KeyboardEvent("3"), state)
 
             assertNotNull(result)
-            val movedUnit = result!!.app.session.gameState.units.first { it.id == unit.id }
+            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
             assertEquals(HexDirection.SE, movedUnit.facing)
         }
 
@@ -242,7 +243,7 @@ internal class MovementPhaseTest {
             val result = phase.handle(KeyboardEvent("1"), state)
 
             assertNotNull(result)
-            val movedUnit = result!!.app.session.gameState.units.first { it.id == unit.id }
+            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
             assertEquals(HexDirection.N, movedUnit.facing)
         }
     }
@@ -410,7 +411,7 @@ internal class MovementPhaseTest {
             val result = phase.handle(KeyboardEvent("Tab"), state)
 
             assertNotNull(result)
-            assertEquals(gameState, result!!.app.session.gameState)
+            assertEquals(gameState.projectFor(result!!.app.viewer), result.app.visibleState)
             assertEquals(turnState.movement.movedUnitIds, result.app.turnState.movement.movedUnitIds)
         }
 
