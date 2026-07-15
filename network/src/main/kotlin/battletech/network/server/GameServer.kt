@@ -54,9 +54,9 @@ import kotlin.concurrent.thread
  * handshake time — neither side can act as another seat's, active-turn or
  * not.
  *
- * [snapshotFor] is the single seam every outbound [GameSnapshot] (join
- * acceptance and pushes alike) is built through; future hidden-info
- * redaction lands there without touching call sites.
+ * [snapshot] is the one seam every outbound [GameSnapshot] (join acceptance
+ * and pushes alike) is built through — see its KDoc for why it does not
+ * redact anything.
  *
  * Disconnects freeze the whole session: both [submitCommand] and the remote
  * reader loop reject with [CommandRejection.OpponentUnavailable] whenever
@@ -164,9 +164,38 @@ public class GameServer(
     }
 
     /**
-     * The single redaction seam: every [ServerMessage.JoinAccepted] and
-     * [ServerMessage.StatePush] is built through here. Currently permissive;
-     * hidden-info rules land here without touching call sites.
+     * The one place a real trust boundary exists in this codebase: server ->
+     * wire -> client. Everything on the [session] side is in-process, same
+     * JVM, no adversary; this is where bytes leave for a socket a remote
+     * client controls.
+     *
+     * No redaction is performed here, by decision. BattleTech is played
+     * open-information: positions and damage sit on the table, loadouts are
+     * published in the Technical Readouts, and fog of war is an optional
+     * rule this project doesn't implement. The threat model is hot-seat and
+     * trusted remote play — a modified/cheating client is explicitly out of
+     * scope. A prior redaction seam, sketched across a public/redacted
+     * [GameState] typealias, a per-event visibility filter, and a per-player
+     * overload of `subscribe`, was deleted because it was placed by
+     * symmetry, not by a threat model, and could never have worked as
+     * designed.
+     *
+     * If that decision ever changes, redact HERE — but note this is not the
+     * only outbound path: [ServerMessage.JoinAccepted] also carries
+     * `session.gameLog.snapshot()` directly (see [attachTransport]), and
+     * every [ServerMessage.StatePush] carries a log delta alongside this
+     * snapshot. Redacting only this snapshot and leaving the log
+     * un-redacted leaks everything through the other channel — that
+     * mismatch is exactly why the old design was theater. Prefer a
+     * differently-shaped projection type for the redacted view over
+     * sentinel/fake values threaded into [GameState]; fakes would
+     * reintroduce the nullable proliferation the July 2026 design sweep
+     * removed.
+     *
+     * Also worth knowing: redacting this snapshot would propagate
+     * automatically to [battletech.network.client.RemoteGameSession.gameState]
+     * and from there to the TUI's ~40 raw `GameState` reads — those call
+     * sites would not need to change.
      */
     private fun snapshot(): GameSnapshot = GameSnapshot(
         gameState = session.gameState,
