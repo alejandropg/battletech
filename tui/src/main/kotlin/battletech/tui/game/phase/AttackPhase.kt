@@ -6,6 +6,7 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.DeclaredWeaponAttack
+import battletech.tactical.query.DeclaredWeaponLine
 import battletech.tactical.query.ForeignUnit
 import battletech.tactical.query.OwnUnit
 import battletech.tactical.query.PlayerView
@@ -418,12 +419,17 @@ private fun committedAttackerEntry(
 ): DeclaredAttackerEntry {
     val targetEntries = attacks.map { attack ->
         val weaponEntries = attack.weapons.map { line ->
-            DeclaredWeaponEntry(
-                weaponName = line.weaponName,
-                successChance = line.successChance,
-                targetDiceRoll = line.targetNumber,
-                modifiers = line.modifierLabels,
-            )
+            when (line) {
+                is DeclaredWeaponLine.Detailed -> DeclaredWeaponEntry.Detailed(
+                    weaponName = line.weaponName,
+                    successChance = line.successChance,
+                    targetDiceRoll = line.targetNumber,
+                    modifiers = line.modifierLabels,
+                )
+                // An enemy attacker's to-hit math is not ours to render — and the type no
+                // longer carries it. See DeclaredWeaponLine's KDoc.
+                is DeclaredWeaponLine.Undisclosed -> DeclaredWeaponEntry.Undisclosed(weaponName = line.weaponName)
+            }
         }
         DeclaredTargetEntry(targetId = attack.targetId, isPrimary = attack.isPrimary, weapons = weaponEntries)
     }
@@ -466,7 +472,9 @@ private fun resolveWeaponEntry(
         .firstOrNull { it.unitId == targetId }
         ?.weapons
         ?.firstOrNull { it.weaponIndex == weaponIndex }
-    return DeclaredWeaponEntry(
+    // Detailed unconditionally: drafts only ever exist for the viewer's own attacker (the
+    // caller filters to unit.owner == viewingPlayer before building one).
+    return DeclaredWeaponEntry.Detailed(
         weaponName = weaponName,
         successChance = weaponInfo?.successChance ?: 0,
         targetDiceRoll = weaponInfo?.targetDiceRoll ?: 13,

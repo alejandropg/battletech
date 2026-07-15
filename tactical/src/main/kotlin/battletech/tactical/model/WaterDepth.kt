@@ -3,8 +3,8 @@ package battletech.tactical.model
 import battletech.tactical.unit.CombatUnit
 
 /**
- * Returns the water depth (in levels) of the hex occupied by [unit], or 0 if the hex is
- * dry or absent from the map.
+ * Returns the water depth (in levels) of the hex at [position], or 0 if the hex is
+ * dry or absent from [map].
  *
  * - Depth 0: dry land.
  * - Depth 1: legs submerged — the target gains **partial cover** (+3 to-hit, leg hits
@@ -15,10 +15,16 @@ import battletech.tactical.unit.CombatUnit
  * This is the single authoritative query for water depth across the engine. Call sites in
  * `PhysicalReachRules`, `LineOfSight`, `SubmergedWeaponRule`, `HeatPhaseHandler`, and
  * `GameStateHeatTransform` all delegate here rather than reading
- * `map.hexes[unit.position]?.depth` directly.
+ * `map.hexes[position]?.depth` directly.
+ *
+ * Takes a bare [position] and [map] — not a unit and a [GameState] — because that is
+ * genuinely all it reads. That keeps it callable from the per-viewer query path, where the
+ * unit in hand may be a [battletech.tactical.query.ForeignUnit] carrying only public
+ * fields (position among them) and no [GameState] is available at all. Same rationale as
+ * [battletech.tactical.attack.lineOfSight]'s position-only signature.
  */
-public fun unitWaterDepth(unit: CombatUnit, gameState: GameState): Int =
-    gameState.map.hexes[unit.position]?.depth ?: 0
+public fun unitWaterDepth(position: HexCoordinates, map: GameMap): Int =
+    map.hexes[position]?.depth ?: 0
 
 /**
  * Extra heat dissipation granted when a unit is standing in water
@@ -36,7 +42,7 @@ public fun unitWaterDepth(unit: CombatUnit, gameState: GameState): Int =
  * per-location heat-sink placement is added to the model.
  */
 public fun submersionDissipationBonus(unit: CombatUnit, gameState: GameState): Int =
-    when (unitWaterDepth(unit, gameState)) {
+    when (unitWaterDepth(unit.position, gameState.map)) {
         0 -> 0
         1 -> 6
         else -> 12

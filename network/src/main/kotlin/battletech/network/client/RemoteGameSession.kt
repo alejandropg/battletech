@@ -9,6 +9,7 @@ import battletech.network.wire.SessionId
 import battletech.network.wire.WireJson
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
 import battletech.tactical.session.CommandRejection
@@ -51,27 +52,22 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
  *
  * **What this class does NOT have, on purpose:** raw [battletech.tactical.model.GameState].
  * [snapshot]`.gameState` is already [PlayerGameState] — [playerId]'s own projection, exactly
- * as the host computed and sent it (see [battletech.network.server.GameServer.snapshotFor])
- * — so [stateFor] and [logFor] can serve [playerId] locally with no re-projection, but they
- * have no way to honestly answer for a DIFFERENT viewer (there is no raw state left to
- * re-project from) and refuse rather than guess; see their KDoc. [viewFor] goes further:
- * [battletech.tactical.query.DefaultPlayerView] and its query engine
+ * as the host computed and sent it (see [battletech.network.server.GameServer.snapshotFor]).
+ *
+ * That projection is enough to serve this seat completely, with no round trip: [stateFor],
+ * [logFor] and [viewFor] all answer locally for [playerId]. [viewFor] in particular builds
+ * the same [battletech.tactical.query.DefaultPlayerView] the authoritative host builds, over
+ * the same [PlayerGameState] shape — the query engine
  * ([battletech.tactical.movement.ReachabilityCalculator], [battletech.tactical.query.WeaponTargeting],
- * [battletech.tactical.query.PhysicalAttackQueries]) are typed against raw
- * [battletech.tactical.model.GameState]/[battletech.tactical.unit.CombatUnit] throughout —
- * that dependency was never migrated to the projection (Stage 2 of the redaction work kept
- * it as-is: "PlayerView's query methods already return computed results, not raw units").
- * A remote client has no raw [battletech.tactical.model.GameState] to build one from, and
- * fabricating one for foreign units (defaulted gunnery/heat/criticals) would be exactly the
- * sentinel-value anti-pattern this design forbids — so [viewFor] throws rather than lie.
- * **This is a known, reported gap, not a silent decision**: it regresses local move/attack
- * legality queries for a `--join`ed remote seat (the in-process host path — [BattleSession]/
- * [battletech.network.server.GameServer] — is unaffected, since it still holds real state).
- * Closing it needs either (a) teaching the query engine to accept a viewer's own raw unit
- * plus [battletech.tactical.query.VisibleUnit]-shaped others — verified feasible; every
- * "other unit" field the engine reads (position, prone, shutdown, movement-this-turn — see
- * e.g. [battletech.tactical.attack.LineOfSight]'s own "position-only" doc) is already public
- * — or (b) a round-trip query message. Neither is implemented here.
+ * [battletech.tactical.query.PhysicalAttackQueries]) consumes the projection, resolving the
+ * ACTOR (always a unit this seat owns) through
+ * [battletech.tactical.query.PlayerGameState.ownUnitById] and leaving every other unit
+ * [battletech.tactical.query.VisibleUnit]-shaped, because every field it reads off a
+ * non-actor unit is public. One implementation, so a client's answer cannot drift from the
+ * server's.
+ *
+ * None of the three can honestly answer for a DIFFERENT viewer — there is no raw state left
+ * to re-project from — so all three refuse rather than guess; see their KDoc.
  */
 public class RemoteGameSession internal constructor(
     private val input: BufferedReader,
@@ -107,22 +103,22 @@ public class RemoteGameSession internal constructor(
     public override val gameLog: GameLog get() = log
 
     /**
-     * Not supported: [battletech.tactical.query.DefaultPlayerView] (and the
-     * [battletech.tactical.movement.ReachabilityCalculator]/[battletech.tactical.query.WeaponTargeting]/
-     * [battletech.tactical.query.PhysicalAttackQueries] it composes) needs raw
-     * [battletech.tactical.model.GameState] to compute reachability/targeting, and this
-     * class holds none — [snapshot]`.gameState` is [playerId]'s own projection, not raw
-     * state, and fabricating a stand-in for foreign units is exactly the sentinel-value
-     * anti-pattern this design forbids. See the class KDoc for what closing this gap needs.
-     * Throws for every [playerId], not just a mismatched seat — there is no raw state to
-     * build a view from regardless of whose seat is asked for.
+     * Answers "what is legal right now?" for THIS connection's own seat, locally, with no
+     * round trip: [DefaultPlayerView] consumes the same [PlayerGameState] projection the
+     * host's [battletech.tactical.session.BattleSession.viewFor] feeds it, so this client
+     * runs the identical query code and cannot drift from the server's answer.
+     *
+     * Refuses any OTHER seat, for the same reason as [stateFor]: this replica holds only its
+     * own projection, so it has neither the data nor the standing to build the opponent's
+     * view.
      */
-    public override fun viewFor(playerId: PlayerId): PlayerView =
-        throw UnsupportedOperationException(
-            "RemoteGameSession.viewFor: no raw GameState on the client to build a PlayerView from " +
-                "(see this class's KDoc) — query the host's own GameSession.viewFor instead, " +
-                "or use stateFor($playerId) for the projected units/board.",
-        )
+    public override fun viewFor(playerId: PlayerId): PlayerView {
+        require(playerId == this.playerId) {
+            "RemoteGameSession.viewFor: this replica can only build a view for its own seat " +
+                "(${this.playerId}); it holds no projection for $playerId."
+        }
+        return DefaultPlayerView(playerId, snapshot.gameState, snapshot.turnState)
+    }
 
     /**
      * Serves ONLY [playerId] (this connection's own seat): [snapshot]`.gameState` already

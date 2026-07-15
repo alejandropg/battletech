@@ -15,7 +15,7 @@ import battletech.tactical.session.RuleRejection
 public class LineOfSightRule : AttackRule<AttackContext> {
 
     override fun evaluate(context: AttackContext): RuleResult {
-        val los = lineOfSight(context.actor, context.target, context.gameState.map)
+        val los = lineOfSight(context.actor.position, context.target.position, context.map)
         return if (los.blocked) {
             RuleResult.Unsatisfied(
                 RuleRejection.NoLineOfSight(

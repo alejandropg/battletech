@@ -2,6 +2,7 @@ package battletech.tui.view
 
 import battletech.tui.game.PanelId
 import battletech.tui.game.phase.DeclaredTargetsRender
+import battletech.tui.game.phase.DeclaredWeaponEntry
 import battletech.tui.hex.targetIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
@@ -35,7 +36,22 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
                 content.writeln(targetLine, contentColor)
 
                 for (weapon in target.weapons) {
-                    WeaponHitWidget.draw(content, "    ${weapon.weaponName}", weapon.targetDiceRoll, weapon.successChance, weapon.modifiers, contentColor)
+                    when (weapon) {
+                        is DeclaredWeaponEntry.Detailed -> WeaponHitWidget.draw(
+                            content,
+                            "    ${weapon.weaponName}",
+                            weapon.targetDiceRoll,
+                            weapon.successChance,
+                            weapon.modifiers,
+                            contentColor,
+                        )
+                        // Enemy attacker: name the weapon that's pointed at us (observable),
+                        // but print no target number, hit chance, or modifier breakdown —
+                        // that math is computed from the attacker's gunnery/heat/sensor
+                        // crits. The type carries no such fields; see DeclaredWeaponEntry.
+                        is DeclaredWeaponEntry.Undisclosed ->
+                            content.writeln("    ${weapon.weaponName}", contentColor)
+                    }
                 }
             }
 

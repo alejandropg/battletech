@@ -184,7 +184,7 @@ private fun resolveDrowning(
 ): Pair<CombatUnit, List<GameEvent>> {
     if (unit.isDestroyed) return unit to emptyList()
     if (!unit.isProne) return unit to emptyList()
-    val depth = unitWaterDepth(unit, gameState)
+    val depth = unitWaterDepth(unit.position, gameState.map)
     if (depth < 2) return unit to emptyList()
     return applyPilotHit(unit, roller)
 }

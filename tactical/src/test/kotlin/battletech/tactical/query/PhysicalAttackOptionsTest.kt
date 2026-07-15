@@ -7,6 +7,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.session.RuleRejection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import battletech.tactical.query.projectFor
 
 internal class PhysicalAttackOptionsTest {
 
@@ -14,7 +15,7 @@ internal class PhysicalAttackOptionsTest {
     private fun enemyAt(col: Int) = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(col, 0))
 
     private fun viewWith(vararg units: battletech.tactical.unit.CombatUnit) =
-        DefaultPlayerView(PlayerId.PLAYER_1, aGameState(units = units.toList()))
+        DefaultPlayerView(PlayerId.PLAYER_1, aGameState(units = units.toList()).projectFor(PlayerId.PLAYER_1))
 
     @Test
     fun `an adjacent enemy yields punch per arm and a kick`() {

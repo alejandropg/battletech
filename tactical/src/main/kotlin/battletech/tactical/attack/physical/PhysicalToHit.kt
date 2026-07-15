@@ -8,7 +8,8 @@ import battletech.tactical.attack.lineOfSight
 import battletech.tactical.attack.proneTargetToHitModifier
 import battletech.tactical.attack.targetMovementModifier
 import battletech.tactical.attack.total
-import battletech.tactical.model.GameState
+import battletech.tactical.model.GameMap
+import battletech.tactical.query.VisibleUnit
 import battletech.tactical.unit.CombatUnit
 
 /**
@@ -23,13 +24,13 @@ import battletech.tactical.unit.CombatUnit
  */
 public fun physicalToHitModifiers(
     attacker: CombatUnit,
-    target: CombatUnit,
+    target: VisibleUnit,
     kind: PhysicalAttackKind,
-    gameState: GameState,
+    map: GameMap,
 ): List<ToHitModifier> = listOf(
     ToHitModifier(ToHitFactor.ATTACKER_MOVEMENT, "attacker move", attackerMovementModifier(attacker.movementThisTurn)),
     ToHitModifier(ToHitFactor.TARGET_MOVEMENT, "target move", targetMovementModifier(target.movementThisTurn)),
-    ToHitModifier(ToHitFactor.TERRAIN, "terrain", terrainModifier(attacker, target, gameState)),
+    ToHitModifier(ToHitFactor.TERRAIN, "terrain", terrainModifier(attacker, target, map)),
     ToHitModifier(
         ToHitFactor.PRONE_TARGET,
         "prone",
@@ -45,13 +46,13 @@ public fun physicalToHitModifiers(
  */
 public fun physicalToHitTargetNumber(
     attacker: CombatUnit,
-    target: CombatUnit,
+    target: VisibleUnit,
     kind: PhysicalAttackKind,
-    gameState: GameState,
-): Int = attacker.pilotingSkill + physicalToHitModifiers(attacker, target, kind, gameState).total()
+    map: GameMap,
+): Int = attacker.pilotingSkill + physicalToHitModifiers(attacker, target, kind, map).total()
 
-private fun terrainModifier(attacker: CombatUnit, target: CombatUnit, gameState: GameState): Int {
-    val los = lineOfSight(attacker, target, gameState.map)
+private fun terrainModifier(attacker: CombatUnit, target: VisibleUnit, map: GameMap): Int {
+    val los = lineOfSight(attacker.position, target.position, map)
     return los.woodsModifier + if (los.partialCover) 3 else 0
 }
 

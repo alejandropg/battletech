@@ -6,14 +6,27 @@ import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.query.VisibleUnit
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.destroyedLegCount
 import java.util.PriorityQueue
 import kotlin.math.ceil
 
+/**
+ * Dijkstra reachability over [gameMap].
+ *
+ * [units] is only ever consulted for the ids and positions of OTHER units (the hexes an
+ * actor may not enter or end in), so it is typed as [VisibleUnit] — both are public. The
+ * moving actor, by contrast, is passed to [calculate] as a full [CombatUnit], because MP
+ * genuinely depends on its record sheet (heat, destroyed legs). Callers that hold raw state
+ * wrap their units via [battletech.tactical.query.OwnUnit]; the per-viewer query path passes
+ * its [battletech.tactical.query.PlayerGameState.units] straight through. One
+ * implementation serves both, so a client's preview can never drift from the server's
+ * authoritative answer.
+ */
 public class ReachabilityCalculator(
     private val gameMap: GameMap,
-    private val units: List<CombatUnit>,
+    private val units: List<VisibleUnit>,
 ) {
 
     public fun calculate(actor: CombatUnit, mode: MovementMode): ReachabilityMap {

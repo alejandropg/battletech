@@ -31,7 +31,7 @@ internal class LineOfSightTest {
     ): LineOfSightResult {
         val attacker = aUnit(id = "attacker", position = attackerPos)
         val target = aUnit(id = "target", position = targetPos)
-        return lineOfSight(attacker, target, GameMap(hexes))
+        return lineOfSight(attacker.position, target.position, GameMap(hexes))
     }
 
     // ── Woods modifier (no blocking) ─────────────────────────────────────────

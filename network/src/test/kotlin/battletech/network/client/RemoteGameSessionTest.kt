@@ -95,15 +95,60 @@ internal class RemoteGameSessionTest {
         assertThatThrownBy { remote.logFor(null) }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
+    /**
+     * The regression guard for remote play: a `--join`ed client must be able to answer
+     * "what is legal right now?" from its OWN projected snapshot, with no round trip and
+     * WITHOUT borrowing the host's [GameServer.viewFor]. Routing this through the server
+     * is the shortcut that previously hid a totally broken remote client behind a green
+     * suite — every assertion below is against `remote.viewFor`, deliberately.
+     */
     @Test
-    fun `viewFor is not supported on a remote replica — no raw GameState to compute from`() {
+    fun `viewFor on the remote's own seat answers movement legality from its projected snapshot`() {
         val server = GameServer(aSampleSession(), sessionId, port = 0)
         val connection = PipedConnection()
         server.attachInBackground(connection)
         val remote = connectRemoteOverPipes(sessionId, connection)
         awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
 
-        assertThatThrownBy { remote.viewFor(remote.playerId) }.isInstanceOf(UnsupportedOperationException::class.java)
+        val unit = remote.stateFor(remote.playerId).unitsOf(PlayerId.PLAYER_2).first()
+        val reachability = remote.viewFor(remote.playerId).legalMovementsFor(unit.id)
+
+        assertThat(reachability).isNotEmpty
+        assertThat(reachability.first().destinations).isNotEmpty
+        // The client computed the same answer the authoritative host would.
+        assertThat(reachability).isEqualTo(server.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id))
+    }
+
+    @Test
+    fun `viewFor on the remote's own seat answers targeting queries from its projected snapshot`() {
+        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+        val remote = connectRemoteOverPipes(sessionId, connection)
+        awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
+
+        val unit = remote.stateFor(remote.playerId).unitsOf(PlayerId.PLAYER_2).first()
+        val view = remote.viewFor(remote.playerId)
+
+        // Fire arc + legal torso facings are pure geometry off the projection.
+        assertThat(view.fireArc(unit.id, unit.facing)).isNotEmpty
+        assertThat(view.legalTorsoFacings(unit.id)).isNotEmpty
+        // And they agree with the host's authoritative answers.
+        assertThat(view.fireArc(unit.id, unit.facing))
+            .isEqualTo(server.viewFor(PlayerId.PLAYER_2).fireArc(unit.id, unit.facing))
+        assertThat(view.targetInfos(unit.id, unit.facing))
+            .isEqualTo(server.viewFor(PlayerId.PLAYER_2).targetInfos(unit.id, unit.facing))
+    }
+
+    @Test
+    fun `viewFor still refuses a seat other than this replica's own`() {
+        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+        val remote = connectRemoteOverPipes(sessionId, connection)
+        awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
+
+        assertThatThrownBy { remote.viewFor(PlayerId.PLAYER_1) }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
@@ -138,12 +183,10 @@ internal class RemoteGameSessionTest {
         server.advanceMovementUntilActivePlayerIs(PlayerId.PLAYER_2)
         awaitTrue { remote.turnState.movement.activePlayer == PlayerId.PLAYER_2 }
 
-        // The replica still knows its OWN units (stateFor(remote.playerId) — OwnUnit, full
-        // fidelity id/position); the reachability MAP itself has to come from the host's
-        // viewFor, since RemoteGameSession.viewFor no longer has raw state to compute one
-        // (see that method's KDoc) — a known, reported limitation of this stage.
+        // Built entirely from the replica's own surface — no host queries — so this exercises
+        // the real client path a --join'ed seat takes.
         val unit = remote.turnState.selectableUnits(remote.stateFor(remote.playerId)).first()
-        val reachability = server.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id).first()
+        val reachability = remote.viewFor(remote.playerId).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val command = MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode)
 
@@ -173,7 +216,7 @@ internal class RemoteGameSessionTest {
         assertThat(remote.gameLog.snapshot().map { it.event }).contains(expectedNotice)
 
         val unit = remote.stateFor(remote.playerId).unitsOf(PlayerId.PLAYER_2).first()
-        val reachability = server.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id).first()
+        val reachability = remote.viewFor(remote.playerId).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val result = remote.submitCommand(MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode))
 

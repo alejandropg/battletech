@@ -4,6 +4,7 @@ import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
+import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import kotlinx.serialization.Serializable
 
@@ -42,6 +43,22 @@ public data class PlayerGameState(
      */
     public fun findUnit(id: UnitId): VisibleUnit? =
         units.find { it.id == id }
+
+    /**
+     * The full [CombatUnit] for [id], for call sites that already know [id] names a unit the
+     * viewer owns — the **actor** of a query (the mover, the attacker), which is by
+     * definition always one of the viewer's own units, and whose record sheet the to-hit and
+     * reachability math genuinely needs (see [battletech.tactical.attack.AttackContext]).
+     *
+     * Throws if [id] projects as [ForeignUnit] instead: that means the call site's ownership
+     * assumption was wrong, which must fail LOUDLY rather than silently degrade to a wrong
+     * answer — and certainly rather than tempt a caller into fabricating the missing private
+     * fields. The single source of this rule; [battletech.tui.game.AppState]'s `ownUnit`
+     * delegates here rather than restating it.
+     */
+    public fun ownUnitById(id: UnitId): CombatUnit =
+        (unitById(id) as? OwnUnit)?.unit
+            ?: error("Expected $id to be the viewer's own unit, but it projected as foreign")
 
     public fun unitsOf(player: PlayerId): List<VisibleUnit> = units.filter { it.owner == player }
 

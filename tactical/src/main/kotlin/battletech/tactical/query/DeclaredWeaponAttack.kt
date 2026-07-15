@@ -3,17 +3,45 @@ package battletech.tactical.query
 import battletech.tactical.unit.UnitId
 
 /**
- * One weapon's committed declaration within a [DeclaredWeaponAttack]: its index on the
- * attacker, a display name, the target number and success chance it would resolve at right
- * now, and the modifier labels that sum to it (rendered verbatim, e.g. "+2 range").
+ * One weapon's committed declaration within a [DeclaredWeaponAttack].
+ *
+ * Split by what the viewer may legitimately know, mirroring the
+ * [OwnUnit]/[ForeignUnit] and [battletech.tactical.session.CriticalHit] `Detailed`/`Undisclosed`
+ * precedents: WHICH weapons are pointed at WHICH target is observable (you watch the torso
+ * swing), but the attacker's to-hit MATH is not — it is computed from the attacker's gunnery
+ * skill, current heat, and sensor criticals, all record-sheet data. So the prediction rides
+ * only on [Detailed], for attackers the viewer owns; a foreign attacker's declaration
+ * arrives as [Undisclosed], carrying the observable fact and nothing more.
+ *
+ * There is deliberately no "unknown" target number: a sentinel like 13/0% would assert a
+ * falsehood rather than withhold a truth.
  */
-public data class DeclaredWeaponLine(
-    public val weaponIndex: Int,
-    public val weaponName: String,
-    public val targetNumber: Int,
-    public val successChance: Int,
-    public val modifierLabels: List<String>,
-)
+public sealed interface DeclaredWeaponLine {
+    public val weaponIndex: Int
+    public val weaponName: String
+
+    /**
+     * A weapon on an attacker the viewer owns: carries [targetNumber], [successChance], and
+     * the [modifierLabels] that sum to it (rendered verbatim, e.g. "+2 range").
+     */
+    public data class Detailed(
+        override val weaponIndex: Int,
+        override val weaponName: String,
+        public val targetNumber: Int,
+        public val successChance: Int,
+        public val modifierLabels: List<String>,
+    ) : DeclaredWeaponLine
+
+    /**
+     * A weapon on an attacker the viewer does NOT own: the weapon and its target are
+     * observable, the to-hit prediction is not. There is no target-number field on this type,
+     * so leaking one is a compile error rather than a discipline problem.
+     */
+    public data class Undisclosed(
+        override val weaponIndex: Int,
+        override val weaponName: String,
+    ) : DeclaredWeaponLine
+}
 
 /**
  * A committed weapon-attack declaration for one (attacker, target) pair: whether [targetId] is

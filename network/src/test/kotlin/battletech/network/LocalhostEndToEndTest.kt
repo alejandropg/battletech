@@ -33,13 +33,12 @@ import org.junit.jupiter.api.Test
  * [battletech.network.wire.ServerMessage.StatePush] on the remote's reader
  * thread, so convergence there is polled with a short deadline.
  *
- * Movement reachability for PLAYER_2's moves is computed via the HOST's
- * [GameServer.viewFor] rather than the remote's own — [RemoteGameSession.viewFor]
- * is unsupported by design (see its KDoc): it would need raw
- * [battletech.tactical.model.GameState] to compute a reachability map, and a remote
- * replica only ever holds its own projected [battletech.tactical.query.PlayerGameState].
- * The remote side is still proven independently queryable for what it DOES hold — its
- * own unit id/position via [RemoteGameSession.stateFor].
+ * PLAYER_2's moves are built entirely from the REMOTE's own surface — its
+ * [RemoteGameSession.stateFor] for the unit and its [RemoteGameSession.viewFor] for
+ * reachability — never the host's. That is deliberate: routing client queries through
+ * [GameServer.viewFor] would let a completely broken remote client pass this test, which is
+ * exactly how a `--join`ed client that crashed on entering movement once slipped through a
+ * green suite.
  *
  * No unit in [battletech.tactical.model.GameStateFactory.sampleGameState] is
  * ever prone during this test — falls only follow combat damage, and every
@@ -148,15 +147,16 @@ internal class LocalhostEndToEndTest {
      * [RemoteGameSession] owns the active seat submits, and BOTH remotes are
      * checked for convergence with the server afterwards (unlike the
      * host-embedded scripts, there is no local host seat that's trivially
-     * up to date). Reachability still comes from the server's [GameServer.viewFor]
-     * (see class KDoc) — the remotes are read only for their own unit id/position.
+     * up to date). Both the unit and its reachability come from the acting REMOTE's own
+     * surface — never the server's — so a client that couldn't answer locally would fail
+     * here rather than pass on the host's coattails.
      */
     private fun playHeadlessMovementPhase(gameServer: GameServer, remote1: RemoteGameSession, remote2: RemoteGameSession) {
         while (gameServer.currentPhase == TurnPhase.MOVEMENT) {
             val active = gameServer.turnState.movement.activePlayer
             val actor = if (active == PlayerId.PLAYER_1) remote1 else remote2
             val unit = actor.turnState.selectableUnits(actor.stateFor(actor.playerId)).first()
-            val reachability = gameServer.viewFor(active).legalMovementsFor(unit.id).first()
+            val reachability = actor.viewFor(active).legalMovementsFor(unit.id).first()
             val command = MoveUnit(active, unit.id, reachability.destinations.first(), reachability.mode)
             submitAndVerifyHeadless(gameServer, remote1, remote2, active, command)
         }
@@ -245,10 +245,9 @@ internal class LocalhostEndToEndTest {
      * Drives one [MoveUnit] per movement impulse until the phase advances.
      * Who is active is read from the host's authoritative [GameServer.turnState]
      * (both sides agree once converged, which they are at the top of every
-     * iteration); PLAYER_2's move picks its own unit from the REMOTE's OWN
-     * [RemoteGameSession.stateFor] rather than the host's (proving the replica
-     * independently knows its own units), but the reachability MAP itself comes
-     * from the host's [GameServer.viewFor] — see class KDoc for why.
+     * iteration); PLAYER_2's move is then built ENTIRELY from the remote's own
+     * [RemoteGameSession.stateFor] and [RemoteGameSession.viewFor], proving the replica is
+     * independently queryable rather than a pass-through — see class KDoc.
      */
     private fun playMovementPhase(host: GameServer, remote: RemoteGameSession) {
         while (host.currentPhase == TurnPhase.MOVEMENT) {
@@ -259,7 +258,7 @@ internal class LocalhostEndToEndTest {
                 MoveUnit(active, unit.id, reachability.destinations.first(), reachability.mode)
             } else {
                 val unit = remote.turnState.selectableUnits(remote.stateFor(remote.playerId)).first()
-                val reachability = host.viewFor(active).legalMovementsFor(unit.id).first()
+                val reachability = remote.viewFor(active).legalMovementsFor(unit.id).first()
                 MoveUnit(active, unit.id, reachability.destinations.first(), reachability.mode)
             }
             submitAndVerify(host, remote, active, command)

@@ -58,10 +58,12 @@ internal data class AppState(
      * ([selectOwnUnit][battletech.tui.game.phase.selectOwnUnit]). Throws if the projection
      * disagrees: that would mean the call site's ownership assumption was wrong, which should
      * fail loudly rather than silently render nothing (or, worse, leak).
+     *
+     * Delegates to [PlayerGameState.ownUnitById] — the rules engine's query path resolves its
+     * actor through that same single implementation, so the TUI and the engine cannot drift
+     * on what "the viewer's own unit" means.
      */
-    fun ownUnit(id: UnitId): CombatUnit =
-        (visibleState.unitById(id) as? OwnUnit)?.unit
-            ?: error("Expected $id to be the viewer's own unit, but it projected as foreign")
+    fun ownUnit(id: UnitId): CombatUnit = visibleState.ownUnitById(id)
 }
 
 /**

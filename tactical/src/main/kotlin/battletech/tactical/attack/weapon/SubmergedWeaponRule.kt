@@ -22,7 +22,7 @@ import battletech.tactical.session.RuleRejection
 public class SubmergedWeaponRule : AttackRule<WeaponAttackContext> {
 
     override fun evaluate(context: WeaponAttackContext): RuleResult {
-        val depth = unitWaterDepth(context.actor, context.gameState)
+        val depth = unitWaterDepth(context.actor.position, context.map)
         if (depth < 2) return RuleResult.Satisfied
         if (context.weapon.underwaterCapable) return RuleResult.Satisfied
         return RuleResult.Unsatisfied(RuleRejection.AttackerSubmerged(depth))

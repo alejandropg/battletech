@@ -3,6 +3,7 @@ package battletech.tactical.attack.weapon
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.ImpulseAttackPhaseHandler
 import battletech.tactical.attack.WeaponAttackContext
+import battletech.tactical.query.OwnUnit
 import battletech.tactical.attack.resolveAttacksWithCrits
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.heat.applyWeaponHeat
@@ -64,9 +65,11 @@ public class WeaponAttackPhaseHandler : ImpulseAttackPhaseHandler() {
             val target = state.unitById(decl.targetId)
             val context = WeaponAttackContext(
                 actor = attacker,
-                target = target,
+                // OwnUnit(target): the authoritative handler holds the full unit; the rules
+                // only read its public projection (see AttackContext).
+                target = OwnUnit(target),
                 weapon = attacker.weapons[decl.weaponIndex],
-                gameState = state,
+                map = state.map,
             )
             FireWeaponActionDefinition().firstRejection(context)?.let { rejection ->
                 return CommandRejection.RuleViolation(rejection)

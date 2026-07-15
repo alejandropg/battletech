@@ -9,15 +9,20 @@ import battletech.tactical.attack.physical.Side
 import battletech.tactical.attack.physical.kickDamage
 import battletech.tactical.attack.physical.physicalToHitTargetNumber
 import battletech.tactical.attack.physical.punchDamage
-import battletech.tactical.model.GameState
 import battletech.tactical.model.MechLocation
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 
-internal class PhysicalAttackQueries(private val state: GameState) {
+/**
+ * Physical-attack options over a per-viewer [PlayerGameState]; see [WeaponTargeting] for the
+ * actor/target typing rationale. The attacker is resolved via [PlayerGameState.ownUnitById]
+ * (piloting skill, heat and limb internal structure all feed these options); adjacent
+ * enemies stay [VisibleUnit].
+ */
+internal class PhysicalAttackQueries(private val state: PlayerGameState) {
 
     fun physicalAttackOptions(attackerId: UnitId): List<PhysicalAttackOption> {
-        val attacker = state.unitById(attackerId)
+        val attacker = state.ownUnitById(attackerId)
         val punchDef = PunchActionDefinition()
         val kickDef = KickActionDefinition()
 
@@ -27,13 +32,13 @@ internal class PhysicalAttackQueries(private val state: GameState) {
             .filter { attacker.position.distanceTo(it.position) == 1 }
 
         return adjacentEnemies.flatMap { enemy ->
-            val context = PhysicalAttackContext(actor = attacker, gameState = state, target = enemy)
+            val context = PhysicalAttackContext(actor = attacker, map = state.map, target = enemy)
 
             val punchReasons = unsatisfiedReasons(punchDef.rules, context)
             // C4: the only to-hit-number math here is the shared predictor
             // (battletech.tactical.attack.physical.physicalToHitTargetNumber), also used by
             // PhysicalAttackResolution — read and apply can't drift.
-            val punchTargetNumber = physicalToHitTargetNumber(attacker, enemy, PhysicalAttackKind.Punch(Side.LEFT), state)
+            val punchTargetNumber = physicalToHitTargetNumber(attacker, enemy, PhysicalAttackKind.Punch(Side.LEFT), state.map)
             val punchOptions = listOf(Side.LEFT, Side.RIGHT).map { arm ->
                 val limbReasons = punchReasons + limbDestroyedReason(armStructure(attacker, arm), attackerId)
                 PhysicalAttackOption(
@@ -49,7 +54,7 @@ internal class PhysicalAttackQueries(private val state: GameState) {
             }
 
             val kickReasons = unsatisfiedReasons(kickDef.rules, context)
-            val kickTargetNumber = physicalToHitTargetNumber(attacker, enemy, PhysicalAttackKind.Kick(Side.RIGHT), state)
+            val kickTargetNumber = physicalToHitTargetNumber(attacker, enemy, PhysicalAttackKind.Kick(Side.RIGHT), state.map)
             // Kick uses whichever leg is intact (prefer right); the kicking leg only
             // matters for the attacker's own fall on a miss.
             val kickLeg = if (legStructure(attacker, Side.RIGHT) > 0) Side.RIGHT else Side.LEFT

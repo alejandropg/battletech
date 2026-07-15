@@ -8,14 +8,22 @@ import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.attack.weaponTargetNumber
 import battletech.tactical.attack.weaponToHitModifiers
-import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.cannotFireFromSensorDamage
 
-internal class WeaponTargeting(private val state: GameState) {
+/**
+ * Weapon targeting over a per-viewer [PlayerGameState] — the same projection a remote
+ * client holds, so a `--join`ed seat answers targeting queries locally with the identical
+ * code the host runs.
+ *
+ * The attacker is resolved via [PlayerGameState.ownUnitById] (to-hit math needs its gunnery,
+ * heat and sensor criticals, and the attacker is always the viewer's own unit); targets stay
+ * [VisibleUnit], which is all the shared math ever reads off them.
+ */
+internal class WeaponTargeting(private val state: PlayerGameState) {
 
     private val definition = FireWeaponActionDefinition()
 
@@ -25,7 +33,7 @@ internal class WeaponTargeting(private val state: GameState) {
     }
 
     fun validTargets(attackerId: UnitId, torsoFacing: HexDirection): Set<UnitId> {
-        val attacker = state.unitById(attackerId)
+        val attacker = state.ownUnitById(attackerId)
         // An unconscious pilot cannot act this turn (Stage 7) — same actor-eligibility
         // treatment as a sensor-blinded unit. Unconscious units remain valid TARGETS
         // (see the `!it.isDestroyed` filter below, which deliberately does not also
@@ -43,7 +51,7 @@ internal class WeaponTargeting(private val state: GameState) {
     }
 
     fun targetInfos(attackerId: UnitId, torsoFacing: HexDirection): List<TargetInfo> {
-        val attacker = state.unitById(attackerId)
+        val attacker = state.ownUnitById(attackerId)
         val targetIds = validTargets(attackerId, torsoFacing)
         return targetIds.mapNotNull { targetId ->
             val target = state.unitById(targetId)
@@ -54,7 +62,7 @@ internal class WeaponTargeting(private val state: GameState) {
                     actor = attacker,
                     target = target,
                     weapon = weapon,
-                    gameState = state,
+                    map = state.map,
                 )
                 if (definition.firstRejection(context) != null) {
                     WeaponTargetInfo(
@@ -72,7 +80,7 @@ internal class WeaponTargeting(private val state: GameState) {
                         weapon = weapon,
                         distance = distance,
                         isPrimaryTarget = true,
-                        gameState = state,
+                        map = state.map,
                     )
                     // C4: the only to-hit-number math here is the shared predictor
                     // (battletech.tactical.attack.weaponTargetNumber), also used by
@@ -100,13 +108,13 @@ internal class WeaponTargeting(private val state: GameState) {
      * firing rules ([FireWeaponActionDefinition]) against [target]. Used as the
      * per-target eligibility filter in [validTargets].
      */
-    private fun hasEligibleWeapon(attacker: CombatUnit, target: CombatUnit): Boolean =
+    private fun hasEligibleWeapon(attacker: CombatUnit, target: VisibleUnit): Boolean =
         attacker.weapons.any { weapon ->
             val context = WeaponAttackContext(
                 actor = attacker,
                 target = target,
                 weapon = weapon,
-                gameState = state,
+                map = state.map,
             )
             definition.firstRejection(context) == null
         }

@@ -17,11 +17,13 @@ import battletech.tactical.session.TurnState
 import battletech.tactical.unit.UnitId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import battletech.tactical.query.projectFor
+import battletech.tactical.query.OwnUnit
 
 internal class DefaultPlayerViewTest {
 
     private fun viewFor(vararg units: battletech.tactical.unit.CombatUnit): PlayerView =
-        DefaultPlayerView(PlayerId.PLAYER_1, aGameState(units = units.toList()))
+        DefaultPlayerView(PlayerId.PLAYER_1, aGameState(units = units.toList()).projectFor(PlayerId.PLAYER_1))
 
     private fun mapWithRadius(center: HexCoordinates, radius: Int): GameMap {
         val hexes = mutableMapOf<HexCoordinates, Hex>()
@@ -49,7 +51,7 @@ internal class DefaultPlayerViewTest {
             units = listOf(attacker, destroyedEnemy),
             hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
         )
-        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
 
         assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).isEmpty()
     }
@@ -83,13 +85,13 @@ internal class DefaultPlayerViewTest {
             units = listOf(unconsciousAttacker, enemy),
             hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
         )
-        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
 
         // Cannot act as an attacker.
         assertThat(view.validTargets(UnitId("unconscious-attacker"), HexDirection.N)).isEmpty()
 
         // But remains a valid target for the enemy.
-        val enemyView = DefaultPlayerView(PlayerId.PLAYER_2, state)
+        val enemyView = DefaultPlayerView(PlayerId.PLAYER_2, state.projectFor(PlayerId.PLAYER_2))
         assertThat(enemyView.validTargets(UnitId("enemy"), HexDirection.N))
             .contains(UnitId("unconscious-attacker"))
     }
@@ -114,7 +116,7 @@ internal class DefaultPlayerViewTest {
             units = listOf(attacker, enemy),
             hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
         )
-        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
 
         assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).isEmpty()
         assertThat(view.targetInfos(UnitId("attacker"), HexDirection.N)).isEmpty()
@@ -137,7 +139,7 @@ internal class DefaultPlayerViewTest {
             units = listOf(attacker, enemy),
             hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
         )
-        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
 
         assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).isEmpty()
         assertThat(view.targetInfos(UnitId("attacker"), HexDirection.N)).isEmpty()
@@ -159,7 +161,7 @@ internal class DefaultPlayerViewTest {
             units = listOf(attacker, enemy),
             hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
         )
-        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
 
         assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).containsExactly(UnitId("enemy"))
         val info = view.targetInfos(UnitId("attacker"), HexDirection.N).single()
@@ -179,7 +181,7 @@ internal class DefaultPlayerViewTest {
             HexCoordinates(0, -3) to Hex(HexCoordinates(0, -3), Terrain.CLEAR),
         )
         val state = aGameState(units = listOf(attacker, enemy), hexes = hexes)
-        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
 
         assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).isEmpty()
         assertThat(view.targetInfos(UnitId("attacker"), HexDirection.N)).isEmpty()
@@ -197,7 +199,7 @@ internal class DefaultPlayerViewTest {
             HexCoordinates(0, -3) to Hex(HexCoordinates(0, -3), Terrain.CLEAR),
         )
         val state = aGameState(units = listOf(attacker, enemy), hexes = hexes)
-        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
 
         assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).containsExactly(UnitId("enemy"))
         assertThat(view.targetInfos(UnitId("attacker"), HexDirection.N)).hasSize(1)
@@ -221,7 +223,7 @@ internal class DefaultPlayerViewTest {
             units = listOf(attacker, enemy),
             hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
         )
-        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
 
         val weaponInfo = view.targetInfos(UnitId("attacker"), HexDirection.N).single().weapons.single()
         val modifiers = weaponInfo.modifiers
@@ -253,7 +255,7 @@ internal class DefaultPlayerViewTest {
             units = listOf(attacker, proneEnemy),
             hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
         )
-        val view = DefaultPlayerView(PlayerId.PLAYER_1, state)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
 
         val info = view.targetInfos(UnitId("attacker"), HexDirection.N).single()
         val weaponInfo = info.weapons.single()
@@ -262,7 +264,7 @@ internal class DefaultPlayerViewTest {
 
         val expectedTargetNumber = (
             attacker.gunnerySkill +
-                weaponToHitModifiers(attacker, proneEnemy, weapon, distance, isPrimaryTarget = true, gameState = state).total()
+                weaponToHitModifiers(attacker, OwnUnit(proneEnemy), weapon, distance, isPrimaryTarget = true, map = state.map).total()
             ).coerceAtLeast(2)
 
         assertThat(weaponInfo.targetDiceRoll).isEqualTo(expectedTargetNumber)
@@ -317,7 +319,7 @@ internal class DefaultPlayerViewTest {
                 weaponDeclarations = listOf(decl),
             ),
         )
-        val view = DefaultPlayerView(PlayerId.PLAYER_1, state, turnState)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1), turnState)
 
         val attacks = view.declaredWeaponAttacks()
 
@@ -349,10 +351,74 @@ internal class DefaultPlayerViewTest {
                 weaponDeclarations = listOf(p1Decl, p2Decl),
             ),
         )
-        val view = DefaultPlayerView(PlayerId.PLAYER_1, state, turnState)
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1), turnState)
 
         val attacks = view.declaredWeaponAttacks()
 
         assertThat(attacks.map { it.attackerId }).containsExactly(p2Unit.id, p1Unit.id)
+    }
+
+    @Test
+    fun `declaredWeaponAttacks withholds an enemy attacker's to-hit math but keeps the observable declaration`() {
+        val p1Unit = aUnit(id = "p1unit", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+        val p2Unit = aUnit(id = "p2unit", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, -3))
+        val state = aGameState(
+            units = listOf(p1Unit, p2Unit),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
+        )
+        val turnState = TurnState(
+            initiative = Initiative(emptyMap(), PlayerId.PLAYER_1, PlayerId.PLAYER_2),
+            attack = AttackProgress(
+                sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1), Impulse(PlayerId.PLAYER_2, 1))),
+                weaponDeclarations = listOf(
+                    AttackDeclaration(p1Unit.id, p2Unit.id, weaponIndex = 0, isPrimary = true),
+                    AttackDeclaration(p2Unit.id, p1Unit.id, weaponIndex = 0, isPrimary = true),
+                ),
+            ),
+        )
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1), turnState)
+
+        val attacks = view.declaredWeaponAttacks()
+
+        // PLAYER_1 (own): full to-hit prediction.
+        val own = attacks.single { it.attackerId == p1Unit.id }.weapons.single()
+        assertThat(own).isInstanceOf(DeclaredWeaponLine.Detailed::class.java)
+        assertThat((own as DeclaredWeaponLine.Detailed).modifierLabels).anyMatch { it.contains("gunnery") }
+
+        // PLAYER_2 (enemy): the declaration is still visible — you watch the torso swing and
+        // see which weapon is aimed at you — but the to-hit math, which is computed from that
+        // attacker's gunnery/heat/sensor crits, is absent from the type entirely.
+        val foreign = attacks.single { it.attackerId == p2Unit.id }.weapons.single()
+        assertThat(foreign).isInstanceOf(DeclaredWeaponLine.Undisclosed::class.java)
+        assertThat(foreign.weaponName).isEqualTo(p2Unit.weapons.single().name)
+        assertThat(foreign.weaponIndex).isEqualTo(0)
+    }
+
+    @Test
+    fun `declaredWeaponAttacks reveals both sides' to-hit math once the match is over`() {
+        val p1Unit = aUnit(id = "p1unit", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+        val p2Unit = aUnit(id = "p2unit", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, -3))
+        val state = aGameState(
+            units = listOf(p1Unit, p2Unit),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
+        )
+        val turnState = TurnState(
+            initiative = Initiative(emptyMap(), PlayerId.PLAYER_1, PlayerId.PLAYER_2),
+            attack = AttackProgress(
+                sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_2, 1))),
+                weaponDeclarations = listOf(AttackDeclaration(p2Unit.id, p1Unit.id, weaponIndex = 0, isPrimary = true)),
+            ),
+        )
+        // revealAll is what BattleSession.stateFor passes once the match ends; the enemy's
+        // prediction becomes visible through the same seam, deliberately.
+        val view = DefaultPlayerView(
+            PlayerId.PLAYER_1,
+            state.projectFor(PlayerId.PLAYER_1, revealAll = true),
+            turnState,
+        )
+
+        val revealed = view.declaredWeaponAttacks().single { it.attackerId == p2Unit.id }.weapons.single()
+
+        assertThat(revealed).isInstanceOf(DeclaredWeaponLine.Detailed::class.java)
     }
 }

@@ -10,6 +10,7 @@ import battletech.tactical.query.aUnit
 import battletech.tactical.session.RuleRejection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import battletech.tactical.query.OwnUnit
 
 internal class PhysicalReachRuleTest {
 
@@ -27,7 +28,7 @@ internal class PhysicalReachRuleTest {
             attackerPos to Hex(attackerPos, elevation = attackerElevation),
             targetPos to Hex(targetPos, elevation = targetElevation, depth = targetDepth),
         )
-        return PhysicalAttackContext(actor, GameState(listOf(actor, target), GameMap(hexes)), target)
+        return PhysicalAttackContext(actor, GameMap(hexes), OwnUnit(target))
     }
 
     private fun reason(result: RuleResult): RuleRejection =

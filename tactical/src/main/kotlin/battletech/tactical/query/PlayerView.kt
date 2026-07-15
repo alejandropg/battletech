@@ -11,12 +11,17 @@ import battletech.tactical.unit.UnitId
 /**
  * Read-side surface scoped to one [PlayerId]. Deliveries (TUI, web, remote
  * client) consume this to answer "what is legal right now?" without
- * reaching into raw [GameState].
+ * reaching into raw [battletech.tactical.model.GameState].
  *
- * The game is open-information: every implementation returns the same data
- * for any [playerId]. `playerId` is the view's identity for convenience
- * (whose turn is this, whose units are "mine" for display purposes), not an
- * access boundary — there is no hidden information being withheld.
+ * [playerId] IS an access boundary, not just a display convenience: the game has real
+ * hidden information, and a view is built over that player's
+ * [PlayerGameState] projection. Queries about the viewer's own units answer in
+ * full; data belonging to units the viewer does not own is either absent from
+ * the result type entirely ([DeclaredWeaponLine.Undisclosed]) or was never
+ * reachable to begin with ([ForeignUnit] has no gunnery/heat/internals field).
+ * Asking for something only an owner could know — e.g. movement legality for a
+ * foreign unit — fails loudly rather than answering wrongly; see
+ * [PlayerGameState.ownUnitById].
  */
 public interface PlayerView {
     public val playerId: PlayerId

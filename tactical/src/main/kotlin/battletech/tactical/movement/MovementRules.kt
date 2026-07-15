@@ -2,6 +2,7 @@ package battletech.tactical.movement
 
 import battletech.tactical.model.GameState
 import battletech.tactical.model.MovementMode
+import battletech.tactical.query.OwnUnit
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.cannotStandFromGyroDamage
@@ -84,7 +85,7 @@ public object MovementRules {
         if (requested.position == unit.position && requested.facing == unit.facing && requested.mpSpent == 0) {
             return AuthoritativeDestination.Legal(stationaryHex(unit))
         }
-        val serverHex = ReachabilityCalculator(state.map, state.units)
+        val serverHex = ReachabilityCalculator(state.map, state.units.map(::OwnUnit))
             .calculate(unit, mode)
             .destinations
             .firstOrNull { it.position == requested.position && it.facing == requested.facing }

@@ -1,6 +1,7 @@
 package battletech.tactical.attack
 
-import battletech.tactical.model.GameState
+import battletech.tactical.model.GameMap
+import battletech.tactical.query.VisibleUnit
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.Weapon
 
@@ -49,17 +50,22 @@ private fun rangeLabelFor(band: RangeBand): String = when (band) {
  * modifier, and partial-cover (+3) into a single term. When LOS is blocked entirely,
  * [lineOfSight] returns [LineOfSightResult.blocked] = true, which is enforced by
  * [battletech.tactical.attack.weapon.LineOfSightRule] before this function is reached.
+ *
+ * [attacker] is a full [CombatUnit] (heat and sensor criticals genuinely feed the math);
+ * [target] is only a [VisibleUnit], because every field read off it here — position, prone,
+ * shutdown, movement-this-turn — is public. That asymmetry is what lets the per-viewer query
+ * path and the authoritative resolver share this one implementation: see [AttackContext].
  */
 public fun weaponToHitModifiers(
     attacker: CombatUnit,
-    target: CombatUnit,
+    target: VisibleUnit,
     weapon: Weapon,
     distance: Int,
     isPrimaryTarget: Boolean,
-    gameState: GameState,
+    map: GameMap,
 ): List<ToHitModifier> {
     val band = rangeBandFor(distance, weapon)
-    val los = lineOfSight(attacker, target, gameState.map)
+    val los = lineOfSight(attacker.position, target.position, map)
     val terrainMod = los.woodsModifier + if (los.partialCover) 3 else 0
     return listOf(
         ToHitModifier(ToHitFactor.RANGE, rangeLabelFor(band), rangeModifierFor(band)),

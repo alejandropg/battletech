@@ -3,7 +3,6 @@ package battletech.tactical.attack
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Terrain
-import battletech.tactical.unit.CombatUnit
 
 /**
  * The result of a line-of-sight check between an attacker and target.
@@ -26,7 +25,13 @@ public data class LineOfSightResult(
 )
 
 /**
- * Traces a line of sight from [attacker] to [target] on [map].
+ * Traces a line of sight from [attackerPosition] to [targetPosition] on [map].
+ *
+ * Deliberately position-only: the check never needs any field of either unit beyond its
+ * [HexCoordinates]. That is what lets a caller which only knows a unit's public position
+ * (the per-viewer query path, where the target is a [battletech.tactical.query.ForeignUnit])
+ * run the *identical* check the authoritative resolver runs — one implementation, no drift,
+ * and no need for the target's private state.
  *
  * **Woods accumulation** (intervening hexes only, both endpoints excluded):
  *   LIGHT_WOODS = 1 level, HEAVY_WOODS = 2 levels.
@@ -42,16 +47,6 @@ public data class LineOfSightResult(
  *   LOS. This adds +3 to-hit and makes leg hits no-effect.
  *
  * Elevation for each position is looked up from [map]; missing hexes default to 0.
- */
-public fun lineOfSight(attacker: CombatUnit, target: CombatUnit, map: GameMap): LineOfSightResult =
-    lineOfSight(attacker.position, target.position, map)
-
-/**
- * Position-only overload of [lineOfSight]: the check only ever needs the two
- * endpoints' [HexCoordinates], never any other field of either unit — this is
- * what lets a caller that only knows a target's public position (e.g. a
- * delivery rendering a line-of-sight preview for a unit it doesn't own) run
- * the identical check without needing that unit's full private state.
  */
 public fun lineOfSight(attackerPosition: HexCoordinates, targetPosition: HexCoordinates, map: GameMap): LineOfSightResult {
     val line = attackerPosition.lineTo(targetPosition)
