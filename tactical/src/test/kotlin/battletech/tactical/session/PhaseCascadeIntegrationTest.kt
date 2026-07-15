@@ -86,7 +86,7 @@ internal class PhaseCascadeIntegrationTest {
     fun `I1 - advance fires initiative and lands at MOVEMENT with movement sequence seeded`() {
         val session = freshSession()
         val received = mutableListOf<GameEvent>()
-        session.subscribe(PlayerId.PLAYER_1) { received += it }
+        session.subscribe { received += it }
 
         val events = session.advance()
 
@@ -119,7 +119,7 @@ internal class PhaseCascadeIntegrationTest {
     fun `I2 - movement alternates players and final move cascades to WEAPON_ATTACK`() {
         val session = freshSession()
         val received = mutableListOf<GameEvent>()
-        session.subscribe(PlayerId.PLAYER_1) { received += it }
+        session.subscribe { received += it }
 
         session.advance()
         received.clear() // clear advance events; focus on movement commands
@@ -195,7 +195,7 @@ internal class PhaseCascadeIntegrationTest {
     fun `I4 - empty weapon impulses emit AttackDeclarationsRecorded and cascade to PHYSICAL_ATTACK without AttacksResolved`() {
         val session = freshSession()
         val received = mutableListOf<GameEvent>()
-        session.subscribe(PlayerId.PLAYER_1) { received += it }
+        session.subscribe { received += it }
 
         session.advance()
         received.clear()
@@ -283,7 +283,7 @@ internal class PhaseCascadeIntegrationTest {
     fun `I6 - completing physical phase cascades through HEAT and END to turn 2 MOVEMENT`() {
         val session = freshSession()
         val received = mutableListOf<GameEvent>()
-        session.subscribe(PlayerId.PLAYER_1) { received += it }
+        session.subscribe { received += it }
 
         session.advance()
         received.clear()
@@ -375,7 +375,7 @@ internal class PhaseCascadeIntegrationTest {
     fun `full turn smoke - all cross-phase events observed by subscriber in order`() {
         val session = freshSession()
         val allEvents = mutableListOf<GameEvent>()
-        session.subscribe(PlayerId.PLAYER_1) { allEvents += it }
+        session.subscribe { allEvents += it }
 
         // Kickstart
         session.advance()

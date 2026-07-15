@@ -85,7 +85,7 @@ internal class RemoteGameSessionTest {
         awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
 
         val events = mutableListOf<GameEvent>()
-        remote.subscribe(PlayerId.PLAYER_2) { events += it }
+        remote.subscribe { events += it }
 
         val active = server.turnState.movement.activePlayer
         val unit = server.turnState.selectableUnits(server.gameState).first()
@@ -130,7 +130,7 @@ internal class RemoteGameSessionTest {
         val remote = connectRemoteOverPipes(sessionId, connection)
         awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
         val events = mutableListOf<GameEvent>()
-        remote.subscribe(PlayerId.PLAYER_2) { events += it }
+        remote.subscribe { events += it }
 
         connection.closeServerSide()
         val expectedNotice = SessionNotice("Disconnected from host — restart with --join <host> --session <id> to rejoin")

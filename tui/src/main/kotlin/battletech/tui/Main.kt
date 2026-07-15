@@ -248,7 +248,7 @@ private fun runHeadlessServer(port: Int, map: GameMap) {
 
     val printer = GameEventPrinter(System.out)
     // Subscribed before any annotation so the printer sees the whole log from the start.
-    session.subscribe(PlayerId.PLAYER_1) { event ->
+    session.subscribe { event ->
         printer.print(event, session.gameState, session.turnState.turnNumber)
     }
 

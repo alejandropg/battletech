@@ -193,19 +193,19 @@ internal class BattleSessionTest {
     }
 
     @Test
-    fun `annotate appends a log entry at the current turn number and notifies both players' listeners`() {
+    fun `annotate appends a log entry at the current turn number and notifies all listeners`() {
         val session = sessionInMovement()
-        val p1Events = mutableListOf<GameEvent>()
-        val p2Events = mutableListOf<GameEvent>()
-        session.subscribe(PlayerId.PLAYER_1) { p1Events += it }
-        session.subscribe(PlayerId.PLAYER_2) { p2Events += it }
+        val firstListenerEvents = mutableListOf<GameEvent>()
+        val secondListenerEvents = mutableListOf<GameEvent>()
+        session.subscribe { firstListenerEvents += it }
+        session.subscribe { secondListenerEvents += it }
         val notice = SessionNotice("Opponent connected")
 
         session.annotate(notice)
 
         assertThat(session.gameLog.snapshot()).contains(LogEntry(session.turnState.turnNumber, notice))
-        assertThat(p1Events).containsExactly(notice)
-        assertThat(p2Events).containsExactly(notice)
+        assertThat(firstListenerEvents).containsExactly(notice)
+        assertThat(secondListenerEvents).containsExactly(notice)
     }
 
     // ---------- helpers ----------

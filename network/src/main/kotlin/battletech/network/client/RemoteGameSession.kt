@@ -67,7 +67,7 @@ public class RemoteGameSession internal constructor(
     private var snapshot: GameSnapshot = initial.snapshot
 
     private val log: GameLog = GameLog()
-    private val listeners: MutableMap<PlayerId, MutableList<(GameEvent) -> Unit>> = mutableMapOf()
+    private val listeners: MutableList<(GameEvent) -> Unit> = mutableListOf()
     private val pendingReply: ArrayBlockingQueue<ServerMessage.CommandReply> = ArrayBlockingQueue(1)
     private val requestIdCounter: AtomicLong = AtomicLong(0)
     private val readerThread: Thread
@@ -90,12 +90,11 @@ public class RemoteGameSession internal constructor(
     public override fun viewFor(playerId: PlayerId): PlayerView =
         DefaultPlayerView(playerId, snapshot.gameState, snapshot.turnState)
 
-    public override fun subscribe(playerId: PlayerId, listener: (GameEvent) -> Unit): Subscription {
-        val perPlayer = listeners.getOrPut(playerId) { mutableListOf() }
-        perPlayer += listener
+    public override fun subscribe(listener: (GameEvent) -> Unit): Subscription {
+        listeners += listener
         return object : Subscription {
             override fun unsubscribe() {
-                perPlayer.remove(listener)
+                listeners.remove(listener)
             }
         }
     }
@@ -168,10 +167,8 @@ public class RemoteGameSession internal constructor(
     }
 
     private fun dispatch(event: GameEvent) {
-        val snapshotOfListeners = listeners.mapValues { (_, perPlayer) -> perPlayer.toList() }
-        for ((_, perPlayer) in snapshotOfListeners) {
-            for (listener in perPlayer) listener(event)
-        }
+        val snapshotOfListeners = listeners.toList()
+        for (listener in snapshotOfListeners) listener(event)
     }
 
     public companion object {

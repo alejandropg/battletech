@@ -22,7 +22,7 @@ internal class SubscriptionTest {
     fun `subscriber receives events emitted by submitCommand`() {
         val session = sessionInMovement()
         val received = mutableListOf<GameEvent>()
-        session.subscribe(PlayerId.PLAYER_1) { received += it }
+        session.subscribe { received += it }
 
         session.submitCommand(
             MoveUnit(
@@ -44,7 +44,7 @@ internal class SubscriptionTest {
             roller = DiceRoller.seeded(42),
         )
         val received = mutableListOf<GameEvent>()
-        session.subscribe(PlayerId.PLAYER_1) { received += it }
+        session.subscribe { received += it }
 
         session.advance()
 
@@ -56,7 +56,7 @@ internal class SubscriptionTest {
     fun `unsubscribe stops delivery`() {
         val session = sessionInMovement()
         val received = mutableListOf<GameEvent>()
-        val subscription = session.subscribe(PlayerId.PLAYER_1) { received += it }
+        val subscription = session.subscribe { received += it }
 
         subscription.unsubscribe()
         session.submitCommand(
@@ -69,7 +69,7 @@ internal class SubscriptionTest {
     @Test
     fun `unsubscribe is idempotent`() {
         val session = sessionInMovement()
-        val subscription = session.subscribe(PlayerId.PLAYER_1) { /* noop */ }
+        val subscription = session.subscribe { /* noop */ }
 
         subscription.unsubscribe()
         subscription.unsubscribe() // must not throw
@@ -80,8 +80,8 @@ internal class SubscriptionTest {
         val session = sessionInMovement()
         val a = mutableListOf<GameEvent>()
         val b = mutableListOf<GameEvent>()
-        session.subscribe(PlayerId.PLAYER_1) { a += it }
-        session.subscribe(PlayerId.PLAYER_1) { b += it }
+        session.subscribe { a += it }
+        session.subscribe { b += it }
 
         session.submitCommand(
             MoveUnit(PlayerId.PLAYER_1, mech1.id, aReachableHex(), MovementMode.WALK),
@@ -92,20 +92,20 @@ internal class SubscriptionTest {
     }
 
     @Test
-    fun `subscribers for different players each receive the same permissive event stream`() {
+    fun `multiple subscribers each receive every event`() {
         val session = sessionInMovement()
-        val p1 = mutableListOf<GameEvent>()
-        val p2 = mutableListOf<GameEvent>()
-        session.subscribe(PlayerId.PLAYER_1) { p1 += it }
-        session.subscribe(PlayerId.PLAYER_2) { p2 += it }
+        val first = mutableListOf<GameEvent>()
+        val second = mutableListOf<GameEvent>()
+        session.subscribe { first += it }
+        session.subscribe { second += it }
 
         session.submitCommand(
             MoveUnit(PlayerId.PLAYER_1, mech1.id, aReachableHex(), MovementMode.WALK),
         )
 
         // The game is open-information — both observers see the event.
-        assertThat(p1.filterIsInstance<UnitMoved>()).hasSize(1)
-        assertThat(p2.filterIsInstance<UnitMoved>()).hasSize(1)
+        assertThat(first.filterIsInstance<UnitMoved>()).hasSize(1)
+        assertThat(second.filterIsInstance<UnitMoved>()).hasSize(1)
     }
 
     @Test
@@ -113,7 +113,7 @@ internal class SubscriptionTest {
         val session = sessionInMovement()
         val received = mutableListOf<GameEvent>()
         var subscription: Subscription? = null
-        subscription = session.subscribe(PlayerId.PLAYER_1) { ev ->
+        subscription = session.subscribe { ev ->
             received += ev
             subscription?.unsubscribe()
         }

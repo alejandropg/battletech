@@ -31,11 +31,12 @@ public interface GameSession {
     public fun viewFor(playerId: PlayerId): PlayerView
 
     /**
-     * Register [listener] to receive events emitted by this session,
-     * scoped to [playerId]'s view. Returns a [Subscription] whose
+     * Register [listener] to receive every event emitted by this session.
+     * Open-information: there is no per-player filtering — every subscriber
+     * sees everything. Returns a [Subscription] whose
      * [Subscription.unsubscribe] detaches the listener.
      */
-    public fun subscribe(playerId: PlayerId, listener: (GameEvent) -> Unit): Subscription
+    public fun subscribe(listener: (GameEvent) -> Unit): Subscription
 
     public fun submitCommand(command: GameCommand): CommandResult
 }

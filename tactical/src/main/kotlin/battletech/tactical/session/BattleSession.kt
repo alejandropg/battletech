@@ -52,7 +52,7 @@ public class BattleSession(
     private var _needsOnEntry: Boolean = initialNeedsOnEntry
     private var _matchOver: Boolean = false
 
-    private val listeners: MutableMap<PlayerId, MutableList<(GameEvent) -> Unit>> = mutableMapOf()
+    private val listeners: MutableList<(GameEvent) -> Unit> = mutableListOf()
 
     private val _gameLog: GameLog = GameLog()
 
@@ -68,20 +68,19 @@ public class BattleSession(
     public override fun viewFor(playerId: PlayerId): PlayerView = DefaultPlayerView(playerId, _gameState, _turnState)
 
     /**
-     * Register [listener] to receive events emitted by this session,
-     * scoped to [playerId]'s view.
+     * Register [listener] to receive every event emitted by this session:
+     * a session-wide feed, not scoped to any player (open-information).
      *
      * Returns a [Subscription] whose [Subscription.unsubscribe] detaches
      * the listener. Listeners are invoked synchronously on the thread
      * that called [submitCommand] / [advance]; long-running work should
      * be deferred to another thread by the listener.
      */
-    public override fun subscribe(playerId: PlayerId, listener: (GameEvent) -> Unit): Subscription {
-        val perPlayer = listeners.getOrPut(playerId) { mutableListOf() }
-        perPlayer += listener
+    public override fun subscribe(listener: (GameEvent) -> Unit): Subscription {
+        listeners += listener
         return object : Subscription {
             override fun unsubscribe() {
-                perPlayer.remove(listener)
+                listeners.remove(listener)
             }
         }
     }
@@ -151,12 +150,8 @@ public class BattleSession(
         if (events.isEmpty() || listeners.isEmpty()) return
         // Iterate over a snapshot so listeners that unsubscribe themselves
         // mid-dispatch don't trip a ConcurrentModificationException.
-        val snapshot = listeners.mapValues { (_, list) -> list.toList() }
-        for ((_, perPlayer) in snapshot) {
-            for (event in events) {
-                for (listener in perPlayer) listener(event)
-            }
-        }
+        val snapshot = listeners.toList()
+        for (event in events) for (listener in snapshot) listener(event)
     }
 
     private fun cascade(): List<GameEvent> {

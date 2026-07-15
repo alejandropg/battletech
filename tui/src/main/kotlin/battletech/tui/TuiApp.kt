@@ -105,9 +105,7 @@ public class TuiApp(
         try {
             runBlocking {
                 val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-                val subscriptions = PlayerId.entries.map { player ->
-                    session.subscribe(player) { internalEvents.trySend(UiEvent.Session(it)) }
-                }
+                val subscription = session.subscribe { internalEvents.trySend(UiEvent.Session(it)) }
                 try {
                     runLoop(
                         events = merge(
@@ -121,7 +119,7 @@ public class TuiApp(
                         initialState = appState,
                     )
                 } finally {
-                    subscriptions.forEach { it.unsubscribe() }
+                    subscription.unsubscribe()
                 }
             }
         } finally {

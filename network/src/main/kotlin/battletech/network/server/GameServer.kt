@@ -122,8 +122,8 @@ public class GameServer(
      * occur on a client's reader thread (in response to a remote command) as
      * well as on whichever thread calls [submitCommand].
      */
-    public override fun subscribe(playerId: PlayerId, listener: (GameEvent) -> Unit): Subscription =
-        session.subscribe(playerId, listener)
+    public override fun subscribe(listener: (GameEvent) -> Unit): Subscription =
+        session.subscribe(listener)
 
     public override fun submitCommand(command: GameCommand): CommandResult = synchronized(lock) {
         if (!clients.keys.containsAll(remoteSeats)) {
