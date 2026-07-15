@@ -3,6 +3,7 @@ package battletech.tactical.session
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
 
 /**
@@ -29,6 +30,9 @@ public interface GameSession {
     public val gameLog: GameLog
 
     public fun viewFor(playerId: PlayerId): PlayerView
+
+    /** What [viewer] may see. null viewer => everything foreign (fails closed). */
+    public fun stateFor(viewer: PlayerId?): PlayerGameState
 
     /**
      * Register [listener] to receive every event emitted by this session.

@@ -15,7 +15,7 @@ import battletech.tactical.unit.UnitId
 
 public class DefaultPlayerView(
     override val playerId: PlayerId,
-    override val state: GameState,
+    private val state: GameState,
     private val turnState: TurnState = TurnState.NULL,
 ) : PlayerView {
 

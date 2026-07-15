@@ -10,7 +10,9 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.victoryStatus
 import battletech.tactical.movement.MovementPhaseHandler
 import battletech.tactical.query.DefaultPlayerView
+import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
+import battletech.tactical.query.projectFor
 import battletech.tactical.unit.destructionReason
 
 /**
@@ -66,6 +68,14 @@ public class BattleSession(
     public override val isMatchOver: Boolean get() = _matchOver
 
     public override fun viewFor(playerId: PlayerId): PlayerView = DefaultPlayerView(playerId, _gameState, _turnState)
+
+    /**
+     * The deliberate match-over reveal lives here, inside the projection:
+     * once [_matchOver] is set, every unit becomes visible to every viewer
+     * (including `null`), regardless of ownership.
+     */
+    public override fun stateFor(viewer: PlayerId?): PlayerGameState =
+        _gameState.projectFor(viewer, revealAll = _matchOver)
 
     /**
      * Register [listener] to receive every event emitted by this session:

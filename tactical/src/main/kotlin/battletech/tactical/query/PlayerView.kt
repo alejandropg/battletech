@@ -20,7 +20,6 @@ import battletech.tactical.unit.UnitId
  */
 public interface PlayerView {
     public val playerId: PlayerId
-    public val state: GameState
 
     /** Reachability map for each available movement mode, in WALK→RUN→JUMP
      *  order, skipping modes the unit cannot perform. */

@@ -189,7 +189,27 @@ internal class BattleSessionTest {
         val session = sessionInMovement()
         val view = session.viewFor(PlayerId.PLAYER_1)
         assertThat(view.playerId).isEqualTo(PlayerId.PLAYER_1)
-        assertThat(view.state.units).containsExactlyElementsOf(session.gameState.units)
+    }
+
+    @Test
+    fun `stateFor projects the viewer's own units as OwnUnit and the rest as ForeignUnit`() {
+        val session = sessionInMovement()
+
+        val projected = session.stateFor(PlayerId.PLAYER_1)
+
+        assertThat(projected.unitById(mech1.id)).isInstanceOf(battletech.tactical.query.OwnUnit::class.java)
+        assertThat(projected.unitById(mech2.id)).isInstanceOf(battletech.tactical.query.ForeignUnit::class.java)
+    }
+
+    @Test
+    fun `stateFor with a null viewer fails closed to ForeignUnit for every unit`() {
+        val session = sessionInMovement()
+
+        val projected = session.stateFor(null)
+
+        assertThat(projected.units).allSatisfy {
+            assertThat(it).isInstanceOf(battletech.tactical.query.ForeignUnit::class.java)
+        }
     }
 
     @Test

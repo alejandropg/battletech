@@ -11,7 +11,9 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.DefaultPlayerView
+import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
+import battletech.tactical.query.projectFor
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.GameCommand
@@ -89,6 +91,9 @@ public class RemoteGameSession internal constructor(
 
     public override fun viewFor(playerId: PlayerId): PlayerView =
         DefaultPlayerView(playerId, snapshot.gameState, snapshot.turnState)
+
+    public override fun stateFor(viewer: PlayerId?): PlayerGameState =
+        snapshot.gameState.projectFor(viewer, revealAll = snapshot.isMatchOver)
 
     public override fun subscribe(listener: (GameEvent) -> Unit): Subscription {
         listeners += listener

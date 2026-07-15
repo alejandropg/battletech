@@ -10,6 +10,7 @@ import battletech.network.wire.WireJson
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.CommandRejection
@@ -116,6 +117,8 @@ public class GameServer(
     public override val gameLog: GameLog get() = synchronized(lock) { session.gameLog }
 
     public override fun viewFor(playerId: PlayerId): PlayerView = synchronized(lock) { session.viewFor(playerId) }
+
+    public override fun stateFor(viewer: PlayerId?): PlayerGameState = synchronized(lock) { session.stateFor(viewer) }
 
     /**
      * Listener bodies must be thread-safe on the caller's side: dispatch may
