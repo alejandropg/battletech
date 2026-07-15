@@ -158,7 +158,7 @@ public class GameServer(
         val result = session.submitCommand(command)
         if (result is CommandResult.Accepted) {
             val delta = session.gameLog.snapshot().drop(mark)
-            clients.values.forEach { it.outbound.put(ServerMessage.StatePush(delta, snapshotFor(it.seat))) }
+            clients.values.forEach { it.outbound.put(ServerMessage.StatePush(delta, snapshot())) }
         }
         return result
     }
@@ -168,7 +168,7 @@ public class GameServer(
      * [ServerMessage.StatePush] is built through here. Currently permissive;
      * hidden-info rules land here without touching call sites.
      */
-    private fun snapshotFor(player: PlayerId): GameSnapshot = GameSnapshot(
+    private fun snapshot(): GameSnapshot = GameSnapshot(
         gameState = session.gameState,
         turnState = session.turnState,
         currentPhase = session.currentPhase,
@@ -245,7 +245,7 @@ public class GameServer(
             clients[seat] = client
             startWriterThread(client)
             val markBeforeKickstart = session.gameLog.snapshot().size
-            client.outbound.put(ServerMessage.JoinAccepted(seat, snapshotFor(seat), session.gameLog.snapshot()))
+            client.outbound.put(ServerMessage.JoinAccepted(seat, snapshot(), session.gameLog.snapshot()))
 
             val kickstarted = !everStarted && clients.keys == remoteSeats
             if (kickstarted) {
@@ -257,9 +257,9 @@ public class GameServer(
             // fired) entirely — push them the combined delta. The joiner already has the connect
             // notice via JoinAccepted.log above, so it only needs the kickstart delta, if any.
             val finalLog = session.gameLog.snapshot()
-            alreadyConnected.forEach { it.outbound.put(ServerMessage.StatePush(finalLog.drop(markBeforeConnectNotice), snapshotFor(it.seat))) }
+            alreadyConnected.forEach { it.outbound.put(ServerMessage.StatePush(finalLog.drop(markBeforeConnectNotice), snapshot())) }
             if (kickstarted) {
-                client.outbound.put(ServerMessage.StatePush(finalLog.drop(markBeforeKickstart), snapshotFor(seat)))
+                client.outbound.put(ServerMessage.StatePush(finalLog.drop(markBeforeKickstart), snapshot()))
             }
             client
         }
