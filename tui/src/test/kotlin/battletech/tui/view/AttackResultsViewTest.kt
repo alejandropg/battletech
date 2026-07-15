@@ -95,17 +95,18 @@ internal class AttackResultsViewTest {
         missilesHit = missilesHit,
     )
 
-    private fun makeView(results: List<AttackResult>): AttackResultsView {
+    private fun makeView(results: List<AttackResult>, viewer: PlayerId? = PlayerId.PLAYER_1): AttackResultsView {
         val render = AttackResultsRender(
             results = results,
             unitOwners = mapOf(attackerId to PlayerId.PLAYER_1, targetId to PlayerId.PLAYER_2),
+            viewer = viewer,
         )
         return AttackResultsView(render)
     }
 
     /** Renders via the decorator — pixel-parity regression guard for box/title/coordinates. */
-    private fun renderToString(results: List<AttackResult>, width: Int = 34, height: Int = 30): String {
-        val view = makeView(results)
+    private fun renderToString(results: List<AttackResult>, width: Int = 34, height: Int = 30, viewer: PlayerId? = PlayerId.PLAYER_1): String {
+        val view = makeView(results, viewer)
         val decorated = ScrollablePanelView(
             index = AttackResultsView.INDEX,
             title = AttackResultsView.TITLE,
@@ -166,9 +167,20 @@ internal class AttackResultsViewTest {
     }
 
     @Test
-    fun `breakdown includes the gunnery base line`() {
-        val output = renderToString(listOf(aHitResult(gunnery = 4)))
+    fun `breakdown includes the gunnery base line for the viewer's own attacker`() {
+        val output = renderToString(listOf(aHitResult(gunnery = 4)), viewer = PlayerId.PLAYER_1)
         assertTrue(output.contains("+4 gunnery")) { "Expected gunnery base line in output: $output" }
+    }
+
+    @Test
+    fun `breakdown omits the gunnery base line for a foreign attacker, though it stays derivable from TN and modifiers`() {
+        // attackerId is owned by PLAYER_1 (see makeView); viewing as PLAYER_2 makes it foreign.
+        val output = renderToString(
+            listOf(aHitResult(gunnery = 4, modifiers = listOf(ToHitModifier(ToHitFactor.RANGE, "med", 2)))),
+            viewer = PlayerId.PLAYER_2,
+        )
+        assertFalse(output.contains("gunnery")) { "Expected no gunnery label for a foreign attacker: $output" }
+        assertTrue(output.contains("+2 med")) { "Modifiers stay visible for a foreign attacker: $output" }
     }
 
     @Test

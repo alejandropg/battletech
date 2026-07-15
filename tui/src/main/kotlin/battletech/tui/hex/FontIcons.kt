@@ -104,6 +104,14 @@ internal fun criticalHitIcon(content: CriticalSlotContent): String =
         else -> NF_MD_IMAGE_BROKEN
     }
 
+/**
+ * Marker for a critical hit on a foreign unit whose component is undisclosed
+ * (`CriticalHit.Undisclosed`): the same glyph regardless of what was actually hit, so the
+ * icon itself doesn't leak the component the way [criticalHitIcon] deliberately does for
+ * an owned unit's [CriticalHit.Detailed].
+ */
+internal fun undisclosedCriticalHitIcon(): String = NF_MD_IMAGE_BROKEN
+
 /** Marker for a log line where a mech location was blown off. */
 internal fun locationDestroyedIcon(): String = NF_FA_CHAIN_BROKEN
 

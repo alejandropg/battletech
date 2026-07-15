@@ -43,6 +43,7 @@ import battletech.tui.hex.movementModeIcon
 import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.hex.torsoArrowIcon
+import battletech.tui.hex.undisclosedCriticalHitIcon
 
 internal object GameLogFormatter {
 
@@ -112,6 +113,7 @@ internal object GameLogFormatter {
             val text = when (event) {
                 is UnitShutdown.Automatic -> "$name auto-shut down (heat ≥ 30)"
                 is UnitShutdown.AvoidFailed -> "$name shut down from heat"
+                is UnitShutdown.Undisclosed -> "$name shut down"
             }
             listOf(LogLine(null, text))
         }
@@ -121,7 +123,11 @@ internal object GameLogFormatter {
         }
         is AmmoExploded -> {
             val name = event.unitId.value
-            listOf(LogLine(ammoExplosionIcon(), "$name ammo explosion: ${event.ammoType.name} (${event.damage} damage)"))
+            val text = when (event) {
+                is AmmoExploded.Detailed -> "$name ammo explosion: ${event.ammoType.name} (${event.damage} damage)"
+                is AmmoExploded.Undisclosed -> "$name ammo explosion (${event.damage} damage)"
+            }
+            listOf(LogLine(ammoExplosionIcon(), text))
         }
         is UnitDestroyed -> {
             val name = event.unitId.value
@@ -136,12 +142,22 @@ internal object GameLogFormatter {
         }
         is CriticalHit -> {
             val name = event.unitId.value
-            val component = criticalSlotContentLabel(event.content, event.unitId, state)
-            listOf(LogLine(criticalHitIcon(event.content), "$name critical hit: $component in ${locationLabel(event.location)}"))
+            when (event) {
+                is CriticalHit.Detailed -> {
+                    val component = criticalSlotContentLabel(event.content, event.unitId, state)
+                    listOf(LogLine(criticalHitIcon(event.content), "$name critical hit: $component in ${locationLabel(event.location)}"))
+                }
+                is CriticalHit.Undisclosed -> listOf(LogLine(undisclosedCriticalHitIcon(), "$name takes a critical hit"))
+            }
         }
         is PilotHit -> {
             val name = event.unitId.value
-            listOf(LogLine(null, "$name pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)"))
+            val text = when (event) {
+                is PilotHit.Fatal -> "$name pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)"
+                is PilotHit.Checked -> "$name pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)"
+                is PilotHit.Undisclosed -> "$name pilot wounded"
+            }
+            listOf(LogLine(null, text))
         }
         is PilotKnockedUnconscious -> {
             val name = event.unitId.value

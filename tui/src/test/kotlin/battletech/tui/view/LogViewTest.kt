@@ -32,7 +32,7 @@ internal class LogViewTest {
     private val passedPsr = PilotingSkillRoll(targetNumber = 5, roll = DiceRoll(4, 4), passed = true)
 
     private fun stoodUp(): UnitStoodUp =
-        UnitStoodUp(unitId = mUnit.id, psr = passedPsr, stoodUp = true)
+        UnitStoodUp.Detailed(unitId = mUnit.id, psr = passedPsr, stoodUp = true)
 
     private fun movedTo(toCol: Int): UnitMoved = UnitMoved(
         unitId = mUnit.id,

@@ -21,6 +21,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.projectFor
+import battletech.tactical.session.AmmoExploded
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.CriticalHit
@@ -39,6 +40,7 @@ import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitDestroyed
 import battletech.tactical.session.UnitMoved
+import battletech.tactical.session.UnitShutdown
 import battletech.tactical.unit.ActuatorType
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.CriticalSlotContent
@@ -57,6 +59,7 @@ import battletech.tui.hex.movementModeIcon
 import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.hex.torsoArrowIcon
+import battletech.tui.hex.undisclosedCriticalHitIcon
 import battletech.tui.mediumLaser
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -449,7 +452,7 @@ internal class GameLogFormatterTest {
         val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
-            CriticalHit(
+            CriticalHit.Detailed(
                 unitId = locust.id,
                 location = MechLocation.CENTER_TORSO,
                 slotIndex = 0,
@@ -466,7 +469,7 @@ internal class GameLogFormatterTest {
         val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
-            CriticalHit(
+            CriticalHit.Detailed(
                 unitId = locust.id,
                 location = MechLocation.RIGHT_ARM,
                 slotIndex = 5,
@@ -482,7 +485,7 @@ internal class GameLogFormatterTest {
         val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
-            CriticalHit(
+            CriticalHit.Detailed(
                 unitId = locust.id,
                 location = MechLocation.LEFT_TORSO,
                 slotIndex = 2,
@@ -492,7 +495,7 @@ internal class GameLogFormatterTest {
         )).isEqualTo("locust critical hit: AC20 ammo in Left Torso")
 
         assertThat(text(
-            CriticalHit(
+            CriticalHit.Detailed(
                 unitId = locust.id,
                 location = MechLocation.LEFT_ARM,
                 slotIndex = 1,
@@ -500,6 +503,59 @@ internal class GameLogFormatterTest {
             ),
             stateWithLocust,
         )).isEqualTo("locust critical hit: Upper arm actuator in Left Arm")
+    }
+
+    @Test
+    fun `CriticalHit Undisclosed reports only that a crit landed, with a generic icon`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+
+        val lines = GameLogFormatter.lines(CriticalHit.Undisclosed(unitId = locust.id), stateWithLocust)
+
+        assertThat(lines.single().text).isEqualTo("locust takes a critical hit")
+        assertThat(lines.single().icon).isEqualTo(undisclosedCriticalHitIcon())
+    }
+
+    @Test
+    fun `AmmoExploded Detailed shows the ammo type and damage`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+
+        assertThat(text(
+            AmmoExploded.Detailed(unitId = locust.id, ammoType = battletech.tactical.unit.AmmoType.AC20, damage = 100),
+            stateWithLocust,
+        )).isEqualTo("locust ammo explosion: AC20 (100 damage)")
+    }
+
+    @Test
+    fun `AmmoExploded Undisclosed drops the ammo type but keeps the damage`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+
+        assertThat(text(
+            AmmoExploded.Undisclosed(unitId = locust.id, damage = 100),
+            stateWithLocust,
+        )).isEqualTo("locust ammo explosion (100 damage)")
+    }
+
+    @Test
+    fun `UnitShutdown Automatic and AvoidFailed name the mechanism`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+
+        assertThat(text(UnitShutdown.Automatic(unitId = locust.id), stateWithLocust))
+            .isEqualTo("locust auto-shut down (heat ≥ 30)")
+        assertThat(text(UnitShutdown.AvoidFailed(unitId = locust.id, roll = DiceRoll(2, 2)), stateWithLocust))
+            .isEqualTo("locust shut down from heat")
+    }
+
+    @Test
+    fun `UnitShutdown Undisclosed reports only that the unit shut down`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+
+        assertThat(text(UnitShutdown.Undisclosed(unitId = locust.id), stateWithLocust))
+            .isEqualTo("locust shut down")
     }
 
     @Test
@@ -525,6 +581,15 @@ internal class GameLogFormatterTest {
             ),
             stateWithLocust,
         )).isEqualTo("locust pilot wounded (3 hits total)")
+    }
+
+    @Test
+    fun `PilotHit Undisclosed drops the running total`() {
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+
+        assertThat(text(PilotHit.Undisclosed(unitId = locust.id), stateWithLocust))
+            .isEqualTo("locust pilot wounded")
     }
 
     @Test
@@ -558,7 +623,7 @@ internal class GameLogFormatterTest {
 
     @Test
     fun `iconFor maps engine, gyro, sensor, and life-support crits to distinct glyphs`() {
-        fun crit(content: CriticalSlotContent) = CriticalHit(
+        fun crit(content: CriticalSlotContent) = CriticalHit.Detailed(
             unitId = UnitId("locust"), location = MechLocation.CENTER_TORSO, slotIndex = 0, content = content,
         )
 

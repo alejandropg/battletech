@@ -2,6 +2,7 @@ package battletech.tui.view
 
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.HitLocation
+import battletech.tactical.attack.displayLabels
 import battletech.tactical.attack.toHitBreakdownLabels
 import battletech.tactical.dice.twoD6AtLeastProbability
 import battletech.tui.game.PanelId
@@ -46,7 +47,14 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
     private fun renderWeaponResult(content: ContentWriter, result: AttackResult) {
         // Block 1: unified hit widget (weapon name, TN, success %, modifiers)
         val successChance = twoD6AtLeastProbability(result.targetNumber)
-        WeaponHitWidget.draw(content, "  ${result.weaponName}", result.targetNumber, successChance, toHitBreakdownLabels(result.gunnery, result.modifiers), Color.WHITE)
+        // The TN and modifier breakdown are both observable (announced at the table), so
+        // AttackResult itself is never redacted (see GameEvent.redactFor's KDoc) — but the
+        // explicit "+N gunnery" label is still dropped for a foreign attacker so the skill
+        // number isn't handed over for free. This is NOT a guarantee: targetNumber == gunnery
+        // + sum(modifiers), so gunnery stays derivable by subtraction from what's shown here.
+        val isOwnAttacker = data.unitOwners[result.attackerId] == data.viewer
+        val breakdown = if (isOwnAttacker) toHitBreakdownLabels(result.gunnery, result.modifiers) else result.modifiers.displayLabels()
+        WeaponHitWidget.draw(content, "  ${result.weaponName}", result.targetNumber, successChance, breakdown, Color.WHITE)
 
         // Block 2: raw roll + outcome (right-aligned, outcome overwritten in color)
         val hit = result is AttackResult.Hit

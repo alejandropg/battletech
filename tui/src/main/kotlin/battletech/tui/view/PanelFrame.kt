@@ -24,7 +24,7 @@ internal class PanelFrame(private val appState: AppState) {
 
     val pendingHeat by lazy { appState.phase.pendingHeat(appState) }
 
-    val logEntries by lazy { appState.session.gameLog.snapshot() }
+    val logEntries by lazy { appState.session.logFor(appState.viewer) }
 
     val declaredTargets by lazy { appState.phase.declaredTargetsRender(appState) }
 
@@ -33,6 +33,7 @@ internal class PanelFrame(private val appState: AppState) {
             AttackResultsRender(
                 results = results,
                 unitOwners = visibleState.units.associate { it.id to it.owner },
+                viewer = appState.viewer,
             )
         }
     }
