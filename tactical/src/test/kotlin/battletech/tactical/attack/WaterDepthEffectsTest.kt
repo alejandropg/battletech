@@ -18,6 +18,7 @@ import battletech.tactical.session.PilotHit
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
+import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.WeaponModel
 import battletech.tactical.unit.Weapon
 import org.assertj.core.api.Assertions.assertThat
@@ -251,6 +252,7 @@ internal class WaterDepthEffectsTest {
                 shortRange = 3,
                 mediumRange = 6,
                 longRange = 9,
+                kind = WeaponKind.Energy,
                 underwaterCapable = true,
             ),
         )

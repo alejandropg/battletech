@@ -9,6 +9,7 @@ public object WeaponModels {
         mediumRange = 6,
         longRange = 9,
         criticalSlots = 1,
+        kind = WeaponKind.Energy,
     )
 
     public val largeLaser: WeaponModel = WeaponModel(
@@ -19,6 +20,7 @@ public object WeaponModels {
         mediumRange = 10,
         longRange = 15,
         criticalSlots = 2,
+        kind = WeaponKind.Energy,
     )
 
     public val ac20: WeaponModel = WeaponModel(
@@ -30,7 +32,7 @@ public object WeaponModels {
         mediumRange = 6,
         longRange = 9,
         criticalSlots = 10,
-        ammoType = AmmoType.AC20,
+        kind = WeaponKind.Ballistic(AmmoType.AC20),
     )
 
     public val srm6: WeaponModel = WeaponModel(
@@ -41,10 +43,7 @@ public object WeaponModels {
         mediumRange = 6,
         longRange = 9,
         criticalSlots = 2,
-        ammoType = AmmoType.SRM6,
-        clusterSize = 6,
-        damagePerMissile = 2,
-        missilesPerGroup = 1,
+        kind = WeaponKind.Missile(AmmoType.SRM6, clusterSize = 6, damagePerMissile = 2, missilesPerGroup = 1),
     )
 
     public val smallLaser: WeaponModel = WeaponModel(
@@ -55,6 +54,7 @@ public object WeaponModels {
         mediumRange = 2,
         longRange = 3,
         criticalSlots = 1,
+        kind = WeaponKind.Energy,
     )
 
     public val machineGun: WeaponModel = WeaponModel(
@@ -65,7 +65,7 @@ public object WeaponModels {
         mediumRange = 2,
         longRange = 3,
         criticalSlots = 1,
-        ammoType = AmmoType.MG,
+        kind = WeaponKind.Ballistic(AmmoType.MG),
     )
 
     public val srm2: WeaponModel = WeaponModel(
@@ -76,10 +76,7 @@ public object WeaponModels {
         mediumRange = 6,
         longRange = 9,
         criticalSlots = 1,
-        ammoType = AmmoType.SRM2,
-        clusterSize = 2,
-        damagePerMissile = 2,
-        missilesPerGroup = 1,
+        kind = WeaponKind.Missile(AmmoType.SRM2, clusterSize = 2, damagePerMissile = 2, missilesPerGroup = 1),
     )
 
     public val ppc: WeaponModel = WeaponModel(
@@ -91,6 +88,7 @@ public object WeaponModels {
         mediumRange = 12,
         longRange = 18,
         criticalSlots = 3,
+        kind = WeaponKind.Energy,
     )
 
     public val lrm5: WeaponModel = WeaponModel(
@@ -102,10 +100,7 @@ public object WeaponModels {
         mediumRange = 14,
         longRange = 21,
         criticalSlots = 1,
-        ammoType = AmmoType.LRM5,
-        clusterSize = 5,
-        damagePerMissile = 1,
-        missilesPerGroup = 5,
+        kind = WeaponKind.Missile(AmmoType.LRM5, clusterSize = 5, damagePerMissile = 1, missilesPerGroup = 5),
     )
 
     public val lrm10: WeaponModel = WeaponModel(
@@ -117,10 +112,7 @@ public object WeaponModels {
         mediumRange = 14,
         longRange = 21,
         criticalSlots = 2,
-        ammoType = AmmoType.LRM10,
-        clusterSize = 10,
-        damagePerMissile = 1,
-        missilesPerGroup = 5,
+        kind = WeaponKind.Missile(AmmoType.LRM10, clusterSize = 10, damagePerMissile = 1, missilesPerGroup = 5),
     )
 
     public val lrm20: WeaponModel = WeaponModel(
@@ -132,10 +124,7 @@ public object WeaponModels {
         mediumRange = 14,
         longRange = 21,
         criticalSlots = 5,
-        ammoType = AmmoType.LRM20,
-        clusterSize = 20,
-        damagePerMissile = 1,
-        missilesPerGroup = 5,
+        kind = WeaponKind.Missile(AmmoType.LRM20, clusterSize = 20, damagePerMissile = 1, missilesPerGroup = 5),
     )
 
     public val ac5: WeaponModel = WeaponModel(
@@ -147,6 +136,6 @@ public object WeaponModels {
         mediumRange = 12,
         longRange = 18,
         criticalSlots = 4,
-        ammoType = AmmoType.AC5,
+        kind = WeaponKind.Ballistic(AmmoType.AC5),
     )
 }

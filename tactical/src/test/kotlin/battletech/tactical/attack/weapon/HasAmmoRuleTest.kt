@@ -7,6 +7,7 @@ import battletech.tactical.query.aWeapon
 import battletech.tactical.attack.aWeaponAttackContext
 import battletech.tactical.session.RuleRejection
 import battletech.tactical.unit.AmmoType
+import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.mechLayout
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -20,14 +21,14 @@ internal class HasAmmoRuleTest {
     fun `satisfied when weapon has ammo remaining`() {
         val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
         val actor = aUnit(criticalLayout = layout)
-        val result = rule.evaluate(aWeaponAttackContext(actor = actor, weapon = aWeapon(ammoType = AmmoType.AC20)))
+        val result = rule.evaluate(aWeaponAttackContext(actor = actor, weapon = aWeapon(kind = WeaponKind.Ballistic(AmmoType.AC20))))
 
         assertEquals(RuleResult.Satisfied, result)
     }
 
     @Test
     fun `satisfied for energy weapons with no ammo tracking`() {
-        val result = rule.evaluate(aWeaponAttackContext(weapon = aWeapon(ammoType = null)))
+        val result = rule.evaluate(aWeaponAttackContext(weapon = aWeapon()))
 
         assertEquals(RuleResult.Satisfied, result)
     }
@@ -35,7 +36,7 @@ internal class HasAmmoRuleTest {
     @Test
     fun `unsatisfied when ammo is zero`() {
         // No matching ammo bin in the actor's layout for AC20 -> zero remaining rounds.
-        val result = rule.evaluate(aWeaponAttackContext(weapon = aWeapon(name = "SRM-4", ammoType = AmmoType.AC20)))
+        val result = rule.evaluate(aWeaponAttackContext(weapon = aWeapon(name = "SRM-4", kind = WeaponKind.Ballistic(AmmoType.AC20))))
 
         assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
         val unsatisfied = result as RuleResult.Unsatisfied

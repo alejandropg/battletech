@@ -18,9 +18,7 @@ public data class Weapon(
     public val mediumRange: Int get() = model.mediumRange
     public val longRange: Int get() = model.longRange
     public val criticalSlots: Int get() = model.criticalSlots
-    public val ammoType: AmmoType? get() = model.ammoType
-    public val clusterSize: Int? get() = model.clusterSize
-    public val damagePerMissile: Int get() = model.damagePerMissile
-    public val missilesPerGroup: Int get() = model.missilesPerGroup
+    public val kind: WeaponKind get() = model.kind
+    public val ammoType: AmmoType? get() = (model.kind as? WeaponKind.AmmoFed)?.ammoType
     public val underwaterCapable: Boolean get() = model.underwaterCapable
 }

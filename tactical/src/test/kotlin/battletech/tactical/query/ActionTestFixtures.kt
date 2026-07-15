@@ -6,7 +6,6 @@ import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
-import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.CriticalLayout
@@ -15,6 +14,7 @@ import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
+import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.WeaponModel
 import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.empty
@@ -31,7 +31,7 @@ internal fun aWeapon(
     shortRange: Int = 3,
     mediumRange: Int = 6,
     longRange: Int = 9,
-    ammoType: AmmoType? = null,
+    kind: WeaponKind = WeaponKind.Energy,
     destroyed: Boolean = false,
 ): Weapon = Weapon(
     model = WeaponModel(
@@ -42,7 +42,7 @@ internal fun aWeapon(
         shortRange = shortRange,
         mediumRange = mediumRange,
         longRange = longRange,
-        ammoType = ammoType,
+        kind = kind,
     ),
     destroyed = destroyed,
 )

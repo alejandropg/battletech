@@ -10,6 +10,7 @@ import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
+import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.WeaponModel
 import battletech.tactical.unit.mechLayout
 import battletech.tui.aUnit
@@ -373,7 +374,7 @@ internal class UnitStatusViewTest {
         val weapon = Weapon(
             model = WeaponModel(
                 name = "AC/20", damage = 20, heat = 7,
-                shortRange = 3, mediumRange = 6, longRange = 9, ammoType = AmmoType.AC20,
+                shortRange = 3, mediumRange = 6, longRange = 9, kind = WeaponKind.Ballistic(AmmoType.AC20),
             ),
         )
         val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
@@ -440,7 +441,7 @@ internal class UnitStatusViewTest {
         val weapon = Weapon(
             model = WeaponModel(
                 name = "Medium Laser", damage = 5, heat = 3,
-                shortRange = 3, mediumRange = 6, longRange = 9, ammoType = null,
+                shortRange = 3, mediumRange = 6, longRange = 9, kind = WeaponKind.Energy,
             ),
         )
         val unit = aUnit(weapons = listOf(weapon))

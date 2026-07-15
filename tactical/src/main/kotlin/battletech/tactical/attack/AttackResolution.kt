@@ -11,6 +11,7 @@ import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.GameEvent
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.Weapon
+import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.consumeOneRoundFromAvailableBin
 
 /**
@@ -222,11 +223,11 @@ private fun resolveOneAttack(
     val toHitRoll = roller.roll2d6()
 
     return if (toHitRoll.total >= targetNumber) {
-        val clusterSize = weapon.clusterSize
-        if (clusterSize != null) {
-            clusterHit(declaration, attacker, weapon, direction, useRearArmor, targetNumber, toHitRoll, rangeBand, modifiers, los.partialCover, roller)
-        } else {
-            singleHit(declaration, attacker, weapon, direction, useRearArmor, targetNumber, toHitRoll, rangeBand, modifiers, los.partialCover, roller)
+        when (val kind = weapon.kind) {
+            is WeaponKind.Missile ->
+                clusterHit(declaration, attacker, weapon, kind, direction, useRearArmor, targetNumber, toHitRoll, rangeBand, modifiers, los.partialCover, roller)
+            else ->
+                singleHit(declaration, attacker, weapon, direction, useRearArmor, targetNumber, toHitRoll, rangeBand, modifiers, los.partialCover, roller)
         }
     } else {
         missResult(declaration, attacker, weapon, targetNumber, toHitRoll, rangeBand, modifiers, los.partialCover)
@@ -290,6 +291,7 @@ private fun clusterHit(
     declaration: AttackDeclaration,
     attacker: CombatUnit,
     weapon: Weapon,
+    kind: WeaponKind.Missile,
     direction: AttackDirection,
     useRearArmor: Boolean,
     targetNumber: Int,
@@ -299,10 +301,9 @@ private fun clusterHit(
     partialCover: Boolean,
     roller: DiceRoller,
 ): AttackResult.ClusterHit {
-    val clusterSize = requireNotNull(weapon.clusterSize) { "clusterHit requires a cluster weapon" }
     val clusterRoll = roller.roll2d6()
-    val missiles = ClusterHitsTable.missilesHit(clusterSize, clusterRoll.total)
-    val groupDamages = buildClusterGroups(missiles, weapon.missilesPerGroup, weapon.damagePerMissile)
+    val missiles = ClusterHitsTable.missilesHit(kind.clusterSize, clusterRoll.total)
+    val groupDamages = buildClusterGroups(missiles, kind.missilesPerGroup, kind.damagePerMissile)
     val locationHits = groupDamages.map { groupDmg ->
         val locRoll = roller.roll2d6()
         LocationHit(HitLocationTable.roll(locRoll.total, direction), groupDmg, locRoll)

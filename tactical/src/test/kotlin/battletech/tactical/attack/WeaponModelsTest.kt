@@ -1,9 +1,9 @@
 package battletech.tactical.attack
 
 import battletech.tactical.unit.AmmoType
+import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.WeaponModels
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 internal class WeaponModelsTest {
@@ -19,7 +19,7 @@ internal class WeaponModelsTest {
         assertEquals(3, weapon.shortRange)
         assertEquals(6, weapon.mediumRange)
         assertEquals(9, weapon.longRange)
-        assertNull(weapon.ammoType)
+        assertEquals(WeaponKind.Energy, weapon.kind)
     }
 
     @Test
@@ -33,7 +33,7 @@ internal class WeaponModelsTest {
         assertEquals(3, weapon.shortRange)
         assertEquals(6, weapon.mediumRange)
         assertEquals(9, weapon.longRange)
-        assertEquals(AmmoType.AC20, weapon.ammoType)
+        assertEquals(WeaponKind.Ballistic(AmmoType.AC20), weapon.kind)
     }
 
     @Test
@@ -43,7 +43,7 @@ internal class WeaponModelsTest {
         assertEquals("SRM 6", weapon.name)
         assertEquals(12, weapon.damage)
         assertEquals(4, weapon.heat)
-        assertEquals(AmmoType.SRM6, weapon.ammoType)
+        assertEquals(WeaponKind.Missile(AmmoType.SRM6, clusterSize = 6, damagePerMissile = 2, missilesPerGroup = 1), weapon.kind)
     }
 
     @Test
