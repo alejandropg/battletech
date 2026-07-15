@@ -163,6 +163,8 @@ internal object GameLogFormatter {
             val name = event.unitId.value
             listOf(LogLine(null, "$name pilot knocked unconscious"))
         }
+        // Both leaves render identically: the recovery roll was never printed, so redacting
+        // it is wire-only and costs no rendering fidelity (see GameEvent.redactFor's KDoc).
         is PilotRecoveredConsciousness -> {
             val name = event.unitId.value
             listOf(LogLine(null, "$name pilot regained consciousness"))

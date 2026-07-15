@@ -23,6 +23,19 @@ import battletech.tactical.unit.UnitId
  * numbers behind it (heat, which component, ammo type, pilot-hit totals, skill-revealing
  * rolls) are not, and are withheld from a [viewer] who does not own the unit.
  *
+ * **A roll is never "just a roll" when the event carrying it is conditional on the roll's
+ * outcome.** Several events are emitted only on a pass (or only on a fail) against a target
+ * number computed from private data, so the event's mere *existence* asserts an inequality
+ * and the roll value bounds that private number. Judging such a roll in isolation ("2d6
+ * reveals nothing") is the mistake; the precondition is the leak:
+ *  - [PilotRecoveredConsciousness.Detailed] fires only when `roll.total >=
+ *    CONSCIOUSNESS_TARGET[pilotHits]` — the roll bounds `pilotHits`.
+ *  - [UnitRestarted.RollPassed] fires only when `roll.total >= shutdownAvoidTarget(heat)`,
+ *    and [UnitShutdown.AvoidFailed] only when `roll.total <` it — both bound `currentHeat`.
+ * All three are withheld for foreign units. By contrast [InitiativeRolled]'s dice are
+ * unconditional (both players' rolls are emitted win or lose, and the target is the
+ * opponent's roll, not a record-sheet number), so they stay verbatim.
+ *
  * Ownership resolves via [GameState.findUnit]. [viewer] `== null` means "I don't know
  * who is looking": every unit is treated as foreign, same as [battletech.tactical.query.projectFor].
  * This fails CLOSED on purpose — the opposite (fail-open) was the live bug fixed in
@@ -77,6 +90,9 @@ public fun GameEvent.redactFor(viewer: PlayerId?, state: GameState, revealAll: B
         is PilotHit.Checked -> if (owns(unitId)) this else PilotHit.Undisclosed(unitId)
         is PilotHit.Undisclosed -> this
 
+        is PilotRecoveredConsciousness.Detailed -> if (owns(unitId)) this else PilotRecoveredConsciousness.Undisclosed(unitId)
+        is PilotRecoveredConsciousness.Undisclosed -> this
+
         is PhysicalAttacksResolved -> copy(results = results.map { redactPhysicalResult(it, viewer, state) })
 
         // No private fields: the fact + its already-public detail (position, mode, damage,
@@ -93,7 +109,6 @@ public fun GameEvent.redactFor(viewer: PlayerId?, state: GameState, revealAll: B
         is UnitDestroyed -> this
         is MatchEnded -> this
         is PilotKnockedUnconscious -> this
-        is PilotRecoveredConsciousness -> this
         is SessionNotice -> this
     }
 }

@@ -111,10 +111,17 @@ public data class HeatDissipated(
 
 /**
  * A unit powered down in the Heat Phase. The shutdown itself is observable (the 'Mech goes
- * visibly inert), but WHICH sub-case fired tells a foreign viewer which heat band the unit
- * is in ([Automatic] means heat ≥ 30; [AvoidFailed] means a lower, roll-dependent band) —
- * [currentHeat] is record-sheet data, so foreign viewers get [Undisclosed] instead, which
- * reports only that the unit shut down — see [battletech.tactical.session.redactFor].
+ * visibly inert); `currentHeat` behind it is record-sheet data, and this event leaks it two
+ * ways, so foreign viewers get [Undisclosed] — see [battletech.tactical.session.redactFor].
+ *
+ *  1. WHICH sub-case fired is itself a heat band: [Automatic] means heat ≥ 30, [AvoidFailed]
+ *     a lower, roll-dependent band.
+ *  2. [AvoidFailed.roll] leaks **via its emission precondition**, not in isolation:
+ *     `resolvePower` emits it ONLY on a failed avoidance, so the event's existence asserts
+ *     `roll.total < HeatScale.shutdownAvoidTarget(currentHeat)` and the roll value bounds
+ *     `currentHeat`. (This is the same shape as [UnitRestarted.RollPassed] and
+ *     [PilotRecoveredConsciousness.Detailed.roll]; a roll is never "just a roll" when the
+ *     event carrying it is conditional on the roll's outcome.)
  */
 @Serializable
 public sealed interface UnitShutdown : GameEvent {
@@ -134,8 +141,10 @@ public sealed interface UnitShutdown : GameEvent {
 }
 
 /**
- * A shut-down unit came back online in the Heat Phase. Same reasoning as [UnitShutdown]:
- * which sub-case fired reveals a heat band, so foreign viewers get [Undisclosed].
+ * A shut-down unit came back online in the Heat Phase. Same two leaks as [UnitShutdown], with
+ * the roll's precondition inverted: [RollPassed] is emitted ONLY on a *passed* restart roll, so
+ * its existence asserts `roll.total >= HeatScale.shutdownAvoidTarget(currentHeat)` and the roll
+ * value bounds `currentHeat` from the other side. Foreign viewers get [Undisclosed].
  */
 @Serializable
 public sealed interface UnitRestarted : GameEvent {
@@ -270,12 +279,34 @@ public data class PilotKnockedUnconscious(
  * [unitId]'s pilot regained consciousness (Stage 7 Heat Phase recovery roll —
  * ASSUMPTION/standard; `docs/rules/armor-damage.md` only pins life-support damage
  * sources and death, not recovery mechanics).
+ *
+ * *That* the pilot woke up is observable (the 'Mech visibly comes back under control),
+ * but the recovery [Detailed.roll] leaks **via this event's success precondition**, not
+ * in isolation: [battletech.tactical.attack.attemptConsciousnessRecovery] emits it ONLY
+ * when `roll.total >= CONSCIOUSNESS_TARGET[pilotHits]`, so the event's mere existence
+ * asserts that inequality and the roll value bounds `pilotHits` — recovering on a 3
+ * implies a very different hit count than recovering on a 10. `pilotHits` is the same
+ * record-sheet number [PilotHit] withholds, so foreign viewers get [Undisclosed].
+ *
+ * The roll is never rendered (the log prints only "pilot regained consciousness"), so
+ * unlike [battletech.tactical.attack.AttackResult.gunnery] — whose target number the UI
+ * is obliged to show — withholding it costs no rendering fidelity at all. See
+ * [battletech.tactical.session.redactFor].
  */
 @Serializable
-public data class PilotRecoveredConsciousness(
-    public val unitId: UnitId,
-    public val roll: DiceRoll,
-) : GameEvent
+public sealed interface PilotRecoveredConsciousness : GameEvent {
+    public val unitId: UnitId
+
+    @Serializable
+    public data class Detailed(
+        override val unitId: UnitId,
+        public val roll: DiceRoll,
+    ) : PilotRecoveredConsciousness
+
+    /** Foreign-viewer redaction of [Detailed]: the pilot woke up; the roll that bounds `pilotHits` is withheld. */
+    @Serializable
+    public data class Undisclosed(override val unitId: UnitId) : PilotRecoveredConsciousness
+}
 
 /**
  * A free-text annotation recorded in the game log for an out-of-band

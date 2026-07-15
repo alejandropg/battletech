@@ -82,7 +82,7 @@ public fun attemptConsciousnessRecovery(unit: CombatUnit, roller: DiceRoller): P
     val target = CONSCIOUSNESS_TARGET[unit.pilotHits] ?: return unit to null
     val roll = roller.roll2d6()
     if (roll.total < target) return unit to null
-    return unit.copy(isPilotConscious = true) to PilotRecoveredConsciousness(unit.id, roll)
+    return unit.copy(isPilotConscious = true) to PilotRecoveredConsciousness.Detailed(unit.id, roll)
 }
 
 /**

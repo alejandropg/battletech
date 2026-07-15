@@ -600,8 +600,22 @@ internal class GameLogFormatterTest {
         assertThat(text(PilotKnockedUnconscious(unitId = locust.id), stateWithLocust))
             .isEqualTo("locust pilot knocked unconscious")
 
-        assertThat(text(PilotRecoveredConsciousness(unitId = locust.id, roll = DiceRoll(5, 5)), stateWithLocust))
+        assertThat(text(PilotRecoveredConsciousness.Detailed(unitId = locust.id, roll = DiceRoll(5, 5)), stateWithLocust))
             .isEqualTo("locust pilot regained consciousness")
+    }
+
+    @Test
+    fun `PilotRecoveredConsciousness renders identically whether Detailed or Undisclosed`() {
+        // The recovery roll is never printed, so its redaction is wire-only: the redacted
+        // leaf must be byte-identical to the detailed one here (see GameEvent.redactFor).
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+
+        val detailed = GameLogFormatter.lines(PilotRecoveredConsciousness.Detailed(locust.id, DiceRoll(5, 5)), stateWithLocust)
+        val undisclosed = GameLogFormatter.lines(PilotRecoveredConsciousness.Undisclosed(locust.id), stateWithLocust)
+
+        assertThat(undisclosed).isEqualTo(detailed)
+        assertThat(undisclosed.single().text).isEqualTo("locust pilot regained consciousness")
     }
 
     @Test

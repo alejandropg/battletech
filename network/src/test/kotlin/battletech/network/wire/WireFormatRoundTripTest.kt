@@ -211,6 +211,13 @@ internal class WireFormatRoundTripTest {
     }
 
     @Test
+    fun `PilotRecoveredConsciousness Undisclosed round-trips`() {
+        val event: GameEvent = PilotRecoveredConsciousness.Undisclosed(unitId = unitA)
+        val line = WireJson.json.encodeToString(event)
+        assertThat(WireJson.json.decodeFromString<GameEvent>(line)).isEqualTo(event)
+    }
+
+    @Test
     fun `MatchEnded with a Draw outcome round-trips`() {
         val event: GameEvent = MatchEnded(outcome = MatchOutcome.Draw)
         val line = WireJson.json.encodeToString(event)
@@ -573,7 +580,7 @@ internal class WireFormatRoundTripTest {
             ),
             PilotHit::class to PilotHit.Checked(unitId = unitA, pilotHits = 2, consciousnessRoll = DiceRoll(3, 3), conscious = true),
             PilotKnockedUnconscious::class to PilotKnockedUnconscious(unitId = unitA),
-            PilotRecoveredConsciousness::class to PilotRecoveredConsciousness(unitId = unitA, roll = DiceRoll(5, 6)),
+            PilotRecoveredConsciousness::class to PilotRecoveredConsciousness.Detailed(unitId = unitA, roll = DiceRoll(5, 6)),
             SessionNotice::class to SessionNotice(text = "Opponent connected"),
         )
 

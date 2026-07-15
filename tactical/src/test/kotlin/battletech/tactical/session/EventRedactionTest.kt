@@ -139,6 +139,34 @@ internal class EventRedactionTest {
         assertThat(redact(checked)).isEqualTo(PilotHit.Undisclosed(foreignUnit.id))
     }
 
+    // ---------- PilotRecoveredConsciousness ----------
+
+    @Test
+    fun `PilotRecoveredConsciousness stays Detailed for the owner`() {
+        val event = PilotRecoveredConsciousness.Detailed(ownedUnit.id, DiceRoll(5, 5))
+
+        assertThat(redact(event)).isEqualTo(event)
+    }
+
+    @Test
+    fun `PilotRecoveredConsciousness drops the recovery roll for a foreign unit`() {
+        // The roll leaks via this event's success precondition, not in isolation: the event
+        // fires only when roll.total >= CONSCIOUSNESS_TARGET[pilotHits], so the roll bounds
+        // pilotHits — the same record-sheet number PilotHit withholds.
+        val event = PilotRecoveredConsciousness.Detailed(foreignUnit.id, DiceRoll(5, 5))
+
+        assertThat(redact(event)).isEqualTo(PilotRecoveredConsciousness.Undisclosed(foreignUnit.id))
+    }
+
+    @Test
+    fun `PilotRecoveredConsciousness is redacted for a null viewer and verbatim under revealAll`() {
+        val event = PilotRecoveredConsciousness.Detailed(ownedUnit.id, DiceRoll(5, 5))
+
+        assertThat(redact(event, viewer = null)).isEqualTo(PilotRecoveredConsciousness.Undisclosed(ownedUnit.id))
+        assertThat(redact(PilotRecoveredConsciousness.Detailed(foreignUnit.id, DiceRoll(5, 5)), revealAll = true))
+            .isEqualTo(PilotRecoveredConsciousness.Detailed(foreignUnit.id, DiceRoll(5, 5)))
+    }
+
     // ---------- HeatDissipated ----------
 
     @Test
