@@ -98,18 +98,4 @@ public class DefaultPlayerView(
 
     override fun resolveTargetPositions(targetIds: Set<UnitId>): Set<HexCoordinates> =
         targetIds.map { state.unitById(it).position }.toSet()
-
-    override fun publicUnit(unitId: UnitId): PublicUnit? {
-        val unit = state.findUnit(unitId) ?: return null
-        return PublicUnit(
-            id = unit.id,
-            owner = unit.owner,
-            name = unit.name,
-            walkingMP = unit.walkingMP,
-            runningMP = unit.runningMP,
-            jumpMP = unit.jumpMP,
-            armor = unit.armor,
-            weapons = unit.weapons.map { PublicWeapon(name = it.name) },
-        )
-    }
 }

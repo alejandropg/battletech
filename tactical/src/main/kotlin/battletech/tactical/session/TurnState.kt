@@ -4,6 +4,8 @@ import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.physical.PhysicalAttackDeclaration
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
+import battletech.tactical.query.PlayerGameState
+import battletech.tactical.query.VisibleUnit
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import kotlinx.serialization.Serializable
@@ -101,6 +103,20 @@ public data class TurnState(
 
     public fun selectableAttackUnits(gameState: GameState): List<CombatUnit> =
         gameState.activeUnitsOf(attack.activePlayer)
+
+    /**
+     * Projection-based counterpart of [selectableUnits], for deliveries (the TUI) that hold only
+     * a per-viewer [PlayerGameState]. Only meaningful when [state] was projected for
+     * [MovementProgress.activePlayer] as viewer — the caller's own units at that point — which
+     * every current call site guarantees (selection/cycling only runs once the local turn guard
+     * has confirmed the viewer is the active player).
+     */
+    public fun selectableUnits(state: PlayerGameState): List<VisibleUnit> =
+        state.activeUnitsOf(movement.activePlayer).filter { it.id !in movement.movedUnitIds }
+
+    /** Projection-based counterpart of [selectableAttackUnits]; see [selectableUnits]'s KDoc. */
+    public fun selectableAttackUnits(state: PlayerGameState): List<VisibleUnit> =
+        state.activeUnitsOf(attack.activePlayer)
 
     public companion object {
         public val NULL: TurnState = TurnState(

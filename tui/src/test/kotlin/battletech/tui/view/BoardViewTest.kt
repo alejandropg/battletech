@@ -8,6 +8,7 @@ import battletech.tui.hex.destroyedIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.query.projectFor
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -15,7 +16,7 @@ internal class BoardViewTest {
 
     @Test
     fun `renders hex borders for a 3x3 map`() {
-        val state = aGameState(map = aGameMap(cols = 3, rows = 3))
+        val state = aGameState(map = aGameMap(cols = 3, rows = 3)).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
         val buffer = ScreenBuffer(30, 16)
 
@@ -33,7 +34,7 @@ internal class BoardViewTest {
     @Test
     fun `renders unit initial on hex`() {
         val unit = aUnit(name = "Atlas", position = HexCoordinates(0, 0))
-        val state = aGameState(units = listOf(unit), map = aGameMap())
+        val state = aGameState(units = listOf(unit), map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
         val buffer = ScreenBuffer(30, 16)
 
@@ -45,7 +46,7 @@ internal class BoardViewTest {
 
     @Test
     fun `scroll offset hides column 0`() {
-        val state = aGameState(map = aGameMap(cols = 5, rows = 3))
+        val state = aGameState(map = aGameMap(cols = 5, rows = 3)).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state, viewport = Viewport(1, 0, 26, 12))
         val buffer = ScreenBuffer(30, 16)
 
@@ -58,7 +59,7 @@ internal class BoardViewTest {
 
     @Test
     fun `cursor position highlights hex`() {
-        val state = aGameState(map = aGameMap())
+        val state = aGameState(map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val cursor = HexCoordinates(1, 1)
         val view = BoardView(state, viewport = Viewport(0, 0, 26, 12), cursorPosition = cursor)
         val buffer = ScreenBuffer(30, 16)
@@ -72,7 +73,7 @@ internal class BoardViewTest {
     @Test
     fun `renders destroyed unit with its initial and a skull marker`() {
         val unit = aUnit(name = "Atlas", position = HexCoordinates(0, 0)).copy(isDestroyed = true)
-        val state = aGameState(units = listOf(unit), map = aGameMap())
+        val state = aGameState(units = listOf(unit), map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
         val buffer = ScreenBuffer(30, 16)
 
@@ -89,7 +90,7 @@ internal class BoardViewTest {
     @Test
     fun `prone unit still renders its lowercase glyph, distinct from destroyed`() {
         val unit = aUnit(name = "Atlas", position = HexCoordinates(0, 0)).copy(isProne = true)
-        val state = aGameState(units = listOf(unit), map = aGameMap())
+        val state = aGameState(units = listOf(unit), map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
         val buffer = ScreenBuffer(30, 16)
 
@@ -100,7 +101,7 @@ internal class BoardViewTest {
 
     @Test
     fun `highlights map with reachable and path overlays`() {
-        val state = aGameState(map = aGameMap())
+        val state = aGameState(map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val highlights = mapOf(
             HexCoordinates(1, 0) to HexHighlight.REACHABLE_WALK,
             HexCoordinates(2, 0) to HexHighlight.PATH,

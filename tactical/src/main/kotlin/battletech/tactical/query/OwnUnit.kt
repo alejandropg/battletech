@@ -29,7 +29,7 @@ public data class OwnUnit(public val unit: CombatUnit) : VisibleUnit {
     override val walkingMP: Int get() = unit.walkingMP
     override val runningMP: Int get() = unit.runningMP
     override val jumpMP: Int get() = unit.jumpMP
-    override val weapons: List<PublicWeapon> get() = unit.weapons.map { PublicWeapon(name = it.name) }
+    override val weapons: List<PublicWeapon> get() = unit.weapons.map { PublicWeapon(name = it.name, mountId = it.mountId) }
     override val isProne: Boolean get() = unit.isProne
     override val isShutdown: Boolean get() = unit.isShutdown
     override val isDestroyed: Boolean get() = unit.isDestroyed

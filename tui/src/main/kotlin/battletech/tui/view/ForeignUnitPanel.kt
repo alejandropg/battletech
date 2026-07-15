@@ -1,17 +1,18 @@
 package battletech.tui.view
 
-import battletech.tactical.query.PublicUnit
+import battletech.tactical.query.ForeignUnit
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 
 /**
- * Renders the public projection of a unit — name, movement, armor (front +
- * rear values only, no internal structure), and weapon names — shared by
- * [TargetStatusView] and [UnitStatusView] (for [battletech.tui.game.UnitStatusSubject.Public]
- * subjects). This is the redacted view a player sees of a unit he does not own.
+ * Renders a [ForeignUnit] — name, movement, armor (front + rear values only,
+ * no internal structure), and weapon names — shared by [TargetStatusView]
+ * and [UnitStatusView]. This is the redacted view a player sees of a unit he
+ * does not own; there is no private field to omit here because [ForeignUnit]
+ * doesn't carry one.
  */
-internal object PublicUnitPanel {
-    fun render(content: ContentWriter, unit: PublicUnit) {
+internal object ForeignUnitPanel {
+    fun render(content: ContentWriter, unit: ForeignUnit) {
         // UNIT
         with(content) {
             writeln(unit.name, Color.BRIGHT_YELLOW)

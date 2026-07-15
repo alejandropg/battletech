@@ -1,13 +1,16 @@
 package battletech.tui.view
 
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
-import battletech.tactical.query.PublicUnit
+import battletech.tactical.query.ForeignUnit
 import battletech.tactical.query.PublicWeapon
 import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.HeatSource
+import battletech.tactical.unit.MovementThisTurn
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponKind
@@ -15,7 +18,6 @@ import battletech.tactical.unit.WeaponModel
 import battletech.tactical.unit.mechLayout
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
-import battletech.tui.game.UnitStatusSubject
 import battletech.tui.hex.ammoIcon
 import battletech.tui.hex.emptyCircleIcon
 import battletech.tui.hex.filledCircleIcon
@@ -42,21 +44,30 @@ internal class UnitStatusViewTest {
         return buffer
     }
 
-    private fun aPublicUnit(
+    private fun aForeignUnit(
         name: String = "Hunchback",
         walkingMP: Int = 4,
         runningMP: Int = 6,
         jumpMP: Int = 0,
         weapons: List<PublicWeapon> = listOf(PublicWeapon("AC/20")),
-    ): PublicUnit = PublicUnit(
+    ): ForeignUnit = ForeignUnit(
         id = UnitId("u1"),
         owner = PlayerId.PLAYER_2,
         name = name,
+        tonnage = 50,
+        position = HexCoordinates(0, 0),
+        facing = HexDirection.N,
+        torsoFacing = HexDirection.N,
+        armor = anArmorLayout(),
         walkingMP = walkingMP,
         runningMP = runningMP,
         jumpMP = jumpMP,
-        armor = anArmorLayout(),
         weapons = weapons,
+        isProne = false,
+        isShutdown = false,
+        isDestroyed = false,
+        isPilotConscious = true,
+        movementThisTurn = MovementThisTurn.Stationary,
     )
 
     @Test
@@ -456,7 +467,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders public subject unit name`() {
-        val view = UnitStatusView(UnitStatusSubject.Public(aPublicUnit(name = "Hunchback")))
+        val view = UnitStatusView(aForeignUnit(name = "Hunchback"))
         val buffer = renderDecorated(view)
 
         val line = (2 until 11).map { buffer.get(it, 2).char }.joinToString("")
@@ -466,7 +477,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders public subject MOVEMENT section with walk and run values`() {
-        val view = UnitStatusView(UnitStatusSubject.Public(aPublicUnit(walkingMP = 4, runningMP = 6)))
+        val view = UnitStatusView(aForeignUnit(walkingMP = 4, runningMP = 6))
         val buffer = renderDecorated(view)
 
         val headerRow = (2 until 26).map { buffer.get(it, 4).char }.joinToString("")
@@ -480,12 +491,12 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders public subject jump movement points only when nonzero`() {
-        val viewWithoutJump = UnitStatusView(UnitStatusSubject.Public(aPublicUnit(jumpMP = 0)))
+        val viewWithoutJump = UnitStatusView(aForeignUnit(jumpMP = 0))
         val bufferWithoutJump = renderDecorated(viewWithoutJump)
         val jumpRow = (2 until 26).map { bufferWithoutJump.get(it, 6).char }.joinToString("")
         assertFalse(jumpRow.contains("Jump"))
 
-        val viewWithJump = UnitStatusView(UnitStatusSubject.Public(aPublicUnit(jumpMP = 5)))
+        val viewWithJump = UnitStatusView(aForeignUnit(jumpMP = 5))
         val bufferWithJump = renderDecorated(viewWithJump)
         val jumpRowPresent = (2 until 26).map { bufferWithJump.get(it, 6).char }.joinToString("")
         assertTrue(jumpRowPresent.contains("Jump"))
@@ -494,7 +505,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders public subject ARMOR section with HD CT and LL values`() {
-        val view = UnitStatusView(UnitStatusSubject.Public(aPublicUnit()))
+        val view = UnitStatusView(aForeignUnit())
         val buffer = renderDecorated(view)
 
         val armorHeader = (2 until 26).map { buffer.get(it, 7).char }.joinToString("")
@@ -513,7 +524,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders public subject WEAPONS section with weapon names`() {
         val view = UnitStatusView(
-            UnitStatusSubject.Public(aPublicUnit(weapons = listOf(PublicWeapon("AC/20"), PublicWeapon("Medium Laser")))),
+            aForeignUnit(weapons = listOf(PublicWeapon("AC/20"), PublicWeapon("Medium Laser"))),
         )
         val buffer = renderDecorated(view)
 
@@ -527,7 +538,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `does not render private-only sections for public subject`() {
-        val view = UnitStatusView(UnitStatusSubject.Public(aPublicUnit()))
+        val view = UnitStatusView(aForeignUnit())
         val buffer = renderDecorated(view, height = 30)
 
         val allText = (0 until 30).flatMap { row ->

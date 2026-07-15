@@ -33,7 +33,7 @@ internal object Panels {
             UnitStatusView(frame.unitStatus, frame.pendingHeat)
         },
         Panel(PanelId.LOG, LogView.TITLE, width = 28, anchorBottom = true) { frame ->
-            LogView(entries = frame.logEntries, gameState = frame.gameState)
+            LogView(entries = frame.logEntries, state = frame.visibleState)
         },
     )
 }

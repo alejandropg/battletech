@@ -50,7 +50,7 @@ public data class ForeignUnit(
             walkingMP = unit.walkingMP,
             runningMP = unit.runningMP,
             jumpMP = unit.jumpMP,
-            weapons = unit.weapons.map { PublicWeapon(name = it.name) },
+            weapons = unit.weapons.map { PublicWeapon(name = it.name, mountId = it.mountId) },
             isProne = unit.isProne,
             isShutdown = unit.isShutdown,
             isDestroyed = unit.isDestroyed,

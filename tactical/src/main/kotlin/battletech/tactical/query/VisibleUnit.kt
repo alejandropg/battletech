@@ -27,7 +27,7 @@ import kotlinx.serialization.Serializable
  * - [tonnage] is public **deliberately**: [name] already reveals the chassis (e.g.
  *   "Atlas AS7-D"), and tonnage is looked up from that chassis name in the Technical
  *   Readouts. Hiding a field that's derivable from a field you already show is theater,
- *   not redaction. (The older `PublicUnit` omitted tonnage; that was an inconsistency
+ *   not redaction. (The pre-projection minimal public unit type omitted tonnage; that was an inconsistency
  *   this projection does not repeat.)
  *
  * The test for "is this public?" is **observability**, not sensitivity: could an

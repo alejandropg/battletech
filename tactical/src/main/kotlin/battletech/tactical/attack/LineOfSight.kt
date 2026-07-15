@@ -43,13 +43,23 @@ public data class LineOfSightResult(
  *
  * Elevation for each position is looked up from [map]; missing hexes default to 0.
  */
-public fun lineOfSight(attacker: CombatUnit, target: CombatUnit, map: GameMap): LineOfSightResult {
-    val line = attacker.position.lineTo(target.position)
+public fun lineOfSight(attacker: CombatUnit, target: CombatUnit, map: GameMap): LineOfSightResult =
+    lineOfSight(attacker.position, target.position, map)
+
+/**
+ * Position-only overload of [lineOfSight]: the check only ever needs the two
+ * endpoints' [HexCoordinates], never any other field of either unit — this is
+ * what lets a caller that only knows a target's public position (e.g. a
+ * delivery rendering a line-of-sight preview for a unit it doesn't own) run
+ * the identical check without needing that unit's full private state.
+ */
+public fun lineOfSight(attackerPosition: HexCoordinates, targetPosition: HexCoordinates, map: GameMap): LineOfSightResult {
+    val line = attackerPosition.lineTo(targetPosition)
     // Exclude both endpoints (attacker position and target position).
     val intervening = if (line.size <= 2) emptyList() else line.drop(1).dropLast(1)
 
-    val attackerElev = map.hexes[attacker.position]?.elevation ?: 0
-    val targetElev = map.hexes[target.position]?.elevation ?: 0
+    val attackerElev = map.hexes[attackerPosition]?.elevation ?: 0
+    val targetElev = map.hexes[targetPosition]?.elevation ?: 0
 
     var interveningWoodsLevels = 0
     var woodsBlockedAt: HexCoordinates? = null
@@ -95,7 +105,7 @@ public fun lineOfSight(attacker: CombatUnit, target: CombatUnit, map: GameMap): 
     val blocked = woodsBlocked || elevationBlocked
 
     // Target's own hex woods add to the to-hit modifier but not to the blocking threshold.
-    val targetHexWoods = when (map.hexes[target.position]?.terrain) {
+    val targetHexWoods = when (map.hexes[targetPosition]?.terrain) {
         Terrain.LIGHT_WOODS -> 1
         Terrain.HEAVY_WOODS -> 2
         else -> 0
@@ -104,7 +114,7 @@ public fun lineOfSight(attacker: CombatUnit, target: CombatUnit, map: GameMap): 
     // Depth-1 water: the target's legs are submerged, giving the same partial-cover effect
     // as an intervening terrain obstacle — +3 to-hit and leg hits are no-effect.
     // (ASSUMPTION/standard BattleTech: shallow water provides lower-body cover.)
-    val targetInShallowWater = (map.hexes[target.position]?.depth ?: 0) == 1
+    val targetInShallowWater = (map.hexes[targetPosition]?.depth ?: 0) == 1
 
     return LineOfSightResult(
         blocked = blocked,

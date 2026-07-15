@@ -6,8 +6,10 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.DeclaredWeaponAttack
+import battletech.tactical.query.ForeignUnit
+import battletech.tactical.query.OwnUnit
 import battletech.tactical.query.PlayerView
-import battletech.tactical.query.PublicUnit
+import battletech.tactical.query.VisibleUnit
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.CommitAttackImpulse
@@ -19,7 +21,6 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData
-import battletech.tui.game.UnitStatusSubject
 import battletech.tui.game.attackPlayerLabel
 import battletech.tui.game.displayName
 import battletech.tui.game.losHighlights
@@ -67,7 +68,7 @@ internal sealed interface AttackPhase : Phase {
                 event = event,
                 app = app,
                 activePlayer = { app.turnState.attack.activePlayer },
-                selectableUnits = { app.turnState.selectableAttackUnits(app.gameState) },
+                selectableUnits = { app.turnState.selectableAttackUnits(app.visibleState) },
                 onCommit = { a -> commitAttackImpulse(a, attackTurnPhase, drafts) },
                 enterFor = { unit, a ->
                     Transition(a.copy(phase = enterDeclaring(unit, attackTurnPhase, a.viewFor(unit.owner), drafts)))
@@ -81,12 +82,9 @@ internal sealed interface AttackPhase : Phase {
             return "$playerName: select units, toggle weapons | 'c' to commit"
         }
 
-        override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitAt(app.cursor)
+        override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.unitAt(app.cursor)
 
-        override fun unitStatus(app: AppState): UnitStatusSubject? {
-            val ts = app.turnState
-            return cursorUnitStatus(app, if (ts.attack.isComplete) null else ts.attack.activePlayer)
-        }
+        override fun unitStatus(app: AppState): VisibleUnit? = cursorUnitStatus(app)
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState)
 
@@ -128,7 +126,7 @@ internal sealed interface AttackPhase : Phase {
             } ?: return null
 
             // Compute view + targets once per event; pass into pure allocation methods.
-            val attacker = app.gameState.unitById(unitId)
+            val attacker = app.ownUnit(unitId)
             val view = app.viewFor(attacker.owner)
             val targets = view.targetInfos(unitId, torsoFacing)
 
@@ -154,10 +152,10 @@ internal sealed interface AttackPhase : Phase {
                     Transition(app.copy(phase = copy(allocation = newAllocation)))
                 }
                 is AttackAction.ClickTarget -> {
-                    val targetUnit = app.gameState.unitAt(app.cursor)
+                    val targetUnitId = app.visibleState.unitAt(app.cursor)?.id
                     val validIds = view.validTargets(unitId, torsoFacing)
-                    if (targetUnit == null || targetUnit.id !in validIds) return Transition(app)
-                    val newAllocation = allocation.clickTarget(targetUnit.id, targets)
+                    if (targetUnitId == null || targetUnitId !in validIds) return Transition(app)
+                    val newAllocation = allocation.clickTarget(targetUnitId, targets)
                     Transition(app.copy(phase = copy(allocation = newAllocation)))
                 }
             }
@@ -166,8 +164,8 @@ internal sealed interface AttackPhase : Phase {
         override fun prompt(app: AppState): String = DECLARING_PROMPT
 
         override fun render(app: AppState): RenderData {
-            val gameState = app.gameState
-            val attacker = gameState.unitById(unitId)
+            val visibleState = app.visibleState
+            val attacker = app.ownUnit(unitId)
             val view: PlayerView = app.viewFor(attacker.owner)
             val arc = view.fireArc(unitId, torsoFacing)
             val validIds = view.validTargets(unitId, torsoFacing)
@@ -175,10 +173,12 @@ internal sealed interface AttackPhase : Phase {
             val arcHighlights = arc.associateWith { HexHighlight.ATTACK_RANGE }
             val torsoFacings = mapOf(attacker.position to torsoFacing)
             val targetPositions = view.resolveTargetPositions(validIds)
-            val los = losHighlights(attacker, validIds, gameState)
-            val selectedLos = selectedLosHighlights(attacker, this, targets, gameState)
             val selectedTargetPosition = targets.getOrNull(cursorTargetIndex)
-                ?.let { gameState.unitById(it.unitId).position }
+                ?.let { visibleState.unitById(it.unitId).position }
+            val los = losHighlights(attacker.position, targetPositions, visibleState.map)
+            val selectedLos = selectedTargetPosition
+                ?.let { selectedLosHighlights(attacker.position, it, visibleState.map) }
+                ?: emptyMap()
             return RenderData(
                 hexHighlights = arcHighlights + los + selectedLos,
                 torsoFacings = torsoFacings,
@@ -187,13 +187,13 @@ internal sealed interface AttackPhase : Phase {
             )
         }
 
-        override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitById(unitId)
+        override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.unitById(unitId)
 
         override fun onCancel(app: AppState): Transition =
             Transition(app.copy(phase = SelectingAttacker(attackTurnPhase, allDrafts())))
 
         override fun pendingHeat(app: AppState): List<battletech.tactical.unit.HeatSource> {
-            val attacker = app.gameState.unitById(unitId)
+            val attacker = app.ownUnit(unitId)
             val firedWeaponIndices = weaponAssignments.values.flatten().toSet()
             return firedWeaponIndices.sorted().mapNotNull { index ->
                 attacker.weapons.getOrNull(index)?.let(::weaponHeatSource)
@@ -201,8 +201,8 @@ internal sealed interface AttackPhase : Phase {
         }
 
         override fun attackRender(app: AppState): AttackRender {
-            val attacker = app.gameState.unitById(unitId)
-            val view = app.viewFor(attacker.owner)
+            val owner = app.visibleState.unitById(unitId).owner
+            val view = app.viewFor(owner)
             return AttackRender(
                 targets = targetTable(view),
                 weaponAssignments = weaponAssignments,
@@ -212,12 +212,12 @@ internal sealed interface AttackPhase : Phase {
             )
         }
 
-        override fun targetStatusUnit(app: AppState): PublicUnit? {
-            val attacker = app.gameState.unitById(unitId)
-            val view = app.viewFor(attacker.owner)
+        override fun targetStatusUnit(app: AppState): ForeignUnit? {
+            val owner = app.visibleState.unitById(unitId).owner
+            val view = app.viewFor(owner)
             val targets = targetTable(view)
             val target = targets.getOrNull(cursorTargetIndex) ?: return null
-            return view.publicUnit(target.unitId)
+            return app.visibleState.findUnit(target.unitId) as? ForeignUnit
         }
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState, requireSeeded = false)
@@ -231,7 +231,7 @@ internal sealed interface AttackPhase : Phase {
 
         private fun nextAttacker(app: AppState): Transition {
             val turn = app.turnState
-            val attackers = turn.selectableAttackUnits(app.gameState)
+            val attackers = turn.selectableAttackUnits(app.visibleState)
             val savedDrafts = allDrafts()
             if (attackers.isEmpty()) {
                 return Transition(app.copy(phase = SelectingAttacker(attackTurnPhase, savedDrafts)))
@@ -239,7 +239,8 @@ internal sealed interface AttackPhase : Phase {
             val currentIdx = attackers.indexOfFirst { it.id == unitId }.coerceAtLeast(0)
             val nextIdx = (currentIdx + 1) % attackers.size
             val nextUnit = attackers[nextIdx]
-            val newPhase = enterDeclaring(nextUnit, attackTurnPhase, app.viewFor(nextUnit.owner), savedDrafts)
+            val nextCombatUnit = app.ownUnit(nextUnit.id)
+            val newPhase = enterDeclaring(nextCombatUnit, attackTurnPhase, app.viewFor(nextUnit.owner), savedDrafts)
             return Transition(app.copy(phase = newPhase, cursor = nextUnit.position))
         }
     }
@@ -348,13 +349,19 @@ internal fun declaredTargetsViewingPlayer(turnState: TurnState): PlayerId =
  * projection any client would see. The viewing player's own in-progress (uncommitted) [drafts]
  * are folded in locally: they don't exist server-side until commit (see [WeaponAllocation]'s
  * KDoc for why that stays a client-side concern).
+ *
+ * Scoped to [viewingPlayer] via [battletech.tactical.session.GameSession.stateFor] directly —
+ * deliberately NOT [AppState.visibleState]/[AppState.ownUnit], since [viewingPlayer] (the
+ * attacker whose drafts this panel folds in) need not equal [AppState.viewer] for every caller
+ * of this function (it does in the live TUI, where the active attacker always renders their own
+ * screen, but callers testing this fold logic directly may pass either player's perspective).
  */
 internal fun buildDeclaredTargetsRender(
     app: AppState,
     viewingPlayer: PlayerId,
     drafts: Map<UnitId, UnitDeclaration>,
 ): DeclaredTargetsRender {
-    val gameState = app.gameState
+    val scopedState = app.session.stateFor(viewingPlayer)
     val turnState = app.turnState
     val playerOrder: List<PlayerId> = if (turnState.attack.sequence.order.isNotEmpty()) {
         turnState.attack.sequence.order.map { it.player }.distinct()
@@ -366,25 +373,28 @@ internal fun buildDeclaredTargetsRender(
         app.viewFor(viewingPlayer).declaredWeaponAttacks().groupBy { it.attackerId }
 
     val activeDrafts: Map<UnitId, UnitDeclaration> = drafts.filter { (unitId, decl) ->
-        val unit = gameState.unitById(unitId)
+        val unit = scopedState.unitById(unitId)
         unit.owner == viewingPlayer && decl.weaponAssignments.values.any { it.isNotEmpty() }
     }
 
     val entries = buildList {
         for (player in playerOrder) {
             committedByAttacker
-                .filter { (id, _) -> gameState.unitById(id).owner == player }
+                .filter { (id, _) -> scopedState.unitById(id).owner == player }
                 .forEach { (attackerId, attacks) ->
-                    add(committedAttackerEntry(gameState.unitById(attackerId), attacks, player))
+                    add(committedAttackerEntry(attackerId, attacks, player))
                 }
 
             if (player == viewingPlayer) {
                 activeDrafts.keys
-                    .filter { id -> gameState.unitById(id).owner == player }
+                    .filter { id -> scopedState.unitById(id).owner == player }
                     .sortedBy { it.value }
                     .forEach { attackerId ->
                         val decl = activeDrafts[attackerId] ?: return@forEach
-                        val attackerUnit = gameState.unitById(attackerId)
+                        // Own by construction: activeDrafts was already filtered to
+                        // unit.owner == viewingPlayer above, and scopedState was projected
+                        // for that same viewingPlayer.
+                        val attackerUnit = (scopedState.unitById(attackerId) as OwnUnit).unit
                         val normalized = decl.weaponAssignments.entries
                             .filter { (_, weapons) -> weapons.isNotEmpty() }
                             .map { (targetId, weaponIndices) ->
@@ -402,7 +412,7 @@ internal fun buildDeclaredTargetsRender(
 }
 
 private fun committedAttackerEntry(
-    attackerUnit: CombatUnit,
+    attackerId: UnitId,
     attacks: List<DeclaredWeaponAttack>,
     ownerPlayer: PlayerId,
 ): DeclaredAttackerEntry {
@@ -418,7 +428,7 @@ private fun committedAttackerEntry(
         DeclaredTargetEntry(targetId = attack.targetId, isPrimary = attack.isPrimary, weapons = weaponEntries)
     }
     return DeclaredAttackerEntry(
-        attackerId = attackerUnit.id,
+        attackerId = attackerId,
         ownerPlayer = ownerPlayer,
         isDraft = false,
         targets = targetEntries,

@@ -7,6 +7,7 @@ import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
+import battletech.tactical.query.projectFor
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.LogEntry
@@ -26,7 +27,7 @@ internal class LogViewTest {
     private val emptyState = GameState(
         units = listOf(mUnit),
         map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0)))),
-    )
+    ).projectFor(viewer = null, revealAll = true)
 
     private val passedPsr = PilotingSkillRoll(targetNumber = 5, roll = DiceRoll(4, 4), passed = true)
 
@@ -64,7 +65,7 @@ internal class LogViewTest {
 
     @Test
     fun `renders a box titled LOG`() {
-        val view = LogView(entries = emptyList(), gameState = emptyState)
+        val view = LogView(entries = emptyList(), state = emptyState)
         val buffer = renderDecorated(view)
 
         val topRow = (0 until 28).map { buffer.get(it, 0).char }.joinToString("")
@@ -75,7 +76,7 @@ internal class LogViewTest {
 
     @Test
     fun `renders a single short entry under a turn header, with no turn prefix`() {
-        val view = LogView(entries = listOf(LogEntry(turn = 2, event = stoodUp())), gameState = emptyState)
+        val view = LogView(entries = listOf(LogEntry(turn = 2, event = stoodUp())), state = emptyState)
         val buffer = renderDecorated(view, scrollOffset = 0)
 
         // Inner content starts at x=2, y=1 (just inside the box).
@@ -92,7 +93,7 @@ internal class LogViewTest {
                 LogEntry(2, movedTo(1)),
                 LogEntry(2, movedTo(2)),
             ),
-            gameState = emptyState,
+            state = emptyState,
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
@@ -107,7 +108,7 @@ internal class LogViewTest {
 
     @Test
     fun `turn numbers of 10 or more render correctly in the header`() {
-        val view = LogView(entries = listOf(LogEntry(turn = 10, event = stoodUp())), gameState = emptyState)
+        val view = LogView(entries = listOf(LogEntry(turn = 10, event = stoodUp())), state = emptyState)
         val buffer = renderDecorated(view, scrollOffset = 0)
 
         val headerLine = readLine(buffer, x = 2, y = 1, width = 24)
@@ -124,7 +125,7 @@ internal class LogViewTest {
                 LogEntry(1, movedTo(2)),
                 LogEntry(1, movedTo(3)),
             ),
-            gameState = emptyState,
+            state = emptyState,
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
@@ -145,7 +146,7 @@ internal class LogViewTest {
         )
         val view = LogView(
             entries = listOf(LogEntry(2, InitiativeRolled(initiative))),
-            gameState = emptyState,
+            state = emptyState,
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
@@ -169,7 +170,7 @@ internal class LogViewTest {
         // Panel of height 6: inner height = 4 rows. Decorated with anchorBottom=true.
         // Each entry is its own turn, so every entry is preceded by its own header row.
         val entries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
-        val view = LogView(entries, gameState = emptyState)
+        val view = LogView(entries, state = emptyState)
         val buffer = renderDecorated(view, height = 6, scrollOffset = null, anchorBottom = true)
 
         // The bottom inner row (y = 4, since box bottom is y=5) should be the most recent entry.
@@ -183,7 +184,7 @@ internal class LogViewTest {
     @Test
     fun `scrollOffset 0 with overflowing content shows the oldest entries`() {
         val entries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
-        val view = LogView(entries, gameState = emptyState)
+        val view = LogView(entries, state = emptyState)
         // anchorBottom=true but scrollOffset=0 detaches scroll to top
         val buffer = renderDecorated(view, height = 6, scrollOffset = 0, anchorBottom = true)
 
@@ -206,7 +207,7 @@ internal class LogViewTest {
         )
         val view = LogView(
             entries = listOf(LogEntry(1, InitiativeRolled(initiative))),
-            gameState = emptyState,
+            state = emptyState,
         )
         val buffer = renderDecorated(view, width = 40, height = 6, scrollOffset = 0)
 

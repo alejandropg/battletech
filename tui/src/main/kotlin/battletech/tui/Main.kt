@@ -10,6 +10,7 @@ import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.map.resolveMap
+import battletech.tactical.query.projectFor
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.SessionNotice
@@ -283,9 +284,16 @@ private fun runHeadlessServer(port: Int, map: GameMap) {
 internal class GameEventPrinter(private val out: Appendable) {
     private var lastPrintedTurn: Int? = null
 
+    /**
+     * [gameState] is the authoritative, unfiltered state a headless server console
+     * legitimately has (see the class doc) — there is no single "viewer" to project
+     * for here, so it's revealed in full via [projectFor] rather than redacted for
+     * an arbitrary seat. [GameLogFormatter] itself takes the same [PlayerGameState]
+     * shape every other consumer (the in-game LOG panel) does.
+     */
     @Synchronized
     fun print(event: GameEvent, gameState: GameState, turnNumber: Int) {
-        val lines = GameLogFormatter.lines(event, gameState)
+        val lines = GameLogFormatter.lines(event, gameState.projectFor(viewer = null, revealAll = true))
         if (lines.isEmpty()) return
         if (turnNumber != lastPrintedTurn) {
             out.append("== TURN $turnNumber ==\n")

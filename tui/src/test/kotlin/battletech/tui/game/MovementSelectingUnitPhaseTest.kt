@@ -2,6 +2,8 @@ package battletech.tui.game
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
+import battletech.tactical.query.ForeignUnit
+import battletech.tactical.query.OwnUnit
 import battletech.tactical.session.Impulse
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.UnitId
@@ -189,12 +191,12 @@ internal class MovementSelectingUnitPhaseTest {
 
             val subject = MovementPhase.SelectingUnit.unitStatus(state)
 
-            assertInstanceOf(UnitStatusSubject.Owned::class.java, subject)
-            assertEquals(p1Unit.id, (subject as UnitStatusSubject.Owned).unit.id)
+            assertInstanceOf(OwnUnit::class.java, subject)
+            assertEquals(p1Unit.id, (subject as OwnUnit).unit.id)
         }
 
         @Test
-        fun `unitStatus is Public when cursor is over an enemy unit`() {
+        fun `unitStatus is Foreign when cursor is over an enemy unit`() {
             val p1Unit = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
             val p2Unit = aUnit(id = "u2", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 1))
             val gameState = aGameState(units = listOf(p1Unit, p2Unit))
@@ -202,17 +204,17 @@ internal class MovementSelectingUnitPhaseTest {
 
             val subject = MovementPhase.SelectingUnit.unitStatus(state)
 
-            assertInstanceOf(UnitStatusSubject.Public::class.java, subject)
-            assertEquals(p2Unit.id, (subject as UnitStatusSubject.Public).unit.id)
+            assertInstanceOf(ForeignUnit::class.java, subject)
+            assertEquals(p2Unit.id, (subject as ForeignUnit).id)
         }
 
         @Test
-        fun `unitStatus is Public for an enemy unit when the viewer is unknown (fails closed)`() {
-            // Movement complete -> MovementPhase.unitStatus passes activePlayer = null; combined
-            // with the default anAppState() localPlayer = null, cursorUnitStatus's viewer is
-            // unknown. This is the match-over-parked scenario: "I don't know who is looking" must
-            // redact, not reveal. This test reproduces the bug: it fails on the old fail-open code
-            // (which returned Owned whenever viewer == null).
+        fun `unitStatus is Foreign for an enemy unit when the viewer is unknown (fails closed)`() {
+            // Movement complete -> session.activePlayer is null; combined with the default
+            // anAppState() localPlayer = null, AppState.viewer is unknown. This is the
+            // match-over-parked scenario: "I don't know who is looking" must redact, not
+            // reveal. This test reproduces the bug: it fails on the old fail-open code (which
+            // returned Owned whenever viewer == null).
             val p1Unit = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
             val p2Unit = aUnit(id = "u2", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 1))
             val gameState = aGameState(units = listOf(p1Unit, p2Unit))
@@ -224,12 +226,12 @@ internal class MovementSelectingUnitPhaseTest {
 
             val subject = MovementPhase.SelectingUnit.unitStatus(state)
 
-            assertInstanceOf(UnitStatusSubject.Public::class.java, subject)
-            assertEquals(p2Unit.id, (subject as UnitStatusSubject.Public).unit.id)
+            assertInstanceOf(ForeignUnit::class.java, subject)
+            assertEquals(p2Unit.id, (subject as ForeignUnit).id)
         }
 
         @Test
-        fun `unitStatus is Public for the viewer's own unit when the viewer is unknown (fails closed)`() {
+        fun `unitStatus is Foreign for the viewer's own unit when the viewer is unknown (fails closed)`() {
             // Same unknown-viewer scenario as above, but the cursor sits on the unit that would be
             // "own" under any active player. With no known viewer there is no "own" to compare
             // against, so it must still redact.
@@ -244,8 +246,8 @@ internal class MovementSelectingUnitPhaseTest {
 
             val subject = MovementPhase.SelectingUnit.unitStatus(state)
 
-            assertInstanceOf(UnitStatusSubject.Public::class.java, subject)
-            assertEquals(p1Unit.id, (subject as UnitStatusSubject.Public).unit.id)
+            assertInstanceOf(ForeignUnit::class.java, subject)
+            assertEquals(p1Unit.id, (subject as ForeignUnit).id)
         }
     }
 }

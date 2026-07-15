@@ -1,12 +1,12 @@
 package battletech.tui.game.phase
 
 import battletech.tactical.model.PlayerId
+import battletech.tactical.query.VisibleUnit
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
 import battletech.tactical.unit.CombatUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
-import battletech.tui.game.UnitStatusSubject
 import battletech.tui.game.moveCursor
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
@@ -51,7 +51,7 @@ internal fun mapIdleInput(event: InputEvent): IdleAction? = when (event) {
  * [Transition].
  */
 internal fun handleCursorMove(app: AppState, action: IdleAction.MoveCursor): Transition =
-    Transition(app.copy(cursor = moveCursor(app.cursor, action.direction, app.gameState.map)))
+    Transition(app.copy(cursor = moveCursor(app.cursor, action.direction, app.visibleState.map)))
 
 /**
  * Guard against acting outside this client's seat in remote play.
@@ -99,9 +99,10 @@ internal fun selectOwnUnit(
     extraGuard: (CombatUnit) -> FlashMessage? = { null },
     onSelect: (CombatUnit) -> Transition,
 ): Transition {
-    val unit = app.gameState.unitAt(app.cursor) ?: return Transition(app)
+    val visible = app.visibleState.unitAt(app.cursor) ?: return Transition(app)
     localTurnGuard(app) { activePlayer }?.let { return it }
-    if (unit.owner != activePlayer) return Transition(app, FlashMessage("Not your unit"))
+    if (visible.owner != activePlayer) return Transition(app, FlashMessage("Not your unit"))
+    val unit = app.ownUnit(visible.id)
     extraGuard(unit)?.let { return Transition(app, it) }
     return onSelect(unit)
 }
@@ -131,7 +132,7 @@ internal fun handleUnitSelection(
     event: InputEvent,
     app: AppState,
     activePlayer: () -> PlayerId,
-    selectableUnits: () -> List<CombatUnit>,
+    selectableUnits: () -> List<VisibleUnit>,
     selectGuard: (CombatUnit) -> FlashMessage? = { null },
     onCommit: (AppState) -> Transition = { Transition(it) },
     enterFor: (CombatUnit, AppState) -> Transition,
@@ -156,31 +157,16 @@ internal fun handleUnitSelection(
 }
 
 /**
- * The [UnitStatusSubject] for the unit under the cursor in an idle
- * selecting state: full [UnitStatusSubject.Owned] detail for the viewer's
- * own units, the condensed [UnitStatusSubject.Public] summary for anyone
- * else's — matching what TARGET STATUS shows via [PlayerView.publicUnit].
- *
- * This fails **closed**: [viewer] is [AppState.localPlayer] when set (remote
- * play: the local seat keeps the summary form for units it doesn't own, even
- * on the opponent's turn), or else falls back to [activePlayer] (hot-seat:
- * the acting player is the viewer). When neither is known — [viewer] is null,
- * e.g. the session has parked past match-over and [activePlayer] is passed
- * as null — there is no identity to compare against "own", so every unit,
- * including the caller's own, renders as [UnitStatusSubject.Public]. "I don't
- * know who is looking" is exactly when redaction must be maximal, not
- * minimal.
- *
- * [publicUnit] is called with an arbitrary valid [PlayerId] when [viewer] is
- * null ([unit.owner], since one is guaranteed to exist): its projection does
- * not depend on which player's view it was built from.
+ * The [VisibleUnit] under the cursor in an idle selecting state.
+ * [AppState.visibleState] has already decided
+ * [battletech.tactical.query.OwnUnit] vs [battletech.tactical.query.ForeignUnit]
+ * for [AppState.viewer] — including the fail-closed case where the viewer
+ * itself is unknown (e.g. the session has parked past match-over): see
+ * [battletech.tactical.query.projectFor]'s KDoc for why an unknown viewer
+ * renders every unit, including what would be the caller's own, as foreign.
+ * There is nothing left to redact here — the projection already did it.
  */
-internal fun cursorUnitStatus(app: AppState, activePlayer: PlayerId?): UnitStatusSubject? {
-    val unit = app.gameState.unitAt(app.cursor) ?: return null
-    val viewer = app.localPlayer ?: activePlayer
-    return if (viewer != null && unit.owner == viewer) UnitStatusSubject.Owned(unit)
-    else UnitStatusSubject.Public(app.viewFor(viewer ?: unit.owner).publicUnit(unit.id)!!)
-}
+internal fun cursorUnitStatus(app: AppState): VisibleUnit? = app.visibleState.unitAt(app.cursor)
 
 private fun selectUnitAt(
     app: AppState,
@@ -205,12 +191,12 @@ private fun selectUnitAt(
  */
 private fun cycleAndEnter(
     app: AppState,
-    selectableUnits: List<CombatUnit>,
+    selectableUnits: List<VisibleUnit>,
     enterFor: (CombatUnit, AppState) -> Transition,
 ): Transition {
     if (selectableUnits.isEmpty()) return Transition(app)
-    val currentId = app.gameState.unitAt(app.cursor)?.id
+    val currentId = app.visibleState.unitAt(app.cursor)?.id
     val idx = selectableUnits.indexOfFirst { it.id == currentId }
     val next = selectableUnits[if (idx == -1) 0 else (idx + 1) % selectableUnits.size]
-    return enterFor(next, app.copy(cursor = next.position))
+    return enterFor(app.ownUnit(next.id), app.copy(cursor = next.position))
 }

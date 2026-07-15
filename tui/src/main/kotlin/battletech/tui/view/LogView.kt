@@ -1,6 +1,6 @@
 package battletech.tui.view
 
-import battletech.tactical.model.GameState
+import battletech.tactical.query.PlayerGameState
 import battletech.tactical.session.LogEntry
 import battletech.tui.game.PanelId
 import battletech.tui.screen.CellWidth
@@ -10,7 +10,7 @@ import battletech.tui.screen.TextWrap
 
 public class LogView(
     private val entries: List<LogEntry>,
-    private val gameState: GameState,
+    private val state: PlayerGameState,
 ) : View {
 
     public companion object {
@@ -23,7 +23,7 @@ public class LogView(
         var lastTurn: Int? = null
 
         for (entry in entries) {
-            val logLines = GameLogFormatter.lines(entry.event, gameState)
+            val logLines = GameLogFormatter.lines(entry.event, state)
             if (logLines.isEmpty()) continue
 
             if (entry.turn != lastTurn) {

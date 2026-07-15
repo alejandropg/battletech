@@ -3,13 +3,12 @@ package battletech.tui.game.phase
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.query.PublicUnit
-import battletech.tactical.unit.CombatUnit
+import battletech.tactical.query.ForeignUnit
+import battletech.tactical.query.VisibleUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tui.game.AppState
 import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData
-import battletech.tui.game.UnitStatusSubject
 import com.github.ajalt.mordant.input.InputEvent
 
 /**
@@ -28,10 +27,9 @@ internal sealed interface Phase {
 
     fun prompt(app: AppState): String
 
-    fun selectedUnit(app: AppState): CombatUnit? = null
+    fun selectedUnit(app: AppState): VisibleUnit? = null
 
-    fun unitStatus(app: AppState): UnitStatusSubject? =
-        selectedUnit(app)?.let { UnitStatusSubject.Owned(it) }
+    fun unitStatus(app: AppState): VisibleUnit? = selectedUnit(app)
 
     /**
      * Heat the [selectedUnit] *would* generate if the in-progress declaration
@@ -44,7 +42,7 @@ internal sealed interface Phase {
 
     fun attackRender(app: AppState): AttackRender? = null
 
-    fun targetStatusUnit(app: AppState): PublicUnit? = null
+    fun targetStatusUnit(app: AppState): ForeignUnit? = null
 
     /**
      * Phase-local side panels the active phase wants visible. The always-on

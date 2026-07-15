@@ -7,13 +7,12 @@ import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.PhysicalAttackOption
+import battletech.tactical.query.VisibleUnit
 import battletech.tactical.session.CommitPhysicalAttackImpulse
-import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.PanelId
-import battletech.tui.game.UnitStatusSubject
 import battletech.tui.game.attackPlayerLabel
 import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
@@ -48,7 +47,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
                 event = event,
                 app = app,
                 activePlayer = { app.turnState.attack.activePlayer },
-                selectableUnits = { app.turnState.selectableAttackUnits(app.gameState) },
+                selectableUnits = { app.turnState.selectableAttackUnits(app.visibleState) },
                 onCommit = { a -> commitPhysicalImpulse(a, drafts) },
                 enterFor = { unit, a -> Transition(a.copy(phase = enterPhysicalDeclaring(unit.id, a, drafts))) },
             )
@@ -60,12 +59,9 @@ internal sealed interface PhysicalAttackPhase : Phase {
             return "$name: select a unit to punch/kick | 'c' to commit"
         }
 
-        override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitAt(app.cursor)
+        override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.unitAt(app.cursor)
 
-        override fun unitStatus(app: AppState): UnitStatusSubject? {
-            val ts = app.turnState
-            return cursorUnitStatus(app, if (ts.attack.isComplete) null else ts.attack.activePlayer)
-        }
+        override fun unitStatus(app: AppState): VisibleUnit? = cursorUnitStatus(app)
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState)
     }
@@ -92,7 +88,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
 
         override fun prompt(app: AppState): String = PHYSICAL_DECLARING_PROMPT
 
-        override fun selectedUnit(app: AppState): CombatUnit? = app.gameState.unitById(unitId)
+        override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.unitById(unitId)
 
         override fun onCancel(app: AppState): Transition = Transition(app.copy(phase = SelectingAttacker(allDrafts())))
 
@@ -136,7 +132,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
             if (assignments.values.any { it.isNotEmpty() }) drafts + (unitId to assignments) else drafts - unitId
 
         private fun optionsFor(app: AppState): List<PhysicalAttackOption> {
-            val owner = app.gameState.unitById(unitId).owner
+            val owner = app.visibleState.unitById(unitId).owner
             return app.viewFor(owner).physicalAttackOptions(unitId)
         }
 
@@ -171,14 +167,14 @@ internal sealed interface PhysicalAttackPhase : Phase {
             val declarations = candidate.flatMap { (targetId, kinds) ->
                 kinds.map { PhysicalAttackDeclaration(unitId, targetId, it) }
             }
-            physicalImpulseViolation(declarations, app.gameState)?.let {
+            physicalImpulseViolation(declarations) { id -> app.ownUnit(id) }?.let {
                 return Transition(app, FlashMessage("Illegal combination"))
             }
             return Transition(app.copy(phase = copy(assignments = candidate)))
         }
 
         private fun nextAttacker(app: AppState): Transition {
-            val attackers = app.turnState.selectableAttackUnits(app.gameState)
+            val attackers = app.turnState.selectableAttackUnits(app.visibleState)
             val saved = allDrafts()
             if (attackers.isEmpty()) return Transition(app.copy(phase = SelectingAttacker(saved)))
             val idx = attackers.indexOfFirst { it.id == unitId }.coerceAtLeast(0)

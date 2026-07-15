@@ -1,10 +1,10 @@
 package battletech.tui.view
 
 import battletech.tactical.model.PlayerId
-import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
+import battletech.tactical.query.PlayerGameState
 import battletech.tui.hex.HexGeometry
 import battletech.tui.hex.HexHighlight
 import battletech.tui.hex.HexLayout
@@ -14,7 +14,7 @@ import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
 public class BoardView(
-    private val gameState: GameState,
+    private val state: PlayerGameState,
     private val viewport: Viewport,
     private val cursorPosition: HexCoordinates? = null,
     private val hexHighlights: Map<HexCoordinates, HexHighlight> = emptyMap(),
@@ -37,7 +37,7 @@ public class BoardView(
         for (col in colRange) {
             for (row in rowRange) {
                 val coords = HexCoordinates(col, row)
-                val hex = gameState.map.hexes[coords] ?: continue
+                val hex = state.map.hexes[coords] ?: continue
 
                 val (screenX, screenY) = HexLayout.hexToScreen(col, row)
                 val drawX = contentX + screenX - viewport.scrollCol * HexGeometry.COL_STRIDE
@@ -77,7 +77,7 @@ public class BoardView(
                     }
                 }
 
-                val unit = gameState.unitAt(coords)
+                val unit = state.unitAt(coords)
                 if (unit != null) {
                     val isValidTarget = coords in validTargetPositions
                     val isSelectedTarget = coords == selectedTargetPosition

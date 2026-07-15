@@ -2,6 +2,8 @@ package battletech.tactical.attack.physical
 
 import battletech.tactical.model.GameState
 import battletech.tactical.session.RuleRejection
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.UnitId
 
 /**
  * Validates the per-turn physical-attack limits for a committed impulse,
@@ -14,6 +16,18 @@ import battletech.tactical.session.RuleRejection
 public fun physicalImpulseViolation(
     declarations: List<PhysicalAttackDeclaration>,
     gameState: GameState,
+): RuleRejection? = physicalImpulseViolation(declarations) { gameState.unitById(it) }
+
+/**
+ * Lookup-based overload of [physicalImpulseViolation]: the rule only ever
+ * resolves each declaration's own attacker, never any other unit on the
+ * table, so a caller that can resolve just those attacker ids — e.g. a
+ * delivery validating its own player's in-progress declarations without
+ * holding the full [GameState] — can call this directly via [unitById].
+ */
+public fun physicalImpulseViolation(
+    declarations: List<PhysicalAttackDeclaration>,
+    unitById: (UnitId) -> CombatUnit,
 ): RuleRejection? {
     for ((attackerId, decls) in declarations.groupBy { it.attackerId }) {
         val hasPunch = decls.any { it.kind is PhysicalAttackKind.Punch }
@@ -25,7 +39,7 @@ public fun physicalImpulseViolation(
             return RuleRejection.LimbAlreadyUsed(attackerId)
         }
 
-        val attacker = gameState.unitById(attackerId)
+        val attacker = unitById(attackerId)
         val usedLimbs = mutableSetOf<Pair<Boolean, Side>>()
         for (decl in decls) {
             val (isPunch, side) = when (val kind = decl.kind) {

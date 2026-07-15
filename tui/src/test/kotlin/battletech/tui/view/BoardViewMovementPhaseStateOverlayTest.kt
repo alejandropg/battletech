@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
+import battletech.tactical.query.projectFor
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.hex.HexHighlight
@@ -15,7 +16,7 @@ internal class BoardViewMovementPhaseStateOverlayTest {
 
     @Test
     fun `reachable hexes show dot marker at center`() {
-        val state = aGameState(map = aGameMap(cols = 5, rows = 5))
+        val state = aGameState(map = aGameMap(cols = 5, rows = 5)).projectFor(viewer = null, revealAll = true)
         val highlights = mapOf(
             HexCoordinates(1, 1) to HexHighlight.REACHABLE_WALK,
             HexCoordinates(2, 1) to HexHighlight.REACHABLE_WALK,
@@ -34,7 +35,7 @@ internal class BoardViewMovementPhaseStateOverlayTest {
 
     @Test
     fun `reachable hex with facing overlay suppresses dot at center`() {
-        val state = aGameState(map = aGameMap(cols = 5, rows = 5))
+        val state = aGameState(map = aGameMap(cols = 5, rows = 5)).projectFor(viewer = null, revealAll = true)
         val highlights = mapOf(
             HexCoordinates(1, 1) to HexHighlight.REACHABLE_WALK,
         )
@@ -57,7 +58,7 @@ internal class BoardViewMovementPhaseStateOverlayTest {
 
     @Test
     fun `path hexes show walk icon even when also in reachable facings`() {
-        val state = aGameState(map = aGameMap(cols = 5, rows = 5))
+        val state = aGameState(map = aGameMap(cols = 5, rows = 5)).projectFor(viewer = null, revealAll = true)
         val highlights = mapOf(
             HexCoordinates(1, 0) to HexHighlight.PATH,
         )
@@ -81,7 +82,7 @@ internal class BoardViewMovementPhaseStateOverlayTest {
 
     @Test
     fun `path hexes show walk icon at center`() {
-        val state = aGameState(map = aGameMap(cols = 5, rows = 5))
+        val state = aGameState(map = aGameMap(cols = 5, rows = 5)).projectFor(viewer = null, revealAll = true)
         val highlights = mapOf(
             HexCoordinates(0, 0) to HexHighlight.PATH,
             HexCoordinates(1, 0) to HexHighlight.PATH,
@@ -103,7 +104,7 @@ internal class BoardViewMovementPhaseStateOverlayTest {
 
     @Test
     fun `destination hex with all facings and walk mode shows walk icon`() {
-        val state = aGameState(map = aGameMap(cols = 5, rows = 5))
+        val state = aGameState(map = aGameMap(cols = 5, rows = 5)).projectFor(viewer = null, revealAll = true)
         val allFacings = HexDirection.entries.toSet()
         val reachableFacings = mapOf(
             HexCoordinates(1, 0) to allFacings,

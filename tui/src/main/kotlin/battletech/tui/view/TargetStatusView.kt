@@ -1,12 +1,12 @@
 package battletech.tui.view
 
-import battletech.tactical.query.PublicUnit
+import battletech.tactical.query.ForeignUnit
 import battletech.tui.game.PanelId
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
 
-public class TargetStatusView(private val unit: PublicUnit?) : View {
+public class TargetStatusView(private val unit: ForeignUnit?) : View {
 
     public companion object {
         public val INDEX: Int = PanelId.TARGET_STATUS.index
@@ -22,6 +22,6 @@ public class TargetStatusView(private val unit: PublicUnit?) : View {
             return
         }
 
-        PublicUnitPanel.render(content, unit)
+        ForeignUnitPanel.render(content, unit)
     }
 }

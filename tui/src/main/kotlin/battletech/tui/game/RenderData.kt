@@ -1,17 +1,11 @@
 package battletech.tui.game
 
-import battletech.tactical.attack.PhysicalAttackContext
-import battletech.tactical.attack.weapon.LineOfSightRule
-import battletech.tactical.attack.weapon.TargetInfo
-import battletech.tactical.model.GameState
+import battletech.tactical.attack.lineOfSight
+import battletech.tactical.model.GameMap
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.ReachabilityMap
-import battletech.tactical.query.RuleResult
-import battletech.tactical.unit.CombatUnit
-import battletech.tactical.unit.UnitId
-import battletech.tui.game.phase.AttackPhase
 import battletech.tui.hex.HexHighlight
 
 public data class RenderData(
@@ -27,32 +21,29 @@ public data class RenderData(
     }
 }
 
+/**
+ * Line-of-sight highlight hexes from [attackerPosition] to each of [targetPositions].
+ * Positions only — [battletech.tactical.attack.lineOfSight] never needs anything else
+ * about either unit, so this works identically whether a target is owned by the viewer
+ * or not.
+ */
 internal fun losHighlights(
-    attacker: CombatUnit,
-    validTargetIds: Set<UnitId>,
-    gameState: GameState,
+    attackerPosition: HexCoordinates,
+    targetPositions: Set<HexCoordinates>,
+    map: GameMap,
 ): Map<HexCoordinates, HexHighlight> =
-    validTargetIds.flatMap { targetId ->
-        val target = gameState.unitById(targetId)
-        losLine(attacker, target, gameState)
-    }.associateWith { HexHighlight.LINE_OF_SIGHT }
+    targetPositions.flatMap { losLine(attackerPosition, it, map) }.associateWith { HexHighlight.LINE_OF_SIGHT }
 
 internal fun selectedLosHighlights(
-    attacker: CombatUnit,
-    declaring: AttackPhase.Declaring,
-    targets: List<TargetInfo>,
-    gameState: GameState,
-): Map<HexCoordinates, HexHighlight> {
-    val idx = declaring.cursorTargetIndex
-    if (idx !in targets.indices) return emptyMap()
-    val target = gameState.unitById(targets[idx].unitId)
-    return losLine(attacker, target, gameState).associateWith { HexHighlight.LINE_OF_SIGHT_SELECTED }
-}
+    attackerPosition: HexCoordinates,
+    targetPosition: HexCoordinates,
+    map: GameMap,
+): Map<HexCoordinates, HexHighlight> =
+    losLine(attackerPosition, targetPosition, map).associateWith { HexHighlight.LINE_OF_SIGHT_SELECTED }
 
-private fun losLine(attacker: CombatUnit, target: CombatUnit, gameState: GameState): List<HexCoordinates> {
-    val context = PhysicalAttackContext(actor = attacker, gameState = gameState, target = target)
-    if (LineOfSightRule().evaluate(context) != RuleResult.Satisfied) return emptyList()
-    return attacker.position.lineTo(target.position).drop(1).dropLast(1)
+private fun losLine(attackerPosition: HexCoordinates, targetPosition: HexCoordinates, map: GameMap): List<HexCoordinates> {
+    if (lineOfSight(attackerPosition, targetPosition, map).blocked) return emptyList()
+    return attackerPosition.lineTo(targetPosition).drop(1).dropLast(1)
 }
 
 internal fun reachabilityHighlights(reachability: ReachabilityMap): Map<HexCoordinates, HexHighlight> {

@@ -3,11 +3,11 @@ package battletech.tui.view
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.LocationDamage
 import battletech.tactical.attack.physical.PhysicalAttackResult
-import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
+import battletech.tactical.query.PlayerGameState
 import battletech.tactical.session.AmmoExploded
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
@@ -49,7 +49,7 @@ internal object GameLogFormatter {
     data class LogLine(val icon: String?, val text: String)
 
     /** Renders an event as one or more log lines, each with its own icon (e.g. one per twisted unit). */
-    fun lines(event: GameEvent, state: GameState): List<LogLine> = when (event) {
+    fun lines(event: GameEvent, state: PlayerGameState): List<LogLine> = when (event) {
         is PhaseChanged -> emptyList()
         is TurnEnded -> emptyList()
         is TorsoFacingsApplied -> torsoFacingLines(event, state)
@@ -173,7 +173,7 @@ internal object GameLogFormatter {
     private fun physicalDetailLine(result: PhysicalAttackResult.Hit): LogLine =
         LogLine(attackOutcomeIcon(hit = true), "${result.attackName} → ${locationLabel(result.hitLocation)} (${result.damageApplied} dmg)")
 
-    private fun torsoFacingLines(event: TorsoFacingsApplied, state: GameState): List<LogLine> {
+    private fun torsoFacingLines(event: TorsoFacingsApplied, state: PlayerGameState): List<LogLine> {
         if (event.facings.isEmpty()) return listOf(LogLine(null, "Torso facings: no changes"))
         return event.facings.entries.map { (unitId, dir) ->
             val name = unitId.value
@@ -181,7 +181,7 @@ internal object GameLogFormatter {
         }
     }
 
-    private fun attackDeclarationLines(event: AttackDeclarationsRecorded, state: GameState): List<LogLine> =
+    private fun attackDeclarationLines(event: AttackDeclarationsRecorded, state: PlayerGameState): List<LogLine> =
         event.declarations.groupBy { it.attackerId }.entries.map { (attackerId, decls) ->
             val attacker = state.unitById(attackerId)
             val attackerName = attackerId.value
@@ -203,7 +203,7 @@ internal object GameLogFormatter {
         DestructionReason.PILOT_DEAD -> "pilot dead"
     }
 
-    private fun criticalSlotContentLabel(content: CriticalSlotContent, unitId: UnitId, state: GameState): String =
+    private fun criticalSlotContentLabel(content: CriticalSlotContent, unitId: UnitId, state: PlayerGameState): String =
         when (content) {
             is CriticalSlotContent.Empty -> "empty slot"
             is CriticalSlotContent.Engine -> "Engine"
@@ -241,7 +241,7 @@ internal object GameLogFormatter {
 
     private fun destroyedClause(
         targetsAndDamage: List<Pair<UnitId, List<LocationDamage>>>,
-        state: GameState,
+        state: PlayerGameState,
     ): String? {
         val parts = targetsAndDamage.flatMap { (targetId, steps) ->
             val name = targetId.value

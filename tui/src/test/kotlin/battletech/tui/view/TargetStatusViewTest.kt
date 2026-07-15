@@ -1,8 +1,11 @@
 package battletech.tui.view
 
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
-import battletech.tactical.query.PublicUnit
+import battletech.tactical.query.ForeignUnit
 import battletech.tactical.query.PublicWeapon
+import battletech.tactical.unit.MovementThisTurn
 import battletech.tactical.unit.UnitId
 import battletech.tui.anArmorLayout
 import battletech.tui.screen.Color
@@ -14,21 +17,30 @@ import org.junit.jupiter.api.Test
 
 internal class TargetStatusViewTest {
 
-    private fun aPublicUnit(
+    private fun aForeignUnit(
         name: String = "Hunchback",
         walkingMP: Int = 4,
         runningMP: Int = 6,
         jumpMP: Int = 0,
         weapons: List<PublicWeapon> = listOf(PublicWeapon("AC/20")),
-    ): PublicUnit = PublicUnit(
+    ): ForeignUnit = ForeignUnit(
         id = UnitId("u1"),
         owner = PlayerId.PLAYER_1,
         name = name,
+        tonnage = 50,
+        position = HexCoordinates(0, 0),
+        facing = HexDirection.N,
+        torsoFacing = HexDirection.N,
+        armor = anArmorLayout(),
         walkingMP = walkingMP,
         runningMP = runningMP,
         jumpMP = jumpMP,
-        armor = anArmorLayout(),
         weapons = weapons,
+        isProne = false,
+        isShutdown = false,
+        isDestroyed = false,
+        isPilotConscious = true,
+        movementThisTurn = MovementThisTurn.Stationary,
     )
 
     /** Render via decorator at (0,0) — pixel-parity regression guard for box/coordinates. */
@@ -61,7 +73,7 @@ internal class TargetStatusViewTest {
 
     @Test
     fun `renders unit name in BRIGHT_YELLOW`() {
-        val unit = aPublicUnit(name = "Hunchback")
+        val unit = aForeignUnit(name = "Hunchback")
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
@@ -81,7 +93,7 @@ internal class TargetStatusViewTest {
 
     @Test
     fun `renders MOVEMENT section with walk and run values`() {
-        val unit = aPublicUnit(walkingMP = 4, runningMP = 6)
+        val unit = aForeignUnit(walkingMP = 4, runningMP = 6)
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
@@ -96,7 +108,7 @@ internal class TargetStatusViewTest {
 
     @Test
     fun `renders ARMOR section with HD CT and LL values`() {
-        val unit = aPublicUnit()
+        val unit = aForeignUnit()
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
@@ -115,7 +127,7 @@ internal class TargetStatusViewTest {
 
     @Test
     fun `renders WEAPONS section with weapon names`() {
-        val unit = aPublicUnit(weapons = listOf(PublicWeapon("AC/20"), PublicWeapon("Medium Laser")))
+        val unit = aForeignUnit(weapons = listOf(PublicWeapon("AC/20"), PublicWeapon("Medium Laser")))
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
@@ -129,7 +141,7 @@ internal class TargetStatusViewTest {
 
     @Test
     fun `does not render PILOT section`() {
-        val unit = aPublicUnit()
+        val unit = aForeignUnit()
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 

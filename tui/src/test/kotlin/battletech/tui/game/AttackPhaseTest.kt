@@ -216,7 +216,7 @@ internal class AttackPhaseTest {
             // Commit the impulse via the helper
             val committed = commitAttackImpulse(twisted.app, TurnPhase.WEAPON_ATTACK, twistedPhase.allDrafts())
 
-            val updatedUnit = committed.app.gameState.units.first { it.id == unit.id }
+            val updatedUnit = committed.app.session.gameState.units.first { it.id == unit.id }
             assertThat(updatedUnit.torsoFacing).isEqualTo(HexDirection.NE)
         }
 
@@ -314,7 +314,7 @@ internal class AttackPhaseTest {
         }
 
         @Test
-        fun `targetStatusUnit returns PublicUnit for cursor target`() {
+        fun `targetStatusUnit returns a ForeignUnit for cursor target`() {
             val unit = aUnit(
                 weapons = listOf(mediumLaser()),
                 position = HexCoordinates(2, 2),

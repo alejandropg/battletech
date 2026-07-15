@@ -347,7 +347,7 @@ public class TuiApp(
         val renderData = appState.phase.render(appState)
         val viewport = Viewport(0, 0, layout.boardWidth - 4, layout.boardHeight - 4)
         val boardView = BoardView(
-            appState.gameState,
+            appState.visibleState,
             viewport,
             cursorPosition = appState.cursor,
             hexHighlights = renderData.hexHighlights,

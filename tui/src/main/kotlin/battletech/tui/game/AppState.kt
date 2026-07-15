@@ -9,11 +9,15 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.query.OwnUnit
+import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.GameSession
 import battletech.tactical.session.MatchEnded
 import battletech.tactical.session.TurnState
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.UnitId
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.Phase
@@ -21,11 +25,11 @@ import battletech.tui.game.phase.PhysicalAttackPhase
 
 /**
  * The TUI's UI-shell state. Holds a reference to the [GameSession] (the
- * source of truth for gameState and turnState) plus pure UI state: which
- * [Phase] sub-state machine is active and where the cursor sits.
+ * source of truth for turnState) plus pure UI state: which [Phase]
+ * sub-state machine is active and where the cursor sits.
  *
- * The [gameState] and [turnState] accessors read through the session;
- * mutations flow via `session.submitCommand(...)`.
+ * [visibleState] is the ONLY view of game state a delivery may read — see its
+ * KDoc. [turnState] mutations flow via `session.submitCommand(...)`.
  */
 internal data class AppState(
     val session: GameSession,
@@ -37,11 +41,27 @@ internal data class AppState(
     val matchEnded: MatchEnded? = null,
     val localPlayer: PlayerId? = null,
 ) {
-    val gameState: GameState get() = session.gameState
     val turnState: TurnState get() = session.turnState
     val currentPhase: TurnPhase get() = phase.turnPhase
 
+    /** Who the screen is drawn for. Hot-seat has no localPlayer, so the acting player is the viewer. */
+    val viewer: PlayerId? get() = localPlayer ?: session.activePlayer
+
+    /** The only state the TUI can see. */
+    val visibleState: PlayerGameState get() = session.stateFor(viewer)
+
     fun viewFor(player: PlayerId): PlayerView = session.viewFor(player)
+
+    /**
+     * The full [CombatUnit] for [id], for call sites that already know [id] names a unit the
+     * viewer owns — e.g. the attacker/mover reached via an ownership-gated selection
+     * ([selectOwnUnit][battletech.tui.game.phase.selectOwnUnit]). Throws if the projection
+     * disagrees: that would mean the call site's ownership assumption was wrong, which should
+     * fail loudly rather than silently render nothing (or, worse, leak).
+     */
+    fun ownUnit(id: UnitId): CombatUnit =
+        (visibleState.unitById(id) as? OwnUnit)?.unit
+            ?: error("Expected $id to be the viewer's own unit, but it projected as foreign")
 }
 
 /**

@@ -14,7 +14,7 @@ import battletech.tui.game.phase.AttackResultsRender
  */
 internal class PanelFrame(private val appState: AppState) {
 
-    val gameState get() = appState.gameState
+    val visibleState get() = appState.visibleState
 
     val attackRender by lazy { appState.phase.attackRender(appState) }
 
@@ -32,7 +32,7 @@ internal class PanelFrame(private val appState: AppState) {
         appState.lastAttackResults?.let { results ->
             AttackResultsRender(
                 results = results,
-                unitOwners = gameState.units.associate { it.id to it.owner },
+                unitOwners = visibleState.units.associate { it.id to it.owner },
             )
         }
     }
