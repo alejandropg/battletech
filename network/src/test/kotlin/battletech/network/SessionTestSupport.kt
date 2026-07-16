@@ -11,6 +11,7 @@ import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.PlayerId
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.CommandResult
+import battletech.tactical.session.GameSession
 import battletech.tactical.session.MoveUnit
 import kotlin.concurrent.thread
 import kotlin.random.Random
@@ -37,21 +38,25 @@ internal fun GameServer.attachInBackground(
 }
 
 /**
- * Test-setup helper: drives the host-side [GameServer.submitCommand] path
- * (legal moves for whichever player is currently active) until the movement
- * impulse sequence reaches [target]. Requires a client already connected
- * (host [GameServer.submitCommand] rejects otherwise) and the session
- * already in the movement phase.
+ * Test-setup helper: drives a local client's [GameSession.submitCommand] (legal moves for
+ * whichever player is currently active) until the movement impulse sequence reaches [target].
+ * Requires every seat connected (a [GameServer] with any seat still vacant rejects with
+ * [battletech.tactical.session.CommandRejection.OpponentUnavailable]) and the session already in
+ * the movement phase.
+ *
+ * Only works correctly while `activePlayer` stays this receiver's own seat for every iteration —
+ * true of every call site, which always drives it via a [GameServer.connectLocal] session that
+ * moves for its own seat only, stopping the moment [target] (the OTHER seat) becomes active.
  *
  * Returns the number of accepted setup moves. Each one enqueued a
- * [ServerMessage.StatePush] to the client — raw-wire tests must drain that
- * many pushes from the pipe before asserting on subsequent traffic.
+ * [ServerMessage.StatePush] to every OTHER connected client — raw-wire tests must drain that
+ * many pushes from their pipe before asserting on subsequent traffic.
  */
-internal fun GameServer.advanceMovementUntilActivePlayerIs(target: PlayerId): Int {
+internal fun GameSession.advanceMovementUntilActivePlayerIs(target: PlayerId): Int {
     var moves = 0
     while (turnState.movement.activePlayer != target) {
         val active = turnState.movement.activePlayer
-        val unit = turnState.selectableUnits(gameState).first()
+        val unit = turnState.selectableUnits(stateFor(active)).first()
         val reachability = viewFor(active).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val result = submitCommand(MoveUnit(active, unit.id, destination, reachability.mode))
@@ -84,9 +89,11 @@ internal fun PipedConnection.join(sessionId: String, protocolVersion: Int = PROT
  * kickstart's [ServerMessage.StatePush] (see [GameServer] KDoc — the
  * kickstart fires at most once per server lifetime).
  *
- * Host-config only (a single remote seat): the very first join already
- * completes [remoteSeats][GameServer], so it always kickstarts. For a
- * multi-seat (headless) server use [joinBothSeats] instead.
+ * Only valid when this join is the one that completes the roster (every
+ * [battletech.tactical.model.PlayerId] connected) — typically because a
+ * [GameServer.connectLocal] call already claimed the other seat before this
+ * connection attaches. For a from-scratch two-seat join dance use
+ * [joinBothSeats] instead.
  */
 internal fun PipedConnection.joinAndConsumeKickstart(sessionId: String): Pair<ServerMessage.JoinAccepted, ServerMessage.StatePush> {
     val joinAccepted = join(sessionId) as ServerMessage.JoinAccepted
@@ -95,10 +102,9 @@ internal fun PipedConnection.joinAndConsumeKickstart(sessionId: String): Pair<Se
 }
 
 /**
- * Two-seat join dance for a headless-config [GameServer] (`remoteSeats =
- * {PLAYER_1, PLAYER_2}`): joins [first] then [second], asserting the first
- * joiner is seated PLAYER_1 with a pre-kickstart snapshot and no push, and
- * the second is seated PLAYER_2 and receives the kickstart's
+ * Two-seat join dance for a [GameServer] with neither seat pre-claimed: joins [first] then
+ * [second], asserting the first joiner is seated PLAYER_1 with a pre-kickstart snapshot and no
+ * push, and the second is seated PLAYER_2 and receives the kickstart's
  * [ServerMessage.StatePush] — which also arrives on [first]'s connection,
  * since the kickstart fans out to every connected client.
  */

@@ -244,21 +244,35 @@ public class RemoteGameSession internal constructor(
             val input = BufferedReader(InputStreamReader(socket.getInputStream()))
             val output = OutputStreamWriter(socket.getOutputStream())
             val connection = JsonLineConnection.Client(input, output)
+            return handshake(connection, sessionId)
+        }
 
+        /**
+         * Sends [ClientMessage.Join] on [connection] and blocks for the host's handshake
+         * response, building the [RemoteGameSession] on acceptance. Shared by [connect] (a real
+         * socket) and [battletech.network.server.GameServer.connectLocal] (an in-process
+         * [battletech.network.transport.InMemoryConnection] half) — the handshake itself neither
+         * knows nor cares which transport it is running over, which is exactly the property that
+         * lets a local player be indistinguishable from a remote one. [connection] is closed on
+         * any failure path; on success it becomes the returned session's transport.
+         *
+         * @throws JoinRejectedException if the host refuses the join.
+         */
+        internal fun handshake(connection: ClientConnection, sessionId: String): RemoteGameSession {
             connection.send(ClientMessage.Join(SessionId.normalize(sessionId), PROTOCOL_VERSION))
 
             val message = connection.receive() ?: run {
-                socket.close()
+                connection.close()
                 throw IOException("Connection closed before the host replied to Join")
             }
             return when (message) {
                 is ServerMessage.JoinAccepted -> RemoteGameSession(connection, message)
                 is ServerMessage.JoinRejected -> {
-                    socket.close()
+                    connection.close()
                     throw JoinRejectedException(message.reason)
                 }
                 else -> {
-                    socket.close()
+                    connection.close()
                     throw IOException("Unexpected first message from host: $message")
                 }
             }

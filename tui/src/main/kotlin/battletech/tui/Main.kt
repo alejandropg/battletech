@@ -3,6 +3,7 @@ package battletech.tui
 import battletech.network.client.JoinRejectedException
 import battletech.network.client.RemoteGameSession
 import battletech.network.server.GameServer
+import battletech.network.server.SocketAcceptor
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.GameStateFactory
@@ -175,14 +176,21 @@ public fun main(args: Array<String>) {
 
         is Mode.Host -> {
             val map = resolveMapOrExit(mode.mapName)
-            val server = GameServer.host(GameStateFactory().sampleGameState(map), mode.port)
-            server.start()
-            println("Session ID: ${server.sessionId} — listening on port ${server.boundPort}")
-            server.use { server ->
-                TuiApp(
-                    providedSession = server,
-                    localPlayer = PlayerId.PLAYER_1,
-                ).run()
+            val server = GameServer.host(GameStateFactory().sampleGameState(map))
+            // connectLocal() BEFORE the acceptor starts: no accept loop exists yet, so no socket
+            // client can possibly attach first — the local player is deterministically PLAYER_1.
+            // See GameServer.connectLocal's KDoc for the full determinism argument.
+            val localSession = server.connectLocal()
+            val acceptor = SocketAcceptor(server, mode.port)
+            acceptor.start()
+            println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
+            acceptor.use {
+                server.use {
+                    TuiApp(
+                        providedSession = localSession,
+                        localPlayer = localSession.playerId,
+                    ).run()
+                }
             }
         }
 
@@ -214,11 +222,7 @@ public fun main(args: Array<String>) {
  * event to stdout as it happens; the process stays up after [battletech.tactical.session.MatchEnded].
  */
 private fun runHeadlessServer(port: Int, map: GameMap) {
-    val server = GameServer.host(
-        GameStateFactory().sampleGameState(map),
-        port,
-        remoteSeats = setOf(PlayerId.PLAYER_1, PlayerId.PLAYER_2),
-    )
+    val server = GameServer.host(GameStateFactory().sampleGameState(map))
 
     val printer = GameEventPrinter(System.out)
     // Replay the seeded notices before subscribing so the printer sees the whole log from the
@@ -228,12 +232,14 @@ private fun runHeadlessServer(port: Int, map: GameMap) {
         printer.print(event, server.gameState, server.turnState.turnNumber)
     }
 
-    server.start()
-    println("Session ID: ${server.sessionId} — listening on port ${server.boundPort}")
+    val acceptor = SocketAcceptor(server, port)
+    acceptor.start()
+    println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
 
     val latch = CountDownLatch(1)
     Runtime.getRuntime().addShutdownHook(
         Thread {
+            acceptor.close()
             server.close()
             latch.countDown()
         },

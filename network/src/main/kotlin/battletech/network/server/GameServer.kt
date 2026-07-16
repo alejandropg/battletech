@@ -1,5 +1,7 @@
 package battletech.network.server
 
+import battletech.network.client.RemoteGameSession
+import battletech.network.transport.InMemoryConnection
 import battletech.network.transport.JsonLineConnection
 import battletech.network.transport.ServerConnection
 import battletech.network.wire.ClientMessage
@@ -26,137 +28,161 @@ import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.redactFor
 import battletech.tactical.unit.UnknownUnitException
-import java.io.BufferedReader
 import java.io.IOException
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
-import java.net.ServerSocket
-import java.net.Socket
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
 /**
- * Host-side network endpoint: wraps an authoritative [BattleSession] and
- * exposes it to a configurable set of remote seats ([remoteSeats]) over
- * newline-delimited JSON on a TCP socket.
+ * Host-side network endpoint: wraps an authoritative [BattleSession] and exposes it to every
+ * seat ([PlayerId.entries]) as a client connection over the [battletech.network.transport]
+ * port — a real socket ([JsonLineConnection]) via [SocketAcceptor], or an in-process
+ * [InMemoryConnection] via [connectLocal]. Every seat is a connection; there is no seat this
+ * class serves any other way. That is deliberate — see below.
  *
- * Two configurations share this class, both normally built via [Companion.host]:
- * - **Host-embedded** (the default: `remoteSeats = {PLAYER_2}`): the host's
- *   own UI drives the wrapped session through [submitCommand] as
- *   [PlayerId.PLAYER_1], and exactly one remote client connects and plays
- *   [PlayerId.PLAYER_2]. Every touch of [session] — host UI thread,
- *   connected client's reader thread, or the join-time
- *   [BattleSession.advance] kickstart — goes through [lock].
- * - **Headless** (`remoteSeats = {PLAYER_1, PLAYER_2}`): nobody drives the
- *   host [GameSession] surface directly; both players connect remotely and
- *   [submitCommand] simply stays frozen (no local seat to serve).
+ * ### There is exactly one path in
  *
- * Seat enforcement is symmetric: [submitCommand] (the host UI path) rejects
- * with [CommandRejection.NotYourTurn] unless `command.playerId` is
- * [PlayerId.PLAYER_1], and the reader loop in [runReaderLoop] applies the
- * mirror-image check for whichever seat was assigned to that connection at
- * handshake time — neither side can act as another seat's, active-turn or
- * not.
+ * Every command, from every seat, arrives the same way: a [ClientMessage.SubmitCommand] read by
+ * [runReaderLoop] off that seat's [ServerConnection]/wire, checked against that seat's assigned
+ * [ConnectedClient.seat], and applied via [submitAndPush]. A caller driving the local player
+ * used to reach [session] through a second, hand-rolled path (a `submitCommand` override on this
+ * class, gated by a hardcoded `PlayerId.PLAYER_1` check) that could disagree with the remote
+ * path's seat check — remote enforcement was derived from the connection's assigned seat, local
+ * enforcement was a literal constant, and nothing kept the two in sync. [connectLocal] closes
+ * that gap by making the local player a client too: it hands back a [RemoteGameSession] wired to
+ * an [InMemoryConnection] half, indistinguishable on this end from a socket client's connection.
+ * One path, one seat-check, one place the guarantee ("neither side can act as another seat's")
+ * can live.
  *
- * [snapshotFor] is the one seam every outbound [GameSnapshot] (join
- * acceptance and pushes alike) is built through — see its KDoc for how
- * redaction happens there, and why the log traveling alongside it
- * ([ServerMessage.JoinAccepted.log], [ServerMessage.StatePush.entries]) must
- * redact in lockstep.
+ * ### What this class does NOT own
  *
- * Disconnects freeze the whole session: both [submitCommand] and the remote
- * reader loop reject with [CommandRejection.OpponentUnavailable] whenever
- * any seat in [remoteSeats] is vacant. The accept loop keeps listening, so a
- * rejoin (same session id) is just another successful handshake — it
- * resends the full log but never re-runs the join-time kickstart, which
- * fires at most once per server lifetime (the moment every remote seat has
- * connected for the first time).
+ * No [java.net.ServerSocket], no accept loop, no port. [SocketAcceptor] owns all three and calls
+ * [attach] once a socket connection completes the wire framing — see its KDoc for why splitting
+ * that out is what makes hot-seat (a [GameServer] with two [connectLocal] clients and no socket
+ * at all) possible. This class is no longer a [GameSession] either: there is no single local
+ * seat left to implement that interface's `submitCommand`/`turnState`/etc. *for* — every seat's
+ * own [connectLocal]/[JsonLineConnection] client already implements [GameSession] for itself.
+ * What legitimately remains here — [gameState], [turnState], [currentPhase], [activePlayer],
+ * [isMatchOver], [gameLog], [viewFor], [stateFor], [logFor], [subscribe] — are plain (non-
+ * override) reads of the authoritative session: the headless console (no per-seat viewer to
+ * project for) and tests that need to assert against ground truth alongside a client's
+ * projection both have a legitimate need for them that no [GameSession] implementation could
+ * serve.
+ *
+ * ### Kickstart: fires once, no matter who completes the roster
+ *
+ * [BattleSession.advance] must run exactly once per server lifetime, the moment every seat in
+ * [PlayerId.entries] has attached for the first time — regardless of whether that seat is a
+ * [connectLocal] client or a socket client. [attach] is that single trigger point (`kickstarted`
+ * inside its synchronized block), so this holds uniformly across all three compositions:
+ * - **hot-seat**: two [connectLocal] calls; the second one's [attach] call completes the roster.
+ * - **`--host`**: one [connectLocal] call + one socket join; whichever completes the roster
+ *   fires it — see [connectLocal]'s KDoc for why the local seat is guaranteed to be first.
+ * - **`--server`**: two socket joins; the second fires it.
+ *
+ * The `everStarted` flag (checked and set inside the same synchronized block that runs
+ * [BattleSession.advance]) makes a second firing impossible, and [disconnect]'s identity check
+ * (not just a seat check) means a rejoin can never be mistaken for a first-time attach — a
+ * rejoin's seat is already a key in [clients] at the moment of eviction, so [attach]'s "first
+ * time every seat is filled" condition (`clients.keys == allSeats` guarded by `!everStarted`)
+ * can only ever be satisfied once, on the roster's true first completion.
+ *
+ * ### Freeze: correct even though an in-memory seat can't vanish
+ *
+ * Both [runReaderLoop]'s seat check and [attach]'s handshake reject with
+ * [CommandRejection.OpponentUnavailable] (or [JoinRejectionReason.SEAT_TAKEN]/handshake
+ * behavior, respectively) whenever [clients] doesn't yet cover every seat in [PlayerId.entries].
+ * That check needs no special case per transport: an [InMemoryConnection] simply never drops on
+ * its own (nothing closes it unless a caller explicitly calls `close()`, which no in-game code
+ * path does), so a hot-seat server's roster — once full — can never become partial again, and the
+ * freeze branch is simply unreachable there. A socket seat CAN drop (a real disconnect), and the
+ * exact same check freezes the whole session for every remaining seat, [connectLocal] ones
+ * included, until [attach] sees that seat rejoin.
+ *
+ * [snapshotFor] is the one seam every outbound [GameSnapshot] (join acceptance and pushes alike)
+ * is built through — see its KDoc for how redaction happens there, and why the log traveling
+ * alongside it ([ServerMessage.JoinAccepted.log], [ServerMessage.StatePush.entries]) must redact
+ * in lockstep.
  */
 public class GameServer(
     private val session: BattleSession,
     public val sessionId: String,
-    port: Int,
-    private val remoteSeats: Set<PlayerId> = setOf(PlayerId.PLAYER_2),
-) : GameSession, AutoCloseable {
-
-    init {
-        require(remoteSeats.isNotEmpty()) { "remoteSeats must not be empty" }
-    }
+) : AutoCloseable {
 
     private val lock: Any = Any()
-    private val serverSocket: ServerSocket = ServerSocket(port)
 
-    @Volatile
-    private var running: Boolean = true
+    /** Every seat this match expects a connection for — no distinction between "local" and "remote" seats anymore. */
+    private val allSeats: Set<PlayerId> = PlayerId.entries.toSet()
 
     private val clients: MutableMap<PlayerId, ConnectedClient> = mutableMapOf()
     private var everStarted: Boolean = false
 
-    /** The actual bound port — meaningful even when constructed with port 0. */
-    public val boundPort: Int get() = serverSocket.localPort
-
-    /** Starts the accept loop on a daemon thread. Safe to call once. */
-    public fun start() {
-        thread(isDaemon = true, name = "game-server-accept") {
-            while (running) {
-                val socket = try {
-                    serverSocket.accept()
-                } catch (e: IOException) {
-                    null
-                }
-                when {
-                    socket != null -> handleClientSocket(socket)
-                    !running -> return@thread
-                }
-            }
-        }
-    }
-
-    // ---------- GameSession overrides (host UI path) ----------
+    // ---------- reads of the authoritative session ----------
 
     /**
-     * The authoritative, unredacted state — NOT part of [GameSession] (a remote client has
-     * no equivalent). Legitimate here because [GameServer] runs in-process with [session]:
-     * this never crosses the wire itself, only the per-seat projections built from it do
-     * (see [snapshotFor]). Used by this class's own outbound-message building and by tests
-     * that need to inspect/drive the authoritative state directly.
+     * The authoritative, unredacted state — NOT part of [GameSession] (a client only ever holds
+     * its own projection). Legitimate here because [GameServer] runs in-process with [session]:
+     * this never crosses the wire itself, only the per-seat projections built from it do (see
+     * [snapshotFor]). Used by the headless console (there is no single "viewer" to project for)
+     * and by tests that need to inspect/drive the authoritative state directly.
      */
     public val gameState: GameState get() = synchronized(lock) { session.gameState }
-    public override val turnState: TurnState get() = synchronized(lock) { session.turnState }
-    public override val currentPhase: TurnPhase get() = synchronized(lock) { session.currentPhase }
-    public override val activePlayer: PlayerId? get() = synchronized(lock) { session.activePlayer }
-    public override val isMatchOver: Boolean get() = synchronized(lock) { session.isMatchOver }
-    public override val gameLog: GameLog get() = synchronized(lock) { session.gameLog }
+    public val turnState: TurnState get() = synchronized(lock) { session.turnState }
+    public val currentPhase: TurnPhase get() = synchronized(lock) { session.currentPhase }
+    public val activePlayer: PlayerId? get() = synchronized(lock) { session.activePlayer }
+    public val isMatchOver: Boolean get() = synchronized(lock) { session.isMatchOver }
+    public val gameLog: GameLog get() = synchronized(lock) { session.gameLog }
 
-    public override fun viewFor(playerId: PlayerId): PlayerView = synchronized(lock) { session.viewFor(playerId) }
+    public fun viewFor(playerId: PlayerId): PlayerView = synchronized(lock) { session.viewFor(playerId) }
 
-    public override fun stateFor(viewer: PlayerId?): PlayerGameState = synchronized(lock) { session.stateFor(viewer) }
+    public fun stateFor(viewer: PlayerId?): PlayerGameState = synchronized(lock) { session.stateFor(viewer) }
 
-    public override fun logFor(viewer: PlayerId?): List<LogEntry> = synchronized(lock) { session.logFor(viewer) }
+    public fun logFor(viewer: PlayerId?): List<LogEntry> = synchronized(lock) { session.logFor(viewer) }
 
     /**
-     * Listener bodies must be thread-safe on the caller's side: dispatch may
-     * occur on a client's reader thread (in response to a remote command) as
-     * well as on whichever thread calls [submitCommand].
+     * Register [listener] to receive every raw event emitted by [session] — session-wide and
+     * unfiltered, the same as [GameSession.subscribe]'s documented contract. The headless
+     * console (`GameEventPrinter` in `battletech.tui`) is the one legitimate direct caller: it
+     * has no single seat to redact for, and reveals everything on purpose. Listener bodies must
+     * be thread-safe on the caller's side — dispatch may occur on a client's reader thread (in
+     * response to a remote command) as well as any other thread that ends up inside
+     * [submitAndPush].
      */
-    public override fun subscribe(listener: (GameEvent) -> Unit): Subscription =
-        session.subscribe(listener)
+    public fun subscribe(listener: (GameEvent) -> Unit): Subscription = session.subscribe(listener)
 
-    public override fun submitCommand(command: GameCommand): CommandResult = synchronized(lock) {
-        if (!clients.keys.containsAll(remoteSeats)) {
-            CommandResult.Rejected(CommandRejection.OpponentUnavailable)
-        } else if (command.playerId != PlayerId.PLAYER_1) {
-            CommandResult.Rejected(
-                CommandRejection.NotYourTurn(activePlayer = PlayerId.PLAYER_1, attemptedBy = command.playerId),
-            )
-        } else {
-            submitAndPush(command)
+    /**
+     * Seats the local player as a client of this server — the fix this commit makes. Builds an
+     * [InMemoryConnection.pair], hands the server half to [attach] on its own daemon thread
+     * (exactly as [SocketAcceptor] hands a socket connection its own thread), and performs on the
+     * client half the SAME [ClientMessage.Join] handshake a socket client performs
+     * ([RemoteGameSession.handshake]). The seat this call is assigned, the snapshot it starts
+     * with, and every event it receives afterward are therefore produced by the identical code
+     * path a `--join`ed client goes through — there is no way for the returned session to behave
+     * differently from a socket client's, because it isn't a different implementation, it's the
+     * same one over a different [battletech.network.transport.ClientConnection].
+     *
+     * Returns [RemoteGameSession] rather than [GameSession] for the same reason
+     * [RemoteGameSession.connect] does: a caller needs the seat the server assigned
+     * ([RemoteGameSession.playerId]) to know which seat it is playing, and widening the return
+     * type here would only force that caller to downcast to get it back.
+     *
+     * **Determinism for `--host`:** seat assignment is `(allSeats - clients.keys).min()` — first
+     * attach wins [PlayerId.PLAYER_1]. [Companion.host] deliberately does not start any
+     * [SocketAcceptor] itself, so as long as a caller calls this method before constructing (or
+     * at least before [SocketAcceptor.start]ing) an acceptor for the same server, no socket
+     * client can possibly attach first: there is no accept loop running yet to race. That's the
+     * whole determinism argument — it depends on call order, not on locking, because nothing
+     * else could observe [clients] before the acceptor exists.
+     */
+    public fun connectLocal(): RemoteGameSession {
+        val (serverHalf, clientHalf) = InMemoryConnection.pair()
+        thread(isDaemon = true, name = "game-server-local") {
+            attach(serverHalf)
         }
+        return RemoteGameSession.handshake(clientHalf, sessionId)
     }
 
+    /** Disconnects every currently-connected seat (local and remote alike) — see [disconnect]. */
     public override fun close() {
-        running = false
-        serverSocket.close()
         val connected = synchronized(lock) { clients.values.toList() }
         connected.forEach { disconnect(it) }
     }
@@ -191,13 +217,15 @@ public class GameServer(
      * wire -> client. Everything on the [session] side is in-process, same
      * JVM, no adversary; this is where bytes leave for a socket a remote
      * client controls — and, per this stage, a client that may be modified
-     * or actively cheating.
+     * or actively cheating. A [connectLocal] seat crosses this same seam too
+     * (it is a real [ServerConnection]/[battletech.network.transport.ClientConnection]
+     * pair, just an in-process one) — it is simply never adversarial in practice.
      *
-     * [seat] gets [session]'s state PROJECTED for it, via [GameSession.stateFor]
+     * [seat] gets [session]'s state PROJECTED for it, via [BattleSession.stateFor]
      * — the same seam [BattleSession.stateFor] uses for the in-process TUI, so a
      * connected seat can see no more of another seat's units than a hot-seat
      * viewer could. This is only ONE of three outbound paths that must agree:
-     * [ServerMessage.JoinAccepted] carries [GameSession.logFor] (not the raw
+     * [ServerMessage.JoinAccepted] carries [BattleSession.logFor] (not the raw
      * [session]`.gameLog.snapshot()`), and every [ServerMessage.StatePush]
      * carries a log delta run through [redactedDeltaFor] — see [attach]
      * and [submitAndPush]. Redacting only this snapshot and leaving either log
@@ -218,9 +246,9 @@ public class GameServer(
 
     /**
      * Redacts a game-log SLICE (a [ServerMessage.StatePush] delta, rather than the whole
-     * log [GameSession.logFor] redacts) for [seat], entry by entry via
+     * log [BattleSession.logFor] redacts) for [seat], entry by entry via
      * [battletech.tactical.session.redactFor] — same rule, same [session]`.gameState` used
-     * for ownership lookups, same [GameSession.isMatchOver] reveal, just scoped to the
+     * for ownership lookups, same [BattleSession.isMatchOver] reveal, just scoped to the
      * entries that changed since the last push instead of the full history.
      */
     private fun redactedDeltaFor(entries: List<LogEntry>, seat: PlayerId): List<LogEntry> =
@@ -230,29 +258,16 @@ public class GameServer(
 
     // ---------- transport ----------
 
-    private fun handleClientSocket(socket: Socket) {
-        thread(isDaemon = true, name = "game-server-client") {
-            try {
-                socket.soTimeout = HANDSHAKE_TIMEOUT_MS
-                val input = BufferedReader(InputStreamReader(socket.getInputStream()))
-                val output = OutputStreamWriter(socket.getOutputStream())
-                val connection = JsonLineConnection.Server(input, output)
-                attach(connection, onJoinAccepted = { socket.soTimeout = 0 })
-            } catch (e: IOException) {
-                socket.close()
-            }
-        }
-    }
-
     /**
      * Performs the join handshake on [connection] and, on success, runs the
      * per-client reader loop inline (blocking the calling thread until
-     * disconnect). Shared by the real-socket accept path (each connection
-     * gets its own daemon thread) and pipe-based tests (the test spawns the
-     * thread itself). [onJoinAccepted] fires once, right after a successful
-     * handshake — the real path uses it to clear the handshake `soTimeout`;
-     * there is no `onDisconnect` counterpart because tearing the transport
-     * down is just [ServerConnection.close] now, called from [disconnect].
+     * disconnect). Shared by [SocketAcceptor] (each real socket connection gets
+     * its own daemon thread), [connectLocal] (same — its own daemon thread over
+     * an in-process connection instead of a socket), and pipe-based tests (the
+     * test spawns the thread itself). [onJoinAccepted] fires once, right after a
+     * successful handshake — [SocketAcceptor] uses it to clear the handshake
+     * `soTimeout`; there is no `onDisconnect` counterpart because tearing the
+     * transport down is just [ServerConnection.close] now, called from [disconnect].
      */
     internal fun attach(
         connection: ServerConnection,
@@ -265,7 +280,7 @@ public class GameServer(
 
         val rejection = synchronized(lock) {
             when {
-                clients.keys.containsAll(remoteSeats) -> JoinRejectionReason.SEAT_TAKEN
+                clients.keys.containsAll(allSeats) -> JoinRejectionReason.SEAT_TAKEN
                 !SessionId.matches(join.sessionId, sessionId) -> JoinRejectionReason.UNKNOWN_SESSION
                 join.protocolVersion != PROTOCOL_VERSION -> JoinRejectionReason.INCOMPATIBLE_PROTOCOL
                 else -> null
@@ -281,7 +296,7 @@ public class GameServer(
         onJoinAccepted()
 
         val connected = synchronized(lock) {
-            val seat = (remoteSeats - clients.keys).min()
+            val seat = (allSeats - clients.keys).min()
             val client = ConnectedClient(seat = seat, connection = connection)
             val alreadyConnected = clients.values.toList()
 
@@ -296,7 +311,7 @@ public class GameServer(
             // already be redacted, same as every later push (see snapshotFor's KDoc).
             client.outbound.put(ServerMessage.JoinAccepted(seat, snapshotFor(seat), session.logFor(seat)))
 
-            val kickstarted = !everStarted && clients.keys == remoteSeats
+            val kickstarted = !everStarted && clients.keys == allSeats
             if (kickstarted) {
                 everStarted = true
                 session.advance()
@@ -326,7 +341,7 @@ public class GameServer(
                 val message = incoming as? ClientMessage.SubmitCommand ?: continue
                 synchronized(lock) {
                     val result = when {
-                        !clients.keys.containsAll(remoteSeats) ->
+                        !clients.keys.containsAll(allSeats) ->
                             CommandResult.Rejected(CommandRejection.OpponentUnavailable)
                         message.command.playerId != connected.seat ->
                             CommandResult.Rejected(
@@ -400,7 +415,6 @@ public class GameServer(
     }
 
     public companion object {
-        private const val HANDSHAKE_TIMEOUT_MS = 5000
 
         /**
          * Builds the [BattleSession] + [SessionId] + [GameServer] triple every launcher needs,
@@ -410,22 +424,23 @@ public class GameServer(
          * concern ([battletech.network] must not depend on [battletech.tactical.model.GameStateFactory]
          * for that), so callers pass `GameStateFactory().sampleGameState(map)` themselves.
          *
-         * Deliberately does NOT call [start] — the returned server has no accept loop yet, so no
-         * client can connect and no [GameEvent] can fire, which makes "replay the seeded notices,
-         * subscribe, then start" race-free for any caller that wants to observe them: replaying
-         * [GameServer.gameLog] (or [GameSession.logFor]) before subscribing can never miss an event
-         * to a subscriber that races the accept loop, because there is no accept loop yet. Callers
-         * that don't need to observe the seed notices before traffic starts (a host UI reading them
-         * back out of the replayed log) can just call [start] immediately after.
+         * Takes no port: this class no longer binds a socket at all — see the class KDoc's "What
+         * this class does NOT own". A caller that wants a listening socket constructs a
+         * [SocketAcceptor] over the returned server itself; a caller that wants a local seat
+         * calls [connectLocal]. Neither is implied by [host] — do both, either, or neither.
+         *
+         * Deliberately does NOT call [connectLocal] or start any [SocketAcceptor] — the returned
+         * server has no attached clients yet, so no [GameEvent] can fire, which makes "replay the
+         * seeded notices, subscribe, then attach clients" race-free for any caller that wants to
+         * observe them: replaying [GameServer.gameLog] (or [logFor]) before subscribing can never
+         * miss an event to a subscriber that races a client attaching, because nothing has
+         * attached yet. Callers that don't need to observe the seed notices before traffic starts
+         * (a host UI reading them back out of the replayed log) can just attach immediately.
          */
-        public fun host(
-            initialGameState: GameState,
-            port: Int,
-            remoteSeats: Set<PlayerId> = setOf(PlayerId.PLAYER_2),
-        ): GameServer {
+        public fun host(initialGameState: GameState): GameServer {
             val session = BattleSession(initialGameState = initialGameState, initialTurnState = TurnState.NULL)
             val sessionId = SessionId.generate()
-            val server = GameServer(session, sessionId, port, remoteSeats)
+            val server = GameServer(session, sessionId)
             session.annotate(SessionNotice("Session ID: $sessionId"))
             session.annotate(SessionNotice("Waiting for players to join…"))
             return server

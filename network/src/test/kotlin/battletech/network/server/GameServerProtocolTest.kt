@@ -31,8 +31,13 @@ import org.junit.jupiter.api.Test
  * Drives [GameServer] over in-memory pipes ([PipedConnection]) via its
  * [GameServer.attach] testability seam — no real sockets. Covers
  * the join handshake, the wire ordering invariant (push before reply),
- * remote player-id spoofing, the host's own [GameServer.submitCommand]
+ * remote player-id spoofing, the local player's [GameServer.connectLocal]
  * path, and disconnect/rejoin.
+ *
+ * Most tests below need PLAYER_1 spoken for before attaching a [PipedConnection] as PLAYER_2 —
+ * [GameServer.connectLocal] does that (see its KDoc: first attach always wins PLAYER_1), and is
+ * also how what used to be the hardcoded "host UI" path (`GameServer.submitCommand`) is driven
+ * now: through the [battletech.tactical.session.GameSession] it returns.
  */
 internal class GameServerProtocolTest {
 
@@ -40,14 +45,18 @@ internal class GameServerProtocolTest {
 
     @Test
     fun `successful join sends JoinAccepted for PLAYER_2 with a pre-kickstart snapshot and a connect notice in the log`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
 
         val (joinAccepted, push) = connection.joinAndConsumeKickstart(sessionId)
 
         assertThat(joinAccepted.playerId).isEqualTo(PlayerId.PLAYER_2)
-        assertThat(joinAccepted.log).containsExactly(LogEntry(turn = 1, event = SessionNotice("Player 2 connected")))
+        assertThat(joinAccepted.log).containsExactly(
+            LogEntry(turn = 1, event = SessionNotice("Player 1 connected")),
+            LogEntry(turn = 1, event = SessionNotice("Player 2 connected")),
+        )
         assertThat(joinAccepted.snapshot.currentPhase).isEqualTo(TurnPhase.INITIATIVE)
         assertThat(joinAccepted.snapshot.gameState).isEqualTo(server.stateFor(PlayerId.PLAYER_2))
 
@@ -60,7 +69,8 @@ internal class GameServerProtocolTest {
 
     @Test
     fun `JoinAccepted's snapshot shows PLAYER_1's units as ForeignUnit and PLAYER_2's own as CombatUnit`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
 
@@ -87,7 +97,8 @@ internal class GameServerProtocolTest {
                 content = CriticalSlotContent.Empty,
             ),
         )
-        val server = GameServer(session, sessionId, port = 0)
+        val server = GameServer(session, sessionId)
+        server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
 
@@ -100,7 +111,7 @@ internal class GameServerProtocolTest {
 
     @Test
     fun `wrong session id rejects with UNKNOWN_SESSION, and the server still accepts a later correct join`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
 
         val badConnection = PipedConnection()
         server.attachInBackground(badConnection)
@@ -115,7 +126,7 @@ internal class GameServerProtocolTest {
 
     @Test
     fun `wrong protocol version rejects with INCOMPATIBLE_PROTOCOL`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
         val connection = PipedConnection()
         server.attachInBackground(connection)
 
@@ -126,11 +137,12 @@ internal class GameServerProtocolTest {
 
     @Test
     fun `remote command accepted pushes state to the wire before the command reply`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        val local = server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
         connection.joinAndConsumeKickstart(sessionId)
-        val setupMoves = server.advanceMovementUntilActivePlayerIs(PlayerId.PLAYER_2)
+        val setupMoves = local.advanceMovementUntilActivePlayerIs(PlayerId.PLAYER_2)
         repeat(setupMoves) {
             val setupPush = WireJson.decodeServerMessage(connection.clientInput.readLine())
             assertThat(setupPush).isInstanceOf(ServerMessage.StatePush::class.java)
@@ -157,7 +169,8 @@ internal class GameServerProtocolTest {
 
     @Test
     fun `remote command spoofing PLAYER_1 is rejected without touching the session`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
         connection.joinAndConsumeKickstart(sessionId)
@@ -182,20 +195,22 @@ internal class GameServerProtocolTest {
     }
 
     @Test
-    fun `host submitCommand rejects with OpponentUnavailable when no client is connected`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+    fun `local submitCommand rejects with OpponentUnavailable when the other seat isn't connected`() {
+        val server = GameServer(aSampleSession(), sessionId)
+        val local = server.connectLocal()
         val unit = server.gameState.unitsOf(PlayerId.PLAYER_1).first()
         val reachability = server.viewFor(PlayerId.PLAYER_1).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
 
-        val result = server.submitCommand(MoveUnit(PlayerId.PLAYER_1, unit.id, destination, reachability.mode))
+        val result = local.submitCommand(MoveUnit(PlayerId.PLAYER_1, unit.id, destination, reachability.mode))
 
         assertThat(result).isEqualTo(CommandResult.Rejected(CommandRejection.OpponentUnavailable))
     }
 
     @Test
-    fun `host submitCommand spoofing PLAYER_2 is rejected without touching the session or pushing state`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+    fun `local submitCommand spoofing PLAYER_2 is rejected without touching the session or pushing state`() {
+        val server = GameServer(aSampleSession(), sessionId)
+        val local = server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
         connection.joinAndConsumeKickstart(sessionId)
@@ -206,7 +221,7 @@ internal class GameServerProtocolTest {
         val destination = reachability.destinations.first()
         val command = MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode)
 
-        val result = server.submitCommand(command)
+        val result = local.submitCommand(command)
 
         val rejected = result as CommandResult.Rejected
         assertThat(rejected.reason).isInstanceOf(CommandRejection.NotYourTurn::class.java)
@@ -221,8 +236,9 @@ internal class GameServerProtocolTest {
     }
 
     @Test
-    fun `host submitCommand with a client connected pushes state to the client`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+    fun `local submitCommand with the other seat connected pushes state to that client`() {
+        val server = GameServer(aSampleSession(), sessionId)
+        val local = server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
         connection.joinAndConsumeKickstart(sessionId)
@@ -232,7 +248,7 @@ internal class GameServerProtocolTest {
         val reachability = server.viewFor(active).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
 
-        val result = server.submitCommand(MoveUnit(active, unit.id, destination, reachability.mode))
+        val result = local.submitCommand(MoveUnit(active, unit.id, destination, reachability.mode))
         assertThat(result).isInstanceOf(CommandResult.Accepted::class.java)
 
         val push = WireJson.decodeServerMessage(connection.clientInput.readLine()) as ServerMessage.StatePush
@@ -240,8 +256,9 @@ internal class GameServerProtocolTest {
     }
 
     @Test
-    fun `disconnect freezes the host, and rejoin resends the full log without re-running the kickstart`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+    fun `disconnect freezes the local seat too, and rejoin resends the full log without re-running the kickstart`() {
+        val server = GameServer(aSampleSession(), sessionId)
+        val local = server.connectLocal()
         val firstConnection = PipedConnection()
         server.attachInBackground(firstConnection)
         firstConnection.joinAndConsumeKickstart(sessionId)
@@ -257,7 +274,7 @@ internal class GameServerProtocolTest {
         val unit = server.gameState.unitsOf(PlayerId.PLAYER_1).first()
         val reachability = server.viewFor(PlayerId.PLAYER_1).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
-        val frozenResult = server.submitCommand(MoveUnit(PlayerId.PLAYER_1, unit.id, destination, reachability.mode))
+        val frozenResult = local.submitCommand(MoveUnit(PlayerId.PLAYER_1, unit.id, destination, reachability.mode))
         assertThat(frozenResult).isEqualTo(CommandResult.Rejected(CommandRejection.OpponentUnavailable))
 
         val secondConnection = PipedConnection()
@@ -268,6 +285,7 @@ internal class GameServerProtocolTest {
         assertThat(rejoinAccepted.log).hasSize(logSizeBeforeRejoin + 2)
         val noticeTexts = rejoinAccepted.log.map { it.event }.filterIsInstance<SessionNotice>().map { it.text }
         assertThat(noticeTexts).containsExactly(
+            "Player 1 connected",
             "Player 2 connected",
             "Player 2 disconnected — waiting for rejoin…",
             "Player 2 connected",
@@ -279,10 +297,9 @@ internal class GameServerProtocolTest {
         assertThat(secondConnection.clientInput.ready()).isFalse()
     }
 
-    // ---------- headless config: both seats remote ----------
+    // ---------- both seats over PipedConnection, neither pre-claimed by connectLocal() ----------
 
-    private fun twoSeatServer(): GameServer =
-        GameServer(aSampleSession(), sessionId, port = 0, remoteSeats = setOf(PlayerId.PLAYER_1, PlayerId.PLAYER_2))
+    private fun twoSeatServer(): GameServer = GameServer(aSampleSession(), sessionId)
 
     @Test
     fun `two-seat config - first join seats PLAYER_1 without a kickstart, second seats PLAYER_2 and the kickstart pushes to both`() {

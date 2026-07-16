@@ -2,12 +2,14 @@ package battletech.network
 
 import battletech.network.client.RemoteGameSession
 import battletech.network.server.GameServer
+import battletech.network.server.SocketAcceptor
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.CommitPhysicalAttackImpulse
 import battletech.tactical.session.GameCommand
+import battletech.tactical.session.GameSession
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.TurnEnded
 import org.assertj.core.api.Assertions.assertThat
@@ -20,8 +22,8 @@ import org.junit.jupiter.api.Test
  * skips both [PipedConnection] and [GameServer.attach]. Plays a
  * full turn (MOVEMENT → WEAPON_ATTACK → PHYSICAL_ATTACK, then the automatic
  * HEAT → END → INITIATIVE cascade into turn 2's MOVEMENT) driven entirely
- * through [GameServer] (PLAYER_1, the host) and [RemoteGameSession]
- * (PLAYER_2, the joiner), asserting after every accepted command that the
+ * through a local client ([GameServer.connectLocal], seated PLAYER_1) and a real-socket
+ * [RemoteGameSession] (PLAYER_2, the joiner), asserting after every accepted command that the
  * remote replica has converged with the host on projected state, turn
  * state, phase, and log length.
  *
@@ -29,7 +31,7 @@ import org.junit.jupiter.api.Test
  * invariant documented on [RemoteGameSession]: a command submitted BY the
  * remote is guaranteed fresh the instant [RemoteGameSession.submitCommand]
  * returns (assert immediately, no poll needed); a command submitted by the
- * host reaches the remote asynchronously via a
+ * local (host) seat reaches the remote asynchronously via a
  * [battletech.network.wire.ServerMessage.StatePush] on the remote's reader
  * thread, so convergence there is polled with a short deadline.
  *
@@ -39,6 +41,11 @@ import org.junit.jupiter.api.Test
  * [GameServer.viewFor] would let a completely broken remote client pass this test, which is
  * exactly how a `--join`ed client that crashed on entering movement once slipped through a
  * green suite.
+ *
+ * The last test in this file ("hot-seat-style composition…") swaps the real socket for a second
+ * [GameServer.connectLocal] and reuses the headless-config helpers verbatim — the whole point
+ * being that [GameServer] cannot tell the difference, so neither should this test file's own
+ * scripts.
  *
  * No unit in [battletech.tactical.model.GameStateFactory.sampleGameState] is
  * ever prone during this test — falls only follow combat damage, and every
@@ -50,11 +57,14 @@ internal class LocalhostEndToEndTest {
     private val sessionId = "TESTID"
 
     private var server: GameServer? = null
+    private var acceptor: SocketAcceptor? = null
+    private var local: GameSession? = null
     private var client: RemoteGameSession? = null
     private var client2: RemoteGameSession? = null
 
     @AfterEach
     fun tearDown() {
+        acceptor?.close()
         client?.close()
         client2?.close()
         server?.close()
@@ -101,18 +111,15 @@ internal class LocalhostEndToEndTest {
 
     @Test
     fun `headless config - two real-socket RemoteGameSessions converge with the server after every accepted command`() {
-        val gameServer = GameServer(
-            aSampleSession(),
-            sessionId,
-            port = 0,
-            remoteSeats = setOf(PlayerId.PLAYER_1, PlayerId.PLAYER_2),
-        )
+        val gameServer = GameServer(aSampleSession(), sessionId)
         server = gameServer
-        gameServer.start()
+        val socketAcceptor = SocketAcceptor(gameServer, port = 0)
+        acceptor = socketAcceptor
+        socketAcceptor.start()
 
-        val remote1 = RemoteGameSession.connect("127.0.0.1", gameServer.boundPort, sessionId)
+        val remote1 = RemoteGameSession.connect("127.0.0.1", socketAcceptor.boundPort, sessionId)
         client = remote1
-        val remote2 = RemoteGameSession.connect("127.0.0.1", gameServer.boundPort, sessionId)
+        val remote2 = RemoteGameSession.connect("127.0.0.1", socketAcceptor.boundPort, sessionId)
         client2 = remote2
 
         assertThat(remote1.playerId).isEqualTo(PlayerId.PLAYER_1)
@@ -140,7 +147,51 @@ internal class LocalhostEndToEndTest {
         assertHeadlessConverged(gameServer, remote1, remote2)
     }
 
-    // ---------- headless-config phase scripts (both seats remote; no host.submitCommand path) ----------
+    /**
+     * The claim this commit makes, asserted directly: [GameServer] cannot tell a local player
+     * from a remote one. Same script as the real-socket headless test just above — same
+     * [playHeadlessMovementPhase]/[playHeadlessAttackImpulses]/[awaitHeadlessConvergence] helpers,
+     * unmodified — with both [RemoteGameSession]s obtained via [GameServer.connectLocal] instead
+     * of a real socket. If the server treated a local seat any differently, this test would need
+     * different helpers; it doesn't, so it reuses them verbatim.
+     */
+    @Test
+    fun `hot-seat-style composition - two connectLocal clients converge exactly like two socket clients do`() {
+        val gameServer = GameServer(aSampleSession(), sessionId)
+        server = gameServer
+
+        val local1 = gameServer.connectLocal()
+        client = local1
+        val local2 = gameServer.connectLocal()
+        client2 = local2
+
+        assertThat(local1.playerId).isEqualTo(PlayerId.PLAYER_1)
+        assertThat(local2.playerId).isEqualTo(PlayerId.PLAYER_2)
+
+        // Same race as the real-socket test above: the second connectLocal()'s JoinAccepted can
+        // reach this thread before the concurrent attach() call has finished applying the
+        // kickstart — poll rather than assert immediately.
+        awaitTrue { gameServer.currentPhase == TurnPhase.MOVEMENT }
+        awaitHeadlessConvergence(gameServer, local1, local2)
+
+        playHeadlessMovementPhase(gameServer, local1, local2)
+        playHeadlessAttackImpulses(gameServer, local1, local2, TurnPhase.WEAPON_ATTACK) { active ->
+            CommitAttackImpulse(active, emptyList(), emptyMap())
+        }
+        playHeadlessAttackImpulses(gameServer, local1, local2, TurnPhase.PHYSICAL_ATTACK) { active ->
+            CommitPhysicalAttackImpulse(active, emptyList(), emptyMap())
+        }
+
+        // The final physical impulse cascades HEAT -> END -> INITIATIVE -> MOVEMENT
+        // (all system phases; no further commands needed) and the turn number advances.
+        assertThat(gameServer.currentPhase).isEqualTo(TurnPhase.MOVEMENT)
+        assertThat(gameServer.turnState.turnNumber).isEqualTo(2)
+        assertThat(gameServer.gameLog.snapshot().map { it.event })
+            .anyMatch { it is TurnEnded && it.turnNumber == 1 }
+        assertHeadlessConverged(gameServer, local1, local2)
+    }
+
+    // ---------- headless-config phase scripts (both seats remote — over a socket or connectLocal(), the server can't tell) ----------
 
     /**
      * Mirrors [playMovementPhase] but for the headless config: whichever
@@ -226,15 +277,25 @@ internal class LocalhostEndToEndTest {
 
     // ---------- setup ----------
 
+    /**
+     * Builds the host side of the host-embedded topology: [GameServer.connectLocal] is called
+     * BEFORE [SocketAcceptor.start] — no accept loop exists yet to race, so the local seat is
+     * deterministically PLAYER_1 (see [GameServer.connectLocal]'s KDoc) and every command this
+     * test file submits "as the host" goes through [local], not [GameServer] directly (there is
+     * no such path left).
+     */
     private fun startServer(): GameServer {
-        val gameServer = GameServer(aSampleSession(), sessionId, port = 0)
+        val gameServer = GameServer(aSampleSession(), sessionId)
         server = gameServer
-        gameServer.start()
+        val socketAcceptor = SocketAcceptor(gameServer, port = 0)
+        acceptor = socketAcceptor
+        local = gameServer.connectLocal()
+        socketAcceptor.start()
         return gameServer
     }
 
     private fun connectClient(host: GameServer): RemoteGameSession {
-        val remote = RemoteGameSession.connect("127.0.0.1", host.boundPort, sessionId)
+        val remote = RemoteGameSession.connect("127.0.0.1", acceptor!!.boundPort, sessionId)
         client = remote
         return remote
     }
@@ -279,13 +340,14 @@ internal class LocalhostEndToEndTest {
     }
 
     /**
-     * Submits [command] via whichever side owns [actingSide] (host = PLAYER_1,
-     * remote = PLAYER_2), asserts acceptance, then verifies convergence — polled
-     * for a host-originated command, immediate for a remote-originated one (see
-     * class doc for why the two differ).
+     * Submits [command] via whichever side owns [actingSide] (host = PLAYER_1, driven through
+     * the local client [local] rather than [GameServer] directly — there is no other path in
+     * anymore; remote = PLAYER_2), asserts acceptance, then verifies convergence — polled for a
+     * host-originated command, immediate for a remote-originated one (see class doc for why the
+     * two differ).
      */
     private fun submitAndVerify(host: GameServer, remote: RemoteGameSession, actingSide: PlayerId, command: GameCommand) {
-        val result = if (actingSide == PlayerId.PLAYER_1) host.submitCommand(command) else remote.submitCommand(command)
+        val result = if (actingSide == PlayerId.PLAYER_1) local!!.submitCommand(command) else remote.submitCommand(command)
         assertThat(result).isInstanceOf(CommandResult.Accepted::class.java)
         if (actingSide == PlayerId.PLAYER_1) awaitConvergence(host, remote) else assertConverged(host, remote)
     }

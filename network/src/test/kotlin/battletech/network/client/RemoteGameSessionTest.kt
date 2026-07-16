@@ -27,8 +27,11 @@ import org.junit.jupiter.api.Test
 
 /**
  * Drives [RemoteGameSession] over in-memory pipes against a real
- * [GameServer] (via its [GameServer.attachTransport] testability seam) — no
- * real sockets. Covers post-join state, local queries against the snapshot,
+ * [GameServer] (via its [GameServer.attach] testability seam) — no
+ * real sockets. Every test below calls [GameServer.connectLocal] to claim PLAYER_1 before
+ * attaching its [PipedConnection] — [GameServer] now expects a connection for every seat before
+ * it will kick off the match, so this is what makes the lone [PipedConnection] land on PLAYER_2
+ * and the kickstart actually fire. Covers post-join state, local queries against the snapshot,
  * event dispatch, the push-before-reply ordering invariant from the client
  * side, connection-loss handling, and — the point of this stage — that the
  * snapshot/log this replica holds is already redacted for [RemoteGameSession.playerId],
@@ -40,7 +43,8 @@ internal class RemoteGameSessionTest {
 
     @Test
     fun `after join, stateFor turnState and currentPhase reflect the post-kickstart snapshot`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
 
@@ -56,7 +60,8 @@ internal class RemoteGameSessionTest {
 
     @Test
     fun `playerId is the seat assigned by the server's JoinAccepted`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
 
@@ -69,7 +74,8 @@ internal class RemoteGameSessionTest {
 
     @Test
     fun `stateFor(playerId) shows PLAYER_1's units as ForeignUnit and this seat's own as CombatUnit`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
 
@@ -84,7 +90,8 @@ internal class RemoteGameSessionTest {
 
     @Test
     fun `stateFor and logFor refuse a viewer other than this replica's own seat`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
         val remote = connectRemoteOverPipes(sessionId, connection)
@@ -105,7 +112,8 @@ internal class RemoteGameSessionTest {
      */
     @Test
     fun `viewFor on the remote's own seat answers movement legality from its projected snapshot`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
         val remote = connectRemoteOverPipes(sessionId, connection)
@@ -122,7 +130,8 @@ internal class RemoteGameSessionTest {
 
     @Test
     fun `viewFor on the remote's own seat answers targeting queries from its projected snapshot`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
         val remote = connectRemoteOverPipes(sessionId, connection)
@@ -143,7 +152,8 @@ internal class RemoteGameSessionTest {
 
     @Test
     fun `viewFor still refuses a seat other than this replica's own`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
         val remote = connectRemoteOverPipes(sessionId, connection)
@@ -154,7 +164,8 @@ internal class RemoteGameSessionTest {
 
     @Test
     fun `a subscribed listener receives events pushed by the host`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        val local = server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
 
@@ -168,7 +179,7 @@ internal class RemoteGameSessionTest {
         val unit = server.turnState.selectableUnits(server.gameState).first()
         val reachability = server.viewFor(active).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
-        val result = server.submitCommand(MoveUnit(active, unit.id, destination, reachability.mode))
+        val result = local.submitCommand(MoveUnit(active, unit.id, destination, reachability.mode))
         check(result is CommandResult.Accepted) { "setup move rejected: $result" }
 
         awaitTrue { events.any { it is UnitMoved } }
@@ -176,12 +187,13 @@ internal class RemoteGameSessionTest {
 
     @Test
     fun `submitCommand returns the reply result and the snapshot is already fresh when it returns`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        val local = server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
         val remote = connectRemoteOverPipes(sessionId, connection)
         awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
-        server.advanceMovementUntilActivePlayerIs(PlayerId.PLAYER_2)
+        local.advanceMovementUntilActivePlayerIs(PlayerId.PLAYER_2)
         awaitTrue { remote.turnState.movement.activePlayer == PlayerId.PLAYER_2 }
 
         // Built entirely from the replica's own surface — no host queries — so this exercises
@@ -203,12 +215,13 @@ internal class RemoteGameSessionTest {
 
     @Test
     fun `submitCommand with an unknown unit id gets ProtocolError and the connection stays usable`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        val local = server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
         val remote = connectRemoteOverPipes(sessionId, connection)
         awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
-        server.advanceMovementUntilActivePlayerIs(PlayerId.PLAYER_2)
+        local.advanceMovementUntilActivePlayerIs(PlayerId.PLAYER_2)
         awaitTrue { remote.turnState.movement.activePlayer == PlayerId.PLAYER_2 }
 
         // A correctly-behaving client can never produce this — GameServer's reader loop
@@ -240,7 +253,8 @@ internal class RemoteGameSessionTest {
 
     @Test
     fun `connection lost appends a SessionNotice to the replica log and delivers it to subscribers, then submitCommand rejects with OpponentUnavailable`() {
-        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
         val connection = PipedConnection()
         server.attachInBackground(connection)
         val remote = connectRemoteOverPipes(sessionId, connection)
