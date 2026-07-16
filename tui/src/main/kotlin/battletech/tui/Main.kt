@@ -3,7 +3,6 @@ package battletech.tui
 import battletech.network.client.JoinRejectedException
 import battletech.network.client.RemoteGameSession
 import battletech.network.server.GameServer
-import battletech.network.wire.SessionId
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.GameStateFactory
@@ -11,10 +10,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.map.resolveMap
 import battletech.tactical.query.projectFor
-import battletech.tactical.session.BattleSession
 import battletech.tactical.session.GameEvent
-import battletech.tactical.session.SessionNotice
-import battletech.tactical.session.TurnState
 import battletech.tui.view.GameLogFormatter
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
@@ -179,16 +175,9 @@ public fun main(args: Array<String>) {
 
         is Mode.Host -> {
             val map = resolveMapOrExit(mode.mapName)
-            val session = BattleSession(
-                initialGameState = GameStateFactory().sampleGameState(map),
-                initialTurnState = TurnState.NULL,
-            )
-            val sessionId = SessionId.generate()
-            val server = GameServer(session, sessionId, mode.port)
+            val server = GameServer.host(GameStateFactory().sampleGameState(map), mode.port)
             server.start()
-            println("Session ID: $sessionId — listening on port ${server.boundPort}")
-            session.annotate(SessionNotice("Session ID: $sessionId"))
-            session.annotate(SessionNotice("Waiting for opponent to join…"))
+            println("Session ID: ${server.sessionId} — listening on port ${server.boundPort}")
             server.use { server ->
                 TuiApp(
                     providedSession = server,
@@ -225,24 +214,22 @@ public fun main(args: Array<String>) {
  * event to stdout as it happens; the process stays up after [battletech.tactical.session.MatchEnded].
  */
 private fun runHeadlessServer(port: Int, map: GameMap) {
-    val session = BattleSession(
-        initialGameState = GameStateFactory().sampleGameState(map),
-        initialTurnState = TurnState.NULL,
+    val server = GameServer.host(
+        GameStateFactory().sampleGameState(map),
+        port,
+        remoteSeats = setOf(PlayerId.PLAYER_1, PlayerId.PLAYER_2),
     )
-    val sessionId = SessionId.generate()
 
     val printer = GameEventPrinter(System.out)
-    // Subscribed before any annotation so the printer sees the whole log from the start.
-    session.subscribe { event ->
-        printer.print(event, session.gameState, session.turnState.turnNumber)
+    // Replay the seeded notices before subscribing so the printer sees the whole log from the
+    // start without racing the accept loop — see GameServer.host's KDoc for why this is safe.
+    server.gameLog.snapshot().forEach { entry -> printer.print(entry.event, server.gameState, entry.turn) }
+    server.subscribe { event ->
+        printer.print(event, server.gameState, server.turnState.turnNumber)
     }
 
-    session.annotate(SessionNotice("Session ID: $sessionId"))
-    session.annotate(SessionNotice("Waiting for players to join…"))
-
-    val server = GameServer(session, sessionId, port, remoteSeats = setOf(PlayerId.PLAYER_1, PlayerId.PLAYER_2))
     server.start()
-    println("Session ID: $sessionId — listening on port ${server.boundPort}")
+    println("Session ID: ${server.sessionId} — listening on port ${server.boundPort}")
 
     val latch = CountDownLatch(1)
     Runtime.getRuntime().addShutdownHook(

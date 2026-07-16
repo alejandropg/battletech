@@ -40,7 +40,7 @@ import kotlin.concurrent.thread
  * exposes it to a configurable set of remote seats ([remoteSeats]) over
  * newline-delimited JSON on a TCP socket.
  *
- * Two configurations share this class:
+ * Two configurations share this class, both normally built via [Companion.host]:
  * - **Host-embedded** (the default: `remoteSeats = {PLAYER_2}`): the host's
  *   own UI drives the wrapped session through [submitCommand] as
  *   [PlayerId.PLAYER_1], and exactly one remote client connects and plays
@@ -74,7 +74,7 @@ import kotlin.concurrent.thread
  */
 public class GameServer(
     private val session: BattleSession,
-    private val sessionId: String,
+    public val sessionId: String,
     port: Int,
     private val remoteSeats: Set<PlayerId> = setOf(PlayerId.PLAYER_2),
 ) : GameSession, AutoCloseable {
@@ -408,7 +408,36 @@ public class GameServer(
         internal var writerThread: Thread? = null
     }
 
-    private companion object {
+    public companion object {
         private const val HANDSHAKE_TIMEOUT_MS = 5000
+
+        /**
+         * Builds the [BattleSession] + [SessionId] + [GameServer] triple every launcher needs,
+         * seeded with the two notices ("Session ID: …", "Waiting for players to join…") every
+         * launcher prints. Takes [GameState], not a [battletech.tactical.model.GameMap] or a
+         * [battletech.tactical.model.GameStateFactory] call — map/scenario resolution is a `tui`
+         * concern ([battletech.network] must not depend on [battletech.tactical.model.GameStateFactory]
+         * for that), so callers pass `GameStateFactory().sampleGameState(map)` themselves.
+         *
+         * Deliberately does NOT call [start] — the returned server has no accept loop yet, so no
+         * client can connect and no [GameEvent] can fire, which makes "replay the seeded notices,
+         * subscribe, then start" race-free for any caller that wants to observe them: replaying
+         * [GameServer.gameLog] (or [GameSession.logFor]) before subscribing can never miss an event
+         * to a subscriber that races the accept loop, because there is no accept loop yet. Callers
+         * that don't need to observe the seed notices before traffic starts (a host UI reading them
+         * back out of the replayed log) can just call [start] immediately after.
+         */
+        public fun host(
+            initialGameState: GameState,
+            port: Int,
+            remoteSeats: Set<PlayerId> = setOf(PlayerId.PLAYER_2),
+        ): GameServer {
+            val session = BattleSession(initialGameState = initialGameState, initialTurnState = TurnState.NULL)
+            val sessionId = SessionId.generate()
+            val server = GameServer(session, sessionId, port, remoteSeats)
+            session.annotate(SessionNotice("Session ID: $sessionId"))
+            session.annotate(SessionNotice("Waiting for players to join…"))
+            return server
+        }
     }
 }
