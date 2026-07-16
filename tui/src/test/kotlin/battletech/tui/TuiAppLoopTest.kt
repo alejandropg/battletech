@@ -18,6 +18,7 @@ import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.loop.UiEvent
+import battletech.tui.loop.runLoop
 import battletech.tui.screen.ScreenRenderer
 import battletech.tui.view.AttackResultsView
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -47,7 +48,6 @@ internal class TuiAppLoopTest {
     private val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = 120, height = 40)
     private val terminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
     private val renderer = ScreenRenderer(terminal)
-    private val app = TuiApp()
 
     /**
      * Build a minimal AppState backed by a real BattleSession positioned at
@@ -97,7 +97,7 @@ internal class TuiAppLoopTest {
             UiEvent.Quit,
         )
 
-        app.runLoop(
+        runLoop(
             events = merge(events, internalEvents.receiveAsFlow()),
             internalEvents = internalEvents,
             terminal = terminal,
@@ -127,7 +127,7 @@ internal class TuiAppLoopTest {
         // Launch runLoop: with UnconfinedTestDispatcher it starts running eagerly
         // and suspends when it hits the first channel receive (empty channel).
         val loopJob = launch {
-            app.runLoop(
+            runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
                 terminal = terminal,
@@ -158,7 +158,7 @@ internal class TuiAppLoopTest {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
-            app.runLoop(
+            runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
                 terminal = terminal,
@@ -196,7 +196,7 @@ internal class TuiAppLoopTest {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
-            app.runLoop(
+            runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
                 terminal = terminal,
@@ -228,7 +228,7 @@ internal class TuiAppLoopTest {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
-            app.runLoop(
+            runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
                 terminal = terminal,
@@ -285,7 +285,7 @@ internal class TuiAppLoopTest {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
-            app.runLoop(
+            runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
                 terminal = terminal,
@@ -318,7 +318,7 @@ internal class TuiAppLoopTest {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
-            app.runLoop(
+            runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
                 terminal = terminal,
@@ -342,7 +342,7 @@ internal class TuiAppLoopTest {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
-            app.runLoop(
+            runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
                 terminal = terminal,
@@ -370,7 +370,7 @@ internal class TuiAppLoopTest {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
-            app.runLoop(
+            runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
                 terminal = terminal,
@@ -407,7 +407,7 @@ internal class TuiAppLoopTest {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
-            app.runLoop(
+            runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
                 terminal = terminal,
@@ -454,7 +454,7 @@ internal class TuiAppLoopTest {
         )
 
         val loopJob = launch {
-            app.runLoop(
+            runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
                 terminal = terminal,
@@ -492,7 +492,7 @@ internal class TuiAppLoopTest {
         val initialState = buildAppState().copy(lastAttackResults = listOf(aResult()))
 
         val loopJob = launch {
-            app.runLoop(
+            runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
                 terminal = terminal,
@@ -528,7 +528,7 @@ internal class TuiAppLoopTest {
         val session = initialState.session as BattleSession
 
         val loopJob = launch {
-            app.runLoop(
+            runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
                 terminal = terminal,
