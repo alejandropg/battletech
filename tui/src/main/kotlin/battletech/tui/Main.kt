@@ -61,12 +61,12 @@ internal fun parseArgs(args: Array<String>): Mode {
     if (rest.isEmpty()) return Mode.Local(mapName = mapName)
 
     return when (rest[0]) {
-        "--host" -> parseHost(rest, mapName)
+        "--host" -> Mode.Host(parsePort(rest), mapName)
         "--join" -> {
             if (mapName != null) throw ArgsException("--map cannot be combined with --join")
             parseJoin(rest)
         }
-        "--server" -> parseServer(rest, mapName)
+        "--server" -> Mode.Server(parsePort(rest), mapName)
         else -> throw ArgsException("Unknown argument: ${rest[0]}")
     }
 }
@@ -85,7 +85,7 @@ private fun extractMapArg(args: Array<String>): Pair<String?, Array<String>> {
     return value to remaining
 }
 
-private fun parseHost(args: Array<String>, mapName: String?): Mode.Host {
+private fun parsePort(args: Array<String>): Int {
     var port = DEFAULT_PORT
     var i = 1
     while (i < args.size) {
@@ -98,23 +98,7 @@ private fun parseHost(args: Array<String>, mapName: String?): Mode.Host {
             else -> throw ArgsException("Unknown argument: ${args[i]}")
         }
     }
-    return Mode.Host(port = port, mapName = mapName)
-}
-
-private fun parseServer(args: Array<String>, mapName: String?): Mode.Server {
-    var port = DEFAULT_PORT
-    var i = 1
-    while (i < args.size) {
-        when (args[i]) {
-            "--port" -> {
-                val value = args.getOrNull(i + 1) ?: throw ArgsException("--port requires a value")
-                port = value.toIntOrNull() ?: throw ArgsException("--port must be an integer, got: $value")
-                i += 2
-            }
-            else -> throw ArgsException("Unknown argument: ${args[i]}")
-        }
-    }
-    return Mode.Server(port = port, mapName = mapName)
+    return port
 }
 
 private fun parseJoin(args: Array<String>): Mode.Join {
