@@ -77,8 +77,8 @@ public class BattleSession(
 
     /**
      * Built from [stateFor] — the projection — NOT raw [_gameState], so the authoritative
-     * host and a remote client
-     * ([battletech.network.client.RemoteGameSession.viewFor], over its projected snapshot)
+     * host and a client
+     * ([battletech.network.client.ClientGameSession.viewFor], over its projected snapshot)
      * run the identical [DefaultPlayerView] code against the identical shape of input. One
      * implementation, so a client's "what is legal right now?" can never drift from the
      * server's answer, and the host cannot accidentally rely on data a client wouldn't have.

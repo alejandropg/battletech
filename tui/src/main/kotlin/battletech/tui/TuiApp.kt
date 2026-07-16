@@ -24,7 +24,7 @@ import kotlinx.coroutines.runBlocking
  * hot-seat's shared [battletech.tactical.session.BattleSession] has already had
  * [battletech.tactical.session.BattleSession.advance] called on it, a `--host` seat's server
  * fires its own kickstart once the roster completes, and a `--join`ed
- * [battletech.network.client.RemoteGameSession] never kickstarts at all. This class never builds
+ * [battletech.network.client.ClientGameSession] never kickstarts at all. This class never builds
  * a session or calls `advance()` itself.
  */
 public class TuiApp(private val seats: Map<PlayerId, GameSession>) {

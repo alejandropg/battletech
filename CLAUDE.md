@@ -34,7 +34,7 @@ Visual TUI spot-checks: see `docs/tui-testing.md`. Automated tests are the prima
 Dependencies flow: `tui` → `tactical` + `network`; `network` → (`api`) `tactical`; `bt` → `strategic` + `tactical`.
 
 - **`tactical/`** — the engine: tactical-level rules (combat, to-hit, movement, heat). Delivery-agnostic — no UI assumptions, no I/O. Every delivery (TUI, `network`, any future web UI) consumes it through the same public surface.
-- **`network/`** — client/server layer over `tactical` (`GameServer`, `RemoteGameSession`, wire protocol). No UI. Depends on `tactical` via `api` and reuses its types as wire DTOs rather than redefining them.
+- **`network/`** — client/server layer over `tactical` (`GameServer`, `ClientGameSession`, wire protocol). No UI. Depends on `tactical` via `api` and reuses its types as wire DTOs rather than redefining them.
 - **`tui/`** — terminal UI using [Mordant](https://github.com/ajalt/mordant). Entry point `battletech.tui.MainKt`.
 - **`strategic/` + `bt/`** — placeholders. `strategic` holds one stub class (`calculateCampaignMovement(d) = d * 2`); `bt` (`battletech.MainKt`) is a hello-world that prints it. Ignore unless explicitly asked.
 

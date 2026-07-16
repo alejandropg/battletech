@@ -26,7 +26,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
 /**
- * Drives [RemoteGameSession] over in-memory pipes against a real
+ * Drives [ClientGameSession] over in-memory pipes against a real
  * [GameServer] (via its [GameServer.attach] testability seam) — no
  * real sockets. Every test below calls [GameServer.connectLocal] to claim PLAYER_1 before
  * attaching its [PipedConnection] — [GameServer] now expects a connection for every seat before
@@ -34,10 +34,10 @@ import org.junit.jupiter.api.Test
  * and the kickstart actually fire. Covers post-join state, local queries against the snapshot,
  * event dispatch, the push-before-reply ordering invariant from the client
  * side, connection-loss handling, and — the point of this stage — that the
- * snapshot/log this replica holds is already redacted for [RemoteGameSession.playerId],
+ * snapshot/log this replica holds is already redacted for [ClientGameSession.playerId],
  * never PLAYER_1's private fields.
  */
-internal class RemoteGameSessionTest {
+internal class ClientGameSessionTest {
 
     private val sessionId = "TESTID"
 
@@ -275,13 +275,13 @@ internal class RemoteGameSessionTest {
         assertThat(result).isEqualTo(CommandResult.Rejected(CommandRejection.OpponentUnavailable))
     }
 
-    /** Mirrors [RemoteGameSession.connect] but over [PipedConnection] pipes instead of a real socket. */
-    private fun connectRemoteOverPipes(sessionId: String, connection: PipedConnection): RemoteGameSession {
+    /** Mirrors [ClientGameSession.connect] but over [PipedConnection] pipes instead of a real socket. */
+    private fun connectRemoteOverPipes(sessionId: String, connection: PipedConnection): ClientGameSession {
         val jsonConnection = JsonLineConnection.Client(connection.clientInput, connection.clientOutput)
         jsonConnection.send(ClientMessage.Join(sessionId, PROTOCOL_VERSION))
         val message = jsonConnection.receive() ?: error("connection closed before join response")
         return when (message) {
-            is ServerMessage.JoinAccepted -> RemoteGameSession(jsonConnection, message)
+            is ServerMessage.JoinAccepted -> ClientGameSession(jsonConnection, message)
             is ServerMessage.JoinRejected -> throw JoinRejectedException(message.reason)
             else -> error("unexpected first message from host: $message")
         }

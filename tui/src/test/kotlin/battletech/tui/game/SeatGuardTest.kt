@@ -19,19 +19,21 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Remote-play seat enforcement in idle selecting states
+ * Single-seat client enforcement in idle selecting states
  * ([MovementPhase.SelectingUnit], [AttackPhase.SelectingAttacker]).
  *
  * A client may act only for a seat present in [AppState.seats]. Host/join play puts exactly one
- * seat there (e.g. PLAYER_2 for a joiner), so this client may act only while that seat is the
- * active player. Tab, Enter, click, and 'c' must all be blocked with the "Waiting for opponent"
- * flash on the opponent's turn — previously only Enter/click were guarded (via `selectOwnUnit`),
+ * seat there — PLAYER_1 for a `--host` process (its own local seat), PLAYER_2 for a joiner —
+ * so this client may act only while that seat is the active player, regardless of whether that
+ * seat's own session happens to be local or remote. Tab, Enter, click, and 'c' must all be
+ * blocked with the "Waiting for opponent" flash on the opponent's turn — previously only
+ * Enter/click were guarded (via `selectOwnUnit`),
  * letting Tab and 'c' drive the opponent's units. Cursor movement is unaffected, and hot-seat
  * (both seats present) bypasses the gate entirely — not via any conditional, but because
  * [AppState.seats] holds both players there, so the active player is always a member. See
  * [HotSeatRegression] for the regression guard on that specifically.
  */
-internal class RemoteSeatGuardTest {
+internal class SeatGuardTest {
 
     private fun enterKey(): KeyboardEvent = KeyboardEvent("Enter")
     private fun tabKey(): KeyboardEvent = KeyboardEvent("Tab")

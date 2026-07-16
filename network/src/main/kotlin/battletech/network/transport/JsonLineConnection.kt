@@ -10,7 +10,7 @@ import java.io.Writer
 /**
  * [ServerConnection]/[ClientConnection] adapters over a `BufferedReader`/`Writer` pair, speaking
  * the same newline-delimited JSON [battletech.network.server.GameServer] and
- * [battletech.network.client.RemoteGameSession] already exchange over a socket — this relocates
+ * [battletech.network.client.ClientGameSession] already exchange over a socket — this relocates
  * that behavior behind the port unchanged rather than altering it. [WireJson] owns the actual
  * encoding; this class only owns the line framing.
  *
@@ -24,7 +24,7 @@ import java.io.Writer
  * "null = peer closed / end of stream"), and collapsing "the socket died mid-read" into the same
  * null a graceful close produces is what lets [InMemoryConnection] and this class present
  * IDENTICAL behavior to a caller: neither today's call sites nor the port's contract distinguish
- * the two. `GameServer.runReaderLoop` and `RemoteGameSession.readLoop` already `catch (e:
+ * the two. `GameServer.runReaderLoop` and `ClientGameSession.readLoop` already `catch (e:
  * IOException)` around their raw `readLine()` loops and treat it exactly like a `null`/break —
  * neither branches on it — so this is not a behavior change, only moving that catch below the
  * port instead of leaving it to every caller to remember. A decode failure (malformed JSON) is

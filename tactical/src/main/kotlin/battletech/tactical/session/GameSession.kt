@@ -12,16 +12,18 @@ import battletech.tactical.query.PlayerView
  * authority.
  *
  * [BattleSession] is the authoritative implementation, running command
- * processing locally. Other implementations — e.g. a remote proxy that
- * forwards [submitCommand] over the network and mirrors state pushed back by
- * the authoritative session — present the same surface so deliveries can be
- * written once against [GameSession] and swapped between local and remote
- * play without change.
+ * processing locally. [battletech.network.client.ClientGameSession] is the
+ * other — a client-side proxy that forwards [submitCommand] to the host (over
+ * a socket for a remote seat, an in-process connector for a local one) and
+ * mirrors state pushed back by the authoritative session — presenting the
+ * same surface so deliveries can be written once against [GameSession] and
+ * swapped between local and remote play without change.
  *
- * Deliberately absent: raw [battletech.tactical.model.GameState]. A remote
- * client only ever holds [stateFor]'s projection (what the wire actually
- * carried), so this interface cannot expose a field a remote implementation
- * couldn't honestly serve — see [battletech.network.client.RemoteGameSession].
+ * Deliberately absent: raw [battletech.tactical.model.GameState]. A client
+ * only ever holds [stateFor]'s projection (what its transport actually
+ * carried — a socket for a remote seat, an in-process queue for a local
+ * one), so this interface cannot expose a field a client implementation
+ * couldn't honestly serve — see [battletech.network.client.ClientGameSession].
  * [BattleSession], the authoritative in-process implementation, keeps a
  * concrete `gameState` of its own (not part of this interface) for the
  * server-side and headless-printer call sites that legitimately need it.

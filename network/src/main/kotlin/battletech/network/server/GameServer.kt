@@ -1,6 +1,6 @@
 package battletech.network.server
 
-import battletech.network.client.RemoteGameSession
+import battletech.network.client.ClientGameSession
 import battletech.network.transport.InMemoryConnection
 import battletech.network.transport.JsonLineConnection
 import battletech.network.transport.ServerConnection
@@ -48,7 +48,7 @@ import kotlin.concurrent.thread
  * class, gated by a hardcoded `PlayerId.PLAYER_1` check) that could disagree with the remote
  * path's seat check — remote enforcement was derived from the connection's assigned seat, local
  * enforcement was a literal constant, and nothing kept the two in sync. [connectLocal] closes
- * that gap by making the local player a client too: it hands back a [RemoteGameSession] wired to
+ * that gap by making the local player a client too: it hands back a [ClientGameSession] wired to
  * an [InMemoryConnection] half, indistinguishable on this end from a socket client's connection.
  * One path, one seat-check, one place the guarantee ("neither side can act as another seat's")
  * can live.
@@ -154,15 +154,15 @@ public class GameServer(
      * [InMemoryConnection.pair], hands the server half to [attach] on its own daemon thread
      * (exactly as [SocketAcceptor] hands a socket connection its own thread), and performs on the
      * client half the SAME [ClientMessage.Join] handshake a socket client performs
-     * ([RemoteGameSession.handshake]). The seat this call is assigned, the snapshot it starts
+     * ([ClientGameSession.handshake]). The seat this call is assigned, the snapshot it starts
      * with, and every event it receives afterward are therefore produced by the identical code
      * path a `--join`ed client goes through — there is no way for the returned session to behave
      * differently from a socket client's, because it isn't a different implementation, it's the
      * same one over a different [battletech.network.transport.ClientConnection].
      *
-     * Returns [RemoteGameSession] rather than [GameSession] for the same reason
-     * [RemoteGameSession.connect] does: a caller needs the seat the server assigned
-     * ([RemoteGameSession.playerId]) to know which seat it is playing, and widening the return
+     * Returns [ClientGameSession] rather than [GameSession] for the same reason
+     * [ClientGameSession.connect] does: a caller needs the seat the server assigned
+     * ([ClientGameSession.playerId]) to know which seat it is playing, and widening the return
      * type here would only force that caller to downcast to get it back.
      *
      * **Determinism for `--host`:** seat assignment is `(allSeats - clients.keys).min()` — first
@@ -173,12 +173,12 @@ public class GameServer(
      * whole determinism argument — it depends on call order, not on locking, because nothing
      * else could observe [clients] before the acceptor exists.
      */
-    public fun connectLocal(): RemoteGameSession {
+    public fun connectLocal(): ClientGameSession {
         val (serverHalf, clientHalf) = InMemoryConnection.pair()
         thread(isDaemon = true, name = "game-server-local") {
             attach(serverHalf)
         }
-        return RemoteGameSession.handshake(clientHalf, sessionId)
+        return ClientGameSession.handshake(clientHalf, sessionId)
     }
 
     /** Disconnects every currently-connected seat (local and remote alike) — see [disconnect]. */

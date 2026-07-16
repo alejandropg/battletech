@@ -10,7 +10,7 @@ import java.io.Writer
 /**
  * A pair of in-memory pipes wiring a "server" side to a "client" side, used
  * by protocol tests to drive [battletech.network.server.GameServer] and
- * [battletech.network.client.RemoteGameSession] without real sockets.
+ * [battletech.network.client.ClientGameSession] without real sockets.
  *
  * Buffers are generously sized: a [battletech.tactical.model.GameState]
  * snapshot serializes to a large JSON payload, and the default

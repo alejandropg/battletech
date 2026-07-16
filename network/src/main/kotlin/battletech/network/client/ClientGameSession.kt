@@ -33,14 +33,18 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.concurrent.thread
 
-/** [RemoteGameSession.connect] refused by the host: see [reason]. */
+/** [ClientGameSession.connect] refused by the host: see [reason]. */
 public class JoinRejectedException(public val reason: JoinRejectionReason) : Exception("Join rejected: $reason")
 
 /**
- * Client-side network endpoint: a read-only replica of a host's
+ * Client-side session endpoint: a read-only replica of a host's
  * [battletech.tactical.session.BattleSession], seated at whichever [playerId]
  * the server assigned at join time, kept fresh by a background reader
- * thread that applies [ServerMessage.StatePush]es as they arrive.
+ * thread that applies [ServerMessage.StatePush]es as they arrive. The transport
+ * underneath may be a real socket ([JsonLineConnection]) or an in-process
+ * [battletech.network.transport.InMemoryConnection] half (see
+ * [battletech.network.server.GameServer.connectLocal]) — this class neither knows
+ * nor cares which, which is exactly what lets a local player be a client too.
  *
  * **Ordering invariant** (see [ServerMessage] KDoc): for an accepted command
  * the [ServerMessage.StatePush] carrying the change arrives on the wire
@@ -69,7 +73,7 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
  * None of the three can honestly answer for a DIFFERENT viewer — there is no raw state left
  * to re-project from — so all three refuse rather than guess; see their KDoc.
  */
-public class RemoteGameSession internal constructor(
+public class ClientGameSession internal constructor(
     private val connection: ClientConnection,
     initial: ServerMessage.JoinAccepted,
 ) : GameSession, AutoCloseable {
@@ -91,7 +95,7 @@ public class RemoteGameSession internal constructor(
 
     init {
         initial.log.forEach { log.append(it) }
-        readerThread = thread(isDaemon = true, name = "remote-session-reader") { readLoop() }
+        readerThread = thread(isDaemon = true, name = "client-session-reader") { readLoop() }
     }
 
     public override val turnState: TurnState get() = snapshot.turnState
@@ -112,7 +116,7 @@ public class RemoteGameSession internal constructor(
      */
     public override fun viewFor(playerId: PlayerId): PlayerView {
         require(playerId == this.playerId) {
-            "RemoteGameSession.viewFor: this replica can only build a view for its own seat " +
+            "ClientGameSession.viewFor: this replica can only build a view for its own seat " +
                 "(${this.playerId}); it holds no projection for $playerId."
         }
         return DefaultPlayerView(playerId, snapshot.gameState, snapshot.turnState)
@@ -130,7 +134,7 @@ public class RemoteGameSession internal constructor(
      */
     public override fun stateFor(viewer: PlayerId?): PlayerGameState {
         require(viewer == playerId) {
-            "RemoteGameSession.stateFor: this replica only holds $playerId's own projection " +
+            "ClientGameSession.stateFor: this replica only holds $playerId's own projection " +
                 "(from the host's snapshot); it cannot serve viewer=$viewer without raw state to re-project from."
         }
         return snapshot.gameState
@@ -145,7 +149,7 @@ public class RemoteGameSession internal constructor(
      */
     public override fun logFor(viewer: PlayerId?): List<LogEntry> {
         require(viewer == playerId) {
-            "RemoteGameSession.logFor: this replica only holds $playerId's own redacted log; " +
+            "ClientGameSession.logFor: this replica only holds $playerId's own redacted log; " +
                 "it cannot serve viewer=$viewer without raw state to re-redact against."
         }
         return log.snapshot()
@@ -239,7 +243,7 @@ public class RemoteGameSession internal constructor(
          *
          * @throws JoinRejectedException if the host refuses the join.
          */
-        public fun connect(host: String, port: Int, sessionId: String): RemoteGameSession {
+        public fun connect(host: String, port: Int, sessionId: String): ClientGameSession {
             val socket = Socket(host, port)
             val input = BufferedReader(InputStreamReader(socket.getInputStream()))
             val output = OutputStreamWriter(socket.getOutputStream())
@@ -249,7 +253,7 @@ public class RemoteGameSession internal constructor(
 
         /**
          * Sends [ClientMessage.Join] on [connection] and blocks for the host's handshake
-         * response, building the [RemoteGameSession] on acceptance. Shared by [connect] (a real
+         * response, building the [ClientGameSession] on acceptance. Shared by [connect] (a real
          * socket) and [battletech.network.server.GameServer.connectLocal] (an in-process
          * [battletech.network.transport.InMemoryConnection] half) — the handshake itself neither
          * knows nor cares which transport it is running over, which is exactly the property that
@@ -258,7 +262,7 @@ public class RemoteGameSession internal constructor(
          *
          * @throws JoinRejectedException if the host refuses the join.
          */
-        internal fun handshake(connection: ClientConnection, sessionId: String): RemoteGameSession {
+        internal fun handshake(connection: ClientConnection, sessionId: String): ClientGameSession {
             connection.send(ClientMessage.Join(SessionId.normalize(sessionId), PROTOCOL_VERSION))
 
             val message = connection.receive() ?: run {
@@ -266,7 +270,7 @@ public class RemoteGameSession internal constructor(
                 throw IOException("Connection closed before the host replied to Join")
             }
             return when (message) {
-                is ServerMessage.JoinAccepted -> RemoteGameSession(connection, message)
+                is ServerMessage.JoinAccepted -> ClientGameSession(connection, message)
                 is ServerMessage.JoinRejected -> {
                     connection.close()
                     throw JoinRejectedException(message.reason)

@@ -1,7 +1,7 @@
 package battletech.tui
 
 import battletech.network.client.JoinRejectedException
-import battletech.network.client.RemoteGameSession
+import battletech.network.client.ClientGameSession
 import battletech.network.server.GameServer
 import battletech.network.server.SocketAcceptor
 import battletech.tactical.model.GameMap
@@ -176,7 +176,7 @@ private const val KICKSTART_TIMEOUT_MS: Long = 2000
  * until [GameServer.attach]'s synchronized block — kickstart included — has finished, so it is
  * always the post-kickstart ground truth to converge every seat against.
  */
-private fun awaitKickstart(server: GameServer, seats: Map<PlayerId, RemoteGameSession>) {
+private fun awaitKickstart(server: GameServer, seats: Map<PlayerId, ClientGameSession>) {
     val deadline = System.nanoTime() + KICKSTART_TIMEOUT_MS * 1_000_000L
     while (seats.values.any { it.currentPhase != server.currentPhase }) {
         check(System.nanoTime() < deadline) {
@@ -236,7 +236,7 @@ public fun main(args: Array<String>) {
 
         is Mode.Join -> {
             val remote = try {
-                RemoteGameSession.connect(mode.host, mode.port, mode.sessionId)
+                ClientGameSession.connect(mode.host, mode.port, mode.sessionId)
             } catch (e: JoinRejectedException) {
                 System.err.println("Join rejected: ${e.reason}")
                 kotlin.system.exitProcess(1)

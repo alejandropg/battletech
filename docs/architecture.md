@@ -5,7 +5,7 @@ Package-level, build-plugin, and invariant-rationale detail for the structure su
 ## Package layout per module
 
 - **`tactical/`** (`battletech.tactical.*`): `attack/` (incl. `physical/`, `weapon/` — attack resolution/declarations/crit tables for melee vs. gunnery), `dice/` (`DiceRoller` abstraction), `heat/` (generation/dissipation/phase resolution), `model/` (incl. `map/` — core `GameState`/`GameMap`/hex coordinates, map file loading/catalog), `movement/` (cost/reachability/phase handler), `query/` (per-player read/projection layer — `PlayerView`, `ForeignUnit`/`OwnUnit` redaction types), `session/` (`BattleSession`, `GameCommand`/`GameEvent`, phase handlers, redaction), `unit/`.
-- **`network/`** (`battletech.network.*`): `client/` (`RemoteGameSession`), `server/` (`GameServer`), `wire/` (`Messages`, `SessionId`, `WireJson`). Reuses `tactical.session`/`tactical.query` types directly as wire DTOs (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) rather than redefining them.
+- **`network/`** (`battletech.network.*`): `client/` (`ClientGameSession`), `server/` (`GameServer`), `wire/` (`Messages`, `SessionId`, `WireJson`). Reuses `tactical.session`/`tactical.query` types directly as wire DTOs (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) rather than redefining them.
 - **`tui/`** (`battletech.tui.*`): `game/` (incl. `phase/` — app state, phase-specific UI logic like `AttackPhase`/`MovementPhase`/`WeaponAllocation`), `hex/` (hex-grid rendering/geometry), `input/` (keyboard input mapping per mode), `loop/` (terminal event flows), `screen/` (low-level terminal screen buffer/diffing), `view/` (widget/panel rendering).
 
 ## buildSrc convention plugins
