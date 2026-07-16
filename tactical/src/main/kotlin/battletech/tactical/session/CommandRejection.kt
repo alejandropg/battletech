@@ -34,9 +34,6 @@ public sealed interface CommandRejection : RejectionReason {
     @Serializable
     public data class UnitAlreadyActed(public val unitId: UnitId) : CommandRejection
 
-    @Serializable
-    public data class UnknownUnit(public val unitId: UnitId) : CommandRejection
-
     /** A prone unit was told to move; it must stand up first. */
     @Serializable
     public data class UnitProne(public val unitId: UnitId) : CommandRejection

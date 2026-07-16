@@ -2,6 +2,7 @@ package battletech.tactical.model
 
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnknownUnitException
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -17,22 +18,14 @@ public data class GameState(
         units.find { it.position == position }
 
     /**
-     * Authoritative lookup by [id]. Throws if [id] does not name a unit in this
-     * state — callers must hold the invariant that [id] came from this same
-     * [GameState] (e.g. a command field, an existing [CombatUnit.id]). Use
-     * [findUnit] instead when [id] is unverified input that may legitimately not
-     * resolve.
+     * Authoritative lookup by [id]. Throws [UnknownUnitException] if [id] does not name a
+     * unit in this state. A [UnitId] never legitimately fails to resolve — units are never
+     * removed from [units], destruction only flips [CombatUnit.isDestroyed] — so an unknown
+     * id can only mean a bug or a tampered client, never a correctly-behaving one. See
+     * [UnknownUnitException] for the full rationale.
      */
     public fun unitById(id: UnitId): CombatUnit =
-        units.find { it.id == id } ?: error("No unit with id $id")
-
-    /**
-     * Nullable probe by [id]: `null` when no unit with [id] exists in this state.
-     * Use this (not [unitById]) for validation paths and other call sites where a
-     * missing unit is an expected, handleable outcome rather than a programming error.
-     */
-    public fun findUnit(id: UnitId): CombatUnit? =
-        units.find { it.id == id }
+        units.find { it.id == id } ?: throw UnknownUnitException(id)
 
     public fun unitsOf(player: PlayerId): List<CombatUnit> = units.filter { it.owner == player }
 

@@ -36,7 +36,7 @@ import battletech.tactical.unit.UnitId
  * unconditional (both players' rolls are emitted win or lose, and the target is the
  * opponent's roll, not a record-sheet number), so they stay verbatim.
  *
- * Ownership resolves via [GameState.findUnit]. [viewer] `== null` means "I don't know
+ * Ownership resolves via [GameState.unitById]. [viewer] `== null` means "I don't know
  * who is looking": every unit is treated as foreign, same as [battletech.tactical.query.projectFor].
  * This fails CLOSED on purpose — the opposite (fail-open) was the live bug fixed in
  * `29c7576`; do not repeat it.
@@ -57,7 +57,7 @@ import battletech.tactical.unit.UnitId
 public fun GameEvent.redactFor(viewer: PlayerId?, state: GameState, revealAll: Boolean = false): GameEvent? {
     if (revealAll) return this
 
-    fun owns(unitId: UnitId): Boolean = viewer != null && state.findUnit(unitId)?.owner == viewer
+    fun owns(unitId: UnitId): Boolean = viewer != null && state.unitById(unitId).owner == viewer
 
     return when (this) {
         is HeatDissipated -> {
@@ -121,7 +121,7 @@ public fun GameEvent.redactFor(viewer: PlayerId?, state: GameState, revealAll: B
  * [PilotHit]/[PilotKnockedUnconscious] events, since they are copies of exactly those.
  */
 private fun redactPhysicalResult(result: PhysicalAttackResult, viewer: PlayerId?, state: GameState): PhysicalAttackResult {
-    fun owns(unitId: UnitId): Boolean = viewer != null && state.findUnit(unitId)?.owner == viewer
+    fun owns(unitId: UnitId): Boolean = viewer != null && state.unitById(unitId).owner == viewer
 
     val fallerId = if (result is PhysicalAttackResult.Hit) result.targetId else result.attackerId
     val redacted = when (val knockdown = result.knockdown) {

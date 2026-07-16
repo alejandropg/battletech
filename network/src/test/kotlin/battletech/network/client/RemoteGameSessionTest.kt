@@ -10,6 +10,7 @@ import battletech.network.wire.ClientMessage
 import battletech.network.wire.PROTOCOL_VERSION
 import battletech.network.wire.ServerMessage
 import battletech.network.wire.WireJson
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.ForeignUnit
@@ -20,6 +21,7 @@ import battletech.tactical.session.GameEvent
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.SessionNotice
 import battletech.tactical.session.UnitMoved
+import battletech.tactical.unit.UnitId
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -198,6 +200,43 @@ internal class RemoteGameSessionTest {
         // synchronously, with no further waiting.
         assertThat(remote.stateFor(remote.playerId).unitById(unit.id).position).isEqualTo(destination.position)
         assertThat(remote.turnState.movement.movedUnitIds).contains(unit.id)
+    }
+
+    @Test
+    fun `submitCommand with an unknown unit id gets ProtocolError and the connection stays usable`() {
+        val server = GameServer(aSampleSession(), sessionId, port = 0)
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+        val remote = connectRemoteOverPipes(sessionId, connection)
+        awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
+        server.advanceMovementUntilActivePlayerIs(PlayerId.PLAYER_2)
+        awaitTrue { remote.turnState.movement.activePlayer == PlayerId.PLAYER_2 }
+
+        // A correctly-behaving client can never produce this — GameServer's reader loop
+        // catches the resulting UnknownUnitException instead of letting it tear the reader
+        // thread (and connection) down. See UnknownUnitException, CommandResult.ProtocolError.
+        val bogusMove = MoveUnit(
+            PlayerId.PLAYER_2,
+            UnitId("ghost"),
+            remote.viewFor(remote.playerId)
+                .legalMovementsFor(remote.turnState.selectableUnits(remote.stateFor(remote.playerId)).first().id)
+                .first()
+                .destinations
+                .first(),
+            MovementMode.WALK,
+        )
+
+        val result = remote.submitCommand(bogusMove)
+
+        assertThat(result).isInstanceOf(CommandResult.ProtocolError::class.java)
+
+        // The connection survived: a legitimate move right after still goes through.
+        val unit = remote.turnState.selectableUnits(remote.stateFor(remote.playerId)).first()
+        val reachability = remote.viewFor(remote.playerId).legalMovementsFor(unit.id).first()
+        val destination = reachability.destinations.first()
+        val followUp = remote.submitCommand(MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode))
+
+        assertThat(followUp).isInstanceOf(CommandResult.Accepted::class.java)
     }
 
     @Test

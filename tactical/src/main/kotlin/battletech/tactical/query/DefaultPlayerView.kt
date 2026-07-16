@@ -33,7 +33,7 @@ public class DefaultPlayerView(
     override fun legalMovementsFor(unitId: UnitId): List<ReachabilityMap> {
         // Movement legality is only ever asked about the viewer's own unit, and MP depends on
         // its heat/destroyed legs — ownUnitById fails loud if that assumption breaks.
-        val unit = (state.findUnit(unitId) as? OwnUnit)?.unit ?: return emptyList()
+        val unit = (state.unitById(unitId) as OwnUnit).unit
         val calculator = ReachabilityCalculator(state.map, state.units)
         return MovementRules.availableModes(unit).map { mode -> calculator.calculate(unit, mode) }
     }
@@ -51,7 +51,7 @@ public class DefaultPlayerView(
         physicalAttackQueries.physicalAttackOptions(attackerId)
 
     override fun legalTorsoFacings(unitId: UnitId): Set<HexDirection> {
-        val unit = state.findUnit(unitId) ?: return emptySet()
+        val unit = state.unitById(unitId)
         return torsoTwistOptions(unit.facing)
     }
 

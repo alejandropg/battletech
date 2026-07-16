@@ -77,7 +77,7 @@ public class MovementPhaseHandler : PhaseHandler {
         state: GameState,
         turn: TurnState,
     ): CommandRejection? {
-        val unit = state.findUnit(unitId) ?: return CommandRejection.UnknownUnit(unitId)
+        val unit = state.unitById(unitId)
         if (unit.owner != playerId) {
             return CommandRejection.NotYourUnit(unitId, owner = unit.owner, attemptedBy = playerId)
         }

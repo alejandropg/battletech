@@ -218,7 +218,7 @@ internal sealed interface AttackPhase : Phase {
             val view = app.viewFor(owner)
             val targets = targetTable(view)
             val target = targets.getOrNull(cursorTargetIndex) ?: return null
-            return app.visibleState.findUnit(target.unitId) as? ForeignUnit
+            return app.visibleState.unitById(target.unitId) as? ForeignUnit
         }
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState, requireSeeded = false)

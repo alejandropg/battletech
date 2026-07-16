@@ -4,6 +4,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnknownUnitException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -65,14 +66,7 @@ internal class GameStateProjectionTest {
     fun `unitById throws for an unknown id`() {
         val projected = state.projectFor(viewer = PlayerId.PLAYER_1)
 
-        assertThrows<IllegalStateException> { projected.unitById(UnitId("unknown")) }
-    }
-
-    @Test
-    fun `findUnit returns null for an unknown id`() {
-        val projected = state.projectFor(viewer = PlayerId.PLAYER_1)
-
-        assertThat(projected.findUnit(UnitId("unknown"))).isNull()
+        assertThrows<UnknownUnitException> { projected.unitById(UnitId("unknown")) }
     }
 
     @Test

@@ -13,7 +13,9 @@ import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnknownUnitException
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
 internal class BattleSessionTest {
@@ -61,13 +63,12 @@ internal class BattleSessionTest {
     }
 
     @Test
-    fun `MoveUnit rejects UnknownUnit`() {
+    fun `MoveUnit with an unknown unit id throws`() {
         val session = sessionInMovement()
-        val result = session.submitCommand(
-            MoveUnit(PlayerId.PLAYER_1, UnitId("ghost"), aReachableHex(), MovementMode.WALK),
-        )
-        val rejected = result as CommandResult.Rejected
-        assertThat(rejected.reason).isInstanceOf(CommandRejection.UnknownUnit::class.java)
+
+        assertThatThrownBy {
+            session.submitCommand(MoveUnit(PlayerId.PLAYER_1, UnitId("ghost"), aReachableHex(), MovementMode.WALK))
+        }.isInstanceOf(UnknownUnitException::class.java)
     }
 
     @Test

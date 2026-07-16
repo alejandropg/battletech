@@ -6,6 +6,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnknownUnitException
 import kotlinx.serialization.Serializable
 
 /**
@@ -27,22 +28,12 @@ public data class PlayerGameState(
         units.find { it.position == position }
 
     /**
-     * Authoritative lookup by [id]. Throws if [id] does not name a unit in this
-     * state — callers must hold the invariant that [id] came from this same
-     * [PlayerGameState] (e.g. a command field, an existing [VisibleUnit.id]). Use
-     * [findUnit] instead when [id] is unverified input that may legitimately not
-     * resolve.
+     * Authoritative lookup by [id]. Throws [UnknownUnitException] if [id] does not name a
+     * unit in this state. Mirrors [GameState.unitById] — see [UnknownUnitException] for why
+     * an unknown id is a violated precondition rather than a handleable outcome.
      */
     public fun unitById(id: UnitId): VisibleUnit =
-        units.find { it.id == id } ?: error("No unit with id $id")
-
-    /**
-     * Nullable probe by [id]: `null` when no unit with [id] exists in this state.
-     * Use this (not [unitById]) for validation paths and other call sites where a
-     * missing unit is an expected, handleable outcome rather than a programming error.
-     */
-    public fun findUnit(id: UnitId): VisibleUnit? =
-        units.find { it.id == id }
+        units.find { it.id == id } ?: throw UnknownUnitException(id)
 
     /**
      * The full [CombatUnit] for [id], for call sites that already know [id] names a unit the

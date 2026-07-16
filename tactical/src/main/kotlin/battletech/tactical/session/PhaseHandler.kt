@@ -29,8 +29,11 @@ public interface PhaseHandler {
 
     /** Command-specific validation run after [accepts] passes but before
      *  [apply]. Return null to accept; return a [CommandRejection] to
-     *  reject with that reason (e.g., UnknownUnit, NotYourUnit,
-     *  UnitAlreadyActed). Default: no validation.
+     *  reject with that reason (e.g., NotYourUnit, UnitAlreadyActed).
+     *  Default: no validation. An unknown unit id is NOT a validation
+     *  concern — [battletech.tactical.model.GameState.unitById] throws
+     *  [battletech.tactical.unit.UnknownUnitException] for that; a
+     *  correctly-behaving client can never trigger it.
      *
      *  [BattleSession.submitCommand] is the ONLY active-player check
      *  ([CommandRejection.NotYourTurn]) — it runs before [validate] is ever

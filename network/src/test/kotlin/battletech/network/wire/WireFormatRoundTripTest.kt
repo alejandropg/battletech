@@ -327,6 +327,16 @@ internal class WireFormatRoundTripTest {
         assertThat(decoded).isEqualTo(rejected)
     }
 
+    @Test
+    fun `CommandResult ProtocolError round-trips`() {
+        val protocolError = CommandResult.ProtocolError(message = "No unit with id ghost")
+
+        val line = WireJson.json.encodeToString<CommandResult>(protocolError)
+        val decoded = WireJson.json.decodeFromString<CommandResult>(line)
+
+        assertThat(decoded).isEqualTo(protocolError)
+    }
+
     // ---------- Envelope nesting: ClientMessage / ServerMessage ----------
 
     @Test
@@ -608,7 +618,6 @@ internal class WireFormatRoundTripTest {
             CommandRejection.NotYourUnit::class to CommandRejection.NotYourUnit(unitId = unitA, owner = PlayerId.PLAYER_1, attemptedBy = PlayerId.PLAYER_2),
             CommandRejection.WrongPhase::class to CommandRejection.WrongPhase(actual = TurnPhase.HEAT),
             CommandRejection.UnitAlreadyActed::class to CommandRejection.UnitAlreadyActed(unitId = unitA),
-            CommandRejection.UnknownUnit::class to CommandRejection.UnknownUnit(unitId = UnitId("ghost")),
             CommandRejection.UnitProne::class to CommandRejection.UnitProne(unitId = unitA),
             CommandRejection.UnitNotProne::class to CommandRejection.UnitNotProne(unitId = unitA),
             CommandRejection.GyroDestroyed::class to CommandRejection.GyroDestroyed(unitId = unitA),

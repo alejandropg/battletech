@@ -15,7 +15,9 @@ import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnknownUnitException
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import battletech.tactical.query.projectFor
 import battletech.tactical.query.OwnUnit
@@ -281,10 +283,11 @@ internal class DefaultPlayerViewTest {
     }
 
     @Test
-    fun `legalTorsoFacings returns empty set for an unknown unit`() {
+    fun `legalTorsoFacings throws for an unknown unit`() {
         val view = viewFor(aUnit(id = "u1"))
 
-        assertThat(view.legalTorsoFacings(UnitId("unknown"))).isEmpty()
+        assertThatThrownBy { view.legalTorsoFacings(UnitId("unknown")) }
+            .isInstanceOf(UnknownUnitException::class.java)
     }
 
     @Test

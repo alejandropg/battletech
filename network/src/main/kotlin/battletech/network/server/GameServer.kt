@@ -24,6 +24,7 @@ import battletech.tactical.session.SessionNotice
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.redactFor
+import battletech.tactical.unit.UnknownUnitException
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -339,7 +340,16 @@ public class GameServer(
                                     attemptedBy = message.command.playerId,
                                 ),
                             )
-                        else -> submitAndPush(message.command)
+                        else -> try {
+                            submitAndPush(message.command)
+                        } catch (e: UnknownUnitException) {
+                            // A correctly-behaving client can never name a UnitId that
+                            // doesn't exist (see UnknownUnitException's KDoc) — this is a
+                            // malformed/tampered command, not a gameplay rejection. Reply
+                            // and keep the connection alive rather than let the exception
+                            // unwind through synchronized(lock) and kill this reader thread.
+                            CommandResult.ProtocolError(e.message ?: "unknown unit")
+                        }
                     }
                     connected.outbound.put(ServerMessage.CommandReply(message.requestId, result))
                 }

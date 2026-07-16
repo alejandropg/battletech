@@ -31,6 +31,9 @@ internal fun rejectionFlash(result: CommandResult): FlashMessage? = when (result
         is CommandRejection.OpponentUnavailable -> FlashMessage("Opponent not connected")
         else -> FlashMessage("Command rejected")
     }
+    // Only reachable over the network seam (GameServer catches UnknownUnitException) — the
+    // host-embedded UI path never produces this, it would crash instead. See CommandResult.ProtocolError.
+    is CommandResult.ProtocolError -> FlashMessage("Command error")
 }
 
 /**
