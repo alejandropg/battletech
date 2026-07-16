@@ -1,6 +1,6 @@
 package battletech.tui.view
 
-import battletech.tactical.query.ForeignUnit
+import battletech.tactical.unit.ForeignUnit
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 

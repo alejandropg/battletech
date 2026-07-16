@@ -5,7 +5,7 @@ import battletech.tactical.attack.physical.PhysicalAttackDeclaration
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.query.PlayerGameState
-import battletech.tactical.query.VisibleUnit
+import battletech.tactical.unit.VisibleUnit
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 import kotlinx.serialization.Serializable

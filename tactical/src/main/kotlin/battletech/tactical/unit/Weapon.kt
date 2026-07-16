@@ -6,11 +6,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 public data class Weapon(
     public val model: WeaponModel,
-    public val mountId: WeaponMountId? = null,
+    override val mountId: WeaponMountId? = null,
     public val location: MechLocation? = null,
     public val destroyed: Boolean = false,
-) {
-    public val name: String get() = model.name
+) : WeaponView {
+    override val name: String get() = model.name
     public val damage: Int get() = model.damage
     public val heat: Int get() = model.heat
     public val minimumRange: Int get() = model.minimumRange

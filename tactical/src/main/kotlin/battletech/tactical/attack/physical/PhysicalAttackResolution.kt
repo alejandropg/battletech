@@ -7,7 +7,6 @@ import battletech.tactical.attack.resolveDamage
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.model.withUnit
-import battletech.tactical.query.OwnUnit
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.basePsrModifier
 import battletech.tactical.unit.pilotingSkillRoll
@@ -84,9 +83,9 @@ private fun resolveOnePhysicalAttack(
     val target = gameState.unitById(declaration.targetId)
     val direction = attackDirection(attacker, target)
 
-    // OwnUnit(target): see the equivalent note in AttackResolution.resolveOneAttack — the
-    // resolver holds the full unit and hands the shared math its public projection.
-    val targetNumber = physicalToHitTargetNumber(attacker, OwnUnit(target), declaration.kind, gameState.map)
+    // target is passed as-is: see the equivalent note in AttackResolution.resolveOneAttack —
+    // the shared math only reads target's public projection, and CombatUnit is a VisibleUnit.
+    val targetNumber = physicalToHitTargetNumber(attacker, target, declaration.kind, gameState.map)
     val toHitRoll = roller.roll2d6()
 
     if (toHitRoll.total < targetNumber) {

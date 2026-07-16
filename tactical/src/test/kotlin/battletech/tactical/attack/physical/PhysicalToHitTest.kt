@@ -11,7 +11,6 @@ import battletech.tactical.query.aUnit
 import battletech.tactical.unit.CombatUnit
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import battletech.tactical.query.OwnUnit
 
 internal class PhysicalToHitTest {
 
@@ -26,7 +25,7 @@ internal class PhysicalToHitTest {
         aUnit(id = "target", position = targetPos).copy(movementThisTurn = movement)
 
     private fun punchTn(attacker: CombatUnit, target: CombatUnit, hexes: Map<HexCoordinates, Hex> = emptyMap()): Int =
-        physicalToHitTargetNumber(attacker, OwnUnit(target), Punch(Side.LEFT), aGameState(units = listOf(attacker, target), hexes = hexes).map)
+        physicalToHitTargetNumber(attacker, target, Punch(Side.LEFT), aGameState(units = listOf(attacker, target), hexes = hexes).map)
 
     @Test
     fun `a stationary attacker against a stationary target is just the piloting skill`() {

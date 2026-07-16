@@ -10,14 +10,13 @@ import battletech.tactical.attack.PhysicalAttackContext
 import battletech.tactical.session.RuleRejection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import battletech.tactical.query.OwnUnit
 
 internal class PhysicalMovementRuleTest {
 
     private fun context(movement: MovementThisTurn): PhysicalAttackContext {
         val actor = aUnit(id = "actor", position = HexCoordinates(0, 0)).copy(movementThisTurn = movement)
         val target = aUnit(id = "target", position = HexCoordinates(1, 0))
-        return PhysicalAttackContext(actor = actor, target = OwnUnit(target), map = aGameState(units = listOf(actor, target)).map)
+        return PhysicalAttackContext(actor = actor, target = target, map = aGameState(units = listOf(actor, target)).map)
     }
 
     @Test

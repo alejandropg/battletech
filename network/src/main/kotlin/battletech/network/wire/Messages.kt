@@ -22,7 +22,7 @@ public const val PROTOCOL_VERSION: Int = 1
  * ([battletech.tactical.query.projectFor]), never the raw
  * [battletech.tactical.model.GameState] — built by
  * [battletech.network.server.GameServer.snapshotFor] for the specific seat this snapshot
- * is addressed to. A [GameSnapshot] built for PLAYER_2 carries [battletech.tactical.query.ForeignUnit]
+ * is addressed to. A [GameSnapshot] built for PLAYER_2 carries [battletech.tactical.unit.ForeignUnit]
  * for every PLAYER_1 unit (no gunnery/heat/internals reachable), same as any other
  * [battletech.tactical.session.GameSession.stateFor] caller. This is the type-level half of
  * the wire's hidden-information guarantee; see [battletech.network.server.GameServer] for

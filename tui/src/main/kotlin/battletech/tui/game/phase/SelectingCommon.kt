@@ -1,10 +1,10 @@
 package battletech.tui.game.phase
 
 import battletech.tactical.model.PlayerId
-import battletech.tactical.query.VisibleUnit
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.moveCursor
@@ -162,7 +162,7 @@ internal fun handleUnitSelection(
 /**
  * The [VisibleUnit] under the cursor in an idle selecting state.
  * [AppState.visibleState] has already decided
- * [battletech.tactical.query.OwnUnit] vs [battletech.tactical.query.ForeignUnit]
+ * [battletech.tactical.unit.CombatUnit] vs [battletech.tactical.unit.ForeignUnit]
  * for [AppState.viewer], which is always a concrete seat (see [AppState.viewer]'s
  * KDoc). There is nothing left to redact here — the projection already did it.
  */

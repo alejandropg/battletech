@@ -3,6 +3,9 @@ package battletech.tactical.query
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.ForeignUnit
+import battletech.tactical.unit.PublicWeapon
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.UnknownUnitException
 import org.assertj.core.api.Assertions.assertThat
@@ -28,13 +31,13 @@ internal class GameStateProjectionTest {
     private val state = aGameState(units = listOf(ownUnit, enemyUnit))
 
     @Test
-    fun `own units project as OwnUnit carrying the full CombatUnit`() {
+    fun `own units project as the CombatUnit itself`() {
         val projected = state.projectFor(viewer = PlayerId.PLAYER_1)
 
         val visible = projected.unitById(UnitId("own"))
 
-        assertThat(visible).isInstanceOf(OwnUnit::class.java)
-        assertEquals(ownUnit, (visible as OwnUnit).unit)
+        assertThat(visible).isInstanceOf(CombatUnit::class.java)
+        assertEquals(ownUnit, visible as CombatUnit)
     }
 
     @Test
@@ -54,12 +57,12 @@ internal class GameStateProjectionTest {
     }
 
     @Test
-    fun `revealAll makes every unit an OwnUnit regardless of owner`() {
+    fun `revealAll makes every unit a CombatUnit regardless of owner`() {
         val projected = state.projectFor(viewer = PlayerId.PLAYER_1, revealAll = true)
 
-        assertThat(projected.units).allSatisfy { assertThat(it).isInstanceOf(OwnUnit::class.java) }
-        val revealedEnemy = projected.unitById(UnitId("enemy")) as OwnUnit
-        assertEquals(enemyUnit, revealedEnemy.unit)
+        assertThat(projected.units).allSatisfy { assertThat(it).isInstanceOf(CombatUnit::class.java) }
+        val revealedEnemy = projected.unitById(UnitId("enemy")) as CombatUnit
+        assertEquals(enemyUnit, revealedEnemy)
     }
 
     @Test

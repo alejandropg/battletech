@@ -8,14 +8,13 @@ import battletech.tactical.query.aUnit
 import battletech.tactical.session.RuleRejection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import battletech.tactical.query.OwnUnit
 
 internal class ProneAttackerRuleTest {
 
     private fun context(prone: Boolean): PhysicalAttackContext {
         val actor = aUnit(id = "actor", position = HexCoordinates(0, 0)).copy(isProne = prone)
         val target = aUnit(id = "target", position = HexCoordinates(1, 0))
-        return PhysicalAttackContext(actor, aGameState(units = listOf(actor, target)).map, OwnUnit(target))
+        return PhysicalAttackContext(actor, aGameState(units = listOf(actor, target)).map, target)
     }
 
     @Test

@@ -19,8 +19,6 @@ import battletech.tactical.unit.UnknownUnitException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
-import battletech.tactical.query.projectFor
-import battletech.tactical.query.OwnUnit
 
 internal class DefaultPlayerViewTest {
 
@@ -266,7 +264,7 @@ internal class DefaultPlayerViewTest {
 
         val expectedTargetNumber = (
             attacker.gunnerySkill +
-                weaponToHitModifiers(attacker, OwnUnit(proneEnemy), weapon, distance, isPrimaryTarget = true, map = state.map).total()
+                weaponToHitModifiers(attacker, proneEnemy, weapon, distance, isPrimaryTarget = true, map = state.map).total()
             ).coerceAtLeast(2)
 
         assertThat(weaponInfo.targetDiceRoll).isEqualTo(expectedTargetNumber)

@@ -1,7 +1,7 @@
 package battletech.tactical.attack
 
 import battletech.tactical.model.GameMap
-import battletech.tactical.query.VisibleUnit
+import battletech.tactical.unit.VisibleUnit
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.Weapon
 

@@ -9,7 +9,7 @@ import battletech.tactical.attack.proneTargetToHitModifier
 import battletech.tactical.attack.targetMovementModifier
 import battletech.tactical.attack.total
 import battletech.tactical.model.GameMap
-import battletech.tactical.query.VisibleUnit
+import battletech.tactical.unit.VisibleUnit
 import battletech.tactical.unit.CombatUnit
 
 /**

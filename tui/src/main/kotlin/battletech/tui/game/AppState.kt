@@ -9,7 +9,6 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.query.OwnUnit
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
 import battletech.tactical.session.BattleSession

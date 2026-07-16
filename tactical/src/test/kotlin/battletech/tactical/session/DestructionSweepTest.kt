@@ -12,12 +12,12 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
-import battletech.tactical.query.OwnUnit
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.anArmorLayout
 import battletech.tactical.query.anInternalStructureLayout
 import battletech.tactical.query.mediumLaser
+import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.DestructionReason
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -286,14 +286,14 @@ internal class DestructionSweepTest {
     }
 
     @Test
-    fun `stateFor reveals every unit as OwnUnit once the match is over, regardless of viewer`() {
+    fun `stateFor reveals every unit as the CombatUnit itself once the match is over, regardless of viewer`() {
         val (session, result) = driveToAttack(toHit = 4 to 5, location = 3 to 4)
         check(result is CommandResult.Accepted) { "attack impulse rejected: $result" }
         check(session.isMatchOver) { "expected the match to be over" }
 
         for (viewer in listOf(PlayerId.PLAYER_1, PlayerId.PLAYER_2, null)) {
             val projected = session.stateFor(viewer)
-            assertThat(projected.units).allSatisfy { assertThat(it).isInstanceOf(OwnUnit::class.java) }
+            assertThat(projected.units).allSatisfy { assertThat(it).isInstanceOf(CombatUnit::class.java) }
         }
     }
 

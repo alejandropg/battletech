@@ -62,7 +62,7 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
  * [battletech.tactical.query.PhysicalAttackQueries]) consumes the projection, resolving the
  * ACTOR (always a unit this seat owns) through
  * [battletech.tactical.query.PlayerGameState.ownUnitById] and leaving every other unit
- * [battletech.tactical.query.VisibleUnit]-shaped, because every field it reads off a
+ * [battletech.tactical.unit.VisibleUnit]-shaped, because every field it reads off a
  * non-actor unit is public. One implementation, so a client's answer cannot drift from the
  * server's.
  *

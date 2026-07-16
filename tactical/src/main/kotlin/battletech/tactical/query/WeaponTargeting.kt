@@ -12,6 +12,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.VisibleUnit
 import battletech.tactical.unit.cannotFireFromSensorDamage
 
 /**

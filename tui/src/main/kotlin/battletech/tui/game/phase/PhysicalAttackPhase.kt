@@ -7,9 +7,9 @@ import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.PhysicalAttackOption
-import battletech.tactical.query.VisibleUnit
 import battletech.tactical.session.CommitPhysicalAttackImpulse
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.PanelId

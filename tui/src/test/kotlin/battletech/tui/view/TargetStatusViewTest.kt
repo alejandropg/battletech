@@ -3,9 +3,9 @@ package battletech.tui.view
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
-import battletech.tactical.query.ForeignUnit
-import battletech.tactical.query.PublicWeapon
+import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.MovementThisTurn
+import battletech.tactical.unit.PublicWeapon
 import battletech.tactical.unit.UnitId
 import battletech.tui.anArmorLayout
 import battletech.tui.screen.Color

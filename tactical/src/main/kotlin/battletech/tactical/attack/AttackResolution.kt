@@ -7,7 +7,6 @@ import battletech.tactical.dice.DiceRoller
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
 import battletech.tactical.model.MechLocation
-import battletech.tactical.query.OwnUnit
 import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.GameEvent
 import battletech.tactical.unit.CombatUnit
@@ -212,11 +211,10 @@ private fun resolveOneAttack(
     val distance = attacker.position.distanceTo(target.position)
     val direction = attackDirection(attacker, target)
     val useRearArmor = direction == AttackDirection.REAR
-    // OwnUnit(target) is the authoritative resolver handing the shared to-hit math the
-    // public projection of a unit it fully holds — not a stand-in for missing data. The math
-    // only reads public fields off the target (see AttackContext), so this is the same input
-    // a client's projected snapshot would supply: one implementation, no drift.
-    val modifiers = weaponToHitModifiers(attacker, OwnUnit(target), weapon, distance, declaration.isPrimary, gameState.map)
+    // target is passed as-is: the shared to-hit math only reads public fields off it (see
+    // AttackContext) — the same input a client's projected snapshot would supply, whether the
+    // resolver's target is a CombatUnit or (over the wire) a ForeignUnit.
+    val modifiers = weaponToHitModifiers(attacker, target, weapon, distance, declaration.isPrimary, gameState.map)
     val los = lineOfSight(attacker.position, target.position, gameState.map)
     val rangeBand = rangeBandFor(distance, weapon)
     val targetNumber = weaponTargetNumber(attacker, modifiers)

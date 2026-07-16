@@ -193,13 +193,13 @@ internal class BattleSessionTest {
     }
 
     @Test
-    fun `stateFor projects the viewer's own units as OwnUnit and the rest as ForeignUnit`() {
+    fun `stateFor projects the viewer's own units as the CombatUnit itself and the rest as ForeignUnit`() {
         val session = sessionInMovement()
 
         val projected = session.stateFor(PlayerId.PLAYER_1)
 
-        assertThat(projected.unitById(mech1.id)).isInstanceOf(battletech.tactical.query.OwnUnit::class.java)
-        assertThat(projected.unitById(mech2.id)).isInstanceOf(battletech.tactical.query.ForeignUnit::class.java)
+        assertThat(projected.unitById(mech1.id)).isInstanceOf(battletech.tactical.unit.CombatUnit::class.java)
+        assertThat(projected.unitById(mech2.id)).isInstanceOf(battletech.tactical.unit.ForeignUnit::class.java)
     }
 
     @Test
@@ -209,7 +209,7 @@ internal class BattleSessionTest {
         val projected = session.stateFor(null)
 
         assertThat(projected.units).allSatisfy {
-            assertThat(it).isInstanceOf(battletech.tactical.query.ForeignUnit::class.java)
+            assertThat(it).isInstanceOf(battletech.tactical.unit.ForeignUnit::class.java)
         }
     }
 

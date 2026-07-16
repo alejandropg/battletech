@@ -1,12 +1,8 @@
-package battletech.tactical.query
+package battletech.tactical.unit
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
-import battletech.tactical.unit.ArmorLayout
-import battletech.tactical.unit.CombatUnit
-import battletech.tactical.unit.MovementThisTurn
-import battletech.tactical.unit.UnitId
 import kotlinx.serialization.Serializable
 
 /**

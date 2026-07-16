@@ -4,13 +4,13 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
-import battletech.tactical.query.ForeignUnit
-import battletech.tactical.query.PublicWeapon
 import battletech.tactical.unit.AmmoType
+import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.MovementThisTurn
+import battletech.tactical.unit.PublicWeapon
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponKind
@@ -160,7 +160,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders with no unit selected shows empty`() {
-        val view = UnitStatusView(unit = null)
+        val view = UnitStatusView(subject = null)
         val buffer = renderDecorated(view, height = 14)
 
         val text = (2 until 18).map { buffer.get(it, 2).char }.joinToString("")
@@ -169,7 +169,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders box border`() {
-        val view = UnitStatusView(unit = null)
+        val view = UnitStatusView(subject = null)
         val buffer = renderDecorated(view, height = 14)
 
         assertEquals("╭", buffer.get(0, 0).char)

@@ -13,7 +13,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
-import battletech.tactical.query.OwnUnit
 
 internal class ReachabilityCalculatorTest {
 
@@ -29,7 +28,7 @@ internal class ReachabilityCalculatorTest {
     }
 
     private fun calculator(map: GameMap, units: List<CombatUnit>) =
-        ReachabilityCalculator(map, units.map(::OwnUnit))
+        ReachabilityCalculator(map, units)
 
     // --- Heat movement penalty ---
 

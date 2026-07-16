@@ -2,13 +2,12 @@ package battletech.tui.view
 
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.heat.projectHeat
-import battletech.tactical.query.ForeignUnit
-import battletech.tactical.query.OwnUnit
-import battletech.tactical.query.VisibleUnit
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ComponentCritStatus
 import battletech.tactical.unit.CriticalComponent
+import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.HeatSource
+import battletech.tactical.unit.VisibleUnit
 import battletech.tactical.unit.availableAmmoBins
 import battletech.tactical.unit.criticalDamageStatus
 import battletech.tui.game.PanelId
@@ -24,11 +23,6 @@ public class UnitStatusView(
     private val subject: VisibleUnit?,
     private val pendingHeat: List<HeatSource> = emptyList(),
 ) : View {
-
-    public constructor(
-        unit: CombatUnit?,
-        pendingHeat: List<HeatSource> = emptyList(),
-    ) : this(unit?.let { OwnUnit(it) }, pendingHeat)
 
     public companion object {
         public val INDEX: Int = PanelId.UNIT_STATUS.index
@@ -48,10 +42,10 @@ public class UnitStatusView(
                 ForeignUnitPanel.render(content, subject)
                 return
             }
-            is OwnUnit -> Unit
+            is CombatUnit -> Unit
         }
 
-        val unit = subject.unit
+        val unit = subject
 
         // UNIT
         with(content) {

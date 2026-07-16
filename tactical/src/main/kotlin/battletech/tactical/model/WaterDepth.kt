@@ -19,7 +19,7 @@ import battletech.tactical.unit.CombatUnit
  *
  * Takes a bare [position] and [map] — not a unit and a [GameState] — because that is
  * genuinely all it reads. That keeps it callable from the per-viewer query path, where the
- * unit in hand may be a [battletech.tactical.query.ForeignUnit] carrying only public
+ * unit in hand may be a [battletech.tactical.unit.ForeignUnit] carrying only public
  * fields (position among them) and no [GameState] is available at all. Same rationale as
  * [battletech.tactical.attack.lineOfSight]'s position-only signature.
  */

@@ -2,10 +2,10 @@ package battletech.tui.game
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
-import battletech.tactical.query.ForeignUnit
-import battletech.tactical.query.OwnUnit
 import battletech.tactical.session.Impulse
 import battletech.tactical.session.TurnState
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.UnitId
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
@@ -191,8 +191,8 @@ internal class MovementSelectingUnitPhaseTest {
 
             val subject = MovementPhase.SelectingUnit.unitStatus(state)
 
-            assertInstanceOf(OwnUnit::class.java, subject)
-            assertEquals(p1Unit.id, (subject as OwnUnit).unit.id)
+            assertInstanceOf(CombatUnit::class.java, subject)
+            assertEquals(p1Unit.id, (subject as CombatUnit).id)
         }
 
         @Test
@@ -248,8 +248,8 @@ internal class MovementSelectingUnitPhaseTest {
 
             val subject = MovementPhase.SelectingUnit.unitStatus(state)
 
-            assertInstanceOf(OwnUnit::class.java, subject)
-            assertEquals(p1Unit.id, (subject as OwnUnit).unit.id)
+            assertInstanceOf(CombatUnit::class.java, subject)
+            assertEquals(p1Unit.id, (subject as CombatUnit).id)
         }
     }
 }

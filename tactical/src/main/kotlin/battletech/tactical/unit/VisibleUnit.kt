@@ -1,20 +1,17 @@
-package battletech.tactical.query
+package battletech.tactical.unit
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
-import battletech.tactical.unit.ArmorLayout
-import battletech.tactical.unit.MovementThisTurn
-import battletech.tactical.unit.UnitId
 import kotlinx.serialization.Serializable
 
 /**
- * A per-viewer projection of a [battletech.tactical.unit.CombatUnit]: exposes only the
- * fields a BattleTech player can observe about ANY unit on the table, whether or not
- * they own it. [OwnUnit] additionally carries the full
- * [battletech.tactical.unit.CombatUnit] for units the viewer owns; [ForeignUnit] holds
- * nothing beyond what is declared here — there is no field to leak because the field
- * does not exist on the type.
+ * A per-viewer projection of a [CombatUnit]: exposes only the fields a BattleTech player can
+ * observe about ANY unit on the table, whether or not they own it. [CombatUnit] itself
+ * implements this directly — it already carries every field this interface declares, plus
+ * the record-sheet data (gunnery, heat, internal structure, ...) that stays reachable for the
+ * owner's own rendering. [ForeignUnit] holds nothing beyond what is declared here — there is
+ * no field to leak because the field does not exist on the type.
  *
  * Deliberately public, despite looking sensitive at a glance:
  * - [movementThisTurn] — you watch the enemy move across the table.
@@ -34,9 +31,9 @@ import kotlinx.serialization.Serializable
  * opponent learn it by watching the table or hearing the roll announced? If yes,
  * withholding it buys nothing and costs consistency.
  *
- * Absent by design — never appears on [ForeignUnit], and therefore never leaks:
- * gunnery skill, piloting skill, current heat, heat sink, internal structure, critical
- * hit layout/locations, heat generated this turn, pilot hits.
+ * Absent by design — never appears on [ForeignUnit], and therefore never leaks: gunnery
+ * skill, piloting skill, current heat, heat sink, internal structure, critical hit
+ * layout/locations, heat generated this turn, pilot hits.
  */
 @Serializable
 public sealed interface VisibleUnit {
@@ -51,7 +48,7 @@ public sealed interface VisibleUnit {
     public val walkingMP: Int
     public val runningMP: Int
     public val jumpMP: Int
-    public val weapons: List<PublicWeapon>
+    public val weapons: List<WeaponView>
     public val isProne: Boolean
     public val isShutdown: Boolean
     public val isDestroyed: Boolean

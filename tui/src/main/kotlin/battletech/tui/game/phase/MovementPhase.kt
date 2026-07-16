@@ -9,12 +9,12 @@ import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.movement.hexesMoved
 import battletech.tactical.query.PlayerView
-import battletech.tactical.query.VisibleUnit
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.StandUp
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
 import battletech.tui.game.FlashMessage

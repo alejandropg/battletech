@@ -205,7 +205,7 @@ public class GameServer(
      * mismatch is exactly why the previous (deleted) redaction attempt never
      * worked. No sentinel/fake values are used anywhere in this path — a
      * [PlayerGameState] simply doesn't have a field to leak for units [seat]
-     * doesn't own ([battletech.tactical.query.ForeignUnit] has no
+     * doesn't own ([battletech.tactical.unit.ForeignUnit] has no
      * gunnery/heat/internals field at all).
      */
     private fun snapshotFor(seat: PlayerId): GameSnapshot = GameSnapshot(

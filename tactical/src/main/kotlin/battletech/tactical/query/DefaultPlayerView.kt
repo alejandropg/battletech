@@ -9,7 +9,9 @@ import battletech.tactical.movement.MovementRules
 import battletech.tactical.movement.ReachabilityCalculator
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.session.TurnState
+import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.VisibleUnit
 
 /**
  * The one [PlayerView] implementation, built over a per-viewer [PlayerGameState].
@@ -33,7 +35,7 @@ public class DefaultPlayerView(
     override fun legalMovementsFor(unitId: UnitId): List<ReachabilityMap> {
         // Movement legality is only ever asked about the viewer's own unit, and MP depends on
         // its heat/destroyed legs — ownUnitById fails loud if that assumption breaks.
-        val unit = (state.unitById(unitId) as OwnUnit).unit
+        val unit = state.unitById(unitId) as CombatUnit
         val calculator = ReachabilityCalculator(state.map, state.units)
         return MovementRules.availableModes(unit).map { mode -> calculator.calculate(unit, mode) }
     }
@@ -78,7 +80,7 @@ public class DefaultPlayerView(
                         // from the projection — hence the Undisclosed branch below rather than
                         // a fabricated target number.
                         val targetInfos =
-                            if (attackerUnit is OwnUnit) targetInfos(attackerId, attackerUnit.torsoFacing) else null
+                            if (attackerUnit is CombatUnit) targetInfos(attackerId, attackerUnit.torsoFacing) else null
                         declarations.groupBy { it.targetId }.forEach { (targetId, decls) ->
                             val weaponIndices = decls.sortedBy { it.weaponIndex }.map { it.weaponIndex }
                             val isPrimary = decls.any { it.isPrimary }
@@ -96,8 +98,9 @@ public class DefaultPlayerView(
      * Builds one [DeclaredWeaponLine]. [targetInfos] is non-null exactly when [attackerUnit]
      * is the viewer's own (see the call site), which is what selects
      * [DeclaredWeaponLine.Detailed] over [DeclaredWeaponLine.Undisclosed]. The weapon NAME is
-     * public on both projections ([VisibleUnit.weapons] is a [PublicWeapon] list), so the
-     * observable half of the declaration survives redaction intact.
+     * public on both projections ([VisibleUnit.weapons] is a
+     * [battletech.tactical.unit.WeaponView] list), so the observable half of the declaration
+     * survives redaction intact.
      */
     private fun declaredWeaponLine(
         attackerUnit: VisibleUnit,

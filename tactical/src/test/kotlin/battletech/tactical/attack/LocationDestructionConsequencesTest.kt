@@ -33,7 +33,6 @@ import battletech.tactical.unit.mechLayout
 import battletech.tactical.unit.withSlot
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import battletech.tactical.query.OwnUnit
 
 /**
  * Tests for Task 5 — Location destruction consequences.
@@ -267,7 +266,7 @@ internal class LocationDestructionConsequencesTest {
             jumpMP = 3,
             internalStructure = anInternalStructureLayout(leftLeg = 0),
         )
-        val calc = ReachabilityCalculator(map, listOf(OwnUnit(unit)))
+        val calc = ReachabilityCalculator(map, listOf(unit))
 
         assertThat(calc.calculate(unit, MovementMode.WALK).maxMP).isEqualTo(2)
         assertThat(calc.calculate(unit, MovementMode.RUN).maxMP).isEqualTo(0)
@@ -284,7 +283,7 @@ internal class LocationDestructionConsequencesTest {
             jumpMP = 3,
             internalStructure = anInternalStructureLayout(leftLeg = 21, rightLeg = 21),
         )
-        val calc = ReachabilityCalculator(map, listOf(OwnUnit(unit)))
+        val calc = ReachabilityCalculator(map, listOf(unit))
 
         assertThat(calc.calculate(unit, MovementMode.WALK).maxMP).isEqualTo(4)
         assertThat(calc.calculate(unit, MovementMode.RUN).maxMP).isEqualTo(6)

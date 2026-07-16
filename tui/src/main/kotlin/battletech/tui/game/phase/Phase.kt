@@ -3,9 +3,9 @@ package battletech.tui.game.phase
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.query.ForeignUnit
-import battletech.tactical.query.VisibleUnit
+import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.HeatSource
+import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData

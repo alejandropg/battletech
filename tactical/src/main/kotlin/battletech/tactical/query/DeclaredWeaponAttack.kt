@@ -6,8 +6,9 @@ import battletech.tactical.unit.UnitId
  * One weapon's committed declaration within a [DeclaredWeaponAttack].
  *
  * Split by what the viewer may legitimately know, mirroring the
- * [OwnUnit]/[ForeignUnit] and [battletech.tactical.session.CriticalHit] `Detailed`/`Undisclosed`
- * precedents: WHICH weapons are pointed at WHICH target is observable (you watch the torso
+ * [battletech.tactical.unit.CombatUnit]/[battletech.tactical.unit.ForeignUnit] and
+ * [battletech.tactical.session.CriticalHit] `Detailed`/`Undisclosed` precedents: WHICH
+ * weapons are pointed at WHICH target is observable (you watch the torso
  * swing), but the attacker's to-hit MATH is not — it is computed from the attacker's gunnery
  * skill, current heat, and sensor criticals, all record-sheet data. So the prediction rides
  * only on [Detailed], for attackers the viewer owns; a foreign attacker's declaration

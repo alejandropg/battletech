@@ -8,7 +8,6 @@ import battletech.tactical.query.aUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import battletech.tactical.query.OwnUnit
 
 internal class KickActionDefinitionTest {
 
@@ -45,7 +44,7 @@ internal class KickActionDefinitionTest {
         val target = aUnit(id = "enemy", position = HexCoordinates(1, 0))
         val gameState = aGameState(units = listOf(actor, target))
 
-        val targetNumber = physicalToHitTargetNumber(actor, OwnUnit(target), PhysicalAttackKind.Kick(Side.LEFT), gameState.map)
+        val targetNumber = physicalToHitTargetNumber(actor, target, PhysicalAttackKind.Kick(Side.LEFT), gameState.map)
 
         assertEquals(97, twoD6AtLeastProbability(targetNumber))
     }

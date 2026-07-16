@@ -16,8 +16,7 @@ import battletech.network.wire.WireJson
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.query.ForeignUnit
-import battletech.tactical.query.OwnUnit
+import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.CriticalHit
@@ -60,7 +59,7 @@ internal class GameServerProtocolTest {
     // ---------- the payoff: what a PLAYER_2 client actually receives on the wire ----------
 
     @Test
-    fun `JoinAccepted's snapshot shows PLAYER_1's units as ForeignUnit and PLAYER_2's own as OwnUnit`() {
+    fun `JoinAccepted's snapshot shows PLAYER_1's units as ForeignUnit and PLAYER_2's own as CombatUnit`() {
         val server = GameServer(aSampleSession(), sessionId, port = 0)
         val connection = PipedConnection()
         server.attachInBackground(connection)
@@ -70,7 +69,7 @@ internal class GameServerProtocolTest {
         val units = joinAccepted.snapshot.gameState.units
         assertThat(units).isNotEmpty
         units.filter { it.owner == PlayerId.PLAYER_1 }.forEach { assertThat(it).isInstanceOf(ForeignUnit::class.java) }
-        units.filter { it.owner == PlayerId.PLAYER_2 }.forEach { assertThat(it).isInstanceOf(OwnUnit::class.java) }
+        units.filter { it.owner == PlayerId.PLAYER_2 }.forEach { assertThat(it).isInstanceOf(battletech.tactical.unit.CombatUnit::class.java) }
     }
 
     @Test

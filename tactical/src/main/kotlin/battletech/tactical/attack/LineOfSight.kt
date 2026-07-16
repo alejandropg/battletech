@@ -29,7 +29,7 @@ public data class LineOfSightResult(
  *
  * Deliberately position-only: the check never needs any field of either unit beyond its
  * [HexCoordinates]. That is what lets a caller which only knows a unit's public position
- * (the per-viewer query path, where the target is a [battletech.tactical.query.ForeignUnit])
+ * (the per-viewer query path, where the target is a [battletech.tactical.unit.ForeignUnit])
  * run the *identical* check the authoritative resolver runs — one implementation, no drift,
  * and no need for the target's private state.
  *

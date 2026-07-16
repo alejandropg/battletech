@@ -7,10 +7,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.DeclaredWeaponAttack
 import battletech.tactical.query.DeclaredWeaponLine
-import battletech.tactical.query.ForeignUnit
-import battletech.tactical.query.OwnUnit
 import battletech.tactical.query.PlayerView
-import battletech.tactical.query.VisibleUnit
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.CommitAttackImpulse
@@ -18,7 +15,9 @@ import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
 import battletech.tactical.session.toAttackDeclarations
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData
@@ -395,7 +394,7 @@ internal fun buildDeclaredTargetsRender(
                         // Own by construction: activeDrafts was already filtered to
                         // unit.owner == viewingPlayer above, and scopedState was projected
                         // for that same viewingPlayer.
-                        val attackerUnit = (scopedState.unitById(attackerId) as OwnUnit).unit
+                        val attackerUnit = scopedState.unitById(attackerId) as CombatUnit
                         val normalized = decl.weaponAssignments.entries
                             .filter { (_, weapons) -> weapons.isNotEmpty() }
                             .map { (targetId, weaponIndices) ->

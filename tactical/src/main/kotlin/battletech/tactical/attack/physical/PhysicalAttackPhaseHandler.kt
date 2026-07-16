@@ -2,7 +2,6 @@ package battletech.tactical.attack.physical
 
 import battletech.tactical.attack.ImpulseAttackPhaseHandler
 import battletech.tactical.attack.PhysicalAttackContext
-import battletech.tactical.query.OwnUnit
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.model.TurnPhase
@@ -61,9 +60,9 @@ public class PhysicalAttackPhaseHandler : ImpulseAttackPhaseHandler() {
                 is PhysicalAttackKind.Punch -> PunchActionDefinition()
                 is PhysicalAttackKind.Kick -> KickActionDefinition()
             }
-            // OwnUnit(target): the authoritative handler holds the full unit; the rules only
-            // read its public projection (see AttackContext).
-            val context = PhysicalAttackContext(actor = attacker, target = OwnUnit(target), map = state.map)
+            // target is passed as-is: the rules only read its public projection (see
+            // AttackContext), and CombatUnit is a VisibleUnit.
+            val context = PhysicalAttackContext(actor = attacker, target = target, map = state.map)
             definition.firstRejection(context)?.let { rejection ->
                 return CommandRejection.RuleViolation(rejection)
             }

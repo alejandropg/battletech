@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import battletech.tactical.query.OwnUnit
 
 /**
  * Tests for all water and depth effects:
@@ -74,7 +73,7 @@ internal class WaterDepthEffectsTest {
             hexes = mapOf(targetPos to depth1Hex(targetPos)),
         )
 
-        val mods = weaponToHitModifiers(attacker, OwnUnit(target), weapon, 1, isPrimaryTarget = true, gameState.map)
+        val mods = weaponToHitModifiers(attacker, target, weapon, 1, isPrimaryTarget = true, gameState.map)
 
         // partialCover = true → woodsModifier 0 + partialCover +3 = 3
         assertEquals(3, mods.first { it.label == "terrain" }.amount)

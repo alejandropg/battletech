@@ -14,7 +14,6 @@ import battletech.tactical.unit.Weapon
 import battletech.tactical.dice.DiceRoller
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import battletech.tactical.query.OwnUnit
 
 /**
  * Unit tests for the three new to-hit modifiers added in Task 1:
@@ -40,7 +39,7 @@ internal class WeaponToHitModifiersTest {
         weapon: Weapon = aWeapon(),
         distance: Int = attacker.position.distanceTo(target.position),
         gameState: GameState = aGameState(),
-    ) = weaponToHitModifiers(attacker, OwnUnit(target), weapon, distance, isPrimaryTarget = true, map = gameState.map)
+    ) = weaponToHitModifiers(attacker, target, weapon, distance, isPrimaryTarget = true, map = gameState.map)
 
     // -------------------------------------------------------------------------
     // Attacker movement modifier

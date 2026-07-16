@@ -13,8 +13,7 @@ import battletech.network.wire.WireJson
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.query.ForeignUnit
-import battletech.tactical.query.OwnUnit
+import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.GameEvent
@@ -69,7 +68,7 @@ internal class RemoteGameSessionTest {
     // ---------- the payoff: what this client actually holds is already redacted ----------
 
     @Test
-    fun `stateFor(playerId) shows PLAYER_1's units as ForeignUnit and this seat's own as OwnUnit`() {
+    fun `stateFor(playerId) shows PLAYER_1's units as ForeignUnit and this seat's own as CombatUnit`() {
         val server = GameServer(aSampleSession(), sessionId, port = 0)
         val connection = PipedConnection()
         server.attachInBackground(connection)
@@ -80,7 +79,7 @@ internal class RemoteGameSessionTest {
         val units = remote.stateFor(remote.playerId).units
         assertThat(units).isNotEmpty
         units.filter { it.owner == PlayerId.PLAYER_1 }.forEach { assertThat(it).isInstanceOf(ForeignUnit::class.java) }
-        units.filter { it.owner == PlayerId.PLAYER_2 }.forEach { assertThat(it).isInstanceOf(OwnUnit::class.java) }
+        units.filter { it.owner == PlayerId.PLAYER_2 }.forEach { assertThat(it).isInstanceOf(battletech.tactical.unit.CombatUnit::class.java) }
     }
 
     @Test

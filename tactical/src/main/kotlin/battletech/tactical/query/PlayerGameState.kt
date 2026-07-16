@@ -5,15 +5,17 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.UnknownUnitException
+import battletech.tactical.unit.VisibleUnit
 import kotlinx.serialization.Serializable
 
 /**
  * Per-viewer projection of [GameState]: the same read surface, but [units] holds
- * [VisibleUnit]s instead of raw [battletech.tactical.unit.CombatUnit]s — [OwnUnit] for
- * units the viewer owns (or every unit, at the deliberate match-over reveal),
- * [ForeignUnit] otherwise. Built by [projectFor].
+ * [VisibleUnit]s instead of raw [CombatUnit]s — the [CombatUnit] itself for units the
+ * viewer owns (or every unit, at the deliberate match-over reveal), [ForeignUnit]
+ * otherwise. Built by [projectFor].
  */
 @Serializable
 public data class PlayerGameState(
@@ -48,7 +50,7 @@ public data class PlayerGameState(
      * delegates here rather than restating it.
      */
     public fun ownUnitById(id: UnitId): CombatUnit =
-        (unitById(id) as? OwnUnit)?.unit
+        unitById(id) as? CombatUnit
             ?: error("Expected $id to be the viewer's own unit, but it projected as foreign")
 
     public fun unitsOf(player: PlayerId): List<VisibleUnit> = units.filter { it.owner == player }
@@ -65,10 +67,10 @@ public data class PlayerGameState(
 }
 
 /**
- * Projects [GameState] for [viewer]: [OwnUnit] for units [viewer] owns, [ForeignUnit]
- * otherwise.
+ * Projects [GameState] for [viewer]: the [CombatUnit] itself for units [viewer] owns,
+ * [ForeignUnit] otherwise.
  *
- * [revealAll] is the deliberate match-over reveal (every unit becomes [OwnUnit]) — a
+ * [revealAll] is the deliberate match-over reveal (every unit stays a [CombatUnit]) — a
  * later stage supplies it from `session.isMatchOver`.
  *
  * [viewer] `== null` means "I don't know who is looking": every unit becomes
@@ -80,7 +82,7 @@ public fun GameState.projectFor(viewer: PlayerId?, revealAll: Boolean = false): 
     PlayerGameState(
         units = units.map { unit ->
             if (revealAll || (viewer != null && unit.owner == viewer)) {
-                OwnUnit(unit)
+                unit
             } else {
                 ForeignUnit.from(unit)
             }
