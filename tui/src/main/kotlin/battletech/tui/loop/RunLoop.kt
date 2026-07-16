@@ -168,7 +168,7 @@ internal suspend fun runLoop(
                 // subscription) without a local Transition ever having run, so the
                 // TUI phase can go stale — the resync below catches it up.
                 is UiEvent.Session -> {
-                    val resynced = mapToTuiPhase(appState.session.currentPhase)
+                    val resynced = mapToTuiPhase(appState.anySession.currentPhase)
                     val isResync = resynced.turnPhase != appState.phase.turnPhase
                     appState = appState.copy(
                         matchEnded = (ui.event as? MatchEnded) ?: appState.matchEnded,

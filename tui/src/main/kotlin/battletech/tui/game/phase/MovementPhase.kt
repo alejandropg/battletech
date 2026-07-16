@@ -298,8 +298,8 @@ internal fun enterBrowsing(unit: CombatUnit, view: PlayerView): MovementPhase.Br
 internal fun enterMovementSubMode(unit: CombatUnit, app: AppState): Transition =
     if (unit.isProne) {
         // A prone unit must stand before it can move.
-        val result = app.session.submitCommand(StandUp(playerId = unit.owner, unitId = unit.id))
-        Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)), flash = rejectionFlash(result))
+        val result = app.submitCommand(StandUp(playerId = unit.owner, unitId = unit.id))
+        Transition(app.copy(phase = mapToTuiPhase(app.anySession.currentPhase)), flash = rejectionFlash(result))
     } else {
         Transition(app.copy(phase = enterBrowsing(unit, app.viewFor(unit.owner))))
     }
@@ -326,7 +326,7 @@ private fun submitMove(
     mode: MovementMode,
 ): Transition {
     val owner = app.visibleState.unitById(unitId).owner
-    val result = app.session.submitCommand(
+    val result = app.submitCommand(
         MoveUnit(
             playerId = owner,
             unitId = unitId,
@@ -334,7 +334,7 @@ private fun submitMove(
             mode = mode,
         ),
     )
-    return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)), flash = rejectionFlash(result))
+    return Transition(app.copy(phase = mapToTuiPhase(app.anySession.currentPhase)), flash = rejectionFlash(result))
 }
 
 internal fun modePrompt(reachability: ReachabilityMap?): String {

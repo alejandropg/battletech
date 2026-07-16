@@ -1,12 +1,8 @@
 package battletech.tui
 
-import battletech.tactical.model.GameState
-import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
-import battletech.tactical.session.BattleSession
 import battletech.tactical.session.GameSession
-import battletech.tactical.session.TurnState
 import battletech.tui.game.AppState
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.loop.UiEvent
@@ -21,22 +17,28 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
 
-public class TuiApp(
-    private val providedSession: GameSession? = null,
-    private val localPlayer: PlayerId? = null,
-    private val initialGameState: GameState? = null,
-) {
+/**
+ * [seats] is the set of seats this process drives, each mapped to the [GameSession] that seat
+ * acts and reads through — see [AppState]'s KDoc for the full rationale. The caller composes this
+ * map and hands it a session that has already been started (kickstarted, if applicable):
+ * hot-seat's shared [battletech.tactical.session.BattleSession] has already had
+ * [battletech.tactical.session.BattleSession.advance] called on it, a `--host` seat's server
+ * fires its own kickstart once the roster completes, and a `--join`ed
+ * [battletech.network.client.RemoteGameSession] never kickstarts at all. This class never builds
+ * a session or calls `advance()` itself.
+ */
+public class TuiApp(private val seats: Map<PlayerId, GameSession>) {
 
     /**
-     * Entry point. Sets up the session, wires subscriptions for every player into
-     * [internalEvents], merges all event sources, and drives [runLoop].
+     * Entry point. Wires a subscription for every seat's session into [internalEvents], merges
+     * all event sources, and drives [runLoop].
      *
-     * When [providedSession] is null (hot-seat, the default) this builds a local
-     * [BattleSession] and fires the [BattleSession.advance] kickstart itself, exactly
-     * as before remote play existed. When non-null (host/join modes) the caller
-     * owns session construction/kickstart — a host's [BattleSession] wrapped in
-     * `GameServer` fires its own kickstart once a client joins; a joining client's
-     * `RemoteGameSession` never kickstarts at all.
+     * ### One subscription per seat, not deduplicated by session identity
+     * Hot-seat's two seats share the SAME underlying session object, so subscribing per seat
+     * (rather than per distinct session) delivers each event twice there — renders are
+     * idempotent, so that's wasteful, not wrong, and keeps this method free of any "is this the
+     * same session as another seat?" special-casing. Host/join seat maps have exactly one entry,
+     * so they see no duplication at all.
      *
      * ### Single-thread confinement
      * All session mutations, AppState updates, and rendering run on the single
@@ -52,26 +54,19 @@ public class TuiApp(
         val terminal = Terminal()
         val renderer = ScreenRenderer(terminal)
 
-        val session = providedSession ?: BattleSession(
-            initialGameState = initialGameState ?: GameStateFactory().sampleGameState(),
-            initialTurnState = TurnState.NULL,
-        ).also {
-            // Kickstart cascades INITIATIVE → MOVEMENT; the session's gameLog
-            // captures the cascade events and the LOG panel renders them.
-            it.advance()
-        }
         val appState = AppState(
-            session = session,
-            phase = mapToTuiPhase(session.currentPhase),
+            seats = seats,
+            phase = mapToTuiPhase(seats.values.first().currentPhase),
             cursor = HexCoordinates(0, 0),
-            localPlayer = localPlayer,
         )
 
         renderer.clear()
         try {
             runBlocking {
                 val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-                val subscription = session.subscribe { internalEvents.trySend(UiEvent.Session(it)) }
+                val subscriptions = seats.values.map { session ->
+                    session.subscribe { internalEvents.trySend(UiEvent.Session(it)) }
+                }
                 try {
                     runLoop(
                         events = merge(
@@ -85,7 +80,7 @@ public class TuiApp(
                         initialState = appState,
                     )
                 } finally {
-                    subscription.unsubscribe()
+                    subscriptions.forEach { it.unsubscribe() }
                 }
             }
         } finally {

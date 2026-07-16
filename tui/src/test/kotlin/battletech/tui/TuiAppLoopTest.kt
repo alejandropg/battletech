@@ -525,7 +525,7 @@ internal class TuiAppLoopTest {
     fun `SessionNotice recorded in the gameLog renders in the LOG panel with the lan-connect icon`() = runTest(UnconfinedTestDispatcher()) {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         val initialState = buildAppState()
-        val session = initialState.session as BattleSession
+        val session = initialState.anySession as BattleSession
 
         val loopJob = launch {
             runLoop(

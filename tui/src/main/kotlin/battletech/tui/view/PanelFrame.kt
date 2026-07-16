@@ -24,7 +24,7 @@ internal class PanelFrame(private val appState: AppState) {
 
     val pendingHeat by lazy { appState.phase.pendingHeat(appState) }
 
-    val logEntries by lazy { appState.session.logFor(appState.viewer) }
+    val logEntries by lazy { appState.logFor(appState.viewer) }
 
     val declaredTargets by lazy { appState.phase.declaredTargetsRender(appState) }
 

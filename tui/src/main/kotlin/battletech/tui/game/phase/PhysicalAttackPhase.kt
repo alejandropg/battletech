@@ -17,6 +17,7 @@ import battletech.tui.game.attackPlayerLabel
 import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.AttackAction
+import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -42,8 +43,16 @@ internal sealed interface PhysicalAttackPhase : Phase {
         override val drafts: PhysicalDrafts = emptyMap(),
     ) : PhysicalAttackPhase {
 
-        override fun handle(event: InputEvent, app: AppState): Transition? =
-            handleUnitSelection(
+        override fun handle(event: InputEvent, app: AppState): Transition? {
+            val turnState = app.turnState
+            // Mirrors AttackPhase.SelectingAttacker's / MovementPhase.SelectingUnit's guard: the
+            // (shared) attack impulse sequence may not be seeded yet, and every other field this
+            // phase touches indexes into it.
+            if (turnState.attack.isComplete) {
+                val action = mapIdleInput(event) ?: return null
+                return if (action is IdleAction.MoveCursor) handleCursorMove(app, action) else Transition(app)
+            }
+            return handleUnitSelection(
                 event = event,
                 app = app,
                 activePlayer = { app.turnState.attack.activePlayer },
@@ -51,6 +60,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
                 onCommit = { a -> commitPhysicalImpulse(a, drafts) },
                 enterFor = { unit, a -> Transition(a.copy(phase = enterPhysicalDeclaring(unit.id, a, drafts))) },
             )
+        }
 
         override fun prompt(app: AppState): String {
             val turnState = app.turnState
@@ -199,12 +209,12 @@ internal fun commitPhysicalImpulse(app: AppState, drafts: PhysicalDrafts): Trans
     val declarations = drafts.flatMap { (attackerId, byTarget) ->
         byTarget.flatMap { (targetId, kinds) -> kinds.map { PhysicalAttackDeclaration(attackerId, targetId, it) } }
     }
-    val result = app.session.submitCommand(
+    val result = app.submitCommand(
         CommitPhysicalAttackImpulse(
             playerId = turnState.attack.activePlayer,
             declarations = declarations,
             torsoFacings = emptyMap(),
         ),
     )
-    return Transition(app.copy(phase = mapToTuiPhase(app.session.currentPhase)), flash = rejectionFlash(result))
+    return Transition(app.copy(phase = mapToTuiPhase(app.anySession.currentPhase)), flash = rejectionFlash(result))
 }

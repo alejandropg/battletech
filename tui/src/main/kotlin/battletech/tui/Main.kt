@@ -11,7 +11,9 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.map.resolveMap
 import battletech.tactical.query.projectFor
+import battletech.tactical.session.BattleSession
 import battletech.tactical.session.GameEvent
+import battletech.tactical.session.TurnState
 import battletech.tui.view.GameLogFormatter
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
@@ -171,7 +173,16 @@ public fun main(args: Array<String>) {
     when (mode) {
         is Mode.Local -> {
             val map = resolveMapOrExit(mode.mapName)
-            TuiApp(initialGameState = GameStateFactory().sampleGameState(map)).run()
+            // Hot-seat still builds its own BattleSession here (wiring it through
+            // GameServer.connectLocal() instead is the next commit) and kickstarts it itself —
+            // TuiApp no longer does either. Both seats share the one session: legal, since
+            // BattleSession.stateFor projects for any viewer, and it's what makes this hot-seat
+            // rather than a one-seat host/join map.
+            val session = BattleSession(
+                initialGameState = GameStateFactory().sampleGameState(map),
+                initialTurnState = TurnState.NULL,
+            ).also { it.advance() }
+            TuiApp(seats = PlayerId.entries.associateWith { session }).run()
         }
 
         is Mode.Host -> {
@@ -186,10 +197,7 @@ public fun main(args: Array<String>) {
             println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
             acceptor.use {
                 server.use {
-                    TuiApp(
-                        providedSession = localSession,
-                        localPlayer = localSession.playerId,
-                    ).run()
+                    TuiApp(seats = mapOf(localSession.playerId to localSession)).run()
                 }
             }
         }
@@ -205,10 +213,7 @@ public fun main(args: Array<String>) {
                 kotlin.system.exitProcess(1)
             }
             remote.use { remote ->
-                TuiApp(
-                    providedSession = remote,
-                    localPlayer = remote.playerId,
-                ).run()
+                TuiApp(seats = mapOf(remote.playerId to remote)).run()
             }
         }
 

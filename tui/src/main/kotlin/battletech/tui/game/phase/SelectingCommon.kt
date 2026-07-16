@@ -57,35 +57,34 @@ internal fun handleCursorMove(app: AppState, action: IdleAction.MoveCursor): Tra
     Transition(app.copy(cursor = moveCursor(app.cursor, action.direction, app.visibleState.map)))
 
 /**
- * Guard against acting outside this client's seat in remote play.
+ * Guard against acting outside a seat this process drives.
  *
- * [AppState.localPlayer] is set once a session is remote (host = PLAYER_1,
- * joiner = PLAYER_2); hot-seat play leaves it `null` and this guard is always
- * a no-op. Returns `Transition(app, FlashMessage("Waiting for opponent"))`
- * when [app.localPlayer] is set and differs from [activePlayer], else `null`
- * so the caller can fall through to the real handling via `?:`.
+ * Returns `Transition(app, FlashMessage("Waiting for opponent"))` when [activePlayer] is not one
+ * of [AppState.seats], else `null` so the caller can fall through to the real handling via `?:`.
+ * Hot-seat never flashes — not because anything here special-cases hot-seat, but because
+ * [AppState.seats] holds both players there, so [activePlayer] is always a member.
  *
- * [activePlayer] is itself lazy and only invoked when [app.localPlayer] is
- * non-null: hot-seat play never touches turn-state fields via this guard, so
- * it stays safe to call from branches (like commit) whose turn state may be
- * unseeded ([TurnState.NULL]) when nothing is actually in progress.
+ * [activePlayer] is now evaluated unconditionally (there is no nullable "local player" left to
+ * gate it on). Every `handle()` that reaches this guard must therefore already know its own
+ * turn-state field is seeded before calling in — see [MovementPhase.SelectingUnit]'s
+ * `turnState.movement.isComplete` guard and [AttackPhase.SelectingAttacker]'s /
+ * [PhysicalAttackPhase.SelectingAttacker]'s `turnState.attack.isComplete` guard, both of which
+ * short-circuit to cursor-only handling — never reaching this function, let alone [activePlayer]
+ * — while the impulse sequence is unseeded (e.g. fresh [TurnState.NULL]).
  *
- * This is the single source of truth for the seat check: [selectOwnUnit]
- * calls it for the Enter/click select path, and [handleUnitSelection] calls
- * it directly (before [selectOwnUnit] would otherwise run) for Tab and
- * commit, which never reach [selectOwnUnit].
+ * This is the single source of truth for the seat check: [selectOwnUnit] calls it for the
+ * Enter/click select path, and [handleUnitSelection] calls it directly (before [selectOwnUnit]
+ * would otherwise run) for Tab and commit, which never reach [selectOwnUnit].
  */
-private fun localTurnGuard(app: AppState, activePlayer: () -> PlayerId): Transition? {
-    val localPlayer = app.localPlayer ?: return null
-    return if (activePlayer() != localPlayer) Transition(app, FlashMessage("Waiting for opponent")) else null
-}
+private fun localTurnGuard(app: AppState, activePlayer: () -> PlayerId): Transition? =
+    if (activePlayer() in app.seats) null else Transition(app, FlashMessage("Waiting for opponent"))
 
 /**
  * Try to select the unit at the cursor as the active player's unit.
  *
  * - No unit at cursor → `Transition(app)` (no-op).
- * - [app.localPlayer] is set and differs from [activePlayer] (remote play,
- *   not this client's turn) → `Transition(app, FlashMessage("Waiting for opponent"))`
+ * - [activePlayer] is not a seat this process drives (remote play, not this
+ *   client's turn) → `Transition(app, FlashMessage("Waiting for opponent"))`
  *   (see [localTurnGuard]; kept here too as defense in depth for any direct
  *   caller of this function, though [handleUnitSelection] now also checks
  *   this before calling in).
@@ -141,13 +140,15 @@ internal fun handleUnitSelection(
     enterFor: (CombatUnit, AppState) -> Transition,
 ): Transition? {
     val action = mapIdleInput(event) ?: return null
-    // [activePlayer] and [selectableUnits] are evaluated lazily: cursor moves
-    // must not touch turn-state fields that may be absent (e.g. TurnState.NULL)
-    // when no unit selection is actually happening. Every other branch is an
-    // acting move, so it runs [localTurnGuard] (which itself only calls
-    // [activePlayer] when [AppState.localPlayer] is set — see its KDoc) before
-    // doing anything else, so a still-unseeded turn state under hot-seat play
-    // (e.g. a pre-commit no-op) stays exactly as lazy as before this guard existed.
+    // [activePlayer] and [selectableUnits] are evaluated lazily: cursor moves must not touch
+    // turn-state fields that may be absent (e.g. TurnState.NULL) when no unit selection is
+    // actually happening. Every other branch is an acting move and calls [activePlayer]
+    // unconditionally (via [localTurnGuard], and again directly for Click/Enter) — so this
+    // function must only ever be entered once the caller's own turn-state field is already known
+    // to be seeded. See [MovementPhase.SelectingUnit]'s `turnState.movement.isComplete` guard and
+    // [AttackPhase.SelectingAttacker]'s / [PhysicalAttackPhase.SelectingAttacker]'s
+    // `turnState.attack.isComplete` guard, each of which short-circuits to cursor-only handling
+    // (never calling this function) while its sequence is unseeded.
     return when (action) {
         is IdleAction.MoveCursor -> handleCursorMove(app, action)
         is IdleAction.ClickHex ->

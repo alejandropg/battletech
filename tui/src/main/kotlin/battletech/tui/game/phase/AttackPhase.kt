@@ -28,6 +28,7 @@ import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.selectedLosHighlights
 import battletech.tui.hex.HexHighlight
 import battletech.tui.input.AttackAction
+import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -63,8 +64,18 @@ internal sealed interface AttackPhase : Phase {
         override val drafts: Map<UnitId, UnitDeclaration> = emptyMap(),
     ) : AttackPhase {
 
-        override fun handle(event: InputEvent, app: AppState): Transition? =
-            handleUnitSelection(
+        override fun handle(event: InputEvent, app: AppState): Transition? {
+            val turnState = app.turnState
+            // The attack impulse sequence may not be seeded yet (fresh TurnState.NULL, or a
+            // host-mode render before the roster completes and the session's advance() kickstart
+            // fires) — every other field this phase touches (activePlayer, selectableUnits)
+            // indexes into that sequence and would throw, so only cursor movement is safe here.
+            // Mirrors MovementPhase.SelectingUnit's `turnState.movement.isComplete` guard.
+            if (turnState.attack.isComplete) {
+                val action = mapIdleInput(event) ?: return null
+                return if (action is IdleAction.MoveCursor) handleCursorMove(app, action) else Transition(app)
+            }
+            return handleUnitSelection(
                 event = event,
                 app = app,
                 activePlayer = { app.turnState.attack.activePlayer },
@@ -74,6 +85,7 @@ internal sealed interface AttackPhase : Phase {
                     Transition(a.copy(phase = enterDeclaring(unit, attackTurnPhase, a.viewFor(unit.owner), drafts)))
                 },
             )
+        }
 
         override fun prompt(app: AppState): String {
             val turnState = app.turnState
@@ -309,7 +321,7 @@ internal fun commitAttackImpulse(
     val torsoFacings: Map<UnitId, HexDirection> = drafts.values.associate { it.unitId to it.torsoFacing }
     val declarations = drafts.values.toAttackDeclarations()
 
-    val result = app.session.submitCommand(
+    val result = app.submitCommand(
         CommitAttackImpulse(
             playerId = activePlayer,
             declarations = declarations,
@@ -318,7 +330,7 @@ internal fun commitAttackImpulse(
     )
     val accepted = result as? CommandResult.Accepted
     val resolvedResults = accepted?.events?.filterIsInstance<AttacksResolved>()?.firstOrNull()?.results
-    val newPhase = mapToTuiPhase(app.session.currentPhase)
+    val newPhase = mapToTuiPhase(app.anySession.currentPhase)
     val isNewWeaponAttackPhase = newPhase.turnPhase == TurnPhase.WEAPON_ATTACK
     val updatedApp = app.copy(
         phase = newPhase,
@@ -350,7 +362,7 @@ internal fun declaredTargetsViewingPlayer(turnState: TurnState): PlayerId =
  * are folded in locally: they don't exist server-side until commit (see [WeaponAllocation]'s
  * KDoc for why that stays a client-side concern).
  *
- * Scoped to [viewingPlayer] via [battletech.tactical.session.GameSession.stateFor] directly —
+ * Scoped to [viewingPlayer] via [AppState.stateFor] directly —
  * deliberately NOT [AppState.visibleState]/[AppState.ownUnit], since [viewingPlayer] (the
  * attacker whose drafts this panel folds in) need not equal [AppState.viewer] for every caller
  * of this function (it does in the live TUI, where the active attacker always renders their own
@@ -361,7 +373,7 @@ internal fun buildDeclaredTargetsRender(
     viewingPlayer: PlayerId,
     drafts: Map<UnitId, UnitDeclaration>,
 ): DeclaredTargetsRender {
-    val scopedState = app.session.stateFor(viewingPlayer)
+    val scopedState = app.stateFor(viewingPlayer)
     val turnState = app.turnState
     val playerOrder: List<PlayerId> = if (turnState.attack.sequence.order.isNotEmpty()) {
         turnState.attack.sequence.order.map { it.player }.distinct()
