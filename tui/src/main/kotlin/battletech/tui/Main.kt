@@ -11,9 +11,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.map.resolveMap
 import battletech.tactical.query.projectFor
-import battletech.tactical.session.BattleSession
 import battletech.tactical.session.GameEvent
-import battletech.tactical.session.TurnState
 import battletech.tui.view.GameLogFormatter
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
@@ -159,6 +157,36 @@ private fun resolveMapOrExit(mapName: String?) = try {
     kotlin.system.exitProcess(2)
 }
 
+/** Bound on [awaitKickstart]'s poll loop — generous for an in-process, no-I/O handoff. */
+private const val KICKSTART_TIMEOUT_MS: Long = 2000
+
+/**
+ * Blocks until every hot-seat [seats] session has caught up with [server]'s current phase.
+ *
+ * [GameServer.attach] sends a seat its [battletech.network.wire.ServerMessage.JoinAccepted]
+ * BEFORE calling [battletech.tactical.session.BattleSession.advance] (see [GameServer]'s KDoc
+ * on kickstart) — true even for the second [GameServer.connectLocal] call, the one whose join
+ * completes the roster and triggers the advance. The post-kickstart state reaches each seat
+ * afterward as a [battletech.network.wire.ServerMessage.StatePush], applied asynchronously by
+ * that seat's own reader thread. A [GameServer.connectLocal] call can therefore return before
+ * its own session reflects the kickstart, and the OTHER already-connected seat's session lags
+ * the same way. [TuiApp] reads `currentPhase` to build its initial `AppState` and is not the
+ * place to absorb transport timing — so composition waits here first: [server]`.currentPhase`
+ * is read under the server's own lock (see [GameServer.currentPhase]), which cannot return
+ * until [GameServer.attach]'s synchronized block — kickstart included — has finished, so it is
+ * always the post-kickstart ground truth to converge every seat against.
+ */
+private fun awaitKickstart(server: GameServer, seats: Map<PlayerId, RemoteGameSession>) {
+    val deadline = System.nanoTime() + KICKSTART_TIMEOUT_MS * 1_000_000L
+    while (seats.values.any { it.currentPhase != server.currentPhase }) {
+        check(System.nanoTime() < deadline) {
+            "hot-seat kickstart did not land within ${KICKSTART_TIMEOUT_MS}ms: " +
+                "server=${server.currentPhase}, seats=${seats.mapValues { it.value.currentPhase }}"
+        }
+        Thread.sleep(1)
+    }
+}
+
 /**
  * Entry point for the TUI application.
  * Processes command-line arguments and launches the [TuiApp].
@@ -173,16 +201,20 @@ public fun main(args: Array<String>) {
     when (mode) {
         is Mode.Local -> {
             val map = resolveMapOrExit(mode.mapName)
-            // Hot-seat still builds its own BattleSession here (wiring it through
-            // GameServer.connectLocal() instead is the next commit) and kickstarts it itself —
-            // TuiApp no longer does either. Both seats share the one session: legal, since
-            // BattleSession.stateFor projects for any viewer, and it's what makes this hot-seat
-            // rather than a one-seat host/join map.
-            val session = BattleSession(
-                initialGameState = GameStateFactory().sampleGameState(map),
-                initialTurnState = TurnState.NULL,
-            ).also { it.advance() }
-            TuiApp(seats = PlayerId.entries.associateWith { session }).run()
+            val server = GameServer.host(GameStateFactory().sampleGameState(map))
+            // Build the map from each returned session's OWN playerId — connectLocal() assigns
+            // seats via (allSeats - clients.keys).min(), not call order, so the Nth call is not
+            // guaranteed to be the Nth PlayerId. See GameServer.connectLocal's KDoc.
+            val seats = List(PlayerId.entries.size) { server.connectLocal() }.associateBy { it.playerId }
+            check(seats.keys == PlayerId.entries.toSet()) {
+                "hot-seat roster incomplete: expected ${PlayerId.entries.toSet()}, got ${seats.keys}"
+            }
+            // The second connectLocal()'s JoinAccepted (and, for the same reason, the first's) can
+            // return before the kickstart's StatePush has been applied by that session's own reader
+            // thread — see awaitKickstart's KDoc. TuiApp reads currentPhase to build its initial
+            // AppState, so composition must absorb this race before handing seats to TuiApp.
+            awaitKickstart(server, seats)
+            server.use { TuiApp(seats).run() }
         }
 
         is Mode.Host -> {
