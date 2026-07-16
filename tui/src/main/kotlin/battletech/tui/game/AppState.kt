@@ -44,8 +44,14 @@ internal data class AppState(
     val turnState: TurnState get() = session.turnState
     val currentPhase: TurnPhase get() = phase.turnPhase
 
-    /** Who the screen is drawn for. Hot-seat has no localPlayer, so the acting player is the viewer. */
-    val viewer: PlayerId? get() = localPlayer ?: session.activePlayer
+    /**
+     * Who the screen is drawn for. A remote client is pinned to its own seat via [localPlayer];
+     * hot-seat follows the acting player. Falls back to PLAYER_1 only for the transient
+     * system-phase windows (Initiative/Heat/End) where [GameSession.activePlayer] is momentarily
+     * null — never a resting render state, since the cascade (see [mapToTuiPhase]'s KDoc) drives
+     * past system phases before the next render.
+     */
+    val viewer: PlayerId get() = localPlayer ?: session.activePlayer ?: PlayerId.PLAYER_1
 
     /** The only state the TUI can see. */
     val visibleState: PlayerGameState get() = session.stateFor(viewer)

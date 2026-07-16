@@ -440,9 +440,10 @@ internal class TuiAppLoopTest {
 
         // Session is constructed already sitting at WEAPON_ATTACK while the TUI
         // phase below is MovementPhase — a deliberate mismatch so the first
-        // Session event triggers the resync branch.
+        // Session event triggers the resync branch. Includes a unit matching
+        // aResult()'s attackerId so AttackResultsView's owner lookup resolves.
         val base = AppState(
-            gameState = aGameState(),
+            gameState = aGameState(units = listOf(aUnit(id = "ally", owner = PlayerId.PLAYER_1))),
             turnState = aTurnState(),
             phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK),
             cursor = HexCoordinates(0, 0),
@@ -552,8 +553,11 @@ internal class TuiAppLoopTest {
 
     // ---- helpers ----
 
-    private fun aResult() = AttackResult.Miss(
-        attackerId = UnitId("a"),
+    // attackerId defaults to "ally" (buildAppState()'s PLAYER_1 unit) since AttackResultsView
+    // now looks the attacker up in the rendered gameState's unitOwners via getValue (fails loud
+    // on an unknown id, rather than silently rendering white as the old nullable playerColor did).
+    private fun aResult(attackerId: UnitId = UnitId("ally")) = AttackResult.Miss(
+        attackerId = attackerId,
         targetId = UnitId("b"),
         weaponName = "Med Laser",
         targetNumber = 7,

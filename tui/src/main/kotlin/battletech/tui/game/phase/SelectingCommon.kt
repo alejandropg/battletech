@@ -160,11 +160,8 @@ internal fun handleUnitSelection(
  * The [VisibleUnit] under the cursor in an idle selecting state.
  * [AppState.visibleState] has already decided
  * [battletech.tactical.query.OwnUnit] vs [battletech.tactical.query.ForeignUnit]
- * for [AppState.viewer] — including the fail-closed case where the viewer
- * itself is unknown (e.g. the session has parked past match-over): see
- * [battletech.tactical.query.projectFor]'s KDoc for why an unknown viewer
- * renders every unit, including what would be the caller's own, as foreign.
- * There is nothing left to redact here — the projection already did it.
+ * for [AppState.viewer], which is always a concrete seat (see [AppState.viewer]'s
+ * KDoc). There is nothing left to redact here — the projection already did it.
  */
 internal fun cursorUnitStatus(app: AppState): VisibleUnit? = app.visibleState.unitAt(app.cursor)
 

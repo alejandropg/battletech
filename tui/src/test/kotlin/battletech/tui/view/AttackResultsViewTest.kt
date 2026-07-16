@@ -95,7 +95,7 @@ internal class AttackResultsViewTest {
         missilesHit = missilesHit,
     )
 
-    private fun makeView(results: List<AttackResult>, viewer: PlayerId? = PlayerId.PLAYER_1): AttackResultsView {
+    private fun makeView(results: List<AttackResult>, viewer: PlayerId = PlayerId.PLAYER_1): AttackResultsView {
         val render = AttackResultsRender(
             results = results,
             unitOwners = mapOf(attackerId to PlayerId.PLAYER_1, targetId to PlayerId.PLAYER_2),
@@ -105,7 +105,7 @@ internal class AttackResultsViewTest {
     }
 
     /** Renders via the decorator — pixel-parity regression guard for box/title/coordinates. */
-    private fun renderToString(results: List<AttackResult>, width: Int = 34, height: Int = 30, viewer: PlayerId? = PlayerId.PLAYER_1): String {
+    private fun renderToString(results: List<AttackResult>, width: Int = 34, height: Int = 30, viewer: PlayerId = PlayerId.PLAYER_1): String {
         val view = makeView(results, viewer)
         val decorated = ScrollablePanelView(
             index = AttackResultsView.INDEX,

@@ -209,12 +209,14 @@ internal class MovementSelectingUnitPhaseTest {
         }
 
         @Test
-        fun `unitStatus is Foreign for an enemy unit when the viewer is unknown (fails closed)`() {
-            // Movement complete -> session.activePlayer is null; combined with the default
-            // anAppState() localPlayer = null, AppState.viewer is unknown. This is the
-            // match-over-parked scenario: "I don't know who is looking" must redact, not
-            // reveal. This test reproduces the bug: it fails on the old fail-open code (which
-            // returned Owned whenever viewer == null).
+        fun `unitStatus is Foreign for an enemy unit once movement completes`() {
+            // Movement complete -> session.activePlayer is null. AppState.viewer no longer goes
+            // null here: hot-seat falls back to PLAYER_1 (AppState.viewer's `?: PlayerId.PLAYER_1`)
+            // through this transient system-phase-like moment, so the projection is still concrete.
+            // p2Unit is foreign under that viewer regardless. (The engine's own "unknown viewer
+            // fails closed" contract — see battletech.tactical.query.projectFor's KDoc — is
+            // exercised directly by BattleSessionTest/EventRedactionTest, not through this
+            // TUI-level state.)
             val p1Unit = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
             val p2Unit = aUnit(id = "u2", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 1))
             val gameState = aGameState(units = listOf(p1Unit, p2Unit))
@@ -231,10 +233,10 @@ internal class MovementSelectingUnitPhaseTest {
         }
 
         @Test
-        fun `unitStatus is Foreign for the viewer's own unit when the viewer is unknown (fails closed)`() {
-            // Same unknown-viewer scenario as above, but the cursor sits on the unit that would be
-            // "own" under any active player. With no known viewer there is no "own" to compare
-            // against, so it must still redact.
+        fun `unitStatus stays Own for the last acting player's unit once movement completes`() {
+            // Same transient moment as above (activePlayer null), but the cursor sits on the unit
+            // that just finished acting. AppState.viewer falls back to PLAYER_1 rather than going
+            // null, so their own unit keeps rendering as Own instead of flickering to Foreign.
             val p1Unit = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
             val p2Unit = aUnit(id = "u2", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 1))
             val gameState = aGameState(units = listOf(p1Unit, p2Unit))
@@ -246,8 +248,8 @@ internal class MovementSelectingUnitPhaseTest {
 
             val subject = MovementPhase.SelectingUnit.unitStatus(state)
 
-            assertInstanceOf(ForeignUnit::class.java, subject)
-            assertEquals(p1Unit.id, (subject as ForeignUnit).id)
+            assertInstanceOf(OwnUnit::class.java, subject)
+            assertEquals(p1Unit.id, (subject as OwnUnit).unit.id)
         }
     }
 }

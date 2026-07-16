@@ -28,7 +28,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         val byAttacker = data.results.groupBy { it.attackerId }
 
         for ((attackerId, attackerResults) in byAttacker) {
-            val attackerColor = playerColor(data.unitOwners[attackerId])
+            val attackerColor = playerColor(data.unitOwners.getValue(attackerId))
             content.writeln(attackerId.value, attackerColor)
 
             val byTarget = attackerResults.groupBy { it.targetId }

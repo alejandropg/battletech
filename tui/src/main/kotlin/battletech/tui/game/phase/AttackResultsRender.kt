@@ -9,5 +9,5 @@ internal data class AttackResultsRender(
     val unitOwners: Map<UnitId, PlayerId>,
     /** Who this render is for — lets [battletech.tui.view.AttackResultsView] tell an own
      *  attacker from a foreign one (`unitOwners[id] == viewer`) without re-deriving it. */
-    val viewer: PlayerId?,
+    val viewer: PlayerId,
 )
