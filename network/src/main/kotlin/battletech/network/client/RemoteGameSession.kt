@@ -1,12 +1,13 @@
 package battletech.network.client
 
+import battletech.network.transport.ClientConnection
+import battletech.network.transport.JsonLineConnection
 import battletech.network.wire.ClientMessage
 import battletech.network.wire.GameSnapshot
 import battletech.network.wire.JoinRejectionReason
 import battletech.network.wire.PROTOCOL_VERSION
 import battletech.network.wire.ServerMessage
 import battletech.network.wire.SessionId
-import battletech.network.wire.WireJson
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.DefaultPlayerView
@@ -26,7 +27,6 @@ import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
-import java.io.Writer
 import java.net.Socket
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -70,10 +70,8 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
  * to re-project from — so all three refuse rather than guess; see their KDoc.
  */
 public class RemoteGameSession internal constructor(
-    private val input: BufferedReader,
-    private val output: Writer,
+    private val connection: ClientConnection,
     initial: ServerMessage.JoinAccepted,
-    private val onClose: () -> Unit = {},
 ) : GameSession, AutoCloseable {
 
     /** The seat the server assigned this connection at join time. */
@@ -174,8 +172,7 @@ public class RemoteGameSession internal constructor(
 
         val requestId = requestIdCounter.incrementAndGet()
         return try {
-            output.write(WireJson.encodeToLine(ClientMessage.SubmitCommand(requestId, command)) + "\n")
-            output.flush()
+            connection.send(ClientMessage.SubmitCommand(requestId, command))
             val reply = pendingReply.poll(REPLY_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             when {
                 reply == null -> {
@@ -197,14 +194,14 @@ public class RemoteGameSession internal constructor(
 
     public override fun close() {
         readerThread.interrupt()
-        onClose()
+        connection.close()
     }
 
     private fun readLoop() {
         try {
             while (true) {
-                val line = input.readLine() ?: break
-                when (val message = WireJson.decodeServerMessage(line)) {
+                val message = connection.receive() ?: break
+                when (message) {
                     is ServerMessage.StatePush -> {
                         snapshot = message.snapshot
                         for (entry in message.entries) {
@@ -216,8 +213,6 @@ public class RemoteGameSession internal constructor(
                     is ServerMessage.JoinAccepted, is ServerMessage.JoinRejected -> Unit // handshake-only, unexpected here
                 }
             }
-        } catch (e: IOException) {
-            // fall through to connection-lost handling below
         } catch (e: InterruptedException) {
             return // close() requested shutdown; nothing more to report
         }
@@ -248,16 +243,16 @@ public class RemoteGameSession internal constructor(
             val socket = Socket(host, port)
             val input = BufferedReader(InputStreamReader(socket.getInputStream()))
             val output = OutputStreamWriter(socket.getOutputStream())
+            val connection = JsonLineConnection.Client(input, output)
 
-            output.write(WireJson.encodeToLine(ClientMessage.Join(SessionId.normalize(sessionId), PROTOCOL_VERSION)) + "\n")
-            output.flush()
+            connection.send(ClientMessage.Join(SessionId.normalize(sessionId), PROTOCOL_VERSION))
 
-            val line = input.readLine() ?: run {
+            val message = connection.receive() ?: run {
                 socket.close()
                 throw IOException("Connection closed before the host replied to Join")
             }
-            return when (val message = WireJson.decodeServerMessage(line)) {
-                is ServerMessage.JoinAccepted -> RemoteGameSession(input, output, message, onClose = { socket.close() })
+            return when (message) {
+                is ServerMessage.JoinAccepted -> RemoteGameSession(connection, message)
                 is ServerMessage.JoinRejected -> {
                     socket.close()
                     throw JoinRejectedException(message.reason)

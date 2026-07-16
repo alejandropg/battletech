@@ -1,6 +1,7 @@
 package battletech.network
 
 import battletech.network.server.GameServer
+import battletech.network.transport.JsonLineConnection
 import battletech.network.wire.ClientMessage
 import battletech.network.wire.PROTOCOL_VERSION
 import battletech.network.wire.ServerMessage
@@ -21,17 +22,18 @@ internal fun aSampleSession(): BattleSession = BattleSession(
 )
 
 /**
- * Runs [GameServer.attachTransport] on its own daemon-ish test thread, since
- * it blocks (handshake read, then the reader loop) for the life of the
+ * Runs [GameServer.attach] on its own daemon-ish test thread, since it
+ * blocks (handshake read, then the reader loop) for the life of the
  * connection. Real-socket connections get one such thread per client from
- * [GameServer]'s accept loop; here the test plays that role.
+ * [GameServer]'s accept loop; here the test plays that role. Wraps
+ * [connection]'s raw pipes in [JsonLineConnection.Server] — the same adapter
+ * the real accept path uses over a socket.
  */
 internal fun GameServer.attachInBackground(
     connection: PipedConnection,
     onJoinAccepted: () -> Unit = {},
-    onDisconnect: () -> Unit = {},
 ): Thread = thread(isDaemon = true, name = "test-server-attach") {
-    attachTransport(connection.serverInput, connection.serverOutput, onJoinAccepted, onDisconnect)
+    attach(JsonLineConnection.Server(connection.serverInput, connection.serverOutput), onJoinAccepted)
 }
 
 /**

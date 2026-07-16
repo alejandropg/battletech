@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Drives [GameServer] over in-memory pipes ([PipedConnection]) via its
- * [GameServer.attachTransport] testability seam — no real sockets. Covers
+ * [GameServer.attach] testability seam — no real sockets. Covers
  * the join handshake, the wire ordering invariant (push before reply),
  * remote player-id spoofing, the host's own [GameServer.submitCommand]
  * path, and disconnect/rejoin.
@@ -77,7 +77,7 @@ internal class GameServerProtocolTest {
         val session = aSampleSession()
         val player1Unit = session.gameState.unitsOf(PlayerId.PLAYER_1).first()
         // annotate() lands this in the same gameLog session.logFor (and this stage's
-        // GameServer.snapshotFor/attachTransport) redact through — no gameplay needed to
+        // GameServer.snapshotFor/attach) redact through — no gameplay needed to
         // prove the redaction seam itself.
         session.annotate(
             CriticalHit.Detailed(

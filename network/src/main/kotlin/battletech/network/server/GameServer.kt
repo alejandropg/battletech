@@ -1,12 +1,13 @@
 package battletech.network.server
 
+import battletech.network.transport.JsonLineConnection
+import battletech.network.transport.ServerConnection
 import battletech.network.wire.ClientMessage
 import battletech.network.wire.GameSnapshot
 import battletech.network.wire.JoinRejectionReason
 import battletech.network.wire.PROTOCOL_VERSION
 import battletech.network.wire.ServerMessage
 import battletech.network.wire.SessionId
-import battletech.network.wire.WireJson
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
@@ -29,7 +30,6 @@ import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
-import java.io.Writer
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.LinkedBlockingQueue
@@ -199,7 +199,7 @@ public class GameServer(
      * viewer could. This is only ONE of three outbound paths that must agree:
      * [ServerMessage.JoinAccepted] carries [GameSession.logFor] (not the raw
      * [session]`.gameLog.snapshot()`), and every [ServerMessage.StatePush]
-     * carries a log delta run through [redactedDeltaFor] — see [attachTransport]
+     * carries a log delta run through [redactedDeltaFor] — see [attach]
      * and [submitAndPush]. Redacting only this snapshot and leaving either log
      * channel un-redacted leaks everything through that other channel; that
      * mismatch is exactly why the previous (deleted) redaction attempt never
@@ -236,12 +236,8 @@ public class GameServer(
                 socket.soTimeout = HANDSHAKE_TIMEOUT_MS
                 val input = BufferedReader(InputStreamReader(socket.getInputStream()))
                 val output = OutputStreamWriter(socket.getOutputStream())
-                attachTransport(
-                    input = input,
-                    output = output,
-                    onJoinAccepted = { socket.soTimeout = 0 },
-                    onDisconnect = { socket.close() },
-                )
+                val connection = JsonLineConnection.Server(input, output)
+                attach(connection, onJoinAccepted = { socket.soTimeout = 0 })
             } catch (e: IOException) {
                 socket.close()
             }
@@ -249,23 +245,23 @@ public class GameServer(
     }
 
     /**
-     * Performs the join handshake on [input]/[output] and, on success, runs
-     * the per-client reader loop inline (blocking the calling thread until
+     * Performs the join handshake on [connection] and, on success, runs the
+     * per-client reader loop inline (blocking the calling thread until
      * disconnect). Shared by the real-socket accept path (each connection
      * gets its own daemon thread) and pipe-based tests (the test spawns the
      * thread itself). [onJoinAccepted] fires once, right after a successful
-     * handshake — the real path uses it to clear the handshake [soTimeout];
-     * [onDisconnect] fires when the transport should be torn down (socket
-     * close for real connections, stream close for pipes).
+     * handshake — the real path uses it to clear the handshake `soTimeout`;
+     * there is no `onDisconnect` counterpart because tearing the transport
+     * down is just [ServerConnection.close] now, called from [disconnect].
      */
-    internal fun attachTransport(
-        input: BufferedReader,
-        output: Writer,
+    internal fun attach(
+        connection: ServerConnection,
         onJoinAccepted: () -> Unit = {},
-        onDisconnect: () -> Unit = {},
     ) {
-        val line = input.readLine() ?: return
-        val join = WireJson.decodeClientMessage(line) as? ClientMessage.Join ?: return
+        val join = connection.receive() as? ClientMessage.Join ?: run {
+            connection.close()
+            return
+        }
 
         val rejection = synchronized(lock) {
             when {
@@ -277,9 +273,8 @@ public class GameServer(
         }
 
         if (rejection != null) {
-            output.write(WireJson.encodeToLine(ServerMessage.JoinRejected(rejection)) + "\n")
-            output.flush()
-            onDisconnect()
+            connection.send(ServerMessage.JoinRejected(rejection))
+            connection.close()
             return
         }
 
@@ -287,7 +282,7 @@ public class GameServer(
 
         val connected = synchronized(lock) {
             val seat = (remoteSeats - clients.keys).min()
-            val client = ConnectedClient(seat = seat, output = output, onDisconnect = onDisconnect)
+            val client = ConnectedClient(seat = seat, connection = connection)
             val alreadyConnected = clients.values.toList()
 
             // Everything from here up to (and including) the connect notice is new to
@@ -321,14 +316,14 @@ public class GameServer(
             client
         }
 
-        runReaderLoop(input, connected)
+        runReaderLoop(connected)
     }
 
-    private fun runReaderLoop(input: BufferedReader, connected: ConnectedClient) {
+    private fun runReaderLoop(connected: ConnectedClient) {
         try {
             while (true) {
-                val line = input.readLine() ?: break
-                val message = WireJson.decodeClientMessage(line) as? ClientMessage.SubmitCommand ?: continue
+                val incoming = connected.connection.receive() ?: break
+                val message = incoming as? ClientMessage.SubmitCommand ?: continue
                 synchronized(lock) {
                     val result = when {
                         !clients.keys.containsAll(remoteSeats) ->
@@ -354,8 +349,6 @@ public class GameServer(
                     connected.outbound.put(ServerMessage.CommandReply(message.requestId, result))
                 }
             }
-        } catch (e: IOException) {
-            // fall through to disconnect
         } finally {
             disconnect(connected)
         }
@@ -366,8 +359,7 @@ public class GameServer(
             try {
                 while (true) {
                     val message = connected.outbound.take()
-                    connected.output.write(WireJson.encodeToLine(message) + "\n")
-                    connected.output.flush()
+                    connected.connection.send(message)
                 }
             } catch (e: InterruptedException) {
                 // shutting down
@@ -389,7 +381,7 @@ public class GameServer(
             clients.remove(connected.seat)
             connected.writerThread?.interrupt()
             try {
-                connected.onDisconnect()
+                connected.connection.close()
             } catch (e: IOException) {
                 // already gone
             }
@@ -401,8 +393,7 @@ public class GameServer(
 
     private class ConnectedClient(
         internal val seat: PlayerId,
-        internal val output: Writer,
-        internal val onDisconnect: () -> Unit,
+        internal val connection: ServerConnection,
     ) {
         internal val outbound: LinkedBlockingQueue<ServerMessage> = LinkedBlockingQueue()
         internal var writerThread: Thread? = null

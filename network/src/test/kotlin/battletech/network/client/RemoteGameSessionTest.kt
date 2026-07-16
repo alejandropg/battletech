@@ -6,10 +6,10 @@ import battletech.network.advanceMovementUntilActivePlayerIs
 import battletech.network.attachInBackground
 import battletech.network.awaitTrue
 import battletech.network.server.GameServer
+import battletech.network.transport.JsonLineConnection
 import battletech.network.wire.ClientMessage
 import battletech.network.wire.PROTOCOL_VERSION
 import battletech.network.wire.ServerMessage
-import battletech.network.wire.WireJson
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
@@ -263,11 +263,11 @@ internal class RemoteGameSessionTest {
 
     /** Mirrors [RemoteGameSession.connect] but over [PipedConnection] pipes instead of a real socket. */
     private fun connectRemoteOverPipes(sessionId: String, connection: PipedConnection): RemoteGameSession {
-        connection.clientOutput.write(WireJson.encodeToLine(ClientMessage.Join(sessionId, PROTOCOL_VERSION)) + "\n")
-        connection.clientOutput.flush()
-        val line = connection.clientInput.readLine() ?: error("connection closed before join response")
-        return when (val message = WireJson.decodeServerMessage(line)) {
-            is ServerMessage.JoinAccepted -> RemoteGameSession(connection.clientInput, connection.clientOutput, message)
+        val jsonConnection = JsonLineConnection.Client(connection.clientInput, connection.clientOutput)
+        jsonConnection.send(ClientMessage.Join(sessionId, PROTOCOL_VERSION))
+        val message = jsonConnection.receive() ?: error("connection closed before join response")
+        return when (message) {
+            is ServerMessage.JoinAccepted -> RemoteGameSession(jsonConnection, message)
             is ServerMessage.JoinRejected -> throw JoinRejectedException(message.reason)
             else -> error("unexpected first message from host: $message")
         }

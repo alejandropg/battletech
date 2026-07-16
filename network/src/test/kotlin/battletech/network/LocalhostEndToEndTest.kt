@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test
 /**
  * End-to-end test over REAL TCP sockets (port 0 — OS-assigned, so parallel
  * test runs never collide) and REAL threads — the only layer-3 test that
- * skips both [PipedConnection] and [GameServer.attachTransport]. Plays a
+ * skips both [PipedConnection] and [GameServer.attach]. Plays a
  * full turn (MOVEMENT → WEAPON_ATTACK → PHYSICAL_ATTACK, then the automatic
  * HEAT → END → INITIATIVE cascade into turn 2's MOVEMENT) driven entirely
  * through [GameServer] (PLAYER_1, the host) and [RemoteGameSession]
