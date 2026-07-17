@@ -6,10 +6,6 @@ import battletech.tui.screen.ScreenBuffer
 
 public class CollapsedPanelView(public val index: Int, public val title: String) : View {
 
-    public companion object {
-        private val BRIGHT_YELLOW_STYLE = Cell.Style(Color.BRIGHT_YELLOW)
-    }
-
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         buffer.drawBox(x, y, width, height)
         buffer.writeString(x + 2, y, "[$index]", BRIGHT_YELLOW_STYLE)
@@ -24,5 +20,9 @@ public class CollapsedPanelView(public val index: Int, public val title: String)
                 buffer.writeString(centerX, row, ch.toString(), BRIGHT_YELLOW_STYLE)
             }
         }
+    }
+
+    private companion object {
+        private val BRIGHT_YELLOW_STYLE = Cell.Style(Color.BRIGHT_YELLOW)
     }
 }

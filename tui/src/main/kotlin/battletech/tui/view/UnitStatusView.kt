@@ -27,17 +27,6 @@ public class UnitStatusView(
     private val pendingHeat: List<HeatSource> = emptyList(),
 ) : View {
 
-    public companion object {
-        public val INDEX: Int = PanelId.UNIT_STATUS.index
-        public const val TITLE: String = "UNIT STATUS"
-
-        private val WHITE_STYLE = Cell.Style(Color.WHITE)
-        private val BRIGHT_YELLOW_STYLE = Cell.Style(Color.BRIGHT_YELLOW)
-        private val RED_STYLE = Cell.Style(Color.RED)
-        private val DRAFT_STYLE = Cell.Style(Color.DRAFT)
-        private val DESTROYED_STYLE = Cell.Style(Color.RED, strikethrough = true)
-    }
-
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         // One blank row for pixel parity with the decorator's y+1 inner-content start
         val content = ContentWriter(buffer, x, y + 1, width)
@@ -288,5 +277,16 @@ public class UnitStatusView(
         CriticalComponent.GYRO -> "Gyro"
         CriticalComponent.SENSOR -> "Sensor"
         CriticalComponent.LIFE_SUPPORT -> "Support"
+    }
+
+    internal companion object {
+        internal val INDEX: Int = PanelId.UNIT_STATUS.index
+        internal const val TITLE: String = "UNIT STATUS"
+
+        private val WHITE_STYLE = Cell.Style(Color.WHITE)
+        private val BRIGHT_YELLOW_STYLE = Cell.Style(Color.BRIGHT_YELLOW)
+        private val RED_STYLE = Cell.Style(Color.RED)
+        private val DRAFT_STYLE = Cell.Style(Color.DRAFT)
+        private val DESTROYED_STYLE = Cell.Style(Color.RED, strikethrough = true)
     }
 }

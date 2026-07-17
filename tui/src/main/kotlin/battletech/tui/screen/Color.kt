@@ -18,11 +18,11 @@ public enum class Color {
     LIGHT_BLUE,
     GRAY;
 
-    public companion object {
+    internal companion object {
         /** Uncommitted / preview content the player has not committed yet. */
-        public val DRAFT: Color = GRAY
+        internal val DRAFT: Color = GRAY
 
         /** Disabled or unavailable elements (e.g. unusable weapons). */
-        public val DISABLED: Color = GRAY
+        internal val DISABLED: Color = GRAY
     }
 }

@@ -17,13 +17,6 @@ import battletech.tui.screen.ScreenBuffer
 
 internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
-    companion object {
-        val INDEX: Int = PanelId.ATTACK_RESULTS.index
-        const val TITLE: String = "ATTACK RESULTS"
-
-        private val WHITE_STYLE = Cell.Style(Color.WHITE)
-    }
-
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         // One blank row for pixel parity with the decorator's y+1 inner-content start
         val content = ContentWriter(buffer, x, y + 1, width)
@@ -98,4 +91,10 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         HitLocation.RIGHT_LEG -> "Right Leg"
     }
 
+    internal companion object {
+        val INDEX: Int = PanelId.ATTACK_RESULTS.index
+        const val TITLE: String = "ATTACK RESULTS"
+
+        private val WHITE_STYLE = Cell.Style(Color.WHITE)
+    }
 }

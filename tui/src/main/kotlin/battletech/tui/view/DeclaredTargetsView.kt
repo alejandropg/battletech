@@ -11,13 +11,6 @@ import battletech.tui.screen.ScreenBuffer
 
 internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {
 
-    companion object {
-        val INDEX: Int = PanelId.DECLARED_TARGETS.index
-        const val TITLE: String = "DECLARED TARGETS"
-
-        private val WHITE_STYLE = Cell.Style(Color.WHITE)
-    }
-
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         // One blank row for pixel parity with the decorator's y+1 inner-content start
         val content = ContentWriter(buffer, x, y + 1, width)
@@ -65,4 +58,10 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
         }
     }
 
+    internal companion object {
+        val INDEX: Int = PanelId.DECLARED_TARGETS.index
+        const val TITLE: String = "DECLARED TARGETS"
+
+        private val WHITE_STYLE = Cell.Style(Color.WHITE)
+    }
 }

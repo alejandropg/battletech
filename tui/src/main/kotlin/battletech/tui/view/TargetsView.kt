@@ -16,13 +16,6 @@ public class TargetsView(
     private val cursorWeaponIndex: Int = 0,
 ) : View {
 
-    public companion object {
-        public val INDEX: Int = PanelId.TARGETS.index
-        public const val TITLE: String = "TARGETS"
-
-        private val WHITE_STYLE = Cell.Style(Color.WHITE)
-    }
-
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         // One blank row for pixel parity with the decorator's y+1 inner-content start
         val content = ContentWriter(buffer, x, y + 1, width)
@@ -82,5 +75,12 @@ public class TargetsView(
 
             content.newLine() // blank line between targets
         }
+    }
+
+    internal companion object {
+        internal val INDEX: Int = PanelId.TARGETS.index
+        internal const val TITLE: String = "TARGETS"
+
+        private val WHITE_STYLE = Cell.Style(Color.WHITE)
     }
 }

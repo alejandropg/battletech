@@ -15,11 +15,6 @@ internal class ScrollablePanelView(
     var maxOffset: Int = 0
         private set
 
-    companion object {
-        private const val MAX_CONTENT_ROWS = 512
-        private val GREEN_STYLE = Cell.Style(Color.GREEN)
-    }
-
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         buffer.drawBox(x, y, width, height, title, index = index)
 
@@ -63,5 +58,10 @@ internal class ScrollablePanelView(
             }
         }
         return 0
+    }
+
+    private companion object {
+        private const val MAX_CONTENT_ROWS = 512
+        private val GREEN_STYLE = Cell.Style(Color.GREEN)
     }
 }

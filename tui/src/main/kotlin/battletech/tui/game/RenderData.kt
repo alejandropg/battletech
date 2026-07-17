@@ -16,8 +16,8 @@ public data class RenderData(
     val validTargetPositions: Set<HexCoordinates> = emptySet(),
     val selectedTargetPosition: HexCoordinates? = null,
 ) {
-    public companion object {
-        public val EMPTY: RenderData = RenderData()
+    internal companion object {
+        internal val EMPTY: RenderData = RenderData()
     }
 }
 

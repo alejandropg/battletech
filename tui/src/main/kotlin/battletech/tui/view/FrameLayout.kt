@@ -28,7 +28,7 @@ internal data class FrameLayout(
     val boardHeight: Int,
     val slots: List<PanelSlotLayout>,
 ) {
-    companion object {
+    internal companion object {
         /** Rows consumed by the status bar below the board and panels. */
         const val STATUS_BAR_HEIGHT: Int = 7
 

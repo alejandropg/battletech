@@ -22,8 +22,6 @@ public data class LocationSlots(
 
 @Serializable
 public data class CriticalLayout(public val byLocation: Map<MechLocation, LocationSlots>) {
-    public companion object Factory
-
     public fun slotsAt(location: MechLocation): List<CriticalSlotContent> =
         byLocation[location]?.slots ?: emptyList()
 
@@ -53,6 +51,8 @@ public data class CriticalLayout(public val byLocation: Map<MechLocation, Locati
                 }
             }
         }
+
+    public companion object Factory
 }
 
 private val HEAD_FRAMEWORK: List<CriticalSlotContent> = listOf(

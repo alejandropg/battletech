@@ -9,9 +9,9 @@ public data class Cell(
         val bg: Color = Color.DEFAULT,
         val strikethrough: Boolean = false,
     ) {
-        public companion object {
+        internal companion object {
             /** The all-defaults style; reused everywhere an unstyled cell is needed. */
-            public val DEFAULT: Style = Style()
+            internal val DEFAULT: Style = Style()
         }
     }
 }

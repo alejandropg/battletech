@@ -32,9 +32,9 @@ public data class ForeignUnit(
     override val isPilotConscious: Boolean,
     override val movementThisTurn: MovementThisTurn,
 ) : VisibleUnit {
-    public companion object {
+    internal companion object {
         /** Builds the public-only projection of [unit]. */
-        public fun from(unit: CombatUnit): ForeignUnit = ForeignUnit(
+        internal fun from(unit: CombatUnit): ForeignUnit = ForeignUnit(
             id = unit.id,
             owner = unit.owner,
             name = unit.name,

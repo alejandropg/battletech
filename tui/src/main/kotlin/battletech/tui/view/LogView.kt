@@ -13,11 +13,6 @@ public class LogView(
     private val state: PlayerGameState,
 ) : View {
 
-    public companion object {
-        public val INDEX: Int = PanelId.LOG.index
-        public const val TITLE: String = "LOG"
-    }
-
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
         val content = ContentWriter(buffer, x, y, width)
         var lastTurn: Int? = null
@@ -41,5 +36,10 @@ public class LogView(
                 }
             }
         }
+    }
+
+    internal companion object {
+        internal val INDEX: Int = PanelId.LOG.index
+        internal const val TITLE: String = "LOG"
     }
 }
