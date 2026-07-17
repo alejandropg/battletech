@@ -1,17 +1,13 @@
 package battletech.tui.game
 
 import battletech.tactical.attack.AttackResult
-import battletech.tactical.dice.DiceRoller
-import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.GameMap
-import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
-import battletech.tactical.session.BattleSession
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameSession
@@ -106,52 +102,6 @@ internal data class AppState(
      * on what "the viewer's own unit" means.
      */
     fun ownUnit(id: UnitId): CombatUnit = visibleState.ownUnitById(id)
-}
-
-/**
- * Back-compat factory matching the pre-PR5 positional signature. Constructs
- * a [BattleSession] positioned at the supplied [phase]'s domain phase so
- * the session and TUI agree on where in the turn we are, and hands it to
- * BOTH seats — a legal hot-seat composition, since [BattleSession.stateFor]
- * projects for any viewer. Used primarily by tests that pre-seed a known
- * [turnState].
- */
-internal fun AppState(
-    gameState: GameState,
-    turnState: TurnState = TurnState.NULL,
-    phase: Phase,
-    cursor: HexCoordinates,
-    roller: DiceRoller = RandomDiceRoller(),
-): AppState {
-    val session: GameSession = BattleSession(
-        initialGameState = gameState,
-        initialTurnState = turnState,
-        roller = roller,
-        initialPhase = phase.turnPhase,
-        initialNeedsOnEntry = inferNeedsOnEntry(phase.turnPhase, turnState),
-    )
-    return AppState(
-        seats = PlayerId.entries.associateWith { session },
-        phase = phase,
-        cursor = cursor,
-    )
-}
-
-/**
- * Decide whether the session should fire on-entry for the starting phase.
- *
- * Player phases drive on-entry from state markers (e.g., attackSequence
- * empty ⇒ WeaponAttack hasn't seeded yet ⇒ on-entry pending). System
- * phases have no neutral marker; assume on-entry is pending if the caller
- * hasn't pre-supplied a turnState.
- */
-private fun inferNeedsOnEntry(phase: TurnPhase, turn: TurnState): Boolean = when (phase) {
-    TurnPhase.INITIATIVE -> turn.initiative.rolls.isEmpty()
-    TurnPhase.MOVEMENT -> false
-    TurnPhase.WEAPON_ATTACK -> turn.attack.sequence.order.isEmpty()
-    TurnPhase.PHYSICAL_ATTACK -> turn.attack.sequence.order.isEmpty()
-    TurnPhase.HEAT -> turn === TurnState.NULL
-    TurnPhase.END -> turn === TurnState.NULL
 }
 
 public fun moveCursor(
