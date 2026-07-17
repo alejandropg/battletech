@@ -31,8 +31,6 @@ public data class HexCoordinates(
         return HexCoordinates(col + dc, row + dr)
     }
 
-    public fun neighbors(): List<HexCoordinates> = HexDirection.entries.map { neighbor(it) }
-
     public fun distanceTo(other: HexCoordinates): Int {
         val (ax, ay, az) = toCube()
         val (bx, by, bz) = other.toCube()

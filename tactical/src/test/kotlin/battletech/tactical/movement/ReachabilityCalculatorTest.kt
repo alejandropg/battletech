@@ -301,7 +301,7 @@ internal class ReachabilityCalculatorTest {
     fun `surrounded by enemies can only change facing in place`() {
         val origin = HexCoordinates(0, 0)
         val hexes = mutableMapOf(origin to Hex(origin))
-        val enemies = origin.neighbors().mapIndexed { index, pos ->
+        val enemies = HexDirection.entries.map { origin.neighbor(it) }.mapIndexed { index, pos ->
             hexes[pos] = Hex(pos)
             aUnit(id = "enemy-$index", position = pos)
         }

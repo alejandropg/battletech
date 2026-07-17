@@ -62,11 +62,15 @@ import kotlin.concurrent.thread
  * seat left to implement that interface's `submitCommand`/`turnState`/etc. *for* — every seat's
  * own [connectLocal]/[JsonLineConnection] client already implements [GameSession] for itself.
  * What legitimately remains here — [gameState], [turnState], [currentPhase], [activePlayer],
- * [isMatchOver], [gameLog], [viewFor], [stateFor], [logFor], [subscribe] — are plain (non-
- * override) reads of the authoritative session: the headless console (no per-seat viewer to
- * project for) and tests that need to assert against ground truth alongside a client's
- * projection both have a legitimate need for them that no [GameSession] implementation could
- * serve.
+ * [gameLog], [viewFor], [stateFor], [subscribe] — are plain (non-override) reads of the
+ * authoritative session, but they don't all serve the same caller. [gameState], [turnState],
+ * [gameLog], and [subscribe] are read by the headless console (`runHeadlessServer` in
+ * `tui/src/main/kotlin/battletech/tui/Main.kt`), which has no per-seat viewer to project for
+ * and so reads ground truth directly. [currentPhase] has a different production caller:
+ * `awaitKickstart`, in the same file, polls it to block hot-seat composition until every
+ * seat's own session has caught up with the post-kickstart phase. [activePlayer], [viewFor],
+ * and [stateFor] have no production caller at all — they exist for tests that need to assert
+ * against ground truth alongside a client's own projection.
  *
  * ### Kickstart: fires once, no matter who completes the roster
  *
@@ -129,14 +133,11 @@ public class GameServer(
     public val turnState: TurnState get() = synchronized(lock) { session.turnState }
     public val currentPhase: TurnPhase get() = synchronized(lock) { session.currentPhase }
     public val activePlayer: PlayerId? get() = synchronized(lock) { session.activePlayer }
-    public val isMatchOver: Boolean get() = synchronized(lock) { session.isMatchOver }
     public val gameLog: GameLog get() = synchronized(lock) { session.gameLog }
 
     public fun viewFor(playerId: PlayerId): PlayerView = synchronized(lock) { session.viewFor(playerId) }
 
     public fun stateFor(viewer: PlayerId?): PlayerGameState = synchronized(lock) { session.stateFor(viewer) }
-
-    public fun logFor(viewer: PlayerId?): List<LogEntry> = synchronized(lock) { session.logFor(viewer) }
 
     /**
      * Register [listener] to receive every raw event emitted by [session] — session-wide and
@@ -432,7 +433,7 @@ public class GameServer(
          * Deliberately does NOT call [connectLocal] or start any [SocketAcceptor] — the returned
          * server has no attached clients yet, so no [GameEvent] can fire, which makes "replay the
          * seeded notices, subscribe, then attach clients" race-free for any caller that wants to
-         * observe them: replaying [GameServer.gameLog] (or [logFor]) before subscribing can never
+         * observe them: replaying [GameServer.gameLog] before subscribing can never
          * miss an event to a subscriber that races a client attaching, because nothing has
          * attached yet. Callers that don't need to observe the seed notices before traffic starts
          * (a host UI reading them back out of the replayed log) can just attach immediately.

@@ -133,24 +133,6 @@ public fun CriticalLayout.withSlot(
     return copy(byLocation = byLocation + (location to updatedLocationSlots))
 }
 
-/**
- * Returns a copy of this layout with one shot consumed from the first non-empty bin of
- * [ammoType]. Bin selection mirrors [battletech.tactical.attack.weapon.HasAmmoRule]: the
- * first entry (in [ammoBins] order) whose `type == ammoType` and `shots > 0` is chosen.
- *
- * If no such bin exists (all empty or no bin of that type), this layout is returned
- * unchanged. Callers should guard with [battletech.tactical.attack.weapon.HasAmmoRule]
- * before declaration to ensure a bin is available.
- *
- * No dice involved — pure state mutation.
- */
-public fun CriticalLayout.consumeOneRound(ammoType: AmmoType): CriticalLayout {
-    val (location, slotIndex, bin) = ammoBins()
-        .firstOrNull { (_, _, b) -> b.type == ammoType && b.shots > 0 }
-        ?: return this
-    return withSlot(location, slotIndex, bin.copy(shots = bin.shots - 1))
-}
-
 // ---------------------------------------------------------------------------
 // IS-aware ammo helpers: exclude bins whose location has IS = 0.
 // A destroyed location's feed mechanism is gone; that ammo is inaccessible.
@@ -172,8 +154,10 @@ public fun CombatUnit.availableAmmoBins(): List<Triple<MechLocation, Int, Critic
 
 /**
  * Returns a copy of this unit with one shot consumed from the first non-empty,
- * non-destroyed-location bin of [ammoType]. Mirrors [CriticalLayout.consumeOneRound]
- * but skips bins in locations whose IS is 0.
+ * non-destroyed-location bin of [ammoType]. Bin selection mirrors
+ * [battletech.tactical.attack.weapon.HasAmmoRule]: the first entry (in [availableAmmoBins]
+ * order) whose `type == ammoType` and `shots > 0` is chosen, skipping bins in locations
+ * whose IS is 0.
  *
  * Returns this unit unchanged if no available bin exists. Callers should guard with
  * [battletech.tactical.attack.weapon.HasAmmoRule] to ensure a bin is available.

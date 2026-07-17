@@ -79,34 +79,6 @@ internal class HexCoordinatesTest {
     }
 
     @Test
-    fun `neighbors returns all six adjacent hexes`() {
-        val hex = HexCoordinates(2, 2)
-
-        val neighbors = hex.neighbors()
-
-        assertEquals(
-            listOf(
-                HexCoordinates(2, 1),
-                HexCoordinates(3, 1),
-                HexCoordinates(3, 2),
-                HexCoordinates(2, 3),
-                HexCoordinates(1, 2),
-                HexCoordinates(1, 1)
-            ),
-            neighbors
-        )
-    }
-
-    @Test
-    fun `all neighbors are at distance one`() {
-        val hex = HexCoordinates(3, 3)
-
-        hex.neighbors().forEach { neighbor ->
-            assertEquals(1, hex.distanceTo(neighbor))
-        }
-    }
-
-    @Test
     fun `lineTo same hex returns list with only that hex`() {
         val hex = HexCoordinates(2, 3)
         assertEquals(listOf(hex), hex.lineTo(hex))
