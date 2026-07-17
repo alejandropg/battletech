@@ -128,7 +128,7 @@ internal class ExpandedPsrTest {
         // Crit check 2d6 (3,3)=6 → 0 crits (empty layout, no slots to pick).
         val roller = DiceRoller.deterministic(4, 4, 6, 6, 3, 3, 3, 3)
 
-        val (newState, _) = resolveAttacks(listOf(AttackDeclaration(attacker.id, target.id, 0, true)), state, roller)
+        val (newState, _, _) = resolveAttacksWithCrits(listOf(AttackDeclaration(attacker.id, target.id, 0, true)), state, roller)
 
         val updatedTarget = newState.unitById(target.id)!!
         assertThat(updatedTarget.pilotHits).isEqualTo(1)
@@ -153,7 +153,7 @@ internal class ExpandedPsrTest {
         // to-hit (4+4=8 → hit); location (6+6=12 → HEAD); no IS damage → no pilot hit.
         val roller = DiceRoller.deterministic(4, 4, 6, 6)
 
-        val (newState, _) = resolveAttacks(listOf(AttackDeclaration(attacker.id, target.id, 0, true)), state, roller)
+        val (newState, _, _) = resolveAttacksWithCrits(listOf(AttackDeclaration(attacker.id, target.id, 0, true)), state, roller)
 
         assertThat(newState.unitById(target.id)!!.pilotHits).isEqualTo(0)
     }

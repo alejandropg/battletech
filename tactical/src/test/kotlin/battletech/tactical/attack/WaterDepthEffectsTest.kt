@@ -145,7 +145,7 @@ internal class WaterDepthEffectsTest {
 
         // dice order: to-hit 2d6 (d1=2, d2=3 → sum 5 = target 5, hit), location 2d6 (d1=3, d2=2 → sum 5 = RIGHT_LEG)
         val roller = DiceRoller.deterministic(2, 3, 3, 2)
-        val (newState, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val (newState, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
 
         val result = results.single()
         assertTrue(result is AttackResult.Hit)
@@ -187,7 +187,7 @@ internal class WaterDepthEffectsTest {
 
         // to-hit 2+3=5 (hit), location 4+3=7 (CENTER_TORSO)
         val roller = DiceRoller.deterministic(2, 3, 4, 3)
-        val (newState, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val (newState, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
 
         val result = results.single()
         assertTrue(result is AttackResult.Hit)

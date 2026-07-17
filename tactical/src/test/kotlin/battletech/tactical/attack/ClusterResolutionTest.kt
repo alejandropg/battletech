@@ -76,7 +76,7 @@ internal class ClusterResolutionTest {
         val decl = AttackDeclaration(att.id, target.id, 0, true)
         // Dice: to-hit (4,4)=8 ≥ TN 2, location (3,4)=7 → CENTER_TORSO
         val roller = DiceRoller.deterministic(4, 4, 3, 4)
-        val (_, results) = resolveAttacks(listOf(decl), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.SingleHit)
@@ -98,7 +98,7 @@ internal class ClusterResolutionTest {
         val decl = AttackDeclaration(highGunneryAtt.id, target.id, 0, true)
         // TN = 8, roll (1,1)=2 → miss; no location roll consumed
         val roller = DiceRoller.deterministic(1, 1)
-        val (_, results) = resolveAttacks(listOf(decl), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.Miss)
@@ -112,7 +112,7 @@ internal class ClusterResolutionTest {
         val state = gameState.copy(units = listOf(att, target))
         val decl = AttackDeclaration(att.id, target.id, 0, true)
         val roller = DiceRoller.deterministic(4, 5, 3, 4)
-        val (_, results) = resolveAttacks(listOf(decl), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertEquals(DiceRoll(4, 5), result.toHitRoll)
@@ -134,7 +134,7 @@ internal class ClusterResolutionTest {
         val decl = AttackDeclaration(att.id, target.id, 0, true)
         // TN = 8, roll (1,1)=2 → miss; no cluster or location rolls consumed
         val roller = DiceRoller.deterministic(1, 1)
-        val (_, results) = resolveAttacks(listOf(decl), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.Miss)
@@ -165,7 +165,7 @@ internal class ClusterResolutionTest {
             2, 2,    // loc 5 = 4 → RIGHT_ARM
             5, 6,    // loc 6 = 11 → LEFT_ARM
         )
-        val (_, results) = resolveAttacks(listOf(decl), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.ClusterHit)
@@ -201,7 +201,7 @@ internal class ClusterResolutionTest {
             3, 4,   // loc 1 = 7 → CENTER_TORSO
             4, 4,   // loc 2 = 8 → LEFT_TORSO
         )
-        val (_, results) = resolveAttacks(listOf(decl), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.ClusterHit)
@@ -238,7 +238,7 @@ internal class ClusterResolutionTest {
             3, 3,   // crit check for loc 3 IS damage → 6 → no crit
             3, 3,   // crit check for loc 4 IS damage → 6 → no crit
         )
-        val (newState, results) = resolveAttacks(listOf(decl), state, roller)
+        val (newState, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.ClusterHit)
@@ -279,7 +279,7 @@ internal class ClusterResolutionTest {
             5, 5,   // loc 3 = 10 → LEFT_ARM      (5 dmg)
             1, 2,   // loc 4 = 3 → RIGHT_ARM      (1 dmg)
         )
-        val (_, results) = resolveAttacks(listOf(decl), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.ClusterHit)
@@ -323,7 +323,7 @@ internal class ClusterResolutionTest {
             5, 5,   // loc 3 = 10 → LEFT_ARM
             1, 3,   // loc 4 = 4 → RIGHT_ARM
         )
-        val (_, results) = resolveAttacks(listOf(decl), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.ClusterHit)
@@ -347,7 +347,7 @@ internal class ClusterResolutionTest {
             3, 4,   // loc 1 = 7 → CENTER_TORSO  (5 dmg)
             4, 4,   // loc 2 = 8 → LEFT_TORSO    (1 dmg)
         )
-        val (_, results) = resolveAttacks(listOf(decl), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.ClusterHit)
@@ -386,7 +386,7 @@ internal class ClusterResolutionTest {
             3, 3,   // crit check for loc 3 IS damage → 6 → no crit
             3, 3,   // crit check for loc 4 IS damage → 6 → no crit
         )
-        val (newState, results) = resolveAttacks(listOf(decl), state, roller)
+        val (newState, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.Hit)
@@ -437,7 +437,7 @@ internal class ClusterResolutionTest {
             2, 3,   // loc 3 = 5 → RIGHT_LEG    (suppressed)
             4, 4,   // loc 4 = 8 → LEFT_TORSO   (2 dmg)
         )
-        val (newState, results) = resolveAttacks(listOf(decl), pcState, roller)
+        val (newState, results, _) = resolveAttacksWithCrits(listOf(decl), pcState, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.ClusterHit)
@@ -471,7 +471,7 @@ internal class ClusterResolutionTest {
             3, 4,   // loc 1 = 7 → CENTER_TORSO
             4, 4,   // loc 2 = 8 → LEFT_TORSO
         )
-        val (_, results) = resolveAttacks(listOf(decl), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.ClusterHit)
@@ -493,7 +493,7 @@ internal class ClusterResolutionTest {
             1, 1,   // cluster roll = 2 → size 2 → 1 missile
             3, 4,   // loc 1 = 7 → CENTER_TORSO
         )
-        val (_, results) = resolveAttacks(listOf(decl), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         assertTrue(result is AttackResult.ClusterHit)

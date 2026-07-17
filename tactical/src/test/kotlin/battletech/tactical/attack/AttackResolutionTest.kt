@@ -51,7 +51,7 @@ internal class AttackResolutionTest {
         )
         // Use a seeded roller: first 2d6 for to-hit, second 2d6 for hit location
         val roller = DiceRoller.seeded(42)
-        val (newState, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val (newState, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
 
         val result = results.single()
         if (result is AttackResult.Hit) {
@@ -78,7 +78,7 @@ internal class AttackResolutionTest {
         var foundMiss = false
         for (seed in 0..100) {
             val roller = DiceRoller.seeded(seed.toLong())
-            val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
+            val (newState, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
             val result = results.single()
             if (result is AttackResult.Miss) {
                 // Target should be unchanged
@@ -108,7 +108,7 @@ internal class AttackResolutionTest {
         for (seed in 0..1000) {
             val roller = DiceRoller.seeded(seed.toLong())
             val declaration = AttackDeclaration(attacker.id, thinTarget.id, 0, true)
-            val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
+            val (newState, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
             val result = results.single()
             if (result is AttackResult.Hit && result.locationHits.first().location == HitLocation.CENTER_TORSO) {
                 val updatedTarget = newState.unitById(thinTarget.id)!!
@@ -131,7 +131,7 @@ internal class AttackResolutionTest {
 
         // Compute expected target number: gunnery 4 + range 0 (short) + secondary 1 = 5
         val roller = DiceRoller.seeded(42)
-        val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
         val result = results.single()
         assertEquals(5, result.targetNumber)
     }
@@ -146,7 +146,7 @@ internal class AttackResolutionTest {
         )
 
         val roller = DiceRoller.seeded(42)
-        val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
         val result = results.single()
         // gunnery 4 + range 0 = 4
         assertEquals(4, result.targetNumber)
@@ -159,7 +159,7 @@ internal class AttackResolutionTest {
         val declaration = AttackDeclaration(hotAttacker.id, target.id, 0, true)
 
         val roller = DiceRoller.seeded(42)
-        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         val result = results.single()
         // gunnery 4 + range 0 + heat penalty (heat 16 → +2) = 6
         assertEquals(6, result.targetNumber)
@@ -172,7 +172,7 @@ internal class AttackResolutionTest {
         val declaration = AttackDeclaration(attacker.id, proneTarget.id, 0, true)
 
         val roller = DiceRoller.seeded(42)
-        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         // gunnery 4 + range 0 - 2 (prone adjacent) = 2
         assertEquals(2, results.single().targetNumber)
     }
@@ -184,7 +184,7 @@ internal class AttackResolutionTest {
         val declaration = AttackDeclaration(attacker.id, shutdownTarget.id, 0, true)
 
         val roller = DiceRoller.seeded(42)
-        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         // gunnery 4 + range 0 - 4 (immobile) = 0
         assertEquals(0, results.single().targetNumber)
     }
@@ -196,7 +196,7 @@ internal class AttackResolutionTest {
         val declaration = AttackDeclaration(attacker.id, proneFarTarget.id, 0, true)
 
         val roller = DiceRoller.seeded(42)
-        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         // gunnery 4 + medium range 2 + 1 (prone at range) = 7
         assertEquals(7, results.single().targetNumber)
     }
@@ -211,7 +211,7 @@ internal class AttackResolutionTest {
         val declaration = AttackDeclaration(blindedAttacker.id, target.id, 0, true)
 
         val roller = DiceRoller.seeded(42)
-        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         val result = results.single()
         // gunnery 4 + range 0 + 2 (1 sensor crit) = 6
         assertEquals(6, result.targetNumber)
@@ -225,7 +225,7 @@ internal class AttackResolutionTest {
         val declaration = AttackDeclaration(attacker.id, farTarget.id, 0, true)
 
         val roller = DiceRoller.seeded(42)
-        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         val result = results.single()
         // gunnery 4 + medium range 2 = 6
         assertEquals(6, result.targetNumber)
@@ -245,7 +245,7 @@ internal class AttackResolutionTest {
         )
 
         val roller = DiceRoller.seeded(42)
-        val (_, results) = resolveAttacks(declarations, state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(declarations, state, roller)
         assertEquals(2, results.size)
         assertEquals(attacker.id, results[0].attackerId)
         assertEquals(attacker2.id, results[1].attackerId)
@@ -256,7 +256,7 @@ internal class AttackResolutionTest {
         val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
         // deterministic: to-hit = 4+5=9 (hit, TN=4), location = 3+4=7 (CENTER_TORSO)
         val roller = DiceRoller.deterministic(4, 5, 3, 4)
-        val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
         val result = results.single()
         assertEquals(DiceRoll(4, 5), result.toHitRoll)
         assertEquals(9, result.toHitRoll.total)
@@ -266,7 +266,7 @@ internal class AttackResolutionTest {
     fun `hit result has non-null locationRoll with correct faces`() {
         val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
         val roller = DiceRoller.deterministic(4, 5, 3, 4)
-        val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
         val result = results.single()
         assertTrue(result is AttackResult.Hit)
         val locationRoll = (result as AttackResult.Hit).locationHits.first().locationRoll
@@ -279,7 +279,7 @@ internal class AttackResolutionTest {
         val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
         // TN = 4, roll = 1+1 = 2 (miss)
         val roller = DiceRoller.deterministic(1, 1)
-        val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
         val result = results.single()
         assertTrue(result is AttackResult.Miss)
     }
@@ -288,7 +288,7 @@ internal class AttackResolutionTest {
     fun `TN breakdown fields correct for short range primary with no heat`() {
         val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
         val roller = DiceRoller.deterministic(4, 5, 3, 4)
-        val (_, results) = resolveAttacks(listOf(declaration), gameState, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
         val result = results.single()
         assertEquals(4, result.gunnery)
         assertEquals(0, result.modifiers.amountOf(ToHitFactor.RANGE))
@@ -305,7 +305,7 @@ internal class AttackResolutionTest {
         val declaration = AttackDeclaration(hotAttacker.id, farTarget.id, 0, false)
         // TN = 4+2+2+1=9, roll=1+1=2 (miss, no location roll needed)
         val roller = DiceRoller.deterministic(1, 1)
-        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         val result = results.single()
         assertEquals(4, result.gunnery)
         assertEquals(2, result.modifiers.amountOf(ToHitFactor.RANGE))
@@ -542,7 +542,7 @@ internal class AttackResolutionTest {
         for (seed in 0..2000) {
             val roller = DiceRoller.seeded(seed.toLong())
             val declaration = AttackDeclaration(attacker.id, unit.id, 0, true)
-            val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
+            val (newState, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
             val result = results.single()
             if (result is AttackResult.Hit && result.locationHits.first().location == HitLocation.LEFT_ARM) {
                 // Medium laser does 5 damage: 2 armor + 3 IS, no destruction, single step.
@@ -603,7 +603,7 @@ internal class AttackResolutionTest {
         // TN = 4 (gunnery) + 0 (range short) + 3 (terrain / partial cover) = 7
         val declaration = AttackDeclaration(pcAttacker.id, pcTarget.id, 0, true)
         val roller = DiceRoller.deterministic(1, 1) // guaranteed miss; just check TN
-        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
 
         assertEquals(7, results.single().targetNumber)
         assertTrue(results.single().modifiers.any { it.label == "terrain" && it.amount == 3 })
@@ -619,7 +619,7 @@ internal class AttackResolutionTest {
         // Under partial cover, RIGHT_LEG hit should deal 0 damage.
         val declaration = AttackDeclaration(pcAttacker.id, pcTarget.id, 0, true)
         val roller = DiceRoller.deterministic(4, 4, 2, 3)
-        val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
+        val (newState, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
 
         val result = results.single()
         assertTrue(result is AttackResult.Hit)
@@ -642,7 +642,7 @@ internal class AttackResolutionTest {
         // Center torso is not a leg, so damage should apply normally.
         val declaration = AttackDeclaration(pcAttacker.id, pcTarget.id, 0, true)
         val roller = DiceRoller.deterministic(4, 4, 3, 4)
-        val (newState, results) = resolveAttacks(listOf(declaration), state, roller)
+        val (newState, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
 
         val result = results.single()
         assertTrue(result is AttackResult.Hit)

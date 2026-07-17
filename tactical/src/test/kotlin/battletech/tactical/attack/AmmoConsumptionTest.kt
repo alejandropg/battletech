@@ -94,7 +94,7 @@ internal class AmmoConsumptionTest {
                 "Expected ${shotsPerTon - shotNumber} shots before shot ${shotNumber + 1}")
 
             // Roll 1,1 = miss; no location roll consumed
-            val (newState, _) = resolveAttacks(listOf(decl), state, DiceRoller.deterministic(1, 1))
+            val (newState, _, _) = resolveAttacksWithCrits(listOf(decl), state, DiceRoller.deterministic(1, 1))
             state = newState
 
             val after = state.unitById(attacker.id)!!
@@ -137,7 +137,7 @@ internal class AmmoConsumptionTest {
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
         // Roll 1+1 = 2 < TN → miss. Ammo should still be decremented.
-        val (newState, results) = resolveAttacks(listOf(decl), state, DiceRoller.deterministic(1, 1))
+        val (newState, results, _) = resolveAttacksWithCrits(listOf(decl), state, DiceRoller.deterministic(1, 1))
 
         assertInstanceOf(AttackResult.Miss::class.java, results.single(), "Should have missed")
         val shots = newState.unitById(attacker.id)!!
@@ -163,7 +163,7 @@ internal class AmmoConsumptionTest {
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
         // to-hit (6,6)=12 ≥ TN 0 → hit; location (3,4)=7 → CENTER_TORSO
-        val (newState, results) = resolveAttacks(
+        val (newState, results, _) = resolveAttacksWithCrits(
             listOf(decl), state, DiceRoller.deterministic(6, 6, 3, 4),
         )
 
@@ -195,7 +195,7 @@ internal class AmmoConsumptionTest {
         // Dice: to-hit(3,3)=6 ≥ 0 → hit; cluster(6,5)=11 → size 10 roll 11 → 10 missiles
         // Groups: 10/5=2 full groups; loc1(3,4)=7→CT, loc2(4,4)=8→LT
         // Target has thick armor so no IS → no crit dice.
-        val (newState, results) = resolveAttacks(
+        val (newState, results, _) = resolveAttacksWithCrits(
             listOf(decl), state,
             DiceRoller.deterministic(3, 3, 6, 5, 3, 4, 4, 4),
         )
@@ -220,7 +220,7 @@ internal class AmmoConsumptionTest {
         val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
-        val (newState, results) = resolveAttacks(
+        val (newState, results, _) = resolveAttacksWithCrits(
             listOf(decl), state, DiceRoller.deterministic(1, 1),
         )
 
@@ -248,7 +248,7 @@ internal class AmmoConsumptionTest {
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
         // to-hit(3,3)=6 ≥ TN 2 → hit; cluster(6,5)=11 → 6 missiles; 6 loc rolls, target thick armor
-        val (newState, results) = resolveAttacks(
+        val (newState, results, _) = resolveAttacksWithCrits(
             listOf(decl), state,
             DiceRoller.deterministic(3, 3, 6, 5, 3, 4, 4, 4, 5, 5, 1, 2, 2, 2, 5, 6),
         )
@@ -275,7 +275,7 @@ internal class AmmoConsumptionTest {
         val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
-        val (newState, _) = resolveAttacks(listOf(decl), state, DiceRoller.deterministic(1, 1))
+        val (newState, _, _) = resolveAttacksWithCrits(listOf(decl), state, DiceRoller.deterministic(1, 1))
 
         // CriticalLayout should be unchanged — no bins to decrement
         val newAttacker = newState.unitById(attacker.id)!!
@@ -305,7 +305,7 @@ internal class AmmoConsumptionTest {
 
         // Fire 3 times (all misses to keep dice simple)
         repeat(3) {
-            val (next, _) = resolveAttacks(listOf(decl), state, DiceRoller.deterministic(1, 1))
+            val (next, _, _) = resolveAttacksWithCrits(listOf(decl), state, DiceRoller.deterministic(1, 1))
             state = next
         }
 
@@ -368,7 +368,7 @@ internal class AmmoConsumptionTest {
         //  decl 1 (SRM-6, cluster): to-hit(1,1)=2 ≥ 0 → hit; cluster(1,1)=2 → 2 missiles;
         //    loc1(3,4)=7→CT, loc2(4,4)=8→LT
         // All thick armor → no crit dice.
-        val (newState, results) = resolveAttacks(
+        val (newState, results, _) = resolveAttacksWithCrits(
             decls, state,
             DiceRoller.deterministic(
                 3, 4,   // AC/20 to-hit = 7 ≥ 0 → hit
@@ -411,7 +411,7 @@ internal class AmmoConsumptionTest {
         )
 
         // Both miss (TN = gunnery 2 + secondary 1 for decl 1 = 3; roll 1+1=2 → miss)
-        val (newState, _) = resolveAttacks(
+        val (newState, _, _) = resolveAttacksWithCrits(
             decls, state,
             DiceRoller.deterministic(1, 1, 1, 1),  // two 2d6 miss rolls
         )
@@ -441,7 +441,7 @@ internal class AmmoConsumptionTest {
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
         val roller = DiceRoller.deterministic(4, 5, 3, 4)
-        val (newState, results) = resolveAttacks(listOf(decl), state, roller)
+        val (newState, results, _) = resolveAttacksWithCrits(listOf(decl), state, roller)
         val result = results.single()
 
         // Verify dice stream: to-hit = (4,5)=9, location = (3,4)=7→CENTER_TORSO

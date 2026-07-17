@@ -16,7 +16,11 @@ import battletech.tactical.unit.consumeOneRoundFromAvailableBin
 
 /**
  * Resolves [declarations] against [gameState] and applies the resulting damage and
- * critical hits. Canonical dice order (must match seeded test expectations):
+ * critical hits, also returning the [CriticalHit] events produced, in volley order,
+ * for callers (the weapon-attack phase handler) that need to surface them alongside
+ * [battletech.tactical.session.AttacksResolved].
+ *
+ * Canonical dice order (must match seeded test expectations):
  *
  *  1. Per declaration, in order: to-hit 2d6, then (if hit) hit-location 2d6 — both in
  *     [resolveOneAttack]. All attacks roll against the *original* state (simultaneous
@@ -29,20 +33,6 @@ import battletech.tactical.unit.consumeOneRoundFromAvailableBin
  *     through-armor crit (`docs/rules/armor-damage.md` §3) even when no IS damage
  *     occurred. `isDestroyed`/`MatchEnded` evaluation is deferred to the session's
  *     post-volley destruction sweep, not decided here.
- */
-public fun resolveAttacks(
-    declarations: List<AttackDeclaration>,
-    gameState: GameState,
-    roller: DiceRoller,
-): Pair<GameState, List<AttackResult>> {
-    val (state, results, _) = resolveAttacksWithCrits(declarations, gameState, roller)
-    return state to results
-}
-
-/**
- * Same resolution as [resolveAttacks] but also returns the [CriticalHit] events
- * produced, in volley order, for callers (the weapon-attack phase handler) that need
- * to surface them alongside [battletech.tactical.session.AttacksResolved].
  */
 public fun resolveAttacksWithCrits(
     declarations: List<AttackDeclaration>,

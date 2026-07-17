@@ -190,7 +190,7 @@ internal class WeaponToHitModifiersTest {
         )
 
         val roller = DiceRoller.deterministic(1, 1) // guaranteed miss (roll = 2), no location roll needed
-        val (_, results) = resolveAttacks(listOf(declaration), state, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         val result = results.single()
 
         // attacker ran → +2
