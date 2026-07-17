@@ -10,7 +10,11 @@ public object MapCatalog {
 
     private val builtins: Map<String, () -> GameMap> = mapOf("default" to ::defaultMap)
 
-    /** Ids of all built-in maps. */
+    /**
+     * Ids of all built-in maps. No production caller yet — kept deliberately: `--map <name>`
+     * already accepts these ids, so anything that has to *offer* the choice (a `--list-maps`
+     * flag, a map picker) needs exactly this, and it cannot be derived from [get].
+     */
     public fun ids(): Set<String> = builtins.keys
 
     /** Looks up a built-in map by [id], or `null` if no built-in map has that id. */

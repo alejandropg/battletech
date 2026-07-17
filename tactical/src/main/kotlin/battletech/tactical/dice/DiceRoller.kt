@@ -9,6 +9,14 @@ public interface DiceRoller {
 
     public fun roll2d6(): DiceRoll = DiceRoll(d6(), d6())
 
+    /**
+     * Reproducible rollers. Only tests call these today — they are NOT dead code awaiting a
+     * cleanup, and a sweep for "no production caller" will keep finding them: replaying an exact
+     * game means feeding back the exact rolls in the exact order they were consumed, which is
+     * precisely what [deterministic] does and what a future replay/save feature will need.
+     * (Both are `internal` to `tactical`; a replay driven from `tui`/`network` would have to
+     * widen them — a problem for the commit that builds replay, not a reason to delete them now.)
+     */
     public companion object {
         internal fun seeded(seed: Long): DiceRoller = RandomDiceRoller(Random(seed))
 

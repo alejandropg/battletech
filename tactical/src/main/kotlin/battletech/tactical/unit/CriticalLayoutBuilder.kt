@@ -89,6 +89,17 @@ public class CriticalLayoutBuilder {
     private val placedWeapons: MutableList<Weapon> = mutableListOf()
     private var nextMountId: Int = 0
 
+    /**
+     * Builds [location] without its lower-arm and/or hand actuator. No production caller yet —
+     * kept deliberately, for two reasons a "no callers" sweep won't see: real mech variants ship
+     * without hand actuators by design (the slot goes to a weapon), and the rule that missing
+     * actuators change punch damage is not implemented yet — `attack/physical/` references
+     * actuators nowhere. This is the foothold for both, not dead code.
+     *
+     * Distinct from an actuator destroyed in play, which `resolveCriticalHits` marks destroyed on
+     * an already-built layout — and which today also has no consequence, per the same missing
+     * rule (`applyCritConsequence` files actuators under "no additional consequence").
+     */
     public fun omitActuators(location: MechLocation, lowerArm: Boolean = false, hand: Boolean = false) {
         val slots = slotsByLocation.getValue(location)
         if (lowerArm) {
