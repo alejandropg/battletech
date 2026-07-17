@@ -12,6 +12,8 @@ public class TargetStatusView(private val unit: ForeignUnit?) : View {
     public companion object {
         public val INDEX: Int = PanelId.TARGET_STATUS.index
         public const val TITLE: String = "TARGET STATUS"
+
+        private val WHITE_STYLE = Cell.Style(Color.WHITE)
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -19,7 +21,7 @@ public class TargetStatusView(private val unit: ForeignUnit?) : View {
         val content = ContentWriter(buffer, x, y + 1, width)
 
         if (unit == null) {
-            content.writeln("No target selected", Cell.Style(Color.WHITE))
+            content.writeln("No target selected", WHITE_STYLE)
             return
         }
 

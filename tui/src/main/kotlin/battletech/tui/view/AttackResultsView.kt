@@ -20,6 +20,8 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
     companion object {
         val INDEX: Int = PanelId.ATTACK_RESULTS.index
         const val TITLE: String = "ATTACK RESULTS"
+
+        private val WHITE_STYLE = Cell.Style(Color.WHITE)
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -36,7 +38,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
             for ((targetId, targetResults) in byTarget) {
                 val targetLine = "${targetIcon()} ${targetId.value}"
-                content.writeln(targetLine, Cell.Style(Color.WHITE))
+                content.writeln(targetLine, WHITE_STYLE)
 
                 for (result in targetResults) {
                     renderWeaponResult(content, result)
@@ -64,24 +66,24 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         val outcomeColor = if (hit) Color.GREEN else Color.RED
         val rollLine = "   ${diceRollLabel(toHit)}"
         val padding = (content.width - CellWidth.of(rollLine) - CellWidth.of(outcomeText)).coerceAtLeast(1)
-        content.writeln("$rollLine${" ".repeat(padding)}$outcomeText", Cell.Style(Color.WHITE))
+        content.writeln("$rollLine${" ".repeat(padding)}$outcomeText", WHITE_STYLE)
         val outcomeX = content.x + content.width - CellWidth.of(outcomeText)
         if (outcomeX >= content.x) content.buffer.writeString(outcomeX, content.cy - 1, outcomeText, Cell.Style(outcomeColor))
 
         // Block 3: location + damage (hit only)
         if (result is AttackResult.ClusterHit) {
             val total = result.locationHits.sumOf { it.damage }
-            content.writeRow("   ${result.missilesHit} missiles", "$total dmg", Cell.Style(Color.WHITE))
+            content.writeRow("   ${result.missilesHit} missiles", "$total dmg", WHITE_STYLE)
             val byLocation = LinkedHashMap<HitLocation, Int>()
             for (locationHit in result.locationHits) {
                 byLocation.merge(locationHit.location, locationHit.damage, Int::plus)
             }
             for ((loc, dmg) in byLocation) {
-                content.writeRow("   → ${hitLocationName(loc)}", "$dmg dmg", Cell.Style(Color.WHITE))
+                content.writeRow("   → ${hitLocationName(loc)}", "$dmg dmg", WHITE_STYLE)
             }
         } else if (result is AttackResult.SingleHit) {
             val hitLoc = result.locationHits.first().location
-            content.writeln("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", Cell.Style(Color.WHITE))
+            content.writeln("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", WHITE_STYLE)
         }
     }
 

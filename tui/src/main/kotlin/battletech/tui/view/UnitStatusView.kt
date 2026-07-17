@@ -30,6 +30,12 @@ public class UnitStatusView(
     public companion object {
         public val INDEX: Int = PanelId.UNIT_STATUS.index
         public const val TITLE: String = "UNIT STATUS"
+
+        private val WHITE_STYLE = Cell.Style(Color.WHITE)
+        private val BRIGHT_YELLOW_STYLE = Cell.Style(Color.BRIGHT_YELLOW)
+        private val RED_STYLE = Cell.Style(Color.RED)
+        private val DRAFT_STYLE = Cell.Style(Color.DRAFT)
+        private val DESTROYED_STYLE = Cell.Style(Color.RED, strikethrough = true)
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -38,7 +44,7 @@ public class UnitStatusView(
 
         when (subject) {
             null -> {
-                content.writeln("No unit selected", Cell.Style(Color.WHITE))
+                content.writeln("No unit selected", WHITE_STYLE)
                 return
             }
             is ForeignUnit -> {
@@ -52,7 +58,7 @@ public class UnitStatusView(
 
         // UNIT
         with(content) {
-            writeln(unit.name, Cell.Style(Color.BRIGHT_YELLOW))
+            writeln(unit.name, BRIGHT_YELLOW_STYLE)
             newLine()
         }
 
@@ -64,27 +70,27 @@ public class UnitStatusView(
             // upward, each one forcing a Consciousness roll (PilotHits.kt).
             val hitsLabel = "Hits".padEnd(9) + ": "
             val hits = unit.pilotHits.coerceIn(0, PILOT_DEATH_THRESHOLD)
-            content.writeStr(0, hitsLabel, Cell.Style(Color.WHITE))
+            content.writeStr(0, hitsLabel, WHITE_STYLE)
             var hitCol = hitsLabel.length
             for (i in 0 until hits) {
                 // The 6th hit kills the pilot outright (PILOT_DEATH_THRESHOLD) — mark that
                 // final box with a skull instead of a plain filled dot.
                 val icon = if (i == PILOT_DEATH_THRESHOLD - 1) destroyedIcon() else filledCircleIcon()
-                content.writeStr(hitCol, icon, Cell.Style(Color.RED))
+                content.writeStr(hitCol, icon, RED_STYLE)
                 hitCol += 1
             }
-            repeat(PILOT_DEATH_THRESHOLD - hits) { content.writeStr(hitCol, emptyCircleIcon(), Cell.Style(Color.WHITE)); hitCol += 1 }
+            repeat(PILOT_DEATH_THRESHOLD - hits) { content.writeStr(hitCol, emptyCircleIcon(), WHITE_STYLE); hitCol += 1 }
             content.newLine()
-            writeln("Gunnery  : ${unit.gunnerySkill}", Cell.Style(Color.WHITE))
-            writeln("Piloting : ${unit.pilotingSkill}", Cell.Style(Color.WHITE))
+            writeln("Gunnery  : ${unit.gunnerySkill}", WHITE_STYLE)
+            writeln("Piloting : ${unit.pilotingSkill}", WHITE_STYLE)
             newLine()
         }
 
         // MOVEMENT
         with(content) {
             writeHeader("MOVEMENT")
-            writeln("Walk : ${unit.walkingMP}    Run : ${unit.runningMP}", Cell.Style(Color.WHITE))
-            if (unit.jumpMP > 0) writeln("Jump : ${unit.jumpMP}", Cell.Style(Color.WHITE))
+            writeln("Walk : ${unit.walkingMP}    Run : ${unit.runningMP}", WHITE_STYLE)
+            if (unit.jumpMP > 0) writeln("Jump : ${unit.jumpMP}", WHITE_STYLE)
             newLine()
         }
 
@@ -101,7 +107,7 @@ public class UnitStatusView(
                 writeln("  ${source.label} +${source.amount}")
             }
             for (source in projection.pending) {
-                writeln("  ${source.label} +${source.amount}", Cell.Style(Color.DRAFT))
+                writeln("  ${source.label} +${source.amount}", DRAFT_STYLE)
             }
 
             val sink = unit.heatSink
@@ -135,9 +141,9 @@ public class UnitStatusView(
             writeLocation(9, "CT", armor.centerTorso, is_.centerTorso, Color.BRIGHT_YELLOW)
             writeLocation(16, "RT", armor.rightTorso, is_.rightTorso, Color.GREEN)
             newLine()
-            writeStr(3, "r:%2d".format(armor.leftTorsoRear), Cell.Style())
-            writeStr(10, "r:%2d".format(armor.centerTorsoRear), Cell.Style())
-            writeStr(17, "r:%2d".format(armor.rightTorsoRear), Cell.Style())
+            writeStr(3, "r:%2d".format(armor.leftTorsoRear), Cell.Style.DEFAULT)
+            writeStr(10, "r:%2d".format(armor.centerTorsoRear), Cell.Style.DEFAULT)
+            writeStr(17, "r:%2d".format(armor.rightTorsoRear), Cell.Style.DEFAULT)
             newLine()
             writeLocation(0, "LA", armor.leftArm, is_.leftArm, Color.GREEN)
             writeLocation(17, "RA", armor.rightArm, is_.rightArm, Color.GREEN)
@@ -147,13 +153,13 @@ public class UnitStatusView(
             newLine()
             newLine()
 
-            writeln("Critical hit points", Cell.Style(Color.WHITE))
+            writeln("Critical hit points", WHITE_STYLE)
             for (status in unit.criticalDamageStatus()) {
                 writeCritDots(content, status)
             }
             newLine()
 
-            writeln("Internal Structure", Cell.Style(Color.WHITE))
+            writeln("Internal Structure", WHITE_STYLE)
             writeLocation(9, "HD", is_.head, is_.head, Color.CYAN)
             newLine()
             writeLocation(2, "LT", is_.leftTorso, is_.leftTorso, Color.GREEN)
@@ -172,7 +178,7 @@ public class UnitStatusView(
         with(content) {
             writeHeader("WEAPONS")
             for (weapon in unit.weapons) {
-                val style = if (weapon.destroyed) Cell.Style(Color.RED, strikethrough = true) else Cell.Style(Color.WHITE)
+                val style = if (weapon.destroyed) DESTROYED_STYLE else WHITE_STYLE
                 val right = weapon.ammoType?.let { type ->
                     // Only count available ammo (bins in locations with IS > 0).
                     val remaining = unit.availableAmmoBins()
@@ -191,7 +197,7 @@ public class UnitStatusView(
      * renders in its normal [intactColor].
      */
     private fun ContentWriter.writeLocation(padding: Int, label: String, value: Int, structure: Int, intactColor: Color) {
-        val style = if (structure == 0) Cell.Style(Color.RED, strikethrough = true) else Cell.Style(intactColor)
+        val style = if (structure == 0) DESTROYED_STYLE else Cell.Style(intactColor)
         writeStr(padding, "%s:%2d".format(label, value), style)
     }
 
@@ -259,20 +265,20 @@ public class UnitStatusView(
         val capacity = status.capacity
         val destroyedCount = status.hits.coerceIn(0, capacity)
         val label6 = label.padEnd(7)
-        content.writeStr(2, "$label6: ", Cell.Style(Color.WHITE))
+        content.writeStr(2, "$label6: ", WHITE_STYLE)
         val dotsStart = 2 + "$label6: ".length
         var col = dotsStart
         repeat(destroyedCount) {
-            content.writeStr(col, filledCircleIcon(), Cell.Style(Color.RED))
+            content.writeStr(col, filledCircleIcon(), RED_STYLE)
             col += 2
         }
         repeat(capacity - destroyedCount) {
-            content.writeStr(col, emptyCircleIcon(), Cell.Style(Color.WHITE))
+            content.writeStr(col, emptyCircleIcon(), WHITE_STYLE)
             col += 2
         }
         content.newLine()
         for (penalty in status.penalties) {
-            content.writeStr(4, penalty, Cell.Style(Color.RED))
+            content.writeStr(4, penalty, RED_STYLE)
             content.newLine()
         }
     }

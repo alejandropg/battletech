@@ -37,6 +37,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 
+private val WHITE_STYLE = Cell.Style(Color.WHITE)
+
 private data class RenderedFrame(
     val layout: FrameLayout,
     val maxOffsets: Map<Int, Int>,
@@ -226,7 +228,7 @@ private fun renderGameOverBanner(
         titleColor = Color.BRIGHT_YELLOW,
     )
     val mx = bx + (bannerWidth - winnerLine.length) / 2
-    buffer.writeString(mx, by + 3, winnerLine, Cell.Style(Color.WHITE))
+    buffer.writeString(mx, by + 3, winnerLine, WHITE_STYLE)
 }
 
 private fun playerName(player: PlayerId): String = when (player) {

@@ -17,6 +17,7 @@ internal class ScrollablePanelView(
 
     companion object {
         private const val MAX_CONTENT_ROWS = 512
+        private val GREEN_STYLE = Cell.Style(Color.GREEN)
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -47,7 +48,7 @@ internal class ScrollablePanelView(
         )
         if (thumbRange != null) {
             for (row in thumbRange) {
-                buffer.set(x + width - 1, y + 1 + row, Cell("▐", Cell.Style(Color.GREEN)))
+                buffer.set(x + width - 1, y + 1 + row, Cell("▐", GREEN_STYLE))
             }
         }
     }

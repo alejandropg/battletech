@@ -8,8 +8,12 @@ internal class ContentWriter(
 ) {
     var cy = y
 
+    companion object {
+        private val CYAN_STYLE = Cell.Style(fg = Color.CYAN)
+    }
+
     fun writeHeader(label: String) {
-        writeln(sectionHeader(label), Cell.Style(fg = Color.CYAN))
+        writeln(sectionHeader(label), CYAN_STYLE)
     }
 
     private fun sectionHeader(label: String): String {

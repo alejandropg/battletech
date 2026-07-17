@@ -14,6 +14,8 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
     companion object {
         val INDEX: Int = PanelId.DECLARED_TARGETS.index
         const val TITLE: String = "DECLARED TARGETS"
+
+        private val WHITE_STYLE = Cell.Style(Color.WHITE)
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -21,7 +23,7 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
         val content = ContentWriter(buffer, x, y + 1, width)
 
         if (data.entries.isEmpty()) {
-            content.writeln("No declarations", Cell.Style(Color.WHITE))
+            content.writeln("No declarations", WHITE_STYLE)
             return
         }
 

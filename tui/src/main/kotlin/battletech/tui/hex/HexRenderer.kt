@@ -10,6 +10,8 @@ import battletech.tui.screen.ScreenBuffer
 
 public object HexRenderer {
 
+    private val BRIGHT_YELLOW_STYLE = Cell.Style(Color.BRIGHT_YELLOW)
+
     // Terrain icons (nf-md-tree_outline, nf-md-tree and another Nerd Fonts icons are above U+FFFF, need surrogate pairs)
     private fun terrainIcon(terrain: Terrain): String = when (terrain) {
         Terrain.CLEAR       -> ""
@@ -89,7 +91,7 @@ public object HexRenderer {
         for (direction in facings) {
             val (dx, dy) = facingPosition(direction)
             val number = facingNumber(direction)
-            buffer.set(x + dx, y + dy, Cell(number, Cell.Style(Color.BRIGHT_YELLOW)))
+            buffer.set(x + dx, y + dy, Cell(number, BRIGHT_YELLOW_STYLE))
         }
     }
 

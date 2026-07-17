@@ -19,6 +19,8 @@ public class TargetsView(
     public companion object {
         public val INDEX: Int = PanelId.TARGETS.index
         public const val TITLE: String = "TARGETS"
+
+        private val WHITE_STYLE = Cell.Style(Color.WHITE)
     }
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
@@ -26,7 +28,7 @@ public class TargetsView(
         val content = ContentWriter(buffer, x, y + 1, width)
 
         if (targets.isEmpty()) {
-            content.writeln("No targets", Cell.Style(Color.WHITE))
+            content.writeln("No targets", WHITE_STYLE)
             return
         }
 
