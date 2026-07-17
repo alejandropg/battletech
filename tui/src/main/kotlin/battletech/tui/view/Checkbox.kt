@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import battletech.tui.hex.checkboxIcon
+import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
@@ -21,6 +22,6 @@ public object Checkbox {
         state: CheckState,
         color: Color = intrinsicColor(state),
     ) {
-        buffer.writeString(x, y, checkboxIcon(state), color)
+        buffer.writeString(x, y, checkboxIcon(state), Cell.Style(color))
     }
 }

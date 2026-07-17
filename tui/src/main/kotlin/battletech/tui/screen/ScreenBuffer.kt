@@ -22,8 +22,7 @@ public class ScreenBuffer(
         x: Int,
         y: Int,
         text: String,
-        fg: Color = Color.DEFAULT,
-        bg: Color = Color.DEFAULT,
+        style: Cell.Style = Cell.Style.DEFAULT,
     ) {
         var cx = x
         var i = 0
@@ -35,9 +34,9 @@ public class ScreenBuffer(
                 i += charCount
                 continue
             }
-            set(cx, y, Cell(text.substring(i, i + charCount), fg, bg))
+            set(cx, y, Cell(text.substring(i, i + charCount), style))
             if (w == 2 && cx + 1 < width) {
-                set(cx + 1, y, Cell("", fg, bg))
+                set(cx + 1, y, Cell("", style))
             }
             cx += w
             i += charCount
@@ -56,29 +55,29 @@ public class ScreenBuffer(
     ) {
         if (width < 2 || height < 2) return
 
-        set(x, y, Cell("╭", borderColor))
-        set(x + width - 1, y, Cell("╮", borderColor))
-        set(x, y + height - 1, Cell("╰", borderColor))
-        set(x + width - 1, y + height - 1, Cell("╯", borderColor))
+        set(x, y, Cell("╭", Cell.Style(borderColor)))
+        set(x + width - 1, y, Cell("╮", Cell.Style(borderColor)))
+        set(x, y + height - 1, Cell("╰", Cell.Style(borderColor)))
+        set(x + width - 1, y + height - 1, Cell("╯", Cell.Style(borderColor)))
 
         for (i in 1 until width - 1) {
-            set(x + i, y, Cell("─", borderColor))
-            set(x + i, y + height - 1, Cell("─", borderColor))
+            set(x + i, y, Cell("─", Cell.Style(borderColor)))
+            set(x + i, y + height - 1, Cell("─", Cell.Style(borderColor)))
         }
 
         for (i in 1 until height - 1) {
-            set(x, y + i, Cell("│", borderColor))
-            set(x + width - 1, y + i, Cell("│", borderColor))
+            set(x, y + i, Cell("│", Cell.Style(borderColor)))
+            set(x + width - 1, y + i, Cell("│", Cell.Style(borderColor)))
         }
 
         if (title.isNotEmpty()) {
             if (index != null && width > title.length + 8) {
-                writeString(x + 2, y, "[$index] $title", titleColor)
-                set(x + 6 + title.length, y, Cell(" ", borderColor))
+                writeString(x + 2, y, "[$index] $title", Cell.Style(titleColor))
+                set(x + 6 + title.length, y, Cell(" ", Cell.Style(borderColor)))
             } else if (index == null && width > title.length + 6) {
-                set(x + 3, y, Cell(" ", borderColor))
-                writeString(x + 4, y, title, titleColor)
-                set(x + 4 + title.length, y, Cell(" ", borderColor))
+                set(x + 3, y, Cell(" ", Cell.Style(borderColor)))
+                writeString(x + 4, y, title, Cell.Style(titleColor))
+                set(x + 4 + title.length, y, Cell(" ", Cell.Style(borderColor)))
             }
         }
     }

@@ -35,7 +35,7 @@ internal class DeclaredTargetsViewTest {
         }
     }
 
-    private fun colorAt(buffer: ScreenBuffer, row: Int, col: Int = 2): Color = buffer.get(col, row).fg
+    private fun colorAt(buffer: ScreenBuffer, row: Int, col: Int = 2): Color = buffer.get(col, row).style.fg
 
     private fun rowContaining(buffer: ScreenBuffer, text: String, height: Int = 30, width: Int = 28): Int {
         for (row in 0 until height) {
@@ -79,7 +79,7 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Wolverine")
         assertTrue(row >= 0) { "Expected to find Wolverine attacker row" }
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).fg == Color.GRAY }) {
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == Color.GRAY }) {
             "Expected attacker row to contain Color.GRAY"
         }
     }
@@ -97,7 +97,7 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Wolverine")
         assertTrue(row >= 0)
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).fg == Color.BLUE }) {
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == Color.BLUE }) {
             "Expected P1 committed attacker row to use Color.BLUE"
         }
     }
@@ -115,7 +115,7 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Atlas")
         assertTrue(row >= 0)
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).fg == Color.MAGENTA }) {
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == Color.MAGENTA }) {
             "Expected P2 committed attacker row to use Color.MAGENTA"
         }
     }

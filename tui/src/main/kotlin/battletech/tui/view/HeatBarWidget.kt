@@ -1,5 +1,6 @@
 package battletech.tui.view
 
+import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
@@ -16,12 +17,12 @@ public class HeatBarWidget(
         val filled = if (maxValue <= 0) 0 else (value * barWidth / maxValue).coerceIn(0, barWidth)
         val bar = "█".repeat(filled) + "░".repeat(barWidth - filled)
         val color = colorFor(value)
-        buffer.writeString(x, y, "[$bar]$suffix", color)
+        buffer.writeString(x, y, "[$bar]$suffix", Cell.Style(color))
         val valueStr = value.toString()
         // First bar cell is at x + 1 (the "[" prefix). Anchor on the last filled cell,
         // or the first cell when empty, then right-align the number to it.
         val anchorCol = x + filled.coerceAtLeast(1)
-        buffer.writeString(anchorCol - valueStr.length + 1, y + 1, valueStr, color)
+        buffer.writeString(anchorCol - valueStr.length + 1, y + 1, valueStr, Cell.Style(color))
         return y + 2
     }
 

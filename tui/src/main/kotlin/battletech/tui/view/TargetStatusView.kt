@@ -2,6 +2,7 @@ package battletech.tui.view
 
 import battletech.tactical.unit.ForeignUnit
 import battletech.tui.game.PanelId
+import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
@@ -18,7 +19,7 @@ public class TargetStatusView(private val unit: ForeignUnit?) : View {
         val content = ContentWriter(buffer, x, y + 1, width)
 
         if (unit == null) {
-            content.writeln("No target selected", Color.WHITE)
+            content.writeln("No target selected", Cell.Style(Color.WHITE))
             return
         }
 

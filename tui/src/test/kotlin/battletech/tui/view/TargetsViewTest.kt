@@ -198,7 +198,7 @@ internal class TargetsViewTest {
             (0 until width).any { col -> buffer.get(col, row).char == "L" } &&
                 buildString { (0 until width).forEach { col -> append(buffer.get(col, row).char) } }.contains("LRM15")
         }
-        val rowColors = (0 until width).map { col -> buffer.get(col, lrmRow).fg }.toSet()
+        val rowColors = (0 until width).map { col -> buffer.get(col, lrmRow).style.fg }.toSet()
         assertTrue(rowColors.contains(Color.GRAY)) { "Expected disabled weapon row to use Color.GRAY, got: $rowColors" }
     }
 

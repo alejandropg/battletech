@@ -98,13 +98,13 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assertEquals(Color.CYAN, buffer.get(2, 1).fg)
+        assertEquals(Color.CYAN, buffer.get(2, 1).style.fg)
         // Only one header for the single turn: row 2 and row 3 are plain entries, not headers.
         val headerLine = readLine(buffer, 2, 1, 24)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
         assert(readLine(buffer, 2, 2, 24).contains("0101→0201")) { "Expected first move entry" }
         assert(readLine(buffer, 2, 3, 24).contains("0101→0301")) { "Expected second move entry" }
-        assertEquals(Color.DEFAULT, buffer.get(2, 2).fg)
+        assertEquals(Color.DEFAULT, buffer.get(2, 2).style.fg)
     }
 
     @Test

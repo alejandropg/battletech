@@ -4,6 +4,7 @@ import battletech.tui.game.PanelId
 import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.game.phase.DeclaredWeaponEntry
 import battletech.tui.hex.targetIcon
+import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
@@ -20,7 +21,7 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
         val content = ContentWriter(buffer, x, y + 1, width)
 
         if (data.entries.isEmpty()) {
-            content.writeln("No declarations", Color.WHITE)
+            content.writeln("No declarations", Cell.Style(Color.WHITE))
             return
         }
 
@@ -28,12 +29,12 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
             val attackerColor = if (entry.isDraft) Color.DRAFT else playerColor(entry.ownerPlayer)
             val contentColor = if (entry.isDraft) Color.DRAFT else Color.WHITE
 
-            content.writeln(entry.attackerId.value, attackerColor)
+            content.writeln(entry.attackerId.value, Cell.Style(attackerColor))
 
             for (target in entry.targets) {
                 val tag = if (target.isPrimary) "[P]" else "[S]"
                 val targetLine = "${targetIcon()} ${target.targetId.value} $tag"
-                content.writeln(targetLine, contentColor)
+                content.writeln(targetLine, Cell.Style(contentColor))
 
                 for (weapon in target.weapons) {
                     when (weapon) {
@@ -50,7 +51,7 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
                         // that math is computed from the attacker's gunnery/heat/sensor
                         // crits. The type carries no such fields; see DeclaredWeaponEntry.
                         is DeclaredWeaponEntry.Undisclosed ->
-                            content.writeln("    ${weapon.weaponName}", contentColor)
+                            content.writeln("    ${weapon.weaponName}", Cell.Style(contentColor))
                     }
                 }
             }

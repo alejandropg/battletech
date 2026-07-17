@@ -10,7 +10,7 @@ internal class ScreenBufferTest {
     fun `new buffer has all cells set to default`() {
         val buffer = ScreenBuffer(3, 2)
 
-        val defaultCell = Cell(" ", Color.DEFAULT, Color.DEFAULT)
+        val defaultCell = Cell(" ", Cell.Style(Color.DEFAULT, Color.DEFAULT))
         for (x in 0 until 3) {
             for (y in 0 until 2) {
                 assertEquals(defaultCell, buffer.get(x, y))
@@ -21,7 +21,7 @@ internal class ScreenBufferTest {
     @Test
     fun `set and get cell`() {
         val buffer = ScreenBuffer(5, 5)
-        val cell = Cell("A", Color.RED, Color.BLUE)
+        val cell = Cell("A", Cell.Style(Color.RED, Color.BLUE))
 
         buffer.set(2, 3, cell)
 
@@ -54,10 +54,10 @@ internal class ScreenBufferTest {
     fun `writeString places characters horizontally`() {
         val buffer = ScreenBuffer(10, 1)
 
-        buffer.writeString(2, 0, "Hi", Color.GREEN, Color.BLACK)
+        buffer.writeString(2, 0, "Hi", Cell.Style(Color.GREEN, Color.BLACK))
 
-        assertEquals(Cell("H", Color.GREEN, Color.BLACK), buffer.get(2, 0))
-        assertEquals(Cell("i", Color.GREEN, Color.BLACK), buffer.get(3, 0))
+        assertEquals(Cell("H", Cell.Style(Color.GREEN, Color.BLACK)), buffer.get(2, 0))
+        assertEquals(Cell("i", Cell.Style(Color.GREEN, Color.BLACK)), buffer.get(3, 0))
         assertEquals(Cell(" "), buffer.get(4, 0))
     }
 
@@ -77,7 +77,7 @@ internal class ScreenBufferTest {
 
         buffer.writeString(0, 0, "AB")
 
-        assertEquals(Cell("A", Color.DEFAULT, Color.DEFAULT), buffer.get(0, 0))
+        assertEquals(Cell("A", Cell.Style(Color.DEFAULT, Color.DEFAULT)), buffer.get(0, 0))
     }
 
     @Test
@@ -165,8 +165,8 @@ internal class ScreenBufferTest {
         assertEquals("S", buffer.get(6, 0).char)
         assertEquals("T", buffer.get(7, 0).char)
         assertEquals(" ", buffer.get(8, 0).char)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(4, 0).fg)
-        assertEquals(Color.GREEN, buffer.get(0, 0).fg)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(4, 0).style.fg)
+        assertEquals(Color.GREEN, buffer.get(0, 0).style.fg)
     }
 
     @Test
@@ -175,7 +175,7 @@ internal class ScreenBufferTest {
 
         buffer.drawBox(0, 0, 10, 3, "", borderColor = Color.RED, titleColor = Color.WHITE)
 
-        assertEquals(Color.RED, buffer.get(0, 0).fg)
+        assertEquals(Color.RED, buffer.get(0, 0).style.fg)
     }
 
     @Test
@@ -193,8 +193,8 @@ internal class ScreenBufferTest {
         assertEquals("S", buffer.get(8, 0).char)
         assertEquals("T", buffer.get(9, 0).char)
         assertEquals(" ", buffer.get(10, 0).char)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 0).fg)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(6, 0).fg)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 0).style.fg)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(6, 0).style.fg)
     }
 
     @Test
@@ -219,37 +219,37 @@ internal class ScreenBufferTest {
     @Test
     fun `blit copies cell char fg and bg from source to destination`() {
         val src = ScreenBuffer(5, 5)
-        src.set(1, 2, Cell("X", Color.RED, Color.BLUE))
+        src.set(1, 2, Cell("X", Cell.Style(Color.RED, Color.BLUE)))
         val dest = ScreenBuffer(10, 10)
 
         dest.blit(src, 1, 2, 3, 4, 1, 1)
 
-        assertEquals(Cell("X", Color.RED, Color.BLUE), dest.get(3, 4))
+        assertEquals(Cell("X", Cell.Style(Color.RED, Color.BLUE)), dest.get(3, 4))
     }
 
     @Test
     fun `blit clips at destination right and bottom edges`() {
         val src = ScreenBuffer(5, 5)
-        src.set(0, 0, Cell("A", Color.GREEN))
-        src.set(1, 0, Cell("B", Color.GREEN))
-        src.set(2, 0, Cell("C", Color.GREEN))
+        src.set(0, 0, Cell("A", Cell.Style(Color.GREEN)))
+        src.set(1, 0, Cell("B", Cell.Style(Color.GREEN)))
+        src.set(2, 0, Cell("C", Cell.Style(Color.GREEN)))
         val dest = ScreenBuffer(4, 4)
 
         dest.blit(src, 0, 0, 3, 0, 3, 1)
 
-        assertEquals(Cell("A", Color.GREEN), dest.get(3, 0))
+        assertEquals(Cell("A", Cell.Style(Color.GREEN)), dest.get(3, 0))
         assertEquals(Cell(" "), dest.get(2, 0))
     }
 
     @Test
     fun `blit skips source rows and cols beyond source bounds`() {
         val src = ScreenBuffer(2, 2)
-        src.set(0, 0, Cell("Z", Color.CYAN))
+        src.set(0, 0, Cell("Z", Cell.Style(Color.CYAN)))
         val dest = ScreenBuffer(10, 10)
 
         dest.blit(src, 0, 0, 0, 0, 5, 5)
 
-        assertEquals(Cell("Z", Color.CYAN), dest.get(0, 0))
+        assertEquals(Cell("Z", Cell.Style(Color.CYAN)), dest.get(0, 0))
         assertEquals(Cell(" "), dest.get(2, 0))
         assertEquals(Cell(" "), dest.get(0, 2))
     }

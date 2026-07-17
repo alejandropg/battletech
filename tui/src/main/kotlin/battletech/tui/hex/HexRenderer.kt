@@ -77,7 +77,7 @@ public object HexRenderer {
         }
         for (direction in facings) {
             val (dx, dy) = facingPosition(direction)
-            buffer.set(x + dx, y + dy, Cell(facingIcon(direction), color))
+            buffer.set(x + dx, y + dy, Cell(facingIcon(direction), Cell.Style(color)))
         }
     }
 
@@ -89,7 +89,7 @@ public object HexRenderer {
         for (direction in facings) {
             val (dx, dy) = facingPosition(direction)
             val number = facingNumber(direction)
-            buffer.set(x + dx, y + dy, Cell(number, Color.BRIGHT_YELLOW))
+            buffer.set(x + dx, y + dy, Cell(number, Cell.Style(Color.BRIGHT_YELLOW)))
         }
     }
 
@@ -119,7 +119,7 @@ public object HexRenderer {
     }
 
     private fun renderOverlayChar(buffer: ScreenBuffer, x: Int, y: Int, char: String, color: Color) {
-        buffer.set(x + 4, y + 2, Cell(char, color))
+        buffer.set(x + 4, y + 2, Cell(char, Cell.Style(color)))
     }
 
     private fun contentBackground(highlight: HexHighlight): Color = Color.DEFAULT
@@ -131,50 +131,50 @@ public object HexRenderer {
             Terrain.HEAVY_WOODS -> Color.DARK_GREEN
             Terrain.WATER       -> Color.BLUE
         }
-        buffer.set(x + 2, y + 1, Cell(terrainIcon(terrain), color, bg))
+        buffer.set(x + 2, y + 1, Cell(terrainIcon(terrain), Cell.Style(color, bg)))
     }
 
     private fun renderBorder(buffer: ScreenBuffer, x: Int, y: Int, fg: Color) {
         // Row 0: "  _____  "
         for (i in 2..6) {
-            buffer.set(x + i, y, Cell("_", fg))
+            buffer.set(x + i, y, Cell("_", Cell.Style(fg)))
         }
         // Row 1: " /     \ "
-        buffer.set(x + 1, y + 1, Cell("/", fg))
-        buffer.set(x + 7, y + 1, Cell("\\", fg))
+        buffer.set(x + 1, y + 1, Cell("/", Cell.Style(fg)))
+        buffer.set(x + 7, y + 1, Cell("\\", Cell.Style(fg)))
         // Row 2: "/       \"
-        buffer.set(x, y + 2, Cell("/", fg))
-        buffer.set(x + 8, y + 2, Cell("\\", fg))
+        buffer.set(x, y + 2, Cell("/", Cell.Style(fg)))
+        buffer.set(x + 8, y + 2, Cell("\\", Cell.Style(fg)))
         // Row 3: "\       /"
-        buffer.set(x, y + 3, Cell("\\", fg))
-        buffer.set(x + 8, y + 3, Cell("/", fg))
+        buffer.set(x, y + 3, Cell("\\", Cell.Style(fg)))
+        buffer.set(x + 8, y + 3, Cell("/", Cell.Style(fg)))
         // Row 4: " \_____/ "
-        buffer.set(x + 1, y + 4, Cell("\\", fg))
+        buffer.set(x + 1, y + 4, Cell("\\", Cell.Style(fg)))
         for (i in 2..6) {
-            buffer.set(x + i, y + 4, Cell("_", fg))
+            buffer.set(x + i, y + 4, Cell("_", Cell.Style(fg)))
         }
-        buffer.set(x + 7, y + 4, Cell("/", fg))
+        buffer.set(x + 7, y + 4, Cell("/", Cell.Style(fg)))
     }
 
     private fun renderContent(buffer: ScreenBuffer, x: Int, y: Int, bg: Color) {
         // Row 1 content (narrow): x+2..x+6
         for (i in 2..6) {
-            buffer.set(x + i, y + 1, Cell(" ", Color.DEFAULT, bg))
+            buffer.set(x + i, y + 1, Cell(" ", Cell.Style(Color.DEFAULT, bg)))
         }
         // Row 2 content (wide): x+1..x+7
         for (i in 1..7) {
-            buffer.set(x + i, y + 2, Cell(" ", Color.DEFAULT, bg))
+            buffer.set(x + i, y + 2, Cell(" ", Cell.Style(Color.DEFAULT, bg)))
         }
         // Row 3 content (wide): x+1..x+7
         for (i in 1..7) {
-            buffer.set(x + i, y + 3, Cell(" ", Color.DEFAULT, bg))
+            buffer.set(x + i, y + 3, Cell(" ", Cell.Style(Color.DEFAULT, bg)))
         }
     }
 
     private fun renderElevation(buffer: ScreenBuffer, x: Int, y: Int, elevation: Int, bg: Color) {
         if (elevation == 0) return
         val icon = elevationIcon(elevation)
-        buffer.set(x + 6, y + 1, Cell(icon, Color.WHITE, bg))
+        buffer.set(x + 6, y + 1, Cell(icon, Cell.Style(Color.WHITE, bg)))
     }
 
 }

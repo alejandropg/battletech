@@ -11,6 +11,7 @@ import battletech.tui.game.PanelScroll
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
+import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
@@ -225,7 +226,7 @@ private fun renderGameOverBanner(
         titleColor = Color.BRIGHT_YELLOW,
     )
     val mx = bx + (bannerWidth - winnerLine.length) / 2
-    buffer.writeString(mx, by + 3, winnerLine, Color.WHITE)
+    buffer.writeString(mx, by + 3, winnerLine, Cell.Style(Color.WHITE))
 }
 
 private fun playerName(player: PlayerId): String = when (player) {

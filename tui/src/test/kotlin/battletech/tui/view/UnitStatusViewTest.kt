@@ -20,6 +20,7 @@ import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.mechLayout
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
+import battletech.tui.anInternalStructureLayout
 import battletech.tui.hex.ammoIcon
 import battletech.tui.hex.destroyedIcon
 import battletech.tui.hex.emptyCircleIcon
@@ -118,7 +119,7 @@ internal class UnitStatusViewTest {
         assertEquals(4, line.split(emptyCircleIcon()).size - 1)
         // First hit dot is red, matching the destroyed-slot convention used elsewhere in this panel.
         val firstDotCol = (2 until 26).first { buffer.get(it, 5).char == filledCircleIcon() }
-        assertEquals(Color.RED, buffer.get(firstDotCol, 5).fg)
+        assertEquals(Color.RED, buffer.get(firstDotCol, 5).style.fg)
     }
 
     @Test
@@ -132,7 +133,7 @@ internal class UnitStatusViewTest {
         assertEquals(PILOT_DEATH_THRESHOLD - 1, line.split(filledCircleIcon()).size - 1)
         assertEquals(0, line.split(emptyCircleIcon()).size - 1)
         val skullCol = (2 until 26).first { buffer.get(it, 5).char == destroyedIcon() }
-        assertEquals(Color.RED, buffer.get(skullCol, 5).fg)
+        assertEquals(Color.RED, buffer.get(skullCol, 5).style.fg)
     }
 
     @Test
@@ -252,7 +253,7 @@ internal class UnitStatusViewTest {
         val view = UnitStatusView(unit)
         val buffer = renderDecorated(view, height = 20)
 
-        assertEquals(Color.RED, buffer.get(2, 14).fg)
+        assertEquals(Color.RED, buffer.get(2, 14).style.fg)
     }
 
     @Test
@@ -277,7 +278,30 @@ internal class UnitStatusViewTest {
         val line = (2 until 26).map { buffer.get(it, 23).char }.joinToString("")
         assertTrue(line.contains("HD"))
         assertTrue(line.contains("9"))
-        assertEquals(Color.CYAN, buffer.get(11, 23).fg) // 'H' of "HD: 9"
+        assertEquals(Color.CYAN, buffer.get(11, 23).style.fg) // 'H' of "HD: 9"
+    }
+
+    @Test
+    fun `renders destroyed armor location with strikethrough`() {
+        // Same HD layout as "renders head armor value in cyan", but with head internal
+        // structure zeroed out — that's what drives the destroyed rendering, not the armor value.
+        val unit = aUnit(armor = anArmorLayout(head = 9), internalStructure = anInternalStructureLayout(head = 0))
+        val view = UnitStatusView(unit)
+        val buffer = renderDecorated(view, height = 30)
+
+        // HD value row: cy=23, "HD: 9" starts at cx+9=11
+        assertEquals(Color.RED, buffer.get(11, 23).style.fg)
+        assertTrue(buffer.get(11, 23).style.strikethrough)
+    }
+
+    @Test
+    fun `renders intact armor location without strikethrough`() {
+        // Default internalStructure (head = 3) is intact.
+        val unit = aUnit(armor = anArmorLayout(head = 9))
+        val view = UnitStatusView(unit)
+        val buffer = renderDecorated(view, height = 30)
+
+        assertFalse(buffer.get(11, 23).style.strikethrough)
     }
 
     @Test
@@ -290,7 +314,7 @@ internal class UnitStatusViewTest {
         val line = (2 until 26).map { buffer.get(it, 24).char }.joinToString("")
         assertTrue(line.contains("CT"))
         assertTrue(line.contains("47"))
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(11, 24).fg) // 'C' of "CT:47"
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(11, 24).style.fg) // 'C' of "CT:47"
     }
 
     @Test
@@ -302,7 +326,7 @@ internal class UnitStatusViewTest {
         // Rear row: cy=25, CT rear "r: 8" starts at cx+10=12
         val line = (2 until 26).map { buffer.get(it, 25).char }.joinToString("")
         assertTrue(line.contains("r"))
-        assertEquals(Color.DEFAULT, buffer.get(12, 25).fg) // 'r' of CT rear
+        assertEquals(Color.DEFAULT, buffer.get(12, 25).style.fg) // 'r' of CT rear
     }
 
     @Test
@@ -331,7 +355,7 @@ internal class UnitStatusViewTest {
         // Source line under the bar and the heat value line (row 16).
         val line = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
         assertTrue(line.contains("Running +2"))
-        assertEquals(Color.DEFAULT, buffer.get(2, 16).fg)
+        assertEquals(Color.DEFAULT, buffer.get(2, 16).style.fg)
     }
 
     @Test
@@ -342,7 +366,7 @@ internal class UnitStatusViewTest {
 
         val line = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
         assertTrue(line.contains("Walking +1"))
-        assertEquals(Color.GRAY, buffer.get(2, 16).fg)
+        assertEquals(Color.GRAY, buffer.get(2, 16).style.fg)
     }
 
     @Test
@@ -387,7 +411,7 @@ internal class UnitStatusViewTest {
         val view = UnitStatusView(unit)
         val buffer = renderDecorated(view, height = 20)
 
-        assertEquals(Color.RED, buffer.get(2, 17).fg)
+        assertEquals(Color.RED, buffer.get(2, 17).style.fg)
     }
 
     @Test
@@ -445,6 +469,45 @@ internal class UnitStatusViewTest {
     }
 
     @Test
+    fun `renders destroyed weapon name with strikethrough`() {
+        val weapon = Weapon(
+            model = WeaponModel(
+                name = "Medium Laser", damage = 5, heat = 3,
+                shortRange = 3, mediumRange = 6, longRange = 9, kind = WeaponKind.Energy,
+            ),
+            mountId = WeaponMountId(0),
+            location = MechLocation.CENTER_TORSO,
+            destroyed = true,
+        )
+        val unit = aUnit(weapons = listOf(weapon))
+        val view = UnitStatusView(unit)
+        val buffer = renderDecorated(view, height = 60)
+
+        val row = rowContaining(buffer, 60, "Medium Laser")
+        val nameCol = (2 until 26).first { buffer.get(it, row).char == "M" }
+        assertTrue(buffer.get(nameCol, row).style.strikethrough)
+    }
+
+    @Test
+    fun `renders intact weapon name without strikethrough`() {
+        val weapon = Weapon(
+            model = WeaponModel(
+                name = "Medium Laser", damage = 5, heat = 3,
+                shortRange = 3, mediumRange = 6, longRange = 9, kind = WeaponKind.Energy,
+            ),
+            mountId = WeaponMountId(0),
+            location = MechLocation.CENTER_TORSO,
+        )
+        val unit = aUnit(weapons = listOf(weapon))
+        val view = UnitStatusView(unit)
+        val buffer = renderDecorated(view, height = 60)
+
+        val row = rowContaining(buffer, 60, "Medium Laser")
+        val nameCol = (2 until 26).first { buffer.get(it, row).char == "M" }
+        assertFalse(buffer.get(nameCol, row).style.strikethrough)
+    }
+
+    @Test
     fun `renders all-intact critical hit dots as empty circles`() {
         val unit = aUnit(armor = anArmorLayout())
         val view = UnitStatusView(unit)
@@ -471,7 +534,7 @@ internal class UnitStatusViewTest {
 
         // First dot column should be red (destroyed slot 0 is an Engine slot in CENTER_TORSO).
         val firstDotCol = (2 until 26).first { buffer.get(it, row).char == filledCircleIcon() }
-        assertEquals(Color.RED, buffer.get(firstDotCol, row).fg)
+        assertEquals(Color.RED, buffer.get(firstDotCol, row).style.fg)
     }
 
     @Test
@@ -519,7 +582,7 @@ internal class UnitStatusViewTest {
 
         val line = (2 until 11).map { buffer.get(it, 2).char }.joinToString("")
         assertEquals("Hunchback", line)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 2).fg)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 2).style.fg)
     }
 
     @Test

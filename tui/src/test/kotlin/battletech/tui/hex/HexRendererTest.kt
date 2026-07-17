@@ -43,7 +43,7 @@ internal class HexRendererTest {
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals(Color.BLUE, buffer.get(2, 1).fg)
+        assertEquals(Color.BLUE, buffer.get(2, 1).style.fg)
     }
 
     @Test
@@ -53,7 +53,7 @@ internal class HexRendererTest {
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals(Color.GREEN, buffer.get(2, 1).fg)
+        assertEquals(Color.GREEN, buffer.get(2, 1).style.fg)
     }
 
     @Test
@@ -63,7 +63,7 @@ internal class HexRendererTest {
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals(Color.DARK_GREEN, buffer.get(2, 1).fg)
+        assertEquals(Color.DARK_GREEN, buffer.get(2, 1).style.fg)
     }
 
     @Test
@@ -83,9 +83,9 @@ internal class HexRendererTest {
 
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.CURSOR)
 
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(1, 1).fg) // '/' border
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(7, 1).fg) // '\' border
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 0).fg) // '_' top
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(1, 1).style.fg) // '/' border
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(7, 1).style.fg) // '\' border
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 0).style.fg) // '_' top
     }
 
     @Test
@@ -96,7 +96,7 @@ internal class HexRendererTest {
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.REACHABLE_WALK)
 
         assertEquals(".", buffer.get(4, 2).char)
-        assertEquals(Color.DEFAULT, buffer.get(4, 2).bg)
+        assertEquals(Color.DEFAULT, buffer.get(4, 2).style.bg)
     }
 
     @Test
@@ -147,7 +147,7 @@ internal class HexRendererTest {
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.ATTACK_RANGE)
 
         assertEquals(".", buffer.get(4, 2).char)
-        assertEquals(Color.GRAY, buffer.get(4, 2).fg)
+        assertEquals(Color.GRAY, buffer.get(4, 2).style.fg)
     }
 
     @Test
@@ -158,7 +158,7 @@ internal class HexRendererTest {
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.LINE_OF_SIGHT)
 
         assertEquals(".", buffer.get(4, 2).char)
-        assertEquals(Color.YELLOW, buffer.get(4, 2).fg)
+        assertEquals(Color.YELLOW, buffer.get(4, 2).style.fg)
     }
 
     @Test
@@ -169,6 +169,6 @@ internal class HexRendererTest {
         HexRenderer.render(buffer, 0, 0, hex, HexHighlight.LINE_OF_SIGHT_SELECTED)
 
         assertEquals(targetIcon(), buffer.get(4, 2).char)
-        assertEquals(Color.RED, buffer.get(4, 2).fg)
+        assertEquals(Color.RED, buffer.get(4, 2).style.fg)
     }
 }

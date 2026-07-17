@@ -67,7 +67,7 @@ internal class BoardViewTest {
         view.render(buffer, 0, 0, 30, 16)
 
         // Hex at (1,1) border '/' offset by +2,+2
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(10, 9).fg)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(10, 9).style.fg)
     }
 
     @Test
@@ -82,9 +82,9 @@ internal class BoardViewTest {
         // Unit initial at hex center: charX=4+2, charY=3+2 (same cell as the initial in the
         // "renders unit initial on hex" test above), with a skull marker at the adjacent cell.
         assertEquals("A", buffer.get(6, 5).char)
-        assertEquals(Color.GRAY, buffer.get(6, 5).fg)
+        assertEquals(Color.GRAY, buffer.get(6, 5).style.fg)
         assertEquals(destroyedIcon(), buffer.get(7, 5).char)
-        assertEquals(Color.GRAY, buffer.get(7, 5).fg)
+        assertEquals(Color.GRAY, buffer.get(7, 5).style.fg)
     }
 
     @Test

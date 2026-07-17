@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.PanelId
+import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
@@ -25,7 +26,7 @@ public class TargetsView(
         val content = ContentWriter(buffer, x, y + 1, width)
 
         if (targets.isEmpty()) {
-            content.writeln("No targets", Color.WHITE)
+            content.writeln("No targets", Cell.Style(Color.WHITE))
             return
         }
 
@@ -38,7 +39,7 @@ public class TargetsView(
             }
             val nameColor = if (isCursorOnTarget) Color.BRIGHT_YELLOW else Color.WHITE
             val nameLine = "${target.unitName}$tag"
-            content.writeln(nameLine, nameColor)
+            content.writeln(nameLine, Cell.Style(nameColor))
 
             val assignedToThisTarget = weaponAssignments[target.unitId] ?: emptySet()
             val assignedToOtherTargets = weaponAssignments.entries

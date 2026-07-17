@@ -1,5 +1,6 @@
 package battletech.tui.view
 
+import battletech.tui.screen.Cell
 import battletech.tui.screen.CellWidth
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
@@ -16,7 +17,7 @@ internal object WeaponHitWidget {
     ) {
         val right = hitChanceLabel(targetDiceRoll, successChance)
         val padding = (content.width - left.length - CellWidth.of(right)).coerceAtLeast(1)
-        content.writeln("$left${" ".repeat(padding)}$right", color)
-        modifiers.forEach { content.writeln("    $it", color) }
+        content.writeln("$left${" ".repeat(padding)}$right", Cell.Style(color))
+        modifiers.forEach { content.writeln("    $it", Cell.Style(color)) }
     }
 }

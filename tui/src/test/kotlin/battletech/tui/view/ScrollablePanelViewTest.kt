@@ -125,7 +125,7 @@ internal class ScrollablePanelViewTest {
             val cell = buffer.get(29, row)
             if (row - 1 in thumbRange) {
                 assertEquals("▐", cell.char, "expected thumb at row $row")
-                assertEquals(Color.GREEN, cell.fg)
+                assertEquals(Color.GREEN, cell.style.fg)
             } else {
                 assertEquals("│", cell.char, "expected border at row $row")
             }

@@ -59,10 +59,10 @@ internal class HeatBarWidgetTest {
 
         widget.draw(buffer, 2, 0, 21)
 
-        assertEquals(Color.RED, buffer.get(2, 0).fg)
+        assertEquals(Color.RED, buffer.get(2, 0).style.fg)
         // value "21" is 2 chars; filled = 21*20/30 = 14, anchorCol = 2+14 = 16
         // "21" written at (16 - 2 + 1, 1) = (15, 1)
-        assertEquals(Color.RED, buffer.get(15, 1).fg)
+        assertEquals(Color.RED, buffer.get(15, 1).style.fg)
     }
 
     @Test
@@ -72,7 +72,7 @@ internal class HeatBarWidgetTest {
 
         widget.draw(buffer, 2, 0, 9)
 
-        assertEquals(Color.YELLOW, buffer.get(2, 0).fg)
+        assertEquals(Color.YELLOW, buffer.get(2, 0).style.fg)
     }
 
     @Test
@@ -82,7 +82,7 @@ internal class HeatBarWidgetTest {
 
         widget.draw(buffer, 2, 0, 8)
 
-        assertEquals(Color.LIGHT_BLUE, buffer.get(2, 0).fg)
+        assertEquals(Color.LIGHT_BLUE, buffer.get(2, 0).style.fg)
     }
 
     @Test
@@ -106,6 +106,6 @@ internal class HeatBarWidgetTest {
 
         val row0 = (2 until 28).map { buffer.get(it, 0).char }.joinToString("")
         assertTrue(row0.contains("░".repeat(10)))
-        assertEquals(Color.RED, buffer.get(2, 0).fg)
+        assertEquals(Color.RED, buffer.get(2, 0).style.fg)
     }
 }

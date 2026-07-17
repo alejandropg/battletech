@@ -23,18 +23,18 @@ public object UnitRenderer {
         val initialRow = if (southFacing) 2 else 3
         val arrowRow = if (southFacing) 3 else 2
 
-        buffer.set(x + 4, y + initialRow, Cell(initial.toString(), color, buffer.get(x + 4, y + initialRow).bg))
+        buffer.set(x + 4, y + initialRow, Cell(initial.toString(), Cell.Style(color, buffer.get(x + 4, y + initialRow).style.bg)))
         if (isDestroyed) {
-            buffer.set(x + 5, y + initialRow, Cell(destroyedIcon(), color, buffer.get(x + 5, y + initialRow).bg))
+            buffer.set(x + 5, y + initialRow, Cell(destroyedIcon(), Cell.Style(color, buffer.get(x + 5, y + initialRow).style.bg)))
         }
-        buffer.set(arrowX, y + arrowRow, Cell(arrowChar, color, buffer.get(arrowX, y + arrowRow).bg))
+        buffer.set(arrowX, y + arrowRow, Cell(arrowChar, Cell.Style(color, buffer.get(arrowX, y + arrowRow).style.bg)))
 
         if (torsoFacing != null && torsoFacing != facing) {
             val (torsoChar, torsoOffset) = torsoArrowIcon(torsoFacing)
             val torsoSouth = torsoFacing == HexDirection.SE || torsoFacing == HexDirection.S || torsoFacing == HexDirection.SW
             val torsoX = x + torsoOffset
             val torsoRow = if (torsoSouth) 3 else 2
-            buffer.set(torsoX, y + torsoRow, Cell(torsoChar, color, buffer.get(torsoX, y + torsoRow).bg))
+            buffer.set(torsoX, y + torsoRow, Cell(torsoChar, Cell.Style(color, buffer.get(torsoX, y + torsoRow).style.bg)))
         }
     }
 

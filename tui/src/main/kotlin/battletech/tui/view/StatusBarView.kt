@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import battletech.tactical.model.TurnPhase
+import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
@@ -20,8 +21,8 @@ public class StatusBarView(
         } else {
             "[${phase.name}]"
         }
-        buffer.writeString(cx, cy, phaseLabel, Color.BRIGHT_YELLOW)
-        buffer.writeString(cx, cy + 1, prompt, Color.WHITE)
-        buffer.writeString(cx, cy + 2, "Arrow keys: move/twist | Enter: confirm | Esc: back | Tab: cycle | c: commit | ctrl+c: quit", Color.WHITE)
+        buffer.writeString(cx, cy, phaseLabel, Cell.Style(Color.BRIGHT_YELLOW))
+        buffer.writeString(cx, cy + 1, prompt, Cell.Style(Color.WHITE))
+        buffer.writeString(cx, cy + 2, "Arrow keys: move/twist | Enter: confirm | Esc: back | Tab: cycle | c: commit | ctrl+c: quit", Cell.Style(Color.WHITE))
     }
 }

@@ -31,7 +31,7 @@ internal class UnitRendererTest {
         UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.N, Color.CYAN)
 
         assertEquals("A", buffer.get(4, 3).char)
-        assertEquals(Color.CYAN, buffer.get(4, 3).fg)
+        assertEquals(Color.CYAN, buffer.get(4, 3).style.fg)
     }
 
     @Test
@@ -41,9 +41,9 @@ internal class UnitRendererTest {
         UnitRenderer.render(buffer, 0, 0, 'A', HexDirection.N, Color.CYAN, isDestroyed = true)
 
         assertEquals("A", buffer.get(4, 3).char)
-        assertEquals(Color.CYAN, buffer.get(4, 3).fg)
+        assertEquals(Color.CYAN, buffer.get(4, 3).style.fg)
         assertEquals(ICON_SKULL, buffer.get(5, 3).char)
-        assertEquals(Color.CYAN, buffer.get(5, 3).fg)
+        assertEquals(Color.CYAN, buffer.get(5, 3).style.fg)
     }
 
     @Test

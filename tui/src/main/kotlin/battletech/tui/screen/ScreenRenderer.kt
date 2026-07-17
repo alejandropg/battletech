@@ -3,6 +3,7 @@ package battletech.tui.screen
 import com.github.ajalt.colormath.model.Ansi256
 import com.github.ajalt.mordant.rendering.TextColors
 import com.github.ajalt.mordant.rendering.TextStyle
+import com.github.ajalt.mordant.rendering.TextStyles
 import com.github.ajalt.mordant.terminal.Terminal
 import java.util.EnumMap
 
@@ -16,6 +17,8 @@ public class ScreenRenderer(private val terminal: Terminal) {
     private val bgCache: EnumMap<Color, TextStyle?> = EnumMap<Color, TextStyle?>(Color::class.java).also { map ->
         Color.entries.forEach { map[it] = toBgStyle(it) }
     }
+
+    private val strikeStyle: TextStyle = TextStyles.strikethrough.style
 
     // 14×14 combined style cache, indexed by Color.ordinal.  Null means both DEFAULT (no markup).
     // Lazily populated on first use for each (fg, bg) pair.
@@ -71,18 +74,18 @@ public class ScreenRenderer(private val terminal: Terminal) {
             var x = 0
             while (x < buffer.width) {
                 val firstCell = buffer.get(x, y)
-                val runFg = firstCell.fg
-                val runBg = firstCell.bg
-                // collect all consecutive cells with the same (fg, bg)
+                val runStyle = firstCell.style
+                // collect all consecutive cells with the same style
                 val runChars = StringBuilder()
                 while (x < buffer.width) {
                     val cell = buffer.get(x, y)
-                    if (cell.fg != runFg || cell.bg != runBg) break
+                    if (cell.style != runStyle) break
                     runChars.append(cell.char)
                     x++
                 }
                 val runText = runChars.toString()
-                val style = composedStyle(runFg, runBg)
+                val base = composedStyle(runStyle.fg, runStyle.bg)
+                val style = if (runStyle.strikethrough) (base?.plus(strikeStyle) ?: strikeStyle) else base
                 if (style != null) {
                     sb.append(style(runText))
                 } else {

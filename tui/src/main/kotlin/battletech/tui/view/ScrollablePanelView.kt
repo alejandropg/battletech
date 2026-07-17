@@ -47,7 +47,7 @@ internal class ScrollablePanelView(
         )
         if (thumbRange != null) {
             for (row in thumbRange) {
-                buffer.set(x + width - 1, y + 1 + row, Cell("▐", Color.GREEN))
+                buffer.set(x + width - 1, y + 1 + row, Cell("▐", Cell.Style(Color.GREEN)))
             }
         }
     }
@@ -56,7 +56,7 @@ internal class ScrollablePanelView(
         for (row in scratch.height - 1 downTo 0) {
             for (col in 0 until scratch.width) {
                 val cell = scratch.get(col, row)
-                if (cell.char != " " || cell.bg != Color.DEFAULT) {
+                if (cell.char != " " || cell.style.bg != Color.DEFAULT) {
                     return row + 1
                 }
             }

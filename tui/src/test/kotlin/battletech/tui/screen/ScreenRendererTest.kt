@@ -49,7 +49,7 @@ internal class ScreenRendererTest {
     fun `colored run emits one style per run not one per cell`() {
         // 4 cells all with fg=RED — they should be wrapped in a single SGR open+close pair
         val buffer = ScreenBuffer(4, 1)
-        buffer.writeString(0, 0, "ABCD", fg = Color.RED)
+        buffer.writeString(0, 0, "ABCD", Cell.Style(fg = Color.RED))
 
         renderer.render(buffer)
 
@@ -69,7 +69,7 @@ internal class ScreenRendererTest {
         // Contrast: 4 consecutive RED cells → 1 reset (run-length) vs 4 resets (per-cell, old).
         val buffer = ScreenBuffer(4, 1)
         for (x in 0 until 4) {
-            buffer.set(x, 0, Cell("X", fg = Color.RED))
+            buffer.set(x, 0, Cell("X", Cell.Style(fg = Color.RED)))
         }
 
         renderer.render(buffer)
