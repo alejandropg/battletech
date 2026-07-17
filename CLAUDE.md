@@ -4,6 +4,20 @@
 
 BattleTech is a multi-module project implementing BattleTech, hexagonal board tabletop, turn-based, game rules.
 
+## Game Rules Reference
+
+`docs/rules/` — the canonical tabletop rules this engine implements (hit location, crits,
+heat scale, to-hit modifiers, LOS, cluster hits, pilot, ammo, water, victory). Business
+rules, not technical docs.
+
+**Read `docs/rules/index.md` first** — it is a routing table (doc-by-topic + find-by-keyword)
+that names the one doc owning each rule. Open only the doc it routes to; do not read the
+directory wholesale. Each rule has one canonical home — trust the owning doc over a
+restated number elsewhere, and over general BattleTech knowledge.
+
+Read when implementing, changing, or reviewing a game rule, or when a magic number in code
+or a test expectation is a rules value. Not needed for everyday context.
+
 ## Technology Stack
 
 - Kotlin 2.4
