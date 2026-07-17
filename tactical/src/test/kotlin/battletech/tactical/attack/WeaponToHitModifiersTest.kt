@@ -3,6 +3,7 @@ package battletech.tactical.attack
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.MechLocation
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.Terrain
 import battletech.tactical.query.aGameState
@@ -10,6 +11,7 @@ import battletech.tactical.query.aUnit
 import battletech.tactical.query.aWeapon
 import battletech.tactical.unit.MovementThisTurn
 import battletech.tactical.unit.WeaponModels
+import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.Weapon
 import battletech.tactical.dice.DiceRoller
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -99,7 +101,7 @@ internal class WeaponToHitModifiersTest {
     @Test
     fun `weapon at or beyond minimum range adds zero min range penalty`() {
         // PPC min range 3, distance 3 → at min range, no penalty
-        val ppc = Weapon(model = WeaponModels.ppc)
+        val ppc = Weapon(model = WeaponModels.ppc, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)
         val target = baseTarget(position = HexCoordinates(3, 0))
 
         val mods = modifiersFor(target = target, weapon = ppc, distance = 3)
@@ -110,7 +112,7 @@ internal class WeaponToHitModifiersTest {
     @Test
     fun `PPC at distance one inside min range three adds three`() {
         // minimumRange 3, distance 1 → 3 - 1 + 1 = 3
-        val ppc = Weapon(model = WeaponModels.ppc)
+        val ppc = Weapon(model = WeaponModels.ppc, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)
 
         val mods = modifiersFor(weapon = ppc, distance = 1)
 
@@ -120,7 +122,7 @@ internal class WeaponToHitModifiersTest {
     @Test
     fun `LRM at distance two inside min range six adds five`() {
         // minimumRange 6, distance 2 → 6 - 2 + 1 = 5
-        val lrm = Weapon(model = WeaponModels.lrm5)
+        val lrm = Weapon(model = WeaponModels.lrm5, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)
 
         val mods = modifiersFor(weapon = lrm, distance = 2)
 
@@ -130,7 +132,7 @@ internal class WeaponToHitModifiersTest {
     @Test
     fun `weapon with no minimum range never adds min range penalty`() {
         // Medium laser has minimumRange 0 — never penalised at any distance
-        val ml = Weapon(model = WeaponModels.mediumLaser)
+        val ml = Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)
 
         val mods = modifiersFor(weapon = ml, distance = 1)
 
@@ -152,7 +154,7 @@ internal class WeaponToHitModifiersTest {
         //   attacker move: +0
         //   Expected TN = 4 + 0 (range short) + 0 (heat) + 0 (secondary) + 0 (prone) + 0 (immobile)
         //                   + 0 (sensors) + 0 (attacker move) + 2 (target move) + 5 (min range) = 11
-        val lrm = Weapon(model = WeaponModels.lrm5)
+        val lrm = Weapon(model = WeaponModels.lrm5, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)
         val attacker = baseAttacker(MovementThisTurn.Stationary)
         val target = baseTarget(
             movement = MovementThisTurn.Moved(MovementMode.RUN, 5),
@@ -174,7 +176,7 @@ internal class WeaponToHitModifiersTest {
 
     @Test
     fun `attack result carries attacker move target move and min range fields`() {
-        val lrm = Weapon(model = WeaponModels.lrm5)
+        val lrm = Weapon(model = WeaponModels.lrm5, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)
         val attacker = baseAttacker(MovementThisTurn.Moved(MovementMode.RUN, 5))
             .copy(weapons = listOf(lrm))
         val target = baseTarget(

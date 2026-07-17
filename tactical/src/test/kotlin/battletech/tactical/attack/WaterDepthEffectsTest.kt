@@ -20,6 +20,7 @@ import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.WeaponModel
+import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.Weapon
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -255,6 +256,8 @@ internal class WaterDepthEffectsTest {
                 kind = WeaponKind.Energy,
                 underwaterCapable = true,
             ),
+            mountId = WeaponMountId(0),
+            location = MechLocation.CENTER_TORSO,
         )
         val gameState = aGameState(
             units = listOf(attacker, target),

@@ -6,6 +6,7 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.Terrain
 import battletech.tactical.query.PlayerView
@@ -24,14 +25,21 @@ import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModels
+import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.empty
 import battletech.tui.game.AppState
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.Phase
 
-internal fun mediumLaser(): Weapon = Weapon(model = WeaponModels.mediumLaser)
+internal fun mediumLaser(
+    mountId: WeaponMountId = WeaponMountId(0),
+    location: MechLocation = MechLocation.CENTER_TORSO,
+): Weapon = Weapon(model = WeaponModels.mediumLaser, mountId = mountId, location = location)
 
-internal fun srm6(): Weapon = Weapon(model = WeaponModels.srm6)
+internal fun srm6(
+    mountId: WeaponMountId = WeaponMountId(1),
+    location: MechLocation = MechLocation.LEFT_TORSO,
+): Weapon = Weapon(model = WeaponModels.srm6, mountId = mountId, location = location)
 
 internal fun aTurnState(
     movementOrder: List<Impulse> = listOf(Impulse(PlayerId.PLAYER_1, 1)),

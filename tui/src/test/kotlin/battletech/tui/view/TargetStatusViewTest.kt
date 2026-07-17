@@ -7,6 +7,7 @@ import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.MovementThisTurn
 import battletech.tactical.unit.PublicWeapon
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.WeaponMountId
 import battletech.tui.anArmorLayout
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
@@ -22,7 +23,7 @@ internal class TargetStatusViewTest {
         walkingMP: Int = 4,
         runningMP: Int = 6,
         jumpMP: Int = 0,
-        weapons: List<PublicWeapon> = listOf(PublicWeapon("AC/20")),
+        weapons: List<PublicWeapon> = listOf(PublicWeapon("AC/20", WeaponMountId(0))),
     ): ForeignUnit = ForeignUnit(
         id = UnitId("u1"),
         owner = PlayerId.PLAYER_1,
@@ -127,7 +128,7 @@ internal class TargetStatusViewTest {
 
     @Test
     fun `renders WEAPONS section with weapon names`() {
-        val unit = aForeignUnit(weapons = listOf(PublicWeapon("AC/20"), PublicWeapon("Medium Laser")))
+        val unit = aForeignUnit(weapons = listOf(PublicWeapon("AC/20", WeaponMountId(0)), PublicWeapon("Medium Laser", WeaponMountId(1))))
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 

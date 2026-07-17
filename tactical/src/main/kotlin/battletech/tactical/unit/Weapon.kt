@@ -6,8 +6,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 public data class Weapon(
     public val model: WeaponModel,
-    override val mountId: WeaponMountId? = null,
-    public val location: MechLocation? = null,
+    override val mountId: WeaponMountId,
+    public val location: MechLocation,
     public val destroyed: Boolean = false,
 ) : WeaponView {
     override val name: String get() = model.name

@@ -5,6 +5,7 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
@@ -17,11 +18,18 @@ import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.WeaponModel
 import battletech.tactical.unit.WeaponModels
+import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.empty
 
-internal fun mediumLaser(): Weapon = Weapon(model = WeaponModels.mediumLaser)
+internal fun mediumLaser(
+    mountId: WeaponMountId = WeaponMountId(0),
+    location: MechLocation = MechLocation.CENTER_TORSO,
+): Weapon = Weapon(model = WeaponModels.mediumLaser, mountId = mountId, location = location)
 
-internal fun ac20(): Weapon = Weapon(model = WeaponModels.ac20)
+internal fun ac20(
+    mountId: WeaponMountId = WeaponMountId(0),
+    location: MechLocation = MechLocation.CENTER_TORSO,
+): Weapon = Weapon(model = WeaponModels.ac20, mountId = mountId, location = location)
 
 internal fun aWeapon(
     name: String = "Test Weapon",
@@ -33,6 +41,8 @@ internal fun aWeapon(
     longRange: Int = 9,
     kind: WeaponKind = WeaponKind.Energy,
     destroyed: Boolean = false,
+    mountId: WeaponMountId = WeaponMountId(0),
+    location: MechLocation = MechLocation.CENTER_TORSO,
 ): Weapon = Weapon(
     model = WeaponModel(
         name = name,
@@ -44,6 +54,8 @@ internal fun aWeapon(
         longRange = longRange,
         kind = kind,
     ),
+    mountId = mountId,
+    location = location,
     destroyed = destroyed,
 )
 

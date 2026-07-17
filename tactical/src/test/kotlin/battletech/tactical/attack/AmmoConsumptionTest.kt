@@ -16,6 +16,7 @@ import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModels
+import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.mechLayout
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -79,7 +80,7 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 4,
-            weapons = listOf(Weapon(WeaponModels.ac20)),
+            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
         )
         var state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
@@ -130,7 +131,7 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 12,  // TN ≥ 12 → guaranteed miss
-            weapons = listOf(Weapon(WeaponModels.ac20)),
+            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
         )
         val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
@@ -155,7 +156,7 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,  // TN = 0 → guaranteed hit on any roll
-            weapons = listOf(Weapon(WeaponModels.ac20)),
+            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
             position = HexCoordinates(0, 0),
         )
@@ -184,7 +185,7 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,  // guaranteed hit
-            weapons = listOf(Weapon(WeaponModels.lrm10)),
+            weapons = listOf(Weapon(WeaponModels.lrm10, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
             position = HexCoordinates(0, 0),
         )
@@ -214,7 +215,7 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 12,
-            weapons = listOf(Weapon(WeaponModels.lrm10)),
+            weapons = listOf(Weapon(WeaponModels.lrm10, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
         )
         val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
@@ -241,7 +242,7 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 2,
-            weapons = listOf(Weapon(WeaponModels.srm6)),
+            weapons = listOf(Weapon(WeaponModels.srm6, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
         )
         val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
@@ -269,7 +270,7 @@ internal class AmmoConsumptionTest {
     fun `energy weapon (medium laser) consumes no ammo`() {
         val attacker = aUnit(
             id = "attacker",
-            weapons = listOf(Weapon(WeaponModels.mediumLaser)),
+            weapons = listOf(Weapon(WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             // No ammo bins in the layout
         )
         val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
@@ -297,7 +298,7 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,
-            weapons = listOf(Weapon(WeaponModels.ac20)),
+            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
         )
         var state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
@@ -337,7 +338,10 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,
-            weapons = listOf(Weapon(WeaponModels.ac20), Weapon(WeaponModels.srm6)),
+            weapons = listOf(
+                Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO),
+                Weapon(WeaponModels.srm6, mountId = WeaponMountId(1), location = MechLocation.LEFT_TORSO),
+            ),
             criticalLayout = layout,
         )
         val target2 = aUnit(
@@ -401,7 +405,10 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 4,  // TN=4 primary, TN=5 secondary; roll (1,1)=2 misses both
-            weapons = listOf(Weapon(WeaponModels.srm2), Weapon(WeaponModels.srm2)),
+            weapons = listOf(
+                Weapon(WeaponModels.srm2, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO),
+                Weapon(WeaponModels.srm2, mountId = WeaponMountId(1), location = MechLocation.RIGHT_TORSO),
+            ),
             criticalLayout = layout,
         )
         val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
@@ -434,7 +441,7 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,
-            weapons = listOf(Weapon(WeaponModels.ac20)),
+            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
         )
         val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))

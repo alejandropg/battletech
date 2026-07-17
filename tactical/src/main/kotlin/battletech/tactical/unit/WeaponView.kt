@@ -12,5 +12,5 @@ package battletech.tactical.unit
  */
 public interface WeaponView {
     public val name: String
-    public val mountId: WeaponMountId?
+    public val mountId: WeaponMountId
 }

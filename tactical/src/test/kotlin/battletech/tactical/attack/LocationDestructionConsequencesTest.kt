@@ -27,6 +27,7 @@ import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModels
+import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.availableAmmoBins
 import battletech.tactical.unit.destroyedLegCount
 import battletech.tactical.unit.mechLayout
@@ -71,7 +72,7 @@ internal class LocationDestructionConsequencesTest {
 
     @Test
     fun `arm weapon destroyed - WeaponNotDestroyedRule rejects it`() {
-        val weapon = Weapon(model = WeaponModels.mediumLaser, destroyed = true)
+        val weapon = Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.LEFT_ARM, destroyed = true)
         val unit = aUnit(id = "unit-1", weapons = listOf(weapon))
         val rule = WeaponNotDestroyedRule()
         val ctx = aWeaponAttackContext(actor = unit, weapon = weapon)
@@ -81,7 +82,7 @@ internal class LocationDestructionConsequencesTest {
 
     @Test
     fun `intact arm weapon - WeaponNotDestroyedRule passes`() {
-        val weapon = Weapon(model = WeaponModels.mediumLaser, destroyed = false)
+        val weapon = Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.LEFT_ARM, destroyed = false)
         val unit = aUnit(id = "unit-1", weapons = listOf(weapon))
         val rule = WeaponNotDestroyedRule()
         val ctx = aWeaponAttackContext(actor = unit, weapon = weapon)
@@ -424,7 +425,7 @@ internal class LocationDestructionConsequencesTest {
         }
         val unit = aUnit(
             id = "unit-1",
-            weapons = listOf(Weapon(WeaponModels.ac20)),
+            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = build.layout,
             internalStructure = anInternalStructureLayout(rightTorso = 0),
         )
@@ -440,7 +441,7 @@ internal class LocationDestructionConsequencesTest {
         }
         val unit = aUnit(
             id = "unit-1",
-            weapons = listOf(Weapon(WeaponModels.ac20)),
+            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = build.layout,
             internalStructure = anInternalStructureLayout(leftTorso = 21),
         )
@@ -464,7 +465,7 @@ internal class LocationDestructionConsequencesTest {
         )
         val unit = aUnit(
             id = "unit-1",
-            weapons = listOf(Weapon(WeaponModels.ac20)),
+            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = exhaustedLayout,
             internalStructure = anInternalStructureLayout(leftTorso = 21, rightTorso = 0),
         )
@@ -488,10 +489,11 @@ internal class LocationDestructionConsequencesTest {
             criticalLayout = build.layout,
             internalStructure = anInternalStructureLayout(leftArm = 17),
         )
-        // Bystander has a weapon but no mountId in any criticalLayout → disableWeaponsIn is a no-op
+        // Bystander's weapon has a mountId, but that mount doesn't appear in its (empty)
+        // criticalLayout at leftArm → disableWeaponsIn is a no-op regardless.
         val bystander = aUnit(
             id = "bystander",
-            weapons = listOf(Weapon(WeaponModels.mediumLaser)),
+            weapons = listOf(Weapon(WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.LEFT_ARM)),
             internalStructure = anInternalStructureLayout(leftArm = 17),
         )
         val before = GameState(listOf(affected, bystander), GameMap(emptyMap()))

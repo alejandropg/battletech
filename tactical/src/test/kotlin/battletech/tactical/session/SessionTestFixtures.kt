@@ -4,6 +4,7 @@ import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
@@ -13,6 +14,7 @@ import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModels
+import battletech.tactical.unit.WeaponMountId
 
 internal fun aMech(
     id: String,
@@ -27,7 +29,7 @@ internal fun aMech(
     tonnage = 50,
     gunnerySkill = 4,
     pilotingSkill = 5,
-    weapons = listOf(Weapon(model = WeaponModels.mediumLaser)),
+    weapons = listOf(Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)),
     position = position,
     facing = HexDirection.N,
     torsoFacing = HexDirection.N,

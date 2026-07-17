@@ -15,6 +15,7 @@ import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.WeaponModel
+import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.mechLayout
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
@@ -49,7 +50,7 @@ internal class UnitStatusViewTest {
         walkingMP: Int = 4,
         runningMP: Int = 6,
         jumpMP: Int = 0,
-        weapons: List<PublicWeapon> = listOf(PublicWeapon("AC/20")),
+        weapons: List<PublicWeapon> = listOf(PublicWeapon("AC/20", WeaponMountId(0))),
     ): ForeignUnit = ForeignUnit(
         id = UnitId("u1"),
         owner = PlayerId.PLAYER_2,
@@ -387,6 +388,8 @@ internal class UnitStatusViewTest {
                 name = "AC/20", damage = 20, heat = 7,
                 shortRange = 3, mediumRange = 6, longRange = 9, kind = WeaponKind.Ballistic(AmmoType.AC20),
             ),
+            mountId = WeaponMountId(0),
+            location = MechLocation.RIGHT_TORSO,
         )
         val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
         val unit = aUnit(weapons = listOf(weapon), criticalLayout = layout)
@@ -454,6 +457,8 @@ internal class UnitStatusViewTest {
                 name = "Medium Laser", damage = 5, heat = 3,
                 shortRange = 3, mediumRange = 6, longRange = 9, kind = WeaponKind.Energy,
             ),
+            mountId = WeaponMountId(0),
+            location = MechLocation.CENTER_TORSO,
         )
         val unit = aUnit(weapons = listOf(weapon))
         val view = UnitStatusView(unit)
@@ -524,7 +529,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders public subject WEAPONS section with weapon names`() {
         val view = UnitStatusView(
-            aForeignUnit(weapons = listOf(PublicWeapon("AC/20"), PublicWeapon("Medium Laser"))),
+            aForeignUnit(weapons = listOf(PublicWeapon("AC/20", WeaponMountId(0)), PublicWeapon("Medium Laser", WeaponMountId(1)))),
         )
         val buffer = renderDecorated(view)
 

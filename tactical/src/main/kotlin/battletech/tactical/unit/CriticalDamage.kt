@@ -143,8 +143,7 @@ internal fun CombatUnit.disableWeaponsIn(location: MechLocation): CombatUnit {
     if (weaponIds.isEmpty()) return this
     return copy(
         weapons = weapons.map { weapon ->
-            if (weapon.mountId != null && weapon.mountId in weaponIds) weapon.copy(destroyed = true)
-            else weapon
+            if (weapon.mountId in weaponIds) weapon.copy(destroyed = true) else weapon
         },
     )
 }

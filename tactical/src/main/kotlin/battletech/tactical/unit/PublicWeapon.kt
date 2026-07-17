@@ -10,4 +10,4 @@ import kotlinx.serialization.Serializable
  * unit.
  */
 @Serializable
-public data class PublicWeapon(override val name: String, override val mountId: WeaponMountId? = null) : WeaponView
+public data class PublicWeapon(override val name: String, override val mountId: WeaponMountId) : WeaponView

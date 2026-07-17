@@ -8,6 +8,7 @@ import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.PublicWeapon
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.UnknownUnitException
+import battletech.tactical.unit.WeaponMountId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -85,7 +86,10 @@ internal class GameStateProjectionTest {
         assertEquals(0, visible.jumpMP)
         assertEquals(9, visible.armor.head)
         assertEquals(47, visible.armor.centerTorso)
-        assertEquals(listOf(PublicWeapon("AC/20"), PublicWeapon("Medium Laser")), visible.weapons)
+        assertEquals(
+            listOf(PublicWeapon("AC/20", WeaponMountId(0)), PublicWeapon("Medium Laser", WeaponMountId(0))),
+            visible.weapons,
+        )
     }
 
     @Test

@@ -270,7 +270,10 @@ internal class GameLogFormatterTest {
             id = "atlas",
             name = "Atlas",
             owner = PlayerId.PLAYER_1,
-            weapons = listOf(Weapon(model = WeaponModels.mediumLaser), Weapon(model = WeaponModels.lrm5)),
+            weapons = listOf(
+                Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO),
+                Weapon(model = WeaponModels.lrm5, mountId = WeaponMountId(1), location = MechLocation.LEFT_TORSO),
+            ),
         )
         val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
         val stateWithUnits = emptyGameState.copy(units = listOf(atlas, locust)).projectFor(viewer = null, revealAll = true)
@@ -464,7 +467,7 @@ internal class GameLogFormatterTest {
 
     @Test
     fun `CriticalHit on a weapon mount resolves the weapon's name`() {
-        val weapon = Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0))
+        val weapon = Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)
         val locust = aMech(id = "locust", name = "Locust", weapons = listOf(weapon))
         val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
 

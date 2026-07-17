@@ -7,12 +7,14 @@ import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Hex
+import battletech.tactical.model.MechLocation
 import battletech.tactical.model.Terrain
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.anArmorLayout
 import battletech.tactical.query.anInternalStructureLayout
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModels
+import battletech.tactical.unit.WeaponMountId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -71,7 +73,7 @@ internal class ClusterResolutionTest {
 
     @Test
     fun `medium laser produces exactly one location hit`() {
-        val att = attacker.copy(weapons = listOf(Weapon(WeaponModels.mediumLaser)))
+        val att = attacker.copy(weapons = listOf(Weapon(WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = gameState.copy(units = listOf(att, target))
         val decl = AttackDeclaration(att.id, target.id, 0, true)
         // Dice: to-hit (4,4)=8 ≥ TN 2, location (3,4)=7 → CENTER_TORSO
@@ -93,7 +95,7 @@ internal class ClusterResolutionTest {
 
     @Test
     fun `medium laser miss produces empty locationHits`() {
-        val highGunneryAtt = attacker.copy(gunnerySkill = 8, weapons = listOf(Weapon(WeaponModels.mediumLaser)))
+        val highGunneryAtt = attacker.copy(gunnerySkill = 8, weapons = listOf(Weapon(WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = gameState.copy(units = listOf(highGunneryAtt, target))
         val decl = AttackDeclaration(highGunneryAtt.id, target.id, 0, true)
         // TN = 8, roll (1,1)=2 → miss; no location roll consumed
@@ -108,7 +110,7 @@ internal class ClusterResolutionTest {
     fun `medium laser dice order unchanged — deterministic roller produces identical result`() {
         // Pins the dice order: to-hit(4,5)=9, location(3,4)=7 → CENTER_TORSO.
         // Stream must be exactly [4, 5, 3, 4] — no extra rolls consumed.
-        val att = attacker.copy(weapons = listOf(Weapon(WeaponModels.mediumLaser)))
+        val att = attacker.copy(weapons = listOf(Weapon(WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = gameState.copy(units = listOf(att, target))
         val decl = AttackDeclaration(att.id, target.id, 0, true)
         val roller = DiceRoller.deterministic(4, 5, 3, 4)
@@ -129,7 +131,7 @@ internal class ClusterResolutionTest {
 
     @Test
     fun `SRM-6 miss produces no locationHits`() {
-        val att = attacker.copy(gunnerySkill = 8, weapons = listOf(Weapon(WeaponModels.srm6)))
+        val att = attacker.copy(gunnerySkill = 8, weapons = listOf(Weapon(WeaponModels.srm6, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = gameState.copy(units = listOf(att, target))
         val decl = AttackDeclaration(att.id, target.id, 0, true)
         // TN = 8, roll (1,1)=2 → miss; no cluster or location rolls consumed
@@ -152,7 +154,7 @@ internal class ClusterResolutionTest {
         //   loc 5:    (2,2)=4 → RIGHT_ARM       (2 dmg)
         //   loc 6:    (5,6)=11 → LEFT_ARM       (2 dmg)
         // Total = 12 damage; target has heavy armor so no IS damage → no crit dice needed.
-        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.srm6)))
+        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.srm6, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = gameState.copy(units = listOf(att, target))
         val decl = AttackDeclaration(att.id, target.id, 0, true)
         val roller = DiceRoller.deterministic(
@@ -192,7 +194,7 @@ internal class ClusterResolutionTest {
     @Test
     fun `SRM-6 with partial cluster roll produces fewer locationHits`() {
         // cluster (1,1)=2 → size 6 roll 2 → 2 missiles
-        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.srm6)))
+        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.srm6, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = gameState.copy(units = listOf(att, target))
         val decl = AttackDeclaration(att.id, target.id, 0, true)
         val roller = DiceRoller.deterministic(
@@ -225,7 +227,7 @@ internal class ClusterResolutionTest {
             armor = anArmorLayout(centerTorso = 3, leftTorso = 3),
             internalStructure = anInternalStructureLayout(centerTorso = 20, leftTorso = 20),
         )
-        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.srm6)))
+        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.srm6, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = gameState.copy(units = listOf(att, thinTarget))
         val decl = AttackDeclaration(att.id, thinTarget.id, 0, true)
         val roller = DiceRoller.deterministic(
@@ -268,7 +270,7 @@ internal class ClusterResolutionTest {
         // cluster (4,5)=9 → size 20 roll 9 → 16 missiles
         // Groups: 16 / 5 = 3 full + 1 remainder → [5, 5, 5, 1]
         // Target has heavy armor → no IS damage → no crit dice needed.
-        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.lrm20)))
+        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.lrm20, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = lrmState(att)
         val decl = AttackDeclaration(att.id, lrmTarget.id, 0, true)
         val roller = DiceRoller.deterministic(
@@ -312,7 +314,7 @@ internal class ClusterResolutionTest {
     fun `LRM-20 full salvo (20 missiles) produces 4 groups of 5`() {
         // cluster (6,5)=11 → size 20 roll 11 → 20 missiles
         // Groups: 20 / 5 = 4 full groups → [5, 5, 5, 5]
-        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.lrm20)))
+        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.lrm20, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = lrmState(att)
         val decl = AttackDeclaration(att.id, lrmTarget.id, 0, true)
         val roller = DiceRoller.deterministic(
@@ -338,7 +340,7 @@ internal class ClusterResolutionTest {
     fun `LRM-20 minimum roll (6 missiles) produces one full group and one partial`() {
         // cluster (1,1)=2 → size 20 roll 2 → 6 missiles
         // Groups: 6 / 5 = 1 full + 1 remainder → [5, 1]
-        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.lrm20)))
+        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.lrm20, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = lrmState(att)
         val decl = AttackDeclaration(att.id, lrmTarget.id, 0, true)
         val roller = DiceRoller.deterministic(
@@ -372,7 +374,7 @@ internal class ClusterResolutionTest {
             armor = anArmorLayout(centerTorso = 8),
             internalStructure = anInternalStructureLayout(centerTorso = 20),
         )
-        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.lrm20)))
+        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.lrm20, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = GameState(listOf(att, thinTarget), GameMap(emptyMap()))
         val decl = AttackDeclaration(att.id, thinTarget.id, 0, true)
         val roller = DiceRoller.deterministic(
@@ -413,7 +415,7 @@ internal class ClusterResolutionTest {
             interveningPos to Hex(interveningPos, Terrain.CLEAR, elevation = 1),
         )
         val pcAttacker = aUnit(id = "attacker", position = attackerPos, gunnerySkill = 2,
-            weapons = listOf(Weapon(WeaponModels.srm6)))
+            weapons = listOf(Weapon(WeaponModels.srm6, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val pcTarget = aUnit(
             id = "target",
             position = targetPos,
@@ -462,7 +464,7 @@ internal class ClusterResolutionTest {
     @Test
     fun `SRM-2 full roll (2 missiles) produces 2 groups of 2 dmg`() {
         // cluster (6,5)=11 → size 2 roll 11 → 2 missiles
-        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.srm2)))
+        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.srm2, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = gameState.copy(units = listOf(att, target))
         val decl = AttackDeclaration(att.id, target.id, 0, true)
         val roller = DiceRoller.deterministic(
@@ -485,7 +487,7 @@ internal class ClusterResolutionTest {
     @Test
     fun `SRM-2 minimum roll (1 missile) produces 1 group of 2 dmg`() {
         // cluster (1,1)=2 → size 2 roll 2 → 1 missile
-        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.srm2)))
+        val att = attacker.copy(gunnerySkill = 2, weapons = listOf(Weapon(WeaponModels.srm2, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)))
         val state = gameState.copy(units = listOf(att, target))
         val decl = AttackDeclaration(att.id, target.id, 0, true)
         val roller = DiceRoller.deterministic(
