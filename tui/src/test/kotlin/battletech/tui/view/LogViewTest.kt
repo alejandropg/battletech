@@ -15,6 +15,7 @@ import battletech.tactical.session.UnitMoved
 import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.unit.PilotingSkillRoll
 import battletech.tui.aUnit
+import battletech.tui.hex.unitStoodUpIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -83,7 +84,7 @@ internal class LogViewTest {
         val headerLine = readLine(buffer, x = 2, y = 1, width = 24)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
         val entryLine = readLine(buffer, x = 2, y = 2, width = 24)
-        assertEquals("> m stood up", entryLine)
+        assertEquals("${unitStoodUpIcon()} m stood up", entryLine)
     }
 
     @Test
@@ -114,7 +115,7 @@ internal class LogViewTest {
         val headerLine = readLine(buffer, x = 2, y = 1, width = 24)
         assertEquals("── TURN 10 ─────────────", headerLine)
         val entryLine = readLine(buffer, x = 2, y = 2, width = 24)
-        assertEquals("> m stood up", entryLine)
+        assertEquals("${unitStoodUpIcon()} m stood up", entryLine)
     }
 
     @Test
@@ -175,7 +176,7 @@ internal class LogViewTest {
 
         // The bottom inner row (y = 4, since box bottom is y=5) should be the most recent entry.
         val bottomInnerRow = readLine(buffer, 2, 4, 24)
-        assertEquals("> m stood up", bottomInnerRow)
+        assertEquals("${unitStoodUpIcon()} m stood up", bottomInnerRow)
         // The row above is that entry's own header.
         val secondFromBottom = readLine(buffer, 2, 3, 24)
         assert(secondFromBottom.startsWith("── TURN 10 ")) { "Expected header above last entry: '$secondFromBottom'" }
@@ -192,7 +193,7 @@ internal class LogViewTest {
         val firstLine = readLine(buffer, 2, 1, 24)
         assert(firstLine.startsWith("── TURN 1 ")) { "Expected header at row 1: '$firstLine'" }
         val secondLine = readLine(buffer, 2, 2, 24)
-        assertEquals("> m stood up", secondLine)
+        assertEquals("${unitStoodUpIcon()} m stood up", secondLine)
     }
 
     @Test

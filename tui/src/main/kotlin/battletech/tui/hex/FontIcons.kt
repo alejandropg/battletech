@@ -34,6 +34,11 @@ private val NF_MD_EYE_CIRCLE = String(Character.toChars(0xF0B94))
 private val NF_MD_ACCOUNT_CIRCLE = String(Character.toChars(0xF0009))
 private val NF_MD_SKULL = String(Character.toChars(0xF068C))
 private val NF_MD_LAN_CONNECT = String(Character.toChars(0xF0318))
+private val NF_MD_TRANSFER_DOWN = String(Character.toChars(0xF0DA1))
+private val NF_MD_TRANSFER_UP = String(Character.toChars(0xF0DA3))
+private val NF_MD_ACCOUNT_ALERT = String(Character.toChars(0xF0005))
+private val NF_MD_SLEEP = String(Character.toChars(0xF04B2))
+private val NF_MD_SLEEP_OFF = String(Character.toChars(0xF04B3))
 
 // Leg facing arrows (larger arrows)
 private val NF_MD_ARROW_UP_BOLD_OUTLINE = String(Character.toChars(0xF09C7))
@@ -123,6 +128,21 @@ internal fun destroyedIcon(): String = NF_MD_SKULL
 
 /** Marker for [battletech.tactical.session.SessionNotice] log entries (network happenings). */
 internal fun sessionNoticeIcon(): String = NF_MD_LAN_CONNECT
+
+/** Marker for a unit that fell / was knocked prone. */
+internal fun unitFellIcon(): String = NF_MD_TRANSFER_DOWN
+
+/** Marker for a unit that attempted to stand (up whether or not the PSR succeeded). */
+internal fun unitStoodUpIcon(): String = NF_MD_TRANSFER_UP
+
+/** Marker for a pilot-wounded log line. */
+internal fun pilotWoundedIcon(): String = NF_MD_ACCOUNT_ALERT
+
+/** Marker for a pilot knocked unconscious. */
+internal fun pilotUnconsciousIcon(): String = NF_MD_SLEEP
+
+/** Marker for a pilot regaining consciousness. */
+internal fun pilotConsciousIcon(): String = NF_MD_SLEEP_OFF
 
 internal fun checkboxIcon(state: CheckState): String =
     when (state) {

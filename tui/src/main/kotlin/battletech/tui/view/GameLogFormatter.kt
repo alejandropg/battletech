@@ -40,10 +40,15 @@ import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.destroyedIcon
 import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
+import battletech.tui.hex.pilotConsciousIcon
+import battletech.tui.hex.pilotUnconsciousIcon
+import battletech.tui.hex.pilotWoundedIcon
 import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.hex.torsoArrowIcon
 import battletech.tui.hex.undisclosedCriticalHitIcon
+import battletech.tui.hex.unitFellIcon
+import battletech.tui.hex.unitStoodUpIcon
 
 internal object GameLogFormatter {
 
@@ -102,11 +107,11 @@ internal object GameLogFormatter {
         }
         is UnitFell -> {
             val name = event.unitId.value
-            listOf(LogLine(null, "$name fell — ${event.fall.damage} damage"))
+            listOf(LogLine(unitFellIcon(), "$name fell — ${event.fall.damage} damage"))
         }
         is UnitStoodUp -> {
             val name = event.unitId.value
-            listOf(LogLine(null, if (event.stoodUp) "$name stood up" else "$name failed to stand"))
+            listOf(LogLine(unitStoodUpIcon(), if (event.stoodUp) "$name stood up" else "$name failed to stand"))
         }
         is UnitShutdown -> {
             val name = event.unitId.value
@@ -157,17 +162,17 @@ internal object GameLogFormatter {
                 is PilotHit.Checked -> "$name pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)"
                 is PilotHit.Undisclosed -> "$name pilot wounded"
             }
-            listOf(LogLine(null, text))
+            listOf(LogLine(pilotWoundedIcon(), text))
         }
         is PilotKnockedUnconscious -> {
             val name = event.unitId.value
-            listOf(LogLine(null, "$name pilot knocked unconscious"))
+            listOf(LogLine(pilotUnconsciousIcon(), "$name pilot knocked unconscious"))
         }
         // Both leaves render identically: the recovery roll was never printed, so redacting
         // it is wire-only and costs no rendering fidelity (see GameEvent.redactFor's KDoc).
         is PilotRecoveredConsciousness -> {
             val name = event.unitId.value
-            listOf(LogLine(null, "$name pilot regained consciousness"))
+            listOf(LogLine(pilotConsciousIcon(), "$name pilot regained consciousness"))
         }
         is SessionNotice -> listOf(LogLine(sessionNoticeIcon(), event.text))
     }
