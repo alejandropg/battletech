@@ -7,11 +7,13 @@ import battletech.tactical.unit.ComponentCritStatus
 import battletech.tactical.unit.CriticalComponent
 import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.HeatSource
+import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 import battletech.tactical.unit.VisibleUnit
 import battletech.tactical.unit.availableAmmoBins
 import battletech.tactical.unit.criticalDamageStatus
 import battletech.tui.game.PanelId
 import battletech.tui.hex.ammoIcon
+import battletech.tui.hex.destroyedIcon
 import battletech.tui.hex.emptyCircleIcon
 import battletech.tui.hex.filledCircleIcon
 import battletech.tui.hex.infinityIcon
@@ -56,6 +58,22 @@ public class UnitStatusView(
         // PILOT
         with(content) {
             writeHeader("PILOT")
+            // Canonical 6-box "Hits" track (record sheet Pilot Data): filled = hits taken,
+            // empty = remaining boxes. No "health" concept in the rules — hits accumulate
+            // upward, each one forcing a Consciousness roll (PilotHits.kt).
+            val hitsLabel = "Hits".padEnd(9) + ": "
+            val hits = unit.pilotHits.coerceIn(0, PILOT_DEATH_THRESHOLD)
+            content.writeStr(0, hitsLabel, Color.WHITE)
+            var hitCol = hitsLabel.length
+            for (i in 0 until hits) {
+                // The 6th hit kills the pilot outright (PILOT_DEATH_THRESHOLD) — mark that
+                // final box with a skull instead of a plain filled dot.
+                val icon = if (i == PILOT_DEATH_THRESHOLD - 1) destroyedIcon() else filledCircleIcon()
+                content.writeStr(hitCol, icon, Color.RED)
+                hitCol += 1
+            }
+            repeat(PILOT_DEATH_THRESHOLD - hits) { content.writeStr(hitCol, emptyCircleIcon(), Color.WHITE); hitCol += 1 }
+            content.newLine()
             writeln("Gunnery  : ${unit.gunnerySkill}", Color.WHITE)
             writeln("Piloting : ${unit.pilotingSkill}", Color.WHITE)
             newLine()
