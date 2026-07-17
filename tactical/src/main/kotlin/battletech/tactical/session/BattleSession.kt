@@ -41,13 +41,17 @@ public class BattleSession(
     initialGameState: GameState,
     initialTurnState: TurnState = TurnState.NULL,
     private val roller: DiceRoller = RandomDiceRoller(),
-    private val handlers: List<PhaseHandler> = standardHandlers(),
-    initialPhase: battletech.tactical.model.TurnPhase = handlers.first().phase,
+    initialPhase: battletech.tactical.model.TurnPhase = standardHandlers().first().phase,
     initialNeedsOnEntry: Boolean = true,
 ) : GameSession {
 
+    private val handlers: List<PhaseHandler> = standardHandlers()
     private var _gameState: GameState = initialGameState
     private var _turnState: TurnState = initialTurnState
+
+    // If this fires, it means a TurnPhase was added to the enum without a corresponding
+    // handler being registered in standardHandlers() — a registration mistake, not a bad
+    // caller argument (handlers is no longer injectable; it's always standardHandlers()).
     private var _currentPhaseIndex: Int = handlers.indexOfFirst { it.phase == initialPhase }.also {
         require(it >= 0) { "initialPhase $initialPhase not present in handlers" }
     }
