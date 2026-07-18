@@ -81,6 +81,34 @@ internal class ScreenRendererTest {
     }
 
     @Test
+    fun `strikethrough style emits strikethrough SGR once per run`() {
+        // 3 consecutive cells with fg=RED + strikethrough — Mordant folds both attributes into
+        // one compound SGR open (ESC[31;9m ... ESC[39;29m), and one run should emit exactly one.
+        val buffer = ScreenBuffer(3, 1)
+        buffer.writeString(0, 0, "XYZ", Cell.Style(fg = Color.RED, strikethrough = true))
+
+        renderer.render(buffer)
+
+        val out = recorder.output()
+        assertTrue(out.contains("XYZ"), "Expected 'XYZ' to appear contiguously in output: ${out.repr()}")
+
+        // ";9m" is the strikethrough-on code compounded onto the fg-open sequence;
+        // ";29m" is strikethrough-off compounded onto the fg-reset sequence.
+        val strikeOnCount = out.countOccurrences(";9m")
+        val strikeOffCount = out.countOccurrences(";29m")
+        assertEquals(
+            1,
+            strikeOnCount,
+            "Expected exactly 1 strikethrough-on sequence for a single run, got $strikeOnCount in: ${out.repr()}",
+        )
+        assertEquals(
+            1,
+            strikeOffCount,
+            "Expected exactly 1 strikethrough-off sequence for a single run, got $strikeOffCount in: ${out.repr()}",
+        )
+    }
+
+    @Test
     fun `wide character written via writeString appears in output`() {
         // U+4E2D is a CJK wide character (width=2). writeString stores it in cell 0 and a
         // follow-up Cell("") in cell 1.  The renderer should include the character char and
