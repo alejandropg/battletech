@@ -78,8 +78,8 @@ internal class TargetStatusViewTest {
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
-        val line = (2 until 11).map { buffer.get(it, 2).char }.joinToString("")
-        assertEquals("Hunchback", line)
+        val line = (2 until 15).map { buffer.get(it, 2).char }.joinToString("")
+        assertEquals("u1: Hunchback", line)
         assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 2).style.fg)
     }
 

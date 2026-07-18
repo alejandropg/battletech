@@ -22,7 +22,7 @@ internal object ForeignUnitPanel {
     fun render(content: ContentWriter, unit: ForeignUnit) {
         // UNIT
         with(content) {
-            writeln(unit.name, BRIGHT_YELLOW_STYLE)
+            writeln("${unit.id.value}: ${unit.name}", BRIGHT_YELLOW_STYLE)
             newLine()
         }
 

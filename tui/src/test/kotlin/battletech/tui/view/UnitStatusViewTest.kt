@@ -76,12 +76,12 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders unit name`() {
-        val unit = aUnit(name = "Atlas")
+        val unit = aUnit(id = "A1", name = "Atlas")
         val view = UnitStatusView(unit)
         val buffer = renderDecorated(view, height = 14)
 
-        val text = (2 until 7).map { buffer.get(it, 2).char }.joinToString("")
-        assertEquals("Atlas", text)
+        val text = (2 until 11).map { buffer.get(it, 2).char }.joinToString("")
+        assertEquals("A1: Atlas", text)
     }
 
     @Test
@@ -580,8 +580,8 @@ internal class UnitStatusViewTest {
         val view = UnitStatusView(aForeignUnit(name = "Hunchback"))
         val buffer = renderDecorated(view)
 
-        val line = (2 until 11).map { buffer.get(it, 2).char }.joinToString("")
-        assertEquals("Hunchback", line)
+        val line = (2 until 15).map { buffer.get(it, 2).char }.joinToString("")
+        assertEquals("u1: Hunchback", line)
         assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 2).style.fg)
     }
 

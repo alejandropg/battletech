@@ -32,16 +32,17 @@ internal class BoardViewTest {
     }
 
     @Test
-    fun `renders unit initial on hex`() {
-        val unit = aUnit(name = "Atlas", position = HexCoordinates(0, 0))
+    fun `renders unit id on hex`() {
+        val unit = aUnit(id = "A1", name = "Atlas", position = HexCoordinates(0, 0))
         val state = aGameState(units = listOf(unit), map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
         val buffer = ScreenBuffer(30, 16)
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Unit initial 'A' at hex center: charX=4+2, charY=3+2
+        // Unit id "A1" at hex center: charX=4+2/5+2, charY=3+2
         assertEquals("A", buffer.get(6, 5).char)
+        assertEquals("1", buffer.get(7, 5).char)
     }
 
     @Test
@@ -71,25 +72,26 @@ internal class BoardViewTest {
     }
 
     @Test
-    fun `renders destroyed unit with its initial and a skull marker`() {
-        val unit = aUnit(name = "Atlas", position = HexCoordinates(0, 0)).copy(isDestroyed = true)
+    fun `renders destroyed unit with its id and a skull marker`() {
+        val unit = aUnit(id = "A1", name = "Atlas", position = HexCoordinates(0, 0)).copy(isDestroyed = true)
         val state = aGameState(units = listOf(unit), map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
         val buffer = ScreenBuffer(30, 16)
 
         view.render(buffer, 0, 0, 30, 16)
 
-        // Unit initial at hex center: charX=4+2, charY=3+2 (same cell as the initial in the
-        // "renders unit initial on hex" test above), with a skull marker at the adjacent cell.
+        // Unit id "A1" at hex center: charX=4+2/5+2, charY=3+2 (same cells as the id in the
+        // "renders unit id on hex" test above), with a skull marker left of the id at charX=3+2.
         assertEquals("A", buffer.get(6, 5).char)
-        assertEquals(Color.GRAY, buffer.get(6, 5).style.fg)
-        assertEquals(destroyedIcon(), buffer.get(7, 5).char)
+        assertEquals("1", buffer.get(7, 5).char)
         assertEquals(Color.GRAY, buffer.get(7, 5).style.fg)
+        assertEquals(destroyedIcon(), buffer.get(5, 5).char)
+        assertEquals(Color.GRAY, buffer.get(5, 5).style.fg)
     }
 
     @Test
-    fun `prone unit still renders its lowercase glyph, distinct from destroyed`() {
-        val unit = aUnit(name = "Atlas", position = HexCoordinates(0, 0)).copy(isProne = true)
+    fun `prone unit still renders its lowercase id, distinct from destroyed`() {
+        val unit = aUnit(id = "A1", name = "Atlas", position = HexCoordinates(0, 0)).copy(isProne = true)
         val state = aGameState(units = listOf(unit), map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
         val buffer = ScreenBuffer(30, 16)
@@ -97,6 +99,7 @@ internal class BoardViewTest {
         view.render(buffer, 0, 0, 30, 16)
 
         assertEquals("a", buffer.get(6, 5).char)
+        assertEquals("1", buffer.get(7, 5).char)
     }
 
     @Test

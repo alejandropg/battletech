@@ -91,12 +91,10 @@ public class BoardView(
                     }
                     val effectiveTorso = torsoFacings[coords] ?: unit.torsoFacing
                     val torsoFacing = if (effectiveTorso != unit.facing) effectiveTorso else null
-                    // Prone units (still active) are drawn with a lowercase glyph;
-                    // otherwise the unit's initial is used.
-                    val glyph = when {
-                        unit.isProne -> unit.name.first().lowercaseChar()
-                        else -> unit.name.first()
-                    }
+                    // Prone units (still active) are drawn with a lowercased id;
+                    // otherwise the unit's id is used as-is.
+                    val id = unit.id.value.take(2)
+                    val glyph = if (unit.isProne) id.lowercase() else id
                     val renderColor = if (unit.isDestroyed) Color.GRAY else unitColor
                     UnitRenderer.render(
                         buffer, drawX, drawY,
