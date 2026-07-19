@@ -24,7 +24,7 @@ public object UnitRenderer {
         val arrowRow = if (southFacing) 3 else 2
 
         // Torso arrow's own row/column, computed up front: both the id column choice and the
-        // skull placement below need to know where (if anywhere) it landed.
+        // destroyed-marker placement below need to know where (if anywhere) it landed.
         val torsoChar: String?
         val torsoX: Int?
         val torsoRow: Int?
@@ -50,15 +50,15 @@ public object UnitRenderer {
 
         if (isDestroyed) {
             // If a torso arrow occupies the id row (whether or not that shifted the id), the id
-            // row is crowded, so the skull moves to the arrow row instead, avoiding whichever
+            // row is crowded, so the marker moves to the arrow row instead, avoiding whichever
             // column the facing arrow already claimed there.
-            val skullRow = if (torsoInIdRow) arrowRow else idRow
-            val skullX = if (torsoInIdRow) {
+            val markerRow = if (torsoInIdRow) arrowRow else idRow
+            val markerX = if (torsoInIdRow) {
                 if (arrowX == x + 4) x + 3 else x + 4
             } else {
                 x + 3
             }
-            buffer.set(skullX, y + skullRow, Cell(destroyedIcon(), Cell.Style(color, buffer.get(skullX, y + skullRow).style.bg)))
+            buffer.set(markerX, y + markerRow, Cell(destroyedIcon(), Cell.Style(color, buffer.get(markerX, y + markerRow).style.bg)))
         }
 
         buffer.set(arrowX, y + arrowRow, Cell(arrowChar, Cell.Style(color, buffer.get(arrowX, y + arrowRow).style.bg)))

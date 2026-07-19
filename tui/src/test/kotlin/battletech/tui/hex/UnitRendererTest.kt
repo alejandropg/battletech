@@ -22,7 +22,7 @@ internal class UnitRendererTest {
     private val ICON_TORSO_SW = String(Character.toChars(0xF0042))
     private val ICON_TORSO_NW = String(Character.toChars(0xF005B))
 
-    private val ICON_SKULL = String(Character.toChars(0xF068C))
+    private val ICON_ROBOT_DEAD = String(Character.toChars(0xF16A1))
 
     @Test
     fun `renders unit id at hex center`() {
@@ -58,14 +58,14 @@ internal class UnitRendererTest {
     }
 
     @Test
-    fun `renders skull marker left of id when destroyed and id row is not crowded`() {
+    fun `renders destroyed marker left of id when destroyed and id row is not crowded`() {
         val buffer = ScreenBuffer(10, 6)
 
         UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.N, Color.CYAN, isDestroyed = true)
 
         assertEquals("A", buffer.get(4, 3).char)
         assertEquals("1", buffer.get(5, 3).char)
-        assertEquals(ICON_SKULL, buffer.get(3, 3).char)
+        assertEquals(ICON_ROBOT_DEAD, buffer.get(3, 3).char)
         assertEquals(Color.CYAN, buffer.get(3, 3).style.fg)
     }
 
@@ -311,10 +311,10 @@ internal class UnitRendererTest {
         assertEquals("1", buffer.get(4, 2).char)
     }
 
-    // --- skull relocation --------------------------------------------------------------------
+    // --- destroyed-marker relocation ---------------------------------------------------------
 
     @Test
-    fun `destroyed unit with a torso arrow at x+3 in the id row puts the skull in the arrow row`() {
+    fun `destroyed unit with a torso arrow at x+3 in the id row puts the marker in the arrow row`() {
         val buffer = ScreenBuffer(10, 6)
 
         UnitRenderer.render(
@@ -327,19 +327,19 @@ internal class UnitRendererTest {
         assertEquals(ICON_TORSO_SW, buffer.get(3, 3).char)
         assertEquals("A", buffer.get(4, 3).char)
         assertEquals("1", buffer.get(5, 3).char)
-        // Skull relocates to the arrow row, avoiding the facing arrow's column (x+3).
+        // Marker relocates to the arrow row, avoiding the facing arrow's column (x+3).
         assertEquals(ICON_FACING_NW, buffer.get(3, 2).char)
-        assertEquals(ICON_SKULL, buffer.get(4, 2).char)
+        assertEquals(ICON_ROBOT_DEAD, buffer.get(4, 2).char)
     }
 
     @Test
-    fun `destroyed unit whose torso arrow lands in the id row at x+5 still relocates the skull`() {
+    fun `destroyed unit whose torso arrow lands in the id row at x+5 still relocates the marker`() {
         val buffer = ScreenBuffer(10, 6)
 
         // Facing NE + torso SE: torso row (SE is "south" -> 3) equals the id row (NE is not
         // "south" -> id row 3) at column x+5, which collides with the id's default columns
         // (x+4/x+5), so the id shifts left to x+3/x+4 — yet the id row is still crowded (id +
-        // torso arrow fill x+3..x+5), so the skull must still relocate to the arrow row rather
+        // torso arrow fill x+3..x+5), so the marker must still relocate to the arrow row rather
         // than collide with the torso arrow.
         UnitRenderer.render(
             buffer, 0, 0, "A1", HexDirection.NE, Color.CYAN,
@@ -349,20 +349,20 @@ internal class UnitRendererTest {
         assertEquals("A", buffer.get(3, 3).char)
         assertEquals("1", buffer.get(4, 3).char)
         assertEquals(ICON_TORSO_SE, buffer.get(5, 3).char)
-        // Facing arrow at x+5 in the arrow row; skull prefers x+4 there, which is free.
+        // Facing arrow at x+5 in the arrow row; marker prefers x+4 there, which is free.
         assertEquals(ICON_FACING_NE, buffer.get(5, 2).char)
-        assertEquals(ICON_SKULL, buffer.get(4, 2).char)
+        assertEquals(ICON_ROBOT_DEAD, buffer.get(4, 2).char)
     }
 
     @Test
-    fun `destroyed unit with an uncrowded id row puts the skull left of the id`() {
+    fun `destroyed unit with an uncrowded id row puts the marker left of the id`() {
         val buffer = ScreenBuffer(10, 6)
 
         UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.N, Color.CYAN, isDestroyed = true)
 
         assertEquals("A", buffer.get(4, 3).char)
         assertEquals("1", buffer.get(5, 3).char)
-        assertEquals(ICON_SKULL, buffer.get(3, 3).char)
+        assertEquals(ICON_ROBOT_DEAD, buffer.get(3, 3).char)
         assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
     }
 }

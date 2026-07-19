@@ -13,10 +13,10 @@ import battletech.tactical.unit.availableAmmoBins
 import battletech.tactical.unit.criticalDamageStatus
 import battletech.tui.game.PanelId
 import battletech.tui.hex.ammoIcon
-import battletech.tui.hex.destroyedIcon
 import battletech.tui.hex.emptyCircleIcon
 import battletech.tui.hex.filledCircleIcon
 import battletech.tui.hex.infinityIcon
+import battletech.tui.hex.pilotDeadIcon
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
@@ -64,7 +64,7 @@ public class UnitStatusView(
             for (i in 0 until hits) {
                 // The 6th hit kills the pilot outright (PILOT_DEATH_THRESHOLD) — mark that
                 // final box with a skull instead of a plain filled dot.
-                val icon = if (i == PILOT_DEATH_THRESHOLD - 1) destroyedIcon() else filledCircleIcon()
+                val icon = if (i == PILOT_DEATH_THRESHOLD - 1) pilotDeadIcon() else filledCircleIcon()
                 content.writeStr(hitCol, icon, RED_STYLE)
                 hitCol += 1
             }

@@ -54,9 +54,11 @@ import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.hex.attackOutcomeIcon
 import battletech.tui.hex.criticalHitIcon
+import battletech.tui.hex.destroyedIcon
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
+import battletech.tui.hex.pilotDeadIcon
 import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.hex.torsoArrowIcon
@@ -415,10 +417,11 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust")
         val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
-        assertThat(text(
-            UnitDestroyed(unitId = locust.id, reason = DestructionReason.CENTER_TORSO_DESTROYED),
-            stateWithLocust,
-        )).isEqualTo("locust destroyed (center torso destroyed)")
+        val event = UnitDestroyed(unitId = locust.id, reason = DestructionReason.CENTER_TORSO_DESTROYED)
+        assertThat(text(event, stateWithLocust)).isEqualTo("locust destroyed (center torso destroyed)")
+        // The unit-destroyed marker is a distinct glyph from the pilot-death skull, even when
+        // the destruction reason is PILOT_DEAD — see the reason sweep below.
+        assertThat(icon(event)).isEqualTo(destroyedIcon())
     }
 
     @Test
@@ -435,8 +438,11 @@ internal class GameLogFormatterTest {
         )
 
         for ((reason, label) in expected) {
-            assertThat(text(UnitDestroyed(unitId = locust.id, reason = reason), stateWithLocust))
-                .isEqualTo("locust destroyed ($label)")
+            val event = UnitDestroyed(unitId = locust.id, reason = reason)
+            assertThat(text(event, stateWithLocust)).isEqualTo("locust destroyed ($label)")
+            // Every reason — including PILOT_DEAD — uses the unit-destroyed marker, not the
+            // pilot-death skull; that lives on PilotHit.Fatal instead (see below).
+            assertThat(icon(event)).isEqualTo(destroyedIcon())
         }
     }
 
@@ -563,14 +569,13 @@ internal class GameLogFormatterTest {
     }
 
     @Test
-    fun `PilotHit shows the running pilot hit total`() {
+    fun `PilotHit Fatal is called out as a pilot kill, distinct from a wounded pilot`() {
         val locust = aMech(id = "locust", name = "Locust")
         val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
-        assertThat(text(
-            PilotHit.Fatal(unitId = locust.id, pilotHits = 1),
-            stateWithLocust,
-        )).isEqualTo("locust pilot wounded (1 hit total)")
+        val event = PilotHit.Fatal(unitId = locust.id, pilotHits = 6)
+        assertThat(text(event, stateWithLocust)).isEqualTo("locust pilot killed")
+        assertThat(icon(event)).isEqualTo(pilotDeadIcon())
     }
 
     @Test

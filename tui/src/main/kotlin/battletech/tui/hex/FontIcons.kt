@@ -33,6 +33,7 @@ private val NF_MD_SYNC_CIRCLE = String(Character.toChars(0xF1378))
 private val NF_MD_EYE_CIRCLE = String(Character.toChars(0xF0B94))
 private val NF_MD_ACCOUNT_CIRCLE = String(Character.toChars(0xF0009))
 private val NF_MD_SKULL = String(Character.toChars(0xF068C))
+private val NF_MD_ROBOT_DEAD = String(Character.toChars(0xF16A1))
 private val NF_MD_LAN_CONNECT = String(Character.toChars(0xF0318))
 private val NF_MD_TRANSFER_DOWN = String(Character.toChars(0xF0DA1))
 private val NF_MD_TRANSFER_UP = String(Character.toChars(0xF0DA3))
@@ -123,8 +124,8 @@ internal fun locationDestroyedIcon(): String = NF_FA_CHAIN_BROKEN
 /** Marker for an ammo explosion log line. */
 internal fun ammoExplosionIcon(): String = NF_FA_BOMB
 
-/** Marker for a destroyed unit, rendered alongside its initial glyph. */
-internal fun destroyedIcon(): String = NF_MD_SKULL
+/** Marker for a destroyed unit (board marker + UnitDestroyed log line). */
+internal fun destroyedIcon(): String = NF_MD_ROBOT_DEAD
 
 /** Marker for [battletech.tactical.session.SessionNotice] log entries (network happenings). */
 internal fun sessionNoticeIcon(): String = NF_MD_LAN_CONNECT
@@ -143,6 +144,9 @@ internal fun pilotUnconsciousIcon(): String = NF_MD_SLEEP
 
 /** Marker for a pilot regaining consciousness. */
 internal fun pilotConsciousIcon(): String = NF_MD_SLEEP_OFF
+
+/** Marker for a pilot death: the pilot-hits track's final box and the "pilot killed" log line. */
+internal fun pilotDeadIcon(): String = NF_MD_SKULL
 
 internal fun checkboxIcon(state: CheckState): String =
     when (state) {

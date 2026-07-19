@@ -22,10 +22,10 @@ import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.anInternalStructureLayout
 import battletech.tui.hex.ammoIcon
-import battletech.tui.hex.destroyedIcon
 import battletech.tui.hex.emptyCircleIcon
 import battletech.tui.hex.filledCircleIcon
 import battletech.tui.hex.infinityIcon
+import battletech.tui.hex.pilotDeadIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -129,10 +129,10 @@ internal class UnitStatusViewTest {
         val buffer = renderDecorated(view, height = 14)
 
         val line = (2 until 26).map { buffer.get(it, 5).char }.joinToString("")
-        assertEquals(1, line.split(destroyedIcon()).size - 1)
+        assertEquals(1, line.split(pilotDeadIcon()).size - 1)
         assertEquals(PILOT_DEATH_THRESHOLD - 1, line.split(filledCircleIcon()).size - 1)
         assertEquals(0, line.split(emptyCircleIcon()).size - 1)
-        val skullCol = (2 until 26).first { buffer.get(it, 5).char == destroyedIcon() }
+        val skullCol = (2 until 26).first { buffer.get(it, 5).char == pilotDeadIcon() }
         assertEquals(Color.RED, buffer.get(skullCol, 5).style.fg)
     }
 

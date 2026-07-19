@@ -41,6 +41,7 @@ import battletech.tui.hex.destroyedIcon
 import battletech.tui.hex.locationDestroyedIcon
 import battletech.tui.hex.movementModeIcon
 import battletech.tui.hex.pilotConsciousIcon
+import battletech.tui.hex.pilotDeadIcon
 import battletech.tui.hex.pilotUnconsciousIcon
 import battletech.tui.hex.pilotWoundedIcon
 import battletech.tui.hex.sessionNoticeIcon
@@ -157,12 +158,14 @@ internal object GameLogFormatter {
         }
         is PilotHit -> {
             val name = event.unitId.value
-            val text = when (event) {
-                is PilotHit.Fatal -> "$name pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)"
-                is PilotHit.Checked -> "$name pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)"
-                is PilotHit.Undisclosed -> "$name pilot wounded"
+            when (event) {
+                // The 6th hit kills the pilot outright — call it out with its own line and
+                // the pilot-dead skull, rather than folding it into the generic wounded text.
+                is PilotHit.Fatal -> listOf(LogLine(pilotDeadIcon(), "$name pilot killed"))
+                is PilotHit.Checked ->
+                    listOf(LogLine(pilotWoundedIcon(), "$name pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)"))
+                is PilotHit.Undisclosed -> listOf(LogLine(pilotWoundedIcon(), "$name pilot wounded"))
             }
-            listOf(LogLine(pilotWoundedIcon(), text))
         }
         is PilotKnockedUnconscious -> {
             val name = event.unitId.value
