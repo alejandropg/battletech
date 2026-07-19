@@ -24,7 +24,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         val byAttacker = data.results.groupBy { it.attackerId }
 
         for ((attackerId, attackerResults) in byAttacker) {
-            val attackerColor = playerColor(data.unitOwners.getValue(attackerId))
+            val attackerColor = playerColor(data.units.byId(attackerId).owner)
             content.writeln(attackerId.value, Cell.Style(attackerColor))
 
             val byTarget = attackerResults.groupBy { it.targetId }
@@ -48,7 +48,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         // explicit "+N gunnery" label is still dropped for a foreign attacker so the skill
         // number isn't handed over for free. This is NOT a guarantee: targetNumber == gunnery
         // + sum(modifiers), so gunnery stays derivable by subtraction from what's shown here.
-        val isOwnAttacker = data.unitOwners[result.attackerId] == data.viewer
+        val isOwnAttacker = data.units.byId(result.attackerId).owner == data.viewer
         val breakdown = if (isOwnAttacker) toHitBreakdownLabels(result.gunnery, result.modifiers) else result.modifiers.displayLabels()
         WeaponHitWidget.draw(content, "  ${result.weaponName}", result.targetNumber, successChance, breakdown, Color.WHITE)
 

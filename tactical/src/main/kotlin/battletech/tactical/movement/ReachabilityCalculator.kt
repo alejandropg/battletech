@@ -8,6 +8,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.unit.VisibleUnit
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.destroyedLegCount
 import java.util.PriorityQueue
 import kotlin.math.ceil
@@ -26,7 +27,7 @@ import kotlin.math.ceil
  */
 public class ReachabilityCalculator(
     private val gameMap: GameMap,
-    private val units: List<VisibleUnit>,
+    private val units: UnitRoster<VisibleUnit>,
 ) {
 
     public fun calculate(actor: CombatUnit, mode: MovementMode): ReachabilityMap {
@@ -59,8 +60,7 @@ public class ReachabilityCalculator(
     }
 
     private fun calculateGroundMovement(actor: CombatUnit, maxMP: Int): List<ReachableHex> {
-        val enemyPositions = units.filter { it.id != actor.id }.map { it.position }.toSet()
-        val friendlyPositions = units.filter { it.id != actor.id }.map { it.position }.toSet()
+        val blockedPositions = units.filter { it.id != actor.id }.map { it.position }.toSet()
 
         val best = mutableMapOf<MovementStep, Pair<Int, List<MovementStep>>>()
         val queue = PriorityQueue<Node>(compareBy { it.cost })
@@ -73,7 +73,7 @@ public class ReachabilityCalculator(
             if (node.state in best) continue
             best[node.state] = node.cost to node.path
 
-            for ((nextState, moveCost, nextPath) in transitions(node, enemyPositions)) {
+            for ((nextState, moveCost, nextPath) in transitions(node, blockedPositions)) {
                 val totalCost = node.cost + moveCost
                 if (totalCost > maxMP) continue
                 if (nextState in best) continue
@@ -81,10 +81,9 @@ public class ReachabilityCalculator(
             }
         }
 
-        val occupiedPositions = enemyPositions + friendlyPositions
         return best
             .filter { (state, _) -> state != startState }
-            .filter { (state, _) -> state.position !in occupiedPositions }
+            .filter { (state, _) -> state.position !in blockedPositions }
             .map { (state, costAndPath) ->
                 ReachableHex(
                     position = state.position,
@@ -97,7 +96,7 @@ public class ReachabilityCalculator(
 
     private fun transitions(
         node: Node,
-        enemyPositions: Set<HexCoordinates>,
+        blockedPositions: Set<HexCoordinates>,
     ): List<Transition> {
         val transitions = mutableListOf<Transition>()
         val (position, facing) = node.state
@@ -124,7 +123,7 @@ public class ReachabilityCalculator(
 
         // Move forward
         val nextPosition = position.neighbor(facing)
-        if (nextPosition !in enemyPositions && nextPosition in gameMap.hexes) {
+        if (nextPosition !in blockedPositions && nextPosition in gameMap.hexes) {
             val fromHex = gameMap.hexes.getValue(position)
             val toHex = gameMap.hexes.getValue(nextPosition)
             val moveCost = MovementCost.enterHexCost(fromHex, toHex)

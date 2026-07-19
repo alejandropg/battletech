@@ -15,6 +15,7 @@ import battletech.tactical.session.PilotHit
 import battletech.tactical.session.UnitFell
 import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.mechLayout
 import org.assertj.core.api.Assertions.assertThat
@@ -33,7 +34,7 @@ internal class ExpandedPsrTest {
     @Test
     fun `applyTwentyDamagePsrs - below 20 damage does nothing and consumes no dice`() {
         val unit = aUnit(id = "unit-1", pilotingSkill = 5)
-        val state = GameState(listOf(unit), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
 
         val (newState, events) = applyTwentyDamagePsrs(
             state,
@@ -42,33 +43,33 @@ internal class ExpandedPsrTest {
         )
 
         assertThat(events).isEmpty()
-        assertThat(newState.unitById(unit.id)!!.isProne).isFalse()
+        assertThat(newState.units.byId(unit.id).isProne).isFalse()
     }
 
     @Test
     fun `applyTwentyDamagePsrs - exactly 20 damage triggers PSR at +1 and on pass leaves unit standing`() {
         val unit = aUnit(id = "unit-1", pilotingSkill = 5)
-        val state = GameState(listOf(unit), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         // PSR TN = 5 + 1 = 6; roll (3,3)=6 ≥ 6 → pass.
         val roller = DiceRoller.deterministic(3, 3)
 
         val (newState, events) = applyTwentyDamagePsrs(state, mapOf(unit.id to 20), roller)
 
         assertThat(events).isEmpty()
-        assertThat(newState.unitById(unit.id)!!.isProne).isFalse()
+        assertThat(newState.units.byId(unit.id).isProne).isFalse()
     }
 
     @Test
     fun `applyTwentyDamagePsrs - failing the PSR causes a fall and pilot hit`() {
         val unit = aUnit(id = "unit-1", pilotingSkill = 5)
-        val state = GameState(listOf(unit), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         // PSR TN = 5 + 1 = 6; roll (1,1)=2 < 6 → fail.
         // Fall: location (3,4)=7 → CENTER_TORSO; facing 1; consciousness (3,3)=6 ≥ 3 → conscious.
         val roller = DiceRoller.deterministic(1, 1, 3, 4, 1, 3, 3)
 
         val (newState, events) = applyTwentyDamagePsrs(state, mapOf(unit.id to 20), roller)
 
-        val fallen = newState.unitById(unit.id)!!
+        val fallen = newState.units.byId(unit.id)
         assertThat(fallen.isProne).isTrue()
         assertThat(fallen.pilotHits).isEqualTo(1)
         assertThat(events.filterIsInstance<UnitFell>()).hasSize(1)
@@ -78,21 +79,21 @@ internal class ExpandedPsrTest {
     @Test
     fun `applyTwentyDamagePsrs - 40 damage yields modifier +2 and higher TN`() {
         val unit = aUnit(id = "unit-1", pilotingSkill = 5)
-        val state = GameState(listOf(unit), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         // PSR TN = 5 + 2 = 7; roll (3,3)=6 < 7 → fail.
         // Fall: location (3,4)=7 → CENTER_TORSO; facing 1; consciousness (3,3).
         val roller = DiceRoller.deterministic(3, 3, 3, 4, 1, 3, 3)
 
         val (newState, events) = applyTwentyDamagePsrs(state, mapOf(unit.id to 40), roller)
 
-        assertThat(newState.unitById(unit.id)!!.isProne).isTrue()
+        assertThat(newState.units.byId(unit.id).isProne).isTrue()
         assertThat(events.filterIsInstance<UnitFell>()).hasSize(1)
     }
 
     @Test
     fun `applyTwentyDamagePsrs - already prone unit is skipped even if damage is at or above 20`() {
         val unit = aUnit(id = "unit-1", pilotingSkill = 5).copy(isProne = true)
-        val state = GameState(listOf(unit), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
 
         val (newState, events) = applyTwentyDamagePsrs(
             state,
@@ -101,7 +102,7 @@ internal class ExpandedPsrTest {
         )
 
         assertThat(events).isEmpty()
-        assertThat(newState.unitById(unit.id)!!.isProne).isTrue()
+        assertThat(newState.units.byId(unit.id).isProne).isTrue()
     }
 
     // ── Head IS penetration → 1 pilot hit ────────────────────────────────────
@@ -130,7 +131,7 @@ internal class ExpandedPsrTest {
 
         val (newState, _, _) = resolveAttacksWithCrits(listOf(AttackDeclaration(attacker.id, target.id, 0, true)), state, roller)
 
-        val updatedTarget = newState.unitById(target.id)!!
+        val updatedTarget = newState.units.byId(target.id)
         assertThat(updatedTarget.pilotHits).isEqualTo(1)
     }
 
@@ -155,7 +156,7 @@ internal class ExpandedPsrTest {
 
         val (newState, _, _) = resolveAttacksWithCrits(listOf(AttackDeclaration(attacker.id, target.id, 0, true)), state, roller)
 
-        assertThat(newState.unitById(target.id)!!.pilotHits).isEqualTo(0)
+        assertThat(newState.units.byId(target.id).pilotHits).isEqualTo(0)
     }
 
     // ── Ammo explosion (crit-triggered) → 2 pilot hits ────────────────────────

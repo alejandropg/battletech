@@ -18,6 +18,7 @@ import battletech.tactical.session.PilotHit
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
+import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.WeaponModel
 import battletech.tactical.unit.WeaponMountId
@@ -154,7 +155,7 @@ internal class WaterDepthEffectsTest {
         assertTrue(result.partialCover)
 
         // Leg hit is suppressed: right leg armor must be unchanged.
-        val updatedTarget = newState.unitById(target.id)!!
+        val updatedTarget = newState.units.byId(target.id)
         assertEquals(initialRightLeg, updatedTarget.armor.rightLeg)
     }
 
@@ -196,7 +197,7 @@ internal class WaterDepthEffectsTest {
         assertTrue(result.partialCover)
 
         // CT is NOT a leg — damage applies normally. Weapon damage = 5.
-        val updatedTarget = newState.unitById(target.id)!!
+        val updatedTarget = newState.units.byId(target.id)
         assertEquals(initialCt - 5, updatedTarget.armor.centerTorso)
     }
 
@@ -302,7 +303,7 @@ internal class WaterDepthEffectsTest {
 
         val folded = gameState.applyHeatPhase()
 
-        assertEquals(4, folded.units[0].currentHeat)
+        assertEquals(4, folded.units.all[0].currentHeat)
     }
 
     @Test
@@ -322,7 +323,7 @@ internal class WaterDepthEffectsTest {
 
         val folded = gameState.applyHeatPhase()
 
-        assertEquals(0, folded.units[0].currentHeat)
+        assertEquals(0, folded.units.all[0].currentHeat)
     }
 
     @Test
@@ -339,7 +340,7 @@ internal class WaterDepthEffectsTest {
 
         val folded = gameState.applyHeatPhase()
 
-        assertEquals(10, folded.units[0].currentHeat)
+        assertEquals(10, folded.units.all[0].currentHeat)
     }
 
     @Test
@@ -359,7 +360,7 @@ internal class WaterDepthEffectsTest {
 
         val folded = gameState.applyHeatPhase()
 
-        assertEquals(0, folded.units[0].currentHeat)
+        assertEquals(0, folded.units.all[0].currentHeat)
     }
 
     // ── Drowning: prone unit in depth-2+ water ────────────────────────────────
@@ -388,8 +389,8 @@ internal class WaterDepthEffectsTest {
         // Dice: consciousness check d6(1)+d6(1) = 2 < 3 → fails
         val outcome = runHeatPhase(unit, gameState, DiceRoller.deterministic(1, 1))
 
-        assertEquals(1, outcome.state.units[0].pilotHits)
-        assertFalse(outcome.state.units[0].isPilotConscious)
+        assertEquals(1, outcome.state.units.all[0].pilotHits)
+        assertFalse(outcome.state.units.all[0].isPilotConscious)
         assertThat(outcome.events).anyMatch { it is PilotHit.Checked && it.pilotHits == 1 }
     }
 
@@ -410,8 +411,8 @@ internal class WaterDepthEffectsTest {
         // No dice consumed (no heat effects, no drowning).
         val outcome = runHeatPhase(unit, gameState, DiceRoller.deterministic())
 
-        assertEquals(0, outcome.state.units[0].pilotHits)
-        assertTrue(outcome.state.units[0].isPilotConscious)
+        assertEquals(0, outcome.state.units.all[0].pilotHits)
+        assertTrue(outcome.state.units.all[0].isPilotConscious)
         assertThat(outcome.events).noneMatch { it is PilotHit }
     }
 
@@ -430,7 +431,7 @@ internal class WaterDepthEffectsTest {
 
         val outcome = runHeatPhase(unit, gameState, DiceRoller.deterministic())
 
-        assertEquals(0, outcome.state.units[0].pilotHits)
+        assertEquals(0, outcome.state.units.all[0].pilotHits)
         assertThat(outcome.events).noneMatch { it is PilotHit }
     }
 
@@ -446,7 +447,7 @@ internal class WaterDepthEffectsTest {
 
         val outcome = runHeatPhase(unit, gameState, DiceRoller.deterministic())
 
-        assertEquals(0, outcome.state.units[0].pilotHits)
+        assertEquals(0, outcome.state.units.all[0].pilotHits)
         assertThat(outcome.events).noneMatch { it is PilotHit }
     }
 
@@ -477,15 +478,15 @@ internal class WaterDepthEffectsTest {
         val roller = DiceRoller.deterministic(passingDice)
         repeat(5) {
             val outcome = heatHandler.onEntry(gameState, TurnState.NULL, roller)
-            unit = outcome.state.units[0]
-            gameState = gameState.copy(units = listOf(unit))
+            unit = outcome.state.units.all[0]
+            gameState = gameState.copy(units = UnitRoster(listOf(unit)))
         }
         assertEquals(5, unit.pilotHits)
         assertTrue(unit.isPilotConscious)
 
         // 6th turn: reaches PILOT_DEATH_THRESHOLD, no consciousness roll dice.
         val finalOutcome = heatHandler.onEntry(gameState, TurnState.NULL, DiceRoller.deterministic())
-        val finalUnit = finalOutcome.state.units[0]
+        val finalUnit = finalOutcome.state.units.all[0]
         assertEquals(6, finalUnit.pilotHits)
         // PilotHit is still emitted, as the fatal variant (no consciousness roll).
         assertThat(finalOutcome.events).anyMatch { it is PilotHit.Fatal && it.pilotHits == 6 }

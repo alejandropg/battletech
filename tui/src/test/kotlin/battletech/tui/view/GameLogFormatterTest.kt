@@ -46,6 +46,7 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.DestructionReason
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.WeaponMountId
@@ -71,7 +72,7 @@ internal class GameLogFormatterTest {
     // `viewer = null, revealAll = true` reveals everything, which is what this formatter-output test
     // wants (it is not testing redaction; that's Stage 3).
     private val emptyGameState = GameState(
-        units = emptyList(),
+        units = UnitRoster(emptyList()),
         map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0)))),
     )
     private val emptyState = emptyGameState.projectFor(viewer = null, revealAll = true)
@@ -87,7 +88,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `UnitMoved shows the unit name, mode icon, hex coords, and MP spent`() {
         val atlas = aMech(id = "atlas", name = "Atlas", position = HexCoordinates(2, 0))
-        val stateWithAtlas = emptyGameState.copy(units = listOf(atlas)).projectFor(viewer = null, revealAll = true)
+        val stateWithAtlas = emptyGameState.copy(units = UnitRoster(listOf(atlas))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
             UnitMoved(
@@ -105,7 +106,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `UnitMoved uses the run icon for RUN and jump icon for JUMP`() {
         val atlas = aMech(id = "atlas", name = "Atlas", position = HexCoordinates(0, 0))
-        val stateWithAtlas = emptyGameState.copy(units = listOf(atlas)).projectFor(viewer = null, revealAll = true)
+        val stateWithAtlas = emptyGameState.copy(units = UnitRoster(listOf(atlas))).projectFor(viewer = null, revealAll = true)
 
         val ran = text(
             UnitMoved(atlas.id, HexCoordinates(0, 0), HexCoordinates(0, 1), HexDirection.N, MovementMode.RUN, 5),
@@ -153,7 +154,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `AttacksResolved appends a destroyed-location clause when a location was blown off`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
         val results = listOf(
             anAttackResult(
                 hit = true,
@@ -174,7 +175,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `AttacksResolved omits the destroyed-location clause when nothing was destroyed`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
         val results = listOf(
             anAttackResult(
                 hit = true,
@@ -194,7 +195,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `PhysicalAttacksResolved appends a destroyed-location clause when a location was blown off`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
         val results = listOf(
             aPhysicalAttackResult(
                 hit = true,
@@ -213,7 +214,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `PhysicalAttacksResolved omits the destroyed-location clause when nothing was destroyed`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
         val results = listOf(
             aPhysicalAttackResult(
                 hit = true,
@@ -244,7 +245,7 @@ internal class GameLogFormatterTest {
     fun `AttackDeclarationsRecorded shows attacker, target, and fired weapons`() {
         val atlas = aMech(id = "atlas", name = "Atlas", owner = PlayerId.PLAYER_1)
         val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
-        val stateWithUnits = emptyGameState.copy(units = listOf(atlas, locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithUnits = emptyGameState.copy(units = UnitRoster(listOf(atlas, locust))).projectFor(viewer = null, revealAll = true)
 
         val lines = GameLogFormatter.lines(
             event = AttackDeclarationsRecorded(
@@ -276,7 +277,7 @@ internal class GameLogFormatterTest {
             ),
         )
         val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
-        val stateWithUnits = emptyGameState.copy(units = listOf(atlas, locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithUnits = emptyGameState.copy(units = UnitRoster(listOf(atlas, locust))).projectFor(viewer = null, revealAll = true)
 
         val lines = GameLogFormatter.lines(
             event = AttackDeclarationsRecorded(
@@ -299,7 +300,7 @@ internal class GameLogFormatterTest {
         val atlas = aMech(id = "atlas", name = "Atlas", owner = PlayerId.PLAYER_1)
         val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
         val marauder = aMech(id = "marauder", name = "Marauder", owner = PlayerId.PLAYER_2)
-        val stateWithUnits = emptyGameState.copy(units = listOf(atlas, locust, marauder)).projectFor(viewer = null, revealAll = true)
+        val stateWithUnits = emptyGameState.copy(units = UnitRoster(listOf(atlas, locust, marauder))).projectFor(viewer = null, revealAll = true)
 
         val lines = GameLogFormatter.lines(
             event = AttackDeclarationsRecorded(
@@ -323,7 +324,7 @@ internal class GameLogFormatterTest {
         val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
         val marauder = aMech(id = "marauder", name = "Marauder", owner = PlayerId.PLAYER_1)
         val phoenixHawk = aMech(id = "phoenixhawk", name = "Phoenix Hawk", owner = PlayerId.PLAYER_2)
-        val stateWithUnits = emptyGameState.copy(units = listOf(atlas, locust, marauder, phoenixHawk)).projectFor(viewer = null, revealAll = true)
+        val stateWithUnits = emptyGameState.copy(units = UnitRoster(listOf(atlas, locust, marauder, phoenixHawk))).projectFor(viewer = null, revealAll = true)
 
         val lines = GameLogFormatter.lines(
             event = AttackDeclarationsRecorded(
@@ -347,7 +348,7 @@ internal class GameLogFormatterTest {
     fun `TorsoFacingsApplied lists each unit and its torso facing`() {
         val atlas = aMech(id = "atlas", name = "Atlas")
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithUnits = emptyGameState.copy(units = listOf(atlas, locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithUnits = emptyGameState.copy(units = UnitRoster(listOf(atlas, locust))).projectFor(viewer = null, revealAll = true)
 
         val lines = GameLogFormatter.lines(
             event = TorsoFacingsApplied(
@@ -379,7 +380,7 @@ internal class GameLogFormatterTest {
     fun `HeatDissipated shows before-arrow-after per unit that had heat`() {
         val atlas = aMech(id = "atlas", name = "Atlas")
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithUnits = emptyGameState.copy(units = listOf(atlas, locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithUnits = emptyGameState.copy(units = UnitRoster(listOf(atlas, locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
             HeatDissipated(
@@ -393,7 +394,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `HeatDissipated with no heat reports 'no heat'`() {
         val atlas = aMech(id = "atlas", name = "Atlas")
-        val stateWithAtlas = emptyGameState.copy(units = listOf(atlas)).projectFor(viewer = null, revealAll = true)
+        val stateWithAtlas = emptyGameState.copy(units = UnitRoster(listOf(atlas))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
             HeatDissipated(
@@ -412,7 +413,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `UnitDestroyed shows unit name and a readable destruction reason`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
             UnitDestroyed(unitId = locust.id, reason = DestructionReason.CENTER_TORSO_DESTROYED),
@@ -423,7 +424,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `UnitDestroyed renders every destruction reason readably`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         val expected = mapOf(
             DestructionReason.HEAD_DESTROYED to "head destroyed",
@@ -452,7 +453,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `CriticalHit on a named component shows unit, component, and location`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
             CriticalHit.Detailed(
@@ -469,7 +470,7 @@ internal class GameLogFormatterTest {
     fun `CriticalHit on a weapon mount resolves the weapon's name`() {
         val weapon = Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)
         val locust = aMech(id = "locust", name = "Locust", weapons = listOf(weapon))
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
             CriticalHit.Detailed(
@@ -485,7 +486,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `CriticalHit on an ammo bin and an actuator render readably`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
             CriticalHit.Detailed(
@@ -511,7 +512,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `CriticalHit Undisclosed reports only that a crit landed, with a generic icon`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         val lines = GameLogFormatter.lines(CriticalHit.Undisclosed(unitId = locust.id), stateWithLocust)
 
@@ -522,7 +523,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `AmmoExploded Detailed shows the ammo type and damage`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
             AmmoExploded.Detailed(unitId = locust.id, ammoType = battletech.tactical.unit.AmmoType.AC20, damage = 100),
@@ -533,7 +534,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `AmmoExploded Undisclosed drops the ammo type but keeps the damage`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
             AmmoExploded.Undisclosed(unitId = locust.id, damage = 100),
@@ -544,7 +545,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `UnitShutdown Automatic and AvoidFailed name the mechanism`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(UnitShutdown.Automatic(unitId = locust.id), stateWithLocust))
             .isEqualTo("locust auto-shut down (heat ≥ 30)")
@@ -555,7 +556,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `UnitShutdown Undisclosed reports only that the unit shut down`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(UnitShutdown.Undisclosed(unitId = locust.id), stateWithLocust))
             .isEqualTo("locust shut down")
@@ -564,7 +565,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `PilotHit shows the running pilot hit total`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
             PilotHit.Fatal(unitId = locust.id, pilotHits = 1),
@@ -575,7 +576,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `PilotHit pluralizes hits when more than one`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(
             PilotHit.Checked(
@@ -589,7 +590,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `PilotHit Undisclosed drops the running total`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(PilotHit.Undisclosed(unitId = locust.id), stateWithLocust))
             .isEqualTo("locust pilot wounded")
@@ -598,7 +599,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `PilotKnockedUnconscious and PilotRecoveredConsciousness render readably`() {
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         assertThat(text(PilotKnockedUnconscious(unitId = locust.id), stateWithLocust))
             .isEqualTo("locust pilot knocked unconscious")
@@ -612,7 +613,7 @@ internal class GameLogFormatterTest {
         // The recovery roll is never printed, so its redaction is wire-only: the redacted
         // leaf must be byte-identical to the detailed one here (see GameEvent.redactFor).
         val locust = aMech(id = "locust", name = "Locust")
-        val stateWithLocust = emptyGameState.copy(units = listOf(locust)).projectFor(viewer = null, revealAll = true)
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
 
         val detailed = GameLogFormatter.lines(PilotRecoveredConsciousness.Detailed(locust.id, DiceRoll(5, 5)), stateWithLocust)
         val undisclosed = GameLogFormatter.lines(PilotRecoveredConsciousness.Undisclosed(locust.id), stateWithLocust)

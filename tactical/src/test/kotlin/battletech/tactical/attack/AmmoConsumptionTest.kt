@@ -8,12 +8,11 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MechLocation
 import battletech.tactical.query.RuleResult
-import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.anArmorLayout
 import battletech.tactical.query.anInternalStructureLayout
 import battletech.tactical.unit.AmmoType
-import battletech.tactical.unit.CriticalSlotContent
+import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.WeaponMountId
@@ -80,45 +79,51 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 4,
-            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
+            weapons = listOf(Weapon(WeaponModels.ac20, WeaponMountId(0), MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
         )
-        var state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
+        var state = GameState(UnitRoster(listOf(attacker, toughTarget)), GameMap(emptyMap()))
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
         // AC20 shotsPerTon is 5 — fire 5 times to drain the bin.
         val shotsPerTon = AmmoType.AC20.shotsPerTon  // = 5
         repeat(shotsPerTon) { shotNumber ->
-            val before = state.unitById(attacker.id)!!
+            val before = state.units.byId(attacker.id)
                 .criticalLayout.ammoBins().sumOf { it.third.shots }
-            assertEquals(shotsPerTon - shotNumber, before,
-                "Expected ${shotsPerTon - shotNumber} shots before shot ${shotNumber + 1}")
+            assertEquals(
+                shotsPerTon - shotNumber, before,
+                "Expected ${shotsPerTon - shotNumber} shots before shot ${shotNumber + 1}"
+            )
 
             // Roll 1,1 = miss; no location roll consumed
             val (newState, _, _) = resolveAttacksWithCrits(listOf(decl), state, DiceRoller.deterministic(1, 1))
             state = newState
 
-            val after = state.unitById(attacker.id)!!
+            val after = state.units.byId(attacker.id)
                 .criticalLayout.ammoBins().sumOf { it.third.shots }
-            assertEquals(shotsPerTon - shotNumber - 1, after,
-                "Expected ${shotsPerTon - shotNumber - 1} shots after shot ${shotNumber + 1}")
+            assertEquals(
+                shotsPerTon - shotNumber - 1, after,
+                "Expected ${shotsPerTon - shotNumber - 1} shots after shot ${shotNumber + 1}"
+            )
         }
 
         // After 5 shots the bin is empty.
-        val finalAmmoBins = state.unitById(attacker.id)!!.criticalLayout.ammoBins()
+        val finalAmmoBins = state.units.byId(attacker.id).criticalLayout.ammoBins()
         assertEquals(0, finalAmmoBins.sumOf { it.third.shots })
 
         // HasAmmoRule must now block further declarations.
         val rule = HasAmmoRule()
-        val freshAttacker = state.unitById(attacker.id)!!
+        val freshAttacker = state.units.byId(attacker.id)
         val ctx = aWeaponAttackContext(
             actor = freshAttacker,
             weapon = freshAttacker.weapons[0],
             gameState = state,
             target = toughTarget,
         )
-        assertInstanceOf(RuleResult.Unsatisfied::class.java, rule.evaluate(ctx),
-            "HasAmmoRule should block after bin is empty")
+        assertInstanceOf(
+            RuleResult.Unsatisfied::class.java, rule.evaluate(ctx),
+            "HasAmmoRule should block after bin is empty"
+        )
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -131,17 +136,23 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 12,  // TN ≥ 12 → guaranteed miss
-            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
+            weapons = listOf(
+                Weapon(
+                    WeaponModels.ac20,
+                    mountId = WeaponMountId(0),
+                    location = MechLocation.RIGHT_TORSO
+                )
+            ),
             criticalLayout = layout,
         )
-        val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker, toughTarget)), GameMap(emptyMap()))
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
         // Roll 1+1 = 2 < TN → miss. Ammo should still be decremented.
         val (newState, results, _) = resolveAttacksWithCrits(listOf(decl), state, DiceRoller.deterministic(1, 1))
 
         assertInstanceOf(AttackResult.Miss::class.java, results.single(), "Should have missed")
-        val shots = newState.unitById(attacker.id)!!
+        val shots = newState.units.byId(attacker.id)
             .criticalLayout.ammoBins().sumOf { it.third.shots }
         assertEquals(AmmoType.AC20.shotsPerTon - 1, shots, "Miss should still consume a round")
     }
@@ -156,11 +167,11 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,  // TN = 0 → guaranteed hit on any roll
-            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
+            weapons = listOf(Weapon(WeaponModels.ac20, WeaponMountId(0), MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
             position = HexCoordinates(0, 0),
         )
-        val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker, toughTarget)), GameMap(emptyMap()))
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
         // to-hit (6,6)=12 ≥ TN 0 → hit; location (3,4)=7 → CENTER_TORSO
@@ -169,7 +180,7 @@ internal class AmmoConsumptionTest {
         )
 
         assertInstanceOf(AttackResult.Hit::class.java, results.single(), "Should have hit")
-        val shots = newState.unitById(attacker.id)!!
+        val shots = newState.units.byId(attacker.id)
             .criticalLayout.ammoBins().sumOf { it.third.shots }
         assertEquals(AmmoType.AC20.shotsPerTon - 1, shots, "Hit should consume exactly one round")
     }
@@ -185,12 +196,12 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,  // guaranteed hit
-            weapons = listOf(Weapon(WeaponModels.lrm10, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
+            weapons = listOf(Weapon(WeaponModels.lrm10, WeaponMountId(0), MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
             position = HexCoordinates(0, 0),
         )
         val lrmTarget = toughTarget.copy(position = HexCoordinates(7, 0))
-        val state = GameState(listOf(attacker, lrmTarget), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker, lrmTarget)), GameMap(emptyMap()))
         val decl = AttackDeclaration(attacker.id, lrmTarget.id, 0, true)
 
         // Dice: to-hit(3,3)=6 ≥ 0 → hit; cluster(6,5)=11 → size 10 roll 11 → 10 missiles
@@ -203,10 +214,12 @@ internal class AmmoConsumptionTest {
 
         assertInstanceOf(AttackResult.ClusterHit::class.java, results.single(), "LRM should have hit")
         assertEquals(10, (results.single() as AttackResult.ClusterHit).missilesHit, "Expect 10 missiles hit")
-        val shots = newState.unitById(attacker.id)!!
+        val shots = newState.units.byId(attacker.id)
             .criticalLayout.ammoBins().sumOf { it.third.shots }
-        assertEquals(AmmoType.LRM10.shotsPerTon - 1, shots,
-            "LRM-10 should consume exactly 1 round per declaration, not per missile")
+        assertEquals(
+            AmmoType.LRM10.shotsPerTon - 1, shots,
+            "LRM-10 should consume exactly 1 round per declaration, not per missile"
+        )
     }
 
     @Test
@@ -215,10 +228,10 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 12,
-            weapons = listOf(Weapon(WeaponModels.lrm10, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
+            weapons = listOf(Weapon(WeaponModels.lrm10, WeaponMountId(0), MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
         )
-        val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker, toughTarget)), GameMap(emptyMap()))
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
         val (newState, results, _) = resolveAttacksWithCrits(
@@ -226,10 +239,12 @@ internal class AmmoConsumptionTest {
         )
 
         assertInstanceOf(AttackResult.Miss::class.java, results.single())
-        val shots = newState.unitById(attacker.id)!!
+        val shots = newState.units.byId(attacker.id)
             .criticalLayout.ammoBins().sumOf { it.third.shots }
-        assertEquals(AmmoType.LRM10.shotsPerTon - 1, shots,
-            "LRM-10 miss should still consume exactly 1 round")
+        assertEquals(
+            AmmoType.LRM10.shotsPerTon - 1, shots,
+            "LRM-10 miss should still consume exactly 1 round"
+        )
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -242,10 +257,10 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 2,
-            weapons = listOf(Weapon(WeaponModels.srm6, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
+            weapons = listOf(Weapon(WeaponModels.srm6, WeaponMountId(0), MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
         )
-        val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker, toughTarget)), GameMap(emptyMap()))
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
         // to-hit(3,3)=6 ≥ TN 2 → hit; cluster(6,5)=11 → 6 missiles; 6 loc rolls, target thick armor
@@ -256,10 +271,12 @@ internal class AmmoConsumptionTest {
 
         assertInstanceOf(AttackResult.ClusterHit::class.java, results.single())
         assertEquals(6, (results.single() as AttackResult.ClusterHit).missilesHit)
-        val shots = newState.unitById(attacker.id)!!
+        val shots = newState.units.byId(attacker.id)
             .criticalLayout.ammoBins().sumOf { it.third.shots }
-        assertEquals(AmmoType.SRM6.shotsPerTon - 1, shots,
-            "SRM-6 should consume exactly 1 round per declaration (not per missile)")
+        assertEquals(
+            AmmoType.SRM6.shotsPerTon - 1, shots,
+            "SRM-6 should consume exactly 1 round per declaration (not per missile)"
+        )
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -270,20 +287,24 @@ internal class AmmoConsumptionTest {
     fun `energy weapon (medium laser) consumes no ammo`() {
         val attacker = aUnit(
             id = "attacker",
-            weapons = listOf(Weapon(WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
+            weapons = listOf(Weapon(WeaponModels.mediumLaser, WeaponMountId(0), MechLocation.RIGHT_TORSO)),
             // No ammo bins in the layout
         )
-        val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker, toughTarget)), GameMap(emptyMap()))
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
         val (newState, _, _) = resolveAttacksWithCrits(listOf(decl), state, DiceRoller.deterministic(1, 1))
 
         // CriticalLayout should be unchanged — no bins to decrement
-        val newAttacker = newState.unitById(attacker.id)!!
-        assertEquals(0, newAttacker.criticalLayout.ammoBins().size,
-            "Energy weapon unit should have no ammo bins")
-        assertEquals(attacker.criticalLayout, newAttacker.criticalLayout,
-            "CriticalLayout should be unchanged after energy weapon fire")
+        val newAttacker = newState.units.byId(attacker.id)
+        assertEquals(
+            0, newAttacker.criticalLayout.ammoBins().size,
+            "Energy weapon unit should have no ammo bins"
+        )
+        assertEquals(
+            attacker.criticalLayout, newAttacker.criticalLayout,
+            "CriticalLayout should be unchanged after energy weapon fire"
+        )
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -298,10 +319,10 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,
-            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
+            weapons = listOf(Weapon(WeaponModels.ac20, WeaponMountId(0), MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
         )
-        var state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
+        var state = GameState(UnitRoster(listOf(attacker, toughTarget)), GameMap(emptyMap()))
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
         // Fire 3 times (all misses to keep dice simple)
@@ -310,7 +331,7 @@ internal class AmmoConsumptionTest {
             state = next
         }
 
-        val bins = state.unitById(attacker.id)!!.criticalLayout.ammoBins()
+        val bins = state.units.byId(attacker.id).criticalLayout.ammoBins()
         assertEquals(1, bins.size, "Should still have one ammo bin")
         val (_, _, remainingBin) = bins.single()
         assertEquals(AmmoType.AC20, remainingBin.type)
@@ -319,8 +340,10 @@ internal class AmmoConsumptionTest {
         // The heat-phase cook-off / crit-triggered detonation reads bin.shots to compute
         // explosion damage: shots × damagePerShot.
         val expectedExplosionDamage = remainingBin.shots * remainingBin.type.damagePerShot
-        assertEquals(40, expectedExplosionDamage,
-            "2 remaining AC20 shots × 20 dmg/shot = 40 explosion damage")
+        assertEquals(
+            40, expectedExplosionDamage,
+            "2 remaining AC20 shots × 20 dmg/shot = 40 explosion damage"
+        )
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -359,7 +382,7 @@ internal class AmmoConsumptionTest {
                 leftArm = 100, rightArm = 100, leftLeg = 100, rightLeg = 100,
             ),
         )
-        val state = GameState(listOf(attacker, target2), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker, target2)), GameMap(emptyMap()))
 
         val decls = listOf(
             AttackDeclaration(attacker.id, target2.id, 0, true),   // AC/20
@@ -388,14 +411,18 @@ internal class AmmoConsumptionTest {
         assertInstanceOf(AttackResult.Hit::class.java, results[0], "AC/20 should hit")
         assertInstanceOf(AttackResult.Hit::class.java, results[1], "SRM-6 should hit")
 
-        val bins = newState.unitById(attacker.id)!!.criticalLayout.ammoBins()
+        val bins = newState.units.byId(attacker.id).criticalLayout.ammoBins()
         val ac20Bin = bins.first { it.third.type == AmmoType.AC20 }
         val srm6Bin = bins.first { it.third.type == AmmoType.SRM6 }
 
-        assertEquals(AmmoType.AC20.shotsPerTon - 1, ac20Bin.third.shots,
-            "AC/20 bin should have decremented by 1")
-        assertEquals(AmmoType.SRM6.shotsPerTon - 1, srm6Bin.third.shots,
-            "SRM-6 bin should have decremented by 1")
+        assertEquals(
+            AmmoType.AC20.shotsPerTon - 1, ac20Bin.third.shots,
+            "AC/20 bin should have decremented by 1"
+        )
+        assertEquals(
+            AmmoType.SRM6.shotsPerTon - 1, srm6Bin.third.shots,
+            "SRM-6 bin should have decremented by 1"
+        )
     }
 
     @Test
@@ -411,7 +438,7 @@ internal class AmmoConsumptionTest {
             ),
             criticalLayout = layout,
         )
-        val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker, toughTarget)), GameMap(emptyMap()))
         val decls = listOf(
             AttackDeclaration(attacker.id, toughTarget.id, 0, true),
             AttackDeclaration(attacker.id, toughTarget.id, 1, false),
@@ -423,10 +450,12 @@ internal class AmmoConsumptionTest {
             DiceRoller.deterministic(1, 1, 1, 1),  // two 2d6 miss rolls
         )
 
-        val shots = newState.unitById(attacker.id)!!
+        val shots = newState.units.byId(attacker.id)
             .criticalLayout.ammoBins().sumOf { it.third.shots }
-        assertEquals(AmmoType.SRM2.shotsPerTon - 2, shots,
-            "Two SRM-2 declarations should consume 2 rounds total from the shared bin")
+        assertEquals(
+            AmmoType.SRM2.shotsPerTon - 2, shots,
+            "Two SRM-2 declarations should consume 2 rounds total from the shared bin"
+        )
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -441,10 +470,10 @@ internal class AmmoConsumptionTest {
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,
-            weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
+            weapons = listOf(Weapon(WeaponModels.ac20, WeaponMountId(0), MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
         )
-        val state = GameState(listOf(attacker, toughTarget), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker, toughTarget)), GameMap(emptyMap()))
         val decl = AttackDeclaration(attacker.id, toughTarget.id, 0, true)
 
         val roller = DiceRoller.deterministic(4, 5, 3, 4)
@@ -452,16 +481,20 @@ internal class AmmoConsumptionTest {
         val result = results.single()
 
         // Verify dice stream: to-hit = (4,5)=9, location = (3,4)=7→CENTER_TORSO
-        assertEquals(battletech.tactical.dice.DiceRoll(4, 5), result.toHitRoll,
-            "to-hit roll should be (4,5) — ammo decrement must not consume dice")
+        assertEquals(
+            battletech.tactical.dice.DiceRoll(4, 5), result.toHitRoll,
+            "to-hit roll should be (4,5) — ammo decrement must not consume dice"
+        )
         assertInstanceOf(AttackResult.Hit::class.java, result)
         val hit = result as AttackResult.Hit
-        assertEquals(battletech.tactical.dice.DiceRoll(3, 4), hit.locationHits.first().locationRoll,
-            "location roll should be (3,4) — ammo decrement must not consume dice")
+        assertEquals(
+            battletech.tactical.dice.DiceRoll(3, 4), hit.locationHits.first().locationRoll,
+            "location roll should be (3,4) — ammo decrement must not consume dice"
+        )
         assertEquals(HitLocation.CENTER_TORSO, hit.locationHits.first().location)
 
         // Also verify the ammo was decremented
-        val shots = newState.unitById(attacker.id)!!
+        val shots = newState.units.byId(attacker.id)
             .criticalLayout.ammoBins().sumOf { it.third.shots }
         assertEquals(AmmoType.AC20.shotsPerTon - 1, shots)
     }

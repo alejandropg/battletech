@@ -9,6 +9,7 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.Terrain
 import battletech.tactical.query.aUnit
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.UnitRoster
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -28,7 +29,7 @@ internal class ReachabilityCalculatorTest {
     }
 
     private fun calculator(map: GameMap, units: List<CombatUnit>) =
-        ReachabilityCalculator(map, units)
+        ReachabilityCalculator(map, UnitRoster(units))
 
     // --- Heat movement penalty ---
 

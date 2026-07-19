@@ -19,6 +19,7 @@ import battletech.tactical.query.anInternalStructureLayout
 import battletech.tactical.query.mediumLaser
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.DestructionReason
+import battletech.tactical.unit.UnitRoster
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -56,7 +57,7 @@ internal class DestructionSweepTest {
 
     private fun freshSession(roller: DiceRoller): BattleSession = BattleSession(
         initialGameState = GameState(
-            listOf(attacker, target),
+            UnitRoster(listOf(attacker, target)),
             GameMap(
                 mapOf(
                     HexCoordinates(0, 0) to battletech.tactical.model.Hex(HexCoordinates(0, 0)),
@@ -150,7 +151,7 @@ internal class DestructionSweepTest {
         assertThat(destroyed.single().unitId).isEqualTo(target.id)
         assertThat(destroyed.single().reason).isEqualTo(DestructionReason.CENTER_TORSO_DESTROYED)
 
-        val updatedTarget = session.gameState.unitById(target.id)!!
+        val updatedTarget = session.gameState.units.byId(target.id)!!
         assertThat(updatedTarget.isDestroyed).isTrue()
     }
 
@@ -213,7 +214,7 @@ internal class DestructionSweepTest {
         assertThat(destroyed).hasSize(1)
         assertThat(destroyed.single().unitId).isEqualTo(engineDestroyed.id)
         assertThat(destroyed.single().reason).isEqualTo(DestructionReason.ENGINE_DESTROYED)
-        assertThat(session.gameState.unitById(engineDestroyed.id)!!.isDestroyed).isTrue()
+        assertThat(session.gameState.units.byId(engineDestroyed.id)!!.isDestroyed).isTrue()
     }
 
     @Test
@@ -239,7 +240,7 @@ internal class DestructionSweepTest {
         )
         val session = BattleSession(
             initialGameState = GameState(
-                listOf(dyingPilot, other),
+                UnitRoster(listOf(dyingPilot, other)),
                 GameMap(hexesFor(listOf(dyingPilot, other))),
             ),
             initialTurnState = TurnState.NULL,
@@ -277,7 +278,7 @@ internal class DestructionSweepTest {
         assertThat(destroyed).hasSize(1)
         assertThat(destroyed.single().unitId).isEqualTo(dyingPilot.id)
         assertThat(destroyed.single().reason).isEqualTo(DestructionReason.PILOT_DEAD)
-        assertThat(session.gameState.unitById(dyingPilot.id)!!.isDestroyed).isTrue()
+        assertThat(session.gameState.units.byId(dyingPilot.id)!!.isDestroyed).isTrue()
 
         val matchEnded = finalResult.events.filterIsInstance<MatchEnded>()
         assertThat(matchEnded).hasSize(1)

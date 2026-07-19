@@ -12,7 +12,9 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.UnknownUnitException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -28,7 +30,7 @@ internal class BattleSessionTest {
         turn: TurnState = aMovementTurn(),
         roller: DiceRoller = DiceRoller.seeded(42),
     ): BattleSession = BattleSession(
-        initialGameState = GameState(units, GameMap(hexesFor(units))),
+        initialGameState = GameState(UnitRoster(units), GameMap(hexesFor(units))),
         initialTurnState = turn,
         roller = roller,
         initialPhase = TurnPhase.MOVEMENT,
@@ -58,7 +60,7 @@ internal class BattleSessionTest {
         assertThat(moved.from).isEqualTo(HexCoordinates(0, 0))
         assertThat(moved.to).isEqualTo(HexCoordinates(0, -1))
         assertThat(moved.mode).isEqualTo(MovementMode.WALK)
-        assertThat(session.gameState.unitById(mech1.id)!!.position).isEqualTo(HexCoordinates(0, -1))
+        assertThat(session.gameState.units.byId(mech1.id).position).isEqualTo(HexCoordinates(0, -1))
         assertThat(session.turnState.movement.movedUnitIds).contains(mech1.id)
     }
 
@@ -97,7 +99,7 @@ internal class BattleSessionTest {
     fun `submitCommand to wrong phase is rejected with WrongPhase`() {
         // Heat phase doesn't accept any commands
         val session = BattleSession(
-            initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
+            initialGameState = GameState(UnitRoster(listOf(mech1, mech2)), GameMap(hexesFor(listOf(mech1, mech2)))),
             initialTurnState = aMovementTurn(),
             roller = DiceRoller.seeded(42),
             initialPhase = TurnPhase.HEAT,
@@ -115,7 +117,7 @@ internal class BattleSessionTest {
     fun `CommitAttackImpulse records declarations and applies torso facings (non-final, weapon phase)`() {
         val turn = anAttackTurn()
         val session = BattleSession(
-            initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
+            initialGameState = GameState(UnitRoster(listOf(mech1, mech2)), GameMap(hexesFor(listOf(mech1, mech2)))),
             initialTurnState = turn,
             roller = DiceRoller.seeded(42),
             initialPhase = TurnPhase.WEAPON_ATTACK,
@@ -138,7 +140,7 @@ internal class BattleSessionTest {
         assertThat(accepted.events.filterIsInstance<PhaseChanged>()).isEmpty()
 
         assertThat(session.turnState.attack.weaponDeclarations).containsExactlyElementsOf(decls)
-        assertThat(session.gameState.unitById(mech1.id)!!.torsoFacing).isEqualTo(HexDirection.NE)
+        assertThat(session.gameState.units.byId(mech1.id).torsoFacing).isEqualTo(HexDirection.NE)
     }
 
     @Test
@@ -147,7 +149,7 @@ internal class BattleSessionTest {
         val target = aMech(id = "t", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 0))
         val turn = anAttackTurn(attackOrder = listOf(Impulse(PlayerId.PLAYER_1, 1)))
         val session = BattleSession(
-            initialGameState = GameState(listOf(attacker, target), GameMap(hexesFor(listOf(attacker, target)))),
+            initialGameState = GameState(UnitRoster(listOf(attacker, target)), GameMap(hexesFor(listOf(attacker, target)))),
             initialTurnState = turn,
             roller = DiceRoller.seeded(42),
             initialPhase = TurnPhase.WEAPON_ATTACK,
@@ -173,7 +175,7 @@ internal class BattleSessionTest {
     @Test
     fun `advance bootstraps initiative on construction`() {
         val session = BattleSession(
-            initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
+            initialGameState = GameState(UnitRoster(listOf(mech1, mech2)), GameMap(hexesFor(listOf(mech1, mech2)))),
             initialTurnState = TurnState.NULL,
             roller = DiceRoller.seeded(42),
         )
@@ -198,8 +200,8 @@ internal class BattleSessionTest {
 
         val projected = session.stateFor(PlayerId.PLAYER_1)
 
-        assertThat(projected.unitById(mech1.id)).isInstanceOf(battletech.tactical.unit.CombatUnit::class.java)
-        assertThat(projected.unitById(mech2.id)).isInstanceOf(battletech.tactical.unit.ForeignUnit::class.java)
+        assertThat(projected.units.byId(mech1.id)).isInstanceOf(CombatUnit::class.java)
+        assertThat(projected.units.byId(mech2.id)).isInstanceOf(ForeignUnit::class.java)
     }
 
     @Test
@@ -209,7 +211,7 @@ internal class BattleSessionTest {
         val projected = session.stateFor(null)
 
         assertThat(projected.units).allSatisfy {
-            assertThat(it).isInstanceOf(battletech.tactical.unit.ForeignUnit::class.java)
+            assertThat(it).isInstanceOf(ForeignUnit::class.java)
         }
     }
 

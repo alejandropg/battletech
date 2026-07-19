@@ -3,6 +3,7 @@ package battletech.tactical.model
 import battletech.tactical.model.map.MapCatalog
 import battletech.tactical.unit.MechModels
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.createUnit
 
 public class GameStateFactory {
@@ -33,6 +34,6 @@ public class GameStateFactory {
             ),
         )
 
-        return GameState(units, map)
+        return GameState(UnitRoster(units), map)
     }
 }

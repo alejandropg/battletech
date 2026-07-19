@@ -6,6 +6,7 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.Impulse
+import battletech.tactical.unit.UnitRoster
 import battletech.tui.aGameMap
 import battletech.tui.anAppState
 import battletech.tui.aTurnState
@@ -39,7 +40,7 @@ internal class DeclaredTargetsIntegrationTest {
             id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
             position = HexCoordinates(2, 1),
         )
-        val gameState = GameState(listOf(attacker, target), map)
+        val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
         val phase = AttackPhase.Declaring(
             attackTurnPhase = TurnPhase.WEAPON_ATTACK,
             unitId = attacker.id,
@@ -69,7 +70,7 @@ internal class DeclaredTargetsIntegrationTest {
 
     @Test
     fun `SelectingAttacker with no drafts renders empty panel`() {
-        val gameState = GameState(emptyList(), map)
+        val gameState = GameState(UnitRoster(emptyList()), map)
         val phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
 
         val renderData = phase.declaredTargetsRender(anAppState(phase, gameState = gameState, turnState = turnState))

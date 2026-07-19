@@ -10,6 +10,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
+import battletech.tactical.unit.UnitRoster
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -73,7 +74,7 @@ internal class PhaseCascadeIntegrationTest {
     )
 
     private fun freshSession(): BattleSession = BattleSession(
-        initialGameState = GameState(listOf(p1unit, p2unit), GameMap(hexesFor(listOf(p1unit, p2unit)))),
+        initialGameState = GameState(UnitRoster(listOf(p1unit, p2unit)), GameMap(hexesFor(listOf(p1unit, p2unit)))),
         initialTurnState = TurnState.NULL,
         roller = roller,
     )

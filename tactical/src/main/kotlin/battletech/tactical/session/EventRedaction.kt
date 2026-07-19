@@ -57,40 +57,38 @@ import battletech.tactical.unit.UnitId
 public fun GameEvent.redactFor(viewer: PlayerId?, state: GameState, revealAll: Boolean = false): GameEvent? {
     if (revealAll) return this
 
-    fun owns(unitId: UnitId): Boolean = viewer != null && state.unitById(unitId).owner == viewer
-
     return when (this) {
         is HeatDissipated -> {
-            val before = heatBefore.filterKeys(::owns)
+            val before = heatBefore.filterKeys { owns(it, viewer, state) }
             if (before.isEmpty() && heatBefore.isNotEmpty()) {
                 null // Someone's heat dissipated, just not the viewer's — say nothing rather than lie.
             } else {
-                copy(heatBefore = before, heatAfter = heatAfter.filterKeys(::owns))
+                copy(heatBefore = before, heatAfter = heatAfter.filterKeys { owns(it, viewer, state) })
             }
         }
 
-        is CriticalHit.Detailed -> if (owns(unitId)) this else CriticalHit.Undisclosed(unitId)
+        is CriticalHit.Detailed -> if (owns(unitId, viewer, state)) this else CriticalHit.Undisclosed(unitId)
         is CriticalHit.Undisclosed -> this
 
-        is AmmoExploded.Detailed -> if (owns(unitId)) this else AmmoExploded.Undisclosed(unitId, damage)
+        is AmmoExploded.Detailed -> if (owns(unitId, viewer, state)) this else AmmoExploded.Undisclosed(unitId, damage)
         is AmmoExploded.Undisclosed -> this
 
-        is UnitStoodUp.Detailed -> if (owns(unitId)) this else UnitStoodUp.Undisclosed(unitId, stoodUp)
+        is UnitStoodUp.Detailed -> if (owns(unitId, viewer, state)) this else UnitStoodUp.Undisclosed(unitId, stoodUp)
         is UnitStoodUp.Undisclosed -> this
 
-        is UnitShutdown.Automatic -> if (owns(unitId)) this else UnitShutdown.Undisclosed(unitId)
-        is UnitShutdown.AvoidFailed -> if (owns(unitId)) this else UnitShutdown.Undisclosed(unitId)
+        is UnitShutdown.Automatic -> if (owns(unitId, viewer, state)) this else UnitShutdown.Undisclosed(unitId)
+        is UnitShutdown.AvoidFailed -> if (owns(unitId, viewer, state)) this else UnitShutdown.Undisclosed(unitId)
         is UnitShutdown.Undisclosed -> this
 
-        is UnitRestarted.Automatic -> if (owns(unitId)) this else UnitRestarted.Undisclosed(unitId)
-        is UnitRestarted.RollPassed -> if (owns(unitId)) this else UnitRestarted.Undisclosed(unitId)
+        is UnitRestarted.Automatic -> if (owns(unitId, viewer, state)) this else UnitRestarted.Undisclosed(unitId)
+        is UnitRestarted.RollPassed -> if (owns(unitId, viewer, state)) this else UnitRestarted.Undisclosed(unitId)
         is UnitRestarted.Undisclosed -> this
 
-        is PilotHit.Fatal -> if (owns(unitId)) this else PilotHit.Undisclosed(unitId)
-        is PilotHit.Checked -> if (owns(unitId)) this else PilotHit.Undisclosed(unitId)
+        is PilotHit.Fatal -> if (owns(unitId, viewer, state)) this else PilotHit.Undisclosed(unitId)
+        is PilotHit.Checked -> if (owns(unitId, viewer, state)) this else PilotHit.Undisclosed(unitId)
         is PilotHit.Undisclosed -> this
 
-        is PilotRecoveredConsciousness.Detailed -> if (owns(unitId)) this else PilotRecoveredConsciousness.Undisclosed(unitId)
+        is PilotRecoveredConsciousness.Detailed -> if (owns(unitId, viewer, state)) this else PilotRecoveredConsciousness.Undisclosed(unitId)
         is PilotRecoveredConsciousness.Undisclosed -> this
 
         is PhysicalAttacksResolved -> copy(results = results.map { redactPhysicalResult(it, viewer, state) })
@@ -113,6 +111,10 @@ public fun GameEvent.redactFor(viewer: PlayerId?, state: GameState, revealAll: B
     }
 }
 
+/** Ownership check shared by [redactFor] and [redactPhysicalResult]: `viewer == null` fails closed. */
+private fun owns(unitId: UnitId, viewer: PlayerId?, state: GameState): Boolean =
+    viewer != null && state.units.byId(unitId).owner == viewer
+
 /**
  * Redacts the [Knockdown] embedded in one [PhysicalAttackResult]: the faller (target on a
  * hit, attacker on a miss — mirrors [battletech.tactical.attack.physical.resolvePhysicalAttacks]'s
@@ -121,15 +123,13 @@ public fun GameEvent.redactFor(viewer: PlayerId?, state: GameState, revealAll: B
  * [PilotHit]/[PilotKnockedUnconscious] events, since they are copies of exactly those.
  */
 private fun redactPhysicalResult(result: PhysicalAttackResult, viewer: PlayerId?, state: GameState): PhysicalAttackResult {
-    fun owns(unitId: UnitId): Boolean = viewer != null && state.unitById(unitId).owner == viewer
-
     val fallerId = if (result is PhysicalAttackResult.Hit) result.targetId else result.attackerId
     val redacted = when (val knockdown = result.knockdown) {
         Knockdown.None -> knockdown
-        is Knockdown.Resisted.Detailed -> if (owns(fallerId)) knockdown else Knockdown.Resisted.Undisclosed
+        is Knockdown.Resisted.Detailed -> if (owns(fallerId, viewer, state)) knockdown else Knockdown.Resisted.Undisclosed
         is Knockdown.Resisted.Undisclosed -> knockdown
         is Knockdown.Fell.Detailed ->
-            if (owns(knockdown.unitId)) {
+            if (owns(knockdown.unitId, viewer, state)) {
                 knockdown
             } else {
                 Knockdown.Fell.Undisclosed(

@@ -14,6 +14,7 @@ import battletech.tactical.query.anInternalStructureLayout
 import battletech.tactical.query.mediumLaser
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
+import battletech.tactical.unit.UnitRoster
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -38,7 +39,7 @@ internal class AttackResolutionTest {
         internalStructure = anInternalStructureLayout(centerTorso = 10),
     )
 
-    private val gameState = GameState(listOf(attacker, target), GameMap(emptyMap()))
+    private val gameState = GameState(UnitRoster(listOf(attacker, target)), GameMap(emptyMap()))
 
     @Test
     fun `hit applies damage to correct armor location`() {
@@ -51,11 +52,10 @@ internal class AttackResolutionTest {
         )
         // Use a seeded roller: first 2d6 for to-hit, second 2d6 for hit location
         val roller = DiceRoller.seeded(42)
-        val (newState, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
+        val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
 
         val result = results.single()
         if (result is AttackResult.Hit) {
-            val updatedTarget = newState.unitById(result.targetId)!!
             // Damage should have been applied somewhere
             assertTrue(result.damageApplied > 0)
             assertTrue(result.locationHits.isNotEmpty())
@@ -72,7 +72,7 @@ internal class AttackResolutionTest {
         )
         // Use a seeded roller that produces a miss (high target number)
         val highGunneryAttacker = attacker.copy(gunnerySkill = 12) // target number 12+, almost impossible
-        val state = gameState.copy(units = listOf(highGunneryAttacker, target))
+        val state = gameState.copy(units = UnitRoster(listOf(highGunneryAttacker, target)))
 
         // Try many seeds until we get a miss
         var foundMiss = false
@@ -82,7 +82,7 @@ internal class AttackResolutionTest {
             val result = results.single()
             if (result is AttackResult.Miss) {
                 // Target should be unchanged
-                assertEquals(target, newState.unitById(target.id))
+                assertEquals(target, newState.units.byId(target.id))
                 foundMiss = true
                 break
             }
@@ -102,7 +102,7 @@ internal class AttackResolutionTest {
             ),
             internalStructure = anInternalStructureLayout(centerTorso = 10),
         )
-        val state = gameState.copy(units = listOf(attacker, thinTarget))
+        val state = gameState.copy(units = UnitRoster(listOf(attacker, thinTarget)))
 
         // Find a seed that hits center torso
         for (seed in 0..1000) {
@@ -111,7 +111,7 @@ internal class AttackResolutionTest {
             val (newState, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
             val result = results.single()
             if (result is AttackResult.Hit && result.locationHits.first().location == HitLocation.CENTER_TORSO) {
-                val updatedTarget = newState.unitById(thinTarget.id)!!
+                val updatedTarget = newState.units.byId(thinTarget.id)
                 // Medium laser does 5 damage, 2 armor absorbs 2, 3 overflows to IS
                 assertEquals(0, updatedTarget.armor.centerTorso)
                 assertEquals(7, updatedTarget.internalStructure.centerTorso) // 10 - 3
@@ -155,7 +155,7 @@ internal class AttackResolutionTest {
     @Test
     fun `heat penalty increases target number`() {
         val hotAttacker = attacker.copy(currentHeat = 16, heatSink = HeatSink(HeatSinkType.STS, 10))
-        val state = gameState.copy(units = listOf(hotAttacker, target))
+        val state = gameState.copy(units = UnitRoster(listOf(hotAttacker, target)))
         val declaration = AttackDeclaration(hotAttacker.id, target.id, 0, true)
 
         val roller = DiceRoller.seeded(42)
@@ -168,7 +168,7 @@ internal class AttackResolutionTest {
     @Test
     fun `prone adjacent target lowers the target number by two`() {
         val proneTarget = target.copy(isProne = true)
-        val state = gameState.copy(units = listOf(attacker, proneTarget))
+        val state = gameState.copy(units = UnitRoster(listOf(attacker, proneTarget)))
         val declaration = AttackDeclaration(attacker.id, proneTarget.id, 0, true)
 
         val roller = DiceRoller.seeded(42)
@@ -180,7 +180,7 @@ internal class AttackResolutionTest {
     @Test
     fun `shutdown target lowers the target number by four`() {
         val shutdownTarget = target.copy(isShutdown = true)
-        val state = gameState.copy(units = listOf(attacker, shutdownTarget))
+        val state = gameState.copy(units = UnitRoster(listOf(attacker, shutdownTarget)))
         val declaration = AttackDeclaration(attacker.id, shutdownTarget.id, 0, true)
 
         val roller = DiceRoller.seeded(42)
@@ -192,7 +192,7 @@ internal class AttackResolutionTest {
     @Test
     fun `prone target at range raises the target number by one`() {
         val proneFarTarget = target.copy(position = HexCoordinates(5, 0), isProne = true)
-        val state = gameState.copy(units = listOf(attacker, proneFarTarget))
+        val state = gameState.copy(units = UnitRoster(listOf(attacker, proneFarTarget)))
         val declaration = AttackDeclaration(attacker.id, proneFarTarget.id, 0, true)
 
         val roller = DiceRoller.seeded(42)
@@ -207,7 +207,7 @@ internal class AttackResolutionTest {
         val blindedAttacker = attacker.copy(
             criticalHits = mapOf(battletech.tactical.model.MechLocation.HEAD to setOf(1)),
         )
-        val state = gameState.copy(units = listOf(blindedAttacker, target))
+        val state = gameState.copy(units = UnitRoster(listOf(blindedAttacker, target)))
         val declaration = AttackDeclaration(blindedAttacker.id, target.id, 0, true)
 
         val roller = DiceRoller.seeded(42)
@@ -221,7 +221,7 @@ internal class AttackResolutionTest {
     @Test
     fun `medium range adds plus 2 modifier`() {
         val farTarget = target.copy(position = HexCoordinates(5, 0)) // distance 5, medium range for ML
-        val state = gameState.copy(units = listOf(attacker, farTarget))
+        val state = gameState.copy(units = UnitRoster(listOf(attacker, farTarget)))
         val declaration = AttackDeclaration(attacker.id, farTarget.id, 0, true)
 
         val roller = DiceRoller.seeded(42)
@@ -238,7 +238,7 @@ internal class AttackResolutionTest {
             weapons = listOf(mediumLaser()),
             position = HexCoordinates(0, 1),
         )
-        val state = GameState(listOf(attacker, attacker2, target), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker, attacker2, target)), GameMap(emptyMap()))
         val declarations = listOf(
             AttackDeclaration(attacker.id, target.id, 0, true),
             AttackDeclaration(attacker2.id, target.id, 0, true),
@@ -301,7 +301,7 @@ internal class AttackResolutionTest {
     fun `TN breakdown fields correct for medium range secondary with heat penalty`() {
         val hotAttacker = attacker.copy(currentHeat = 16, heatSink = HeatSink(HeatSinkType.STS, 10))
         val farTarget = target.copy(position = HexCoordinates(5, 0)) // medium range for ML
-        val state = gameState.copy(units = listOf(hotAttacker, farTarget))
+        val state = gameState.copy(units = UnitRoster(listOf(hotAttacker, farTarget)))
         val declaration = AttackDeclaration(hotAttacker.id, farTarget.id, 0, false)
         // TN = 4+2+2+1=9, roll=1+1=2 (miss, no location roll needed)
         val roller = DiceRoller.deterministic(1, 1)
@@ -536,7 +536,7 @@ internal class AttackResolutionTest {
             armor = anArmorLayout(centerTorso = 47, leftArm = 2, leftTorso = 8),
             internalStructure = anInternalStructureLayout(leftArm = 6, leftTorso = 20),
         )
-        val state = gameState.copy(units = listOf(attacker, unit))
+        val state = gameState.copy(units = UnitRoster(listOf(attacker, unit)))
 
         // Find a seed that hits the left arm.
         for (seed in 0..2000) {
@@ -548,7 +548,7 @@ internal class AttackResolutionTest {
                 // Medium laser does 5 damage: 2 armor + 3 IS, no destruction, single step.
                 assertTrue(result.damage.isNotEmpty())
                 assertEquals(HitLocation.LEFT_ARM, result.damage.first().location)
-                val updatedUnit = newState.unitById(unit.id)!!
+                val updatedUnit = newState.units.byId(unit.id)
                 assertEquals(0, updatedUnit.armor.leftArm)
                 assertEquals(3, updatedUnit.internalStructure.leftArm) // 6 - 3
                 return
@@ -627,7 +627,7 @@ internal class AttackResolutionTest {
         assertTrue(result.partialCover)
 
         // Leg armor should be unchanged — partial cover suppressed the damage.
-        val updatedTarget = newState.unitById(pcTarget.id)!!
+        val updatedTarget = newState.units.byId(pcTarget.id)
         assertEquals(2, updatedTarget.armor.rightLeg)  // unchanged from initial 2
         assertEquals(10, updatedTarget.internalStructure.rightLeg) // unchanged
     }
@@ -651,7 +651,7 @@ internal class AttackResolutionTest {
 
         // Center torso armor should have been reduced by 5 (medium laser damage).
         val initialCT = pcTarget.armor.centerTorso
-        val updatedTarget = newState.unitById(pcTarget.id)!!
+        val updatedTarget = newState.units.byId(pcTarget.id)
         assertEquals(initialCT - 5, updatedTarget.armor.centerTorso)
     }
 }

@@ -29,7 +29,7 @@ internal class WeaponTargeting(private val state: PlayerGameState) {
     private val definition = FireWeaponActionDefinition()
 
     fun fireArc(attackerId: UnitId, torsoFacing: HexDirection): Set<HexCoordinates> {
-        val attacker = state.unitById(attackerId)
+        val attacker = state.units.byId(attackerId)
         return FiringArc.forwardArc(attacker.position, torsoFacing, state.map)
     }
 
@@ -42,9 +42,7 @@ internal class WeaponTargeting(private val state: PlayerGameState) {
         if (!attacker.isPilotConscious) return emptySet()
         if (attacker.cannotFireFromSensorDamage()) return emptySet()
         val arc = FiringArc.forwardArc(attacker.position, torsoFacing, state.map)
-        return state.units
-            .filter { it.owner != attacker.owner }
-            .filter { !it.isDestroyed }
+        return state.units.enemiesOf(attacker)
             .filter { it.position in arc }
             .filter { enemy -> hasEligibleWeapon(attacker, enemy) }
             .map { it.id }
@@ -55,7 +53,7 @@ internal class WeaponTargeting(private val state: PlayerGameState) {
         val attacker = state.ownUnitById(attackerId)
         val targetIds = validTargets(attackerId, torsoFacing)
         return targetIds.mapNotNull { targetId ->
-            val target = state.unitById(targetId)
+            val target = state.units.byId(targetId)
             val distance = attacker.position.distanceTo(target.position)
 
             val weapons = attacker.weapons.mapIndexed { index, weapon ->

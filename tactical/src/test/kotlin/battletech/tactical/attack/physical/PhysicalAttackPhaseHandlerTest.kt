@@ -55,7 +55,7 @@ internal class PhysicalAttackPhaseHandlerTest {
 
         val resolved = outcome.events.filterIsInstance<PhysicalAttacksResolved>().single()
         assertThat(resolved.results.single()).isInstanceOf(PhysicalAttackResult.Hit::class.java)
-        assertThat(outcome.state.unitById(target.id).armor.leftArm)
+        assertThat(outcome.state.units.byId(target.id).armor.leftArm)
             .isEqualTo(target.armor.leftArm - 5)
         assertThat(outcome.turn.attack.physicalDeclarations).isEmpty()
     }
@@ -75,7 +75,7 @@ internal class PhysicalAttackPhaseHandlerTest {
 
         val fell = outcome.events.filterIsInstance<UnitFell>().single()
         assertThat(fell.unitId).isEqualTo(target.id)
-        assertThat(outcome.state.unitById(target.id).isProne).isTrue()
+        assertThat(outcome.state.units.byId(target.id).isProne).isTrue()
     }
 
     @Test

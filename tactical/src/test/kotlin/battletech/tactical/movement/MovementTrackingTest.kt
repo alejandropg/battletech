@@ -59,7 +59,7 @@ internal class MovementTrackingTest {
 
         val outcome = handler.apply(command, state, turnFor(PlayerId.PLAYER_1), roller)
 
-        val moved = outcome.state.unitById(mover.id)!!
+        val moved = outcome.state.units.byId(mover.id)
         assertThat(moved.movementThisTurn).isEqualTo(MovementThisTurn.Moved(MovementMode.WALK, 3))
     }
 
@@ -71,7 +71,7 @@ internal class MovementTrackingTest {
 
         val outcome = handler.onEntry(state, turnFor(PlayerId.PLAYER_1), roller)
 
-        val reset = outcome.state.unitById(mover.id)!!
+        val reset = outcome.state.units.byId(mover.id)
         assertThat(reset.movementThisTurn).isEqualTo(MovementThisTurn.Stationary)
     }
 }

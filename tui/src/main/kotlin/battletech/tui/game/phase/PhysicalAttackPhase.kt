@@ -56,7 +56,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
                 event = event,
                 app = app,
                 activePlayer = { app.turnState.attack.activePlayer },
-                selectableUnits = { app.turnState.selectableAttackUnits(app.visibleState) },
+                selectableUnits = { app.turnState.selectableAttackUnits(app.visibleState.units) },
                 onCommit = { a -> commitPhysicalImpulse(a, drafts) },
                 enterFor = { unit, a -> Transition(a.copy(phase = enterPhysicalDeclaring(unit.id, a, drafts))) },
             )
@@ -69,7 +69,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
             return "$name: select a unit to punch/kick | 'c' to commit"
         }
 
-        override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.unitAt(app.cursor)
+        override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.units.at(app.cursor)
 
         override fun unitStatus(app: AppState): VisibleUnit? = cursorUnitStatus(app)
 
@@ -98,7 +98,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
 
         override fun prompt(app: AppState): String = PHYSICAL_DECLARING_PROMPT
 
-        override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.unitById(unitId)
+        override fun selectedUnit(app: AppState): VisibleUnit = app.visibleState.units.byId(unitId)
 
         override fun onCancel(app: AppState): Transition = Transition(app.copy(phase = SelectingAttacker(allDrafts())))
 
@@ -142,7 +142,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
             if (assignments.values.any { it.isNotEmpty() }) drafts + (unitId to assignments) else drafts - unitId
 
         private fun optionsFor(app: AppState): List<PhysicalAttackOption> {
-            val owner = app.visibleState.unitById(unitId).owner
+            val owner = app.visibleState.units.byId(unitId).owner
             return app.viewFor(owner).physicalAttackOptions(unitId)
         }
 
@@ -184,7 +184,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
         }
 
         private fun nextAttacker(app: AppState): Transition {
-            val attackers = app.turnState.selectableAttackUnits(app.visibleState)
+            val attackers = app.turnState.selectableAttackUnits(app.visibleState.units)
             val saved = allDrafts()
             if (attackers.isEmpty()) return Transition(app.copy(phase = SelectingAttacker(saved)))
             val idx = attackers.indexOfFirst { it.id == unitId }.coerceAtLeast(0)

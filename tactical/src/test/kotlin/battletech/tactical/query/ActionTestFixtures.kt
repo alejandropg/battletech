@@ -14,6 +14,7 @@ import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.WeaponModel
@@ -143,7 +144,7 @@ internal fun aGameState(
     units: List<CombatUnit> = emptyList(),
     hexes: Map<HexCoordinates, Hex> = emptyMap(),
 ): GameState = GameState(
-    units = units,
+    units = UnitRoster(units),
     map = GameMap(hexes),
 )
 

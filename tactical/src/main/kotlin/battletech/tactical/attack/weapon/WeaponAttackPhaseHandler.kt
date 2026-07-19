@@ -56,12 +56,12 @@ public class WeaponAttackPhaseHandler : ImpulseAttackPhaseHandler() {
         for (decl in cmd.declarations) {
             validateTarget(decl.attackerId, decl.targetId, cmd.playerId, state)?.let { return it }
 
-            val attacker = state.unitById(decl.attackerId)
+            val attacker = state.units.byId(decl.attackerId)
             if (decl.weaponIndex !in attacker.weapons.indices) {
                 return CommandRejection.NoSuchWeapon(decl.attackerId, decl.weaponIndex)
             }
 
-            val target = state.unitById(decl.targetId)
+            val target = state.units.byId(decl.targetId)
             val context = WeaponAttackContext(
                 actor = attacker,
                 // target is passed as-is: the rules only read its public projection (see

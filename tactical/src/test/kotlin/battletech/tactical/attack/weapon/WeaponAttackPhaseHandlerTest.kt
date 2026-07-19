@@ -286,7 +286,7 @@ internal class WeaponAttackPhaseHandlerTest {
 
         val event = outcome.events.filterIsInstance<TorsoFacingsApplied>().single()
         assertThat(event.facings).containsEntry(attacker.id, newFacing)
-        assertThat(outcome.state.unitById(attacker.id).torsoFacing).isEqualTo(newFacing)
+        assertThat(outcome.state.units.byId(attacker.id).torsoFacing).isEqualTo(newFacing)
     }
 
     @Test
@@ -358,7 +358,7 @@ internal class WeaponAttackPhaseHandlerTest {
 
         val outcome = handler.apply(cmd, thinCtGameState, thinCtTurn(declaration), roller)
 
-        val updatedTarget = outcome.state.unitById(thinCtTarget.id)
+        val updatedTarget = outcome.state.units.byId(thinCtTarget.id)
         assertThat(updatedTarget.criticalHits[MechLocation.CENTER_TORSO]).containsExactly(3)
         assertThat(updatedTarget.isProne).isTrue()
         val fell = outcome.events.filterIsInstance<UnitFell>().single()
@@ -374,7 +374,7 @@ internal class WeaponAttackPhaseHandlerTest {
 
         val outcome = handler.apply(cmd, thinCtGameState, thinCtTurn(declaration), roller)
 
-        val updatedTarget = outcome.state.unitById(thinCtTarget.id)
+        val updatedTarget = outcome.state.units.byId(thinCtTarget.id)
         assertThat(updatedTarget.criticalHits[MechLocation.CENTER_TORSO]).containsExactly(3)
         assertThat(updatedTarget.isProne).isFalse()
         assertThat(outcome.events.filterIsInstance<UnitFell>()).isEmpty()
@@ -555,7 +555,7 @@ internal class WeaponAttackPhaseHandlerTest {
 
         val outcome = handler.apply(cmd, state, thinCtTurn(declaration), roller)
 
-        val updatedTarget = outcome.state.unitById(target.id)
+        val updatedTarget = outcome.state.units.byId(target.id)
         assertThat(updatedTarget.criticalHits[MechLocation.CENTER_TORSO]).containsExactlyInAnyOrder(3, 4)
         assertThat(updatedTarget.isProne).isTrue()
         assertThat(updatedTarget.isDestroyed).isFalse()

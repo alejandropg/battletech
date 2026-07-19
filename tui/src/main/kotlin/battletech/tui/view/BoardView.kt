@@ -77,7 +77,7 @@ public class BoardView(
                     }
                 }
 
-                val unit = state.unitAt(coords)
+                val unit = state.units.at(coords)
                 if (unit != null) {
                     val isValidTarget = coords in validTargetPositions
                     val isSelectedTarget = coords == selectedTargetPosition

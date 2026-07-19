@@ -4,7 +4,6 @@ import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
-import battletech.tactical.model.withUnit
 import battletech.tactical.session.AttackImpulseCommand
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.GameCommand
@@ -65,7 +64,7 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
         facings: Map<UnitId, HexDirection>,
         events: MutableList<GameEvent>,
     ): GameState {
-        val changed = facings.filter { (unitId, facing) -> state.unitById(unitId).torsoFacing != facing }
+        val changed = facings.filter { (unitId, facing) -> state.units.byId(unitId).torsoFacing != facing }
         if (changed.isEmpty()) return state
         events += TorsoFacingsApplied(changed)
         return state.applyTorsoFacings(changed)
@@ -103,7 +102,7 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
         var state = after
         val events = mutableListOf<GameEvent>()
         for (afterUnit in after.units) {
-            val beforeUnit = before.unitById(afterUnit.id)
+            val beforeUnit = before.units.byId(afterUnit.id)
             val beforeCrits = beforeUnit.gyroCritCount()
             val afterCrits = afterUnit.gyroCritCount()
             if (afterUnit.isProne) continue
@@ -122,7 +121,7 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
             }
 
             if (fallEvents.isNotEmpty()) {
-                state = state.withUnit(updatedUnit)
+                state = state.copy(units = state.units.withUnit(updatedUnit))
                 events += fallEvents
             }
         }
@@ -147,12 +146,12 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
         playerId: PlayerId,
         state: GameState,
     ): CommandRejection? {
-        val attacker = state.unitById(attackerId)
+        val attacker = state.units.byId(attackerId)
         if (attacker.owner != playerId) {
             return CommandRejection.NotYourUnit(attackerId, owner = attacker.owner, attemptedBy = playerId)
         }
 
-        val target = state.unitById(targetId)
+        val target = state.units.byId(targetId)
         if (target.owner == attacker.owner) {
             return CommandRejection.FriendlyFire(targetId)
         }
@@ -170,7 +169,7 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
      */
     protected fun validateTorsoFacings(cmd: AttackImpulseCommand, state: GameState): CommandRejection? {
         for ((unitId, newFacing) in cmd.torsoFacings) {
-            val unit = state.unitById(unitId)
+            val unit = state.units.byId(unitId)
 
             if (unit.owner != cmd.playerId) {
                 return CommandRejection.NotYourUnit(unitId, owner = unit.owner, attemptedBy = cmd.playerId)
@@ -236,8 +235,8 @@ internal fun attackOrderFor(initiative: Initiative, state: GameState): List<Impu
     // Shutdown 'Mechs can't fire, so they don't take an impulse slot.
     return calculateAttackOrder(
         loser = loser,
-        loserUnitCount = state.activeUnitsOf(loser).size,
+        loserUnitCount = state.units.activeOf(loser).size,
         winner = winner,
-        winnerUnitCount = state.activeUnitsOf(winner).size,
+        winnerUnitCount = state.units.activeOf(winner).size,
     )
 }

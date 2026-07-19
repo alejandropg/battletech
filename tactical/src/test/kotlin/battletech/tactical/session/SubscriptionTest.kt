@@ -10,6 +10,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
+import battletech.tactical.unit.UnitRoster
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -39,7 +40,7 @@ internal class SubscriptionTest {
     @Test
     fun `subscriber receives events emitted by advance kickstart`() {
         val session = BattleSession(
-            initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
+            initialGameState = GameState(UnitRoster(listOf(mech1, mech2)), GameMap(hexesFor(listOf(mech1, mech2)))),
             initialTurnState = TurnState.NULL,
             roller = DiceRoller.seeded(42),
         )
@@ -132,7 +133,7 @@ internal class SubscriptionTest {
     // ---------- helpers ----------
 
     private fun sessionInMovement(): BattleSession = BattleSession(
-        initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
+        initialGameState = GameState(UnitRoster(listOf(mech1, mech2)), GameMap(hexesFor(listOf(mech1, mech2)))),
         initialTurnState = aMovementTurn(),
         roller = DiceRoller.seeded(42),
         initialPhase = TurnPhase.MOVEMENT,

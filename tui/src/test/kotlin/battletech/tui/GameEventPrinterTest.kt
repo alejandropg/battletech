@@ -8,6 +8,7 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.SessionNotice
+import battletech.tactical.unit.UnitRoster
 import battletech.tui.hex.sessionNoticeIcon
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -15,7 +16,7 @@ import org.junit.jupiter.api.Test
 internal class GameEventPrinterTest {
 
     private val emptyState = GameState(
-        units = emptyList(),
+        units = UnitRoster(emptyList()),
         map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0)))),
     )
 

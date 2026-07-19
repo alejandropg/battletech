@@ -32,7 +32,7 @@ internal class PanelFrame(private val appState: AppState) {
         appState.lastAttackResults?.let { results ->
             AttackResultsRender(
                 results = results,
-                unitOwners = visibleState.units.associate { it.id to it.owner },
+                units = visibleState.units,
                 viewer = appState.viewer,
             )
         }

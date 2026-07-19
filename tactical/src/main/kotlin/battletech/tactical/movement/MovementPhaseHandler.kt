@@ -43,11 +43,11 @@ public class MovementPhaseHandler : PhaseHandler {
         turn: TurnState,
     ): CommandRejection? = when (command) {
         is MoveUnit -> validateActivation(command.unitId, command.playerId, state, turn)
-            ?: MovementRules.moveRejection(state.unitById(command.unitId), command.mode)
+            ?: MovementRules.moveRejection(state.units.byId(command.unitId), command.mode)
             ?: validateDestination(command, state)
 
         is StandUp -> validateActivation(command.unitId, command.playerId, state, turn)
-            ?: MovementRules.standUpRejection(state.unitById(command.unitId))
+            ?: MovementRules.standUpRejection(state.units.byId(command.unitId))
 
         else -> null
     }
@@ -64,7 +64,7 @@ public class MovementPhaseHandler : PhaseHandler {
         cmd: MoveUnit,
         state: GameState,
     ): CommandRejection? {
-        val unit = state.unitById(cmd.unitId) // existence guaranteed by validateActivation
+        val unit = state.units.byId(cmd.unitId) // existence guaranteed by validateActivation
         return when (val destination = MovementRules.authoritativeDestination(unit, cmd.mode, cmd.destination, state)) {
             is AuthoritativeDestination.Legal -> null
             is AuthoritativeDestination.Illegal -> destination.rejection
@@ -77,7 +77,7 @@ public class MovementPhaseHandler : PhaseHandler {
         state: GameState,
         turn: TurnState,
     ): CommandRejection? {
-        val unit = state.unitById(unitId)
+        val unit = state.units.byId(unitId)
         if (unit.owner != playerId) {
             return CommandRejection.NotYourUnit(unitId, owner = unit.owner, attemptedBy = playerId)
         }
@@ -104,13 +104,13 @@ public class MovementPhaseHandler : PhaseHandler {
         turn: TurnState,
         roller: DiceRoller,
     ): PhaseOutcome {
-        val unit = state.unitById(cmd.unitId)
+        val unit = state.units.byId(cmd.unitId)
         val modifier = unit.basePsrModifier()
         val psr = pilotingSkillRoll(unit, roller, modifier = modifier)
         return if (psr.passed) {
             // Stood up; activation NOT consumed so the unit may still move this impulse.
             val newState = state.copy(
-                units = state.units.map { if (it.id == cmd.unitId) it.copy(isProne = false) else it },
+                units = state.units.withUnit(unit.copy(isProne = false)),
             )
             PhaseOutcome(newState, turn, listOf(UnitStoodUp.Detailed(cmd.unitId, psr, stoodUp = true)))
         } else {
@@ -133,7 +133,7 @@ public class MovementPhaseHandler : PhaseHandler {
         state: GameState,
         turn: TurnState,
     ): PhaseOutcome {
-        val unit = state.unitById(cmd.unitId)
+        val unit = state.units.byId(cmd.unitId)
         val from = unit.position
         val serverHex: ReachableHex = if (cmd.destination.mpSpent == 0 &&
             cmd.destination.position == unit.position &&
@@ -167,13 +167,13 @@ public class MovementPhaseHandler : PhaseHandler {
         val initiative = turn.initiative
         // Shutdown 'Mechs can't move, so they don't take an impulse slot.
         val order = calculateMovementOrder(
-            loser = initiative.loser, loserUnitCount = state.activeUnitsOf(initiative.loser).size,
-            winner = initiative.winner, winnerUnitCount = state.activeUnitsOf(initiative.winner).size,
+            loser = initiative.loser, loserUnitCount = state.units.activeOf(initiative.loser).size,
+            winner = initiative.winner, winnerUnitCount = state.units.activeOf(initiative.winner).size,
         )
         // Clear last turn's movement so attacker/target movement modifiers
         // reflect only this turn's movement.
         val resetState = state.copy(
-            units = state.units.map { it.copy(movementThisTurn = MovementThisTurn.Stationary) },
+            units = state.units.mapUnits { it.copy(movementThisTurn = MovementThisTurn.Stationary) },
         )
         return PhaseOutcome(
             resetState,

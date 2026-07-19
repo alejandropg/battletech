@@ -11,6 +11,7 @@ import battletech.tactical.session.Impulse
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.TurnState
+import battletech.tactical.unit.UnitRoster
 import battletech.tui.aGameMap
 import battletech.tui.aUnit
 import battletech.tui.game.phase.PhysicalAttackPhase
@@ -24,7 +25,7 @@ internal class PhysicalAttackPhaseTest {
     private val map = aGameMap(cols = 5, rows = 5)
     private val attacker = aUnit(id = "atk", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
     private val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(1, 0))
-    private val gameState = GameState(listOf(attacker, enemy), map)
+    private val gameState = GameState(UnitRoster(listOf(attacker, enemy)), map)
 
     private fun turn() = TurnState(
         initiative = Initiative(
@@ -83,14 +84,14 @@ internal class PhysicalAttackPhaseTest {
             assignments = mapOf(enemy.id to setOf(PhysicalAttackKind.Punch(Side.LEFT))),
         )
         val app = appWith(declaring)
-        val armorBefore = totalArmor(app.visibleState.unitById(enemy.id).armor)
+        val armorBefore = totalArmor(app.visibleState.units.byId(enemy.id).armor)
 
         declaring.handle(KeyboardEvent("c"), app)!!
 
         // The session resolved the punch (3+3 hit, ceil(50/10)=5 damage applied). app.session
         // is the same mutable BattleSession before and after, so re-reading app.visibleState
         // (not a fresh AppState) observes the post-command state.
-        val armorAfter = totalArmor(app.visibleState.unitById(enemy.id).armor)
+        val armorAfter = totalArmor(app.visibleState.units.byId(enemy.id).armor)
         assertThat(armorAfter).isEqualTo(armorBefore - 5)
     }
 

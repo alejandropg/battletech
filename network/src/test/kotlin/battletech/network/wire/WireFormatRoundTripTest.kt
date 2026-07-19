@@ -444,7 +444,7 @@ internal class WireFormatRoundTripTest {
     fun `a ClientMessage SubmitCommand carrying a real MoveUnit built from session state round-trips`() {
         val session = aSampleSession()
         session.advance()
-        val mover = session.gameState.unitsOf(PlayerId.PLAYER_1).first()
+        val mover = session.gameState.units.of(PlayerId.PLAYER_1).first()
         val destination = ReachableHex(
             position = mover.position.neighbor(mover.facing),
             facing = mover.facing,

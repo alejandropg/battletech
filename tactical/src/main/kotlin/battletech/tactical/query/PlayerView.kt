@@ -61,6 +61,17 @@ public interface PlayerView {
      */
     public fun declaredWeaponAttacks(): List<DeclaredWeaponAttack>
 
+    /**
+     * The same committed declarations as [declaredWeaponAttacks], grouped by attacker and then
+     * by player slot in impulse-commit order — the shape a declared-targets panel renders
+     * directly. Each player in [PlayerId] gets a slot even with zero committed declarations,
+     * so a caller merging in other per-player data (the TUI's own in-progress, uncommitted
+     * drafts, which stay client-side — see [battletech.tactical.session.GameCommand]'s
+     * transient-UI-workflow carve-out) can find the right slot to insert into without
+     * re-deriving player order or the attacker grouping itself.
+     */
+    public fun declaredAttacksByPlayer(): List<DeclaredPlayerAttacks>
+
     /** Positions of the given unit IDs on the board. */
     public fun resolveTargetPositions(targetIds: Set<UnitId>): Set<HexCoordinates>
 }

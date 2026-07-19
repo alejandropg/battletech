@@ -11,6 +11,7 @@ import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.InternalStructureLayout
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnitRoster
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -52,33 +53,33 @@ internal class GameStateTransformsTest {
         @Test
         fun `reduces heat by sink capacity`() {
             val unit = aUnit(currentHeat = 10, heatSink = HeatSink(HeatSinkType.STS, 4))
-            val gameState = GameState(listOf(unit), map)
+            val gameState = GameState(UnitRoster(listOf(unit)), map)
 
             val result = gameState.applyHeatPhase()
 
-            assertEquals(6, result.units[0].currentHeat)
+            assertEquals(6, result.units.all[0].currentHeat)
         }
 
         @Test
         fun `heat does not go below zero`() {
             val unit = aUnit(currentHeat = 2, heatSink = HeatSink(HeatSinkType.STS, 10))
-            val gameState = GameState(listOf(unit), map)
+            val gameState = GameState(UnitRoster(listOf(unit)), map)
 
             val result = gameState.applyHeatPhase()
 
-            assertEquals(0, result.units[0].currentHeat)
+            assertEquals(0, result.units.all[0].currentHeat)
         }
 
         @Test
         fun `applies to all units`() {
             val u1 = aUnit(id = "u1", currentHeat = 8, heatSink = HeatSink(HeatSinkType.STS, 3))
             val u2 = aUnit(id = "u2", currentHeat = 4, heatSink = HeatSink(HeatSinkType.STS, 4))
-            val gameState = GameState(listOf(u1, u2), map)
+            val gameState = GameState(UnitRoster(listOf(u1, u2)), map)
 
             val result = gameState.applyHeatPhase()
 
-            assertEquals(5, result.units[0].currentHeat)
-            assertEquals(0, result.units[1].currentHeat)
+            assertEquals(5, result.units.all[0].currentHeat)
+            assertEquals(0, result.units.all[1].currentHeat)
         }
 
         @Test
@@ -88,13 +89,13 @@ internal class GameStateTransformsTest {
                 heatGeneratedThisTurn = movementHeatSources(MovementMode.WALK, 2) +
                     HeatSource("Medium Laser", 3),
             )
-            val gameState = GameState(listOf(unit), map)
+            val gameState = GameState(UnitRoster(listOf(unit)), map)
 
             val result = gameState.applyHeatPhase()
 
             // 5 + 4 - 10 = -1 -> floored at 0
-            assertEquals(0, result.units[0].currentHeat)
-            assertEquals(emptyList<HeatSource>(), result.units[0].heatGeneratedThisTurn)
+            assertEquals(0, result.units.all[0].currentHeat)
+            assertEquals(emptyList<HeatSource>(), result.units.all[0].heatGeneratedThisTurn)
         }
 
         @Test
@@ -102,12 +103,12 @@ internal class GameStateTransformsTest {
             val unit = aUnit(currentHeat = 10, heatSink = HeatSink(HeatSinkType.STS, 10)).copy(
                 heatGeneratedThisTurn = listOf(HeatSource("PPC", 10), HeatSource("Running", 2)),
             )
-            val gameState = GameState(listOf(unit), map)
+            val gameState = GameState(UnitRoster(listOf(unit)), map)
 
             val result = gameState.applyHeatPhase()
 
             // 10 + 12 - 10 = 12
-            assertEquals(12, result.units[0].currentHeat)
+            assertEquals(12, result.units.all[0].currentHeat)
         }
     }
 
@@ -116,17 +117,17 @@ internal class GameStateTransformsTest {
         @Test
         fun `applies torso facing to listed unit`() {
             val unit = aUnit(facing = HexDirection.N, torsoFacing = HexDirection.N)
-            val gameState = GameState(listOf(unit), map)
+            val gameState = GameState(UnitRoster(listOf(unit)), map)
 
             val result = gameState.applyTorsoFacings(mapOf(unit.id to HexDirection.NE))
 
-            assertEquals(HexDirection.NE, result.units[0].torsoFacing)
+            assertEquals(HexDirection.NE, result.units.all[0].torsoFacing)
         }
 
         @Test
         fun `empty map leaves state unchanged`() {
             val unit = aUnit()
-            val gameState = GameState(listOf(unit), map)
+            val gameState = GameState(UnitRoster(listOf(unit)), map)
 
             val result = gameState.applyTorsoFacings(emptyMap())
 
@@ -139,11 +140,11 @@ internal class GameStateTransformsTest {
         @Test
         fun `resets torso to leg facing`() {
             val unit = aUnit(facing = HexDirection.N, torsoFacing = HexDirection.NE)
-            val gameState = GameState(listOf(unit), map)
+            val gameState = GameState(UnitRoster(listOf(unit)), map)
 
             val result = gameState.resetTorsoFacings()
 
-            assertEquals(HexDirection.N, result.units[0].torsoFacing)
+            assertEquals(HexDirection.N, result.units.all[0].torsoFacing)
         }
     }
 }

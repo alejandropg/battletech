@@ -14,6 +14,7 @@ import battletech.tactical.session.LogEntry
 import battletech.tactical.session.UnitMoved
 import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.unit.PilotingSkillRoll
+import battletech.tactical.unit.UnitRoster
 import battletech.tui.aUnit
 import battletech.tui.hex.unitStoodUpIcon
 import battletech.tui.screen.Color
@@ -26,7 +27,7 @@ internal class LogViewTest {
     private val mUnit = aUnit(id = "m", name = "M")
 
     private val emptyState = GameState(
-        units = listOf(mUnit),
+        units = UnitRoster(listOf(mUnit)),
         map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0)))),
     ).projectFor(viewer = null, revealAll = true)
 

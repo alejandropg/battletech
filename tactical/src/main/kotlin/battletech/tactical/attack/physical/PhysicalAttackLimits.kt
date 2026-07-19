@@ -16,7 +16,7 @@ import battletech.tactical.unit.UnitId
 public fun physicalImpulseViolation(
     declarations: List<PhysicalAttackDeclaration>,
     gameState: GameState,
-): RuleRejection? = physicalImpulseViolation(declarations) { gameState.unitById(it) }
+): RuleRejection? = physicalImpulseViolation(declarations) { gameState.units.byId(it) }
 
 /**
  * Lookup-based overload of [physicalImpulseViolation]: the rule only ever

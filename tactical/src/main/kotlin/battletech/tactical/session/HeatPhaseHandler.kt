@@ -30,7 +30,7 @@ public class HeatPhaseHandler : SystemPhaseHandler() {
         val after = folded.units.associate { it.id to it.currentHeat }
         val events = mutableListOf<GameEvent>(HeatDissipated(before, after))
 
-        val processedUnits = folded.units.map { unit ->
+        val processedUnits = folded.units.mapUnits { unit ->
             // Captured before any of this turn's resolution steps mutate consciousness,
             // so resolveUnitHeatPhase's recovery step can tell "was already unconscious
             // coming into this phase" apart from "knocked out by life support just now".

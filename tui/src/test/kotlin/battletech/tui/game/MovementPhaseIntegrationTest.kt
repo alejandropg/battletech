@@ -5,6 +5,7 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Terrain
+import battletech.tactical.unit.UnitRoster
 import battletech.tui.aUnit
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.enterBrowsing
@@ -25,7 +26,7 @@ internal class MovementPhaseIntegrationTest {
     )
 
     private val unit = aUnit(position = HexCoordinates(2, 2), walkingMP = 3, runningMP = 5)
-    private val gameState = GameState(units = listOf(unit), map = map)
+    private val gameState = GameState(units = UnitRoster(listOf(unit)), map = map)
 
     @Test
     fun `enter produces reachable hexes via PlayerView`() {

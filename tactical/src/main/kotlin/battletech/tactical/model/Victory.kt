@@ -20,8 +20,9 @@ public sealed interface MatchStatus {
  * wins, or it's a [MatchOutcome.Draw] if none do.
  */
 public fun victoryStatus(state: GameState): MatchStatus {
-    val deployedPlayers = PlayerId.entries.filter { state.unitsOf(it).isNotEmpty() }
-    val survivingPlayers = deployedPlayers.filter { player -> state.unitsOf(player).any { !it.isDestroyed } }
+    val rosterByPlayer = PlayerId.entries.associateWith { state.units.of(it) }
+    val deployedPlayers = rosterByPlayer.filterValues { it.isNotEmpty() }.keys
+    val survivingPlayers = deployedPlayers.filter { player -> rosterByPlayer.getValue(player).any { !it.isDestroyed } }
     if (deployedPlayers.size > 1 && survivingPlayers.size <= 1) {
         val winner = survivingPlayers.singleOrNull()
         val outcome = if (winner != null) MatchOutcome.Victory(winner) else MatchOutcome.Draw

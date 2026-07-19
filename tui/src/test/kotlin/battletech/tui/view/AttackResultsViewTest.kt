@@ -9,6 +9,8 @@ import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnitRoster
+import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.targetIcon
@@ -98,7 +100,12 @@ internal class AttackResultsViewTest {
     private fun makeView(results: List<AttackResult>, viewer: PlayerId = PlayerId.PLAYER_1): AttackResultsView {
         val render = AttackResultsRender(
             results = results,
-            unitOwners = mapOf(attackerId to PlayerId.PLAYER_1, targetId to PlayerId.PLAYER_2),
+            units = UnitRoster(
+                listOf(
+                    aUnit(id = attackerId.value, owner = PlayerId.PLAYER_1),
+                    aUnit(id = targetId.value, owner = PlayerId.PLAYER_2),
+                ),
+            ),
             viewer = viewer,
         )
         return AttackResultsView(render)

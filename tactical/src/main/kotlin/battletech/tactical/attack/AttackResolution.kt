@@ -53,7 +53,7 @@ public fun resolveAttacksWithCrits(
     val critEvents = mutableListOf<GameEvent>()
     val finalResults = results.map { result ->
         if (result is AttackResult.Hit) {
-            var updatedTarget: CombatUnit = updatedState.unitById(result.targetId)
+            var updatedTarget: CombatUnit = updatedState.units.byId(result.targetId)
             val allDamageSteps = mutableListOf<LocationDamage>()
 
             for (locHit in result.locationHits) {
@@ -90,9 +90,7 @@ public fun resolveAttacksWithCrits(
                 }
             }
 
-            updatedState = updatedState.copy(
-                units = updatedState.units.map { if (it.id == result.targetId) updatedTarget else it },
-            )
+            updatedState = updatedState.copy(units = updatedState.units.withUnit(updatedTarget))
             result.withDamage(allDamageSteps)
         } else {
             result
@@ -106,14 +104,12 @@ public fun resolveAttacksWithCrits(
     // an attacker is also a damage target. Draws from updatedState each iteration so
     // a multi-weapon volley chains correctly. No dice consumed.
     for (declaration in declarations) {
-        val attacker = updatedState.unitById(declaration.attackerId)
+        val attacker = updatedState.units.byId(declaration.attackerId)
         val weapon = attacker.weapons[declaration.weaponIndex]
         val ammoType = weapon.ammoType ?: continue
         // Consume from an available bin (skips bins in IS=0 locations).
         val updatedAttacker = attacker.consumeOneRoundFromAvailableBin(ammoType)
-        updatedState = updatedState.copy(
-            units = updatedState.units.map { if (it.id == attacker.id) updatedAttacker else it },
-        )
+        updatedState = updatedState.copy(units = updatedState.units.withUnit(updatedAttacker))
     }
 
     return Triple(updatedState, finalResults, critEvents)
@@ -194,8 +190,8 @@ private fun resolveOneAttack(
     gameState: GameState,
     roller: DiceRoller,
 ): AttackResult {
-    val attacker = gameState.unitById(declaration.attackerId)
-    val target = gameState.unitById(declaration.targetId)
+    val attacker = gameState.units.byId(declaration.attackerId)
+    val target = gameState.units.byId(declaration.targetId)
     val weapon = attacker.weapons[declaration.weaponIndex]
 
     val distance = attacker.position.distanceTo(target.position)

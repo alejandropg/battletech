@@ -6,7 +6,6 @@ import battletech.tactical.attack.fall
 import battletech.tactical.attack.resolveDamage
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
-import battletech.tactical.model.withUnit
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.basePsrModifier
 import battletech.tactical.unit.pilotingSkillRoll
@@ -28,14 +27,14 @@ public fun resolvePhysicalAttacks(
     var updatedState = gameState
     val damagedResults = resolved.map { (declaration, result) ->
         if (result is PhysicalAttackResult.Hit) {
-            val target = updatedState.unitById(result.targetId)
+            val target = updatedState.units.byId(result.targetId)
             val resolution = resolveDamage(
                 unit = target,
                 location = result.hitLocation,
                 damage = result.damageApplied,
                 useRearArmor = result.attackDirection == AttackDirection.REAR,
             )
-            updatedState = updatedState.withUnit(resolution.unit)
+            updatedState = updatedState.copy(units = updatedState.units.withUnit(resolution.unit))
             declaration to result.withDamage(resolution.steps)
         } else {
             declaration to result
@@ -47,7 +46,7 @@ public fun resolvePhysicalAttacks(
         if (declaration.kind !is PhysicalAttackKind.Kick) return@map result
 
         val fallerId = if (result is PhysicalAttackResult.Hit) result.targetId else result.attackerId
-        val faller = updatedState.unitById(fallerId)
+        val faller = updatedState.units.byId(fallerId)
         if (faller.isProne) return@map result
 
         // Include gyro + leg PSR penalties in the knockdown roll.
@@ -60,7 +59,7 @@ public fun resolvePhysicalAttacks(
             // Canonical dice order: fall location 2d6, facing 1d6, consciousness check 2d6.
             val (fallen, fallResult) = fall(faller, roller)
             val (injured, pilotEvents) = applyPilotHit(fallen, roller)
-            updatedState = updatedState.withUnit(injured)
+            updatedState = updatedState.copy(units = updatedState.units.withUnit(injured))
             Knockdown.Fell.Detailed(unitId = fallerId, psr = psr, fall = fallResult, pilotEvents = pilotEvents)
         }
         withKnockdown(result, knockdown)
@@ -79,8 +78,8 @@ private fun resolveOnePhysicalAttack(
     gameState: GameState,
     roller: DiceRoller,
 ): PhysicalAttackResult {
-    val attacker = gameState.unitById(declaration.attackerId)
-    val target = gameState.unitById(declaration.targetId)
+    val attacker = gameState.units.byId(declaration.attackerId)
+    val target = gameState.units.byId(declaration.targetId)
     val direction = attackDirection(attacker, target)
 
     // target is passed as-is: see the equivalent note in AttackResolution.resolveOneAttack —

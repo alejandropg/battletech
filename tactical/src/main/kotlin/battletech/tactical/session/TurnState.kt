@@ -2,12 +2,10 @@ package battletech.tactical.session
 
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.physical.PhysicalAttackDeclaration
-import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
-import battletech.tactical.query.PlayerGameState
-import battletech.tactical.unit.VisibleUnit
-import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.UnitRoster
+import battletech.tactical.unit.VisibleUnit
 import kotlinx.serialization.Serializable
 
 /**
@@ -98,25 +96,22 @@ public data class TurnState(
     val attack: AttackProgress = AttackProgress(),
     val turnNumber: Int = 1,
 ) {
-    public fun selectableUnits(gameState: GameState): List<CombatUnit> =
-        gameState.activeUnitsOf(movement.activePlayer).filter { it.id !in movement.movedUnitIds }
-
-    public fun selectableAttackUnits(gameState: GameState): List<CombatUnit> =
-        gameState.activeUnitsOf(attack.activePlayer)
-
     /**
-     * Projection-based counterpart of [selectableUnits], for deliveries (the TUI) that hold only
-     * a per-viewer [PlayerGameState]. Only meaningful when [state] was projected for
-     * [MovementProgress.activePlayer] as viewer — the caller's own units at that point — which
-     * every current call site guarantees (selection/cycling only runs once the local turn guard
-     * has confirmed the viewer is the active player).
+     * Units still selectable to move this impulse: active for [MovementProgress.activePlayer]
+     * and not yet moved. Generic over [UnitRoster]'s element type so it serves both the
+     * authoritative [battletech.tactical.model.GameState] and, for deliveries (the TUI) that
+     * hold only a per-viewer [battletech.tactical.query.PlayerGameState], its projected roster.
+     * Only meaningful when [units] was projected for [MovementProgress.activePlayer] as viewer
+     * — the caller's own units at that point — which every current call site guarantees
+     * (selection/cycling only runs once the local turn guard has confirmed the viewer is the
+     * active player).
      */
-    public fun selectableUnits(state: PlayerGameState): List<VisibleUnit> =
-        state.activeUnitsOf(movement.activePlayer).filter { it.id !in movement.movedUnitIds }
+    public fun <T : VisibleUnit> selectableUnits(units: UnitRoster<T>): List<T> =
+        units.activeOf(movement.activePlayer).all.filter { it.id !in movement.movedUnitIds }
 
-    /** Projection-based counterpart of [selectableAttackUnits]; see [selectableUnits]'s KDoc. */
-    public fun selectableAttackUnits(state: PlayerGameState): List<VisibleUnit> =
-        state.activeUnitsOf(attack.activePlayer)
+    /** Counterpart of [selectableUnits] for the attack phase; see its KDoc. */
+    public fun <T : VisibleUnit> selectableAttackUnits(units: UnitRoster<T>): List<T> =
+        units.activeOf(attack.activePlayer).all
 
     public companion object {
         public val NULL: TurnState = TurnState(

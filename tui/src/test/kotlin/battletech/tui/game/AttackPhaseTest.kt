@@ -9,6 +9,7 @@ import battletech.tactical.query.PlayerView
 import battletech.tactical.session.Impulse
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.UnitRoster
 import battletech.tui.aGameMap
 import battletech.tui.aTurnState
 import battletech.tui.aUnit
@@ -54,7 +55,7 @@ internal class AttackPhaseTest {
                 facing = HexDirection.NE,
             )
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
-            val gameState = GameState(listOf(unit, enemy), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit, enemy)), map5x5)
 
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
 
@@ -70,7 +71,7 @@ internal class AttackPhaseTest {
                 facing = HexDirection.N,
             )
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 4))
-            val gameState = GameState(listOf(unit, enemy), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit, enemy)), map5x5)
 
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
 
@@ -92,7 +93,7 @@ internal class AttackPhaseTest {
                 position = HexCoordinates(4, 3), facing = HexDirection.N,
             )
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
-            val gameState = GameState(listOf(unitA, unitB, enemy), map7x7)
+            val gameState = GameState(UnitRoster(listOf(unitA, unitB, enemy)), map7x7)
             val turnState = baseTurnState()
             val phaseA = enterDeclaring(unitA, TurnPhase.WEAPON_ATTACK, viewFor(unitA, gameState))
             val state = anAppState(phaseA, gameState, turnState, cursor = unitA.position)
@@ -117,7 +118,7 @@ internal class AttackPhaseTest {
         @Test
         fun `torso twist clockwise updates torso facing`() {
             val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
-            val gameState = GameState(listOf(unit), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit)), map5x5)
             val turnState = baseTurnState()
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = unit.position)
@@ -131,7 +132,7 @@ internal class AttackPhaseTest {
         @Test
         fun `torso twist counterclockwise updates torso facing`() {
             val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
-            val gameState = GameState(listOf(unit), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit)), map5x5)
             val turnState = baseTurnState()
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = unit.position)
@@ -145,7 +146,7 @@ internal class AttackPhaseTest {
         @Test
         fun `torso twist beyond one hex-side is rejected`() {
             val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
-            val gameState = GameState(listOf(unit), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit)), map5x5)
             val turnState = baseTurnState()
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = unit.position)
@@ -163,7 +164,7 @@ internal class AttackPhaseTest {
         fun `weapon toggle on and off works`() {
             val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
-            val gameState = GameState(listOf(unit, enemy), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit, enemy)), map5x5)
             val turnState = baseTurnState()
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = enemy.position)
@@ -181,7 +182,7 @@ internal class AttackPhaseTest {
         fun `commit after weapon assignment saves declaration`() {
             val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
-            val gameState = GameState(listOf(unit, enemy), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit, enemy)), map5x5)
             val turnState = aTurnState(attackOrder = listOf(Impulse(PlayerId.PLAYER_1, 1)))
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = enemy.position)
@@ -203,7 +204,7 @@ internal class AttackPhaseTest {
                 facing = HexDirection.N,
             )
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
-            val gameState = GameState(listOf(unit, enemy), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit, enemy)), map5x5)
             val turnState = baseTurnState()
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = unit.position)
@@ -224,7 +225,7 @@ internal class AttackPhaseTest {
         fun `toggle off last weapon on primary clears primaryTargetId`() {
             val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
-            val gameState = GameState(listOf(unit, enemy), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit, enemy)), map5x5)
             val turnState = baseTurnState()
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = enemy.position)
@@ -242,7 +243,7 @@ internal class AttackPhaseTest {
         fun `escape cancels back to SelectingAttacker preserving draft`() {
             val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
-            val gameState = GameState(listOf(unit, enemy), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit, enemy)), map5x5)
             val turnState = baseTurnState()
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val state = anAppState(phase, gameState, turnState, cursor = enemy.position)
@@ -265,7 +266,7 @@ internal class AttackPhaseTest {
             )
             val enemy1 = aUnit(id = "enemy1", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 1))
             val enemy2 = aUnit(id = "enemy2", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 0))
-            val gameState = GameState(listOf(unit, enemy1, enemy2), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit, enemy1, enemy2)), map5x5)
             val turnState = baseTurnState()
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
             val targets = viewFor(unit, gameState).targetInfos(unit.id, phase.torsoFacing)
@@ -294,7 +295,7 @@ internal class AttackPhaseTest {
         @Test
         fun `targetStatusUnit returns null for SelectingAttacker`() {
             val phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
-            val gameState = GameState(emptyList(), aGameMap())
+            val gameState = GameState(UnitRoster(emptyList()), aGameMap())
 
             assertNull(phase.targetStatusUnit(anAppState(phase, gameState, baseTurnState())))
         }
@@ -307,7 +308,7 @@ internal class AttackPhaseTest {
                 facing = HexDirection.N,
             )
             val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 4))
-            val gameState = GameState(listOf(unit, enemy), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit, enemy)), map5x5)
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
 
             assertNull(phase.targetStatusUnit(anAppState(phase, gameState, baseTurnState())))
@@ -321,7 +322,7 @@ internal class AttackPhaseTest {
                 facing = HexDirection.NE,
             )
             val enemy = aUnit(id = "enemy", name = "Centurion", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
-            val gameState = GameState(listOf(unit, enemy), map5x5)
+            val gameState = GameState(UnitRoster(listOf(unit, enemy)), map5x5)
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
 
             val result = phase.targetStatusUnit(anAppState(phase, gameState, baseTurnState()))
@@ -348,7 +349,7 @@ internal class AttackPhaseTest {
                 id = "enemy", owner = PlayerId.PLAYER_2,
                 position = HexCoordinates(3, 1),
             )
-            val gameState = GameState(listOf(unitA, unitB, enemy), map7x7)
+            val gameState = GameState(UnitRoster(listOf(unitA, unitB, enemy)), map7x7)
             val turnState = baseTurnState()
             val phaseA = enterDeclaring(unitA, TurnPhase.WEAPON_ATTACK, viewFor(unitA, gameState))
             val state = anAppState(phaseA, gameState, turnState, cursor = unitA.position)
@@ -375,7 +376,7 @@ internal class AttackPhaseTest {
                 id = "enemy", owner = PlayerId.PLAYER_2,
                 position = HexCoordinates(3, 1),
             )
-            val gameState = GameState(listOf(unitA, unitB, enemy), map7x7)
+            val gameState = GameState(UnitRoster(listOf(unitA, unitB, enemy)), map7x7)
             val turnState = baseTurnState()
             val phaseA = enterDeclaring(unitA, TurnPhase.WEAPON_ATTACK, viewFor(unitA, gameState))
             val state = anAppState(phaseA, gameState, turnState, cursor = unitA.position)

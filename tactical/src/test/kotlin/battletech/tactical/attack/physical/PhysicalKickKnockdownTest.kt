@@ -39,7 +39,7 @@ internal class PhysicalKickKnockdownTest {
         assertThat(knockdown.psr.passed).isFalse()
         assertThat(knockdown.unitId).isEqualTo(target.id)
 
-        val fallenTarget = newState.unitById(target.id)!!
+        val fallenTarget = newState.units.byId(target.id)
         assertThat(fallenTarget.isProne).isTrue()
         // kick damage (ceil(50/5)=10) to Right Leg, plus fall damage (ceil(50/10)=5) to Center Torso.
         assertThat(fallenTarget.armor.rightLeg).isEqualTo(target.armor.rightLeg - 10)
@@ -61,7 +61,7 @@ internal class PhysicalKickKnockdownTest {
         assertThat(knockdown).isInstanceOf(Knockdown.Fell.Detailed::class.java)
         assertThat((knockdown as Knockdown.Fell.Detailed).unitId).isEqualTo(attacker.id)
 
-        val fallenAttacker = newState.unitById(attacker.id)!!
+        val fallenAttacker = newState.units.byId(attacker.id)
         assertThat(fallenAttacker.isProne).isTrue()
         assertThat(fallenAttacker.armor.centerTorso).isEqualTo(attacker.armor.centerTorso - 5)
     }
@@ -76,7 +76,7 @@ internal class PhysicalKickKnockdownTest {
         val knockdown = result.knockdown
         assertThat(knockdown).isInstanceOf(Knockdown.Resisted.Detailed::class.java)
         assertThat((knockdown as Knockdown.Resisted.Detailed).psr.passed).isTrue()
-        assertThat(newState.unitById(target.id)!!.isProne).isFalse()
+        assertThat(newState.units.byId(target.id).isProne).isFalse()
     }
 
     @Test

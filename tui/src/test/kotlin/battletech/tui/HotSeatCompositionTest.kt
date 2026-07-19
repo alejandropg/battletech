@@ -108,13 +108,13 @@ internal class HotSeatCompositionTest {
      */
     @Test
     fun `redaction is real per seat`() {
-        val p1Owned = seats.getValue(PlayerId.PLAYER_1).stateFor(PlayerId.PLAYER_1).unitsOf(PlayerId.PLAYER_1)
-        val p1Foreign = seats.getValue(PlayerId.PLAYER_1).stateFor(PlayerId.PLAYER_1).unitsOf(PlayerId.PLAYER_2)
+        val p1Owned = seats.getValue(PlayerId.PLAYER_1).stateFor(PlayerId.PLAYER_1).units.of(PlayerId.PLAYER_1)
+        val p1Foreign = seats.getValue(PlayerId.PLAYER_1).stateFor(PlayerId.PLAYER_1).units.of(PlayerId.PLAYER_2)
         assertThat(p1Owned).isNotEmpty.allSatisfy { assertThat(it).isInstanceOf(CombatUnit::class.java) }
         assertThat(p1Foreign).isNotEmpty.allSatisfy { assertThat(it).isInstanceOf(ForeignUnit::class.java) }
 
-        val p2Owned = seats.getValue(PlayerId.PLAYER_2).stateFor(PlayerId.PLAYER_2).unitsOf(PlayerId.PLAYER_2)
-        val p2Foreign = seats.getValue(PlayerId.PLAYER_2).stateFor(PlayerId.PLAYER_2).unitsOf(PlayerId.PLAYER_1)
+        val p2Owned = seats.getValue(PlayerId.PLAYER_2).stateFor(PlayerId.PLAYER_2).units.of(PlayerId.PLAYER_2)
+        val p2Foreign = seats.getValue(PlayerId.PLAYER_2).stateFor(PlayerId.PLAYER_2).units.of(PlayerId.PLAYER_1)
         assertThat(p2Owned).isNotEmpty.allSatisfy { assertThat(it).isInstanceOf(CombatUnit::class.java) }
         assertThat(p2Foreign).isNotEmpty.allSatisfy { assertThat(it).isInstanceOf(ForeignUnit::class.java) }
     }
@@ -149,7 +149,7 @@ internal class HotSeatCompositionTest {
             val opponent = PlayerId.entries.single { it != mover }
             val moverSeat = seats.getValue(mover)
 
-            val unit = moverSeat.turnState.selectableUnits(moverSeat.stateFor(mover)).first()
+            val unit = moverSeat.turnState.selectableUnits(moverSeat.stateFor(mover).units).first()
             val reachability = moverSeat.viewFor(mover).legalMovementsFor(unit.id).first()
             // Prefer an actual step (not "turn in place at the current hex", which can offer
             // several facings for zero MP) so exactly one facing is legal there and Enter commits
@@ -198,7 +198,7 @@ internal class HotSeatCompositionTest {
                 // the poll above, so the recorded output reflects the fully-converged frame.
                 internalEvents.send(UiEvent.Resized(Size(120, 40)))
 
-                assertThat(server.stateFor(mover).unitById(unit.id).position).isEqualTo(destination.position)
+                assertThat(server.stateFor(mover).units.byId(unit.id).position).isEqualTo(destination.position)
                 assertThat(recorder.output()).doesNotContain("Waiting for opponent")
 
                 // AppState.viewer follows the active player across real client sessions — the

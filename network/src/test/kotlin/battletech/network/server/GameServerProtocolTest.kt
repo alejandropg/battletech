@@ -85,7 +85,7 @@ internal class GameServerProtocolTest {
     @Test
     fun `JoinAccepted's log carries Undisclosed, not Detailed, for a PLAYER_1 CriticalHit`() {
         val session = aSampleSession()
-        val player1Unit = session.gameState.unitsOf(PlayerId.PLAYER_1).first()
+        val player1Unit = session.gameState.units.of(PlayerId.PLAYER_1).first()
         // annotate() lands this in the same gameLog session.logFor (and this stage's
         // GameServer.snapshotFor/attach) redact through — no gameplay needed to
         // prove the redaction seam itself.
@@ -148,7 +148,7 @@ internal class GameServerProtocolTest {
             assertThat(setupPush).isInstanceOf(ServerMessage.StatePush::class.java)
         }
 
-        val unit = server.turnState.selectableUnits(server.gameState).first()
+        val unit = server.turnState.selectableUnits(server.gameState.units).first()
         val reachability = server.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val command = MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode)
@@ -176,7 +176,7 @@ internal class GameServerProtocolTest {
         connection.joinAndConsumeKickstart(sessionId)
         val logSizeBefore = server.gameLog.snapshot().size
 
-        val unit = server.gameState.unitsOf(PlayerId.PLAYER_1).first()
+        val unit = server.gameState.units.of(PlayerId.PLAYER_1).first()
         val reachability = server.viewFor(PlayerId.PLAYER_1).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val command = MoveUnit(PlayerId.PLAYER_1, unit.id, destination, reachability.mode)
@@ -198,7 +198,7 @@ internal class GameServerProtocolTest {
     fun `local submitCommand rejects with OpponentUnavailable when the other seat isn't connected`() {
         val server = GameServer(aSampleSession(), sessionId)
         val local = server.connectLocal()
-        val unit = server.gameState.unitsOf(PlayerId.PLAYER_1).first()
+        val unit = server.gameState.units.of(PlayerId.PLAYER_1).first()
         val reachability = server.viewFor(PlayerId.PLAYER_1).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
 
@@ -216,7 +216,7 @@ internal class GameServerProtocolTest {
         connection.joinAndConsumeKickstart(sessionId)
         val logSizeBefore = server.gameLog.snapshot().size
 
-        val unit = server.gameState.unitsOf(PlayerId.PLAYER_2).first()
+        val unit = server.gameState.units.of(PlayerId.PLAYER_2).first()
         val reachability = server.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val command = MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode)
@@ -244,7 +244,7 @@ internal class GameServerProtocolTest {
         connection.joinAndConsumeKickstart(sessionId)
 
         val active = server.turnState.movement.activePlayer
-        val unit = server.turnState.selectableUnits(server.gameState).first()
+        val unit = server.turnState.selectableUnits(server.gameState.units).first()
         val reachability = server.viewFor(active).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
 
@@ -271,7 +271,7 @@ internal class GameServerProtocolTest {
                 .contains(SessionNotice("Player 2 disconnected — waiting for rejoin…"))
         }
 
-        val unit = server.gameState.unitsOf(PlayerId.PLAYER_1).first()
+        val unit = server.gameState.units.of(PlayerId.PLAYER_1).first()
         val reachability = server.viewFor(PlayerId.PLAYER_1).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val frozenResult = local.submitCommand(MoveUnit(PlayerId.PLAYER_1, unit.id, destination, reachability.mode))
@@ -352,7 +352,7 @@ internal class GameServerProtocolTest {
         first.join(sessionId)
         val logSizeBefore = server.gameLog.snapshot().size
 
-        val unit = server.gameState.unitsOf(PlayerId.PLAYER_1).first()
+        val unit = server.gameState.units.of(PlayerId.PLAYER_1).first()
         val reachability = server.viewFor(PlayerId.PLAYER_1).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val command = MoveUnit(PlayerId.PLAYER_1, unit.id, destination, reachability.mode)
@@ -374,7 +374,7 @@ internal class GameServerProtocolTest {
         server.attachInBackground(second)
         joinBothSeats(sessionId, first, second)
 
-        val unit = server.gameState.unitsOf(PlayerId.PLAYER_2).first()
+        val unit = server.gameState.units.of(PlayerId.PLAYER_2).first()
         val reachability = server.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val command = MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode)
@@ -402,7 +402,7 @@ internal class GameServerProtocolTest {
         val active = server.turnState.movement.activePlayer
         val submitter = if (active == PlayerId.PLAYER_1) first else second
         val other = if (active == PlayerId.PLAYER_1) second else first
-        val unit = server.turnState.selectableUnits(server.gameState).first()
+        val unit = server.turnState.selectableUnits(server.gameState.units).first()
         val reachability = server.viewFor(active).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val command = MoveUnit(active, unit.id, destination, reachability.mode)
@@ -437,7 +437,7 @@ internal class GameServerProtocolTest {
                 .contains(SessionNotice("Player 1 disconnected — waiting for rejoin…"))
         }
 
-        val unit = server.gameState.unitsOf(PlayerId.PLAYER_2).first()
+        val unit = server.gameState.units.of(PlayerId.PLAYER_2).first()
         val reachability = server.viewFor(PlayerId.PLAYER_2).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val command = MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode)

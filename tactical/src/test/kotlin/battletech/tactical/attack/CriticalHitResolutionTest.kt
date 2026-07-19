@@ -17,6 +17,7 @@ import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.DestructionReason
 import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
+import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.destructionReason
 import battletech.tactical.unit.isSlotDestroyed
@@ -161,7 +162,7 @@ internal class CriticalHitResolutionTest {
             armor = anArmorLayout(centerTorso = 47),
             internalStructure = anInternalStructureLayout(centerTorso = 31),
         )
-        val state = GameState(listOf(attacker, target), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker, target)), GameMap(emptyMap()))
         val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
 
         // to-hit: 4+5=9 (hit, TN=4). location: 1+1=2 -> natural 2, CENTER_TORSO.
@@ -176,7 +177,7 @@ internal class CriticalHitResolutionTest {
         assertThat(result.locationHits.first().location).isEqualTo(HitLocation.CENTER_TORSO)
         assertThat(result.damage.first().structureDamage).isEqualTo(0)
         assertThat(criticalHits).hasSize(1)
-        val updatedTarget = newState.unitById(target.id)!!
+        val updatedTarget = newState.units.byId(target.id)
         assertThat(updatedTarget.criticalHits[MechLocation.CENTER_TORSO]).isNotNull()
     }
 
@@ -197,7 +198,7 @@ internal class CriticalHitResolutionTest {
             armor = anArmorLayout(centerTorso = 2),
             internalStructure = anInternalStructureLayout(centerTorso = 31),
         )
-        val state = GameState(listOf(attacker, target), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker, target)), GameMap(emptyMap()))
         val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
 
         // to-hit 4+5=9 (hit). location 3+4=7 (CENTER_TORSO, not natural-2).
@@ -210,7 +211,7 @@ internal class CriticalHitResolutionTest {
         assertThat(result).isInstanceOf(AttackResult.Hit::class.java)
         assertThat((result as AttackResult.Hit).damage.first().structureDamage).isEqualTo(3)
         assertThat(criticalHits).isEmpty()
-        assertThat(newState.unitById(target.id)!!.criticalHits).isEmpty()
+        assertThat(newState.units.byId(target.id).criticalHits).isEmpty()
     }
 
     @Test
@@ -234,7 +235,7 @@ internal class CriticalHitResolutionTest {
             armor = anArmorLayout(centerTorso = 2),
             internalStructure = anInternalStructureLayout(centerTorso = 31),
         )
-        val state = GameState(listOf(attacker1, attacker2, target), GameMap(emptyMap()))
+        val state = GameState(UnitRoster(listOf(attacker1, attacker2, target)), GameMap(emptyMap()))
         val declarations = listOf(
             AttackDeclaration(attacker1.id, target.id, 0, true),
             AttackDeclaration(attacker2.id, target.id, 0, true),
@@ -254,7 +255,7 @@ internal class CriticalHitResolutionTest {
         val (newState, _, criticalHits) = resolveAttacksWithCrits(declarations, state, roller)
 
         assertThat(criticalHits).hasSize(2)
-        val updatedTarget = newState.unitById(target.id)!!
+        val updatedTarget = newState.units.byId(target.id)
         assertThat(updatedTarget.criticalHits[MechLocation.CENTER_TORSO]).containsExactlyInAnyOrder(7, 8)
     }
 

@@ -35,7 +35,7 @@ internal class GameStateProjectionTest {
     fun `own units project as the CombatUnit itself`() {
         val projected = state.projectFor(viewer = PlayerId.PLAYER_1)
 
-        val visible = projected.unitById(UnitId("own"))
+        val visible = projected.units.byId(UnitId("own"))
 
         assertThat(visible).isInstanceOf(CombatUnit::class.java)
         assertEquals(ownUnit, visible as CombatUnit)
@@ -45,7 +45,7 @@ internal class GameStateProjectionTest {
     fun `enemy units project as ForeignUnit`() {
         val projected = state.projectFor(viewer = PlayerId.PLAYER_1)
 
-        val visible = projected.unitById(UnitId("enemy"))
+        val visible = projected.units.byId(UnitId("enemy"))
 
         assertThat(visible).isInstanceOf(ForeignUnit::class.java)
     }
@@ -62,7 +62,7 @@ internal class GameStateProjectionTest {
         val projected = state.projectFor(viewer = PlayerId.PLAYER_1, revealAll = true)
 
         assertThat(projected.units).allSatisfy { assertThat(it).isInstanceOf(CombatUnit::class.java) }
-        val revealedEnemy = projected.unitById(UnitId("enemy")) as CombatUnit
+        val revealedEnemy = projected.units.byId(UnitId("enemy")) as CombatUnit
         assertEquals(enemyUnit, revealedEnemy)
     }
 
@@ -70,14 +70,14 @@ internal class GameStateProjectionTest {
     fun `unitById throws for an unknown id`() {
         val projected = state.projectFor(viewer = PlayerId.PLAYER_1)
 
-        assertThrows<UnknownUnitException> { projected.unitById(UnitId("unknown")) }
+        assertThrows<UnknownUnitException> { projected.units.byId(UnitId("unknown")) }
     }
 
     @Test
     fun `public fields survive the projection intact for a foreign unit`() {
         val projected = state.projectFor(viewer = PlayerId.PLAYER_2)
 
-        val visible = projected.unitById(UnitId("own"))
+        val visible = projected.units.byId(UnitId("own"))
 
         assertEquals(HexCoordinates(1, 2), visible.position)
         assertEquals(HexDirection.NE, visible.facing)
@@ -96,8 +96,8 @@ internal class GameStateProjectionTest {
     fun `unitsOf filters by owner across the projected mix of Own and Foreign units`() {
         val projected = state.projectFor(viewer = PlayerId.PLAYER_1)
 
-        assertThat(projected.unitsOf(PlayerId.PLAYER_1).map { it.id }).containsExactly(UnitId("own"))
-        assertThat(projected.unitsOf(PlayerId.PLAYER_2).map { it.id }).containsExactly(UnitId("enemy"))
+        assertThat(projected.units.of(PlayerId.PLAYER_1).map { it.id }).containsExactly(UnitId("own"))
+        assertThat(projected.units.of(PlayerId.PLAYER_2).map { it.id }).containsExactly(UnitId("enemy"))
     }
 
     @Test
@@ -106,8 +106,8 @@ internal class GameStateProjectionTest {
         val destroyedEnemy = aUnit(id = "destroyed", owner = PlayerId.PLAYER_2, isDestroyed = true)
         val projected = aGameState(units = listOf(shutdownOwn, destroyedEnemy)).projectFor(viewer = PlayerId.PLAYER_1)
 
-        assertThat(projected.activeUnitsOf(PlayerId.PLAYER_1)).isEmpty()
-        assertThat(projected.activeUnitsOf(PlayerId.PLAYER_2)).isEmpty()
+        assertThat(projected.units.activeOf(PlayerId.PLAYER_1)).isEmpty()
+        assertThat(projected.units.activeOf(PlayerId.PLAYER_2)).isEmpty()
     }
 
     @Test
@@ -115,6 +115,6 @@ internal class GameStateProjectionTest {
         val unconsciousOwn = aUnit(id = "unconscious", owner = PlayerId.PLAYER_1, isPilotConscious = false)
         val projected = aGameState(units = listOf(unconsciousOwn)).projectFor(viewer = PlayerId.PLAYER_1)
 
-        assertThat(projected.activeUnitsOf(PlayerId.PLAYER_1)).isEmpty()
+        assertThat(projected.units.activeOf(PlayerId.PLAYER_1)).isEmpty()
     }
 }

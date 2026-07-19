@@ -2,7 +2,6 @@ package battletech.tactical.heat
 
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.model.GameState
-import battletech.tactical.model.mapUnits
 import battletech.tactical.model.submersionDissipationBonus
 import battletech.tactical.unit.engineHeatPerTurn
 
@@ -25,13 +24,15 @@ import battletech.tactical.unit.engineHeatPerTurn
  */
 public fun GameState.applyHeatPhase(): GameState {
     val snapshot = this
-    return mapUnits { unit ->
-        val generated = unit.heatGeneratedThisTurn.sumOf { it.amount }
-        val engineHeat = unit.engineHeatPerTurn()
-        val waterBonus = submersionDissipationBonus(unit, snapshot)
-        val newHeat = maxOf(0, unit.currentHeat + generated + engineHeat - unit.heatSink.dissipation() - waterBonus)
-        unit.copy(currentHeat = newHeat, heatGeneratedThisTurn = emptyList())
-    }
+    return copy(
+        units = units.mapUnits { unit ->
+            val generated = unit.heatGeneratedThisTurn.sumOf { it.amount }
+            val engineHeat = unit.engineHeatPerTurn()
+            val waterBonus = submersionDissipationBonus(unit, snapshot)
+            val newHeat = maxOf(0, unit.currentHeat + generated + engineHeat - unit.heatSink.dissipation() - waterBonus)
+            unit.copy(currentHeat = newHeat, heatGeneratedThisTurn = emptyList())
+        },
+    )
 }
 
 /**
@@ -42,15 +43,17 @@ public fun GameState.applyHeatPhase(): GameState {
 public fun GameState.applyWeaponHeat(declarations: List<AttackDeclaration>): GameState {
     if (declarations.isEmpty()) return this
     val declarationsByUnit = declarations.groupBy { it.attackerId }
-    return mapUnits { unit ->
-        val unitDeclarations = declarationsByUnit[unit.id]
-        if (unitDeclarations == null) {
-            unit
-        } else {
-            val sources = unitDeclarations.mapNotNull { declaration ->
-                unit.weapons.getOrNull(declaration.weaponIndex)?.let(::weaponHeatSource)
+    return copy(
+        units = units.mapUnits { unit ->
+            val unitDeclarations = declarationsByUnit[unit.id]
+            if (unitDeclarations == null) {
+                unit
+            } else {
+                val sources = unitDeclarations.mapNotNull { declaration ->
+                    unit.weapons.getOrNull(declaration.weaponIndex)?.let(::weaponHeatSource)
+                }
+                unit.copy(heatGeneratedThisTurn = unit.heatGeneratedThisTurn + sources)
             }
-            unit.copy(heatGeneratedThisTurn = unit.heatGeneratedThisTurn + sources)
-        }
-    }
+        },
+    )
 }

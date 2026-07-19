@@ -37,7 +37,7 @@ internal class PhysicalAttackResolutionTest {
         assertThat(result.hitLocation).isEqualTo(HitLocation.LEFT_ARM)
         assertThat(result.damageApplied).isEqualTo(5)
 
-        val damagedTarget = newState.unitById(target.id)!!
+        val damagedTarget = newState.units.byId(target.id)
         assertThat(damagedTarget.armor.leftArm).isEqualTo(target.armor.leftArm - 5)
     }
 
@@ -69,7 +69,7 @@ internal class PhysicalAttackResolutionTest {
 
         val result = results.single()
         assertThat(result).isInstanceOf(PhysicalAttackResult.Miss::class.java)
-        assertThat(newState.unitById(target.id)!!.armor).isEqualTo(target.armor)
+        assertThat(newState.units.byId(target.id).armor).isEqualTo(target.armor)
     }
 
     @Test
@@ -86,7 +86,7 @@ internal class PhysicalAttackResolutionTest {
         val (newState, results) = resolvePhysicalAttacks(listOf(declaration), state, roller)
 
         assertThat((results.single() as PhysicalAttackResult.Hit).hitLocation).isEqualTo(HitLocation.CENTER_TORSO)
-        val damaged = newState.unitById(target.id)!!
+        val damaged = newState.units.byId(target.id)
         assertThat(damaged.armor.centerTorsoRear).isEqualTo(target.armor.centerTorsoRear - 5)
         assertThat(damaged.armor.centerTorso).isEqualTo(target.armor.centerTorso)
     }

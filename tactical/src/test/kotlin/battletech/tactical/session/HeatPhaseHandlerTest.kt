@@ -30,7 +30,7 @@ internal class HeatPhaseHandlerTest {
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(6, 6))
 
-        assertTrue(outcome.state.units[0].isShutdown)
+        assertTrue(outcome.state.units.all[0].isShutdown)
         assertThat(outcome.events).anyMatch { it is UnitShutdown.Automatic }
     }
 
@@ -41,7 +41,7 @@ internal class HeatPhaseHandlerTest {
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(1, 1))
 
-        assertTrue(outcome.state.units[0].isShutdown)
+        assertTrue(outcome.state.units.all[0].isShutdown)
         assertThat(outcome.events).anyMatch { it is UnitShutdown.AvoidFailed }
     }
 
@@ -51,7 +51,7 @@ internal class HeatPhaseHandlerTest {
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(3, 2))
 
-        assertFalse(outcome.state.units[0].isShutdown)
+        assertFalse(outcome.state.units.all[0].isShutdown)
         assertThat(outcome.events).noneMatch { it is UnitShutdown }
     }
 
@@ -63,7 +63,7 @@ internal class HeatPhaseHandlerTest {
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic())
 
-        assertFalse(outcome.state.units[0].isShutdown)
+        assertFalse(outcome.state.units.all[0].isShutdown)
         assertThat(outcome.events).anyMatch { it is UnitRestarted }
     }
 
@@ -88,7 +88,7 @@ internal class HeatPhaseHandlerTest {
         val exploded = outcome.events.filterIsInstance<AmmoExploded.Detailed>().single()
         assertEquals(AmmoType.AC20, exploded.ammoType)
         assertEquals(100, exploded.damage) // 5 shots * 20 damage per shot
-        val remainingBin = outcome.state.units[0].criticalLayout.ammoBins().single()
+        val remainingBin = outcome.state.units.all[0].criticalLayout.ammoBins().single()
         assertEquals(0, remainingBin.third.shots)
     }
 
@@ -104,7 +104,7 @@ internal class HeatPhaseHandlerTest {
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic())
 
-        assertEquals(5, outcome.state.units[0].currentHeat)
+        assertEquals(5, outcome.state.units.all[0].currentHeat)
     }
 
     @Test
@@ -117,7 +117,7 @@ internal class HeatPhaseHandlerTest {
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic())
 
-        assertEquals(10, outcome.state.units[0].currentHeat)
+        assertEquals(10, outcome.state.units.all[0].currentHeat)
     }
 
     @Test
@@ -132,8 +132,8 @@ internal class HeatPhaseHandlerTest {
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(1, 1))
 
-        assertEquals(14, outcome.state.units[0].currentHeat)
-        assertTrue(outcome.state.units[0].isShutdown)
+        assertEquals(14, outcome.state.units.all[0].currentHeat)
+        assertTrue(outcome.state.units.all[0].isShutdown)
         assertThat(outcome.events).anyMatch { it is UnitShutdown.AvoidFailed }
     }
 
@@ -160,7 +160,7 @@ internal class HeatPhaseHandlerTest {
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(3, 3, 3, 3, 3, 3))
 
-        assertEquals(1, outcome.state.units[0].pilotHits)
+        assertEquals(1, outcome.state.units.all[0].pilotHits)
         assertThat(outcome.events).anyMatch { it is PilotHit.Checked && it.pilotHits == 1 }
     }
 
@@ -174,7 +174,7 @@ internal class HeatPhaseHandlerTest {
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic())
 
-        assertEquals(0, outcome.state.units[0].pilotHits)
+        assertEquals(0, outcome.state.units.all[0].pilotHits)
         assertThat(outcome.events).noneMatch { it is PilotHit }
     }
 
@@ -190,7 +190,7 @@ internal class HeatPhaseHandlerTest {
         // Pilot hit #1 -> consciousness target 3; roll (3,3)=6 passes.
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(3, 3))
 
-        assertEquals(1, outcome.state.units[0].pilotHits)
+        assertEquals(1, outcome.state.units.all[0].pilotHits)
         assertThat(outcome.events).anyMatch { it is PilotHit.Checked && it.pilotHits == 1 }
     }
 
@@ -212,7 +212,7 @@ internal class HeatPhaseHandlerTest {
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(3, 3))
 
-        assertTrue(outcome.state.units[0].isPilotConscious)
+        assertTrue(outcome.state.units.all[0].isPilotConscious)
         assertThat(outcome.events).anyMatch { it is PilotRecoveredConsciousness }
     }
 
@@ -229,7 +229,7 @@ internal class HeatPhaseHandlerTest {
 
         val outcome = runHeatPhase(unit, DiceRoller.deterministic(1, 1))
 
-        assertFalse(outcome.state.units[0].isPilotConscious)
+        assertFalse(outcome.state.units.all[0].isPilotConscious)
         assertThat(outcome.events).noneMatch { it is PilotRecoveredConsciousness }
     }
 

@@ -30,7 +30,7 @@ internal class UnitSelectionTest {
         val gameState = aGameState(units = listOf(u1, u2, u3))
         val turnState = aMovementTurn(activePlayer = PlayerId.PLAYER_1)
 
-        val result = turnState.selectableUnits(gameState)
+        val result = turnState.selectableUnits(gameState.units)
 
         assertEquals(listOf(u1, u2), result)
     }
@@ -45,7 +45,7 @@ internal class UnitSelectionTest {
             movedUnitIds = setOf(UnitId("u1")),
         )
 
-        val result = turnState.selectableUnits(gameState)
+        val result = turnState.selectableUnits(gameState.units)
 
         assertEquals(listOf(u2), result)
     }
@@ -56,7 +56,7 @@ internal class UnitSelectionTest {
         val gameState = aGameState(units = listOf(u1))
         val turnState = aMovementTurn(activePlayer = PlayerId.PLAYER_1)
 
-        val result = turnState.selectableUnits(gameState)
+        val result = turnState.selectableUnits(gameState.units)
 
         assertTrue(result.isEmpty())
     }

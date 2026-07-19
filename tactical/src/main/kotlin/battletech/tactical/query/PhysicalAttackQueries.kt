@@ -26,9 +26,7 @@ internal class PhysicalAttackQueries(private val state: PlayerGameState) {
         val punchDef = PunchActionDefinition()
         val kickDef = KickActionDefinition()
 
-        val adjacentEnemies = state.units
-            .filter { it.owner != attacker.owner }
-            .filter { !it.isDestroyed }
+        val adjacentEnemies = state.units.enemiesOf(attacker)
             .filter { attacker.position.distanceTo(it.position) == 1 }
 
         return adjacentEnemies.flatMap { enemy ->

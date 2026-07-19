@@ -119,7 +119,7 @@ internal class ClientGameSessionTest {
         val remote = connectRemoteOverPipes(sessionId, connection)
         awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
 
-        val unit = remote.stateFor(remote.playerId).unitsOf(PlayerId.PLAYER_2).first()
+        val unit = remote.stateFor(remote.playerId).units.of(PlayerId.PLAYER_2).first()
         val reachability = remote.viewFor(remote.playerId).legalMovementsFor(unit.id)
 
         assertThat(reachability).isNotEmpty
@@ -137,7 +137,7 @@ internal class ClientGameSessionTest {
         val remote = connectRemoteOverPipes(sessionId, connection)
         awaitTrue { remote.currentPhase == TurnPhase.MOVEMENT }
 
-        val unit = remote.stateFor(remote.playerId).unitsOf(PlayerId.PLAYER_2).first()
+        val unit = remote.stateFor(remote.playerId).units.of(PlayerId.PLAYER_2).first()
         val view = remote.viewFor(remote.playerId)
 
         // Fire arc + legal torso facings are pure geometry off the projection.
@@ -176,7 +176,7 @@ internal class ClientGameSessionTest {
         remote.subscribe { events += it }
 
         val active = server.turnState.movement.activePlayer
-        val unit = server.turnState.selectableUnits(server.gameState).first()
+        val unit = server.turnState.selectableUnits(server.gameState.units).first()
         val reachability = server.viewFor(active).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val result = local.submitCommand(MoveUnit(active, unit.id, destination, reachability.mode))
@@ -198,7 +198,7 @@ internal class ClientGameSessionTest {
 
         // Built entirely from the replica's own surface — no host queries — so this exercises
         // the real client path a --join'ed seat takes.
-        val unit = remote.turnState.selectableUnits(remote.stateFor(remote.playerId)).first()
+        val unit = remote.turnState.selectableUnits(remote.stateFor(remote.playerId).units).first()
         val reachability = remote.viewFor(remote.playerId).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val command = MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode)
@@ -209,7 +209,7 @@ internal class ClientGameSessionTest {
         // The StatePush for this command is applied by the same reader thread before the
         // CommandReply that unblocks submitCommand — so the snapshot is already fresh here,
         // synchronously, with no further waiting.
-        assertThat(remote.stateFor(remote.playerId).unitById(unit.id).position).isEqualTo(destination.position)
+        assertThat(remote.stateFor(remote.playerId).units.byId(unit.id).position).isEqualTo(destination.position)
         assertThat(remote.turnState.movement.movedUnitIds).contains(unit.id)
     }
 
@@ -231,7 +231,7 @@ internal class ClientGameSessionTest {
             PlayerId.PLAYER_2,
             UnitId("ghost"),
             remote.viewFor(remote.playerId)
-                .legalMovementsFor(remote.turnState.selectableUnits(remote.stateFor(remote.playerId)).first().id)
+                .legalMovementsFor(remote.turnState.selectableUnits(remote.stateFor(remote.playerId).units).first().id)
                 .first()
                 .destinations
                 .first(),
@@ -243,7 +243,7 @@ internal class ClientGameSessionTest {
         assertThat(result).isInstanceOf(CommandResult.ProtocolError::class.java)
 
         // The connection survived: a legitimate move right after still goes through.
-        val unit = remote.turnState.selectableUnits(remote.stateFor(remote.playerId)).first()
+        val unit = remote.turnState.selectableUnits(remote.stateFor(remote.playerId).units).first()
         val reachability = remote.viewFor(remote.playerId).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val followUp = remote.submitCommand(MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode))
@@ -267,7 +267,7 @@ internal class ClientGameSessionTest {
         awaitTrue { events.contains(expectedNotice) }
         assertThat(remote.gameLog.snapshot().map { it.event }).contains(expectedNotice)
 
-        val unit = remote.stateFor(remote.playerId).unitsOf(PlayerId.PLAYER_2).first()
+        val unit = remote.stateFor(remote.playerId).units.of(PlayerId.PLAYER_2).first()
         val reachability = remote.viewFor(remote.playerId).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val result = remote.submitCommand(MoveUnit(PlayerId.PLAYER_2, unit.id, destination, reachability.mode))

@@ -16,6 +16,7 @@ import battletech.tactical.session.Initiative
 import battletech.tactical.session.MovementProgress
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.TurnState
+import battletech.tactical.unit.UnitRoster
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -36,7 +37,7 @@ internal class MovementDestinationValidationTest {
         (-1..1).flatMap { col -> (-4..1).map { row -> HexCoordinates(col, row) } }
             .associateWith { Hex(it) }
 
-    private val state = GameState(units = listOf(mover), map = GameMap(mapHexes))
+    private val state = GameState(units = UnitRoster(listOf(mover)), map = GameMap(mapHexes))
 
     private fun turn() = TurnState(
         initiative = Initiative(emptyMap(), PlayerId.PLAYER_1, PlayerId.PLAYER_2),
@@ -158,7 +159,7 @@ internal class MovementDestinationValidationTest {
 
         val outcome = handler.apply(command, state, turn(), roller)
 
-        val movedUnit = outcome.state.unitById(mover.id)!!
+        val movedUnit = outcome.state.units.byId(mover.id)
         assertThat(movedUnit.position).isEqualTo(HexCoordinates(0, -1))
         assertThat(movedUnit.facing).isEqualTo(HexDirection.N)
     }

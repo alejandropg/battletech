@@ -25,6 +25,7 @@ import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitFell
 import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.CriticalSlotContent
+import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.WeaponMountId
@@ -59,13 +60,13 @@ internal class LocationDestructionConsequencesTest {
             criticalLayout = build.layout,
             internalStructure = anInternalStructureLayout(leftArm = 17),
         )
-        val before = GameState(listOf(unit), GameMap(emptyMap()))
+        val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftArm = 0))
-        val after = GameState(listOf(afterUnit), GameMap(emptyMap()))
+        val after = GameState(UnitRoster(listOf(afterUnit)), GameMap(emptyMap()))
 
         val (finalState, events) = applyLocationDestructionConsequences(before, after, DiceRoller.deterministic())
 
-        val finalUnit = finalState.unitById(unit.id)!!
+        val finalUnit = finalState.units.byId(unit.id)
         assertThat(finalUnit.weapons).allMatch { it.destroyed }
         assertThat(events).isEmpty()
     }
@@ -106,13 +107,13 @@ internal class LocationDestructionConsequencesTest {
             criticalLayout = build.layout,
             internalStructure = anInternalStructureLayout(leftTorso = 21, leftArm = 17),
         )
-        val before = GameState(listOf(unit), GameMap(emptyMap()))
+        val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftTorso = 0, leftArm = 17))
-        val after = GameState(listOf(afterUnit), GameMap(emptyMap()))
+        val after = GameState(UnitRoster(listOf(afterUnit)), GameMap(emptyMap()))
 
         val (finalState, events) = applyLocationDestructionConsequences(before, after, DiceRoller.deterministic())
 
-        val finalUnit = finalState.unitById(unit.id)!!
+        val finalUnit = finalState.units.byId(unit.id)
         assertThat(finalUnit.internalStructure.leftTorso).isEqualTo(0)
         assertThat(finalUnit.internalStructure.leftArm).isEqualTo(0)
         assertThat(finalUnit.weapons).allMatch { it.destroyed }
@@ -131,13 +132,13 @@ internal class LocationDestructionConsequencesTest {
             criticalLayout = build.layout,
             internalStructure = anInternalStructureLayout(rightTorso = 21, rightArm = 17, leftArm = 17),
         )
-        val before = GameState(listOf(unit), GameMap(emptyMap()))
+        val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(rightTorso = 0, rightArm = 17, leftArm = 17))
-        val after = GameState(listOf(afterUnit), GameMap(emptyMap()))
+        val after = GameState(UnitRoster(listOf(afterUnit)), GameMap(emptyMap()))
 
         val (finalState, events) = applyLocationDestructionConsequences(before, after, DiceRoller.deterministic())
 
-        val finalUnit = finalState.unitById(unit.id)!!
+        val finalUnit = finalState.units.byId(unit.id)
         assertThat(finalUnit.internalStructure.rightArm).isEqualTo(0)
         assertThat(finalUnit.internalStructure.leftArm).isEqualTo(17)
 
@@ -163,13 +164,13 @@ internal class LocationDestructionConsequencesTest {
             criticalLayout = build.layout,
             internalStructure = anInternalStructureLayout(leftTorso = 21, leftArm = 0),
         )
-        val before = GameState(listOf(unit), GameMap(emptyMap()))
+        val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftTorso = 0, leftArm = 0))
-        val after = GameState(listOf(afterUnit), GameMap(emptyMap()))
+        val after = GameState(UnitRoster(listOf(afterUnit)), GameMap(emptyMap()))
 
         val (finalState, events) = applyLocationDestructionConsequences(before, after, DiceRoller.deterministic())
 
-        val finalUnit = finalState.unitById(unit.id)!!
+        val finalUnit = finalState.units.byId(unit.id)
         assertThat(finalUnit.internalStructure.leftArm).isEqualTo(0)
         assertThat(events).isEmpty()
     }
@@ -185,16 +186,16 @@ internal class LocationDestructionConsequencesTest {
             tonnage = 50,
             internalStructure = anInternalStructureLayout(leftLeg = 21),
         )
-        val before = GameState(listOf(unit), GameMap(emptyMap()))
+        val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftLeg = 0))
-        val after = GameState(listOf(afterUnit), GameMap(emptyMap()))
+        val after = GameState(UnitRoster(listOf(afterUnit)), GameMap(emptyMap()))
 
         // Fall: location roll (3,4)=7 → CENTER_TORSO; facing roll 1 (no rotation);
         // pilot hit 1 consciousness 2d6 (3,3 → 6 ≥ target 3 → conscious).
         val fallRoller = DiceRoller.deterministic(3, 4, 1, 3, 3)
         val (finalState, events) = applyLocationDestructionConsequences(before, after, fallRoller)
 
-        val finalUnit = finalState.unitById(unit.id)!!
+        val finalUnit = finalState.units.byId(unit.id)
         assertThat(finalUnit.isProne).isTrue()
 
         val fellEvents = events.filterIsInstance<UnitFell>()
@@ -209,9 +210,9 @@ internal class LocationDestructionConsequencesTest {
             tonnage = 50,
             internalStructure = anInternalStructureLayout(leftLeg = 21),
         ).copy(isProne = true)
-        val before = GameState(listOf(unit), GameMap(emptyMap()))
+        val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftLeg = 0))
-        val after = GameState(listOf(afterUnit), GameMap(emptyMap()))
+        val after = GameState(UnitRoster(listOf(afterUnit)), GameMap(emptyMap()))
 
         val (_, events) = applyLocationDestructionConsequences(before, after, DiceRoller.deterministic())
 
@@ -225,14 +226,14 @@ internal class LocationDestructionConsequencesTest {
             tonnage = 50,
             internalStructure = anInternalStructureLayout(leftLeg = 21, rightLeg = 21),
         )
-        val before = GameState(listOf(unit), GameMap(emptyMap()))
+        val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftLeg = 0, rightLeg = 0))
-        val after = GameState(listOf(afterUnit), GameMap(emptyMap()))
+        val after = GameState(UnitRoster(listOf(afterUnit)), GameMap(emptyMap()))
 
         val (finalState, events) = applyLocationDestructionConsequences(before, after, DiceRoller.deterministic())
 
         assertThat(events.filterIsInstance<UnitFell>()).isEmpty()
-        assertThat(finalState.unitById(unit.id)!!.destroyedLegCount()).isEqualTo(2)
+        assertThat(finalState.units.byId(unit.id).destroyedLegCount()).isEqualTo(2)
     }
 
     @Test
@@ -244,9 +245,9 @@ internal class LocationDestructionConsequencesTest {
             tonnage = 50,
             internalStructure = anInternalStructureLayout(leftLeg = 21, rightLeg = 0),
         )
-        val before = GameState(listOf(unit), GameMap(emptyMap()))
+        val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftLeg = 0, rightLeg = 0))
-        val after = GameState(listOf(afterUnit), GameMap(emptyMap()))
+        val after = GameState(UnitRoster(listOf(afterUnit)), GameMap(emptyMap()))
 
         val (_, events) = applyLocationDestructionConsequences(before, after, DiceRoller.deterministic())
 
@@ -267,7 +268,7 @@ internal class LocationDestructionConsequencesTest {
             jumpMP = 3,
             internalStructure = anInternalStructureLayout(leftLeg = 0),
         )
-        val calc = ReachabilityCalculator(map, listOf(unit))
+        val calc = ReachabilityCalculator(map, UnitRoster(listOf(unit)))
 
         assertThat(calc.calculate(unit, MovementMode.WALK).maxMP).isEqualTo(2)
         assertThat(calc.calculate(unit, MovementMode.RUN).maxMP).isEqualTo(0)
@@ -284,7 +285,7 @@ internal class LocationDestructionConsequencesTest {
             jumpMP = 3,
             internalStructure = anInternalStructureLayout(leftLeg = 21, rightLeg = 21),
         )
-        val calc = ReachabilityCalculator(map, listOf(unit))
+        val calc = ReachabilityCalculator(map, UnitRoster(listOf(unit)))
 
         assertThat(calc.calculate(unit, MovementMode.WALK).maxMP).isEqualTo(4)
         assertThat(calc.calculate(unit, MovementMode.RUN).maxMP).isEqualTo(6)
@@ -496,14 +497,14 @@ internal class LocationDestructionConsequencesTest {
             weapons = listOf(Weapon(WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.LEFT_ARM)),
             internalStructure = anInternalStructureLayout(leftArm = 17),
         )
-        val before = GameState(listOf(affected, bystander), GameMap(emptyMap()))
+        val before = GameState(UnitRoster(listOf(affected, bystander)), GameMap(emptyMap()))
         val afterAffected = affected.copy(internalStructure = anInternalStructureLayout(leftArm = 0))
-        val after = GameState(listOf(afterAffected, bystander), GameMap(emptyMap()))
+        val after = GameState(UnitRoster(listOf(afterAffected, bystander)), GameMap(emptyMap()))
 
         val (finalState, _) = applyLocationDestructionConsequences(before, after, DiceRoller.deterministic())
 
-        assertThat(finalState.unitById(affected.id)!!.weapons).allMatch { it.destroyed }
-        assertThat(finalState.unitById(bystander.id)!!.weapons).noneMatch { it.destroyed }
+        assertThat(finalState.units.byId(affected.id).weapons).allMatch { it.destroyed }
+        assertThat(finalState.units.byId(bystander.id).weapons).noneMatch { it.destroyed }
     }
 }
 

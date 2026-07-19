@@ -14,8 +14,8 @@ internal class GameStateTest {
         val p2Unit = aUnit(id = "p2", owner = PlayerId.PLAYER_2)
         val state = aGameState(units = listOf(p1Unit, p2Unit))
 
-        assertEquals(listOf(p1Unit), state.unitsOf(PlayerId.PLAYER_1))
-        assertEquals(listOf(p2Unit), state.unitsOf(PlayerId.PLAYER_2))
+        assertEquals(listOf(p1Unit), state.units.of(PlayerId.PLAYER_1).all)
+        assertEquals(listOf(p2Unit), state.units.of(PlayerId.PLAYER_2).all)
     }
 
     @Test
@@ -23,7 +23,7 @@ internal class GameStateTest {
         val p1Unit = aUnit(id = "p1", owner = PlayerId.PLAYER_1)
         val state = aGameState(units = listOf(p1Unit))
 
-        assertEquals(emptyList<CombatUnit>(), state.unitsOf(PlayerId.PLAYER_2))
+        assertEquals(emptyList<CombatUnit>(), state.units.of(PlayerId.PLAYER_2).all)
     }
 
     @Test
@@ -33,7 +33,7 @@ internal class GameStateTest {
         val u3 = aUnit(id = "u3", owner = PlayerId.PLAYER_1)
         val state = aGameState(units = listOf(u1, u2, u3))
 
-        assertEquals(listOf(u1, u3), state.unitsOf(PlayerId.PLAYER_1))
+        assertEquals(listOf(u1, u3), state.units.of(PlayerId.PLAYER_1).all)
     }
 
     @Test
@@ -42,7 +42,7 @@ internal class GameStateTest {
         val destroyed = aUnit(id = "destroyed", owner = PlayerId.PLAYER_1, isDestroyed = true)
         val state = aGameState(units = listOf(active, destroyed))
 
-        assertEquals(listOf(active), state.activeUnitsOf(PlayerId.PLAYER_1))
+        assertEquals(listOf(active), state.units.activeOf(PlayerId.PLAYER_1).all)
     }
 
     @Test
@@ -51,7 +51,7 @@ internal class GameStateTest {
         val shutdown = aUnit(id = "shutdown", owner = PlayerId.PLAYER_1).copy(isShutdown = true)
         val state = aGameState(units = listOf(active, shutdown))
 
-        assertEquals(listOf(active), state.activeUnitsOf(PlayerId.PLAYER_1))
+        assertEquals(listOf(active), state.units.activeOf(PlayerId.PLAYER_1).all)
     }
 
     @Test
@@ -60,6 +60,6 @@ internal class GameStateTest {
         val unconscious = aUnit(id = "unconscious", owner = PlayerId.PLAYER_1, isPilotConscious = false)
         val state = aGameState(units = listOf(active, unconscious))
 
-        assertEquals(listOf(active), state.activeUnitsOf(PlayerId.PLAYER_1))
+        assertEquals(listOf(active), state.units.activeOf(PlayerId.PLAYER_1).all)
     }
 }

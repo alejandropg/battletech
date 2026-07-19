@@ -206,7 +206,7 @@ internal object GameLogFormatter {
 
     private fun attackDeclarationLines(event: AttackDeclarationsRecorded, state: PlayerGameState): List<LogLine> =
         event.declarations.groupBy { it.attackerId }.entries.map { (attackerId, decls) ->
-            val attacker = state.unitById(attackerId)
+            val attacker = state.units.byId(attackerId)
             val attackerName = attackerId.value
             val perTarget = decls.groupBy { it.targetId }.entries.joinToString(", ") { (targetId, targetDecls) ->
                 val targetName = targetId.value
@@ -238,7 +238,7 @@ internal object GameLogFormatter {
             is CriticalSlotContent.JumpJet -> "Jump Jet"
             is CriticalSlotContent.Actuator -> actuatorLabel(content.type)
             is CriticalSlotContent.WeaponMount -> {
-                state.unitById(unitId).weapons.find { it.mountId == content.weaponId }?.name ?: "weapon"
+                state.units.byId(unitId).weapons.find { it.mountId == content.weaponId }?.name ?: "weapon"
             }
             is CriticalSlotContent.AmmoBin -> "${content.type} ammo"
         }

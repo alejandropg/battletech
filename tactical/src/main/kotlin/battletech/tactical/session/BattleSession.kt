@@ -232,14 +232,11 @@ public class BattleSession(
         if (_matchOver) return emptyList()
 
         val events = mutableListOf<GameEvent>()
-        val newlyDestroyed = _gameState.units.filter { !it.isDestroyed && destructionReason(it) != null }
+        val newlyDestroyed = _gameState.units.all.filter { !it.isDestroyed && destructionReason(it) != null }
 
         if (newlyDestroyed.isNotEmpty()) {
-            val destroyedIds = newlyDestroyed.map { it.id }.toSet()
             _gameState = _gameState.copy(
-                units = _gameState.units.map { unit ->
-                    if (unit.id in destroyedIds) unit.copy(isDestroyed = true) else unit
-                },
+                units = _gameState.units.withUnits(newlyDestroyed.map { it.copy(isDestroyed = true) }),
             )
             for (unit in newlyDestroyed) {
                 events += UnitDestroyed(unit.id, destructionReason(unit)!!)

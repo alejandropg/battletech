@@ -56,7 +56,7 @@ internal fun GameSession.advanceMovementUntilActivePlayerIs(target: PlayerId): I
     var moves = 0
     while (turnState.movement.activePlayer != target) {
         val active = turnState.movement.activePlayer
-        val unit = turnState.selectableUnits(stateFor(active)).first()
+        val unit = turnState.selectableUnits(stateFor(active).units).first()
         val reachability = viewFor(active).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
         val result = submitCommand(MoveUnit(active, unit.id, destination, reachability.mode))

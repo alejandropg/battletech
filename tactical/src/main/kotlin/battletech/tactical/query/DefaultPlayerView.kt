@@ -35,7 +35,7 @@ public class DefaultPlayerView(
     override fun legalMovementsFor(unitId: UnitId): List<ReachabilityMap> {
         // Movement legality is only ever asked about the viewer's own unit, and MP depends on
         // its heat/destroyed legs — ownUnitById fails loud if that assumption breaks.
-        val unit = state.unitById(unitId) as CombatUnit
+        val unit = state.units.byId(unitId) as CombatUnit
         val calculator = ReachabilityCalculator(state.map, state.units)
         return MovementRules.availableModes(unit).map { mode -> calculator.calculate(unit, mode) }
     }
@@ -53,44 +53,66 @@ public class DefaultPlayerView(
         physicalAttackQueries.physicalAttackOptions(attackerId)
 
     override fun legalTorsoFacings(unitId: UnitId): Set<HexDirection> {
-        val unit = state.unitById(unitId)
+        val unit = state.units.byId(unitId)
         return torsoTwistOptions(unit.facing)
     }
 
     override fun declaredWeaponAttacks(): List<DeclaredWeaponAttack> {
+        val committedByAttacker = turnState.attack.weaponDeclarations.groupBy { it.attackerId }
+
+        return buildList {
+            for ((_, attackerIds) in committedAttackerIdsByPlayer()) {
+                attackerIds.forEach { attackerId ->
+                    val attackerUnit = state.units.byId(attackerId)
+                    val declarations = committedByAttacker[attackerId] ?: return@forEach
+                    // Only an attacker the viewer OWNS gets a to-hit prediction: the math
+                    // needs that attacker's gunnery/heat/sensor crits. For a foreign
+                    // attacker targetInfos is not merely unavailable, it is uncomputable
+                    // from the projection — hence the Undisclosed branch below rather than
+                    // a fabricated target number.
+                    val targetInfos =
+                        if (attackerUnit is CombatUnit) targetInfos(attackerId, attackerUnit.torsoFacing) else null
+                    declarations.groupBy { it.targetId }.forEach { (targetId, decls) ->
+                        val weaponIndices = decls.sortedBy { it.weaponIndex }.map { it.weaponIndex }
+                        val isPrimary = decls.any { it.isPrimary }
+                        val weapons = weaponIndices.map { weaponIndex ->
+                            declaredWeaponLine(attackerUnit, weaponIndex, targetId, targetInfos)
+                        }
+                        add(DeclaredWeaponAttack(attackerId, targetId, isPrimary, weapons))
+                    }
+                }
+            }
+        }
+    }
+
+    override fun declaredAttacksByPlayer(): List<DeclaredPlayerAttacks> {
+        val byAttacker = declaredWeaponAttacks().groupBy { it.attackerId }
+        return committedAttackerIdsByPlayer().map { (player, attackerIds) ->
+            DeclaredPlayerAttacks(
+                player = player,
+                attackers = attackerIds.map { attackerId -> DeclaredAttacker(attackerId, byAttacker.getValue(attackerId)) },
+            )
+        }
+    }
+
+    /**
+     * Impulse-commit player order (falling back to [PlayerId.PLAYER_1] then
+     * [PlayerId.PLAYER_2] before the sequence seeds), each mapped to the attacker ids with a
+     * committed declaration this impulse that that player owns, sorted by unit id. The single
+     * ordering [declaredWeaponAttacks] and [declaredAttacksByPlayer] both build on, so the two
+     * can never disagree with each other — or with a caller reading either.
+     */
+    private fun committedAttackerIdsByPlayer(): List<Pair<PlayerId, List<UnitId>>> {
         val playerOrder: List<PlayerId> = if (turnState.attack.sequence.order.isNotEmpty()) {
             turnState.attack.sequence.order.map { it.player }.distinct()
         } else {
             listOf(PlayerId.PLAYER_1, PlayerId.PLAYER_2)
         }
-
         val committedByAttacker = turnState.attack.weaponDeclarations.groupBy { it.attackerId }
-
-        return buildList {
-            for (player in playerOrder) {
-                committedByAttacker.keys
-                    .filter { id -> state.unitById(id).owner == player }
-                    .sortedBy { it.value }
-                    .forEach { attackerId ->
-                        val attackerUnit = state.unitById(attackerId)
-                        val declarations = committedByAttacker[attackerId] ?: return@forEach
-                        // Only an attacker the viewer OWNS gets a to-hit prediction: the math
-                        // needs that attacker's gunnery/heat/sensor crits. For a foreign
-                        // attacker targetInfos is not merely unavailable, it is uncomputable
-                        // from the projection — hence the Undisclosed branch below rather than
-                        // a fabricated target number.
-                        val targetInfos =
-                            if (attackerUnit is CombatUnit) targetInfos(attackerId, attackerUnit.torsoFacing) else null
-                        declarations.groupBy { it.targetId }.forEach { (targetId, decls) ->
-                            val weaponIndices = decls.sortedBy { it.weaponIndex }.map { it.weaponIndex }
-                            val isPrimary = decls.any { it.isPrimary }
-                            val weapons = weaponIndices.map { weaponIndex ->
-                                declaredWeaponLine(attackerUnit, weaponIndex, targetId, targetInfos)
-                            }
-                            add(DeclaredWeaponAttack(attackerId, targetId, isPrimary, weapons))
-                        }
-                    }
-            }
+        return playerOrder.map { player ->
+            player to committedByAttacker.keys
+                .filter { id -> state.units.byId(id).owner == player }
+                .sortedBy { it.value }
         }
     }
 
@@ -126,5 +148,5 @@ public class DefaultPlayerView(
     }
 
     override fun resolveTargetPositions(targetIds: Set<UnitId>): Set<HexCoordinates> =
-        targetIds.map { state.unitById(it).position }.toSet()
+        targetIds.map { state.units.byId(it).position }.toSet()
 }

@@ -206,7 +206,7 @@ internal class LocalhostEndToEndTest {
         while (gameServer.currentPhase == TurnPhase.MOVEMENT) {
             val active = gameServer.turnState.movement.activePlayer
             val actor = if (active == PlayerId.PLAYER_1) remote1 else remote2
-            val unit = actor.turnState.selectableUnits(actor.stateFor(actor.playerId)).first()
+            val unit = actor.turnState.selectableUnits(actor.stateFor(actor.playerId).units).first()
             val reachability = actor.viewFor(active).legalMovementsFor(unit.id).first()
             val command = MoveUnit(active, unit.id, reachability.destinations.first(), reachability.mode)
             submitAndVerifyHeadless(gameServer, remote1, remote2, active, command)
@@ -314,11 +314,11 @@ internal class LocalhostEndToEndTest {
         while (host.currentPhase == TurnPhase.MOVEMENT) {
             val active = host.turnState.movement.activePlayer
             val command = if (active == PlayerId.PLAYER_1) {
-                val unit = host.turnState.selectableUnits(host.gameState).first()
+                val unit = host.turnState.selectableUnits(host.gameState.units).first()
                 val reachability = host.viewFor(active).legalMovementsFor(unit.id).first()
                 MoveUnit(active, unit.id, reachability.destinations.first(), reachability.mode)
             } else {
-                val unit = remote.turnState.selectableUnits(remote.stateFor(remote.playerId)).first()
+                val unit = remote.turnState.selectableUnits(remote.stateFor(remote.playerId).units).first()
                 val reachability = remote.viewFor(active).legalMovementsFor(unit.id).first()
                 MoveUnit(active, unit.id, reachability.destinations.first(), reachability.mode)
             }

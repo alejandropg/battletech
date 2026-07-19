@@ -101,7 +101,7 @@ internal fun selectOwnUnit(
     extraGuard: (CombatUnit) -> FlashMessage? = { null },
     onSelect: (CombatUnit) -> Transition,
 ): Transition {
-    val visible = app.visibleState.unitAt(app.cursor) ?: return Transition(app)
+    val visible = app.visibleState.units.at(app.cursor) ?: return Transition(app)
     localTurnGuard(app) { activePlayer }?.let { return it }
     if (visible.owner != activePlayer) return Transition(app, FlashMessage("Not your unit"))
     val unit = app.ownUnit(visible.id)
@@ -167,7 +167,7 @@ internal fun handleUnitSelection(
  * for [AppState.viewer], which is always a concrete seat (see [AppState.viewer]'s
  * KDoc). There is nothing left to redact here — the projection already did it.
  */
-internal fun cursorUnitStatus(app: AppState): VisibleUnit? = app.visibleState.unitAt(app.cursor)
+internal fun cursorUnitStatus(app: AppState): VisibleUnit? = app.visibleState.units.at(app.cursor)
 
 private fun selectUnitAt(
     app: AppState,
@@ -196,7 +196,7 @@ private fun cycleAndEnter(
     enterFor: (CombatUnit, AppState) -> Transition,
 ): Transition {
     if (selectableUnits.isEmpty()) return Transition(app)
-    val currentId = app.visibleState.unitAt(app.cursor)?.id
+    val currentId = app.visibleState.units.at(app.cursor)?.id
     val idx = selectableUnits.indexOfFirst { it.id == currentId }
     val next = selectableUnits[if (idx == -1) 0 else (idx + 1) % selectableUnits.size]
     return enterFor(app.ownUnit(next.id), app.copy(cursor = next.position))

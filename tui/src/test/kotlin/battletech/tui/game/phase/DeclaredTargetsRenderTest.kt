@@ -12,6 +12,7 @@ import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
+import battletech.tactical.unit.UnitRoster
 import battletech.tui.aGameMap
 import battletech.tui.anAppState
 import battletech.tui.aUnit
@@ -61,7 +62,7 @@ internal class DeclaredTargetsRenderTest {
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
         val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
             position = HexCoordinates(2, 1))
-        val gameState = GameState(listOf(attacker, target), map)
+        val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
 
         val decl = AttackDeclaration(
             attackerId = attacker.id, targetId = target.id,
@@ -91,7 +92,7 @@ internal class DeclaredTargetsRenderTest {
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
         val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
             position = HexCoordinates(2, 1))
-        val gameState = GameState(listOf(attacker, target), map)
+        val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
 
         val decl = AttackDeclaration(
             attackerId = attacker.id, targetId = target.id,
@@ -114,7 +115,7 @@ internal class DeclaredTargetsRenderTest {
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
         val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
             position = HexCoordinates(2, 1))
-        val gameState = GameState(listOf(attacker, target), map)
+        val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
         val turnState = turnState()
 
         val draft = UnitDeclaration(
@@ -137,7 +138,7 @@ internal class DeclaredTargetsRenderTest {
     fun `draft with no weapons is omitted`() {
         val attacker = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
-        val gameState = GameState(listOf(attacker), map)
+        val gameState = GameState(UnitRoster(listOf(attacker)), map)
         val turnState = turnState()
 
         val emptyDraft = UnitDeclaration(
@@ -160,7 +161,7 @@ internal class DeclaredTargetsRenderTest {
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
         val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
             position = HexCoordinates(2, 1))
-        val gameState = GameState(listOf(attacker, target), map)
+        val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
         val turnState = turnState()
 
         val emptyDraft = UnitDeclaration(
@@ -187,7 +188,7 @@ internal class DeclaredTargetsRenderTest {
             position = HexCoordinates(2, 1))
         val p2Target = aUnit(id = "p2target", owner = PlayerId.PLAYER_1, name = "P2Target",
             position = HexCoordinates(4, 5))
-        val gameState = GameState(listOf(p1Unit, p2Unit, p1Target, p2Target), map)
+        val gameState = GameState(UnitRoster(listOf(p1Unit, p2Unit, p1Target, p2Target)), map)
 
         val p1Decl = AttackDeclaration(
             attackerId = p1Unit.id, targetId = p1Target.id,
@@ -221,7 +222,7 @@ internal class DeclaredTargetsRenderTest {
             position = HexCoordinates(2, 1))
         val secondary = aUnit(id = "secondary", owner = PlayerId.PLAYER_2, name = "Secondary",
             position = HexCoordinates(2, 2))
-        val gameState = GameState(listOf(attacker, primary, secondary), map)
+        val gameState = GameState(UnitRoster(listOf(attacker, primary, secondary)), map)
 
         val decls = listOf(
             AttackDeclaration(attackerId = attacker.id, targetId = primary.id,
@@ -249,7 +250,7 @@ internal class DeclaredTargetsRenderTest {
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
         val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
             position = HexCoordinates(2, 1))
-        val gameState = GameState(listOf(attacker, target), map)
+        val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
 
         val decl = AttackDeclaration(
             attackerId = attacker.id, targetId = target.id,
@@ -274,7 +275,7 @@ internal class DeclaredTargetsRenderTest {
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser(), srm6()))
         val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
             position = HexCoordinates(2, 1))
-        val gameState = GameState(listOf(attacker, target), map)
+        val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
 
         // Weapon 0 already committed
         val committed = AttackDeclaration(
@@ -306,7 +307,7 @@ internal class DeclaredTargetsRenderTest {
             position = HexCoordinates(4, 3), facing = HexDirection.S, weapons = listOf(mediumLaser()))
         val p2Target = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(4, 5))
-        val gameState = GameState(listOf(p2Attacker, p2Target), map)
+        val gameState = GameState(UnitRoster(listOf(p2Attacker, p2Target)), map)
         val turnState = turnState()
 
         val p2Draft = UnitDeclaration(
@@ -330,7 +331,7 @@ internal class DeclaredTargetsRenderTest {
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
         val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
             position = HexCoordinates(2, 1))
-        val gameState = GameState(listOf(attacker, target), map)
+        val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
         val turnState = turnState()
 
         val declaring = AttackPhase.Declaring(

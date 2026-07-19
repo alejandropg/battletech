@@ -1,5 +1,6 @@
 package battletech.tactical.query
 
+import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
 
 /**
@@ -53,4 +54,25 @@ public data class DeclaredWeaponAttack(
     public val targetId: UnitId,
     public val isPrimary: Boolean,
     public val weapons: List<DeclaredWeaponLine>,
+)
+
+/**
+ * One attacker's committed declarations for this impulse, collapsed from the (attacker,
+ * target) pairs of [DeclaredWeaponAttack] into a single per-attacker entry (one per target it
+ * declared against) — the grouping a declared-targets panel renders as one block.
+ */
+public data class DeclaredAttacker(
+    public val attackerId: UnitId,
+    public val attacks: List<DeclaredWeaponAttack>,
+)
+
+/**
+ * One player's slot in impulse-commit order (see [PlayerView.declaredAttacksByPlayer]):
+ * [attackers] is empty rather than the slot being omitted, so a caller merging in other
+ * per-player data (e.g. a UI's own in-progress, uncommitted drafts) can find precisely which
+ * slot to insert into without re-deriving player order itself.
+ */
+public data class DeclaredPlayerAttacks(
+    public val player: PlayerId,
+    public val attackers: List<DeclaredAttacker>,
 )

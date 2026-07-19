@@ -4,13 +4,14 @@ import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.unit.UnitRoster
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 internal class EndPhaseHandlerTest {
 
     private val emptyState = GameState(
-        units = emptyList(),
+        units = UnitRoster(emptyList()),
         map = GameMap(mapOf(HexCoordinates(0, 0) to battletech.tactical.model.Hex(HexCoordinates(0, 0)))),
     )
 

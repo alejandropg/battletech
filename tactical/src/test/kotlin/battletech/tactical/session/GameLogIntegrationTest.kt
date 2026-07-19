@@ -10,6 +10,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
+import battletech.tactical.unit.UnitRoster
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -69,7 +70,7 @@ internal class GameLogIntegrationTest {
         // rolls through end-of-turn into a fresh turn 2.
         val turn = TurnState.NULL.copy(turnNumber = 1)
         val session = BattleSession(
-            initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
+            initialGameState = GameState(UnitRoster(listOf(mech1, mech2)), GameMap(hexesFor(listOf(mech1, mech2)))),
             initialTurnState = turn,
             roller = DiceRoller.seeded(42),
             initialPhase = TurnPhase.HEAT,
@@ -104,13 +105,13 @@ internal class GameLogIntegrationTest {
     }
 
     private fun freshSession(): BattleSession = BattleSession(
-        initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
+        initialGameState = GameState(UnitRoster(listOf(mech1, mech2)), GameMap(hexesFor(listOf(mech1, mech2)))),
         initialTurnState = TurnState.NULL,
         roller = DiceRoller.seeded(42),
     )
 
     private fun sessionInMovement(turn: TurnState = aMovementTurn()): BattleSession = BattleSession(
-        initialGameState = GameState(listOf(mech1, mech2), GameMap(hexesFor(listOf(mech1, mech2)))),
+        initialGameState = GameState(UnitRoster(listOf(mech1, mech2)), GameMap(hexesFor(listOf(mech1, mech2)))),
         initialTurnState = turn,
         roller = DiceRoller.seeded(42),
         initialPhase = TurnPhase.MOVEMENT,
