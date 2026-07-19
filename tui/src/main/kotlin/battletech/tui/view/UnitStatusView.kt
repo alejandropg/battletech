@@ -47,7 +47,7 @@ public class UnitStatusView(
 
         // UNIT
         with(content) {
-            writeln("${unit.id.value}: ${unit.name}", BRIGHT_YELLOW_STYLE)
+            writeln(UnitLabel.of(unit), BRIGHT_YELLOW_STYLE)
             newLine()
         }
 

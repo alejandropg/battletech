@@ -58,6 +58,20 @@ internal class TargetsViewTest {
     }
 
     @Test
+    fun `target line uses the canonical id- name format`() {
+        val view = TargetsView(
+            targets = listOf(targetA),
+            weaponAssignments = emptyMap(),
+            primaryTargetId = UnitId("atlas"),
+            cursorTargetIndex = 0,
+        )
+
+        val output = renderToString(view)
+
+        assertTrue(output.contains("atlas: Atlas")) { "Expected id-and-name target line: $output" }
+    }
+
+    @Test
     fun `renders secondary tag for non-primary target`() {
         val view = TargetsView(
             targets = listOf(targetA, targetB),
