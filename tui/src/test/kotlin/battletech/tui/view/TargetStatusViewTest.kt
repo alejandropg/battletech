@@ -66,9 +66,9 @@ internal class TargetStatusViewTest {
         assertEquals("╮", buffer.get(27, 0).char)
         assertEquals("╰", buffer.get(0, 29).char)
         assertEquals("╯", buffer.get(27, 29).char)
-        val prefix = (2 until 6).map { buffer.get(it, 0).char }.joinToString("")
+        val prefix = (2 until 6).joinToString("") { buffer.get(it, 0).char }
         assertEquals("[4] ", prefix)
-        val title = (6 until 19).map { buffer.get(it, 0).char }.joinToString("")
+        val title = (6 until 19).joinToString("") { buffer.get(it, 0).char }
         assertEquals("TARGET STATUS", title)
     }
 
@@ -78,7 +78,7 @@ internal class TargetStatusViewTest {
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
-        val line = (2 until 15).map { buffer.get(it, 2).char }.joinToString("")
+        val line = (2 until 15).joinToString("") { buffer.get(it, 2).char }
         assertEquals("u1: Hunchback", line)
         assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 2).style.fg)
     }
@@ -88,7 +88,7 @@ internal class TargetStatusViewTest {
         val view = TargetStatusView(null)
         val buffer = renderDecorated(view)
 
-        val line = (2 until 20).map { buffer.get(it, 2).char }.joinToString("")
+        val line = (2 until 20).joinToString("") { buffer.get(it, 2).char }
         assertEquals("No target selected", line.trim())
     }
 
@@ -98,9 +98,9 @@ internal class TargetStatusViewTest {
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
-        val headerRow = (2 until 26).map { buffer.get(it, 4).char }.joinToString("")
+        val headerRow = (2 until 26).joinToString("") { buffer.get(it, 4).char }
         assertTrue(headerRow.contains("MOVEMENT"))
-        val walkRunRow = (2 until 26).map { buffer.get(it, 5).char }.joinToString("")
+        val walkRunRow = (2 until 26).joinToString("") { buffer.get(it, 5).char }
         assertTrue(walkRunRow.contains("Walk"))
         assertTrue(walkRunRow.contains("Run"))
         assertTrue(walkRunRow.contains("4"))
@@ -113,15 +113,15 @@ internal class TargetStatusViewTest {
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
-        val armorHeader = (2 until 26).map { buffer.get(it, 7).char }.joinToString("")
+        val armorHeader = (2 until 26).joinToString("") { buffer.get(it, 7).char }
         assertTrue(armorHeader.contains("ARMOR"))
-        val hdRow = (2 until 26).map { buffer.get(it, 8).char }.joinToString("")
+        val hdRow = (2 until 26).joinToString("") { buffer.get(it, 8).char }
         assertTrue(hdRow.contains("HD"))
         assertTrue(hdRow.contains("9"))
-        val ctRow = (2 until 26).map { buffer.get(it, 9).char }.joinToString("")
+        val ctRow = (2 until 26).joinToString("") { buffer.get(it, 9).char }
         assertTrue(ctRow.contains("CT"))
         assertTrue(ctRow.contains("47"))
-        val llRow = (2 until 26).map { buffer.get(it, 12).char }.joinToString("")
+        val llRow = (2 until 26).joinToString("") { buffer.get(it, 12).char }
         assertTrue(llRow.contains("LL"))
         assertTrue(llRow.contains("41"))
     }
@@ -132,11 +132,11 @@ internal class TargetStatusViewTest {
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
-        val weaponsHeader = (2 until 26).map { buffer.get(it, 14).char }.joinToString("")
+        val weaponsHeader = (2 until 26).joinToString("") { buffer.get(it, 14).char }
         assertTrue(weaponsHeader.contains("WEAPONS"))
-        val weapon1Row = (2 until 26).map { buffer.get(it, 15).char }.joinToString("")
+        val weapon1Row = (2 until 26).joinToString("") { buffer.get(it, 15).char }
         assertTrue(weapon1Row.contains("AC/20"))
-        val weapon2Row = (2 until 26).map { buffer.get(it, 16).char }.joinToString("")
+        val weapon2Row = (2 until 26).joinToString("") { buffer.get(it, 16).char }
         assertTrue(weapon2Row.contains("Medium Laser"))
     }
 

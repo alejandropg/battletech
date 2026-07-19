@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 internal class CollapsedPanelViewTest {
 
     private fun readLine(buffer: ScreenBuffer, x: Int, y: Int, width: Int): String =
-        (x until x + width).map { buffer.get(it, y).char }.joinToString("").trimEnd()
+        (x until x + width).joinToString("") { buffer.get(it, y).char }.trimEnd()
 
     @Test
     fun `renders border corners and index label for LOG panel`() {

@@ -15,7 +15,7 @@ internal class HeatBarWidgetTest {
 
         widget.draw(buffer, 2, 0, 0)
 
-        val row0 = (2 until 26).map { buffer.get(it, 0).char }.joinToString("")
+        val row0 = (2 until 26).joinToString("") { buffer.get(it, 0).char }
         assertTrue(row0.contains("[" + "░".repeat(20) + "]30"))
         assertEquals("0", buffer.get(3, 1).char)
     }
@@ -27,7 +27,7 @@ internal class HeatBarWidgetTest {
 
         widget.draw(buffer, 2, 0, 15)
 
-        val row0 = (2 until 26).map { buffer.get(it, 0).char }.joinToString("")
+        val row0 = (2 until 26).joinToString("") { buffer.get(it, 0).char }
         assertTrue(row0.contains("█".repeat(10) + "░".repeat(10)))
     }
 
@@ -92,7 +92,7 @@ internal class HeatBarWidgetTest {
 
         widget.draw(buffer, 2, 0, 10)
 
-        val row0 = (2 until 28).map { buffer.get(it, 0).char }.joinToString("")
+        val row0 = (2 until 28).joinToString("") { buffer.get(it, 0).char }
         assertTrue(row0.contains("]DTS 10(20)"))
         assertTrue(row0.contains("█".repeat(5) + "░".repeat(5)))
     }
@@ -104,7 +104,7 @@ internal class HeatBarWidgetTest {
 
         widget.draw(buffer, 2, 0, 0)
 
-        val row0 = (2 until 28).map { buffer.get(it, 0).char }.joinToString("")
+        val row0 = (2 until 28).joinToString("") { buffer.get(it, 0).char }
         assertTrue(row0.contains("░".repeat(10)))
         assertEquals(Color.RED, buffer.get(2, 0).style.fg)
     }

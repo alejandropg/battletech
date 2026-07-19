@@ -74,7 +74,7 @@ internal class PanelSlotTest {
         // With anchorBottom=true and null offset, last lines should be visible
         // viewport height = 10-2 = 8; maxOffset = 20-8 = 12; first visible line = L12
         val firstVisible = (0 until 8).map { row ->
-            (2 until 8).map { col -> buffer.get(col, 1 + row).char }.joinToString("").trimEnd()
+            (2 until 8).joinToString("") { col -> buffer.get(col, 1 + row).char }.trimEnd()
         }.first { it.isNotBlank() }
         assertTrue(firstVisible.startsWith("L12"), "Expected first visible line to start with L12 but got: $firstVisible")
     }
@@ -100,7 +100,7 @@ internal class PanelSlotTest {
         resolved.render(buffer, 0, 0, 30, 10)
 
         // offset=5 → first visible row is row5
-        val firstLine = (2 until 8).map { buffer.get(it, 1).char }.joinToString("").trimEnd()
+        val firstLine = (2 until 8).joinToString("") { buffer.get(it, 1).char }.trimEnd()
         assertEquals("row5", firstLine)
     }
 

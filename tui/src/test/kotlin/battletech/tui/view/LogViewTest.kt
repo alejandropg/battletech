@@ -70,7 +70,7 @@ internal class LogViewTest {
         val view = LogView(entries = emptyList(), state = emptyState)
         val buffer = renderDecorated(view)
 
-        val topRow = (0 until 28).map { buffer.get(it, 0).char }.joinToString("")
+        val topRow = (0 until 28).joinToString("") { buffer.get(it, 0).char }
         assertEquals('╭', topRow[0])
         assertEquals('╮', topRow[27])
         assert(topRow.contains("LOG")) { "Top border should contain 'LOG', got: $topRow" }
@@ -220,11 +220,11 @@ internal class LogViewTest {
         }
         // Each dice icon must occupy exactly one cell as a full surrogate-pair string,
         // not a split half-surrogate per cell. Row 1 is the turn header; the entry is on row 2.
-        val entryLine = (2 until 38).map { buffer.get(it, 2).char }.joinToString("").trimEnd()
+        val entryLine = (2 until 38).joinToString("") { buffer.get(it, 2).char }.trimEnd()
         val dice4 = String(Character.toChars(0xF01CD))
         assert(entryLine.contains(dice4)) { "entry line should contain dice_4 glyph: '$entryLine'" }
     }
 
     private fun readLine(buffer: ScreenBuffer, x: Int, y: Int, width: Int): String =
-        (x until x + width).map { buffer.get(it, y).char }.joinToString("").trimEnd()
+        (x until x + width).joinToString("") { buffer.get(it, y).char }.trimEnd()
 }

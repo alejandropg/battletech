@@ -1,7 +1,7 @@
 package battletech.tui.view
 
-import battletech.tui.screen.ScreenBuffer
 import battletech.tactical.model.TurnPhase
+import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -14,7 +14,7 @@ internal class StatusBarViewTest {
 
         view.render(buffer, 0, 0, 50, 7)
 
-        val line = (2 until 12).map { buffer.get(it, 2).char }.joinToString("")
+        val line = (2 until 12).joinToString("") { buffer.get(it, 2).char }
         assertEquals("[MOVEMENT]", line)
     }
 
@@ -25,7 +25,7 @@ internal class StatusBarViewTest {
 
         view.render(buffer, 0, 0, 50, 7)
 
-        val line = (2 until 40).map { buffer.get(it, 3).char }.joinToString("")
+        val line = (2 until 40).joinToString("") { buffer.get(it, 3).char }
         assert(line.contains("Select destination"))
     }
 
@@ -36,7 +36,7 @@ internal class StatusBarViewTest {
 
         view.render(buffer, 0, 0, 62, 7)
 
-        val line = (2 until 59).map { buffer.get(it, 4).char }.joinToString("")
+        val line = (2 until 59).joinToString("") { buffer.get(it, 4).char }
         assert(line.contains("Arrow keys"))
         assert(line.contains("Enter"))
         assert(line.contains("Esc"))
