@@ -20,12 +20,12 @@ import battletech.tui.anAppState
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.enterBrowsing
+import battletech.tui.game.phase.enterMovementSubMode
 import battletech.tui.viewFor
 import com.github.ajalt.mordant.input.KeyboardEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -155,6 +155,36 @@ internal class MovementPhaseTest {
             assertEquals(MovementMode.WALK, state.modes[0].mode)
             assertEquals(MovementMode.RUN, state.modes[1].mode)
             assertEquals(0, state.currentModeIndex)
+        }
+    }
+
+    @Nested
+    inner class EnterMovementSubModeTest {
+        @Test
+        fun `entering sub-mode without moving the cursor offers and commits the current facing at the own hex`() {
+            val unit = aUnit(id = "u1", position = HexCoordinates(0, 0), walkingMP = 4, runningMP = 6)
+            val gameState = aGameState(units = listOf(unit), map = bigMap)
+            val state = anAppState(phase = MovementPhase.SelectingUnit, cursor = unit.position, gameState = gameState)
+
+            // The cursor never moves off the unit's own hex — this is exactly the case the
+            // old hard-coded `hoveredDestination = null` used to leave stuck until a nudge.
+            val entered = enterMovementSubMode(unit, state)
+            val browsing = entered.app.phase as MovementPhase.Browsing
+            assertEquals(MovementRules.stationaryHex(unit), browsing.hoveredDestination)
+
+            val facingResult = browsing.handle(KeyboardEvent("Enter"), entered.app)
+
+            assertNotNull(facingResult)
+            val facingPhase = assertInstanceOf(MovementPhase.SelectingFacing::class.java, facingResult!!.app.phase)
+            assertTrue(facingPhase.options.any { it.facing == unit.facing && it.mpSpent == 0 })
+
+            // "1" is FACING_ORDER[0] == N, the unit's current facing.
+            val result = facingPhase.handle(KeyboardEvent("1"), facingResult.app)
+
+            assertNotNull(result)
+            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+            assertEquals(unit.position, movedUnit.position)
+            assertEquals(unit.facing, movedUnit.facing)
         }
     }
 
@@ -418,6 +448,28 @@ internal class MovementPhaseTest {
             assertNotNull(result)
             assertInstanceOf(MovementPhase.Browsing::class.java, result!!.app.phase)
         }
+
+        @Test
+        fun `cancel during facing selection resolves hover for the cursor`() {
+            val unit = aUnit()
+            val gameState = aGameState(units = listOf(unit))
+            val facingPhase = MovementPhase.SelectingFacing(
+                unitId = unit.id,
+                modes = listOf(walkReachabilityMap),
+                currentModeIndex = 0,
+                hex = HexCoordinates(1, 0),
+                options = reachableHexes.filter { it.position == HexCoordinates(1, 0) },
+            )
+            // Cursor sits on a reachable hex (not the facing-selection target), so onCancel's
+            // withCursorAt should resolve a non-null hover there rather than the old hard-coded null.
+            val state = anAppState(phase = facingPhase, cursor = HexCoordinates(0, -1), gameState = gameState)
+
+            val result = facingPhase.handle(KeyboardEvent("Escape"), state)
+
+            assertNotNull(result)
+            val browsing = result!!.app.phase as MovementPhase.Browsing
+            assertEquals(reachableHexes[0], browsing.hoveredDestination)
+        }
     }
 
     @Nested
@@ -442,7 +494,7 @@ internal class MovementPhaseTest {
         }
 
         @Test
-        fun `CycleMode clears hover state`() {
+        fun `CycleMode re-resolves hover for the cursor`() {
             val unit = aUnit()
             val gameState = aGameState(units = listOf(unit))
             val phase = MovementPhase.Browsing(
@@ -451,13 +503,15 @@ internal class MovementPhaseTest {
                 currentModeIndex = 0,
                 hoveredDestination = reachableHexes[0],
             )
-            val state = anAppState(phase = phase, gameState = gameState)
+            // Cursor sits on the unit's own hex — after the mode switch, withCursorAt resolves
+            // hover there directly instead of leaving it null until the cursor next moves.
+            val state = anAppState(phase = phase, cursor = unit.position, gameState = gameState)
 
             val result = phase.handle(KeyboardEvent("x"), state)
 
             val browsing = result!!.app.phase as MovementPhase.Browsing
-            assertNull(browsing.hoveredPath)
-            assertNull(browsing.hoveredDestination)
+            assertEquals(1, browsing.currentModeIndex)
+            assertEquals(MovementRules.stationaryHex(unit), browsing.hoveredDestination)
         }
     }
 
@@ -569,7 +623,9 @@ internal class MovementPhaseTest {
             val browsing = result!!.app.phase as MovementPhase.Browsing
             assertEquals(u1.id, browsing.unitId)
             assertEquals(0, browsing.currentModeIndex)
-            assertNull(browsing.hoveredDestination)
+            // The cursor lands back on u1's own hex, so the fresh Browsing re-resolves hover
+            // there via withCursorAt instead of leaving it null.
+            assertEquals(MovementRules.stationaryHex(u1), browsing.hoveredDestination)
         }
 
         @Test

@@ -102,7 +102,7 @@ internal sealed interface MovementPhase : Phase {
         val hoveredPath: List<HexCoordinates>?
             get() = hoveredDestination?.path?.map { it.position }
 
-        private fun withCursorAt(cursor: HexCoordinates, app: AppState): Browsing {
+        internal fun withCursorAt(cursor: HexCoordinates, app: AppState): Browsing {
             if (modes.isEmpty()) return this
             val cheapest = destinationsAt(cursor, app).minByOrNull { it.mpSpent }
             return copy(hoveredDestination = cheapest)
@@ -157,7 +157,7 @@ internal sealed interface MovementPhase : Phase {
                     Transition(updated.copy(phase = withCursorAt(newCursor, updated)))
 
                 is BrowsingAction.CycleMode ->
-                    Transition(updated.copy(phase = cycleMode()))
+                    Transition(updated.copy(phase = cycleMode().withCursorAt(newCursor, updated)))
 
                 is BrowsingAction.CycleUnit -> cycleToNextUnit(app, unitId)
             }
@@ -269,7 +269,8 @@ internal sealed interface MovementPhase : Phase {
 
         override fun selectedUnit(app: AppState): VisibleUnit = app.visibleState.units.byId(unitId)
 
-        override fun onCancel(app: AppState): Transition = Transition(app.copy(phase = toBrowsing()))
+        override fun onCancel(app: AppState): Transition =
+            Transition(app.copy(phase = toBrowsing().withCursorAt(app.cursor, app)))
 
         override fun pendingHeat(app: AppState): List<HeatSource> {
             val position = app.visibleState.units.byId(unitId).position
@@ -319,7 +320,8 @@ internal fun enterMovementSubMode(unit: CombatUnit, app: AppState): Transition =
         val result = app.submitCommand(StandUp(playerId = unit.owner, unitId = unit.id))
         Transition(app.copy(phase = mapToTuiPhase(app.anySession.currentPhase)), flash = rejectionFlash(result))
     } else {
-        Transition(app.copy(phase = enterBrowsing(unit, app.viewFor(unit.owner))))
+        val browsing = enterBrowsing(unit, app.viewFor(unit.owner))
+        Transition(app.copy(phase = browsing.withCursorAt(app.cursor, app)))
     }
 
 internal fun cycleToNextUnit(app: AppState, currentUnitId: UnitId?): Transition {

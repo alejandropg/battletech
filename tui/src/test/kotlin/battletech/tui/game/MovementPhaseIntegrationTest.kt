@@ -108,4 +108,29 @@ internal class MovementPhaseIntegrationTest {
         assertEquals(jumpUnit.position, movedUnit.position)
         assertEquals(jumpUnit.facing, movedUnit.facing)
     }
+
+    @Test
+    fun `Tab to the next unit then confirming without moving the cursor stays put`() {
+        val u2 = aUnit(id = "u2", position = HexCoordinates(1, 1), walkingMP = 3, runningMP = 5)
+        val twoUnitState = GameState(units = UnitRoster(listOf(unit, u2)), map = map)
+        val view = viewFor(unit.owner, twoUnitState)
+        val browsing = enterBrowsing(unit, view)
+        val state = anAppState(phase = browsing, cursor = unit.position, gameState = twoUnitState)
+
+        // Tab moves the cursor onto u2's own hex — this is the seam under test: the cursor never
+        // moves again before Enter is pressed, so the fresh Browsing must have already resolved
+        // hover there instead of relying on a subsequent cursor nudge.
+        val tabbed = browsing.handle(KeyboardEvent("Tab"), state)
+        assertNotNull(tabbed)
+        val nextBrowsing = tabbed!!.app.phase as MovementPhase.Browsing
+        assertEquals(u2.id, nextBrowsing.unitId)
+        assertEquals(u2.position, tabbed.app.cursor)
+        assertEquals(MovementRules.stationaryHex(u2), nextBrowsing.hoveredDestination)
+
+        val confirmed = nextBrowsing.handle(KeyboardEvent("Enter"), tabbed.app)
+
+        assertNotNull(confirmed)
+        val facingPhase = assertInstanceOf(MovementPhase.SelectingFacing::class.java, confirmed!!.app.phase)
+        assertTrue(facingPhase.options.any { it.facing == u2.facing && it.mpSpent == 0 && it.path.isEmpty() })
+    }
 }
