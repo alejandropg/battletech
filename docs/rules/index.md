@@ -9,6 +9,7 @@ home**; other docs link to it rather than restating it.
 | Document | Owns (canonical) | Key tables / lookups |
 |---|---|---|
 | [`armor-damage.md`](armor-damage.md) | Damage resolution (armor → IS), hit location, **critical hits** & component effects, **damage transfer**, **mech destruction** conditions, **location destruction** consequences | Hit Location Table (Front/Rear/Left/Right), Critical Hit Table (2d6), critical-slot grid, component quick-reference |
+| [`movement.md`](movement.md) | Movement Phase **sequence & alternating activation**, which units are activated vs. excluded, movement modes & MP, **terrain/elevation move cost**, prone & standing up | Terrain movement-cost table, Walk/Run/Jump MP |
 | [`heat.md`](heat.md) | Heat generation & dissipation, the heat scale, shutdown, heat-driven penalties; **water heat-sink bonus** | Universal Heat Scale 0–30 (move / to-hit / shutdown / ammo-explosion thresholds) |
 | [`to-hit-modifiers.md`](to-hit-modifiers.md) | Weapon to-hit modifiers from movement & range | TMM band table, attacker-movement table, minimum-range penalty formula |
 | [`line-of-sight.md`](line-of-sight.md) | LOS tracing, intervening terrain to-hit, LOS blocking, **partial cover** | Light/heavy woods per-hex modifiers, blocking threshold |
@@ -29,6 +30,11 @@ home**; other docs link to it rather than restating it.
 | Damage transfer between locations (blow-through path) | [`armor-damage.md`](armor-damage.md) §5 |
 | What destroys a Mech (head/CT/legs/engine/gyro/ammo/pilot) | [`armor-damage.md`](armor-damage.md) §7 |
 | Arm dropping with side torso, leg-loss fall + halved MP | [`armor-damage.md`](armor-damage.md) §8 |
+| Alternating activation, who moves first, impulse order, larger-force ratio | [`movement.md`](movement.md) §1 |
+| Which units are activated; can a shutdown / immobile / 0-MP unit move | [`movement.md`](movement.md) §2 |
+| Walk vs. run vs. jump MP | [`movement.md`](movement.md) §3 |
+| Terrain movement cost, elevation cost to enter a hex | [`movement.md`](movement.md) §4 |
+| Prone unit, standing up (stand-up PSR) | [`movement.md`](movement.md) §6 |
 | Heat per turn from moving/firing; heat sink dissipation | [`heat.md`](heat.md) §1 |
 | Heat penalties (movement −MP, +to-hit, shutdown, ammo cook-off) | [`heat.md`](heat.md) §2 |
 | Shutdown effects (immobile, −4 to be hit) | [`heat.md`](heat.md) §3 |

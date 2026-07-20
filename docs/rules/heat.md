@@ -62,7 +62,7 @@ To avoid Shutdown or Ammo Explosion penalties, the player must roll **equal to o
 
 ## 3. Mech Shutdown Consequences
 If a Mech fails its shutdown avoidance roll (or hits Heat Level 30), it immediately powers down:
-* The Mech cannot move, jump, rotate its torso, or fire weapons.
+* The Mech cannot move, jump, rotate its torso, or fire weapons. It also **takes no activation slot** in the Movement Phase sequence — see [`movement.md`](movement.md) §2.
 * It becomes an immobile target, granting all attackers a massive **-4 To-Hit bonus**.
 * During the Heat Phase of a turn spent entirely shutdown, the Mech cannot perform actions to generate heat, allowing its heat sinks to safely dissipate a large portion of its current heat scale.
 * A startup roll can be attempted in subsequent turns according to standard operational rules.
