@@ -7,6 +7,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
+import battletech.tactical.movement.MovementRules
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
@@ -96,6 +97,37 @@ internal class MovementPhaseTest {
         ),
     )
 
+    // A turn-in-place option at the unit's own hex (0,0): turning is legal there and shows up
+    // as a normal destination — ReachabilityCalculator only ever excludes the unit's exact
+    // current position+facing (here, (0,0) facing N), never other facings at that same hex.
+    private val turnToNEAtOwnHex = ReachableHex(
+        position = HexCoordinates(0, 0),
+        facing = HexDirection.NE,
+        mpSpent = 1,
+        path = listOf(MovementStep(HexCoordinates(0, 0), HexDirection.NE)),
+    )
+
+    private val walkWithTurnAtOwnHex = ReachabilityMap(
+        mode = MovementMode.WALK,
+        maxMP = 4,
+        destinations = reachableHexes + turnToNEAtOwnHex,
+    )
+
+    private val runWithTurnAtOwnHex = ReachabilityMap(
+        mode = MovementMode.RUN,
+        maxMP = 6,
+        destinations = runReachabilityMap.destinations + turnToNEAtOwnHex,
+    )
+
+    // JUMP never offers the unit's own hex at all — ReachabilityCalculator.calculateJump
+    // filters it out unconditionally — so a JUMP map has nothing at (0,0); the stationary
+    // option `destinationsAt` adds is the only one available there.
+    private val jumpReachabilityMap = ReachabilityMap(
+        mode = MovementMode.JUMP,
+        maxMP = 3,
+        destinations = emptyList(),
+    )
+
     @Nested
     inner class EnterBrowsingTest {
         @Test
@@ -163,6 +195,64 @@ internal class MovementPhaseTest {
 
             assertNotNull(result)
             assertInstanceOf(MovementPhase.SelectingFacing::class.java, result!!.app.phase)
+        }
+
+        @Test
+        fun `confirm on unit's own hex offers facing selection including the current facing`() {
+            val unit = aUnit(walkingMP = 4)
+            val gameState = aGameState(units = listOf(unit), map = bigMap)
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(walkWithTurnAtOwnHex),
+                currentModeIndex = 0,
+                hoveredDestination = MovementRules.stationaryHex(unit),
+            )
+            val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
+
+            val result = phase.handle(KeyboardEvent("Enter"), state)
+
+            assertNotNull(result)
+            val facingPhase = assertInstanceOf(MovementPhase.SelectingFacing::class.java, result!!.app.phase)
+            assertTrue(facingPhase.options.any { it.facing == unit.facing && it.mpSpent == 0 && it.path.isEmpty() })
+        }
+
+        @Test
+        fun `confirm on unit's own hex on the RUN tab also offers the current facing`() {
+            val unit = aUnit(walkingMP = 4, runningMP = 6)
+            val gameState = aGameState(units = listOf(unit), map = bigMap)
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(walkWithTurnAtOwnHex, runWithTurnAtOwnHex),
+                currentModeIndex = 1,
+                hoveredDestination = MovementRules.stationaryHex(unit),
+            )
+            val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
+
+            val result = phase.handle(KeyboardEvent("Enter"), state)
+
+            assertNotNull(result)
+            val facingPhase = assertInstanceOf(MovementPhase.SelectingFacing::class.java, result!!.app.phase)
+            assertTrue(facingPhase.options.any { it.facing == unit.facing && it.mpSpent == 0 })
+        }
+
+        @Test
+        fun `confirm on unit's own hex on the JUMP tab commits the stationary hex directly`() {
+            val unit = aUnit(jumpMP = 3)
+            val gameState = aGameState(units = listOf(unit), map = bigMap)
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(jumpReachabilityMap),
+                currentModeIndex = 0,
+                hoveredDestination = MovementRules.stationaryHex(unit),
+            )
+            val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
+
+            val result = phase.handle(KeyboardEvent("Enter"), state)
+
+            assertNotNull(result)
+            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+            assertEquals(HexCoordinates(0, 0), movedUnit.position)
+            assertEquals(HexDirection.N, movedUnit.facing)
         }
     }
 
@@ -246,6 +336,48 @@ internal class MovementPhaseTest {
             val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
             assertEquals(HexDirection.N, movedUnit.facing)
         }
+
+        @Test
+        fun `SelectFacing for the current facing at own hex commits the stationary hex`() {
+            val unit = aUnit(walkingMP = 4)
+            val gameState = aGameState(units = listOf(unit), map = bigMap)
+            val facingPhase = MovementPhase.SelectingFacing(
+                unitId = unit.id,
+                modes = listOf(walkWithTurnAtOwnHex),
+                currentModeIndex = 0,
+                hex = HexCoordinates(0, 0),
+                options = listOf(turnToNEAtOwnHex, MovementRules.stationaryHex(unit)),
+            )
+            val state = anAppState(phase = facingPhase, cursor = HexCoordinates(0, 0), gameState = gameState)
+
+            // "1" is FACING_ORDER[0] == N, the unit's current facing.
+            val result = facingPhase.handle(KeyboardEvent("1"), state)
+
+            assertNotNull(result)
+            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+            assertEquals(HexCoordinates(0, 0), movedUnit.position)
+            assertEquals(HexDirection.N, movedUnit.facing)
+        }
+
+        @Test
+        fun `direct facing selection from browsing for the current facing at own hex commits the stationary hex`() {
+            val unit = aUnit(walkingMP = 4)
+            val gameState = aGameState(units = listOf(unit), map = bigMap)
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(walkWithTurnAtOwnHex),
+                currentModeIndex = 0,
+                hoveredDestination = MovementRules.stationaryHex(unit),
+            )
+            val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
+
+            val result = phase.handle(KeyboardEvent("1"), state)
+
+            assertNotNull(result)
+            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+            assertEquals(HexCoordinates(0, 0), movedUnit.position)
+            assertEquals(HexDirection.N, movedUnit.facing)
+        }
     }
 
     @Nested
@@ -326,6 +458,48 @@ internal class MovementPhaseTest {
             val browsing = result!!.app.phase as MovementPhase.Browsing
             assertNull(browsing.hoveredPath)
             assertNull(browsing.hoveredDestination)
+        }
+    }
+
+    @Nested
+    inner class HoverOwnHexTest {
+        @Test
+        fun `moving cursor onto the unit's own hex hovers the stationary hex`() {
+            val unit = aUnit(walkingMP = 4)
+            val gameState = aGameState(units = listOf(unit), map = bigMap)
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(walkWithTurnAtOwnHex),
+                currentModeIndex = 0,
+                hoveredDestination = null,
+            )
+            // Start one hex away (north of the unit) and move south, landing on (0,0).
+            val state = anAppState(phase = phase, cursor = HexCoordinates(0, -1), gameState = gameState)
+
+            val result = phase.handle(KeyboardEvent("ArrowDown"), state)
+
+            assertNotNull(result)
+            val browsing = result!!.app.phase as MovementPhase.Browsing
+            assertEquals(MovementRules.stationaryHex(unit), browsing.hoveredDestination)
+        }
+
+        @Test
+        fun `moving cursor onto the unit's own hex on the JUMP tab hovers the stationary hex`() {
+            val unit = aUnit(jumpMP = 3)
+            val gameState = aGameState(units = listOf(unit), map = bigMap)
+            val phase = MovementPhase.Browsing(
+                unitId = unit.id,
+                modes = listOf(jumpReachabilityMap),
+                currentModeIndex = 0,
+                hoveredDestination = null,
+            )
+            val state = anAppState(phase = phase, cursor = HexCoordinates(0, -1), gameState = gameState)
+
+            val result = phase.handle(KeyboardEvent("ArrowDown"), state)
+
+            assertNotNull(result)
+            val browsing = result!!.app.phase as MovementPhase.Browsing
+            assertEquals(MovementRules.stationaryHex(unit), browsing.hoveredDestination)
         }
     }
 

@@ -36,11 +36,20 @@ public fun GameState.applyMove(unitId: UnitId, mode: MovementMode, destination: 
     val hexes = hexesMoved(unit.position, destination)
     val heatSources = movementHeatSources(mode, hexes)
     val moved = moveUnit(unitId, destination)
+    // mpSpent == 0 is the unique discriminator for a genuine stay-put: every turn-in-place,
+    // walk, or jump step costs >=1 MP, so only a true "declare stationary" hits 0. Per
+    // docs/rules/to-hit-modifiers.md ("Stationary attacker -> +0"), that must be recorded as
+    // Stationary, not Moved(mode, 0) (which would wrongly apply the +1/+2/+3 movement modifier).
+    val movementThisTurn = if (destination.mpSpent == 0) {
+        MovementThisTurn.Stationary
+    } else {
+        MovementThisTurn.Moved(mode, hexes)
+    }
     return moved.copy(
         units = moved.units.mapUnits { u ->
             if (u.id == unitId) {
                 u.copy(
-                    movementThisTurn = MovementThisTurn.Moved(mode, hexes),
+                    movementThisTurn = movementThisTurn,
                     heatGeneratedThisTurn = u.heatGeneratedThisTurn + heatSources,
                 )
             } else {

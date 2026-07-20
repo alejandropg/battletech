@@ -4,6 +4,8 @@ import battletech.tactical.unit.MovementThisTurn
 
 import battletech.tactical.model.MovementMode
 
+import battletech.tactical.attack.attackerMovementModifier
+import battletech.tactical.attack.targetMovementModifier
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
@@ -73,5 +75,44 @@ internal class MovementTrackingTest {
 
         val reset = outcome.state.units.byId(mover.id)
         assertThat(reset.movementThisTurn).isEqualTo(MovementThisTurn.Stationary)
+    }
+
+    // -------------------------------------------------------------------------
+    // Stationary (0 MP) vs turn-in-place (>=1 MP, 0 hexes) — docs/rules/to-hit-modifiers.md
+    // "Stationary attacker -> +0"; a turn-in-place still costs MP and stays Moved(mode, 0).
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `a genuine 0-MP stay-put is recorded as Stationary, generates no movement heat, and contributes zero to-hit`() {
+        val mover = aUnit(id = "mover", position = HexCoordinates(0, 0))
+        val state = aGameState(units = listOf(mover), hexes = smallGrid)
+        val command = MoveUnit(PlayerId.PLAYER_1, mover.id, MovementRules.stationaryHex(mover), MovementMode.WALK)
+
+        val outcome = handler.apply(command, state, turnFor(PlayerId.PLAYER_1), roller)
+
+        val moved = outcome.state.units.byId(mover.id)
+        assertThat(moved.movementThisTurn).isEqualTo(MovementThisTurn.Stationary)
+        assertThat(moved.heatGeneratedThisTurn).isEmpty()
+        assertThat(attackerMovementModifier(moved.movementThisTurn)).isEqualTo(0)
+        assertThat(targetMovementModifier(moved.movementThisTurn)).isEqualTo(0)
+    }
+
+    @Test
+    fun `a turn-in-place that spends MP but enters no hex stays Moved(mode, 0)`() {
+        val mover = aUnit(id = "mover", position = HexCoordinates(0, 0))
+        val state = aGameState(units = listOf(mover), hexes = smallGrid)
+        // Same hex, new facing — costs 1 MP to turn, unlike a free torso twist.
+        val turnInPlace = ReachableHex(
+            position = mover.position,
+            facing = HexDirection.NE,
+            mpSpent = 1,
+            path = listOf(MovementStep(mover.position, HexDirection.NE)),
+        )
+        val command = MoveUnit(PlayerId.PLAYER_1, mover.id, turnInPlace, MovementMode.WALK)
+
+        val outcome = handler.apply(command, state, turnFor(PlayerId.PLAYER_1), roller)
+
+        val moved = outcome.state.units.byId(mover.id)
+        assertThat(moved.movementThisTurn).isEqualTo(MovementThisTurn.Moved(MovementMode.WALK, 0))
     }
 }

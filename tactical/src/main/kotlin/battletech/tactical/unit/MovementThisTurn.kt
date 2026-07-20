@@ -8,12 +8,15 @@ import kotlinx.serialization.Serializable
  * attacker movement modifiers and the target movement modifier (TMM) in the
  * attack phases.
  *
- * [Stationary] means the unit never submitted a [battletech.tactical.session.MoveUnit]
- * command this turn (e.g. it starts each movement phase reset to [Stationary]). A
- * unit that *did* submit [battletech.tactical.session.MoveUnit] — even a no-op
- * declaration at 0 MP, or a turn-in-place that only changes facing — is [Moved] with
- * `hexesMoved = 0`; that distinction matters because the attacker-movement +1 to-hit
- * modifier applies to any [Moved], including a 0-hex one.
+ * [Stationary] means either the unit never submitted a [battletech.tactical.session.MoveUnit]
+ * command this turn (e.g. it starts each movement phase reset to [Stationary]), or it did
+ * submit one but spent 0 MP — a genuine "stay put" declaration (same hex, same facing). Per
+ * the tabletop rules, a stationary attacker is +0.
+ *
+ * A unit that submitted [battletech.tactical.session.MoveUnit] and spent *at least 1 MP* —
+ * including a turn-in-place that only changes facing and enters no new hex — is [Moved] with
+ * `hexesMoved = 0`; that distinction matters because the attacker-movement +1/+2 to-hit
+ * modifier applies to any [Moved], including a 0-hex turn-in-place.
  */
 @Serializable
 public sealed interface MovementThisTurn {

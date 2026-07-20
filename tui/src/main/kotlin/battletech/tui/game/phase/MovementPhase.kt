@@ -5,6 +5,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.movement.MovementRules
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.movement.hexesMoved
@@ -101,12 +102,29 @@ internal sealed interface MovementPhase : Phase {
         val hoveredPath: List<HexCoordinates>?
             get() = hoveredDestination?.path?.map { it.position }
 
-        private fun withCursorAt(cursor: HexCoordinates): Browsing {
+        private fun withCursorAt(cursor: HexCoordinates, app: AppState): Browsing {
             if (modes.isEmpty()) return this
-            val cheapest = reachability.destinations
-                .filter { it.position == cursor }
-                .minByOrNull { it.mpSpent }
+            val cheapest = destinationsAt(cursor, app).minByOrNull { it.mpSpent }
             return copy(hoveredDestination = cheapest)
+        }
+
+        /**
+         * The reachable hexes at [cursor] for the current mode, plus — when [cursor] is the
+         * unit's own hex — the zero-cost "stay put" option. [ReachabilityCalculator]
+         * deliberately excludes the unit's current position+facing from `destinations` (it
+         * only ever proposes hexes reached by actually moving), so without this the TUI has
+         * no way to offer "keep current facing" as a destination. [MovementRules.stationaryHex]
+         * is the same server-authoritative shortcut `MoveUnit` already accepts, so merging it
+         * in here just exposes an option the server already supports.
+         */
+        private fun destinationsAt(cursor: HexCoordinates, app: AppState): List<ReachableHex> {
+            val fromReachability = reachability.destinations.filter { it.position == cursor }
+            val unit = app.ownUnit(unitId)
+            return if (cursor == unit.position) {
+                fromReachability + MovementRules.stationaryHex(unit)
+            } else {
+                fromReachability
+            }
         }
 
         private fun cycleMode(): Browsing {
@@ -136,7 +154,7 @@ internal sealed interface MovementPhase : Phase {
                 is BrowsingAction.ConfirmPath -> confirm(updated)
                 is BrowsingAction.SelectFacing -> selectFacing(updated, action.index)
                 is BrowsingAction.MoveCursor, is BrowsingAction.ClickHex ->
-                    Transition(updated.copy(phase = withCursorAt(newCursor)))
+                    Transition(updated.copy(phase = withCursorAt(newCursor, updated)))
 
                 is BrowsingAction.CycleMode ->
                     Transition(updated.copy(phase = cycleMode()))
@@ -174,7 +192,7 @@ internal sealed interface MovementPhase : Phase {
 
         private fun confirm(app: AppState): Transition {
             val destination = hoveredDestination ?: return Transition(app.copy(phase = this))
-            val facingsAtHex = reachability.destinations.filter { it.position == destination.position }
+            val facingsAtHex = destinationsAt(destination.position, app)
             return if (facingsAtHex.size > 1) {
                 Transition(
                     app.copy(
@@ -194,7 +212,7 @@ internal sealed interface MovementPhase : Phase {
 
         private fun selectFacing(app: AppState, index: Int): Transition {
             val destination = hoveredDestination ?: return Transition(app.copy(phase = this))
-            val facingsAtHex = reachability.destinations.filter { it.position == destination.position }
+            val facingsAtHex = destinationsAt(destination.position, app)
             val direction = FACING_ORDER.getOrNull(index - 1) ?: return Transition(app.copy(phase = this))
             val choice = facingsAtHex.find { it.facing == direction }
                 ?: return Transition(app.copy(phase = this))

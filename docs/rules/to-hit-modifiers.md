@@ -48,6 +48,14 @@ the heat those movements generate.
 - Attacker that jumped → +3.
 - Stationary attacker → +0 (combine with the target's TMM and the range modifier for the full number).
 
+**Note.** Spending MP to turn in place — changing the 'Mech's facing without changing hexes,
+distinct from a free torso twist — still counts as Walked/Ran (+1/+2) even though 0 hexes were
+moved. Spending **zero** MP is Stationary (+0); this covers both an attacker that chooses not to
+move and one that cannot move because heat reduced its MP to 0 — the two are identical for this
+modifier. Note that a shutdown or otherwise immobile unit, when it is the *target* rather than the
+attacker, gets a much larger bonus than Stationary's +0 — see the −4 immobile-target modifier in
+[`heat.md`](heat.md#3-mech-shutdown-consequences).
+
 ---
 
 ## 3. Minimum-Range Penalty
