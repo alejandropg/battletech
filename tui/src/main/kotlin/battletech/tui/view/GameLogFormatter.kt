@@ -52,7 +52,6 @@ import battletech.tui.hex.pilotWoundedIcon
 import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.hex.torsoArrowIcon
-import battletech.tui.hex.torsoFacingsUnchangedIcon
 import battletech.tui.hex.undisclosedCriticalHitIcon
 import battletech.tui.hex.unitFellIcon
 import battletech.tui.hex.unitRestartedIcon
@@ -209,13 +208,11 @@ internal object GameLogFormatter {
     private fun physicalDetailLine(result: PhysicalAttackResult.Hit): LogLine =
         LogLine(attackOutcomeIcon(hit = true), "${result.attackName} → ${locationLabel(result.hitLocation)} (${result.damageApplied} dmg)")
 
-    private fun torsoFacingLines(event: TorsoFacingsApplied, state: PlayerGameState): List<LogLine> {
-        if (event.facings.isEmpty()) return listOf(LogLine(torsoFacingsUnchangedIcon(), "Torso facings: no changes"))
-        return event.facings.entries.map { (unitId, dir) ->
+    private fun torsoFacingLines(event: TorsoFacingsApplied, state: PlayerGameState): List<LogLine> =
+        event.facings.entries.map { (unitId, dir) ->
             val name = unitId.value
             LogLine(torsoArrowIcon(dir).first, "$name torso → $dir")
         }
-    }
 
     private fun attackDeclarationLines(event: AttackDeclarationsRecorded, state: PlayerGameState): List<LogLine> =
         event.declarations.groupBy { it.attackerId }.entries.map { (attackerId, decls) ->

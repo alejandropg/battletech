@@ -47,7 +47,6 @@ private val NF_MD_RESTART = String(Character.toChars(0xF0709))
 private val NF_MD_TROPHY = String(Character.toChars(0xF0666))
 private val NF_MD_PISTOL = String(Character.toChars(0xF0302))
 private val NF_MD_BOXING_GLOVE = String(Character.toChars(0xF0B62))
-private val NF_MD_SYNC_OFF = String(Character.toChars(0xF0F97))
 
 // Leg facing arrows (larger arrows)
 private val NF_MD_ARROW_UP_BOLD_OUTLINE = String(Character.toChars(0xF09C7))
@@ -184,9 +183,6 @@ internal fun attacksResolvedIcon(): String = NF_MD_PISTOL
 
 /** Marker for a physical-attack resolution summary that destroyed no location. */
 internal fun physicalAttacksResolvedIcon(): String = NF_MD_BOXING_GLOVE
-
-/** Marker for the torso-facings summary when nothing twisted. */
-internal fun torsoFacingsUnchangedIcon(): String = NF_MD_SYNC_OFF
 
 internal fun ammoIcon(): String = NF_MD_AMMUNITION
 

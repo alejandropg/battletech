@@ -63,7 +63,6 @@ import battletech.tui.hex.pilotDeadIcon
 import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.hex.torsoArrowIcon
-import battletech.tui.hex.torsoFacingsUnchangedIcon
 import battletech.tui.hex.undisclosedCriticalHitIcon
 import battletech.tui.mediumLaser
 import org.assertj.core.api.Assertions.assertThat
@@ -368,16 +367,6 @@ internal class GameLogFormatterTest {
             GameLogFormatter.LogLine(torsoArrowIcon(HexDirection.NE).first, "atlas torso → NE"),
             GameLogFormatter.LogLine(torsoArrowIcon(HexDirection.S).first, "locust torso → S"),
         )
-    }
-
-    @Test
-    fun `TorsoFacingsApplied with no facings says 'no changes'`() {
-        val lines = GameLogFormatter.lines(
-            event = TorsoFacingsApplied(facings = emptyMap()),
-            state = emptyState,
-        )
-
-        assertThat(lines).containsExactly(GameLogFormatter.LogLine(torsoFacingsUnchangedIcon(), "Torso facings: no changes"))
     }
 
     @Test
