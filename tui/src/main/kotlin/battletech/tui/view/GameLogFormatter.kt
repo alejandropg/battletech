@@ -36,10 +36,15 @@ import battletech.tactical.unit.DestructionReason
 import battletech.tactical.unit.UnitId
 import battletech.tui.hex.ammoExplosionIcon
 import battletech.tui.hex.attackOutcomeIcon
+import battletech.tui.hex.attacksResolvedIcon
 import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.destroyedIcon
+import battletech.tui.hex.heatChangeIcon
+import battletech.tui.hex.initiativeIcon
 import battletech.tui.hex.locationDestroyedIcon
+import battletech.tui.hex.matchEndedIcon
 import battletech.tui.hex.movementModeIcon
+import battletech.tui.hex.physicalAttacksResolvedIcon
 import battletech.tui.hex.pilotConsciousIcon
 import battletech.tui.hex.pilotDeadIcon
 import battletech.tui.hex.pilotUnconsciousIcon
@@ -47,8 +52,11 @@ import battletech.tui.hex.pilotWoundedIcon
 import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.hex.torsoArrowIcon
+import battletech.tui.hex.torsoFacingsUnchangedIcon
 import battletech.tui.hex.undisclosedCriticalHitIcon
 import battletech.tui.hex.unitFellIcon
+import battletech.tui.hex.unitRestartedIcon
+import battletech.tui.hex.unitShutdownIcon
 import battletech.tui.hex.unitStoodUpIcon
 
 internal object GameLogFormatter {
@@ -65,7 +73,7 @@ internal object GameLogFormatter {
             val p1 = event.initiative.rolls[PlayerId.PLAYER_1]!!
             val p2 = event.initiative.rolls[PlayerId.PLAYER_2]!!
             val first = playerLabel(event.initiative.loser)
-            listOf(LogLine(null, "Initiative: P1 ${diceRollLabel(p1)}, P2 ${diceRollLabel(p2)} — $first moves first"))
+            listOf(LogLine(initiativeIcon(), "Initiative: P1 ${diceRollLabel(p1)}, P2 ${diceRollLabel(p2)} — $first moves first"))
         }
         is UnitMoved -> {
             val name = event.unitId.value
@@ -78,7 +86,7 @@ internal object GameLogFormatter {
             val summary = "Attacks: $fired fired, ${hits.size} hit, $damage damage"
             val destroyed = destroyedClause(hits.map { it.targetId to it.damage }, state)
             val text = if (destroyed == null) summary else "$summary — $destroyed"
-            val icon = if (hits.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
+            val icon = if (hits.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else attacksResolvedIcon()
             val lines = mutableListOf(LogLine(icon, text))
             // For every hit, append a detail line showing the location(s) struck (and missile count for clusters).
             hits.forEach { result -> lines.add(hitDetailLine(result)) }
@@ -92,7 +100,9 @@ internal object GameLogFormatter {
                     "$name $before→${event.heatAfter[unitId] ?: 0}"
                 }
             val text = if (parts.isEmpty()) "Heat: no heat to dissipate" else "Heat: ${parts.joinToString(", ")}"
-            listOf(LogLine(null, text))
+            val before = event.heatBefore.values.sum()
+            val after = event.heatAfter.values.sum()
+            listOf(LogLine(heatChangeIcon(wentUp = after > before), text))
         }
         is PhysicalAttacksResolved -> {
             val made = event.results.size
@@ -101,7 +111,7 @@ internal object GameLogFormatter {
             val summary = "Physical attacks: $made made, ${hits.size} hit, $damage damage"
             val destroyed = destroyedClause(hits.map { it.targetId to it.damage }, state)
             val text = if (destroyed == null) summary else "$summary — $destroyed"
-            val icon = if (hits.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else null
+            val icon = if (hits.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else physicalAttacksResolvedIcon()
             val lines = mutableListOf(LogLine(icon, text))
             hits.forEach { result -> lines.add(physicalDetailLine(result)) }
             lines
@@ -121,11 +131,11 @@ internal object GameLogFormatter {
                 is UnitShutdown.AvoidFailed -> "$name shut down from heat"
                 is UnitShutdown.Undisclosed -> "$name shut down"
             }
-            listOf(LogLine(null, text))
+            listOf(LogLine(unitShutdownIcon(), text))
         }
         is UnitRestarted -> {
             val name = event.unitId.value
-            listOf(LogLine(null, "$name restarted"))
+            listOf(LogLine(unitRestartedIcon(), "$name restarted"))
         }
         is AmmoExploded -> {
             val name = event.unitId.value
@@ -144,7 +154,7 @@ internal object GameLogFormatter {
                 is MatchOutcome.Draw -> "Match over — draw"
                 is MatchOutcome.Victory -> "Match over — ${playerLabel(outcome.winner)} wins!"
             }
-            listOf(LogLine(null, text))
+            listOf(LogLine(matchEndedIcon(), text))
         }
         is CriticalHit -> {
             val name = event.unitId.value
@@ -200,7 +210,7 @@ internal object GameLogFormatter {
         LogLine(attackOutcomeIcon(hit = true), "${result.attackName} → ${locationLabel(result.hitLocation)} (${result.damageApplied} dmg)")
 
     private fun torsoFacingLines(event: TorsoFacingsApplied, state: PlayerGameState): List<LogLine> {
-        if (event.facings.isEmpty()) return listOf(LogLine(null, "Torso facings: no changes"))
+        if (event.facings.isEmpty()) return listOf(LogLine(torsoFacingsUnchangedIcon(), "Torso facings: no changes"))
         return event.facings.entries.map { (unitId, dir) ->
             val name = unitId.value
             LogLine(torsoArrowIcon(dir).first, "$name torso → $dir")

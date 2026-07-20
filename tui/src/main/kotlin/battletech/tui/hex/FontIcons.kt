@@ -40,6 +40,14 @@ private val NF_MD_TRANSFER_UP = String(Character.toChars(0xF0DA3))
 private val NF_MD_ACCOUNT_ALERT = String(Character.toChars(0xF0005))
 private val NF_MD_SLEEP = String(Character.toChars(0xF04B2))
 private val NF_MD_SLEEP_OFF = String(Character.toChars(0xF04B3))
+private val NF_MD_THERMOMETER_CHEVRON_DOWN = String(Character.toChars(0xF0E02))
+private val NF_MD_THERMOMETER_CHEVRON_UP = String(Character.toChars(0xF0E03))
+private val NF_MD_POWER = String(Character.toChars(0xF0425))
+private val NF_MD_RESTART = String(Character.toChars(0xF0709))
+private val NF_MD_TROPHY = String(Character.toChars(0xF0666))
+private val NF_MD_PISTOL = String(Character.toChars(0xF0302))
+private val NF_MD_BOXING_GLOVE = String(Character.toChars(0xF0B62))
+private val NF_MD_SYNC_OFF = String(Character.toChars(0xF0F97))
 
 // Leg facing arrows (larger arrows)
 private val NF_MD_ARROW_UP_BOLD_OUTLINE = String(Character.toChars(0xF09C7))
@@ -154,6 +162,31 @@ internal fun checkboxIcon(state: CheckState): String =
         CheckState.CHECKED -> NF_MD_CHECKBOX_MARKED_OUTLINE
         CheckState.INDETERMINATE -> NF_MD_MINUS_BOX_OUTLINE
     }
+
+/** Marker for the initiative-roll log line. Same glyph as [diceRoll] — it's the same kind of roll. */
+internal fun initiativeIcon(): String = NF_MD_DICE_MULTIPLE_OUTLINE
+
+/** Marker for the heat-dissipation log line; chevron direction follows net heat change. */
+internal fun heatChangeIcon(wentUp: Boolean): String =
+    if (wentUp) NF_MD_THERMOMETER_CHEVRON_UP else NF_MD_THERMOMETER_CHEVRON_DOWN
+
+/** Marker for a unit shutting down (heat-forced or otherwise). */
+internal fun unitShutdownIcon(): String = NF_MD_POWER
+
+/** Marker for a unit restarting / powering back on. */
+internal fun unitRestartedIcon(): String = NF_MD_RESTART
+
+/** Marker for the match-over log line. */
+internal fun matchEndedIcon(): String = NF_MD_TROPHY
+
+/** Marker for a ranged-attack resolution summary that destroyed no location. */
+internal fun attacksResolvedIcon(): String = NF_MD_PISTOL
+
+/** Marker for a physical-attack resolution summary that destroyed no location. */
+internal fun physicalAttacksResolvedIcon(): String = NF_MD_BOXING_GLOVE
+
+/** Marker for the torso-facings summary when nothing twisted. */
+internal fun torsoFacingsUnchangedIcon(): String = NF_MD_SYNC_OFF
 
 internal fun ammoIcon(): String = NF_MD_AMMUNITION
 

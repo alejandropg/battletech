@@ -53,6 +53,7 @@ import battletech.tactical.unit.WeaponMountId
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.hex.attackOutcomeIcon
+import battletech.tui.hex.attacksResolvedIcon
 import battletech.tui.hex.criticalHitIcon
 import battletech.tui.hex.destroyedIcon
 import battletech.tui.hex.diceIcon
@@ -62,6 +63,7 @@ import battletech.tui.hex.pilotDeadIcon
 import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.hex.torsoArrowIcon
+import battletech.tui.hex.torsoFacingsUnchangedIcon
 import battletech.tui.hex.undisclosedCriticalHitIcon
 import battletech.tui.mediumLaser
 import org.assertj.core.api.Assertions.assertThat
@@ -375,7 +377,7 @@ internal class GameLogFormatterTest {
             state = emptyState,
         )
 
-        assertThat(lines).containsExactly(GameLogFormatter.LogLine(null, "Torso facings: no changes"))
+        assertThat(lines).containsExactly(GameLogFormatter.LogLine(torsoFacingsUnchangedIcon(), "Torso facings: no changes"))
     }
 
     @Test
@@ -661,7 +663,7 @@ internal class GameLogFormatterTest {
     }
 
     @Test
-    fun `iconFor marks a destroyed location and omits the icon otherwise`() {
+    fun `iconFor marks a destroyed location and uses the attacks-resolved icon otherwise`() {
         val destroyed = AttacksResolved(
             listOf(
                 anAttackResult(
@@ -685,7 +687,7 @@ internal class GameLogFormatterTest {
         )
 
         assertThat(GameLogFormatter.lines(destroyed, emptyState).first().icon).isEqualTo(locationDestroyedIcon())
-        assertThat(GameLogFormatter.lines(intact, emptyState).first().icon).isNull()
+        assertThat(GameLogFormatter.lines(intact, emptyState).first().icon).isEqualTo(attacksResolvedIcon())
     }
 
     @Test

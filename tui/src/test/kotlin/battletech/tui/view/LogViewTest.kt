@@ -16,6 +16,7 @@ import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.unit.PilotingSkillRoll
 import battletech.tactical.unit.UnitRoster
 import battletech.tui.aUnit
+import battletech.tui.hex.initiativeIcon
 import battletech.tui.hex.unitStoodUpIcon
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
@@ -156,12 +157,12 @@ internal class LogViewTest {
         assert(readLine(buffer, 2, 1, 24).startsWith("── TURN 2 ")) { "Expected header at row 1" }
         val line1 = readLine(buffer, 2, 2, 24)
         val line2 = readLine(buffer, 2, 3, 24)
-        // No dedicated icon for InitiativeRolled: falls back to the generic ">" marker.
-        assert(line1.startsWith("> Initiative: P1")) { "Line 1 should start with the generic icon: '$line1'" }
+        val icon = initiativeIcon()
+        assert(line1.startsWith("$icon Initiative: P1")) { "Line 1 should start with the initiative icon: '$line1'" }
         // Continuation line is indented two columns to align under the text on line 1.
         assert(line2.startsWith("  ")) { "Line 2 should be indented under the icon column: '$line2'" }
         // The text content should reassemble (whitespace flexible).
-        val reassembled = (line1.removePrefix("> ") + " " + line2.trim()).replace(Regex("\\s+"), " ").trim()
+        val reassembled = (line1.removePrefix("$icon ") + " " + line2.trim()).replace(Regex("\\s+"), " ").trim()
         assert(reassembled.startsWith("Initiative: P1")) {
             "Reassembled text didn't start as expected: '$reassembled'"
         }

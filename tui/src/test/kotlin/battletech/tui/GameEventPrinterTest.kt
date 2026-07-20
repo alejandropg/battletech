@@ -9,6 +9,7 @@ import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.SessionNotice
 import battletech.tactical.unit.UnitRoster
+import battletech.tui.hex.heatChangeIcon
 import battletech.tui.hex.sessionNoticeIcon
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -20,18 +21,16 @@ internal class GameEventPrinterTest {
         map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0)))),
     )
 
-    // HeatDissipated with no units in heatBefore renders one LogLine with a null icon —
-    // used below to exercise the ">" fallback.
-    private val noIconEvent = HeatDissipated(heatBefore = emptyMap(), heatAfter = emptyMap())
+    private val heatDissipatedEvent = HeatDissipated(heatBefore = emptyMap(), heatAfter = emptyMap())
 
     @Test
     fun `prints a turn header only when the turn number changes`() {
         val out = StringBuilder()
         val printer = GameEventPrinter(out)
 
-        printer.print(noIconEvent, emptyState, turnNumber = 1)
-        printer.print(noIconEvent, emptyState, turnNumber = 1)
-        printer.print(noIconEvent, emptyState, turnNumber = 2)
+        printer.print(heatDissipatedEvent, emptyState, turnNumber = 1)
+        printer.print(heatDissipatedEvent, emptyState, turnNumber = 1)
+        printer.print(heatDissipatedEvent, emptyState, turnNumber = 2)
 
         val headerCount = out.lines().count { it == "== TURN 1 ==" }
         assertThat(headerCount).isEqualTo(1)
@@ -40,13 +39,13 @@ internal class GameEventPrinterTest {
     }
 
     @Test
-    fun `falls back to the greater-than icon when the log line has no icon`() {
+    fun `HeatDissipated with no heat to dissipate renders with the heat-down icon`() {
         val out = StringBuilder()
         val printer = GameEventPrinter(out)
 
-        printer.print(noIconEvent, emptyState, turnNumber = 1)
+        printer.print(heatDissipatedEvent, emptyState, turnNumber = 1)
 
-        assertThat(out.toString()).contains("> Heat: no heat to dissipate")
+        assertThat(out.toString()).contains("${heatChangeIcon(wentUp = false)} Heat: no heat to dissipate")
     }
 
     @Test
