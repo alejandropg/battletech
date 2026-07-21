@@ -11,7 +11,7 @@
     { "col": 6, "row": 1, "terrain": "WATER" },
     { "col": 6, "row": 2, "terrain": "WATER" },
     { "col": 6, "row": 3, "terrain": "WATER" },
-    { "col": 5, "row": 2, "elevation": 1 },
+    { "col": 5, "row": 2, "elevation": 2 },
     { "col": 5, "row": 3, "elevation": 1 },
     { "col": 5, "row": 4, "elevation": 1 }
   ]

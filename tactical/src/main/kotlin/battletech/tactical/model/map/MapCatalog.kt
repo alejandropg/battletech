@@ -32,7 +32,14 @@ public object MapCatalog {
                     col == 6 && row in 1..3 -> Terrain.WATER
                     else -> Terrain.CLEAR
                 }
-                val elevation = if (col == 5 && row in 2..4) 1 else 0
+                val elevation = when (col) {
+                    5 -> when (row) {
+                        2 -> 2
+                        in 3..4 -> 1
+                        else -> 0
+                    }
+                    else -> 0
+                }
                 hexes[coords] = Hex(coords, terrain, elevation)
             }
         }

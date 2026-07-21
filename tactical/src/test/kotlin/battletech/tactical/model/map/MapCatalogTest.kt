@@ -46,8 +46,8 @@ internal class MapCatalogTest {
         assertThat(map.hexes.getValue(HexCoordinates(6, 3)).terrain).isEqualTo(Terrain.WATER)
         assertThat(map.hexes.getValue(HexCoordinates(6, 4)).terrain).isEqualTo(Terrain.CLEAR)
 
-        // Elevation family: col 5, row 2..4
-        assertThat(map.hexes.getValue(HexCoordinates(5, 2)).elevation).isEqualTo(1)
+        // Elevation family: col 5 — row 2 is a level-2 hill, rows 3..4 are level 1
+        assertThat(map.hexes.getValue(HexCoordinates(5, 2)).elevation).isEqualTo(2)
         assertThat(map.hexes.getValue(HexCoordinates(5, 4)).elevation).isEqualTo(1)
         assertThat(map.hexes.getValue(HexCoordinates(5, 5)).elevation).isEqualTo(0)
 
