@@ -10,8 +10,6 @@ import battletech.tui.screen.ScreenBuffer
 
 public object HexRenderer {
 
-    private val BRIGHT_YELLOW_STYLE = Cell.Style(Color.BRIGHT_YELLOW)
-
     // Terrain icons (nf-md-tree_outline, nf-md-tree and another Nerd Fonts icons are above U+FFFF, need surrogate pairs)
     private fun terrainIcon(terrain: Terrain): String = when (terrain) {
         Terrain.CLEAR       -> ""
@@ -79,7 +77,7 @@ public object HexRenderer {
         }
         for (direction in facings) {
             val (dx, dy) = facingPosition(direction)
-            buffer.set(x + dx, y + dy, Cell(facingIcon(direction), Cell.Style(color)))
+            buffer.set(x + dx, y + dy, Cell(facingIcon(direction), Cell.Style(color, buffer.get(x + dx, y + dy).style.bg)))
         }
     }
 
@@ -91,17 +89,17 @@ public object HexRenderer {
         for (direction in facings) {
             val (dx, dy) = facingPosition(direction)
             val number = facingNumber(direction)
-            buffer.set(x + dx, y + dy, Cell(number, BRIGHT_YELLOW_STYLE))
+            buffer.set(x + dx, y + dy, Cell(number, Cell.Style(Color.BRIGHT_YELLOW, buffer.get(x + dx, y + dy).style.bg)))
         }
     }
 
     public fun render(buffer: ScreenBuffer, x: Int, y: Int, hex: Hex, highlight: HexHighlight, movementMode: MovementMode? = null) {
-        val bg = contentBackground(highlight)
+        val bg = terrainBackground(hex)
         val borderFg =
             if (highlight == HexHighlight.CURSOR) Color.BRIGHT_YELLOW
             else Color.GRAY
 
-        renderBorder(buffer, x, y, borderFg)
+        renderBorder(buffer, x, y, borderFg, bg)
         renderContent(buffer, x, y, bg)
         renderTerrain(buffer, x, y, hex.terrain, bg)
         renderElevation(buffer, x, y, hex.elevation, bg)
@@ -121,10 +119,20 @@ public object HexRenderer {
     }
 
     private fun renderOverlayChar(buffer: ScreenBuffer, x: Int, y: Int, char: String, color: Color) {
-        buffer.set(x + 4, y + 2, Cell(char, Cell.Style(color)))
+        buffer.set(x + 4, y + 2, Cell(char, Cell.Style(color, buffer.get(x + 4, y + 2).style.bg)))
     }
 
-    private fun contentBackground(highlight: HexHighlight): Color = Color.DEFAULT
+    // Soft background tint for a hex, driven by terrain. One cell has one background, so when a
+    // hex has both a terrain type and elevation the precedence is WATER > woods > elevation: an
+    // elevated forest stays green (its height still shows via the elevation number icon), and the
+    // brown elevation tint appears only on clear elevated hills.
+    private fun terrainBackground(hex: Hex): Color = when {
+        hex.terrain == Terrain.WATER       -> if (hex.depth <= 1) Color.WATER_SHALLOW_BG else Color.WATER_DEEP_BG
+        hex.terrain == Terrain.LIGHT_WOODS -> Color.WOODS_LIGHT_BG
+        hex.terrain == Terrain.HEAVY_WOODS -> Color.WOODS_HEAVY_BG
+        hex.elevation >= 1                 -> if (hex.elevation == 1) Color.ELEVATION_LOW_BG else Color.ELEVATION_HIGH_BG
+        else                               -> Color.DEFAULT
+    }
 
     private fun renderTerrain(buffer: ScreenBuffer, x: Int, y: Int, terrain: Terrain, bg: Color) {
         val color = when (terrain) {
@@ -136,40 +144,50 @@ public object HexRenderer {
         buffer.set(x + 2, y + 1, Cell(terrainIcon(terrain), Cell.Style(color, bg)))
     }
 
-    private fun renderBorder(buffer: ScreenBuffer, x: Int, y: Int, fg: Color) {
-        // Row 0: "  _____  "
+    // The border glyphs carry the terrain `bg` too, so the whole hexagon reads as filled rather
+    // than an outline floating on the terminal background. Adjacent hexes share their edge columns
+    // (9-col glyph, 7-col stride, last-write-wins), so a shared edge column adopts the neighbour's
+    // tint — negligible with these soft colors.
+    private fun renderBorder(buffer: ScreenBuffer, x: Int, y: Int, fg: Color, bg: Color) {
+        // Row 0: "  _____  " — the top edge. Its cells coincide with the hex-above's bottom edge
+        // (row 4), so keep whatever background is already painted there rather than tinting: the
+        // top edge belongs to the upper hex. Tinting it would paint a coloured band protruding
+        // above the hexagon.
         for (i in 2..6) {
-            buffer.set(x + i, y, Cell("_", Cell.Style(fg)))
+            buffer.set(x + i, y, Cell("_", Cell.Style(fg, buffer.get(x + i, y).style.bg)))
         }
+        val style = Cell.Style(fg, bg)
         // Row 1: " /     \ "
-        buffer.set(x + 1, y + 1, Cell("/", Cell.Style(fg)))
-        buffer.set(x + 7, y + 1, Cell("\\", Cell.Style(fg)))
+        buffer.set(x + 1, y + 1, Cell("/", style))
+        buffer.set(x + 7, y + 1, Cell("\\", style))
         // Row 2: "/       \"
-        buffer.set(x, y + 2, Cell("/", Cell.Style(fg)))
-        buffer.set(x + 8, y + 2, Cell("\\", Cell.Style(fg)))
+        buffer.set(x, y + 2, Cell("/", style))
+        buffer.set(x + 8, y + 2, Cell("\\", style))
         // Row 3: "\       /"
-        buffer.set(x, y + 3, Cell("\\", Cell.Style(fg)))
-        buffer.set(x + 8, y + 3, Cell("/", Cell.Style(fg)))
+        buffer.set(x, y + 3, Cell("\\", style))
+        buffer.set(x + 8, y + 3, Cell("/", style))
         // Row 4: " \_____/ "
-        buffer.set(x + 1, y + 4, Cell("\\", Cell.Style(fg)))
+        buffer.set(x + 1, y + 4, Cell("\\", style))
         for (i in 2..6) {
-            buffer.set(x + i, y + 4, Cell("_", Cell.Style(fg)))
+            buffer.set(x + i, y + 4, Cell("_", style))
         }
-        buffer.set(x + 7, y + 4, Cell("/", Cell.Style(fg)))
+        buffer.set(x + 7, y + 4, Cell("/", style))
     }
 
     private fun renderContent(buffer: ScreenBuffer, x: Int, y: Int, bg: Color) {
+        val style = Cell.Style(Color.DEFAULT, bg)
+        val cell = Cell(" ", style)
         // Row 1 content (narrow): x+2..x+6
         for (i in 2..6) {
-            buffer.set(x + i, y + 1, Cell(" ", Cell.Style(Color.DEFAULT, bg)))
+            buffer.set(x + i, y + 1, cell)
         }
         // Row 2 content (wide): x+1..x+7
         for (i in 1..7) {
-            buffer.set(x + i, y + 2, Cell(" ", Cell.Style(Color.DEFAULT, bg)))
+            buffer.set(x + i, y + 2, cell)
         }
         // Row 3 content (wide): x+1..x+7
         for (i in 1..7) {
-            buffer.set(x + i, y + 3, Cell(" ", Cell.Style(Color.DEFAULT, bg)))
+            buffer.set(x + i, y + 3, cell)
         }
     }
 
