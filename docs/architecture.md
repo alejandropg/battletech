@@ -34,8 +34,6 @@ Applied via `id("battletech.<name>")`:
 - **`battletech.kotlin-application`** — applies `kotlin-common` + the `application` plugin; used by `bt`, `tui`.
 - **`battletech.kotlin-serialization`** — applies the Kotlin serialization plugin; used by `tactical` and `network` (both need kotlinx-serialization for `GameState`/wire types).
 
-`explicitApi()` is on repo-wide: public API surface must be explicitly declared (`public`/`internal`).
-
 ## Enforced package boundaries
 
 `tactical/src/test/kotlin/battletech/tactical/ArchitectureTest.kt` uses Konsist to assert import boundaries between packages under `battletech.tactical`. It scans all non-test source files and fails the build if any of these are violated:

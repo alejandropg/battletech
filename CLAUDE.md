@@ -52,7 +52,7 @@ Dependencies flow: `tui` → `tactical` + `network`; `network` → (`api`) `tact
 - **`tui/`** — terminal UI using [Mordant](https://github.com/ajalt/mordant). Entry point `battletech.tui.MainKt`.
 - **`strategic/` + `bt/`** — placeholders. `strategic` holds one stub class (`calculateCampaignMovement(d) = d * 2`); `bt` (`battletech.MainKt`) is a hello-world that prints it. Ignore unless explicitly asked.
 
-`docs/architecture.md` — package layout inside each module, buildSrc convention plugins, invariant rationale, and the rule for which tier (root / module `CLAUDE.md` / `docs/`) owns a given piece of context. Read when navigating inside a module, touching the build, or moving content between docs; not needed for everyday context.
+`docs/architecture.md` — package layout inside each module, buildSrc convention plugins, invariant rationale, and the rule for which tier (this file or `docs/`) owns a given piece of context. Read when navigating inside a module, touching the build, or moving content between docs; not needed for everyday context.
 
 ### Architecture principles
 
