@@ -14,8 +14,8 @@ A MechWarrior can take up to **6 hits — the 6th is fatal**. Hits come from:
 - A **head hit** that penetrates to Internal Structure → **1 hit** (see [`armor-damage.md`](armor-damage.md)).
 - A **fall** → **1 hit** per fall.
 - An **ammo explosion** → **2 hits**.
-- A **Life-Support critical** while the Mech is overheated → 1 hit (thresholds in [`armor-damage.md`](armor-damage.md) §3).
-- A **Cockpit critical** → the pilot is killed outright (see [`armor-damage.md`](armor-damage.md) §3).
+- A **Life-Support critical** while the Mech is overheated → 1 hit (thresholds in [`critical-hits.md`](critical-hits.md) §5).
+- A **Cockpit critical** → the pilot is killed outright (see [`critical-hits.md`](critical-hits.md) §5).
 
 A **dead pilot destroys the Mech** (see *Mech Destruction* in [`armor-damage.md`](armor-damage.md)).
 
@@ -48,7 +48,7 @@ situations. A fall deals fall damage and inflicts 1 pilot hit.
 
 - **20+ total damage in a single phase** — make a PSR with a **+1** modifier, **cumulative per full
   20 damage** (40 damage → +2, 60 → +3, …).
-- **Gyro critical hit** — **+3** PSR (see [`armor-damage.md`](armor-damage.md) §3 for the ongoing gyro penalties).
+- **Gyro critical hit** — **+3** PSR (see [`critical-hits.md`](critical-hits.md) §5 for the ongoing gyro penalties).
 - **Leg / foot actuator or hip critical** — forces a PSR.
 - **Losing a leg** — forces a fall outright (movement consequences in [`armor-damage.md`](armor-damage.md) §8).
 - **Being kicked, pushed, standing up in difficult terrain, or entering certain terrain at speed.**

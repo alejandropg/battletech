@@ -209,7 +209,7 @@ public data class MatchEnded(
 
 /**
  * A critical hit destroyed a component at [Detailed.location]/[Detailed.slotIndex] on
- * [unitId] (`docs/rules/armor-damage.md` §3). *That* a crit landed is observable at the
+ * [unitId] (`docs/rules/critical-hits.md` §1). *That* a crit landed is observable at the
  * table; WHICH component ([Detailed.content]) is record-sheet detail, withheld from
  * foreign viewers via [Undisclosed] — see [battletech.tactical.session.redactFor].
  */
@@ -277,7 +277,7 @@ public data class PilotKnockedUnconscious(
 
 /**
  * [unitId]'s pilot regained consciousness (Stage 7 Heat Phase recovery roll —
- * ASSUMPTION/standard; `docs/rules/armor-damage.md` only pins life-support damage
+ * ASSUMPTION/standard; `docs/rules/critical-hits.md` only pins life-support damage
  * sources and death, not recovery mechanics).
  *
  * *That* the pilot woke up is observable (the 'Mech visibly comes back under control),

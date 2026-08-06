@@ -2,6 +2,23 @@
 
 Package-level, build-plugin, and invariant-rationale detail for the structure summarized in `CLAUDE.md`. Read this when navigating within a module or touching `buildSrc/`; not needed for everyday session context.
 
+## Where context docs live
+
+Two tiers, distinguished by **how they load** — not by topic:
+
+| Tier | Loads | Holds |
+|---|---|---|
+| Root `CLAUDE.md` | Always in context | Every rule and prohibition, stated completely but tersely — never its rationale |
+| `docs/` (this file, `rules/`, `tui-testing.md`) | On demand, when something chooses to read it | Explanation, enumeration, history — what you look up once you know you have a question |
+
+**The ownership test**: does the content *prevent* a decision or *explain* one? Prevent → root `CLAUDE.md`. Explain → `docs/`. A referenced doc is only reached by someone who already suspects it applies, so every trigger has to be in root: the rules warning, the boundary rule, the `DiceRoller` rule. Each compresses to a line, which is why they are stated outright rather than pointed at.
+
+**Never restate across tiers — move ownership instead of copying.** Live example: the `tactical/` boundary rule is stated in full in root `CLAUDE.md` (a prohibition, one line); the `Intent:` paragraph explaining *why* those packages are leaves lives below in this file, and the `standardHandlers()` registration order lives here too (you only need it once you already know you are adding a phase, and it changes whenever one is added).
+
+**No per-module `CLAUDE.md` files.** They were tried and removed: a `<module>/CLAUDE.md` loads whenever *any* file in that module is touched, not when its content is actually needed, and `tactical/` alone is 61% of the source files. That made it near-permanently loaded while restating what root already said. A module file would only pay for itself if the module's conventions could not compress into a line or two of root **and** the module were touched by a minority of sessions — neither holds here.
+
+**No `@path` imports in `CLAUDE.md`** — they expand eagerly at load and cost the same as inlining, which defeats the tiering. Plain backtick path mentions only.
+
 ## Package layout per module
 
 - **`tactical/`** (`battletech.tactical.*`): `attack/` (incl. `physical/`, `weapon/` — attack resolution/declarations/crit tables for melee vs. gunnery), `dice/` (`DiceRoller` abstraction), `heat/` (generation/dissipation/phase resolution), `model/` (incl. `map/` — core `GameState`/`GameMap`/hex coordinates, map file loading/catalog), `movement/` (cost/reachability/phase handler), `query/` (per-player read/projection layer — `PlayerView`, `ForeignUnit`/`OwnUnit` redaction types), `session/` (`BattleSession`, `GameCommand`/`GameEvent`, phase handlers, redaction), `unit/`.

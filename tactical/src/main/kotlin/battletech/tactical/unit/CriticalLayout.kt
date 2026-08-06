@@ -94,10 +94,10 @@ public fun CriticalLayout.Factory.empty(): CriticalLayout = mechLayout { }.layou
 // alongside the rest of CombatUnit's critical-damage behavior. The threshold
 // constants below stay here with the layout framework they describe.
 
-/** Engine crit count at which the mech is destroyed (`docs/rules/armor-damage.md` §3). */
+/** Engine crit count at which the mech is destroyed (`docs/rules/critical-hits.md` §5). */
 public const val ENGINE_DESTROYED_AT: Int = 3
 
-/** Gyro crit count at which the gyro is destroyed (`docs/rules/armor-damage.md` §3). */
+/** Gyro crit count at which the gyro is destroyed (`docs/rules/critical-hits.md` §5). */
 public const val GYRO_DESTROYED_AT: Int = 2
 
 /** Sensor crit count at which a unit's weapon attacks suffer the +2 to-hit penalty. */
@@ -109,7 +109,7 @@ public const val SENSOR_BLIND_AT: Int = 2
 /** Life Support crit count at which the pilot takes a hit every turn, heat irrelevant. */
 public const val LIFE_SUPPORT_FAILURE_AT: Int = 2
 
-/** Heat generated per engine critical hit, added every turn (`docs/rules/armor-damage.md` §3). */
+/** Heat generated per engine critical hit, added every turn (`docs/rules/critical-hits.md` §5). */
 public const val ENGINE_CRIT_HEAT_PER_HIT: Int = 5
 
 /** PSR modifier applied once a unit has taken at least one gyro critical hit. */

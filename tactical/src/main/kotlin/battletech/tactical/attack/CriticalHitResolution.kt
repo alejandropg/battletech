@@ -26,7 +26,7 @@ private val ARM_OR_LEG_LOCATIONS: Set<MechLocation> = setOf(
 
 /**
  * Number of components destroyed by a 2d6 crit-check roll of [total] at [location],
- * per the Critical Hit Table (`docs/rules/armor-damage.md` §3): 2-7 none, 8-9 one,
+ * per the Critical Hit Table (`docs/rules/critical-hits.md` §1): 2-7 none, 8-9 one,
  * 10-11 two, 12 three (Head/Torso) — or a limb blow-off on Arm/Leg, represented here
  * as a sentinel of 6 crits (more than any location's slot count) so callers can detect
  * it via [isLimbBlownOff] without a separate enum.
@@ -78,7 +78,7 @@ private fun pickSlot(unit: CombatUnit, location: MechLocation, roller: DiceRolle
 
 /**
  * Detonates the ammo bin at [binLocation]/[slotIndex] on [unit]: the total damage of
- * [bin]'s remaining shots (`shots × type.damagePerShot`, `docs/rules/armor-damage.md`
+ * [bin]'s remaining shots (`shots × type.damagePerShot`, `docs/rules/critical-hits.md`
  * §3 "Ammunition (Ammo Explosion)") is applied through the standard [applyDamage]
  * path to [damageLocation] — the bin's own location for a critical-hit detonation, or
  * `CENTER_TORSO` for the heat-phase cook-off ([battletech.tactical.session.HeatPhaseHandler])
@@ -105,10 +105,10 @@ public fun detonateAmmoBin(
 
 /**
  * Applies the per-component consequence of destroying [content] at [location] on
- * [unit] (`docs/rules/armor-damage.md` §3): a weapon-mount slot disables that
+ * [unit] (`docs/rules/critical-hits.md` §5): a weapon-mount slot disables that
  * [Weapon] (`destroyed = true`); an ammo-bin slot detonates the bin into its own
  * location via [detonateAmmoBin]; a cockpit slot kills the pilot outright
- * (`docs/rules/armor-damage.md` §3, `docs/rules/pilot.md` §1), setting
+ * (`docs/rules/critical-hits.md` §5, `docs/rules/pilot.md` §1), setting
  * [CombatUnit.pilotHits] to [PILOT_DEATH_THRESHOLD] and emitting a fatal [PilotHit]
  * (no consciousness roll). Any other content (structure, actuators, engine, gyro, …)
  * has no additional consequence. Returns the updated unit and the [GameEvent]s produced,
@@ -140,7 +140,7 @@ private fun CombatUnit.applyCritConsequence(
  * structure zeroed (Stage 1/2's `destructionReason`/sweep then handle elimination).
  *
  * Each newly-destroyed slot's per-component consequence is applied immediately
- * (`docs/rules/armor-damage.md` §3): a weapon-mount slot disables that weapon; an
+ * (`docs/rules/critical-hits.md` §5): a weapon-mount slot disables that weapon; an
  * ammo-bin slot detonates ([detonateAmmoBin]) into its own location, which can itself
  * cause further IS damage (caught by the session's later destruction sweep). An ammo
  * explosion also inflicts 2 pilot hits on the unit (each hit runs a consciousness check

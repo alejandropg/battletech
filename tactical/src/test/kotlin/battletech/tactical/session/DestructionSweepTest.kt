@@ -86,7 +86,7 @@ internal class DestructionSweepTest {
      * 2d6 pair (to-hit, location) appended after the two initiative rolls
      * (4 dice) consumed by [BattleSession.advance]. The hit always drops the
      * target's thin CT IS to 0 (>=1 structure damage), which now fires a crit
-     * check (`docs/rules/armor-damage.md` §3) — a trailing (1,1) roll (2d6=2,
+     * check (`docs/rules/critical-hits.md` §1) — a trailing (1,1) roll (2d6=2,
      * the table's "no crit" band) is appended so it consumes no further dice.
      */
     private fun driveToAttack(

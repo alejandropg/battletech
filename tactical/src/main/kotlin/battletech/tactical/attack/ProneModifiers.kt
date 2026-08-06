@@ -32,7 +32,7 @@ public fun immobileTargetToHitModifier(target: VisibleUnit): Int =
 
 /**
  * +2 to-hit penalty applied to ALL of [attacker]'s weapon attacks once it has
- * taken its first sensor critical hit (`docs/rules/armor-damage.md` §3 Quick
+ * taken its first sensor critical hit (`docs/rules/critical-hits.md` §5 Quick
  * Reference table). A second sensor crit blinds the unit entirely (it cannot
  * fire at all — enforced separately in [battletech.tactical.query.WeaponTargeting]),
  * so this modifier only ever needs to report the single +2 tier. Derives from the

@@ -11,7 +11,7 @@ import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 /**
  * 2d6 consciousness-check target, keyed by the pilot's *current* hit count after the
  * hit being resolved is applied (ASSUMPTION/standard BattleTech table — not stated in
- * `docs/rules/armor-damage.md`, which only pins life-support pilot-damage sources and
+ * `docs/rules/critical-hits.md`, which only pins life-support pilot-damage sources and
  * the death condition). A hit count with no entry here (0, or >= [PILOT_DEATH_THRESHOLD])
  * never reaches this table: 0 hits never triggers a check, and >= 6 hits is death, not
  * a check.
@@ -25,7 +25,7 @@ private val CONSCIOUSNESS_TARGET: Map<Int, Int> = mapOf(
 )
 
 /**
- * Applies one pilot hit to [unit] (`docs/rules/armor-damage.md` §3 Life Support is the
+ * Applies one pilot hit to [unit] (`docs/rules/critical-hits.md` §5 Life Support is the
  * only doc-specified source this stage wires up; future stages may add head-hit/fall/
  * ammo-explosion pilot damage through this same entry point).
  *
@@ -66,7 +66,7 @@ public fun applyPilotHit(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit,
 
 /**
  * Consciousness RECOVERY attempt for a pilot who is alive but unconscious
- * (ASSUMPTION/standard BT — `docs/rules/armor-damage.md` only specifies death and the
+ * (ASSUMPTION/standard BT — `docs/rules/critical-hits.md` only specifies the
  * life-support damage sources, not recovery; we mirror [HeatPhaseHandler]'s
  * shutdown/restart pattern: an "avoid bad state" roll while down, an automatic-style
  * recovery attempt every turn while up). Reuses [CONSCIOUSNESS_TARGET], keyed by the

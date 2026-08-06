@@ -24,7 +24,7 @@ public fun pilotingSkillRoll(unit: CombatUnit, roller: DiceRoller, modifier: Int
 
 /**
  * +3 PSR modifier applied to ALL piloting skill rolls once [unit] has taken at least
- * one gyro critical hit (`docs/rules/armor-damage.md` §3 Quick Reference table). Zero
+ * one gyro critical hit (`docs/rules/critical-hits.md` §5 Quick Reference table). Zero
  * once the gyro is destroyed too (2 crits) since the unit is eliminated by then — the
  * modifier still computes harmlessly for any caller that runs ahead of the destruction
  * sweep. Derives from the single tier -> effect source, [critEffects].

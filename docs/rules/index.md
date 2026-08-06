@@ -8,7 +8,8 @@ home**; other docs link to it rather than restating it.
 
 | Document | Owns (canonical) | Key tables / lookups |
 |---|---|---|
-| [`armor-damage.md`](armor-damage.md) | Damage resolution (armor → IS), hit location, **critical hits** & component effects, **damage transfer**, **mech destruction** conditions, **location destruction** consequences | Hit Location Table (Front/Rear/Left/Right), Critical Hit Table (2d6), critical-slot grid, component quick-reference |
+| [`armor-damage.md`](armor-damage.md) | Damage resolution (armor → IS), hit location, **damage transfer**, **mech destruction** conditions, **location destruction** consequences | Hit Location Table (Front/Rear/Left/Right) |
+| [`critical-hits.md`](critical-hits.md) | The critical hit roll, **which slot/component is hit**, the 78-slot grid, **component destruction effects** (engine/gyro/sensors/life support/cockpit/actuators), **ammo explosions** | Critical Hit Table (2d6), critical-slot grid, component quick-reference |
 | [`movement.md`](movement.md) | Movement Phase **sequence & alternating activation**, which units are activated vs. excluded, movement modes & MP, **terrain/elevation move cost**, prone & standing up | Terrain movement-cost table, Walk/Run/Jump MP |
 | [`heat.md`](heat.md) | Heat generation & dissipation, the heat scale, shutdown, heat-driven penalties; **water heat-sink bonus** | Universal Heat Scale 0–30 (move / to-hit / shutdown / ammo-explosion thresholds) |
 | [`to-hit-modifiers.md`](to-hit-modifiers.md) | Weapon to-hit modifiers from movement & range | TMM band table, attacker-movement table, minimum-range penalty formula |
@@ -26,7 +27,9 @@ home**; other docs link to it rather than restating it.
 | Which location gets hit (2d6 hit location) | [`armor-damage.md`](armor-damage.md) — Hit Location Tables |
 | Front vs. rear armor, side-arc limits, natural-2 crit | [`armor-damage.md`](armor-damage.md) — Hit Location Tables |
 | Armor → internal structure → blow-through | [`armor-damage.md`](armor-damage.md) §1 |
-| Critical hit roll, slot determination, engine/gyro/sensors/life-support/cockpit/actuator/ammo effects | [`armor-damage.md`](armor-damage.md) §3 |
+| Critical hit roll (2d6), when a crit check is triggered | [`critical-hits.md`](critical-hits.md) §1 |
+| Which slot/component is hit, roll-again on empty slots, the 78-slot grid | [`critical-hits.md`](critical-hits.md) §2–3 |
+| Engine/gyro/sensors/life-support/cockpit/actuator effects, ammo explosion | [`critical-hits.md`](critical-hits.md) §5 |
 | Damage transfer between locations (blow-through path) | [`armor-damage.md`](armor-damage.md) §5 |
 | What destroys a Mech (head/CT/legs/engine/gyro/ammo/pilot) | [`armor-damage.md`](armor-damage.md) §7 |
 | Arm dropping with side torso, leg-loss fall + halved MP | [`armor-damage.md`](armor-damage.md) §8 |

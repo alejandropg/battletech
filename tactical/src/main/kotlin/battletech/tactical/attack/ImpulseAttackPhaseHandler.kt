@@ -71,7 +71,7 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
     }
 
     /**
-     * Gyro-crit fall effects (`docs/rules/armor-damage.md` §3), applied right after this
+     * Gyro-crit fall effects (`docs/rules/critical-hits.md` §5), applied right after this
      * impulse's crit resolution by comparing [before] (pre-crit) against [after]
      * (post-crit) snapshots, per unit, in unit-id order:
      *

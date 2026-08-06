@@ -35,20 +35,20 @@ public fun CombatUnit.destroyedSlotCount(
     return destroyedIndices.count { index -> slots.getOrNull(index)?.let(predicate) == true }
 }
 
-/** Number of destroyed Engine slots in the Center Torso (`docs/rules/armor-damage.md` §3). */
+/** Number of destroyed Engine slots in the Center Torso (`docs/rules/critical-hits.md` §3). */
 public fun CombatUnit.engineCritCount(): Int =
     destroyedSlotCount(MechLocation.CENTER_TORSO) { it is CriticalSlotContent.Engine }
 
-/** Number of destroyed Gyro slots in the Center Torso (`docs/rules/armor-damage.md` §3). */
+/** Number of destroyed Gyro slots in the Center Torso (`docs/rules/critical-hits.md` §3). */
 public fun CombatUnit.gyroCritCount(): Int =
     destroyedSlotCount(MechLocation.CENTER_TORSO) { it is CriticalSlotContent.Gyro }
 
-/** Number of destroyed Sensors slots in the Head (`docs/rules/armor-damage.md` §3). */
+/** Number of destroyed Sensors slots in the Head (`docs/rules/critical-hits.md` §3). */
 public fun CombatUnit.sensorCritCount(): Int =
     destroyedSlotCount(MechLocation.HEAD) { it is CriticalSlotContent.Sensors }
 
 /**
- * Number of destroyed Life Support slots in the Head (`docs/rules/armor-damage.md`
+ * Number of destroyed Life Support slots in the Head (`docs/rules/critical-hits.md`
  * §3 Life Support; HEAD framework has 2 LifeSupport slots). Drives the per-turn
  * pilot-damage sources wired in [battletech.tactical.heat.resolveUnitHeatPhase].
  */

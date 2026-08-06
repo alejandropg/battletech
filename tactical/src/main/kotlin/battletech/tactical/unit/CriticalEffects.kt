@@ -19,7 +19,7 @@ public sealed interface CritEffect {
 
 /**
  * THE single source of the crit tier -> effect mapping (most-severe tier per component;
- * `docs/rules/armor-damage.md` §3). Both enforcement and display ([criticalDamageStatus])
+ * `docs/rules/critical-hits.md` §5). Both enforcement and display ([criticalDamageStatus])
  * derive from this — add or change a tier here and every consumer follows.
  */
 public fun criticalEffects(component: CriticalComponent, hits: Int): List<CritEffect> = when (component) {

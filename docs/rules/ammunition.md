@@ -24,7 +24,7 @@ Each ammo bin lives in the critical slots of a particular body location (e.g. an
 Right Torso). The bin's location and its **live remaining round count** matter for two things:
 
 1. **Critical hits / cook-off** — if a critical hit strikes an ammo bin, the bin detonates — the
-   detonation damage and transfer mechanics are covered in [`armor-damage.md`](armor-damage.md)
+   detonation damage is covered in [`critical-hits.md`](critical-hits.md) §5; transfer in [`armor-damage.md`](armor-damage.md) §5
    (Critical Hit System), and the resulting pilot injury in [`pilot.md`](pilot.md).
 2. **Heat-phase explosion** — the heat-driven ammo explosion likewise reads the **live remaining
    round count**, so a nearly-empty bin does far less damage than a full one. See [`heat.md`](heat.md).
@@ -38,4 +38,4 @@ An AC/20 ammo bin starts with N rounds.
 - Each time the AC/20 fires, the bin drops by 1, regardless of hit or miss.
 - After N shots the bin is empty and the AC/20 can no longer fire.
 - If that bin is struck by a critical hit while it still holds rounds, it cooks off
-  (see [`armor-damage.md`](armor-damage.md)) — the more rounds left, the bigger the blast.
+  (see [`critical-hits.md`](critical-hits.md) §5) — the more rounds left, the bigger the blast.

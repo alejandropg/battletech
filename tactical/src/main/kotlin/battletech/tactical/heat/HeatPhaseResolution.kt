@@ -26,7 +26,7 @@ import battletech.tactical.unit.critEffects
  *
  *  1. [resolvePower] — shutdown/restart avoidance (heat-keyed).
  *  2. [resolveLifeSupportPilotHit] — Stage 7 life-support pilot damage
- *     (`docs/rules/armor-damage.md` §3 Life Support), evaluated against *this
+ *     (`docs/rules/critical-hits.md` §5 Life Support), evaluated against *this
  *     turn's* post-fold heat. Ordered before consciousness recovery because a
  *     pilot knocked out by life support this turn should not also attempt a
  *     recovery roll in the same Heat Phase (the recovery in step 3 is reserved
@@ -112,7 +112,7 @@ private fun resolvePower(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit,
 }
 
 /**
- * Life-support pilot damage (`docs/rules/armor-damage.md` §3 Life Support — the
+ * Life-support pilot damage (`docs/rules/critical-hits.md` §5 Life Support — the
  * only doc-specified pilot-hit sources): evaluated using [CombatUnit.critEffects]
  * for [CriticalComponent.LIFE_SUPPORT], the single tier -> effect source.
  *
@@ -163,7 +163,9 @@ private fun resolveConsciousnessRecovery(
 /**
  * Cockpit flooding: a **prone** unit standing in depth-2+ water drowns. The pilot
  * takes 1 hit per Heat Phase while the unit remains prone and submerged
- * (`docs/missing-rules.md` §Water & Depth — ASSUMPTION/standard BattleTech).
+ * (`docs/rules/water.md` §2 owns drowning; the once-per-Heat-Phase, prone-only
+ * cadence is an ASSUMPTION — the doc says the pilot "risks drowning over time"
+ * without pinning a rate).
  *
  * Only targets prone (`isProne`) units whose pilot is still alive (`pilotHits <
  * [PILOT_DEATH_THRESHOLD]`). Destroyed units are already swept by
@@ -192,7 +194,7 @@ private fun resolveDrowning(
 /**
  * Ammo explosion: on a failed avoidance roll the ammo bin with the greatest
  * potential damage (`shots × damagePerShot`) cooks off into the center torso
- * (`docs/rules/armor-damage.md` §3), via the shared [detonateAmmoBin] helper —
+ * (`docs/rules/critical-hits.md` §5), via the shared [detonateAmmoBin] helper —
  * unlike a critical-hit detonation (which hits the bin's own location), heat
  * cook-off always routes into [HitLocation.CENTER_TORSO]. An ammo explosion also
  * inflicts 2 pilot hits on the unit (each running a consciousness check 2d6 via

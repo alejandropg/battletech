@@ -3,9 +3,9 @@ package battletech.tactical.unit
 import battletech.tactical.model.MechLocation
 
 /**
- * Reasons a [CombatUnit] is eliminated from play (`docs/rules/armor-damage.md` §5).
+ * Reasons a [CombatUnit] is eliminated from play (`docs/rules/armor-damage.md` §7).
  *
- * Note: a destroyed gyro is NOT a destruction reason — per the rules doc §3 a 2nd gyro
+ * Note: a destroyed gyro is NOT a destruction reason — per `docs/rules/critical-hits.md` §5 a 2nd gyro
  * crit immobilizes the mech (it crashes prone and can never stand) but it keeps fighting
  * from the ground, so it stays in play. That handling lives in the attack phase handlers
  * and [battletech.tactical.movement.MovementPhaseHandler], not here.

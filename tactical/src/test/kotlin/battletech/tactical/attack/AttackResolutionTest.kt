@@ -203,7 +203,7 @@ internal class AttackResolutionTest {
 
     @Test
     fun `1 sensor crit raises the target number by two`() {
-        // HEAD framework: Sensors at indices 1 and 4 (docs/rules/armor-damage.md §3).
+        // HEAD framework: Sensors at indices 1 and 4 (docs/rules/critical-hits.md §3).
         val blindedAttacker = attacker.copy(
             criticalHits = mapOf(battletech.tactical.model.MechLocation.HEAD to setOf(1)),
         )

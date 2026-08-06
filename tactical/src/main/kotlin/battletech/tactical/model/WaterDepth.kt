@@ -28,7 +28,8 @@ public fun unitWaterDepth(position: HexCoordinates, map: GameMap): Int =
 
 /**
  * Extra heat dissipation granted when a unit is standing in water
- * (`docs/missing-rules.md` §Water & Depth — ASSUMPTION/standard BattleTech).
+ * (`docs/rules/heat.md` §1 owns the water heat-sink bonus; the specific +6/+12 values
+ * below are an ASSUMPTION — the doc states the bonus qualitatively, not numerically).
  *
  * Since per-location heat-sink placement is not tracked granularly in the current model,
  * fixed bonuses are applied based on submersion level:

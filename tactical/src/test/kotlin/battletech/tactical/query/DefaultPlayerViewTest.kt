@@ -124,7 +124,7 @@ internal class DefaultPlayerViewTest {
 
     @Test
     fun `a unit with 2 sensor crits is blind and has no valid targets`() {
-        // HEAD framework: Sensors at indices 1 and 4 (docs/rules/armor-damage.md §3).
+        // HEAD framework: Sensors at indices 1 and 4 (docs/rules/critical-hits.md §3).
         val attacker = aUnit(
             id = "attacker",
             owner = PlayerId.PLAYER_1,

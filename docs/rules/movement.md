@@ -125,5 +125,5 @@ which requires a Piloting Skill Roll (see [`pilot.md`](pilot.md) §3):
 * **Failure** — the unit stays prone and its activation is spent.
 
 A unit that **cannot stand** — after a second gyro critical hit (see
-[`armor-damage.md`](armor-damage.md) §3) — remains prone for the rest of the game.
+[`critical-hits.md`](critical-hits.md) §5) — remains prone for the rest of the game.
 It is still activated each turn (§2), but can neither move nor rise.
