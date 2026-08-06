@@ -18,16 +18,12 @@ public const val PROTOCOL_VERSION: Int = 1
  * [battletech.tactical.session.GameSession] exposes except [battletech.tactical.session.GameLog],
  * which travels separately as [LogEntry] deltas so the client can maintain its own log.
  *
- * [gameState] is [PlayerGameState] — the per-viewer PROJECTION
- * ([battletech.tactical.query.projectFor]), never the raw
- * [battletech.tactical.model.GameState] — built by
- * [battletech.network.server.GameServer.snapshotFor] for the specific seat this snapshot
- * is addressed to. A [GameSnapshot] built for PLAYER_2 carries [battletech.tactical.unit.ForeignUnit]
- * for every PLAYER_1 unit (no gunnery/heat/internals reachable), same as any other
- * [battletech.tactical.session.GameSession.stateFor] caller. This is the type-level half of
- * the wire's hidden-information guarantee; see [battletech.network.server.GameServer] for
- * the other two outbound paths ([ServerMessage.StatePush]'s log delta and
- * [ServerMessage.JoinAccepted]'s log) that must redact in lockstep with this snapshot.
+ * [gameState] is [PlayerGameState] — the per-viewer projection
+ * ([battletech.tactical.query.projectFor]) built by
+ * [battletech.network.server.GameServer.snapshotFor] for the specific seat this snapshot is
+ * addressed to. See [battletech.network.server.GameServer] for the other two outbound paths
+ * ([ServerMessage.StatePush]'s log delta and [ServerMessage.JoinAccepted]'s log) that must
+ * redact in lockstep with this snapshot.
  *
  * [turnState] is NOT filtered per seat: [battletech.tactical.session.AttackProgress]'s
  * `weaponDeclarations`/`physicalDeclarations` hold both players' committed declarations,

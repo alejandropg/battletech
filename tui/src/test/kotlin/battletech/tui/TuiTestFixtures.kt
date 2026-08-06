@@ -73,7 +73,7 @@ internal fun anAppState(
 /**
  * A [PlayerView] for [player] over [gameState], routed through a throwaway [AppState]/session
  * instead of constructing `DefaultPlayerView` directly — keeps test code on the same
- * `session.viewFor` path production code uses (see Stage 7 plan D1).
+ * `session.viewFor` path production code uses.
  */
 internal fun viewFor(player: PlayerId, gameState: GameState): PlayerView =
     anAppState(MovementPhase.SelectingUnit, gameState = gameState).viewFor(player)

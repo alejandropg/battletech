@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * [GameEvent.redactFor] is the single seam both the log ([BattleSession.logFor]) and the
- * wire (Stage 4) redact through. These tests pin its three outcomes (verbatim / redacted /
+ * wire redact through. These tests pin its three outcomes (verbatim / redacted /
  * suppressed) directly against events, independent of any formatter or rendering.
  */
 internal class EventRedactionTest {

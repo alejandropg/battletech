@@ -29,11 +29,8 @@ import kotlinx.serialization.Serializable
  *
  * The test for "is this public?" is **observability**, not sensitivity: could an
  * opponent learn it by watching the table or hearing the roll announced? If yes,
- * withholding it buys nothing and costs consistency.
- *
- * Absent by design — never appears on [ForeignUnit], and therefore never leaks: gunnery
- * skill, piloting skill, current heat, heat sink, internal structure, critical hit
- * layout/locations, heat generated this turn, pilot hits.
+ * withholding it buys nothing and costs consistency. [ForeignUnit] enumerates what
+ * fails that test and is therefore absent by design.
  */
 @Serializable
 public sealed interface VisibleUnit {

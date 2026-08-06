@@ -35,7 +35,7 @@ internal class WeaponTargeting(private val state: PlayerGameState) {
 
     fun validTargets(attackerId: UnitId, torsoFacing: HexDirection): Set<UnitId> {
         val attacker = state.ownUnitById(attackerId)
-        // An unconscious pilot cannot act this turn (Stage 7) — same actor-eligibility
+        // An unconscious pilot cannot act this turn — same actor-eligibility
         // treatment as a sensor-blinded unit. Unconscious units remain valid TARGETS
         // (see the `!it.isDestroyed` filter below, which deliberately does not also
         // check isPilotConscious).

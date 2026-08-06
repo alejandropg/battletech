@@ -14,14 +14,10 @@ import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.VisibleUnit
 
 /**
- * The one [PlayerView] implementation, built over a per-viewer [PlayerGameState].
- *
- * Because it consumes the projection rather than raw [battletech.tactical.model.GameState],
- * the authoritative host ([battletech.tactical.session.BattleSession.viewFor], via
- * `stateFor(playerId)`) and a client
- * ([battletech.network.client.ClientGameSession.viewFor], over its projected snapshot) run
- * this exact code — a client's answer to "what is legal right now?" cannot drift from the
- * server's, and neither can reach a field the viewer isn't entitled to.
+ * The one [PlayerView] implementation, built over a per-viewer [PlayerGameState] rather
+ * than raw [battletech.tactical.model.GameState]. Both
+ * [battletech.tactical.session.BattleSession.viewFor] and
+ * [battletech.network.client.ClientGameSession.viewFor] run this exact code.
  */
 public class DefaultPlayerView(
     override val playerId: PlayerId,

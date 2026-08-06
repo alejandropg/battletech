@@ -209,10 +209,8 @@ public fun main(args: Array<String>) {
             check(seats.keys == PlayerId.entries.toSet()) {
                 "hot-seat roster incomplete: expected ${PlayerId.entries.toSet()}, got ${seats.keys}"
             }
-            // The second connectLocal()'s JoinAccepted (and, for the same reason, the first's) can
-            // return before the kickstart's StatePush has been applied by that session's own reader
-            // thread — see awaitKickstart's KDoc. TuiApp reads currentPhase to build its initial
-            // AppState, so composition must absorb this race before handing seats to TuiApp.
+            // TuiApp reads currentPhase to build its initial AppState, so composition must
+            // absorb the kickstart race here — see awaitKickstart's KDoc.
             awaitKickstart(server, seats)
             server.use { TuiApp(seats).run() }
         }
@@ -220,9 +218,8 @@ public fun main(args: Array<String>) {
         is Mode.Host -> {
             val map = resolveMapOrExit(mode.mapName)
             val server = GameServer.host(GameStateFactory().sampleGameState(map))
-            // connectLocal() BEFORE the acceptor starts: no accept loop exists yet, so no socket
-            // client can possibly attach first — the local player is deterministically PLAYER_1.
-            // See GameServer.connectLocal's KDoc for the full determinism argument.
+            // connectLocal() BEFORE the acceptor starts — see GameServer.connectLocal's KDoc
+            // for why that order is what makes the local seat deterministically PLAYER_1.
             val localSession = server.connectLocal()
             val acceptor = SocketAcceptor(server, mode.port)
             acceptor.start()
@@ -299,11 +296,9 @@ internal class GameEventPrinter(private val out: Appendable) {
     private var lastPrintedTurn: Int? = null
 
     /**
-     * [gameState] is the authoritative, unfiltered state a headless server console
-     * legitimately has (see the class doc) — there is no single "viewer" to project
-     * for here, so it's revealed in full via [projectFor] rather than redacted for
-     * an arbitrary seat. [GameLogFormatter] itself takes the same [PlayerGameState]
-     * shape every other consumer (the in-game LOG panel) does.
+     * There is no single "viewer" to project [gameState] for here, so it is revealed in full
+     * via [projectFor] rather than redacted for an arbitrary seat. [GameLogFormatter] itself
+     * takes the same [PlayerGameState] shape every other consumer (the in-game LOG panel) does.
      */
     @Synchronized
     fun print(event: GameEvent, gameState: GameState, turnNumber: Int) {

@@ -9,7 +9,7 @@ import battletech.tactical.unit.UnitId
 /**
  * Redacts [this] event for [viewer]: the log/wire counterpart of
  * [battletech.tactical.query.projectFor] for units, and the single rule both the log
- * ([BattleSession.logFor]) and the wire (Stage 4) redact through. Three outcomes:
+ * ([BattleSession.logFor]) and the wire redact through. Three outcomes:
  *
  *  - the event unchanged (verbatim) — [revealAll], or the event carries no private
  *    data at all (most events; see the branches below),
@@ -17,11 +17,9 @@ import battletech.tactical.unit.UnitId
  *  - `null`, to suppress the event outright ([HeatDissipated] when the viewer's
  *    filtered share of it is empty but the original was not).
  *
- * The rule this implements throughout (see the `VisibleUnit` KDoc): **observability,
- * not sensitivity**. A 'Mech shutting down, falling, standing, being destroyed, or
- * taking a critical hit is a fact any player at the table would see; the record-sheet
- * numbers behind it (heat, which component, ammo type, pilot-hit totals, skill-revealing
- * rolls) are not, and are withheld from a [viewer] who does not own the unit.
+ * Applies the observability rule owned by the [battletech.tactical.unit.VisibleUnit] KDoc:
+ * what any player at the table would see stays, the record-sheet numbers behind it are
+ * withheld from a [viewer] who does not own the unit.
  *
  * **A roll is never "just a roll" when the event carrying it is conditional on the roll's
  * outcome.** Several events are emitted only on a pass (or only on a fail) against a target
@@ -36,10 +34,8 @@ import battletech.tactical.unit.UnitId
  * unconditional (both players' rolls are emitted win or lose, and the target is the
  * opponent's roll, not a record-sheet number), so they stay verbatim.
  *
- * Ownership resolves via [GameState.unitById]. [viewer] `== null` means "I don't know
- * who is looking": every unit is treated as foreign, same as [battletech.tactical.query.projectFor].
- * This fails CLOSED on purpose — the opposite (fail-open) was the live bug fixed in
- * `29c7576`; do not repeat it.
+ * Ownership resolves via [GameState.unitById]. A null [viewer] fails closed for the reason
+ * given on [battletech.tactical.query.PlayerGameState].
  *
  * **Known limitation, accepted by design**: [AttacksResolved] is NOT redacted here.
  * [battletech.tactical.attack.AttackResult.gunnery] is technically record-sheet data, but

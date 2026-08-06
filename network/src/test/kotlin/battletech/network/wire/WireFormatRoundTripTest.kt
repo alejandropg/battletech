@@ -144,7 +144,7 @@ internal class WireFormatRoundTripTest {
     // MatchEnded(Victory), CriticalHit.Detailed, AmmoExploded.Detailed,
     // UnitStoodUp.Detailed). These round-trip the sibling leaves those nested
     // sealed types (UnitShutdown, UnitRestarted, PilotHit, MatchOutcome,
-    // CriticalHit, AmmoExploded, UnitStoodUp) permit — including Stage 3's
+    // CriticalHit, AmmoExploded, UnitStoodUp) permit — including the
     // `Undisclosed` redaction leaves, which ride the wire just like their
     // `Detailed` siblings.
 
@@ -227,7 +227,7 @@ internal class WireFormatRoundTripTest {
 
     // ---------- Knockdown (nested in PhysicalAttackResult, not a top-level GameEvent —
     // not covered by the completeness guard above, but still rides the wire embedded in
-    // PhysicalAttacksResolved, so its Stage 3 redaction leaves get the same treatment) ----------
+    // PhysicalAttacksResolved, so its redaction leaves get the same treatment) ----------
 
     @Test
     fun `PhysicalAttacksResolved with a Knockdown Resisted Undisclosed round-trips`() {

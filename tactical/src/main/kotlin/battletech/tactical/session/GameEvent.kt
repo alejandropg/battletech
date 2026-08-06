@@ -276,7 +276,7 @@ public data class PilotKnockedUnconscious(
 ) : GameEvent
 
 /**
- * [unitId]'s pilot regained consciousness (Stage 7 Heat Phase recovery roll —
+ * [unitId]'s pilot regained consciousness (Heat Phase recovery roll —
  * ASSUMPTION/standard; `docs/rules/critical-hits.md` only pins life-support damage
  * sources and death, not recovery mechanics).
  *

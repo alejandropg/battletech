@@ -16,24 +16,13 @@ import battletech.tactical.query.projectFor
 import battletech.tactical.unit.destructionReason
 
 /**
- * The authoritative aggregate for a single match. Holds [GameState] and
- * [TurnState] privately and delegates command processing to a list of
- * [PhaseHandler] strategies (one per [battletech.tactical.model.TurnPhase])
- * in canonical order.
+ * Holds [GameState] and [TurnState] privately and delegates command processing to a list
+ * of [PhaseHandler] strategies (one per [battletech.tactical.model.TurnPhase]) in
+ * canonical order.
  *
- * Phase progression model:
- *
- *  - Commands flow through [submitCommand]. The current handler decides
- *    whether to [PhaseHandler.accepts] (else [CommandRejection.WrongPhase]),
- *    then [PhaseHandler.validate]s (else specific rejection), then
- *    [PhaseHandler.apply]s. After applying, the session cascades through any
- *    handlers that report [PhaseHandler.isComplete] — each advance fires the
- *    new handler's [PhaseHandler.onEntry] and emits a [PhaseChanged] event
- *    — until it lands on a handler that needs more input.
- *
- *  - [advance] is the kickstart: it fires the current handler's on-entry if
- *    pending and then runs the same cascade. Used at game start so the TUI
- *    doesn't have to know about system phases (Initiative/Heat/End) at all.
+ * Within [submitCommand], the current handler decides whether to [PhaseHandler.accepts]
+ * (else [CommandRejection.WrongPhase]), then [PhaseHandler.validate]s (else a specific
+ * rejection), then [PhaseHandler.apply]s.
  *
  * Threading: not internally synchronised. Callers must serialise commands.
  */
@@ -65,11 +54,10 @@ public class BattleSession(
     public override val gameLog: GameLog get() = _gameLog
 
     /**
-     * The authoritative, unredacted state. NOT part of [GameSession] — this is a concrete
-     * member only [BattleSession] exposes, for the server-side call sites that legitimately
-     * need raw state in-process ([battletech.network.server.GameServer] building outbound
-     * [battletech.network.wire.GameSnapshot]s, the headless printer in `Main.kt`). Every
-     * delivery-facing read goes through [stateFor] instead.
+     * The authoritative, unredacted state. Deliberately not part of [GameSession]: it
+     * exists for the server-side call sites that legitimately need raw state in-process
+     * ([battletech.network.server.GameServer] building outbound
+     * [battletech.network.wire.GameSnapshot]s, the headless printer in `Main.kt`).
      */
     public val gameState: GameState get() = _gameState
     public override val turnState: TurnState get() = _turnState
@@ -79,22 +67,10 @@ public class BattleSession(
         get() = handlers[_currentPhaseIndex].activePlayer(_turnState)
     public override val isMatchOver: Boolean get() = _matchOver
 
-    /**
-     * Built from [stateFor] — the projection — NOT raw [_gameState], so the authoritative
-     * host and a client
-     * ([battletech.network.client.ClientGameSession.viewFor], over its projected snapshot)
-     * run the identical [DefaultPlayerView] code against the identical shape of input. One
-     * implementation, so a client's "what is legal right now?" can never drift from the
-     * server's answer, and the host cannot accidentally rely on data a client wouldn't have.
-     */
+    /** Built from [stateFor] — the projection — never from raw [_gameState]. */
     public override fun viewFor(playerId: PlayerId): PlayerView =
         DefaultPlayerView(playerId, stateFor(playerId), _turnState)
 
-    /**
-     * The deliberate match-over reveal lives here, inside the projection:
-     * once [_matchOver] is set, every unit becomes visible to every viewer
-     * (including `null`), regardless of ownership.
-     */
     public override fun stateFor(viewer: PlayerId?): PlayerGameState =
         _gameState.projectFor(viewer, revealAll = _matchOver)
 
@@ -108,17 +84,11 @@ public class BattleSession(
         }
 
     /**
-     * Register [listener] to receive every event emitted by this session: a raw,
-     * session-wide feed, not scoped to any player. That is not because the game is
-     * open-information — it has real hidden information — but because per-player
-     * redaction happens once, at [stateFor]/[logFor] (see [GameEvent.redactFor]), not by
-     * filtering this feed. A listener that renders directly from an event delivered here
-     * bypasses that seam; deliveries must go through the projection instead.
+     * Register [listener] to receive every event emitted by this session, unfiltered.
      *
-     * Returns a [Subscription] whose [Subscription.unsubscribe] detaches
-     * the listener. Listeners are invoked synchronously on the thread
-     * that called [submitCommand] / [advance]; long-running work should
-     * be deferred to another thread by the listener.
+     * Returns a [Subscription] whose [Subscription.unsubscribe] detaches the listener.
+     * Listeners are invoked synchronously on the thread that called [submitCommand] /
+     * [advance]; long-running work should be deferred to another thread by the listener.
      */
     public override fun subscribe(listener: (GameEvent) -> Unit): Subscription {
         listeners += listener

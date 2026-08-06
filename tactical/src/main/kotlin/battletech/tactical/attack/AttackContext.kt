@@ -20,8 +20,7 @@ import battletech.tactical.unit.Weapon
  *    off the target (position, elevation/water depth via position, prone, shutdown,
  *    movement-this-turn) is public information any player could read off the table. Typing
  *    it this way is what lets a remote client run the *same* rules against its own projected
- *    snapshot, and makes "a rule reads a foreign unit's private field" a compile error
- *    rather than a leak.
+ *    snapshot.
  *
  * [map] rather than a whole [battletech.tactical.model.GameState] for the same reason: the
  * map is all the rules actually consult, and a per-viewer

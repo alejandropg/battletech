@@ -11,22 +11,17 @@ import kotlin.concurrent.thread
 
 /**
  * Owns the listening TCP socket for a [GameServer]: binds [port] eagerly in the constructor (so
- * [boundPort] is meaningful immediately, even before [start] runs the accept loop — mirroring how
- * [GameServer] itself used to bind before this class existed), accepts connections on a daemon
- * thread, and hands each one to [GameServer.attach] as a [JsonLineConnection.Server].
+ * [boundPort] is meaningful immediately, even before [start] runs the accept loop), accepts
+ * connections on a daemon thread, and hands each one to [GameServer.attach] as a
+ * [JsonLineConnection.Server].
  *
- * Split out of [GameServer] because a [GameServer] must be constructible with NO socket at all —
- * hot-seat play needs the single command-authority + redaction seam [GameServer] provides, but
- * must never bind a port for a solitaire game where both seats are
- * [GameServer.connectLocal] clients. Every socket-specific concern — the [ServerSocket], the
- * accept loop, the per-connection handshake timeout — lives here now; [GameServer] itself knows
- * nothing about TCP, sockets, or ports.
+ * Every socket-specific concern — the [ServerSocket], the accept loop, the per-connection
+ * handshake timeout — lives here, so [GameServer] itself knows nothing about TCP, sockets, or
+ * ports and can be constructed without any of them.
  *
- * A `--host` launch that wants BOTH a local seat and a listening port constructs both: call
- * [GameServer.connectLocal] before calling [start] here (see [GameServer]'s KDoc for why that
- * order is what guarantees the local player gets `PLAYER_1`), then [start] to open the door for
- * the remote seat. A `--server` (headless) launch skips [GameServer.connectLocal] entirely and
- * only ever uses this class. Hot-seat uses neither.
+ * A launch that wants BOTH a local seat and a listening port constructs both, and must call
+ * [GameServer.connectLocal] before calling [start] here — see [GameServer]'s KDoc for why that
+ * order is what guarantees the local player gets `PLAYER_1`.
  */
 public class SocketAcceptor(
     private val server: GameServer,

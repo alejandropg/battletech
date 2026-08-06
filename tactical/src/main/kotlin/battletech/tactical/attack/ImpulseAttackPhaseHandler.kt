@@ -84,7 +84,7 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
      *    It is NOT eliminated (still fights prone) and can never stand again (enforced by
      *    [battletech.tactical.movement.MovementPhaseHandler] via [gyroCritCount]).
      *
-     * Stage 5 applies this within the same `apply()` call rather than deferring to literal
+     * This is applied within the same `apply()` call rather than deferring to literal
      * end-of-phase. A unit already prone takes no further fall.
      *
      * **Canonical dice order** per falling unit:

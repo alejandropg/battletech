@@ -43,8 +43,8 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
  * thread that applies [ServerMessage.StatePush]es as they arrive. The transport
  * underneath may be a real socket ([JsonLineConnection]) or an in-process
  * [battletech.network.transport.InMemoryConnection] half (see
- * [battletech.network.server.GameServer.connectLocal]) — this class neither knows
- * nor cares which, which is exactly what lets a local player be a client too.
+ * [battletech.network.server.GameServer.connectLocal]); this class neither knows nor cares
+ * which.
  *
  * **Ordering invariant** (see [ServerMessage] KDoc): for an accepted command
  * the [ServerMessage.StatePush] carrying the change arrives on the wire
@@ -54,21 +54,17 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
  * returns, [turnState]/[currentPhase] already reflect the accepted command.
  * Callers may read post-submit state immediately.
  *
- * **What this class does NOT have, on purpose:** raw [battletech.tactical.model.GameState].
  * [snapshot]`.gameState` is already [PlayerGameState] — [playerId]'s own projection, exactly
  * as the host computed and sent it (see [battletech.network.server.GameServer.snapshotFor]).
  *
  * That projection is enough to serve this seat completely, with no round trip: [stateFor],
- * [logFor] and [viewFor] all answer locally for [playerId]. [viewFor] in particular builds
- * the same [battletech.tactical.query.DefaultPlayerView] the authoritative host builds, over
- * the same [PlayerGameState] shape — the query engine
+ * [logFor] and [viewFor] all answer locally for [playerId]. The query engine
  * ([battletech.tactical.movement.ReachabilityCalculator], [battletech.tactical.query.WeaponTargeting],
- * [battletech.tactical.query.PhysicalAttackQueries]) consumes the projection, resolving the
- * ACTOR (always a unit this seat owns) through
+ * [battletech.tactical.query.PhysicalAttackQueries]) consumes the projection directly,
+ * resolving the ACTOR (always a unit this seat owns) through
  * [battletech.tactical.query.PlayerGameState.ownUnitById] and leaving every other unit
  * [battletech.tactical.unit.VisibleUnit]-shaped, because every field it reads off a
- * non-actor unit is public. One implementation, so a client's answer cannot drift from the
- * server's.
+ * non-actor unit is public.
  *
  * None of the three can honestly answer for a DIFFERENT viewer — there is no raw state left
  * to re-project from — so all three refuse rather than guess; see their KDoc.
@@ -107,8 +103,7 @@ public class ClientGameSession internal constructor(
     /**
      * Answers "what is legal right now?" for THIS connection's own seat, locally, with no
      * round trip: [DefaultPlayerView] consumes the same [PlayerGameState] projection the
-     * host's [battletech.tactical.session.BattleSession.viewFor] feeds it, so this client
-     * runs the identical query code and cannot drift from the server's answer.
+     * host's [battletech.tactical.session.BattleSession.viewFor] feeds it.
      *
      * Refuses any OTHER seat, for the same reason as [stateFor]: this replica holds only its
      * own projection, so it has neither the data nor the standing to build the opponent's
@@ -255,9 +250,7 @@ public class ClientGameSession internal constructor(
          * Sends [ClientMessage.Join] on [connection] and blocks for the host's handshake
          * response, building the [ClientGameSession] on acceptance. Shared by [connect] (a real
          * socket) and [battletech.network.server.GameServer.connectLocal] (an in-process
-         * [battletech.network.transport.InMemoryConnection] half) — the handshake itself neither
-         * knows nor cares which transport it is running over, which is exactly the property that
-         * lets a local player be indistinguishable from a remote one. [connection] is closed on
+         * [battletech.network.transport.InMemoryConnection] half). [connection] is closed on
          * any failure path; on success it becomes the returned session's transport.
          *
          * @throws JoinRejectedException if the host refuses the join.

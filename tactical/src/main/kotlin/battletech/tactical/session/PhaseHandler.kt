@@ -6,13 +6,8 @@ import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 
 /**
- * One handler per [TurnPhase] of a turn. The [BattleSession] holds a list of
- * handlers in canonical phase order and delegates commands to the current
- * one. Adding a new phase = adding a handler and registering it; no edits
- * to existing handlers or the session (OCP).
- *
- * Handlers are stateless — all data flows through their arguments and
- * the [PhaseOutcome] they return.
+ * One handler per [TurnPhase] of a turn. The [BattleSession] holds a list of handlers in
+ * canonical phase order and delegates commands to the current one.
  */
 public interface PhaseHandler {
 

@@ -42,8 +42,8 @@ public data class PlayerGameState(
  * Projects [GameState] for [viewer]: the [CombatUnit] itself for units [viewer] owns,
  * [ForeignUnit] otherwise.
  *
- * [revealAll] is the deliberate match-over reveal (every unit stays a [CombatUnit]) — a
- * later stage supplies it from `session.isMatchOver`.
+ * [revealAll] is the deliberate match-over reveal (every unit stays a [CombatUnit]),
+ * supplied from `session.isMatchOver`.
  *
  * [viewer] `== null` means "I don't know who is looking": every unit becomes
  * [ForeignUnit], including what would otherwise be that unknown viewer's own units.

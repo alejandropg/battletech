@@ -2,11 +2,7 @@ package battletech.tactical.session
 
 import kotlinx.serialization.Serializable
 
-/**
- * Outcome of submitting a [GameCommand] to a session. Subscribers receive
- * the same events via the subscription channel; the submitter gets
- * them synchronously here as a courtesy.
- */
+/** Outcome of submitting a [GameCommand] to a session. */
 @Serializable
 public sealed interface CommandResult {
 

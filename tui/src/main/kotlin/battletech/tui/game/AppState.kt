@@ -23,11 +23,9 @@ import battletech.tui.game.phase.PhysicalAttackPhase
 
 /**
  * The TUI's UI-shell state. [seats] is the set of seats this process drives, each mapped to the
- * [GameSession] that seat submits commands and reads redacted state through — hot-seat maps both
- * [PlayerId]s to the same shared session, `--host`/`--join` map exactly the one local seat. There
- * is no separate "is this hot-seat?" flag anywhere in this class: a seat's mere presence or
- * absence in [seats] IS the answer, for both viewer pinning ([viewer]) and input gating (the seat
- * check in `battletech.tui.game.phase`'s `localTurnGuard`) alike.
+ * [GameSession] that seat submits commands and reads redacted state through. A seat's presence
+ * or absence in [seats] is what both viewer pinning ([viewer]) and input gating (the seat check
+ * in `battletech.tui.game.phase`'s `localTurnGuard`) key off.
  *
  * Every seat's session is a replica of the same authoritative match, so [turnState] and the
  * domain-level fields on [GameSession] ([GameSession.currentPhase], [GameSession.activePlayer])
@@ -93,13 +91,8 @@ internal data class AppState(
     /**
      * The full [CombatUnit] for [id], for call sites that already know [id] names a unit the
      * viewer owns — e.g. the attacker/mover reached via an ownership-gated selection
-     * ([selectOwnUnit][battletech.tui.game.phase.selectOwnUnit]). Throws if the projection
-     * disagrees: that would mean the call site's ownership assumption was wrong, which should
-     * fail loudly rather than silently render nothing (or, worse, leak).
-     *
-     * Delegates to [PlayerGameState.ownUnitById] — the rules engine's query path resolves its
-     * actor through that same single implementation, so the TUI and the engine cannot drift
-     * on what "the viewer's own unit" means.
+     * ([selectOwnUnit][battletech.tui.game.phase.selectOwnUnit]). Delegates to
+     * [PlayerGameState.ownUnitById], which owns the throw-on-mismatch rule.
      */
     fun ownUnit(id: UnitId): CombatUnit = visibleState.ownUnitById(id)
 }

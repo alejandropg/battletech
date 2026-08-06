@@ -11,15 +11,11 @@ import battletech.tactical.unit.UnitId
 import kotlinx.serialization.Serializable
 
 /**
- * A player intent submitted to a [BattleSession].
- * Coarse and commit-on-intent: each command represents a real game decision
- * the session validates and applies as one atomic step.
+ * A player intent submitted to a [BattleSession], validated and applied as one atomic
+ * step.
  *
- * The transient UI workflow (cursor, hover, in-progress weapon picks) lives
- * client-side and never crosses this boundary — only finalised intents do.
- *
- * Every concrete command carries [playerId] so the session can enforce
- * active-player authorization centrally without inspecting subtypes.
+ * Every concrete command carries [playerId] so the session can enforce active-player
+ * authorization centrally without inspecting subtypes.
  */
 @Serializable
 public sealed interface GameCommand {

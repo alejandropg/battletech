@@ -28,10 +28,8 @@ import org.junit.jupiter.api.Test
  * seat's own session happens to be local or remote. Tab, Enter, click, and 'c' must all be
  * blocked with the "Waiting for opponent" flash on the opponent's turn — previously only
  * Enter/click were guarded (via `selectOwnUnit`),
- * letting Tab and 'c' drive the opponent's units. Cursor movement is unaffected, and hot-seat
- * (both seats present) bypasses the gate entirely — not via any conditional, but because
- * [AppState.seats] holds both players there, so the active player is always a member. See
- * [HotSeatRegression] for the regression guard on that specifically.
+ * letting Tab and 'c' drive the opponent's units. Cursor movement is unaffected; see
+ * [HotSeatRegression] for what happens when both seats are present.
  */
 internal class SeatGuardTest {
 

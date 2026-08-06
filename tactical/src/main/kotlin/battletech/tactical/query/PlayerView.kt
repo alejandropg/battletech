@@ -13,14 +13,12 @@ import battletech.tactical.unit.UnitId
  * client) consume this to answer "what is legal right now?" without
  * reaching into raw [battletech.tactical.model.GameState].
  *
- * [playerId] IS an access boundary, not just a display convenience: the game has real
- * hidden information, and a view is built over that player's
- * [PlayerGameState] projection. Queries about the viewer's own units answer in
- * full; data belonging to units the viewer does not own is either absent from
- * the result type entirely ([DeclaredWeaponLine.Undisclosed]) or was never
- * reachable to begin with ([ForeignUnit] has no gunnery/heat/internals field).
- * Asking for something only an owner could know — e.g. movement legality for a
- * foreign unit — fails loudly rather than answering wrongly; see
+ * [playerId] is an access boundary, not just a display convenience: a view is built over
+ * that player's [PlayerGameState] projection. Queries about the viewer's own units answer
+ * in full; data belonging to units the viewer does not own is either absent from the
+ * result type entirely ([DeclaredWeaponLine.Undisclosed]) or was never reachable to begin
+ * with (see [ForeignUnit]). Asking for something only an owner could know — e.g. movement
+ * legality for a foreign unit — fails loudly rather than answering wrongly; see
  * [PlayerGameState.ownUnitById].
  */
 public interface PlayerView {

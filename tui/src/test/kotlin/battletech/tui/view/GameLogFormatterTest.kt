@@ -73,7 +73,7 @@ internal class GameLogFormatterTest {
     // Raw GameState fixture the per-test `stateWithXxx` derivatives build on via `.copy(units = ...)`;
     // [emptyState] itself is the PlayerGameState every call into GameLogFormatter actually takes —
     // `viewer = null, revealAll = true` reveals everything, which is what this formatter-output test
-    // wants (it is not testing redaction; that's Stage 3).
+    // wants (it is not testing redaction).
     private val emptyGameState = GameState(
         units = UnitRoster(emptyList()),
         map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0)))),

@@ -7,9 +7,7 @@ application {
     mainClass.set("battletech.tui.MainKt")
 }
 
-// Gradle always runs tasks in a forked JVM that has no controlling terminal,
-// so Mordant's enterRawMode() cannot work here. Run the JAR directly instead:
-//   ./gradlew :tui:shadowJar && java -jar tui/build/libs/tui.jar
+// See docs/tui-testing.md for why this task cannot work and what to run instead.
 tasks.named<JavaExec>("run") {
     doFirst {
         throw GradleException(

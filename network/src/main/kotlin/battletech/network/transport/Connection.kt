@@ -5,11 +5,9 @@ import battletech.network.wire.ServerMessage
 
 /**
  * The server's end of a connection to one player, independent of what sits on the other end:
- * a real socket ([JsonLineConnection]) or an in-process peer ([InMemoryConnection]). This is
- * the seam [battletech.network.server.GameServer] will eventually hold one of PER SEAT instead
- * of the `BufferedReader`/`Writer` pair it wires up inline today — a hot-seat/host-local player
- * and a remote player both terminate here, and nothing on this interface lets the server tell
- * them apart.
+ * a real socket ([JsonLineConnection]) or an in-process peer ([InMemoryConnection]).
+ * [battletech.network.server.GameServer] holds one of these per seat, and nothing on this
+ * interface lets it tell the two implementations apart.
  *
  * Threading contract mirrors the socket reality [JsonLineConnection] wraps: [receive] blocks
  * the calling thread until a message arrives or the peer is gone, so a caller reads on a

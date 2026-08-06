@@ -8,21 +8,16 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Factory for an in-process [ServerConnection]/[ClientConnection] pair that swaps message
  * OBJECTS directly through two [LinkedBlockingQueue]s — no serialization, no bytes, no socket.
- * This is the local-player adapter the [ServerConnection]/[ClientConnection] port exists for:
- * it presents the exact same surface [JsonLineConnection] presents over a real socket, so a
- * caller holding one of these — [battletech.network.server.GameServer], once wired up — cannot
- * tell a hot-seat/host-local player from a remote one.
+ * It presents the exact same surface [JsonLineConnection] presents over a real socket.
  *
  * ### Close / poison mechanism
  *
- * `close()` means "this connection is finished" — both directions die, matching real socket
- * semantics: [battletech.network.server.GameServer] disconnects a client today by closing the
- * underlying `Socket`, which unblocks BOTH that client's writer (a subsequent `write` fails) AND
- * the server's own reader thread parked in `input.readLine()` (it throws `SocketException`). A
- * [ServerConnection]/[ClientConnection] that only unblocked the PEER's `receive()` and left its
- * own blocked forever would be a real behavioral difference a caller (eventually `GameServer`)
- * could use to tell this adapter apart from [JsonLineConnection] — exactly what the port exists
- * to prevent.
+ * `close()` here must kill both directions, matching the socket behavior it stands in for:
+ * [battletech.network.server.GameServer] disconnects a client by closing the underlying
+ * `Socket`, which unblocks BOTH that client's writer (a subsequent `write` fails) AND the
+ * server's own reader thread parked in `input.readLine()` (it throws `SocketException`). An
+ * adapter that only unblocked the PEER's `receive()` and left its own blocked forever would be
+ * a behavioral difference a caller could use to tell it apart from [JsonLineConnection].
  *
  * There are two [PoisonableQueue]s, one per direction: `toClient` (written by [pair]'s server
  * half via [ServerConnection.send], read by the client half's [ClientConnection.receive]) and

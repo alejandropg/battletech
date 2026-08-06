@@ -5,7 +5,7 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 
 /**
- * Base for phases the game itself drives rather than a player — Initiative, Heat, End.
+ * Base for phases the game itself drives rather than a player.
  * These do all their work in [onEntry] (roll initiative, dissipate heat, reset for next
  * turn), accept no commands ([accepts] always false, [activePlayer] always null,
  * [apply] a no-op), and complete immediately so the cascade proceeds to the next phase.

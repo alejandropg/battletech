@@ -11,22 +11,13 @@ import battletech.tactical.query.PlayerView
  * submit commands, without depending on which implementation is holding
  * authority.
  *
- * [BattleSession] is the authoritative implementation, running command
- * processing locally. [battletech.network.client.ClientGameSession] is the
- * other — a client-side proxy that forwards [submitCommand] to the host (over
- * a socket for a remote seat, an in-process connector for a local one) and
- * mirrors state pushed back by the authoritative session — presenting the
- * same surface so deliveries can be written once against [GameSession] and
- * swapped between local and remote play without change.
+ * Two implementations: [BattleSession] runs command processing locally,
+ * [battletech.network.client.ClientGameSession] forwards it to a host and mirrors what
+ * comes back.
  *
- * Deliberately absent: raw [battletech.tactical.model.GameState]. A client
- * only ever holds [stateFor]'s projection (what its transport actually
- * carried — a socket for a remote seat, an in-process queue for a local
- * one), so this interface cannot expose a field a client implementation
- * couldn't honestly serve — see [battletech.network.client.ClientGameSession].
- * [BattleSession], the authoritative in-process implementation, keeps a
- * concrete `gameState` of its own (not part of this interface) for the
- * server-side and headless-printer call sites that legitimately need it.
+ * Raw [battletech.tactical.model.GameState] is deliberately absent, so this interface
+ * cannot expose a field a client implementation could not honestly serve.
+ * [BattleSession] keeps a concrete `gameState` of its own, outside this interface.
  *
  * Threading: not internally synchronised. Callers must serialise commands.
  */
@@ -51,12 +42,8 @@ public interface GameSession {
 
     /**
      * Register [listener] to receive every raw event emitted by this session — session-wide
-     * and unfiltered, every subscriber sees everything. This is not because the game is
-     * open-information (it has real hidden information); it's because this is not the
-     * redaction seam. Per-player enforcement happens once, at [stateFor]/[logFor], and a
-     * listener rendering directly from an event delivered here bypasses that seam the same
-     * way a raw [battletech.tactical.model.GameState] read would. Returns a [Subscription]
-     * whose [Subscription.unsubscribe] detaches the listener.
+     * and unfiltered, every subscriber sees everything. Returns a [Subscription] whose
+     * [Subscription.unsubscribe] detaches the listener.
      */
     public fun subscribe(listener: (GameEvent) -> Unit): Subscription
 

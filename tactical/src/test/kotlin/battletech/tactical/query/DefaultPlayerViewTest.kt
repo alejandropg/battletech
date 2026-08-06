@@ -98,7 +98,7 @@ internal class DefaultPlayerViewTest {
 
     @Test
     fun `a unit whose only weapon was critically destroyed is no longer a valid attacker`() {
-        // Stage 4: a crit on a weapon-mount slot sets Weapon.destroyed = true; the query
+        // A crit on a weapon-mount slot sets Weapon.destroyed = true; the query
         // layer (WeaponTargeting.canEngageAt) already filters !destroyed, so the attacker
         // should have no eligible weapon left and the enemy should not be a valid target.
         val attacker = aUnit(
@@ -124,7 +124,7 @@ internal class DefaultPlayerViewTest {
 
     @Test
     fun `a unit with 2 sensor crits is blind and has no valid targets`() {
-        // HEAD framework: Sensors at indices 1 and 4 (docs/rules/critical-hits.md §3).
+        // HEAD Sensors slots (`docs/rules/critical-hits.md` §3).
         val attacker = aUnit(
             id = "attacker",
             owner = PlayerId.PLAYER_1,

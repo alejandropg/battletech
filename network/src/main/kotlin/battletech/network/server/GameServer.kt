@@ -36,31 +36,23 @@ import kotlin.concurrent.thread
  * Host-side network endpoint: wraps an authoritative [BattleSession] and exposes it to every
  * seat ([PlayerId.entries]) as a client connection over the [battletech.network.transport]
  * port — a real socket ([JsonLineConnection]) via [SocketAcceptor], or an in-process
- * [InMemoryConnection] via [connectLocal]. Every seat is a connection; there is no seat this
- * class serves any other way. That is deliberate — see below.
+ * [InMemoryConnection] via [connectLocal].
  *
  * ### There is exactly one path in
  *
  * Every command, from every seat, arrives the same way: a [ClientMessage.SubmitCommand] read by
  * [runReaderLoop] off that seat's [ServerConnection]/wire, checked against that seat's assigned
- * [ConnectedClient.seat], and applied via [submitAndPush]. A caller driving the local player
- * used to reach [session] through a second, hand-rolled path (a `submitCommand` override on this
- * class, gated by a hardcoded `PlayerId.PLAYER_1` check) that could disagree with the remote
- * path's seat check — remote enforcement was derived from the connection's assigned seat, local
- * enforcement was a literal constant, and nothing kept the two in sync. [connectLocal] closes
- * that gap by making the local player a client too: it hands back a [ClientGameSession] wired to
- * an [InMemoryConnection] half, indistinguishable on this end from a socket client's connection.
- * One path, one seat-check, one place the guarantee ("neither side can act as another seat's")
- * can live.
+ * [ConnectedClient.seat], and applied via [submitAndPush]. [connectLocal] keeps the local seat
+ * on that path: it hands back a [ClientGameSession] wired to an [InMemoryConnection] half,
+ * indistinguishable on this end from a socket client's connection.
  *
  * ### What this class does NOT own
  *
- * No [java.net.ServerSocket], no accept loop, no port. [SocketAcceptor] owns all three and calls
- * [attach] once a socket connection completes the wire framing — see its KDoc for why splitting
- * that out is what makes hot-seat (a [GameServer] with two [connectLocal] clients and no socket
- * at all) possible. This class is no longer a [GameSession] either: there is no single local
- * seat left to implement that interface's `submitCommand`/`turnState`/etc. *for* — every seat's
- * own [connectLocal]/[JsonLineConnection] client already implements [GameSession] for itself.
+ * No [java.net.ServerSocket], no accept loop, no port — [SocketAcceptor] owns all three and
+ * calls [attach] once a socket connection completes the wire framing. Nor is this a
+ * [GameSession]: there is no single local seat left to implement that interface's
+ * `submitCommand`/`turnState`/etc. *for*, since every seat's own
+ * [connectLocal]/[JsonLineConnection] client already implements [GameSession] for itself.
  * What legitimately remains here — [gameState], [turnState], [currentPhase], [activePlayer],
  * [gameLog], [viewFor], [stateFor], [subscribe] — are plain (non-override) reads of the
  * authoritative session, but they don't all serve the same caller. [gameState], [turnState],
@@ -114,7 +106,7 @@ public class GameServer(
 
     private val lock: Any = Any()
 
-    /** Every seat this match expects a connection for — no distinction between "local" and "remote" seats anymore. */
+    /** Every seat this match expects a connection for. */
     private val allSeats: Set<PlayerId> = PlayerId.entries.toSet()
 
     private val clients: MutableMap<PlayerId, ConnectedClient> = mutableMapOf()
@@ -123,11 +115,10 @@ public class GameServer(
     // ---------- reads of the authoritative session ----------
 
     /**
-     * The authoritative, unredacted state — NOT part of [GameSession] (a client only ever holds
-     * its own projection). Legitimate here because [GameServer] runs in-process with [session]:
-     * this never crosses the wire itself, only the per-seat projections built from it do (see
-     * [snapshotFor]). Used by the headless console (there is no single "viewer" to project for)
-     * and by tests that need to inspect/drive the authoritative state directly.
+     * The authoritative, unredacted state. Legitimate here because [GameServer] runs in-process
+     * with [session]: this never crosses the wire itself, only the per-seat projections built
+     * from it do (see [snapshotFor]). Used by the headless console, which has no single "viewer"
+     * to project for, and by tests that need to drive the authoritative state directly.
      */
     public val gameState: GameState get() = synchronized(lock) { session.gameState }
     public val turnState: TurnState get() = synchronized(lock) { session.turnState }
@@ -140,18 +131,17 @@ public class GameServer(
     public fun stateFor(viewer: PlayerId?): PlayerGameState = synchronized(lock) { session.stateFor(viewer) }
 
     /**
-     * Register [listener] to receive every raw event emitted by [session] — session-wide and
-     * unfiltered, the same as [GameSession.subscribe]'s documented contract. The headless
-     * console (`GameEventPrinter` in `battletech.tui`) is the one legitimate direct caller: it
-     * has no single seat to redact for, and reveals everything on purpose. Listener bodies must
-     * be thread-safe on the caller's side — dispatch may occur on a client's reader thread (in
+     * Passes through to [GameSession.subscribe] and its contract. The headless console
+     * (`GameEventPrinter` in `battletech.tui`) is the one legitimate direct caller: it has no
+     * single seat to redact for, and reveals everything on purpose. Listener bodies must be
+     * thread-safe on the caller's side — dispatch may occur on a client's reader thread (in
      * response to a remote command) as well as any other thread that ends up inside
      * [submitAndPush].
      */
     public fun subscribe(listener: (GameEvent) -> Unit): Subscription = session.subscribe(listener)
 
     /**
-     * Seats the local player as a client of this server — the fix this commit makes. Builds an
+     * Seats the local player as a client of this server. Builds an
      * [InMemoryConnection.pair], hands the server half to [attach] on its own daemon thread
      * (exactly as [SocketAcceptor] hands a socket connection its own thread), and performs on the
      * client half the SAME [ClientMessage.Join] handshake a socket client performs
@@ -214,28 +204,15 @@ public class GameServer(
     }
 
     /**
-     * The one place a real trust boundary exists in this codebase: server ->
-     * wire -> client. Everything on the [session] side is in-process, same
-     * JVM, no adversary; this is where bytes leave for a socket a remote
-     * client controls — and, per this stage, a client that may be modified
-     * or actively cheating. A [connectLocal] seat crosses this same seam too
-     * (it is a real [ServerConnection]/[battletech.network.transport.ClientConnection]
-     * pair, just an in-process one) — it is simply never adversarial in practice.
+     * Projects [session]'s state for [seat] via [BattleSession.stateFor].
      *
-     * [seat] gets [session]'s state PROJECTED for it, via [BattleSession.stateFor]
-     * — the same seam [BattleSession.stateFor] uses for the in-process TUI, so a
-     * connected seat can see no more of another seat's units than a hot-seat
-     * viewer could. This is only ONE of three outbound paths that must agree:
+     * This is only ONE of three outbound paths that must agree:
      * [ServerMessage.JoinAccepted] carries [BattleSession.logFor] (not the raw
-     * [session]`.gameLog.snapshot()`), and every [ServerMessage.StatePush]
-     * carries a log delta run through [redactedDeltaFor] — see [attach]
-     * and [submitAndPush]. Redacting only this snapshot and leaving either log
-     * channel un-redacted leaks everything through that other channel; that
-     * mismatch is exactly why the previous (deleted) redaction attempt never
-     * worked. No sentinel/fake values are used anywhere in this path — a
-     * [PlayerGameState] simply doesn't have a field to leak for units [seat]
-     * doesn't own ([battletech.tactical.unit.ForeignUnit] has no
-     * gunnery/heat/internals field at all).
+     * [session]`.gameLog.snapshot()`), and every [ServerMessage.StatePush] carries a log
+     * delta run through [redactedDeltaFor] — see [attach] and [submitAndPush]. Redacting
+     * only this snapshot and leaving either log channel un-redacted leaks everything
+     * through that other channel; that mismatch is exactly why the previous (deleted)
+     * redaction attempt never worked.
      */
     private fun snapshotFor(seat: PlayerId): GameSnapshot = GameSnapshot(
         gameState = session.stateFor(seat),

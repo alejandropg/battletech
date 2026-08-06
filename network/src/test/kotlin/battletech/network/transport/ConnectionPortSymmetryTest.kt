@@ -19,10 +19,7 @@ import kotlin.concurrent.thread
 
 /**
  * Asserts [InMemoryConnection] and [JsonLineConnection] satisfy IDENTICAL send/receive/close
- * semantics through the [ServerConnection]/[ClientConnection] port. That symmetry is the whole
- * design claim these adapters exist to make -- a caller holding the port (eventually
- * [battletech.network.server.GameServer], per seat) cannot tell a local pair from a wire pair
- * apart -- so it is asserted directly here, once per behavior.
+ * semantics through the [ServerConnection]/[ClientConnection] port, once per behavior.
  *
  * Two parameter sources, not one: [pairs] backs every test that doesn't touch close (round trip,
  * ordering) and the PEER-unblock close tests, using [battletech.network.PipedConnection] for the
