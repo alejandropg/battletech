@@ -9,12 +9,10 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 
 /**
- * 2d6 consciousness-check target, keyed by the pilot's *current* hit count after the
- * hit being resolved is applied (ASSUMPTION/standard BattleTech table — not stated in
- * `docs/rules/critical-hits.md`, which only pins life-support pilot-damage sources and
- * the death condition). A hit count with no entry here (0, or >= [PILOT_DEATH_THRESHOLD])
- * never reaches this table: 0 hits never triggers a check, and >= 6 hits is death, not
- * a check.
+ * Consciousness-check target (`docs/rules/pilot.md` §2), keyed by the pilot's *current*
+ * hit count after the hit being resolved is applied. A hit count with no entry here
+ * never reaches this table: 0 hits never triggers a check, and [PILOT_DEATH_THRESHOLD]
+ * or more is death, not a check.
  */
 private val CONSCIOUSNESS_TARGET: Map<Int, Int> = mapOf(
     1 to 3,
@@ -25,24 +23,18 @@ private val CONSCIOUSNESS_TARGET: Map<Int, Int> = mapOf(
 )
 
 /**
- * Applies one pilot hit to [unit] (`docs/rules/critical-hits.md` §5 Life Support is the
- * only doc-specified source this stage wires up; future stages may add head-hit/fall/
- * ammo-explosion pilot damage through this same entry point).
+ * The single entry point for applying one pilot hit to [unit], whatever inflicted it
+ * (`docs/rules/pilot.md` §1–2).
  *
- * - Increments [CombatUnit.pilotHits].
- * - If the new total reaches [PILOT_DEATH_THRESHOLD] (ASSUMPTION: 6, standard BT), the
- *   pilot is dead — no consciousness roll is made (a dead pilot can't be conscious or
- *   not; [battletech.tactical.unit.destructionReason] picks up `PILOT_DEAD` from the
- *   updated [CombatUnit.pilotHits] in the session's destruction sweep, no extra wiring
- *   needed here). [PilotHit.consciousnessRoll] is null in this case.
- * - Otherwise rolls 2d6 against [CONSCIOUSNESS_TARGET] for the new hit count via
- *   [roller] (ASSUMPTION table). On failure, [CombatUnit.isPilotConscious] is set false
- *   and a [PilotKnockedUnconscious] is appended after the [PilotHit]. A pilot already
- *   unconscious before this hit stays unconscious (no further event) — only the
- *   *transition* into unconsciousness is reported via [PilotKnockedUnconscious].
+ * On death no consciousness roll is made, and [PilotHit.consciousnessRoll] is null —
+ * [battletech.tactical.unit.destructionReason] picks up `PILOT_DEAD` from the updated
+ * [CombatUnit.pilotHits] in the session's destruction sweep, so nothing extra is wired
+ * here. Otherwise a failed check sets [CombatUnit.isPilotConscious] false and appends
+ * [PilotKnockedUnconscious] after the [PilotHit]. Only the *transition* into
+ * unconsciousness is reported: a pilot already unconscious before this hit produces no
+ * second event.
  *
- * Returns the updated unit and the list of events produced (1 or 2 entries, in order).
- * Pure: all dice flow through [roller]; no raw `Random`.
+ * Returns the updated unit and the events produced (1 or 2 entries, in order).
  */
 public fun applyPilotHit(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit, List<GameEvent>> {
     val newHits = unit.pilotHits + 1
@@ -66,11 +58,10 @@ public fun applyPilotHit(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit,
 
 /**
  * Consciousness RECOVERY attempt for a pilot who is alive but unconscious
- * (ASSUMPTION/standard BT — `docs/rules/critical-hits.md` only specifies the
- * life-support damage sources, not recovery; we mirror [HeatPhaseHandler]'s
- * shutdown/restart pattern: an "avoid bad state" roll while down, an automatic-style
- * recovery attempt every turn while up). Reuses [CONSCIOUSNESS_TARGET], keyed by the
- * pilot's *current* (unchanged) hit count, same table as the original hit check.
+ * (`docs/rules/pilot.md` §2). ASSUMPTION: the doc does not state the recovery target, so
+ * this reuses [CONSCIOUSNESS_TARGET] keyed by the pilot's *current* (unchanged) hit
+ * count, mirroring [HeatPhaseHandler]'s shutdown/restart pattern — an "avoid bad state"
+ * roll while down, a recovery attempt every turn while up.
  *
  * Only called by [battletech.tactical.session.HeatPhaseHandler.onEntry] when
  * `!unit.isPilotConscious && unit.pilotHits < PILOT_DEATH_THRESHOLD` (a dead pilot
@@ -86,10 +77,10 @@ public fun attemptConsciousnessRecovery(unit: CombatUnit, roller: DiceRoller): P
 }
 
 /**
- * Applies the 2 pilot hits an ammo explosion inflicts on [unit] (standard BT rule): each hit
- * runs its own consciousness check via [applyPilotHit]. Shared by [CriticalHitResolution]'s two
- * detonation sites (limb blow-off, ordinary crit) and [battletech.tactical.session.HeatPhaseHandler]'s
- * heat-driven cook-off.
+ * Applies the pilot hits an ammo explosion inflicts on [unit] (`docs/rules/pilot.md` §1): each
+ * hit runs its own consciousness check via [applyPilotHit]. Shared by [CriticalHitResolution]'s
+ * two detonation sites (limb blow-off, ordinary crit) and
+ * [battletech.tactical.session.HeatPhaseHandler]'s heat-driven cook-off.
  *
  * **Canonical dice order:** consciousness check 2d6 (hit 1), then consciousness check 2d6 (hit 2).
  */

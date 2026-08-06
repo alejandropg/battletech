@@ -9,10 +9,7 @@ import battletech.tactical.query.RuleResult
 import battletech.tactical.session.RuleRejection
 import kotlin.math.abs
 
-/**
- * Punch reach: the target must be within one level of the attacker and must
- * not be fully submerged (depth ≥ 2 puts the upper body underwater).
- */
+/** Punch reach: elevation and water-depth limits (`docs/rules/physical-attacks.md` §3). */
 public class PunchReachRule : AttackRule<AttackContext> {
     override fun evaluate(context: AttackContext): RuleResult {
         val depth = unitWaterDepth(context.target.position, context.map)
@@ -24,10 +21,7 @@ public class PunchReachRule : AttackRule<AttackContext> {
     }
 }
 
-/**
- * Kick reach: the target must be at the attacker's level or one level lower
- * (never higher), and its legs must not be submerged (depth ≥ 1).
- */
+/** Kick reach: elevation and water-depth limits (`docs/rules/physical-attacks.md` §3). */
 public class KickReachRule : AttackRule<AttackContext> {
     override fun evaluate(context: AttackContext): RuleResult {
         val depth = unitWaterDepth(context.target.position, context.map)

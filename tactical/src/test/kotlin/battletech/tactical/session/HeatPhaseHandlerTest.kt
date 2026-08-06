@@ -94,7 +94,7 @@ internal class HeatPhaseHandlerTest {
 
     @Test
     fun `1 engine crit adds 5 heat during the heat fold`() {
-        // CENTER_TORSO framework: Engine at indices 0,1,2 and 7,8,9.
+        // CENTER_TORSO Engine slots (`docs/rules/critical-hits.md` §3).
         // No dissipation (0 heat sinks) so the +5 engine heat is visible undamped.
         val unit = aUnit(
             currentHeat = 0,
@@ -122,8 +122,8 @@ internal class HeatPhaseHandlerTest {
 
     @Test
     fun `engine heat can push a unit into a shutdown roll`() {
-        // 2 engine crits = +10 heat; 14 base - 10 dissipation + 10 engine = 14 -> shutdown
-        // roll target 4 (HeatScale.shutdownAvoidTarget(14) == 4); roll 1+1 fails -> shutdown.
+        // 14 base − 10 dissipation + engine crit heat = 14, which needs a shutdown-avoidance
+        // roll; 1+1 fails it.
         val unit = aUnit(
             currentHeat = 14,
             heatSink = HeatSink(HeatSinkType.STS, 10),
@@ -138,20 +138,17 @@ internal class HeatPhaseHandlerTest {
     }
 
     // -------------------------------------------------------------------------
-    // Stage 7: life-support pilot damage
+    // Life-support pilot damage
     // -------------------------------------------------------------------------
 
     @Test
     fun `1st life support crit with heat 15 or higher gives the pilot 1 hit`() {
-        // HEAD framework: LifeSupport at indices 0 and 5. currentHeat 15, no
-        // heat sinks so it stays at 15 after the fold; no engine crits so no
-        // extra heat. Heat 15 also requires a shutdown-avoidance roll
-        // (HeatScale.shutdownAvoidTarget(15) == 4); roll (3,3)=6 avoids it.
-        // Pilot hit #1 -> consciousness target 3; roll (3,3)=6 passes. Heat 15
-        // also requires an ammo-explosion-avoidance roll
-        // (HeatScale.ammoExplosionAvoidTarget(15) == 4, rolled even with no
-        // ammo-using weapons aboard); roll (3,3)=6 avoids it (resolved AFTER
-        // the pilot hit, per the documented dice order).
+        // HEAD LifeSupport slots (`docs/rules/critical-hits.md` §3). No heat sinks and no
+        // engine crits, so heat stays at 15 after the fold. At that heat three 2d6 rolls
+        // are consumed, each passed by (3,3): shutdown avoidance, the pilot hit's
+        // consciousness check, and ammo-explosion avoidance (rolled even with no
+        // ammo-using weapons aboard, and resolved AFTER the pilot hit per the dice order
+        // documented on `resolveUnitHeatPhase`).
         val unit = aUnit(
             currentHeat = 15,
             heatSink = HeatSink(HeatSinkType.STS, 0),
@@ -180,7 +177,7 @@ internal class HeatPhaseHandlerTest {
 
     @Test
     fun `2nd life support crit gives the pilot 1 hit regardless of heat`() {
-        // HEAD framework: LifeSupport at indices 0 and 5.
+        // HEAD LifeSupport slots (`docs/rules/critical-hits.md` §3).
         val unit = aUnit(
             currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),
@@ -195,7 +192,7 @@ internal class HeatPhaseHandlerTest {
     }
 
     // -------------------------------------------------------------------------
-    // Stage 7: consciousness recovery
+    // Consciousness recovery
     // -------------------------------------------------------------------------
 
     @Test
@@ -236,7 +233,7 @@ internal class HeatPhaseHandlerTest {
     @Test
     fun `a conscious unit with no pilot hits and no LS crits rolls no pilot dice`() {
         // Regression guard: untouched fixtures must not consume extra dice for
-        // the new Stage 7 steps.
+        // the life-support and recovery steps.
         val unit = aUnit(
             currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),

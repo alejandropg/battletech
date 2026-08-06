@@ -7,7 +7,7 @@ import battletech.tactical.query.RuleResult
 import battletech.tactical.session.RuleRejection
 import battletech.tactical.unit.MovementThisTurn
 
-/** A kick may only be made after walking or standing still — not after running or jumping. */
+/** Movement restriction on kicking (`docs/rules/physical-attacks.md` §2). */
 public class KickMovementRule : AttackRule<AttackContext> {
     override fun evaluate(context: AttackContext): RuleResult {
         val movement = context.actor.movementThisTurn
@@ -21,7 +21,7 @@ public class KickMovementRule : AttackRule<AttackContext> {
     }
 }
 
-/** A punch may not be made after jumping (a jump only permits a death-from-above). */
+/** Movement restriction on punching (`docs/rules/physical-attacks.md` §2). */
 public class PunchMovementRule : AttackRule<AttackContext> {
     override fun evaluate(context: AttackContext): RuleResult {
         val movement = context.actor.movementThisTurn
@@ -33,7 +33,7 @@ public class PunchMovementRule : AttackRule<AttackContext> {
     }
 }
 
-/** A prone unit cannot make any physical attack. */
+/** A prone unit cannot make any physical attack (`docs/rules/physical-attacks.md` §1). */
 public class ProneAttackerRule : AttackRule<AttackContext> {
     override fun evaluate(context: AttackContext): RuleResult =
         if (context.actor.isProne) RuleResult.Unsatisfied(RuleRejection.AttackerProne) else RuleResult.Satisfied

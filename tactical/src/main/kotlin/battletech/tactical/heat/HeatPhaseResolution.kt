@@ -24,23 +24,19 @@ import battletech.tactical.unit.critEffects
  * which folds every unit's heat first and then walks units in state order calling
  * this once each):
  *
- *  1. [resolvePower] — shutdown/restart avoidance (heat-keyed).
- *  2. [resolveLifeSupportPilotHit] — Stage 7 life-support pilot damage
- *     (`docs/rules/critical-hits.md` §5 Life Support), evaluated against *this
- *     turn's* post-fold heat. Ordered before consciousness recovery because a
- *     pilot knocked out by life support this turn should not also attempt a
- *     recovery roll in the same Heat Phase (the recovery in step 3 is reserved
- *     for pilots who were *already* unconscious coming into this phase).
- *  3. [resolveConsciousnessRecovery] — Stage 7 recovery attempt for a pilot who
- *     was already unconscious before this phase ran.
- *  4. [resolveAmmoExplosion] — heat-driven ammo cook-off (last, since it can
- *     itself wound the pilot in a later stage and we want LS/recovery settled
- *     first against this turn's heat).
- *  5. [resolveDrowning] — cockpit flooding for a **prone** unit in depth-2+ water.
- *     A prone unit submerged in deep water takes 1 pilot hit per Heat Phase
- *     (ASSUMPTION/standard BattleTech). Placed last so all other pilot-damage
- *     sources are settled before the drowning check runs; a pilot knocked out by
- *     drowning will not attempt a recovery roll in the same phase.
+ *  1. [resolvePower] — shutdown/restart avoidance.
+ *  2. [resolveLifeSupportPilotHit] — evaluated against *this turn's* post-fold heat.
+ *     Ordered before consciousness recovery because a pilot knocked out by life
+ *     support this turn should not also attempt a recovery roll in the same Heat
+ *     Phase (the recovery in step 3 is reserved for pilots who were *already*
+ *     unconscious coming into this phase).
+ *  3. [resolveConsciousnessRecovery] — recovery attempt for a pilot who was already
+ *     unconscious before this phase ran.
+ *  4. [resolveAmmoExplosion] — heat-driven ammo cook-off, ordered after LS/recovery
+ *     because it can itself wound the pilot.
+ *  5. [resolveDrowning] — placed last so all other pilot-damage sources are settled
+ *     before the drowning check runs; a pilot knocked out by drowning will not
+ *     attempt a recovery roll in the same phase.
  *
  * [state] is the whole post-fold [GameState] (constant across all units processed
  * this phase — passed through, not updated per unit), needed by [resolveDrowning]
@@ -76,7 +72,6 @@ public fun resolveUnitHeatPhase(
     return afterDrowning to events
 }
 
-/** Shutdown (for an operational unit) or startup (for a shut-down unit). */
 private fun resolvePower(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit, GameEvent?> {
     val heat = unit.currentHeat
     return if (unit.isShutdown) {
@@ -112,19 +107,14 @@ private fun resolvePower(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit,
 }
 
 /**
- * Life-support pilot damage (`docs/rules/critical-hits.md` §5 Life Support — the
- * only doc-specified pilot-hit sources): evaluated using [CombatUnit.critEffects]
- * for [CriticalComponent.LIFE_SUPPORT], the single tier -> effect source.
+ * Life-support pilot damage (`docs/rules/critical-hits.md` §5), evaluated using
+ * [CombatUnit.critEffects] for [CriticalComponent.LIFE_SUPPORT], the single tier ->
+ * effect source.
  *
- *  - 0 LS crits: no effect.
- *  - 1 LS crit ([CritEffect.PilotDamageWhenHeatAtLeast]): the pilot takes 1 hit
- *    ONLY if [CombatUnit.currentHeat] reaches that threshold **this turn** —
- *    checked against [unit], which has already been through
- *    [GameState.applyHeatPhase]'s fold (the heat fold runs before any per-unit
- *    resolution in [battletech.tactical.session.HeatPhaseHandler.onEntry]), so
- *    "this turn's heat" is exactly the standing heat we're looking at here.
- *  - 2+ LS crits ([CritEffect.PilotDamageEachTurn]): the pilot takes 1 hit every
- *    turn, heat irrelevant.
+ * [CritEffect.PilotDamageWhenHeatAtLeast] is checked against [unit], which has already
+ * been through [GameState.applyHeatPhase]'s fold (the heat fold runs before any per-unit
+ * resolution in [battletech.tactical.session.HeatPhaseHandler.onEntry]), so "this turn's
+ * heat" is exactly the standing heat we're looking at here.
  *
  * Captures whether the pilot was unconscious *before* this hit so the recovery
  * step ([resolveConsciousnessRecovery]) can skip a pilot newly knocked out here —
@@ -142,8 +132,8 @@ private fun resolveLifeSupportPilotHit(unit: CombatUnit, roller: DiceRoller): Pa
 /**
  * Consciousness recovery for a pilot who was ALREADY unconscious entering this
  * Heat Phase ([wasUnconsciousBeforePhase], captured by the caller before any of this
- * turn's resolution steps ran) — Stage 7, ASSUMPTION/standard, mirrors
- * [resolvePower]'s shutdown/restart shape. Skipped entirely — no dice rolled —
+ * turn's resolution steps ran), mirroring [resolvePower]'s shutdown/restart shape.
+ * Skipped entirely — no dice rolled —
  * when the pilot was conscious entering this phase (a pilot knocked out moments
  * ago by [resolveLifeSupportPilotHit] already had its one consciousness check
  * this phase, inside [applyPilotHit], and does not also get a recovery attempt),
@@ -161,14 +151,11 @@ private fun resolveConsciousnessRecovery(
 }
 
 /**
- * Cockpit flooding: a **prone** unit standing in depth-2+ water drowns. The pilot
- * takes 1 hit per Heat Phase while the unit remains prone and submerged
- * (`docs/rules/water.md` §2 owns drowning; the once-per-Heat-Phase, prone-only
- * cadence is an ASSUMPTION — the doc says the pilot "risks drowning over time"
- * without pinning a rate).
+ * Cockpit flooding (`docs/rules/water.md` §2). ASSUMPTION: the doc says the pilot "risks
+ * drowning over time" without pinning a rate, so this applies one pilot hit per Heat
+ * Phase while the unit remains prone and submerged.
  *
- * Only targets prone (`isProne`) units whose pilot is still alive (`pilotHits <
- * [PILOT_DEATH_THRESHOLD]`). Destroyed units are already swept by
+ * Destroyed units are already swept by
  * [battletech.tactical.session.BattleSession.runDestructionSweep] before the Heat
  * Phase begins, so they are skipped via the `isDestroyed` guard.
  *
@@ -192,13 +179,10 @@ private fun resolveDrowning(
 }
 
 /**
- * Ammo explosion: on a failed avoidance roll the ammo bin with the greatest
- * potential damage (`shots × damagePerShot`) cooks off into the center torso
- * (`docs/rules/critical-hits.md` §5), via the shared [detonateAmmoBin] helper —
- * unlike a critical-hit detonation (which hits the bin's own location), heat
- * cook-off always routes into [HitLocation.CENTER_TORSO]. An ammo explosion also
- * inflicts 2 pilot hits on the unit (each running a consciousness check 2d6 via
- * [applyPilotHit], immediately after the `AmmoExploded` event).
+ * Heat-driven ammo cook-off (`docs/rules/critical-hits.md` §5). On a failed avoidance
+ * roll the bin with the greatest potential damage detonates via the shared
+ * [detonateAmmoBin] helper — unlike a critical-hit detonation (which hits the bin's own
+ * location), heat cook-off always routes into [HitLocation.CENTER_TORSO].
  *
  * **Canonical dice order** (when explosion occurs):
  *  1. Avoidance 2d6
@@ -223,7 +207,6 @@ private fun resolveAmmoExplosion(unit: CombatUnit, roller: DiceRoller): Pair<Com
     if (ammoEvent == null) return unit to emptyList()
 
     val allEvents = mutableListOf<GameEvent>(ammoEvent)
-    // Ammo explosion inflicts 2 pilot hits; each runs a consciousness check.
     val (working, hitEvents) = applyAmmoExplosionPilotHits(afterExplosion, roller)
     allEvents += hitEvents
     return working to allEvents

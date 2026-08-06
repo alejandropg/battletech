@@ -10,7 +10,7 @@ import battletech.tactical.unit.basePsrModifier
 import battletech.tactical.unit.pilotingSkillRoll
 
 /**
- * Makes [unit] fall and applies 1 pilot hit per the rule that every fall wounds the pilot.
+ * Makes [unit] fall and applies the accompanying pilot hit (`docs/rules/pilot.md` §4).
  *
  * **Canonical dice order** (seeded tests must match this order):
  *  1. Fall location 2d6 (from [fall])
@@ -53,11 +53,10 @@ public fun forcePsrOrFall(unit: CombatUnit, modifier: Int, roller: DiceRoller): 
 }
 
 /**
- * After resolving a volley, checks each target unit's total damage (summing
- * [LocationDamage.armorDamage] + [LocationDamage.structureDamage] across all steps).
- * Any unit with cumulative ≥ 20 must make a PSR at +1 per full 20 damage, with all
- * current PSR modifiers (gyro, leg) included. On failure the unit falls and the pilot
- * takes 1 hit via [forcedFall].
+ * The 20-damage forced PSR (`docs/rules/pilot.md` §3), run after a volley resolves. Each
+ * target unit's total damage is the sum of [LocationDamage.armorDamage] +
+ * [LocationDamage.structureDamage] across all steps; the unit's current PSR modifiers
+ * (gyro, leg) are folded in alongside the damage modifier.
  *
  * Units already prone when their name is reached are skipped. Processing order is
  * deterministic (sorted by [UnitId.value]) so dice consumption is reproducible.
@@ -80,7 +79,6 @@ public fun applyTwentyDamagePsrs(
     for ((unitId, totalDamage) in damageByUnit.entries.sortedBy { it.key.value }) {
         if (totalDamage < 20) continue
         val unit = currentState.units.byId(unitId)
-        // Include gyro and leg PSR penalties alongside the base 20-damage modifier.
         val modifier = totalDamage / 20 + unit.basePsrModifier()
         val (updated, fallEvents) = forcePsrOrFall(unit, modifier, roller)
         if (fallEvents.isNotEmpty()) {

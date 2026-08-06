@@ -2,8 +2,7 @@ package battletech.tactical.unit
 
 public object InternalStructureTables {
 
-    // Standard internal structure values per BattleTech tonnage class
-    // Format: head, centerTorso, leftTorso/rightTorso, leftArm/rightArm, leftLeg/rightLeg
+    // Values transcribed from `docs/rules/armor-damage.md` §2.
     public fun forTonnage(tonnage: Int): InternalStructureLayout = when (tonnage) {
         20  -> InternalStructureLayout(
             head = 3,

@@ -30,12 +30,10 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * Tests for all water and depth effects:
- *   - depth-1 partial cover (+3 to-hit, leg hits suppressed) via [lineOfSight]
- *   - depth-2 weapon restriction via [SubmergedWeaponRule]
- *   - submerged heat-sink dissipation bonus via [battletech.tactical.heat.GameStateHeatTransform]
- *   - drowning (prone in depth-2 water → 1 pilot hit per Heat Phase) via [HeatPhaseHandler]
- *   - [unitWaterDepth] shared query
+ * Water and depth effects (`docs/rules/water.md`), across every consumer of them:
+ * partial cover via [lineOfSight], the weapon restriction via [SubmergedWeaponRule],
+ * the heat-sink bonus via [battletech.tactical.heat.GameStateHeatTransform], drowning
+ * via [HeatPhaseHandler], and the shared [unitWaterDepth] query.
  */
 internal class WaterDepthEffectsTest {
 
@@ -288,8 +286,7 @@ internal class WaterDepthEffectsTest {
 
     @Test
     fun `unit in depth-1 water dissipates 6 extra heat`() {
-        // currentHeat = 20, base dissipation = 10, depth-1 bonus = 6
-        // expected: max(0, 20 - 10 - 6) = 4
+        // 20 heat − 10 dissipation − 6 depth-1 bonus = 4
         val pos = HexCoordinates(0, 0)
         val unit = aUnit(
             position = pos,
@@ -308,8 +305,7 @@ internal class WaterDepthEffectsTest {
 
     @Test
     fun `unit in depth-2 water dissipates 12 extra heat`() {
-        // currentHeat = 20, base dissipation = 10, depth-2 bonus = 12
-        // expected: max(0, 20 - 10 - 12) = 0
+        // 20 heat − 10 dissipation − 12 depth-2 bonus, floored at 0
         val pos = HexCoordinates(0, 0)
         val unit = aUnit(
             position = pos,
@@ -328,8 +324,7 @@ internal class WaterDepthEffectsTest {
 
     @Test
     fun `unit on dry land receives no water dissipation bonus`() {
-        // currentHeat = 20, base dissipation = 10, no bonus
-        // expected: max(0, 20 - 10) = 10
+        // 20 heat − 10 dissipation, no bonus = 10
         val pos = HexCoordinates(0, 0)
         val unit = aUnit(
             position = pos,
@@ -345,8 +340,7 @@ internal class WaterDepthEffectsTest {
 
     @Test
     fun `water dissipation bonus does not drive heat below zero`() {
-        // currentHeat = 5, base dissipation = 10, depth-2 bonus = 12
-        // expected: max(0, 5 - 10 - 12) = 0
+        // 5 heat − 10 dissipation − 12 depth-2 bonus, floored at 0
         val pos = HexCoordinates(0, 0)
         val unit = aUnit(
             position = pos,
@@ -453,13 +447,9 @@ internal class WaterDepthEffectsTest {
 
     @Test
     fun `repeated drowning accumulates pilot hits until PILOT_DEAD`() {
-        // Run the heat phase 6 times on a prone depth-2 unit.
-        // Each turn: 1 pilot hit (consciousness check dice consumed per hit).
-        // After 5 hits: consciousness targets 3,5,7,10,11 — all passed with d6(6)+d6(6)=12.
-        // After 6th hit: PILOT_DEATH_THRESHOLD reached, no consciousness roll (dice not consumed).
-        // Dice consumed per hit round (when pilot stays conscious): d6+d6.
-        // After 5 hits (each passing with 6,6): pilot is at 5 hits, conscious.
-        // 6th hit: pilotHits 5+1=6 >= PILOT_DEATH_THRESHOLD → dead, no dice consumed.
+        // Run the heat phase 6 times on a prone depth-2 unit: 1 pilot hit each turn.
+        // The first 5 hits each consume a 2d6 consciousness check, all passed with 12;
+        // the hit that reaches PILOT_DEATH_THRESHOLD rolls nothing and consumes no dice.
         val pos = HexCoordinates(0, 0)
         var unit = aUnit(
             position = pos,
@@ -471,9 +461,6 @@ internal class WaterDepthEffectsTest {
             hexes = mapOf(pos to depth2Hex(pos)),
         )
 
-        // 5 turns of drowning, each passing the consciousness check (roll 6+6=12).
-        // Dice order: 5 rolls × 2d6 = 10 dice, all 6.
-        // 6th turn: no dice (pilot dies without a roll).
         val passingDice = List(10) { 6 } // 5 × 2d6, each 6+6=12
         val roller = DiceRoller.deterministic(passingDice)
         repeat(5) {

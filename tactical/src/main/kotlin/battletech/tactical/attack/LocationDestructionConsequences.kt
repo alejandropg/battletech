@@ -13,26 +13,19 @@ import battletech.tactical.unit.disableWeaponsIn
  * comparing [before] (pre-volley snapshot) against [after] (post-volley state) for every
  * unit, in unit-id order (for deterministic dice consumption).
  *
- * For each location whose IS was positive before the volley and is now 0:
- *  - **All locations**: Disables all weapons mounted there ([CombatUnit.disableWeaponsIn]).
- *  - **LEFT_TORSO / RIGHT_TORSO**: Also zeroes the same-side arm's IS and disables its
- *    weapons, if the arm was not already destroyed. This mirrors the rules for side-torso
- *    destruction dropping the attached arm.
- *  - **LEFT_LEG / RIGHT_LEG**: Records the unit for a forced fall, processed after all
- *    weapon-disable and cascade work. No fall is triggered when both legs are now destroyed
- *    (the unit is already queued for elimination by the session's destruction sweep) or
- *    when the unit is already prone.
+ * The consequences themselves are owned by `docs/rules/armor-damage.md` §8. Two decisions
+ * this code makes on top of them:
  *
- * **Ammo in destroyed locations** is handled by the exclusion model
- * ([CombatUnit.availableAmmoBins] / [CombatUnit.consumeOneRoundFromAvailableBin]):
- * bins whose location IS = 0 are invisible to ammo-consumption and availability checks.
- * This avoids the cascading-explosion problem that detonation would introduce (detonation
- * adds IS damage, which can destroy more locations, which would need further consequences
- * — a loop bounded only by ammo count). Bins already emptied by a crit-triggered
- * detonation earlier in the same volley are already shots=0 and thus filtered out anyway.
+ * A leg destruction schedules **no** fall when both legs are now destroyed (the unit is
+ * already queued for elimination by the session's destruction sweep) or when the unit is
+ * already prone. Falls are applied last, in unit-id order, via [forcedFall].
  *
- * Falls are applied last, in the same unit-id order, via [forcedFall] (which also applies
- * 1 pilot hit per fall). Units already prone before falls are processed are skipped.
+ * **Ammo in destroyed locations** is handled by exclusion rather than detonation
+ * ([CombatUnit.availableAmmoBins] / [CombatUnit.consumeOneRoundFromAvailableBin]): bins
+ * whose location IS = 0 are invisible to ammo-consumption and availability checks. This
+ * avoids a cascading-explosion loop bounded only by ammo count, since detonation adds IS
+ * damage that can destroy further locations. Bins already emptied by a crit-triggered
+ * detonation earlier in the same volley are shots=0 and filtered out anyway.
  *
  * Called from [battletech.tactical.attack.weapon.WeaponAttackPhaseHandler] and
  * [battletech.tactical.attack.physical.PhysicalAttackPhaseHandler] after weapon/physical
@@ -52,7 +45,6 @@ internal fun applyLocationDestructionConsequences(
         // Use the most-current version of this unit (modified by previous iterations if needed).
         var updatedUnit = state.units.byId(unit.id)
 
-        // Find all locations newly destroyed in this pass.
         val newlyDestroyed = MechLocation.entries.filter { location ->
             beforeUnit.internalStructure.isIntact(location) &&
                 !updatedUnit.internalStructure.isIntact(location)
@@ -63,10 +55,9 @@ internal fun applyLocationDestructionConsequences(
         var needsFall = false
 
         for (location in newlyDestroyed) {
-            // 1. Disable weapons at the destroyed location.
             updatedUnit = updatedUnit.disableWeaponsIn(location)
 
-            // 2. Side-torso cascade: destroy the same-side arm if still intact.
+            // Side-torso cascade: destroy the same-side arm if still intact.
             when (location) {
                 MechLocation.LEFT_TORSO -> {
                     if (updatedUnit.internalStructure.isIntact(MechLocation.LEFT_ARM)) {
@@ -82,8 +73,8 @@ internal fun applyLocationDestructionConsequences(
                         ).disableWeaponsIn(MechLocation.RIGHT_ARM)
                     }
                 }
-                // 3. Leg destruction — schedule a fall unless both legs are now destroyed
-                //    (unit is being eliminated anyway by the destruction sweep).
+                // Schedule a fall unless both legs are now destroyed (the unit is being
+                // eliminated anyway by the destruction sweep).
                 MechLocation.LEFT_LEG, MechLocation.RIGHT_LEG -> {
                     if (updatedUnit.destroyedLegCount() < 2) {
                         needsFall = true
@@ -93,7 +84,6 @@ internal fun applyLocationDestructionConsequences(
             }
         }
 
-        // Commit the modified unit back to state before processing the next unit.
         state = state.copy(units = state.units.withUnit(updatedUnit))
 
         if (needsFall && !updatedUnit.isProne) {
@@ -101,9 +91,8 @@ internal fun applyLocationDestructionConsequences(
         }
     }
 
-    // Process falls last, in the same unit-id order, so dice consumption is deterministic.
-    // Each fall also applies 1 pilot hit via forcedFall (canonical dice order per unit:
-    // fall location 2d6 + facing 1d6 + consciousness check 2d6).
+    // Falls run last, in unit-id order, so dice consumption is deterministic. Canonical
+    // dice order per unit: fall location 2d6 + facing 1d6 + consciousness check 2d6.
     for (unitId in fallPendingUnitIds) {
         val unit = state.units.byId(unitId)
         if (unit.isProne) continue  // already prone (e.g. from gyro fall earlier this pass)

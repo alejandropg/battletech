@@ -22,19 +22,11 @@ import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test
 
 /**
- * Tests for Task 4 — ammunition consumption per shot.
+ * Ammunition consumption per shot (`docs/rules/ammunition.md`), including the
+ * [HasAmmoRule] block once every matching bin is empty.
  *
- * Rules verified:
- *  - Each ballistic/missile declaration decrements exactly 1 round from the attacker's
- *    first non-empty bin of the matching [AmmoType], regardless of hit or miss.
- *  - Cluster weapons (LRM/SRM) also consume exactly 1 round per declaration (not per missile).
- *  - Energy weapons (no ammoType) consume nothing.
- *  - When all bins of a weapon's ammoType are empty, [HasAmmoRule] blocks further declarations.
- *  - Remaining round count is correct after N shots, feeding heat-phase ammo explosion math.
- *  - Multi-weapon volleys from one unit decrement each weapon's bin correctly.
- *
- * No dice are consumed by ammo decrements (verified by ordering: decrements happen after all
- * to-hit / location / crit dice; seeded tests are unchanged by this task).
+ * No dice are consumed by ammo decrements — decrements happen after all to-hit /
+ * location / crit dice, so seeded expectations elsewhere are unaffected.
  */
 internal class AmmoConsumptionTest {
 

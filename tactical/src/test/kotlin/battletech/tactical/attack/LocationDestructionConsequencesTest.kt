@@ -37,7 +37,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 /**
- * Tests for Task 5 — Location destruction consequences.
+ * Tests for location destruction consequences (`docs/rules/armor-damage.md` §8).
  *
  * Uses direct state manipulation (crafting before/after [GameState]s) rather than
  * routing through [resolveAttacksWithCrits], so each test exercises exactly one

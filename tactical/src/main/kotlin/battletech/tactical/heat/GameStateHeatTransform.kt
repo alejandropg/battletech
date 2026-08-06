@@ -8,16 +8,10 @@ import battletech.tactical.unit.engineHeatPerTurn
 /**
  * Fold each unit's heat generated this turn into its standing heat and apply
  * dissipation: `newHeat = max(0, current + generated + engineHeat - capacity - waterBonus)`.
- * The per-turn generation list is consumed and cleared (this is also its reset). Engine
- * critical hits add a flat `5 × engineCritCount()` heat every turn (1st crit +5, 2nd
- * +10; a 3rd destroys the unit outright via the destruction sweep, so it never
- * reaches this fold) — it is generated heat for the turn, so it's folded in
- * alongside weapon/movement heat, before dissipation.
- *
- * **Water submersion dissipation bonus**: units standing in water receive extra
- * dissipation from [submersionDissipationBonus] — +6 at depth 1 (legs submerged),
- * +12 at depth 2+ (fully submerged). See [battletech.tactical.model.submersionDissipationBonus]
- * for the ASSUMPTION/simplification rationale.
+ * The per-turn generation list is consumed and cleared (this is also its reset). Heat
+ * from engine critical hits ([engineHeatPerTurn]) counts as generated heat for the turn,
+ * so it is folded in alongside weapon/movement heat, before dissipation. Units standing
+ * in water dissipate extra via [submersionDissipationBonus].
  *
  * Shutdown and ammo-explosion consequences are rolled separately in
  * [battletech.tactical.session.HeatPhaseHandler] since they require the dice roller.

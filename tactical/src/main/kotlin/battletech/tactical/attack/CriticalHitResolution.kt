@@ -25,11 +25,10 @@ private val ARM_OR_LEG_LOCATIONS: Set<MechLocation> = setOf(
 )
 
 /**
- * Number of components destroyed by a 2d6 crit-check roll of [total] at [location],
- * per the Critical Hit Table (`docs/rules/critical-hits.md` §1): 2-7 none, 8-9 one,
- * 10-11 two, 12 three (Head/Torso) — or a limb blow-off on Arm/Leg, represented here
- * as a sentinel of 6 crits (more than any location's slot count) so callers can detect
- * it via [isLimbBlownOff] without a separate enum.
+ * Number of components destroyed by a 2d6 crit-check roll of [total] at [location]
+ * (`docs/rules/critical-hits.md` §1). A limb blow-off is represented as a sentinel count
+ * larger than any location's slot count, so callers can detect it via [isLimbBlownOff]
+ * without a separate enum.
  */
 private fun critCountFor(total: Int, location: MechLocation): Int = when (total) {
     in 2..7 -> 0
@@ -47,10 +46,9 @@ private data class SlotPick(val index: Int, val content: CriticalSlotContent)
 
 /**
  * Picks one valid (non-empty, not-already-destroyed) slot in [location] using the
- * doc's dice procedure: 1d6 for block (1-3 upper, 4-6 lower; only meaningful for
- * 12-slot locations — 6-slot locations have a single block), 1d6 for the slot
- * (1-6) within that block. Rolls again (consuming fresh dice, in order) whenever
- * the chosen slot is [CriticalSlotContent.Empty] or already destroyed on [unit].
+ * dice procedure in `docs/rules/critical-hits.md` §2–3. Rolls again (consuming fresh
+ * dice, in order) whenever the chosen slot is [CriticalSlotContent.Empty] or already
+ * destroyed on [unit].
  *
  * Returns null if [location] has no remaining valid slot to hit (e.g. an empty
  * side torso) — callers must not loop forever rolling against such a location.
@@ -77,12 +75,12 @@ private fun pickSlot(unit: CombatUnit, location: MechLocation, roller: DiceRolle
 }
 
 /**
- * Detonates the ammo bin at [binLocation]/[slotIndex] on [unit]: the total damage of
- * [bin]'s remaining shots (`shots × type.damagePerShot`, `docs/rules/critical-hits.md`
- * §3 "Ammunition (Ammo Explosion)") is applied through the standard [applyDamage]
- * path to [damageLocation] — the bin's own location for a critical-hit detonation, or
- * `CENTER_TORSO` for the heat-phase cook-off ([battletech.tactical.session.HeatPhaseHandler])
- * — and the bin is emptied (`shots = 0`). A bin with no shots left does nothing.
+ * Detonates the ammo bin at [binLocation]/[slotIndex] on [unit] (`docs/rules/critical-hits.md`
+ * §5): the total damage of [bin]'s remaining shots is applied through the standard
+ * [applyDamage] path to [damageLocation] — the bin's own location for a critical-hit
+ * detonation, or `CENTER_TORSO` for the heat-phase cook-off
+ * ([battletech.tactical.session.HeatPhaseHandler]) — and the bin is emptied. A bin with
+ * no shots left does nothing.
  *
  * Pure and deterministic: the damage is a fixed function of the bin's contents, no
  * dice involved. Shared by crit-triggered and heat-triggered ammo explosions so both
@@ -104,16 +102,12 @@ public fun detonateAmmoBin(
 }
 
 /**
- * Applies the per-component consequence of destroying [content] at [location] on
- * [unit] (`docs/rules/critical-hits.md` §5): a weapon-mount slot disables that
- * [Weapon] (`destroyed = true`); an ammo-bin slot detonates the bin into its own
- * location via [detonateAmmoBin]; a cockpit slot kills the pilot outright
- * (`docs/rules/critical-hits.md` §5, `docs/rules/pilot.md` §1), setting
- * [CombatUnit.pilotHits] to [PILOT_DEATH_THRESHOLD] and emitting a fatal [PilotHit]
- * (no consciousness roll). Any other content (structure, actuators, engine, gyro, …)
- * has no additional consequence. Returns the updated unit and the [GameEvent]s produced,
- * if any. Callers must check for [AmmoExploded] in the returned list to trigger the
- * two post-explosion pilot hits.
+ * Applies the per-component consequence of destroying [content] at [location] on [unit]
+ * (`docs/rules/critical-hits.md` §5). Only three contents carry one here — a [Weapon]
+ * mount, an ammo bin (via [detonateAmmoBin]), and a cockpit; everything else resolves to
+ * no additional consequence. Returns the updated unit and the [GameEvent]s produced.
+ * Callers must check for [AmmoExploded] in the returned list to trigger the
+ * post-explosion pilot hits.
  */
 private fun CombatUnit.applyCritConsequence(
     location: MechLocation,
@@ -133,18 +127,15 @@ private fun CombatUnit.applyCritConsequence(
 }
 
 /**
- * Resolves a single crit *check* at [location] on [unit]: rolls 2d6 on the Critical
- * Hit Table, then resolves each scored crit by picking a slot (1d6 block + 1d6 slot,
- * with roll-again) and marking it destroyed. A roll of 12 on an Arm/Leg blows the
- * limb off instead — every slot in [location] is marked destroyed and its internal
- * structure zeroed (Stage 1/2's `destructionReason`/sweep then handle elimination).
+ * Resolves a single crit *check* at [location] on [unit] (`docs/rules/critical-hits.md`
+ * §1–3): rolls the crit table, then resolves each scored crit by picking a slot and
+ * marking it destroyed. On a limb blow-off every slot in [location] is marked destroyed
+ * and its internal structure zeroed, leaving `destructionReason` and the session's
+ * destruction sweep to handle elimination.
  *
- * Each newly-destroyed slot's per-component consequence is applied immediately
- * (`docs/rules/critical-hits.md` §5): a weapon-mount slot disables that weapon; an
- * ammo-bin slot detonates ([detonateAmmoBin]) into its own location, which can itself
- * cause further IS damage (caught by the session's later destruction sweep). An ammo
- * explosion also inflicts 2 pilot hits on the unit (each hit runs a consciousness check
- * 2d6 via [applyPilotHit], immediately after the [AmmoExploded] event).
+ * Each newly-destroyed slot's consequence is applied immediately via
+ * [applyCritConsequence]. An ammo detonation can itself cause further IS damage, caught
+ * by the session's later destruction sweep.
  *
  * **Canonical dice order per crit slot** (for seeded tests):
  *  - 2d6 crit table, then per scored crit: 1d6 block + 1d6 slot (with roll-again).
@@ -177,8 +168,6 @@ public fun resolveCriticalHits(
             events += consequenceEvents
             for (event in consequenceEvents) {
                 if (event is AmmoExploded) {
-                    // Ammo explosion: pilot takes 2 hits (standard BT rule); dice order:
-                    // hit-1 2d6, hit-2 2d6.
                     val (afterHits, hitEvents) = applyAmmoExplosionPilotHits(currentUnit, roller)
                     currentUnit = afterHits
                     events += hitEvents
@@ -202,8 +191,6 @@ public fun resolveCriticalHits(
         events += consequenceEvents
         for (event in consequenceEvents) {
             if (event is AmmoExploded) {
-                // Ammo explosion: pilot takes 2 hits (standard BT rule); dice order:
-                // hit-1 2d6, hit-2 2d6.
                 val (afterHits, hitEvents) = applyAmmoExplosionPilotHits(currentUnit, roller)
                 currentUnit = afterHits
                 events += hitEvents

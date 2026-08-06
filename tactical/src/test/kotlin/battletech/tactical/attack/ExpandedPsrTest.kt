@@ -22,10 +22,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 /**
- * Expanded forced-PSR rules added in Task 6:
- *  - 20-damage PSR: ≥20 total damage in one attack phase → PSR at +1 per full 20
- *  - Head IS penetration → 1 pilot hit
- *  - Ammo explosion (crit-triggered) → 2 pilot hits
+ * Forced-PSR and pilot-damage triggers: the 20-damage PSR (`docs/rules/pilot.md` §3),
+ * head IS penetration (`docs/rules/pilot.md` §1), and crit-triggered ammo explosions
+ * (`docs/rules/critical-hits.md` §5).
  */
 internal class ExpandedPsrTest {
 

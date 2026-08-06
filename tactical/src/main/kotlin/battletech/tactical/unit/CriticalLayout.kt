@@ -89,10 +89,8 @@ private val LEG_FRAMEWORK: List<ActuatorType> = listOf(
 
 public fun CriticalLayout.Factory.empty(): CriticalLayout = mechLayout { }.layout
 
-// Slot/component crit counts (isSlotDestroyed, destroyedSlotCount, engineCritCount,
-// gyroCritCount, sensorCritCount, lifeSupportCritCount) live in CriticalDamage.kt,
-// alongside the rest of CombatUnit's critical-damage behavior. The threshold
-// constants below stay here with the layout framework they describe.
+// The threshold constants below stay here, with the layout framework they describe;
+// the counts they are compared against live in CriticalDamage.kt.
 
 /** Engine crit count at which the mech is destroyed (`docs/rules/critical-hits.md` §5). */
 public const val ENGINE_DESTROYED_AT: Int = 3
@@ -100,25 +98,25 @@ public const val ENGINE_DESTROYED_AT: Int = 3
 /** Gyro crit count at which the gyro is destroyed (`docs/rules/critical-hits.md` §5). */
 public const val GYRO_DESTROYED_AT: Int = 2
 
-/** Sensor crit count at which a unit's weapon attacks suffer the +2 to-hit penalty. */
+/** Sensor crit count at which the to-hit penalty applies (`docs/rules/critical-hits.md` §5). */
 public const val SENSOR_HIT_TO_HIT_PENALTY_AT: Int = 1
 
-/** Sensor crit count at which a unit is fully blinded and cannot fire any weapons. */
+/** Sensor crit count at which a unit is blinded (`docs/rules/critical-hits.md` §5). */
 public const val SENSOR_BLIND_AT: Int = 2
 
-/** Life Support crit count at which the pilot takes a hit every turn, heat irrelevant. */
+/** Life Support crit count at which the pilot takes a hit every turn (`docs/rules/critical-hits.md` §5). */
 public const val LIFE_SUPPORT_FAILURE_AT: Int = 2
 
 /** Heat generated per engine critical hit, added every turn (`docs/rules/critical-hits.md` §5). */
 public const val ENGINE_CRIT_HEAT_PER_HIT: Int = 5
 
-/** PSR modifier applied once a unit has taken at least one gyro critical hit. */
+/** PSR modifier from a gyro critical hit (`docs/rules/critical-hits.md` §5). */
 public const val GYRO_PSR_PENALTY: Int = 3
 
-/** To-hit penalty applied to all of a unit's weapon attacks once it has taken a sensor critical hit. */
+/** To-hit penalty from a sensor critical hit (`docs/rules/critical-hits.md` §5). */
 public const val SENSOR_TO_HIT_PENALTY: Int = 2
 
-/** Standing heat at/above which a single Life Support crit causes a pilot hit this turn. */
+/** Standing heat at/above which a single Life Support crit wounds the pilot (`docs/rules/critical-hits.md` §5). */
 public const val LIFE_SUPPORT_HEAT_THRESHOLD: Int = 15
 
 /** Returns a copy of this layout with the slot at [location]/[slotIndex] replaced by [content]. */
@@ -132,11 +130,6 @@ public fun CriticalLayout.withSlot(
     val updatedLocationSlots = locationSlots.copy(slots = updatedSlots)
     return copy(byLocation = byLocation + (location to updatedLocationSlots))
 }
-
-// ---------------------------------------------------------------------------
-// IS-aware ammo helpers: exclude bins whose location has IS = 0.
-// A destroyed location's feed mechanism is gone; that ammo is inaccessible.
-// ---------------------------------------------------------------------------
 
 /**
  * Ammo bins that are available for use: bins in locations whose internal structure is

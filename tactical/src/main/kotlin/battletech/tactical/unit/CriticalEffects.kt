@@ -25,7 +25,7 @@ public sealed interface CritEffect {
 public fun criticalEffects(component: CriticalComponent, hits: Int): List<CritEffect> = when (component) {
     CriticalComponent.ENGINE -> when {
         hits in 1..2 -> listOf(CritEffect.HeatPerTurn(hits * ENGINE_CRIT_HEAT_PER_HIT))
-        // 3+ destroys the unit outright via destructionReason, not an ongoing penalty.
+        // Beyond that the unit is eliminated via destructionReason, not penalised.
         else -> emptyList()
     }
 
@@ -47,7 +47,3 @@ public fun criticalEffects(component: CriticalComponent, hits: Int): List<CritEf
         else -> emptyList()
     }
 }
-
-// The CombatUnit-facing extensions that consume this mapping (critEffects,
-// engineHeatPerTurn, cannotFireFromSensorDamage, cannotStandFromGyroDamage) live in
-// CriticalDamage.kt, alongside the rest of CombatUnit's critical-damage behavior.

@@ -1,26 +1,12 @@
 package battletech.tactical.attack
 
-/**
- * Cluster Hits Table from `docs/rules/cluster-weapons.md` §1 — The Cluster Hits Table.
- *
- * Given a launcher [size] and a 2d6 total, returns the number of missiles that connect.
- * Supported sizes: 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
- *                  21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 40.
- *
- * Representative rows (see full table in the doc):
- * ```
- * Roll |  2 |  6 | 10 | 15 | 20 | 30 | 40
- *   2  |  1 |  2 |  3 |  5 |  6 | 10 | 12
- *   7  |  1 |  4 |  6 |  9 | 12 | 18 | 24
- *  12  |  2 |  6 | 10 | 15 | 20 | 30 | 40
- * ```
- */
+/** Cluster Hits Table from `docs/rules/cluster-weapons.md` §1. */
 public object ClusterHitsTable {
 
     /**
      * Returns the number of missiles that hit for a given launcher [size] and [roll2d6Total].
      *
-     * @param size the launcher size (supported: 2–30 and 40; see `docs/rules/cluster-weapons.md`)
+     * @param size the launcher size (supported: 2–30 and 40)
      * @param roll2d6Total the 2d6 total (2..12)
      */
     public fun missilesHit(size: Int, roll2d6Total: Int): Int {
@@ -30,8 +16,8 @@ public object ClusterHitsTable {
         return col[roll2d6Total - 2]
     }
 
-    // Each IntArray has 11 entries for rolls 2,3,4,5,6,7,8,9,10,11,12 (index = roll - 2).
-    // Values transcribed from docs/rules/cluster-weapons.md §1 — The Cluster Hits Table.
+    // Each IntArray has 11 entries for rolls 2..12 (index = roll - 2).
+    // Values transcribed from `docs/rules/cluster-weapons.md` §1.
     private val TABLE: Map<Int, IntArray> = mapOf(
         2  to intArrayOf( 1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2),
         3  to intArrayOf( 1,  1,  1,  2,  2,  2,  2,  2,  3,  3,  3),

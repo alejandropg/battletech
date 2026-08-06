@@ -2,10 +2,7 @@ package battletech.tactical.attack.physical
 
 import battletech.tactical.attack.HitLocation
 
-/**
- * Total Warfare Kick Location Table. A side kick always strikes the near leg;
- * a front or rear kick hits the right leg on 1-3 and the left leg on 4-6.
- */
+/** Kick Location Table (`docs/rules/physical-attacks.md` §7). */
 public object KickLocationTable {
 
     public fun roll(dieResult: Int, direction: AttackDirection): HitLocation {

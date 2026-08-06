@@ -7,11 +7,7 @@ import battletech.tactical.model.Terrain
 import battletech.tactical.query.RuleResult
 import battletech.tactical.session.RuleRejection
 
-/**
- * Blocks an attack when line of sight is obstructed: either by cumulative
- * intervening woods (≥ 3 levels: LIGHT = 1, HEAVY = 2) or by an intervening
- * hex whose elevation exceeds both endpoints.
- */
+/** Blocks an attack when line of sight is obstructed (`docs/rules/line-of-sight.md` §1–2). */
 public class LineOfSightRule : AttackRule<AttackContext> {
 
     override fun evaluate(context: AttackContext): RuleResult {

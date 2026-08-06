@@ -193,9 +193,9 @@ internal class DestructionSweepTest {
 
     @Test
     fun `a unit reaching 3 engine crits is flagged destroyed with ENGINE_DESTROYED via the sweep`() {
-        // Construct criticalHits directly (Stage 5 is about consequences, not crit
+        // Construct criticalHits directly (this test is about consequences, not crit
         // dice) rather than scripting dice to land 3 crit picks on engine slots.
-        // CENTER_TORSO framework: Engine at indices 0,1,2 and 7,8,9.
+        // CENTER_TORSO Engine slots (`docs/rules/critical-hits.md` §3).
         val engineDestroyed = aUnit(
             id = "a",
             owner = PlayerId.PLAYER_1,

@@ -369,7 +369,7 @@ internal class CriticalHitResolutionTest {
 
     @Test
     fun `crit on the cockpit slot kills the pilot and the unit is destroyed with PILOT_DEAD reason`() {
-        // HEAD slot index 2 is Cockpit (standard framework).
+        // HEAD Cockpit slot (`docs/rules/critical-hits.md` §3).
         // 2d6 = 9 -> 1 crit. Block 1 (upper, blockStart=0), slot 3 -> index 2 (Cockpit).
         // No consciousness dice consumed: cockpit = instant death, no check needed.
         val roller = DiceRoller.deterministic(4, 5, 1, 3)

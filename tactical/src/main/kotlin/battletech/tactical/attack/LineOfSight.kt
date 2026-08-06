@@ -10,9 +10,8 @@ import battletech.tactical.model.Terrain
  * @param blocked true when intervening terrain or elevation prevents the attack.
  * @param woodsModifier total to-hit penalty from intervening and target-hex woods.
  * @param partialCover true when the target's lower body is masked — either by an
- *   intervening obstacle exactly one level above the target (and at or below the
- *   attacker), or by the target standing in depth-1 water (legs submerged). Both
- *   sources produce the same effect: +3 to-hit and leg hits deal no damage / no crit.
+ *   intervening obstacle or by the target standing in depth-1 water. Both sources
+ *   produce the same effect (`docs/rules/line-of-sight.md` §3).
  * @param blockerHex the first hex responsible for blocking, or null when unblocked.
  * @param blockingTerrain the terrain at [blockerHex], or null when unblocked.
  */
@@ -33,20 +32,11 @@ public data class LineOfSightResult(
  * run the *identical* check the authoritative resolver runs — one implementation, no drift,
  * and no need for the target's private state.
  *
- * **Woods accumulation** (intervening hexes only, both endpoints excluded):
- *   LIGHT_WOODS = 1 level, HEAVY_WOODS = 2 levels.
- *   LOS is blocked when cumulative levels ≥ 3 across all intervening hexes.
- *   The target's own hex adds to [LineOfSightResult.woodsModifier] but does NOT
- *   count toward the blocking threshold.
- *
- * **Elevation blocking**: an intervening hex whose elevation exceeds both the
- *   attacker's elevation and the target's elevation blocks LOS entirely.
- *
- * **Partial cover**: an intervening hex exactly one elevation level above the target
- *   (while at or below the attacker) masks the target's lower body without blocking
- *   LOS. This adds +3 to-hit and makes leg hits no-effect.
- *
- * Elevation for each position is looked up from [map]; missing hexes default to 0.
+ * Woods accumulation, elevation blocking and partial cover are all owned by
+ * `docs/rules/line-of-sight.md` §1–3. Two modelling details it does not pin down:
+ * woods accumulate over intervening hexes only (the target's own hex adds to
+ * [LineOfSightResult.woodsModifier] but not to the blocking threshold), and elevation
+ * for each position is looked up from [map] with missing hexes defaulting to 0.
  */
 public fun lineOfSight(attackerPosition: HexCoordinates, targetPosition: HexCoordinates, map: GameMap): LineOfSightResult {
     val line = attackerPosition.lineTo(targetPosition)
@@ -106,9 +96,9 @@ public fun lineOfSight(attackerPosition: HexCoordinates, targetPosition: HexCoor
         else -> 0
     }
 
-    // Depth-1 water: the target's legs are submerged, giving the same partial-cover effect
-    // as an intervening terrain obstacle — +3 to-hit and leg hits are no-effect.
-    // (ASSUMPTION/standard BattleTech: shallow water provides lower-body cover.)
+    // Depth-1 water gives the same partial cover as an intervening obstacle
+    // (`docs/rules/water.md` §1). ASSUMPTION: the docs do not state that the two
+    // sources are interchangeable; this treats them as one flag.
     val targetInShallowWater = (map.hexes[targetPosition]?.depth ?: 0) == 1
 
     return LineOfSightResult(

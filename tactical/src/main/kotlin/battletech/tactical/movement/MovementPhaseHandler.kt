@@ -165,7 +165,7 @@ public class MovementPhaseHandler : PhaseHandler {
         roller: DiceRoller,
     ): PhaseOutcome {
         val initiative = turn.initiative
-        // Shutdown 'Mechs can't move, so they don't take an impulse slot.
+        // Only active units take an impulse slot (`docs/rules/movement.md` §2).
         val order = calculateMovementOrder(
             loser = initiative.loser, loserUnitCount = state.units.activeOf(initiative.loser).size,
             winner = initiative.winner, winnerUnitCount = state.units.activeOf(initiative.winner).size,

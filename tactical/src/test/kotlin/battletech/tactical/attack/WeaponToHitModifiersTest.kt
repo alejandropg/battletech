@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 /**
- * Unit tests for the three new to-hit modifiers added in Task 1:
+ * Unit tests for three to-hit modifiers:
  * attacker movement, target movement (TMM), and minimum range.
  */
 internal class WeaponToHitModifiersTest {

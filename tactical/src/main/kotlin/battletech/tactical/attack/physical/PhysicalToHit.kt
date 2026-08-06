@@ -13,14 +13,12 @@ import battletech.tactical.unit.VisibleUnit
 import battletech.tactical.unit.CombatUnit
 
 /**
- * Ordered breakdown of every contribution to a physical attack's to-hit target
- * number, excluding the attacker's piloting skill (the base, added separately
- * like gunnery is for weapons): attacker movement, target movement, terrain,
- * prone target, heat penalty, and the attack kind's own modifier (kick is −2).
+ * Ordered breakdown of every contribution to a physical attack's to-hit target number
+ * (`docs/rules/physical-attacks.md` §4), excluding the attacker's piloting skill — the
+ * base, added separately like gunnery is for weapons.
  *
- * The **terrain** term uses the same [lineOfSight] routine as weapon attacks:
- * intervening woods levels + target-hex woods + partial-cover (+3) share one
- * implementation.
+ * The terrain term uses the same [lineOfSight] routine as weapon attacks, so intervening
+ * woods, target-hex woods and partial cover share one implementation.
  */
 public fun physicalToHitModifiers(
     attacker: CombatUnit,
@@ -40,10 +38,7 @@ public fun physicalToHitModifiers(
     ToHitModifier(ToHitFactor.ATTACK_KIND, attackKindLabel(kind), attackKindModifier(kind)),
 )
 
-/**
- * Total Warfare physical-attack to-hit target number:
- * piloting skill + [physicalToHitModifiers].
- */
+/** Physical-attack to-hit target number: piloting skill + [physicalToHitModifiers]. */
 public fun physicalToHitTargetNumber(
     attacker: CombatUnit,
     target: VisibleUnit,

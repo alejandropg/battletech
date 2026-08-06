@@ -13,18 +13,14 @@ import battletech.tactical.model.MechLocation
  * keeps the pure layout (slots, framework, ammo bookkeeping) concerns.
  */
 
-// ---------------------------------------------------------------------------
-// Slot/component crit counts.
-// ---------------------------------------------------------------------------
-
 /** True when [unit] has already recorded the slot at [location]/[index] as destroyed. */
 public fun CombatUnit.isSlotDestroyed(location: MechLocation, index: Int): Boolean =
     criticalHits[location]?.contains(index) == true
 
 /**
  * Count of slots in [location] whose content matches [predicate] and are recorded as
- * destroyed in [CombatUnit.criticalHits]. Used by later stages to compare destroyed-slot
- * counts of a given component type (engine, gyro, …) against their threshold constants.
+ * destroyed in [CombatUnit.criticalHits]. Backs the per-component counts below, which
+ * compare against the threshold constants in `CriticalLayout.kt`.
  */
 public fun CombatUnit.destroyedSlotCount(
     location: MechLocation,
@@ -48,16 +44,12 @@ public fun CombatUnit.sensorCritCount(): Int =
     destroyedSlotCount(MechLocation.HEAD) { it is CriticalSlotContent.Sensors }
 
 /**
- * Number of destroyed Life Support slots in the Head (`docs/rules/critical-hits.md`
- * §3 Life Support; HEAD framework has 2 LifeSupport slots). Drives the per-turn
- * pilot-damage sources wired in [battletech.tactical.heat.resolveUnitHeatPhase].
+ * Number of destroyed Life Support slots in the Head (`docs/rules/critical-hits.md` §3).
+ * Drives the per-turn pilot-damage sources wired in
+ * [battletech.tactical.heat.resolveUnitHeatPhase].
  */
 public fun CombatUnit.lifeSupportCritCount(): Int =
     destroyedSlotCount(MechLocation.HEAD) { it is CriticalSlotContent.LifeSupport }
-
-// ---------------------------------------------------------------------------
-// Derived per-component effects (mapping table itself lives in CriticalEffects.kt).
-// ---------------------------------------------------------------------------
 
 /** Convenience: effects for [component] given this unit's current crit count for it. */
 public fun CombatUnit.critEffects(component: CriticalComponent): List<CritEffect> {
@@ -82,16 +74,10 @@ public fun CombatUnit.cannotFireFromSensorDamage(): Boolean =
 public fun CombatUnit.cannotStandFromGyroDamage(): Boolean =
     critEffects(CriticalComponent.GYRO).any { it is CritEffect.CannotStand }
 
-// ---------------------------------------------------------------------------
-// Leg destruction (folded in from the former LegDestruction.kt).
-// ---------------------------------------------------------------------------
-
 /**
  * Number of legs whose internal structure has reached 0 on this unit (0, 1, or 2).
- *
- * A leg with IS = 0 is structurally destroyed: the unit cannot run or jump, walk speed
- * is halved, and a single such leg forces an immediate fall. Both legs destroyed triggers
- * [DestructionReason.BOTH_LEGS_DESTROYED] via [destructionReason].
+ * What that costs the unit is owned by `docs/rules/armor-damage.md` §8; both legs
+ * destroyed triggers [DestructionReason.BOTH_LEGS_DESTROYED] via [destructionReason].
  */
 public fun CombatUnit.destroyedLegCount(): Int {
     var count = 0
@@ -100,29 +86,20 @@ public fun CombatUnit.destroyedLegCount(): Int {
     return count
 }
 
-/**
- * PSR modifier applied to all piloting skill rolls while this unit has at least one
- * destroyed leg (+[LEG_PSR_PENALTY] per destroyed leg). Consumed by the movement phase
- * (stand-up attempts) and by [battletech.tactical.attack.applyLocationDestructionConsequences]
- * (fall PSR if future tasks add a PSR-or-fall on leg destruction; currently the fall is
- * automatic, so this modifier surfaces for stand-up and Task 6 forced-PSRs).
- */
+/** PSR modifier per destroyed leg (`docs/rules/pilot.md` §3). */
 public const val LEG_PSR_PENALTY: Int = 1
 
 /**
  * PSR modifier applied to all piloting skill rolls while [unit] has at least one
- * destroyed leg (+[LEG_PSR_PENALTY] per destroyed leg), mirroring the [gyroPsrModifier]
- * pattern. Consumed by [battletech.tactical.movement.MovementPhaseHandler] (stand-up
- * attempts) and available for Task 6 forced-PSR wiring.
+ * destroyed leg, mirroring the [gyroPsrModifier] pattern. Consumed by
+ * [battletech.tactical.movement.MovementPhaseHandler] (stand-up attempts) and by the
+ * forced-PSR path.
  */
 public fun legPsrModifier(unit: CombatUnit): Int = unit.destroyedLegCount() * LEG_PSR_PENALTY
 
-// ---------------------------------------------------------------------------
-// Unit-mutation helpers used while resolving a critical hit (moved from
-// attack/CriticalHitResolution.kt — they only ever touch CombatUnit/unit-package
-// types, so post-Stage-2 they have no attack-package dependency). detonateAmmoBin
-// and applyCritConsequence stay in attack/ since they run the damage pipeline.
-// ---------------------------------------------------------------------------
+// Unit-mutation helpers used while resolving a critical hit. They only touch
+// CombatUnit/unit-package types; detonateAmmoBin and applyCritConsequence stay in
+// attack/ since they run the damage pipeline.
 
 /** Sets `destroyed = true` on the unit's [Weapon] mounted at [weaponId], if any. */
 internal fun CombatUnit.withWeaponDestroyed(weaponId: WeaponMountId): CombatUnit =

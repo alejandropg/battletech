@@ -18,12 +18,10 @@ public object FiringArc {
         val (tx, _, tz) = to.toCube()
         val dx = tx - fx
         val dz = tz - fz
-        // Convert cube coords to 2D cartesian for angle calculation
-        // In pointy-top hex: x-axis goes right, z-axis goes down-right
+        // Cube -> 2D cartesian, pointy-top: x-axis right, z-axis down-right.
         val px = dx + dz * 0.5
         val py = dz * SQRT3_OVER_2
-        // atan2 returns angle from positive x-axis, counterclockwise
-        // We want angle from north (positive y in screen = negative py here), clockwise
+        // Negating py measures the angle clockwise from north rather than from +x.
         val angle = atan2(px, -py)
         val degrees = ((Math.toDegrees(angle) + 360) % 360)
         return when {

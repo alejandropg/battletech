@@ -8,12 +8,10 @@ public typealias HitLocation = MechLocation
 public object HitLocationTable {
 
     /**
-     * Returns the hit location for a 2d6 [dieResult] from the canonical BattleTech
-     * Mech Hit Location Table for the given [direction].
-     *
-     * Front and Rear attacks share the same column; Left and Right have their own columns.
-     * The [direction] parameter defaults to [AttackDirection.FRONT] so existing callers
-     * (e.g. fall damage) continue to compile and behave unchanged.
+     * Returns the hit location for a 2d6 [dieResult] in [direction]
+     * (`docs/rules/armor-damage.md` — Hit Location Tables). [direction] defaults to
+     * [AttackDirection.FRONT] for callers with no attack arc of their own, such as
+     * fall damage.
      */
     public fun roll(dieResult: Int, direction: AttackDirection = AttackDirection.FRONT): HitLocation {
         if (dieResult !in 2..12) error("Invalid 2d6 result: $dieResult (must be 2-12)")
@@ -25,7 +23,7 @@ public object HitLocationTable {
         return column[dieResult - 2]
     }
 
-    // Total Warfare Mech Hit Location Table — Front/Rear column (identical for both arcs).
+    // Columns transcribed from `docs/rules/armor-damage.md` — Hit Location Tables.
     private val FRONT_REAR = listOf(
         /* 2  */ HitLocation.CENTER_TORSO,
         /* 3  */ HitLocation.RIGHT_ARM,
@@ -40,7 +38,7 @@ public object HitLocationTable {
         /* 12 */ HitLocation.HEAD,
     )
 
-    // Left-side column: attacker is on the target's left.
+    // Attacker is on the target's left.
     private val LEFT = listOf(
         /* 2  */ HitLocation.LEFT_TORSO,
         /* 3  */ HitLocation.LEFT_LEG,
@@ -55,7 +53,7 @@ public object HitLocationTable {
         /* 12 */ HitLocation.HEAD,
     )
 
-    // Right-side column: attacker is on the target's right.
+    // Attacker is on the target's right.
     private val RIGHT = listOf(
         /* 2  */ HitLocation.RIGHT_TORSO,
         /* 3  */ HitLocation.RIGHT_LEG,

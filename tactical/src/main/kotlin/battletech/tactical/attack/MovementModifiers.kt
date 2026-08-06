@@ -4,8 +4,7 @@ import battletech.tactical.model.MovementMode
 import battletech.tactical.unit.MovementThisTurn
 
 /**
- * Returns the to-hit penalty for the attacker's movement this turn.
- * Stationary → +0, walk → +1, run → +2, jump → +3.
+ * Attacker Movement Modifier (`docs/rules/to-hit-modifiers.md` §2).
  * Used by both weapon fire and physical attacks.
  */
 public fun attackerMovementModifier(movement: MovementThisTurn): Int = when (movement) {
@@ -18,8 +17,7 @@ public fun attackerMovementModifier(movement: MovementThisTurn): Int = when (mov
 }
 
 /**
- * Returns the Target Movement Modifier (TMM) for the given target's movement.
- * The base band is keyed on hexes moved; a jumping target adds +1 on top.
+ * Target Movement Modifier (`docs/rules/to-hit-modifiers.md` §1).
  * Used by both weapon fire and physical attacks.
  */
 public fun targetMovementModifier(movement: MovementThisTurn): Int {

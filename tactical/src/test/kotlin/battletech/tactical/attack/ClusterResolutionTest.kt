@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test
 /**
  * Tests for cluster-hit weapon resolution (SRM, LRM) and confirming that
  * non-cluster weapons (Medium Laser) preserve the exact dice order they had
- * before Task 3.
+ * before cluster resolution existed.
  *
  * Dice order (canonical, documented in [resolveAttacksWithCrits]):
  *   1. to-hit 2d6

@@ -11,8 +11,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * Unit tests for [lineOfSight]:
- *   LIGHT_WOODS = 1 level, HEAVY_WOODS = 2 levels, blocking threshold ≥ 3 levels.
+ * Unit tests for [lineOfSight] against `docs/rules/line-of-sight.md` §1–3.
  *
  * All tests use a straight-column layout so the intervening hexes are predictable:
  *   attacker (0,0) → target (0,3): intervening hexes are (0,1) and (0,2).

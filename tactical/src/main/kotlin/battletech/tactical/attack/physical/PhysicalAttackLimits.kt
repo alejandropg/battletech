@@ -6,12 +6,9 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 
 /**
- * Validates the per-turn physical-attack limits for a committed impulse,
- * returning the first [RuleRejection] found or `null` if the declarations are
- * legal. Total Warfare limits, enforced per attacking unit:
- *  - a unit may punch with each arm (up to two punches) XOR kick once;
- *  - a unit may not reuse the same limb;
- *  - a unit may not use a destroyed (0 internal structure) limb.
+ * Validates the per-turn physical-attack limits (`docs/rules/physical-attacks.md` §1) for
+ * a committed impulse, returning the first [RuleRejection] found or `null` if the
+ * declarations are legal.
  */
 public fun physicalImpulseViolation(
     declarations: List<PhysicalAttackDeclaration>,

@@ -30,7 +30,7 @@ import battletech.tactical.unit.consumeOneRoundFromAvailableBin
  *     the *evolving* unit — so a later attack's roll-again sees an earlier attack's
  *     already-destroyed slots. A crit check fires once per [LocationDamage] step that
  *     dealt structure damage, plus once more for the hit location on a natural-2
- *     through-armor crit (`docs/rules/armor-damage.md`, The Natural 2 Rule) even when no IS damage
+ *     through-armor crit (`docs/rules/armor-damage.md` — The Natural 2 Rule) even when no IS damage
  *     occurred. `isDestroyed`/`MatchEnded` evaluation is deferred to the session's
  *     post-volley destruction sweep, not decided here.
  */
@@ -39,7 +39,6 @@ public fun resolveAttacksWithCrits(
     gameState: GameState,
     roller: DiceRoller,
 ): Triple<GameState, List<AttackResult>, List<GameEvent>> {
-    // All attacks resolve against the original state (simultaneous resolution)
     val results = declarations.map { declaration ->
         resolveOneAttack(declaration, gameState, roller)
     }
@@ -107,7 +106,6 @@ public fun resolveAttacksWithCrits(
         val attacker = updatedState.units.byId(declaration.attackerId)
         val weapon = attacker.weapons[declaration.weaponIndex]
         val ammoType = weapon.ammoType ?: continue
-        // Consume from an available bin (skips bins in IS=0 locations).
         val updatedAttacker = attacker.consumeOneRoundFromAvailableBin(ammoType)
         updatedState = updatedState.copy(units = updatedState.units.withUnit(updatedAttacker))
     }
@@ -123,11 +121,8 @@ public fun applyDamage(
 ): CombatUnit = resolveDamage(unit, location, damage, useRearArmor).unit
 
 /**
- * Applies [damage] to [location] on [unit]: armor first, then internal structure (IS).
- * If the location's IS is destroyed (reaches 0), any excess damage transfers inward
- * per the blow-through rules (`docs/rules/armor-damage.md` §5), hitting the new
- * location's armor first and preserving [useRearArmor]. Head and Center Torso do not
- * transfer; excess damage there is dropped.
+ * Applies [damage] to [location] on [unit] per `docs/rules/armor-damage.md` §1 and §5.
+ * Transferred damage hits the new location's armor first and preserves [useRearArmor].
  */
 public fun resolveDamage(
     unit: CombatUnit,

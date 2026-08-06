@@ -13,11 +13,9 @@ public sealed interface MatchStatus {
 }
 
 /**
- * Evaluates victory for [state]: only players with units actually deployed are considered
- * (an empty roster — e.g. a not-yet-populated match, or a test fixture with no units for
- * that player — must never be misread as "eliminated"). The match ends once at most one
- * deployed player still has a surviving (non-[battletech.tactical.unit.CombatUnit.isDestroyed]) unit — that player
- * wins, or it's a [MatchOutcome.Draw] if none do.
+ * Evaluates victory for [state] (`docs/rules/victory.md`). Only players with units actually
+ * deployed are considered: an empty roster — a not-yet-populated match, or a test fixture
+ * with no units for that player — must never be misread as "eliminated".
  */
 public fun victoryStatus(state: GameState): MatchStatus {
     val rosterByPlayer = PlayerId.entries.associateWith { state.units.of(it) }

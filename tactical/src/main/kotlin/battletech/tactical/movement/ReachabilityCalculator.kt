@@ -31,19 +31,17 @@ public class ReachabilityCalculator(
 ) {
 
     public fun calculate(actor: CombatUnit, mode: MovementMode): ReachabilityMap {
-        // A destroyed leg prevents running and jumping; walking is halved.
+        // Leg destruction (`docs/rules/armor-damage.md` §8) and heat
+        // (`docs/rules/heat.md` §2) both cut MP. ASSUMPTION on ordering: neither doc says
+        // which applies first, so the leg halving is taken on base walking MP before the
+        // heat penalty is subtracted. Jump jets are unaffected by heat.
         val hasDestroyedLeg = actor.destroyedLegCount() > 0
-
-        // Heat slows walking (and the running derived from it); jump jets are
-        // unaffected. See HeatScale.movementPenalty / docs/rules/heat.md.
         val penalty = HeatScale.movementPenalty(actor.currentHeat)
-        // With a destroyed leg the base walking MP is halved (floor) before the heat
-        // penalty is applied, per the standard "hobble" rule.
         val baseWalk = if (hasDestroyedLeg) actor.walkingMP / 2 else actor.walkingMP
         val effectiveWalk = (baseWalk - penalty).coerceAtLeast(0)
         val maxMP = when (mode) {
             MovementMode.WALK -> effectiveWalk
-            // Cannot run or jump with a destroyed leg — maxMP 0 yields an empty map.
+            // maxMP 0 yields an empty reachability map.
             MovementMode.RUN -> if (hasDestroyedLeg) 0
                 else if (penalty == 0) actor.runningMP
                 else ceil(effectiveWalk * 1.5).toInt()

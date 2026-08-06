@@ -3,9 +3,8 @@ package battletech.tactical.attack.physical
 import battletech.tactical.attack.HitLocation
 
 /**
- * Total Warfare Punch Location Table. Indexed by a 1d6 roll and the
- * [AttackDirection] (the target's struck side). Rear uses the same column as
- * Front.
+ * Punch Location Table (`docs/rules/physical-attacks.md` §6). Indexed by a 1d6 roll and
+ * the [AttackDirection] (the target's struck side).
  */
 public object PunchLocationTable {
 

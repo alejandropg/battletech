@@ -5,14 +5,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 /**
- * Verifies the Cluster Hits Table lookup against the canonical table in
- * `docs/rules/cluster-weapons.md` §1 — The Cluster Hits Table.
- *
- * Representative rows (full table in the doc):
- * Roll |  2 |  6 | 10 | 15 | 20 | 30 | 40
- *   2  |  1 |  2 |  3 |  5 |  6 | 10 | 12
- *   7  |  1 |  4 |  6 |  9 | 12 | 18 | 24
- *  12  |  2 |  6 | 10 | 15 | 20 | 30 | 40
+ * Verifies the [ClusterHitsTable] lookup against the canonical table in
+ * `docs/rules/cluster-weapons.md` §1.
  */
 internal class ClusterHitsTableTest {
 

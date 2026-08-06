@@ -18,11 +18,10 @@ import battletech.tactical.unit.destroyedLegCount
 public object MovementRules {
 
     /**
-     * Modes [unit] may attempt this phase, in WALK/RUN/JUMP order. A unit
-     * that is shutdown, destroyed, or piloted by an unconscious pilot has no
-     * available modes; otherwise a mode is offered iff the unit has a
-     * positive MP allowance for it (prone-ness and leg damage are legality
-     * concerns for a specific attempt, see [moveRejection], not availability).
+     * Modes [unit] may attempt this phase, in WALK/RUN/JUMP order
+     * (`docs/rules/movement.md` §2–3). A mode is offered iff the unit has a positive MP
+     * allowance for it; prone-ness and leg damage are legality concerns for a specific
+     * attempt (see [moveRejection]), not availability.
      */
     public fun availableModes(unit: CombatUnit): List<MovementMode> {
         if (unit.isShutdown || unit.isDestroyed || !unit.isPilotConscious) return emptyList()
@@ -34,10 +33,9 @@ public object MovementRules {
     }
 
     /**
-     * Rule-level rejection for [unit] attempting to move in [mode], independent
-     * of destination (prone units can't move at all; a destroyed leg forbids
-     * running and jumping, hobbling the unit to a halved walk). Returns null
-     * if the attempt is rule-legal.
+     * Rule-level rejection for [unit] attempting to move in [mode], independent of
+     * destination (`docs/rules/movement.md` §2, `docs/rules/armor-damage.md` §8).
+     * Returns null if the attempt is rule-legal.
      */
     public fun moveRejection(unit: CombatUnit, mode: MovementMode): CommandRejection? = when {
         unit.isProne -> CommandRejection.UnitProne(unit.id)

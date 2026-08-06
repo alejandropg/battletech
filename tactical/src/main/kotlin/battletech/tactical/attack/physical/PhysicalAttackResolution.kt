@@ -20,7 +20,6 @@ public fun resolvePhysicalAttacks(
     gameState: GameState,
     roller: DiceRoller,
 ): Pair<GameState, List<PhysicalAttackResult>> {
-    // Pass 1: roll every attack's to-hit and hit location against the original state.
     val resolved = declarations.map { it to resolveOnePhysicalAttack(it, gameState, roller) }
 
     // Apply all hit damage simultaneously.
@@ -41,7 +40,7 @@ public fun resolvePhysicalAttacks(
         }
     }
 
-    // Pass 2: kicks force a knockdown PSR — the target on a hit, the attacker on a miss.
+    // Kick knockdown (`docs/rules/physical-attacks.md` §8).
     val finalResults = damagedResults.map { (declaration, result) ->
         if (declaration.kind !is PhysicalAttackKind.Kick) return@map result
 
@@ -49,13 +48,11 @@ public fun resolvePhysicalAttacks(
         val faller = updatedState.units.byId(fallerId)
         if (faller.isProne) return@map result
 
-        // Include gyro + leg PSR penalties in the knockdown roll.
         val psrModifier = faller.basePsrModifier()
         val psr = pilotingSkillRoll(faller, roller, modifier = psrModifier)
         val knockdown = if (psr.passed) {
             Knockdown.Resisted.Detailed(psr)
         } else {
-            // Fall applies damage; pilot also takes 1 hit per standard BT rules.
             // Canonical dice order: fall location 2d6, facing 1d6, consciousness check 2d6.
             val (fallen, fallResult) = fall(faller, roller)
             val (injured, pilotEvents) = applyPilotHit(fallen, roller)

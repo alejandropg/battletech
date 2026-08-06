@@ -4,13 +4,8 @@ import battletech.tactical.unit.CombatUnit
 
 /**
  * Returns the water depth (in levels) of the hex at [position], or 0 if the hex is
- * dry or absent from [map].
- *
- * - Depth 0: dry land.
- * - Depth 1: legs submerged — the target gains **partial cover** (+3 to-hit, leg hits
- *   no-effect) and heat sinks dissipate extra heat.
- * - Depth 2+: fully submerged — surface (non-[battletech.tactical.unit.Weapon.underwaterCapable])
- *   weapons cannot fire; a prone unit risks drowning (1 pilot hit per Heat Phase).
+ * dry or absent from [map]. What each depth does to a unit is owned by
+ * `docs/rules/water.md`.
  *
  * This is the single authoritative query for water depth across the engine. Call sites in
  * `PhysicalReachRules`, `LineOfSight`, `SubmergedWeaponRule`, `HeatPhaseHandler`, and
@@ -32,15 +27,10 @@ public fun unitWaterDepth(position: HexCoordinates, map: GameMap): Int =
  * below are an ASSUMPTION — the doc states the bonus qualitatively, not numerically).
  *
  * Since per-location heat-sink placement is not tracked granularly in the current model,
- * fixed bonuses are applied based on submersion level:
- *
- *  - **Depth 1** (legs submerged): +6. Approximates ~3 double heat sinks in the legs
- *    and lower torso dissipating at twice the normal rate while immersed.
- *  - **Depth 2+** (fully submerged): +12. All heat sinks benefit from full immersion;
- *    doubling the depth-1 approximation.
- *
- * A future stage could scale this by [battletech.tactical.unit.HeatSink.units] if
- * per-location heat-sink placement is added to the model.
+ * a flat bonus per submersion level stands in: +6 at depth 1 approximates ~3 double heat
+ * sinks in the legs and lower torso running at twice the normal rate, and depth 2+ doubles
+ * that for full immersion. Scaling by [battletech.tactical.unit.HeatSink.units] would need
+ * per-location placement in the model first.
  */
 public fun submersionDissipationBonus(unit: CombatUnit, gameState: GameState): Int =
     when (unitWaterDepth(unit.position, gameState.map)) {

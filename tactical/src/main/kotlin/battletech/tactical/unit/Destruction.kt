@@ -5,9 +5,8 @@ import battletech.tactical.model.MechLocation
 /**
  * Reasons a [CombatUnit] is eliminated from play (`docs/rules/armor-damage.md` §7).
  *
- * Note: a destroyed gyro is NOT a destruction reason — per `docs/rules/critical-hits.md` §5 a 2nd gyro
- * crit immobilizes the mech (it crashes prone and can never stand) but it keeps fighting
- * from the ground, so it stays in play. That handling lives in the attack phase handlers
+ * Note: a destroyed gyro is deliberately absent — it immobilizes rather than eliminates
+ * (`docs/rules/critical-hits.md` §5), so that handling lives in the attack phase handlers
  * and [battletech.tactical.movement.MovementPhaseHandler], not here.
  */
 public enum class DestructionReason {
@@ -18,31 +17,19 @@ public enum class DestructionReason {
     PILOT_DEAD,
 }
 
-/**
- * Pilot hit count at which the pilot dies (ASSUMPTION — not stated in
- * `docs/rules/armor-damage.md`; standard BattleTech rule: 6 pilot hits kills the
- * MechWarrior outright, mirroring the 6-box "Hits Sustained" track on a paper pilot
- * sheet).
- */
+/** Pilot hit count at which the pilot dies (`docs/rules/pilot.md` §1). */
 public const val PILOT_DEATH_THRESHOLD: Int = 6
 
 /**
  * Pure query: returns the first destruction condition satisfied by [unit], or null if
  * the unit is still intact. Does not mutate [unit].
  *
- * Precedence (checked in this order; the first match wins — these conditions are
- * mutually exclusive in practice since each consumes a unit's last sliver of viability,
- * but the order is still meaningful for callers reading the reason off a unit that
- * satisfies more than one at once):
- *  1. Structural (head / CT IS = 0, both legs gone) — already-final, simplest to verify.
- *  2. ENGINE_DESTROYED (3 engine crits) — an immediate shutdown per the doc.
- *  3. PILOT_DEAD (6 pilot hits) — checked LAST (ASSUMPTION). A dead pilot's mech is
- *     just as eliminated as one with a destroyed head, but if a single damage event
- *     somehow satisfies both a structural/crit condition and pilot death at once (e.g.
- *     a head hit that both zeroes head IS and is the pilot's 6th hit), the more
- *     "physical" reason is reported — it is the more informative/debuggable label,
- *     and matches the order new conditions were added to this function over the
- *     project's staged build-out.
+ * The conditions themselves are mutually exclusive in practice, but the first match wins
+ * and the order still matters for a caller reading the reason off a unit that satisfies
+ * more than one at once. Structural reasons are checked first, then ENGINE_DESTROYED,
+ * then PILOT_DEAD last. ASSUMPTION: the doc does not rank them. If a single damage event
+ * satisfies both a structural condition and pilot death (a head hit that zeroes head IS
+ * *and* is the pilot's last hit), the more physical reason is the more debuggable label.
  */
 public fun destructionReason(unit: CombatUnit): DestructionReason? {
     val internalStructure = unit.internalStructure

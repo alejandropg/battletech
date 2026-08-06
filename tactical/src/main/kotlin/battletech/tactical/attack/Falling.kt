@@ -18,11 +18,8 @@ public data class FallResult(
 )
 
 /**
- * Makes [unit] fall: it takes ⌈tonnage/10⌉ damage to a location rolled on the
- * standard hit-location table, its facing is randomised by a 1d6 roll
- * (1 = no change, otherwise rotate clockwise that many hexsides minus one),
- * and it ends up prone. Reusable by any fall trigger (kick knockdown today;
- * weapon-damage and DFA later).
+ * Makes [unit] fall (`docs/rules/pilot.md` §4). Reusable by any fall trigger — kick
+ * knockdown, leg destruction, a failed forced PSR.
  */
 public fun fall(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit, FallResult> {
     val damage = ceil(unit.tonnage / 10.0).toInt()
