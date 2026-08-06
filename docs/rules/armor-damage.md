@@ -20,6 +20,35 @@ Steps:
 
 ---
 
+## 2. Internal Structure by Tonnage
+
+A Mech's Internal Structure points per location are fixed by its tonnage. The Head is always **3**;
+left and right pairs (torso, arm, leg) are always symmetric.
+
+| Tonnage | Head | Center Torso | L/R Torso | L/R Arm | L/R Leg |
+|:-------:|:----:|:------------:|:---------:|:-------:|:-------:|
+|   20    |  3   |      6       |     5     |    3    |    4    |
+|   25    |  3   |      8       |     6     |    4    |    6    |
+|   30    |  3   |      10      |     7     |    5    |    7    |
+|   35    |  3   |      11      |     8     |    6    |    8    |
+|   40    |  3   |      12      |    10     |    6    |   10    |
+|   45    |  3   |      14      |    11     |    7    |   11    |
+|   50    |  3   |      16      |    12     |    8    |   12    |
+|   55    |  3   |      18      |    13     |    9    |   13    |
+|   60    |  3   |      20      |    14     |   10    |   14    |
+|   65    |  3   |      21      |    15     |   10    |   15    |
+|   70    |  3   |      22      |    15     |   11    |   15    |
+|   75    |  3   |      23      |    16     |   12    |   16    |
+|   80    |  3   |      25      |    17     |   13    |   17    |
+|   85    |  3   |      27      |    18     |   14    |   18    |
+|   90    |  3   |      29      |    19     |   15    |   19    |
+|   95    |  3   |      30      |    20     |   16    |   20    |
+|   100   |  3   |      31      |    21     |   17    |   21    |
+
+Tonnage runs in 5-ton steps from 20 to 100; there is no structure table outside that range.
+
+---
+
 ## Hit Location Tables
 
 When a weapon attack successfully hits a BattleMech, the attacker rolls **2d6** to determine exactly which component is struck. You must select the specific column below that matches the attacker's positioning relative to the target: **Front/Rear Arc**, **Left Side Arc**, or **Right Side Arc**.

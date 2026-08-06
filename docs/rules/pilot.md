@@ -48,7 +48,8 @@ situations. A fall deals fall damage and inflicts 1 pilot hit.
 
 - **20+ total damage in a single phase** — make a PSR with a **+1** modifier, **cumulative per full
   20 damage** (40 damage → +2, 60 → +3, …).
-- **Gyro critical hit** — **+3** PSR (see [`critical-hits.md`](critical-hits.md) §5 for the ongoing gyro penalties).
+- **Gyro critical hit** — the PSR penalty in [`critical-hits.md`](critical-hits.md) §5, which owns
+  it along with the rest of the ongoing gyro penalties.
 - **Leg / foot actuator or hip critical** — forces a PSR.
 - **Losing a leg** — forces a fall outright (movement consequences in [`armor-damage.md`](armor-damage.md) §8).
 - **Being kicked, pushed, standing up in difficult terrain, or entering certain terrain at speed.**
@@ -58,4 +59,18 @@ fall (fall damage → pilot hit → consciousness roll).
 
 **Examples.**
 - A 20-damage volley → +1 PSR; a 40-damage volley → +2.
-- A gyro hit → +3 PSR; pass = no fall, fail = fall + 1 pilot hit + consciousness roll.
+- A 20-damage volley on a unit with a gyro hit → +1 plus the gyro penalty; pass = no fall,
+  fail = fall + 1 pilot hit + consciousness roll.
+
+---
+
+## 4. Falls
+
+When a PSR is failed (or a fall is forced outright), the Mech falls:
+
+- It takes **⌈tonnage / 10⌉** damage to a location rolled on the standard hit-location table
+  ([`armor-damage.md`](armor-damage.md) — *Hit Location Tables*).
+- Its **facing is randomised** by a 1d6 roll: **1 = no change**, otherwise rotate clockwise that
+  many hexsides **minus one**.
+- It ends up **prone** (standing back up is owned by [`movement.md`](movement.md) §6).
+- The pilot takes **1 hit**, which triggers a consciousness roll (§1–2).
