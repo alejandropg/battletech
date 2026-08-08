@@ -12,6 +12,7 @@ import battletech.tui.game.PanelScroll
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
+import battletech.tui.input.KeyGlyph
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
@@ -299,7 +300,7 @@ private fun renderFrame(
                 is MatchOutcome.Draw -> "Draw"
                 is MatchOutcome.Victory -> "${playerName(outcome.winner)} wins!"
             }
-            "Match over — $outcomeText  |  ctrl+c: quit"
+            "Match over — $outcomeText  |  ${KeyGlyph.CTRL}c: quit"
         }
         flash != null -> flash.text
         else -> appState.phase.prompt(appState)

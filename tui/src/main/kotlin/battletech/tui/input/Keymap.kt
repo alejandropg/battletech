@@ -7,6 +7,21 @@ internal data class KeyHint(val keys: String, val description: String)
 internal data class KeySection(val title: String, val hints: List<KeyHint>)
 
 /**
+ * Single-cell glyphs standing in for special keys in [KeyHint] labels, matching the arrow
+ * glyphs already used for cursor movement. Each codepoint is confirmed width-1 by
+ * [battletech.tui.screen.CellWidth] (none fall in its wide-glyph ranges), which is what keeps
+ * the HELP panel's key column aligned.
+ */
+internal object KeyGlyph {
+    const val ENTER: String = "⏎"
+    const val TAB: String = "⇥"
+    const val ESC: String = "⎋"
+    const val SPACE: String = "␣"
+    const val CTRL: String = "⌃"
+    const val ALT: String = "⌥"
+}
+
+/**
  * The keybinding hints shown in the HELP panel, kept next to the `InputMapper.map*Event`
  * function each list documents so a binding change and its hint change together.
  */
@@ -15,8 +30,8 @@ internal object Keymap {
     /** Mirrors [InputMapper.mapIdleEvent] as used by [battletech.tui.game.phase.MovementPhase.SelectingUnit]. */
     val MOVEMENT_IDLE: List<KeyHint> = listOf(
         KeyHint("←→↑↓/wasd", "move cursor"),
-        KeyHint("Enter", "select unit"),
-        KeyHint("Tab", "cycle unit"),
+        KeyHint(KeyGlyph.ENTER, "select unit"),
+        KeyHint(KeyGlyph.TAB, "cycle unit"),
         KeyHint("c", "commit declarations"),
     )
 
@@ -24,43 +39,43 @@ internal object Keymap {
     val BROWSING: List<KeyHint> = listOf(
         KeyHint("←→↑↓/wasd", "move cursor"),
         KeyHint("1-6", "select facing"),
-        KeyHint("Enter", "confirm path"),
-        KeyHint("Esc", "back"),
-        KeyHint("Tab", "cycle unit"),
+        KeyHint(KeyGlyph.ENTER, "confirm path"),
+        KeyHint(KeyGlyph.ESC, "back"),
+        KeyHint(KeyGlyph.TAB, "cycle unit"),
         KeyHint("x", "cycle movement mode"),
     )
 
     /** Mirrors [InputMapper.mapFacingEvent]. */
     val FACING: List<KeyHint> = listOf(
         KeyHint("1-6", "select facing"),
-        KeyHint("Esc", "back"),
-        KeyHint("Tab", "cycle unit"),
+        KeyHint(KeyGlyph.ESC, "back"),
+        KeyHint(KeyGlyph.TAB, "cycle unit"),
     )
 
     /** Mirrors [InputMapper.mapIdleEvent] as used by the attack phases' attacker selection. */
     val ATTACK_IDLE: List<KeyHint> = listOf(
         KeyHint("←→↑↓/wasd", "move cursor"),
-        KeyHint("Enter", "select unit"),
-        KeyHint("Tab", "cycle unit"),
+        KeyHint(KeyGlyph.ENTER, "select unit"),
+        KeyHint(KeyGlyph.TAB, "cycle unit"),
         KeyHint("c", "commit"),
     )
 
     /** Mirrors [InputMapper.mapAttackEvent] as used by weapon-attack declaration. */
     val WEAPON_DECLARING: List<KeyHint> = listOf(
-        KeyHint("←/→", "twist torso"),
-        KeyHint("↑/↓", "navigate weapons"),
-        KeyHint("Space", "toggle weapon"),
-        KeyHint("Esc", "back"),
-        KeyHint("Tab", "next attacker"),
+        KeyHint("←→", "twist torso"),
+        KeyHint("↑↓", "navigate weapons"),
+        KeyHint(KeyGlyph.SPACE, "toggle weapon"),
+        KeyHint(KeyGlyph.ESC, "back"),
+        KeyHint(KeyGlyph.TAB, "next attacker"),
         KeyHint("c", "commit"),
     )
 
     /** Mirrors [InputMapper.mapAttackEvent] as used by physical-attack declaration (no torso twist). */
     val PHYSICAL_DECLARING: List<KeyHint> = listOf(
-        KeyHint("↑/↓", "navigate"),
-        KeyHint("Space", "toggle punch/kick"),
-        KeyHint("Esc", "back"),
-        KeyHint("Tab", "next attacker"),
+        KeyHint("↑↓", "navigate"),
+        KeyHint(KeyGlyph.SPACE, "toggle punch/kick"),
+        KeyHint(KeyGlyph.ESC, "back"),
+        KeyHint(KeyGlyph.TAB, "next attacker"),
         KeyHint("c", "commit"),
     )
 
@@ -68,10 +83,10 @@ internal object Keymap {
     val GLOBAL: KeySection = KeySection(
         title = "GLOBAL",
         hints = listOf(
-            KeyHint("alt+h", "toggle HELP"),
-            KeyHint("alt+0-5", "collapse/expand a panel"),
+            KeyHint("${KeyGlyph.ALT}h", "toggle HELP"),
+            KeyHint("${KeyGlyph.ALT}0-5", "collapse/expand a panel"),
             KeyHint("wheel", "scroll a panel"),
-            KeyHint("ctrl+c", "quit"),
+            KeyHint("${KeyGlyph.CTRL}c", "quit"),
         ),
     )
 }
