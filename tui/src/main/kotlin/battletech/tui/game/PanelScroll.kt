@@ -17,31 +17,31 @@ internal object PanelScroll {
     const val STEP: Int = 2
 
     /**
-     * Returns a new offsets map after applying [delta] to the panel at [panelIndex].
+     * Returns a new offsets map after applying [delta] to the panel at [panelKey].
      *
      * - Clamps the result to `0..maxOffset`.
      * - Removes the entry when the new offset equals the anchor value
      *   (0 for top-anchored, [maxOffset] for bottom-anchored).
-     * - When [maxOffset] <= 0 cleans any stale entry for [panelIndex] and
+     * - When [maxOffset] <= 0 cleans any stale entry for [panelKey] and
      *   returns without further mutation.
      */
     fun update(
-        offsets: Map<Int, Int>,
-        panelIndex: Int,
+        offsets: Map<Char, Int>,
+        panelKey: Char,
         delta: Int,
         maxOffset: Int,
         anchorBottom: Boolean,
-    ): Map<Int, Int> {
+    ): Map<Char, Int> {
         if (maxOffset <= 0) {
-            return if (panelIndex in offsets) offsets - panelIndex else offsets
+            return if (panelKey in offsets) offsets - panelKey else offsets
         }
         val anchorValue = if (anchorBottom) maxOffset else 0
-        val current = offsets[panelIndex] ?: anchorValue
+        val current = offsets[panelKey] ?: anchorValue
         val next = (current + delta).coerceIn(0, maxOffset)
         return if (next == anchorValue) {
-            offsets - panelIndex
+            offsets - panelKey
         } else {
-            offsets + (panelIndex to next)
+            offsets + (panelKey to next)
         }
     }
 

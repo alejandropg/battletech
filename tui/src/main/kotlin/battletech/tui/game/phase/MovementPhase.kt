@@ -29,6 +29,8 @@ import battletech.tui.input.BrowsingAction
 import battletech.tui.input.FacingAction
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
+import battletech.tui.input.KeyHint
+import battletech.tui.input.Keymap
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
@@ -38,7 +40,7 @@ internal val FACING_ORDER: List<HexDirection> = listOf(
     HexDirection.S, HexDirection.SW, HexDirection.NW,
 )
 
-internal const val SELECT_FACING_PROMPT = "Select facing (1-6)"
+internal const val SELECT_FACING_PROMPT = "Select facing"
 
 internal sealed interface MovementPhase : Phase {
     override val turnPhase: TurnPhase get() = TurnPhase.MOVEMENT
@@ -88,6 +90,9 @@ internal sealed interface MovementPhase : Phase {
             return turnState.movement.activePlayer.displayName
         }
 
+        override fun keyContext(): String = "MOVEMENT"
+
+        override fun keyHints(): List<KeyHint> = Keymap.MOVEMENT_IDLE
     }
 
     public data class Browsing(
@@ -190,6 +195,10 @@ internal sealed interface MovementPhase : Phase {
             return turnState.movement.activePlayer.displayName
         }
 
+        override fun keyContext(): String = "BROWSE DESTINATION"
+
+        override fun keyHints(): List<KeyHint> = Keymap.BROWSING
+
         private fun confirm(app: AppState): Transition {
             val destination = hoveredDestination ?: return Transition(app.copy(phase = this))
             val facingsAtHex = destinationsAt(destination.position, app)
@@ -287,6 +296,10 @@ internal sealed interface MovementPhase : Phase {
             val turnState = app.turnState
             return turnState.movement.activePlayer.displayName
         }
+
+        override fun keyContext(): String = "SELECT FACING"
+
+        override fun keyHints(): List<KeyHint> = Keymap.FACING
 
         private fun commitByFacing(app: AppState, index: Int): Transition {
             val direction = FACING_ORDER.getOrNull(index - 1) ?: return Transition(app.copy(phase = this))

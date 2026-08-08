@@ -12,6 +12,7 @@ import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.PhysicalAttackPhase
 import battletech.tui.view.AttackResultsView
 import battletech.tui.view.DeclaredTargetsView
+import battletech.tui.view.HelpView
 import battletech.tui.view.LogView
 import battletech.tui.view.UnitStatusView
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -25,16 +26,16 @@ internal class PanelVisibilityTest {
     private val cursor = HexCoordinates(0, 0)
 
     @Test
-    fun `movement phase shows only LOG and UNIT STATUS`() {
+    fun `movement phase shows only LOG, UNIT STATUS and HELP`() {
         val appState = AppState(
             gameState = emptyState,
             phase = MovementPhase.SelectingUnit,
             cursor = cursor,
         )
 
-        val visible = PanelVisibility.visibleIndices(appState)
+        val visible = PanelVisibility.visibleKeys(appState)
 
-        assertEquals(setOf(LogView.INDEX, UnitStatusView.INDEX), visible)
+        assertEquals(setOf(LogView.KEY, UnitStatusView.KEY, HelpView.KEY), visible)
     }
 
     @Test
@@ -45,11 +46,11 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         )
 
-        val visible = PanelVisibility.visibleIndices(appState)
+        val visible = PanelVisibility.visibleKeys(appState)
 
-        assertTrue(visible.contains(LogView.INDEX))
-        assertTrue(visible.contains(UnitStatusView.INDEX))
-        assertTrue(visible.contains(DeclaredTargetsView.INDEX))
+        assertTrue(visible.contains(LogView.KEY))
+        assertTrue(visible.contains(UnitStatusView.KEY))
+        assertTrue(visible.contains(DeclaredTargetsView.KEY))
     }
 
     @Test
@@ -63,9 +64,9 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         )
 
-        val visible = PanelVisibility.visibleIndices(appState)
+        val visible = PanelVisibility.visibleKeys(appState)
 
-        assertFalse(visible.contains(DeclaredTargetsView.INDEX))
+        assertFalse(visible.contains(DeclaredTargetsView.KEY))
     }
 
     @Test
@@ -76,11 +77,24 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         )
 
-        val visible = PanelVisibility.visibleIndices(appState)
+        val visible = PanelVisibility.visibleKeys(appState)
 
-        assertFalse(visible.contains(DeclaredTargetsView.INDEX))
-        assertFalse(visible.contains(3)) // TARGETS
-        assertFalse(visible.contains(4)) // TARGET STATUS
+        assertFalse(visible.contains(DeclaredTargetsView.KEY))
+        assertFalse(visible.contains('3')) // TARGETS
+        assertFalse(visible.contains('4')) // TARGET STATUS
+    }
+
+    @Test
+    fun `HELP is visible even though it starts collapsed by default`() {
+        val appState = AppState(
+            gameState = emptyState,
+            phase = MovementPhase.SelectingUnit,
+            cursor = cursor,
+        )
+
+        val visible = PanelVisibility.visibleKeys(appState)
+
+        assertTrue(visible.contains(HelpView.KEY))
     }
 
     private fun aResult() = AttackResult.Miss(
@@ -101,9 +115,9 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         ).copy(lastAttackResults = listOf(aResult()))
 
-        val visible = PanelVisibility.visibleIndices(appState)
+        val visible = PanelVisibility.visibleKeys(appState)
 
-        assertTrue(visible.contains(AttackResultsView.INDEX))
+        assertTrue(visible.contains(AttackResultsView.KEY))
     }
 
     @Test
@@ -114,9 +128,9 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         ).copy(lastAttackResults = listOf(aResult()))
 
-        val visible = PanelVisibility.visibleIndices(appState)
+        val visible = PanelVisibility.visibleKeys(appState)
 
-        assertTrue(visible.contains(AttackResultsView.INDEX))
+        assertTrue(visible.contains(AttackResultsView.KEY))
     }
 
     @Test
@@ -127,8 +141,8 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         ).copy(lastAttackResults = listOf(aResult()))
 
-        val visible = PanelVisibility.visibleIndices(appState)
+        val visible = PanelVisibility.visibleKeys(appState)
 
-        assertFalse(visible.contains(AttackResultsView.INDEX))
+        assertFalse(visible.contains(AttackResultsView.KEY))
     }
 }

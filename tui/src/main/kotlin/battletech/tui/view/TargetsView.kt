@@ -78,7 +78,7 @@ public class TargetsView(
     }
 
     internal companion object {
-        internal val INDEX: Int = PanelId.TARGETS.index
+        internal val KEY: Char = PanelId.TARGETS.key
         internal const val TITLE: String = "TARGETS"
 
         private val WHITE_STYLE = Cell.Style(Color.WHITE)

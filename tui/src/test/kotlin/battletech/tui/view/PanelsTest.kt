@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 internal class PanelsTest {
 
     @Test
-    fun `registry is in left-to-right render order`() {
+    fun `registry is in left-to-right render order, HELP rightmost`() {
         assertEquals(
             listOf(
                 PanelId.TARGET_STATUS,
@@ -16,6 +16,7 @@ internal class PanelsTest {
                 PanelId.ATTACK_RESULTS,
                 PanelId.UNIT_STATUS,
                 PanelId.LOG,
+                PanelId.HELP,
             ),
             Panels.ordered.map { it.id },
         )
@@ -27,6 +28,7 @@ internal class PanelsTest {
         assertEquals(28, byId.getValue(PanelId.ATTACK_RESULTS).width)
         assertEquals(28, byId.getValue(PanelId.LOG).width)
         assertEquals(28, byId.getValue(PanelId.TARGETS).width)
+        assertEquals(28, byId.getValue(PanelId.HELP).width)
     }
 
     @Test

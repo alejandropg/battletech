@@ -7,6 +7,7 @@ import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.MatchEnded
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
+import battletech.tui.game.PanelId
 import battletech.tui.game.PanelScroll
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
@@ -18,6 +19,7 @@ import battletech.tui.screen.ScreenRenderer
 import battletech.tui.view.BoardView
 import battletech.tui.view.FrameLayout
 import battletech.tui.view.PanelFrame
+import battletech.tui.view.PanelMetrics
 import battletech.tui.view.PanelSlot
 import battletech.tui.view.Panels
 import battletech.tui.view.ScrollablePanelView
@@ -41,7 +43,7 @@ private val WHITE_STYLE = Cell.Style(Color.WHITE)
 
 private data class RenderedFrame(
     val layout: FrameLayout,
-    val maxOffsets: Map<Int, Int>,
+    val maxOffsets: Map<Char, Int>,
 )
 
 /**
@@ -87,13 +89,13 @@ internal suspend fun runLoop(
                         val delta = InputMapper.scrollDelta(event, overPanel = slot != null)
                         if (delta != null) {
                             if (slot != null) {
-                                val panel = Panels.ordered.first { it.id.index == slot.panelIndex }
+                                val panel = Panels.ordered.first { it.id.key == slot.panelKey }
                                 appState = appState.copy(
                                     panelScrollOffsets = PanelScroll.update(
                                         appState.panelScrollOffsets,
-                                        slot.panelIndex,
+                                        slot.panelKey,
                                         delta,
-                                        frame.maxOffsets[slot.panelIndex] ?: 0,
+                                        frame.maxOffsets[slot.panelKey] ?: 0,
                                         panel.anchorBottom,
                                     ),
                                 )
@@ -103,14 +105,11 @@ internal suspend fun runLoop(
                         }
                     }
 
-                    val collapseIndex = if (event is KeyboardEvent) {
-                        InputMapper.isCollapseToggle(event)
-                    } else null
-                    if (collapseIndex != null) {
-                        val visible = PanelVisibility.visibleIndices(appState)
-                        if (collapseIndex in visible) {
+                    val panel = (event as? KeyboardEvent)?.let(InputMapper::panelKey)?.let(PanelId::byKey)
+                    if (panel != null) {
+                        if (panel.key in PanelVisibility.visibleKeys(appState)) {
                             val current = appState.collapsedPanels
-                            val next = if (collapseIndex in current) current - collapseIndex else current + collapseIndex
+                            val next = if (panel.key in current) current - panel.key else current + panel.key
                             appState = appState.copy(collapsedPanels = next)
                         }
                         frame = renderFrame(size, renderer, appState, activeFlash)
@@ -245,13 +244,15 @@ private fun renderFrame(
     appState: AppState,
     flash: FlashMessage? = null,
 ): RenderedFrame {
-    val visible = PanelVisibility.visibleIndices(appState)
+    val visible = PanelVisibility.visibleKeys(appState)
     val layout = FrameLayout.compute(
         termWidth = size.width,
         termHeight = size.height,
         visiblePanels = visible,
         collapsedPanels = appState.collapsedPanels,
-        panelDescriptors = Panels.ordered.map { it.id.index to it.width },
+        panelDescriptors = Panels.ordered.map {
+            PanelMetrics(it.id.key, it.width, if (it.id.hidden) 0 else FrameLayout.COLLAPSED_STUB_WIDTH)
+        },
     )
 
     val buffer = ScreenBuffer(size.width, size.height)
@@ -274,21 +275,21 @@ private fun renderFrame(
     )
     boardView.render(buffer, 0, layout.boardY, layout.boardWidth, layout.boardHeight)
 
-    val maxOffsets = mutableMapOf<Int, Int>()
+    val maxOffsets = mutableMapOf<Char, Int>()
     for (slot in layout.slots) {
-        val panel = Panels.ordered.first { it.id.index == slot.panelIndex }
+        val panel = Panels.ordered.first { it.id.key == slot.panelKey }
         val panelSlot = PanelSlot(
-            index = slot.panelIndex,
+            key = slot.panelKey,
             width = slot.width,
             title = panel.title,
             collapsed = slot.collapsed,
-            scrollOffset = appState.panelScrollOffsets[slot.panelIndex],
+            scrollOffset = appState.panelScrollOffsets[slot.panelKey],
             anchorBottom = panel.anchorBottom,
         ) { panel.build(frame) }
         val view = resolvePanel(panelSlot)
         view?.render(buffer, slot.x, layout.boardY, slot.width, layout.boardHeight)
         val mo = (view as? ScrollablePanelView)?.maxOffset
-        if (mo != null) maxOffsets[slot.panelIndex] = mo
+        if (mo != null) maxOffsets[slot.panelKey] = mo
     }
 
     val matchEnded = appState.matchEnded

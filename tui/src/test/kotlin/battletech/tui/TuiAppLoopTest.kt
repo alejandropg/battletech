@@ -21,6 +21,8 @@ import battletech.tui.loop.UiEvent
 import battletech.tui.loop.runLoop
 import battletech.tui.screen.ScreenRenderer
 import battletech.tui.view.AttackResultsView
+import battletech.tui.view.HelpView
+import battletech.tui.view.LogView
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.Size
@@ -546,6 +548,92 @@ internal class TuiAppLoopTest {
             recorder.output().contains("${sessionNoticeIcon()} Opponent connected"),
             "Expected the SessionNotice to render in the LOG panel at its log position with the lan-connect icon",
         )
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 12: alt+h opens/closes the HELP panel; alt+0 still collapses LOG to
+    // its stub (the char-keyed panel scheme is invisible to existing muscle
+    // memory); alt+h keeps working once the match has ended.
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `alt+h opens and closes the HELP panel`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+        val loopJob = launch {
+            runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = buildAppState(),
+            )
+        }
+
+        assertFalse(recorder.output().contains(HelpView.TITLE), "HELP should be closed by default")
+
+        recorder.clearOutput()
+        internalEvents.send(UiEvent.Input(KeyboardEvent("h", alt = true)))
+        assertTrue(recorder.output().contains(HelpView.TITLE), "alt+h should open HELP")
+
+        recorder.clearOutput()
+        internalEvents.send(UiEvent.Input(KeyboardEvent("h", alt = true)))
+        assertFalse(recorder.output().contains(HelpView.TITLE), "alt+h again should close HELP")
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
+    @Test
+    fun `alt+0 still collapses LOG to its stub`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+        val loopJob = launch {
+            runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = buildAppState(),
+            )
+        }
+
+        assertTrue(recorder.output().contains(LogView.TITLE), "LOG should render expanded initially")
+
+        recorder.clearOutput()
+        internalEvents.send(UiEvent.Input(KeyboardEvent("0", alt = true)))
+
+        // A collapsed panel draws its title one character per row, so the horizontal
+        // "LOG" string no longer appears anywhere in the frame — it becomes a stub.
+        assertFalse(recorder.output().contains(LogView.TITLE), "alt+0 should collapse LOG to a stub")
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
+    @Test
+    fun `alt+h still opens HELP after the match ends`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+        val loopJob = launch {
+            runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = buildAppState(),
+            )
+        }
+
+        internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1))))
+        recorder.clearOutput()
+
+        internalEvents.send(UiEvent.Input(KeyboardEvent("h", alt = true)))
+
+        assertTrue(recorder.output().contains(HelpView.TITLE), "alt+h should still open HELP after MatchEnded")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()

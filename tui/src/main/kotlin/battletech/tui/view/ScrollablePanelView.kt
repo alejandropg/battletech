@@ -5,7 +5,7 @@ import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 
 internal class ScrollablePanelView(
-    private val index: Int,
+    private val key: Char,
     private val title: String,
     private val content: View,
     private val scrollOffset: Int?,
@@ -16,7 +16,7 @@ internal class ScrollablePanelView(
         private set
 
     override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, title, index = index)
+        buffer.drawBox(x, y, width, height, title, badge = key.toString())
 
         if (width <= 4 || height <= 2) {
             maxOffset = 0

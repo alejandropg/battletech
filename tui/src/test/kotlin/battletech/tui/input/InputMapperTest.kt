@@ -220,30 +220,35 @@ internal class InputMapperTest {
     }
 
     @Nested
-    inner class IsCollapseToggleTest {
+    inner class PanelKeyTest {
         @Test
-        fun `Alt+3 returns 3`() {
-            assertEquals(3, InputMapper.isCollapseToggle(key("3", alt = true)))
+        fun `Alt+3 returns '3'`() {
+            assertEquals('3', InputMapper.panelKey(key("3", alt = true)))
         }
 
         @Test
-        fun `Alt+0 returns 0`() {
-            assertEquals(0, InputMapper.isCollapseToggle(key("0", alt = true)))
+        fun `Alt+0 returns '0'`() {
+            assertEquals('0', InputMapper.panelKey(key("0", alt = true)))
+        }
+
+        @Test
+        fun `Alt+h returns 'h'`() {
+            assertEquals('h', InputMapper.panelKey(key("h", alt = true)))
+        }
+
+        @Test
+        fun `Alt+H is lowercased to 'h'`() {
+            assertEquals('h', InputMapper.panelKey(key("H", alt = true)))
         }
 
         @Test
         fun `plain 3 without alt returns null`() {
-            assertNull(InputMapper.isCollapseToggle(key("3")))
+            assertNull(InputMapper.panelKey(key("3")))
         }
 
         @Test
         fun `Ctrl+3 without alt returns null`() {
-            assertNull(InputMapper.isCollapseToggle(key("3", ctrl = true)))
-        }
-
-        @Test
-        fun `Alt+a non-digit returns null`() {
-            assertNull(InputMapper.isCollapseToggle(key("a", alt = true)))
+            assertNull(InputMapper.panelKey(key("3", ctrl = true)))
         }
     }
 

@@ -22,7 +22,7 @@ public class TargetStatusView(private val unit: ForeignUnit?) : View {
     }
 
     internal companion object {
-        internal val INDEX: Int = PanelId.TARGET_STATUS.index
+        internal val KEY: Char = PanelId.TARGET_STATUS.key
         internal const val TITLE: String = "TARGET STATUS"
 
         private val WHITE_STYLE = Cell.Style(Color.WHITE)

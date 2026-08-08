@@ -14,7 +14,7 @@ internal class StatusBarViewTest {
 
         view.render(buffer, 0, 0, 50, 7)
 
-        val line = (2 until 12).joinToString("") { buffer.get(it, 2).char }
+        val line = (2 until 12).joinToString("") { buffer.get(it, 1).char }
         assertEquals("[MOVEMENT]", line)
     }
 
@@ -25,21 +25,8 @@ internal class StatusBarViewTest {
 
         view.render(buffer, 0, 0, 50, 7)
 
-        val line = (2 until 40).joinToString("") { buffer.get(it, 3).char }
+        val line = (2 until 40).joinToString("") { buffer.get(it, 2).char }
         assert(line.contains("Select destination"))
-    }
-
-    @Test
-    fun `renders keybinding hints`() {
-        val view = StatusBarView(TurnPhase.MOVEMENT, "Select destination")
-        val buffer = ScreenBuffer(62, 7)
-
-        view.render(buffer, 0, 0, 62, 7)
-
-        val line = (2 until 59).joinToString("") { buffer.get(it, 4).char }
-        assert(line.contains("Arrow keys"))
-        assert(line.contains("Enter"))
-        assert(line.contains("Esc"))
     }
 
     @Test
@@ -53,5 +40,20 @@ internal class StatusBarViewTest {
         assertEquals("╮", buffer.get(49, 0).char)
         assertEquals("╰", buffer.get(0, 6).char)
         assertEquals("╯", buffer.get(49, 6).char)
+    }
+
+    @Test
+    fun `at production height, label and prompt sit flush against the borders with no clipping`() {
+        val view = StatusBarView(TurnPhase.MOVEMENT, "Select destination")
+        val buffer = ScreenBuffer(50, FrameLayout.STATUS_BAR_HEIGHT)
+
+        view.render(buffer, 0, 0, 50, FrameLayout.STATUS_BAR_HEIGHT)
+
+        assertEquals("╭", buffer.get(0, 0).char)
+        val phaseLabel = (2 until 12).joinToString("") { buffer.get(it, 1).char }
+        assertEquals("[MOVEMENT]", phaseLabel)
+        val prompt = (2 until 40).joinToString("") { buffer.get(it, 2).char }
+        assert(prompt.contains("Select destination"))
+        assertEquals("╰", buffer.get(0, 3).char)
     }
 }

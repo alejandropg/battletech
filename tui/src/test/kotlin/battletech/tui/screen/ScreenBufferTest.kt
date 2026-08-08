@@ -179,10 +179,10 @@ internal class ScreenBufferTest {
     }
 
     @Test
-    fun `drawBox renders indexed title`() {
+    fun `drawBox renders single-char badge title`() {
         val buffer = ScreenBuffer(20, 3)
 
-        buffer.drawBox(0, 0, 20, 3, "TEST", index = 2)
+        buffer.drawBox(0, 0, 20, 3, "TEST", badge = "2")
 
         assertEquals("[", buffer.get(2, 0).char)
         assertEquals("2", buffer.get(3, 0).char)
@@ -194,6 +194,25 @@ internal class ScreenBufferTest {
         assertEquals("T", buffer.get(9, 0).char)
         assertEquals(" ", buffer.get(10, 0).char)
         assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 0).style.fg)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(6, 0).style.fg)
+    }
+
+    @Test
+    fun `drawBox renders letter badge title, e g HELP`() {
+        val buffer = ScreenBuffer(20, 3)
+
+        buffer.drawBox(0, 0, 20, 3, "HELP", badge = "h")
+
+        assertEquals("[", buffer.get(2, 0).char)
+        assertEquals("h", buffer.get(3, 0).char)
+        assertEquals("]", buffer.get(4, 0).char)
+        assertEquals(" ", buffer.get(5, 0).char)
+        assertEquals("H", buffer.get(6, 0).char)
+        assertEquals("E", buffer.get(7, 0).char)
+        assertEquals("L", buffer.get(8, 0).char)
+        assertEquals("P", buffer.get(9, 0).char)
+        assertEquals(" ", buffer.get(10, 0).char)
+        assertEquals(Color.BRIGHT_YELLOW, buffer.get(3, 0).style.fg)
         assertEquals(Color.BRIGHT_YELLOW, buffer.get(6, 0).style.fg)
     }
 

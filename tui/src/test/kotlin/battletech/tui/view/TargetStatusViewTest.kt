@@ -47,7 +47,7 @@ internal class TargetStatusViewTest {
     /** Render via decorator at (0,0) — pixel-parity regression guard for box/coordinates. */
     private fun renderDecorated(view: TargetStatusView, width: Int = 28, height: Int = 30): ScreenBuffer {
         val decorated = ScrollablePanelView(
-            index = TargetStatusView.INDEX,
+            key = TargetStatusView.KEY,
             title = TargetStatusView.TITLE,
             content = view,
             scrollOffset = 0,

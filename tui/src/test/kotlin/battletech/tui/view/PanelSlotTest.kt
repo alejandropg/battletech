@@ -15,21 +15,21 @@ internal class PanelSlotTest {
     }
 
     @Test
-    fun `collapsed slot resolves to a CollapsedPanelView carrying the index and title`() {
-        val slot = PanelSlot(AttackResultsView.INDEX, 7, AttackResultsView.TITLE, collapsed = true) { realView }
+    fun `collapsed slot resolves to a CollapsedPanelView carrying the key and title`() {
+        val slot = PanelSlot(AttackResultsView.KEY, 7, AttackResultsView.TITLE, collapsed = true) { realView }
 
         val resolved = resolvePanel(slot)
 
         assertTrue(resolved is CollapsedPanelView) { "Expected CollapsedPanelView, got $resolved" }
         resolved as CollapsedPanelView
-        assertEquals(AttackResultsView.INDEX, resolved.index)
+        assertEquals(AttackResultsView.KEY, resolved.key)
         assertEquals(AttackResultsView.TITLE, resolved.title)
     }
 
     @Test
     fun `expanded slot wraps content in ScrollablePanelView and renders box plus content`() {
         val slot = PanelSlot(
-            index = AttackResultsView.INDEX,
+            key = AttackResultsView.KEY,
             width = 34,
             title = AttackResultsView.TITLE,
             collapsed = false,
@@ -59,7 +59,7 @@ internal class PanelSlotTest {
             }
         }
         val slot = PanelSlot(
-            index = 0,
+            key = '0',
             width = 30,
             title = "T",
             collapsed = false,
@@ -87,7 +87,7 @@ internal class PanelSlotTest {
             }
         }
         val slot = PanelSlot(
-            index = 0,
+            key = '0',
             width = 30,
             title = "T",
             collapsed = false,
@@ -106,7 +106,7 @@ internal class PanelSlotTest {
 
     @Test
     fun `slot with no width resolves to null`() {
-        val slot = PanelSlot(AttackResultsView.INDEX, 0, AttackResultsView.TITLE, collapsed = true) { realView }
+        val slot = PanelSlot(AttackResultsView.KEY, 0, AttackResultsView.TITLE, collapsed = true) { realView }
 
         assertNull(resolvePanel(slot))
     }
@@ -114,7 +114,7 @@ internal class PanelSlotTest {
     @Test
     fun `buildReal is not invoked for a collapsed slot`() {
         var built = false
-        val slot = PanelSlot(AttackResultsView.INDEX, 7, AttackResultsView.TITLE, collapsed = true) {
+        val slot = PanelSlot(AttackResultsView.KEY, 7, AttackResultsView.TITLE, collapsed = true) {
             built = true
             realView
         }
@@ -127,7 +127,7 @@ internal class PanelSlotTest {
     @Test
     fun `null buildReal result for expanded slot resolves to null`() {
         val slot = PanelSlot(
-            index = 0,
+            key = '0',
             width = 30,
             title = "T",
             collapsed = false,

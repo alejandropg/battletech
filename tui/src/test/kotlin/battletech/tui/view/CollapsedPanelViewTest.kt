@@ -11,7 +11,7 @@ internal class CollapsedPanelViewTest {
 
     @Test
     fun `renders border corners and index label for LOG panel`() {
-        val view = CollapsedPanelView(0, "LOG")
+        val view = CollapsedPanelView('0', "LOG")
         val buffer = ScreenBuffer(7, 10)
 
         view.render(buffer, 0, 0, 7, 10)
@@ -24,7 +24,7 @@ internal class CollapsedPanelViewTest {
 
     @Test
     fun `renders vertical title chars centred for LOG panel`() {
-        val view = CollapsedPanelView(0, "LOG")
+        val view = CollapsedPanelView('0', "LOG")
         val buffer = ScreenBuffer(7, 10)
 
         view.render(buffer, 0, 0, 7, 10)
@@ -40,7 +40,7 @@ internal class CollapsedPanelViewTest {
 
     @Test
     fun `renders UNIT STATUS title with space as blank row`() {
-        val view = CollapsedPanelView(1, "UNIT STATUS")
+        val view = CollapsedPanelView('1', "UNIT STATUS")
         val buffer = ScreenBuffer(7, 15)
 
         view.render(buffer, 0, 0, 7, 15)
@@ -66,7 +66,7 @@ internal class CollapsedPanelViewTest {
     @Test
     fun `clips title that exceeds panel height without throwing`() {
         // Title of 20 chars in a panel of height 5 (only rows 1-3 are inner rows)
-        val view = CollapsedPanelView(2, "ABCDEFGHIJKLMNOPQRST")
+            val view = CollapsedPanelView('2', "ABCDEFGHIJKLMNOPQRST")
         val buffer = ScreenBuffer(7, 5)
 
         view.render(buffer, 0, 0, 7, 5)

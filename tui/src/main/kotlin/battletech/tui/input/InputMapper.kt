@@ -67,9 +67,14 @@ public object InputMapper {
         else -> null
     }
 
-    public fun isCollapseToggle(event: KeyboardEvent): Int? {
+    /**
+     * The panel key an alt-chord names, if any: `alt+0` -> `'0'`, `alt+H` -> `'h'`. Resolving
+     * the key to a [battletech.tui.game.PanelId] and deciding what the chord does (collapse vs
+     * open) is [battletech.tui.game.PanelId.byKey]'s and the caller's job, not this mapper's.
+     */
+    public fun panelKey(event: KeyboardEvent): Char? {
         if (!event.alt) return null
-        return event.key.singleOrNull()?.digitToIntOrNull()
+        return event.key.singleOrNull()?.lowercaseChar()
     }
 
     /**

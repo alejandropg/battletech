@@ -39,7 +39,7 @@ public class LogView(
     }
 
     internal companion object {
-        internal val INDEX: Int = PanelId.LOG.index
+        internal val KEY: Char = PanelId.LOG.key
         internal const val TITLE: String = "LOG"
     }
 }

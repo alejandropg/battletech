@@ -40,9 +40,9 @@ internal data class AppState(
     val seats: Map<PlayerId, GameSession>,
     val phase: Phase,
     val cursor: HexCoordinates,
-    val collapsedPanels: Set<Int> = emptySet(),
+    val collapsedPanels: Set<Char> = setOf(PanelId.HELP.key),
     val lastAttackResults: List<AttackResult>? = null,
-    val panelScrollOffsets: Map<Int, Int> = emptyMap(),
+    val panelScrollOffsets: Map<Char, Int> = emptyMap(),
     val matchEnded: MatchEnded? = null,
 ) {
     /**

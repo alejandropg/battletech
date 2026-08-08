@@ -92,7 +92,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
     }
 
     internal companion object {
-        val INDEX: Int = PanelId.ATTACK_RESULTS.index
+        val KEY: Char = PanelId.ATTACK_RESULTS.key
         const val TITLE: String = "ATTACK RESULTS"
 
         private val WHITE_STYLE = Cell.Style(Color.WHITE)

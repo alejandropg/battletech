@@ -180,7 +180,7 @@ internal class DeclaredTargetsViewTest {
         }
         val view = DeclaredTargetsView(DeclaredTargetsRender(entries))
         val decorated = ScrollablePanelView(
-            index = DeclaredTargetsView.INDEX,
+            key = DeclaredTargetsView.KEY,
             title = DeclaredTargetsView.TITLE,
             content = view,
             scrollOffset = 0,
@@ -208,7 +208,7 @@ internal class DeclaredTargetsViewTest {
     fun `panel title is DECLARED TARGETS`() {
         val view = DeclaredTargetsView(DeclaredTargetsRender(emptyList()))
         val decorated = ScrollablePanelView(
-            index = DeclaredTargetsView.INDEX,
+            key = DeclaredTargetsView.KEY,
             title = DeclaredTargetsView.TITLE,
             content = view,
             scrollOffset = 0,

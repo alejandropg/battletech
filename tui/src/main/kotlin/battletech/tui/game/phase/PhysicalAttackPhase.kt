@@ -19,11 +19,12 @@ import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.AttackAction
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
+import battletech.tui.input.KeyHint
+import battletech.tui.input.Keymap
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 
-internal const val PHYSICAL_DECLARING_PROMPT =
-    "↑/↓ navigate | Space: toggle punch/kick | Esc: back | Tab: next attacker | 'c': commit"
+internal const val PHYSICAL_DECLARING_PROMPT = "Declare punch/kick"
 
 /** Chosen physical attacks per attacker: target id -> set of attack kinds. */
 internal typealias PhysicalDrafts = Map<UnitId, Map<UnitId, Set<PhysicalAttackKind>>>
@@ -66,7 +67,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
             val turnState = app.turnState
             if (turnState.attack.isComplete) return "All physical attacks declared"
             val name = turnState.attack.activePlayer.displayName
-            return "$name: select a unit to punch/kick | 'c' to commit"
+            return "$name: select a unit to punch/kick"
         }
 
         override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.units.at(app.cursor)
@@ -74,6 +75,10 @@ internal sealed interface PhysicalAttackPhase : Phase {
         override fun unitStatus(app: AppState): VisibleUnit? = cursorUnitStatus(app)
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState)
+
+        override fun keyContext(): String = "PHYSICAL ATTACK"
+
+        override fun keyHints(): List<KeyHint> = Keymap.ATTACK_IDLE
     }
 
     public data class Declaring(
@@ -103,6 +108,10 @@ internal sealed interface PhysicalAttackPhase : Phase {
         override fun onCancel(app: AppState): Transition = Transition(app.copy(phase = SelectingAttacker(allDrafts())))
 
         override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState, requireSeeded = false)
+
+        override fun keyContext(): String = "DECLARE PHYSICAL"
+
+        override fun keyHints(): List<KeyHint> = Keymap.PHYSICAL_DECLARING
 
         override fun attackRender(app: AppState): AttackRender {
             val options = optionsFor(app)

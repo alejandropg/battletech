@@ -49,7 +49,7 @@ public class ScreenBuffer(
         width: Int,
         height: Int,
         title: String = "",
-        index: Int? = null,
+        badge: String? = null,
         borderColor: Color = Color.GREEN,
         titleColor: Color = Color.BRIGHT_YELLOW,
     ) {
@@ -71,10 +71,10 @@ public class ScreenBuffer(
         }
 
         if (title.isNotEmpty()) {
-            if (index != null && width > title.length + 8) {
-                writeString(x + 2, y, "[$index] $title", Cell.Style(titleColor))
-                set(x + 6 + title.length, y, Cell(" ", Cell.Style(borderColor)))
-            } else if (index == null && width > title.length + 6) {
+            if (badge != null && width > title.length + badge.length + 7) {
+                writeString(x + 2, y, "[$badge] $title", Cell.Style(titleColor))
+                set(x + 5 + badge.length + title.length, y, Cell(" ", Cell.Style(borderColor)))
+            } else if (badge == null && width > title.length + 6) {
                 set(x + 3, y, Cell(" ", Cell.Style(borderColor)))
                 writeString(x + 4, y, title, Cell.Style(titleColor))
                 set(x + 4 + title.length, y, Cell(" ", Cell.Style(borderColor)))

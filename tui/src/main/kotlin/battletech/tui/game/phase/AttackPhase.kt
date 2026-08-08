@@ -30,12 +30,13 @@ import battletech.tui.hex.HexHighlight
 import battletech.tui.input.AttackAction
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
+import battletech.tui.input.KeyHint
+import battletech.tui.input.Keymap
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 
-internal const val DECLARING_PROMPT =
-    "←/→ twist torso | ↑/↓ navigate weapons | Space: toggle | Esc: back | Tab: next attacker | 'c': commit"
+internal const val DECLARING_PROMPT = "Declare weapon fire"
 
 internal sealed interface AttackPhase : Phase {
     public val attackTurnPhase: TurnPhase
@@ -91,7 +92,7 @@ internal sealed interface AttackPhase : Phase {
             val turnState = app.turnState
             if (turnState.attack.isComplete) return "All attacks declared"
             val playerName = turnState.attack.activePlayer.displayName
-            return "$playerName: select units, toggle weapons | 'c' to commit"
+            return "$playerName: select a unit to attack"
         }
 
         override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.units.at(app.cursor)
@@ -102,6 +103,10 @@ internal sealed interface AttackPhase : Phase {
 
         override fun declaredTargetsRender(app: AppState): DeclaredTargetsRender =
             buildDeclaredTargetsRender(app, declaredTargetsViewingPlayer(app.turnState), drafts)
+
+        override fun keyContext(): String = "WEAPON ATTACK"
+
+        override fun keyHints(): List<KeyHint> = Keymap.ATTACK_IDLE
     }
 
     public data class Declaring(
@@ -236,6 +241,10 @@ internal sealed interface AttackPhase : Phase {
 
         override fun declaredTargetsRender(app: AppState): DeclaredTargetsRender =
             buildDeclaredTargetsRender(app, declaredTargetsViewingPlayer(app.turnState), allDrafts())
+
+        override fun keyContext(): String = "DECLARE FIRE"
+
+        override fun keyHints(): List<KeyHint> = Keymap.WEAPON_DECLARING
 
         /** Query target infos for this attacker's current torso facing — one call per render entry point. */
         private fun targetTable(view: PlayerView): List<battletech.tactical.attack.weapon.TargetInfo> =

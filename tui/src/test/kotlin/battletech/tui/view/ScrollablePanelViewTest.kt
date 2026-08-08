@@ -20,7 +20,7 @@ internal class ScrollablePanelViewTest {
 
     @Test
     fun `draws box and title at given coordinates`() {
-        val view = ScrollablePanelView(index = 2, title = "FOO", content = stubContent(0), scrollOffset = 0)
+        val view = ScrollablePanelView(key = '2', title = "FOO", content = stubContent(0), scrollOffset = 0)
         val buffer = ScreenBuffer(30, 10)
 
         view.render(buffer, 0, 0, 30, 10)
@@ -37,7 +37,7 @@ internal class ScrollablePanelViewTest {
 
     @Test
     fun `content at offset 0 starts at row y+1 col x+2`() {
-        val view = ScrollablePanelView(index = 0, title = "T", content = stubContent(5), scrollOffset = 0)
+        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(5), scrollOffset = 0)
         val buffer = ScreenBuffer(30, 10)
 
         view.render(buffer, 0, 0, 30, 10)
@@ -48,7 +48,7 @@ internal class ScrollablePanelViewTest {
 
     @Test
     fun `explicit offset shifts the visible window`() {
-        val view = ScrollablePanelView(index = 0, title = "T", content = stubContent(20), scrollOffset = 3)
+        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(20), scrollOffset = 3)
         val buffer = ScreenBuffer(30, 10)
 
         view.render(buffer, 0, 0, 30, 10)
@@ -60,7 +60,7 @@ internal class ScrollablePanelViewTest {
     @Test
     fun `offset beyond maxOffset is clamped to maxOffset`() {
         val content = stubContent(5)
-        val view = ScrollablePanelView(index = 0, title = "T", content = content, scrollOffset = 999)
+        val view = ScrollablePanelView(key = '0', title = "T", content = content, scrollOffset = 999)
         val buffer = ScreenBuffer(30, 10)
 
         view.render(buffer, 0, 0, 30, 10)
@@ -72,7 +72,7 @@ internal class ScrollablePanelViewTest {
 
     @Test
     fun `maxOffset property equals contentHeight minus viewportHeight clamped to zero`() {
-        val view = ScrollablePanelView(index = 0, title = "T", content = stubContent(20), scrollOffset = 0)
+        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(20), scrollOffset = 0)
         val buffer = ScreenBuffer(30, 10)
 
         view.render(buffer, 0, 0, 30, 10)
@@ -83,7 +83,7 @@ internal class ScrollablePanelViewTest {
 
     @Test
     fun `maxOffset is zero when content fits in viewport`() {
-        val view = ScrollablePanelView(index = 0, title = "T", content = stubContent(3), scrollOffset = 0)
+        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(3), scrollOffset = 0)
         val buffer = ScreenBuffer(30, 10)
 
         view.render(buffer, 0, 0, 30, 10)
@@ -93,7 +93,7 @@ internal class ScrollablePanelViewTest {
 
     @Test
     fun `null scrollOffset with anchorBottom false shows top of content`() {
-        val view = ScrollablePanelView(index = 0, title = "T", content = stubContent(20), scrollOffset = null, anchorBottom = false)
+        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(20), scrollOffset = null, anchorBottom = false)
         val buffer = ScreenBuffer(30, 10)
 
         view.render(buffer, 0, 0, 30, 10)
@@ -103,7 +103,7 @@ internal class ScrollablePanelViewTest {
 
     @Test
     fun `null scrollOffset with anchorBottom true shows bottom of content`() {
-        val view = ScrollablePanelView(index = 0, title = "T", content = stubContent(20), scrollOffset = null, anchorBottom = true)
+        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(20), scrollOffset = null, anchorBottom = true)
         val buffer = ScreenBuffer(30, 10)
 
         view.render(buffer, 0, 0, 30, 10)
@@ -115,7 +115,7 @@ internal class ScrollablePanelViewTest {
 
     @Test
     fun `scrollbar block cells appear on right border only when content overflows`() {
-        val view = ScrollablePanelView(index = 0, title = "T", content = stubContent(20), scrollOffset = 0)
+        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(20), scrollOffset = 0)
         val buffer = ScreenBuffer(30, 10)
 
         view.render(buffer, 0, 0, 30, 10)
@@ -135,7 +135,7 @@ internal class ScrollablePanelViewTest {
     @Test
     fun `no scrollbar cells when content exactly fits viewport`() {
         val viewportHeight = 8
-        val view = ScrollablePanelView(index = 0, title = "T", content = stubContent(viewportHeight), scrollOffset = 0)
+        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(viewportHeight), scrollOffset = 0)
         val buffer = ScreenBuffer(30, 10)
 
         view.render(buffer, 0, 0, 30, 10)
@@ -147,7 +147,7 @@ internal class ScrollablePanelViewTest {
 
     @Test
     fun `degenerate height 2 draws only box and never throws`() {
-        val view = ScrollablePanelView(index = 0, title = "T", content = stubContent(5), scrollOffset = 0)
+        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(5), scrollOffset = 0)
         val buffer = ScreenBuffer(30, 2)
 
         view.render(buffer, 0, 0, 30, 2)
@@ -159,7 +159,7 @@ internal class ScrollablePanelViewTest {
 
     @Test
     fun `degenerate width 4 draws only box and never throws`() {
-        val view = ScrollablePanelView(index = 0, title = "T", content = stubContent(5), scrollOffset = 0)
+        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(5), scrollOffset = 0)
         val buffer = ScreenBuffer(4, 10)
 
         view.render(buffer, 0, 0, 4, 10)
@@ -170,7 +170,7 @@ internal class ScrollablePanelViewTest {
 
     @Test
     fun `content rendered at offset position within parent buffer`() {
-        val view = ScrollablePanelView(index = 0, title = "T", content = stubContent(5), scrollOffset = 0)
+        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(5), scrollOffset = 0)
         val buffer = ScreenBuffer(40, 20)
 
         view.render(buffer, 5, 3, 20, 10)

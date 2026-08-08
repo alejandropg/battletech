@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -16,20 +17,23 @@ import org.junit.jupiter.api.Test
  */
 internal class FrameLayoutTest {
 
-    private val allDescriptors: List<Pair<Int, Int>> = listOf(
-        4 to 28,  // TARGET_STATUS
-        3 to 28,  // TARGETS
-        2 to 28,  // DECLARED_TARGETS
-        5 to 34,  // ATTACK_RESULTS
-        1 to 28,  // UNIT_STATUS
-        0 to 28,  // LOG
+    private fun stub(key: Char, expandedWidth: Int, collapsedWidth: Int = FrameLayout.COLLAPSED_STUB_WIDTH) =
+        PanelMetrics(key, expandedWidth, collapsedWidth)
+
+    private val allDescriptors: List<PanelMetrics> = listOf(
+        stub('4', 28),  // TARGET_STATUS
+        stub('3', 28),  // TARGETS
+        stub('2', 28),  // DECLARED_TARGETS
+        stub('5', 34),  // ATTACK_RESULTS
+        stub('1', 28),  // UNIT_STATUS
+        stub('0', 28),  // LOG
     )
-    private val allIndices: Set<Int> = allDescriptors.map { it.first }.toSet()
+    private val allKeys: Set<Char> = allDescriptors.map { it.key }.toSet()
 
     private val termWidth = 220
     private val termHeight = 50
 
-    // boardHeight = termHeight - STATUS_BAR_HEIGHT = 50 - 7 = 43
+    // boardHeight = termHeight - STATUS_BAR_HEIGHT = 50 - 4 = 46
     private val expectedBoardHeight = termHeight - FrameLayout.STATUS_BAR_HEIGHT
 
     @Test
@@ -38,7 +42,7 @@ internal class FrameLayoutTest {
         val layout = FrameLayout.compute(
             termWidth = termWidth,
             termHeight = termHeight,
-            visiblePanels = allIndices,
+            visiblePanels = allKeys,
             collapsedPanels = emptySet(),
             panelDescriptors = allDescriptors,
         )
@@ -49,23 +53,23 @@ internal class FrameLayoutTest {
 
         // Panels placed left-to-right starting at x = boardWidth
         val s = layout.slots
-        assertEquals(PanelSlotLayout(panelIndex = 4, x = 46,  width = 28, collapsed = false), s[0]) // TARGET_STATUS
-        assertEquals(PanelSlotLayout(panelIndex = 3, x = 74,  width = 28, collapsed = false), s[1]) // TARGETS
-        assertEquals(PanelSlotLayout(panelIndex = 2, x = 102, width = 28, collapsed = false), s[2]) // DECLARED_TARGETS
-        assertEquals(PanelSlotLayout(panelIndex = 5, x = 130, width = 34, collapsed = false), s[3]) // ATTACK_RESULTS
-        assertEquals(PanelSlotLayout(panelIndex = 1, x = 164, width = 28, collapsed = false), s[4]) // UNIT_STATUS
-        assertEquals(PanelSlotLayout(panelIndex = 0, x = 192, width = 28, collapsed = false), s[5]) // LOG
+        assertEquals(PanelSlotLayout(panelKey = '4', x = 46,  width = 28, collapsed = false), s[0]) // TARGET_STATUS
+        assertEquals(PanelSlotLayout(panelKey = '3', x = 74,  width = 28, collapsed = false), s[1]) // TARGETS
+        assertEquals(PanelSlotLayout(panelKey = '2', x = 102, width = 28, collapsed = false), s[2]) // DECLARED_TARGETS
+        assertEquals(PanelSlotLayout(panelKey = '5', x = 130, width = 34, collapsed = false), s[3]) // ATTACK_RESULTS
+        assertEquals(PanelSlotLayout(panelKey = '1', x = 164, width = 28, collapsed = false), s[4]) // UNIT_STATUS
+        assertEquals(PanelSlotLayout(panelKey = '0', x = 192, width = 28, collapsed = false), s[5]) // LOG
     }
 
     @Test
     fun `one panel collapsed — stub width 7, board absorbs freed space`() {
-        // LOG (index=0) collapsed: its width becomes 7 instead of 28 (saves 21)
+        // LOG (key='0') collapsed: its width becomes 7 instead of 28 (saves 21)
         // totalPanelWidth = 28+28+28+34+28+7 = 153 => boardWidth = 220-153 = 67
         val layout = FrameLayout.compute(
             termWidth = termWidth,
             termHeight = termHeight,
-            visiblePanels = allIndices,
-            collapsedPanels = setOf(0),
+            visiblePanels = allKeys,
+            collapsedPanels = setOf('0'),
             panelDescriptors = allDescriptors,
         )
 
@@ -75,19 +79,19 @@ internal class FrameLayoutTest {
 
         // All preceding slots shift right by 21 (the space freed by the stub)
         val s = layout.slots
-        assertEquals(PanelSlotLayout(panelIndex = 4, x = 67,  width = 28, collapsed = false), s[0])
-        assertEquals(PanelSlotLayout(panelIndex = 3, x = 95,  width = 28, collapsed = false), s[1])
-        assertEquals(PanelSlotLayout(panelIndex = 2, x = 123, width = 28, collapsed = false), s[2])
-        assertEquals(PanelSlotLayout(panelIndex = 5, x = 151, width = 34, collapsed = false), s[3])
-        assertEquals(PanelSlotLayout(panelIndex = 1, x = 185, width = 28, collapsed = false), s[4])
-        assertEquals(PanelSlotLayout(panelIndex = 0, x = 213, width =  7, collapsed = true),  s[5])
+        assertEquals(PanelSlotLayout(panelKey = '4', x = 67,  width = 28, collapsed = false), s[0])
+        assertEquals(PanelSlotLayout(panelKey = '3', x = 95,  width = 28, collapsed = false), s[1])
+        assertEquals(PanelSlotLayout(panelKey = '2', x = 123, width = 28, collapsed = false), s[2])
+        assertEquals(PanelSlotLayout(panelKey = '5', x = 151, width = 34, collapsed = false), s[3])
+        assertEquals(PanelSlotLayout(panelKey = '1', x = 185, width = 28, collapsed = false), s[4])
+        assertEquals(PanelSlotLayout(panelKey = '0', x = 213, width =  7, collapsed = true),  s[5])
     }
 
     @Test
     fun `hidden panels absent from slots — board absorbs their width`() {
-        // Movement phase: only UNIT_STATUS (1) and LOG (0) visible
+        // Movement phase: only UNIT_STATUS ('1') and LOG ('0') visible
         // totalPanelWidth = 28+28 = 56 => boardWidth = 220-56 = 164
-        val movementVisible = setOf(0, 1)
+        val movementVisible = setOf('0', '1')
 
         val layout = FrameLayout.compute(
             termWidth = termWidth,
@@ -101,11 +105,11 @@ internal class FrameLayoutTest {
         assertEquals(expectedBoardHeight, layout.boardHeight)
         assertEquals(2, layout.slots.size)
 
-        // Only UNIT_STATUS and LOG in render order (indices 1 and 0, which appear
+        // Only UNIT_STATUS and LOG in render order (keys '1' and '0', which appear
         // in positions 4 and 5 of allDescriptors)
         val s = layout.slots
-        assertEquals(PanelSlotLayout(panelIndex = 1, x = 164, width = 28, collapsed = false), s[0])
-        assertEquals(PanelSlotLayout(panelIndex = 0, x = 192, width = 28, collapsed = false), s[1])
+        assertEquals(PanelSlotLayout(panelKey = '1', x = 164, width = 28, collapsed = false), s[0])
+        assertEquals(PanelSlotLayout(panelKey = '0', x = 192, width = 28, collapsed = false), s[1])
     }
 
     @Test
@@ -125,8 +129,48 @@ internal class FrameLayoutTest {
     }
 
     @Test
-    fun `status bar height constant is 7 and collapsed stub width is 7`() {
-        assertEquals(7, FrameLayout.STATUS_BAR_HEIGHT)
+    fun `status bar height constant is 4 and collapsed stub width is 7`() {
+        assertEquals(4, FrameLayout.STATUS_BAR_HEIGHT)
         assertEquals(7, FrameLayout.COLLAPSED_STUB_WIDTH)
+    }
+
+    @Test
+    fun `a panel with collapsedWidth 0 disappears entirely when collapsed — no stub, board absorbs its width`() {
+        // Mirrors HELP: hidden panels report collapsedWidth = 0 instead of the stub width.
+        val descriptors = allDescriptors + stub('h', 28, collapsedWidth = 0)
+        val visible = allKeys + 'h'
+
+        val layout = FrameLayout.compute(
+            termWidth = termWidth,
+            termHeight = termHeight,
+            visiblePanels = visible,
+            collapsedPanels = setOf('h'),
+            panelDescriptors = descriptors,
+        )
+
+        // Same board width and slot count as if 'h' were never visible at all.
+        assertEquals(46, layout.boardWidth)
+        assertEquals(6, layout.slots.size)
+        assertTrue(layout.slots.none { it.panelKey == 'h' })
+    }
+
+    @Test
+    fun `a panel with collapsedWidth 0 renders normally when not collapsed`() {
+        val descriptors = allDescriptors + stub('h', 28, collapsedWidth = 0)
+        val visible = allKeys + 'h'
+
+        val layout = FrameLayout.compute(
+            termWidth = termWidth,
+            termHeight = termHeight,
+            visiblePanels = visible,
+            collapsedPanels = emptySet(),
+            panelDescriptors = descriptors,
+        )
+
+        assertEquals(7, layout.slots.size)
+        val helpSlot = layout.slots.last()
+        // boardWidth = 220 - (174 + 28) = 18; HELP is last, so its x is 18 + 174 (the six
+        // preceding panels' combined width) = 192.
+        assertEquals(PanelSlotLayout(panelKey = 'h', x = 192, width = 28, collapsed = false), helpSlot)
     }
 }

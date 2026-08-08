@@ -280,7 +280,7 @@ public class UnitStatusView(
     }
 
     internal companion object {
-        internal val INDEX: Int = PanelId.UNIT_STATUS.index
+        internal val KEY: Char = PanelId.UNIT_STATUS.key
         internal const val TITLE: String = "UNIT STATUS"
 
         private val WHITE_STYLE = Cell.Style(Color.WHITE)

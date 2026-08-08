@@ -59,7 +59,7 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
     }
 
     internal companion object {
-        val INDEX: Int = PanelId.DECLARED_TARGETS.index
+        val KEY: Char = PanelId.DECLARED_TARGETS.key
         const val TITLE: String = "DECLARED TARGETS"
 
         private val WHITE_STYLE = Cell.Style(Color.WHITE)

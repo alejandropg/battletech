@@ -115,7 +115,7 @@ internal class AttackResultsViewTest {
     private fun renderToString(results: List<AttackResult>, width: Int = 34, height: Int = 30, viewer: PlayerId = PlayerId.PLAYER_1): String {
         val view = makeView(results, viewer)
         val decorated = ScrollablePanelView(
-            index = AttackResultsView.INDEX,
+            key = AttackResultsView.KEY,
             title = AttackResultsView.TITLE,
             content = view,
             scrollOffset = 0,
@@ -240,7 +240,7 @@ internal class AttackResultsViewTest {
         val width = 34
         val height = 10
         val decorated = ScrollablePanelView(
-            index = AttackResultsView.INDEX,
+            key = AttackResultsView.KEY,
             title = AttackResultsView.TITLE,
             content = view,
             scrollOffset = 15,

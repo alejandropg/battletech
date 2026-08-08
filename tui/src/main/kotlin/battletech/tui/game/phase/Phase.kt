@@ -9,6 +9,7 @@ import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData
+import battletech.tui.input.KeyHint
 import com.github.ajalt.mordant.input.InputEvent
 
 /**
@@ -57,6 +58,12 @@ internal sealed interface Phase {
     fun movementMode(): MovementMode? = null
 
     fun activePlayerLabel(app: AppState): String? = null
+
+    /** Section title for this phase's local keys in the HELP panel. */
+    fun keyContext(): String = turnPhase.name
+
+    /** The keys local to this phase, shown under [keyContext] in the HELP panel. */
+    fun keyHints(): List<KeyHint> = emptyList()
 }
 
 /**

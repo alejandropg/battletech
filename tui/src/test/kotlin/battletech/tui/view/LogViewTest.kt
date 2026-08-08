@@ -55,7 +55,7 @@ internal class LogViewTest {
         anchorBottom: Boolean = false,
     ): ScreenBuffer {
         val decorated = ScrollablePanelView(
-            index = LogView.INDEX,
+            key = LogView.KEY,
             title = LogView.TITLE,
             content = view,
             scrollOffset = scrollOffset,

@@ -35,5 +35,8 @@ internal object Panels {
         Panel(PanelId.LOG, LogView.TITLE, width = 28, anchorBottom = true) { frame ->
             LogView(entries = frame.logEntries, state = frame.visibleState)
         },
+        Panel(PanelId.HELP, HelpView.TITLE, width = 28) { frame ->
+            HelpView(frame.helpSections)
+        },
     )
 }

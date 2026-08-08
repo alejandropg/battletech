@@ -2,6 +2,8 @@ package battletech.tui.view
 
 import battletech.tui.game.AppState
 import battletech.tui.game.phase.AttackResultsRender
+import battletech.tui.input.KeySection
+import battletech.tui.input.Keymap
 
 /**
  * The view-model inputs for one render frame, derived from [AppState] once and
@@ -36,5 +38,12 @@ internal class PanelFrame(private val appState: AppState) {
                 viewer = appState.viewer,
             )
         }
+    }
+
+    val helpSections: List<KeySection> by lazy {
+        listOf(
+            KeySection(appState.phase.keyContext(), appState.phase.keyHints()),
+            Keymap.GLOBAL,
+        )
     }
 }
