@@ -130,15 +130,19 @@ internal class PanelScrollTest {
 
     // ── slotAt ───────────────────────────────────────────────────────────────
 
-    private fun layout(boardWidth: Int, boardHeight: Int, slots: List<PanelSlotLayout>) =
-        FrameLayout(boardWidth, boardHeight, slots)
+    private fun layout(
+        boardWidth: Int,
+        boardHeight: Int,
+        slots: List<PanelSlotLayout>,
+        boardY: Int = FrameLayout.STATUS_BAR_HEIGHT,
+    ) = FrameLayout(boardWidth, boardHeight, boardY, slots)
 
     @Test
     fun `slotAt returns the matching expanded slot`() {
         val slot = PanelSlotLayout(panelIndex = 1, x = 100, width = 28, collapsed = false)
         val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot))
 
-        assertEquals(slot, PanelScroll.slotAt(layout, x = 110, y = 10))
+        assertEquals(slot, PanelScroll.slotAt(layout, x = 110, y = layout.boardY + 10))
     }
 
     @Test
@@ -146,15 +150,23 @@ internal class PanelScrollTest {
         val slot = PanelSlotLayout(panelIndex = 1, x = 100, width = 28, collapsed = false)
         val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot))
 
-        assertNull(PanelScroll.slotAt(layout, x = 50, y = 10))
+        assertNull(PanelScroll.slotAt(layout, x = 50, y = layout.boardY + 10))
     }
 
     @Test
-    fun `slotAt returns null when y is at or past boardHeight`() {
+    fun `slotAt returns null when y is above boardY (status bar)`() {
         val slot = PanelSlotLayout(panelIndex = 1, x = 100, width = 28, collapsed = false)
         val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot))
 
-        assertNull(PanelScroll.slotAt(layout, x = 110, y = 40))
+        assertNull(PanelScroll.slotAt(layout, x = 110, y = 0))
+    }
+
+    @Test
+    fun `slotAt returns null when y is at or past boardY + boardHeight`() {
+        val slot = PanelSlotLayout(panelIndex = 1, x = 100, width = 28, collapsed = false)
+        val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot))
+
+        assertNull(PanelScroll.slotAt(layout, x = 110, y = layout.boardY + 40))
     }
 
     @Test
@@ -162,7 +174,7 @@ internal class PanelScrollTest {
         val slot = PanelSlotLayout(panelIndex = 1, x = 100, width = 7, collapsed = true)
         val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot))
 
-        assertNull(PanelScroll.slotAt(layout, x = 103, y = 10))
+        assertNull(PanelScroll.slotAt(layout, x = 103, y = layout.boardY + 10))
     }
 
     @Test
@@ -170,7 +182,7 @@ internal class PanelScrollTest {
         val slot = PanelSlotLayout(panelIndex = 1, x = 100, width = 28, collapsed = false)
         val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot))
 
-        assertNull(PanelScroll.slotAt(layout, x = 130, y = 10))
+        assertNull(PanelScroll.slotAt(layout, x = 130, y = layout.boardY + 10))
     }
 
     @Test
@@ -179,7 +191,7 @@ internal class PanelScrollTest {
         val slot2 = PanelSlotLayout(panelIndex = 2, x = 128, width = 28, collapsed = false)
         val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot1, slot2))
 
-        assertEquals(slot2, PanelScroll.slotAt(layout, x = 128, y = 10))
-        assertEquals(slot1, PanelScroll.slotAt(layout, x = 100, y = 10))
+        assertEquals(slot2, PanelScroll.slotAt(layout, x = 128, y = layout.boardY + 10))
+        assertEquals(slot1, PanelScroll.slotAt(layout, x = 100, y = layout.boardY + 10))
     }
 }

@@ -49,11 +49,12 @@ internal object PanelScroll {
      * Returns the expanded (non-collapsed) [PanelSlotLayout] that contains
      * screen column [x] at screen row [y], or `null` if none matches.
      *
-     * Only rows `0 until layout.boardHeight` are considered; clicks on the
-     * status bar, board area, or collapsed stubs return null.
+     * Only rows `layout.boardY until layout.boardY + layout.boardHeight` are
+     * considered; clicks on the status bar, board area, or collapsed stubs
+     * return null.
      */
     fun slotAt(layout: FrameLayout, x: Int, y: Int): PanelSlotLayout? {
-        if (y < 0 || y >= layout.boardHeight) return null
+        if (y < layout.boardY || y >= layout.boardY + layout.boardHeight) return null
         return layout.slots.firstOrNull { slot ->
             !slot.collapsed && x >= slot.x && x < slot.x + slot.width
         }

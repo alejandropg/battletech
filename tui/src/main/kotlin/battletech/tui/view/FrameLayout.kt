@@ -1,35 +1,13 @@
 package battletech.tui.view
 
-/**
- * Pure arithmetic description of one rendered frame, derived solely from
- * terminal dimensions and visibility state — no UI, no rendering, no I/O.
- *
- * The tactical board fills the leftmost portion; side panels are placed to its
- * right in [slots] order (matching [Panels.ordered]).
- *
- * @param boardWidth  columns available for the hex board
- * @param boardHeight rows available for the hex board
- * @param slots       visible panel slots, left-to-right, each with its screen-x
- *                    position and allocated width
- */
-internal data class PanelSlotLayout(
-    /** Matches [battletech.tui.game.PanelId.index] of the corresponding panel. */
-    val panelIndex: Int,
-    /** Left edge (column) of this panel in screen coordinates. */
-    val x: Int,
-    /** Allocated width in columns; never zero (hidden panels are absent from the list). */
-    val width: Int,
-    /** True when the user has collapsed this panel to a narrow stub. */
-    val collapsed: Boolean,
-)
-
 internal data class FrameLayout(
     val boardWidth: Int,
     val boardHeight: Int,
+    val boardY: Int,
     val slots: List<PanelSlotLayout>,
 ) {
     internal companion object {
-        /** Rows consumed by the status bar below the board and panels. */
+        /** Rows consumed by the status bar above the board and panels. */
         const val STATUS_BAR_HEIGHT: Int = 7
 
         /** Column width of a collapsed panel stub. */
@@ -54,15 +32,16 @@ internal data class FrameLayout(
             collapsedPanels: Set<Int>,
             panelDescriptors: List<Pair<Int, Int>>,
         ): FrameLayout {
-            fun allocatedWidth(panelIndex: Int, expandedWidth: Int): Int = when {
-                panelIndex !in visiblePanels -> 0
-                panelIndex in collapsedPanels -> COLLAPSED_STUB_WIDTH
+            fun allocatedWidth(panelIndex: Int, expandedWidth: Int): Int = when (panelIndex) {
+                !in visiblePanels -> 0
+                in collapsedPanels -> COLLAPSED_STUB_WIDTH
                 else -> expandedWidth
             }
 
             val totalPanelWidth = panelDescriptors.sumOf { (idx, w) -> allocatedWidth(idx, w) }
             val boardWidth = termWidth - totalPanelWidth
             val boardHeight = termHeight - STATUS_BAR_HEIGHT
+            val boardY = STATUS_BAR_HEIGHT
 
             val slots = buildList {
                 var nextX = boardWidth
@@ -79,7 +58,7 @@ internal data class FrameLayout(
                 }
             }
 
-            return FrameLayout(boardWidth, boardHeight, slots)
+            return FrameLayout(boardWidth, boardHeight, boardY, slots)
         }
     }
 }

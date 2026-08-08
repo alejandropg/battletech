@@ -64,13 +64,8 @@ internal suspend fun runLoop(
     var flashJob: Job? = null
     var size = currentSize(terminal)
 
-    var frame = RenderedFrame(
-        layout = FrameLayout(boardWidth = 0, boardHeight = 0, slots = emptyList()),
-        maxOffsets = emptyMap(),
-    )
-
     // Render the initial frame before collecting any events.
-    frame = renderFrame(size, renderer, appState, activeFlash)
+    var frame = renderFrame(size, renderer, appState, activeFlash)
 
     events.takeWhile { it != UiEvent.Quit }.collect { ui ->
         // A single bad event must not propagate out of collect: that would cancel this
@@ -210,6 +205,7 @@ private fun renderGameOverBanner(
     buffer: ScreenBuffer,
     boardWidth: Int,
     boardHeight: Int,
+    boardY: Int,
     outcome: MatchOutcome,
 ) {
     val winnerLine = when (outcome) {
@@ -219,7 +215,7 @@ private fun renderGameOverBanner(
     val bannerWidth = maxOf(winnerLine.length + 8, 24)
     val bannerHeight = 7
     val bx = (boardWidth - bannerWidth) / 2
-    val by = (boardHeight - bannerHeight) / 2
+    val by = boardY + (boardHeight - bannerHeight) / 2
     if (bx < 0 || by < 0 || bx + bannerWidth > buffer.width || by + bannerHeight > buffer.height) return
     buffer.drawBox(
         bx, by, bannerWidth, bannerHeight,
@@ -276,7 +272,7 @@ private fun renderFrame(
         validTargetPositions = renderData.validTargetPositions,
         selectedTargetPosition = renderData.selectedTargetPosition,
     )
-    boardView.render(buffer, 0, 0, layout.boardWidth, layout.boardHeight)
+    boardView.render(buffer, 0, layout.boardY, layout.boardWidth, layout.boardHeight)
 
     val maxOffsets = mutableMapOf<Int, Int>()
     for (slot in layout.slots) {
@@ -290,7 +286,7 @@ private fun renderFrame(
             anchorBottom = panel.anchorBottom,
         ) { panel.build(frame) }
         val view = resolvePanel(panelSlot)
-        view?.render(buffer, slot.x, 0, slot.width, layout.boardHeight)
+        view?.render(buffer, slot.x, layout.boardY, slot.width, layout.boardHeight)
         val mo = (view as? ScrollablePanelView)?.maxOffset
         if (mo != null) maxOffsets[slot.panelIndex] = mo
     }
@@ -309,10 +305,10 @@ private fun renderFrame(
     }
     val activePlayerInfo = if (matchEnded != null) null else appState.phase.activePlayerLabel(appState)
     val statusBarView = StatusBarView(appState.currentPhase, prompt, activePlayerInfo)
-    statusBarView.render(buffer, 0, layout.boardHeight, size.width, FrameLayout.STATUS_BAR_HEIGHT)
+    statusBarView.render(buffer, 0, 0, size.width, FrameLayout.STATUS_BAR_HEIGHT)
 
     if (matchEnded != null) {
-        renderGameOverBanner(buffer, layout.boardWidth, layout.boardHeight, matchEnded.outcome)
+        renderGameOverBanner(buffer, layout.boardWidth, layout.boardHeight, layout.boardY, matchEnded.outcome)
     }
 
     renderer.render(buffer)

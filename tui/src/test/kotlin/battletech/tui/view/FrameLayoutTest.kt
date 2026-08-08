@@ -109,7 +109,7 @@ internal class FrameLayoutTest {
     }
 
     @Test
-    fun `board height accounts for status bar height`() {
+    fun `board height and y-offset account for status bar height`() {
         val layout = FrameLayout.compute(
             termWidth = termWidth,
             termHeight = termHeight,
@@ -119,6 +119,7 @@ internal class FrameLayoutTest {
         )
 
         assertEquals(termHeight - FrameLayout.STATUS_BAR_HEIGHT, layout.boardHeight)
+        assertEquals(FrameLayout.STATUS_BAR_HEIGHT, layout.boardY)
         assertEquals(termWidth, layout.boardWidth) // no panels means full width goes to board
         assertEquals(0, layout.slots.size)
     }
