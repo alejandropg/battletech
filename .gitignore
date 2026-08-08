@@ -12,9 +12,10 @@ build/
 *.swo
 
 # AI agents
+.bot_env/
 .claude/settings.local.json
 .claude/worktrees/
-.bot_env/
+.github/
 .junie/
 .scratch/
 
