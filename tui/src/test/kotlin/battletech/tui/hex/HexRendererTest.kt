@@ -5,6 +5,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.Terrain
 import battletech.tactical.model.MovementMode
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,7 +18,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         // Row 0: "  _____  "
         assertEquals("_", buffer.get(2, 0).char)
@@ -42,7 +43,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(Color.BLUE, buffer.get(2, 1).style.fg)
     }
@@ -52,7 +53,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(Color.GREEN, buffer.get(2, 1).style.fg)
     }
@@ -62,7 +63,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.HEAVY_WOODS)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(Color.DARK_GREEN, buffer.get(2, 1).style.fg)
     }
@@ -72,7 +73,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), elevation = 2)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(String(Character.toChars(0xF03A8)), buffer.get(6, 1).char)
     }
@@ -82,7 +83,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(Color.WOODS_LIGHT_BG, buffer.get(4, 3).style.bg)
     }
@@ -92,7 +93,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.HEAVY_WOODS)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(Color.WOODS_HEAVY_BG, buffer.get(4, 3).style.bg)
     }
@@ -102,7 +103,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 1)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(Color.WATER_SHALLOW_BG, buffer.get(4, 3).style.bg)
     }
@@ -112,7 +113,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 3)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(Color.WATER_DEEP_BG, buffer.get(4, 3).style.bg)
     }
@@ -122,7 +123,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), elevation = 1)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(Color.ELEVATION_LOW_BG, buffer.get(4, 3).style.bg)
     }
@@ -132,7 +133,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), elevation = 3)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(Color.ELEVATION_HIGH_BG, buffer.get(4, 3).style.bg)
     }
@@ -142,7 +143,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(Color.DEFAULT, buffer.get(4, 3).style.bg)
     }
@@ -152,7 +153,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS, elevation = 2)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(Color.WOODS_LIGHT_BG, buffer.get(4, 3).style.bg)
     }
@@ -162,7 +163,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals("/", buffer.get(0, 2).char) // left border glyph
         assertEquals(Color.WOODS_LIGHT_BG, buffer.get(0, 2).style.bg)
@@ -173,7 +174,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         // Top edge (row 0) belongs to the hex above — inherited, so DEFAULT here.
         assertEquals(Color.DEFAULT, buffer.get(2, 0).style.bg)
@@ -189,8 +190,8 @@ internal class HexRendererTest {
 
         // The clear hex one ROW_STRIDE down shares its top edge (row 0 at y=4) with the woods
         // hex's bottom edge (row 4 at y=4). Drawn after, it must not overwrite the woods tint.
-        HexRenderer.render(buffer, 0, 0, woods, HexHighlight.NONE)
-        HexRenderer.render(buffer, 0, HexGeometry.ROW_STRIDE, clear, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, woods, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, HexGeometry.ROW_STRIDE, clear, HexHighlight.NONE)
 
         assertEquals(Color.WOODS_LIGHT_BG, buffer.get(2, HexGeometry.ROW_STRIDE).style.bg)
     }
@@ -200,7 +201,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.REACHABLE_WALK)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.REACHABLE_WALK)
 
         assertEquals(".", buffer.get(4, 2).char)
         assertEquals(Color.WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
@@ -210,9 +211,9 @@ internal class HexRendererTest {
     fun `facing arrows inherit the terrain background`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
-        HexRenderer.renderFacingArrows(buffer, 0, 0, setOf(HexDirection.N), Color.WHITE)
+        HexRenderer.renderFacingArrows(Canvas.of(buffer), 0, 0, setOf(HexDirection.N), Color.WHITE)
 
         // N arrow sits at (x+4, y+2)
         assertEquals(Color.WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
@@ -222,9 +223,9 @@ internal class HexRendererTest {
     fun `facing numbers inherit the terrain background`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
-        HexRenderer.renderFacingNumbers(buffer, 0, 0, setOf(HexDirection.N))
+        HexRenderer.renderFacingNumbers(Canvas.of(buffer), 0, 0, setOf(HexDirection.N))
 
         assertEquals("1", buffer.get(4, 2).char)
         assertEquals(Color.WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
@@ -235,7 +236,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.CURSOR)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.CURSOR)
 
         assertEquals(Color.BRIGHT_YELLOW, buffer.get(1, 1).style.fg) // '/' border
         assertEquals(Color.BRIGHT_YELLOW, buffer.get(7, 1).style.fg) // '\' border
@@ -247,7 +248,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.REACHABLE_WALK)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.REACHABLE_WALK)
 
         assertEquals(".", buffer.get(4, 2).char)
         assertEquals(Color.DEFAULT, buffer.get(4, 2).style.bg)
@@ -258,7 +259,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.PATH)
 
         assertEquals("*", buffer.get(4, 2).char)
     }
@@ -268,7 +269,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH, MovementMode.WALK)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.PATH, MovementMode.WALK)
 
         assertEquals(String(Character.toChars(0xF0583)), buffer.get(4, 2).char)
     }
@@ -278,7 +279,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH, MovementMode.RUN)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.PATH, MovementMode.RUN)
 
         assertEquals(String(Character.toChars(0xF046E)), buffer.get(4, 2).char)
     }
@@ -288,7 +289,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH, MovementMode.JUMP)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.PATH, MovementMode.JUMP)
 
         assertEquals(String(Character.toChars(0xF14DE)), buffer.get(4, 2).char)
     }
@@ -298,7 +299,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.ATTACK_RANGE)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.ATTACK_RANGE)
 
         assertEquals(".", buffer.get(4, 2).char)
         assertEquals(Color.GRAY, buffer.get(4, 2).style.fg)
@@ -309,7 +310,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.LINE_OF_SIGHT)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.LINE_OF_SIGHT)
 
         assertEquals(".", buffer.get(4, 2).char)
         assertEquals(Color.YELLOW, buffer.get(4, 2).style.fg)
@@ -320,7 +321,7 @@ internal class HexRendererTest {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.LINE_OF_SIGHT_SELECTED)
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.LINE_OF_SIGHT_SELECTED)
 
         assertEquals(targetIcon(), buffer.get(4, 2).char)
         assertEquals(Color.RED, buffer.get(4, 2).style.fg)

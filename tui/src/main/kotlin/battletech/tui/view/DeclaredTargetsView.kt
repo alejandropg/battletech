@@ -4,16 +4,15 @@ import battletech.tui.game.PanelId
 import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.game.phase.DeclaredWeaponEntry
 import battletech.tui.hex.targetIcon
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
-import battletech.tui.screen.ScreenBuffer
 
 internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {
 
-    override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        // One blank row for pixel parity with the decorator's y+1 inner-content start
-        val content = ContentWriter(buffer, x, y + 1, width)
+    override fun render(canvas: Canvas) {
+        val content = ContentWriter(canvas)
 
         if (data.entries.isEmpty()) {
             content.writeln("No declarations", WHITE_STYLE)

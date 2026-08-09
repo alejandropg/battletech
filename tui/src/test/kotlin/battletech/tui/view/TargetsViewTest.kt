@@ -6,7 +6,6 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.hex.checkboxIcon
 import battletech.tui.hex.diceRoll
 import battletech.tui.screen.Color
-import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -29,18 +28,8 @@ internal class TargetsViewTest {
         ),
     )
 
-    private fun renderToString(view: TargetsView, width: Int = 28, height: Int = 30): String {
-        val buffer = ScreenBuffer(width, height)
-        view.render(buffer, 0, 0, width, height)
-        return buildString {
-            for (row in 0 until height) {
-                for (col in 0 until width) {
-                    append(buffer.get(col, row).char)
-                }
-                appendLine()
-            }
-        }
-    }
+    private fun renderToString(view: TargetsView, width: Int = 28, height: Int = 30): String =
+        render(view, width, height).text()
 
     @Test
     fun `renders target name with primary tag`() {
@@ -205,13 +194,9 @@ internal class TargetsViewTest {
         // Disabled weapon row is rendered in gray
         val width = 28
         val height = 30
-        val buffer = ScreenBuffer(width, height)
-        view.render(buffer, 0, 0, width, height)
+        val buffer = render(view, width, height)
         // Find the row containing "LRM15" and verify its color is GRAY
-        val lrmRow = (0 until height).first { row ->
-            (0 until width).any { col -> buffer.get(col, row).char == "L" } &&
-                buildString { (0 until width).forEach { col -> append(buffer.get(col, row).char) } }.contains("LRM15")
-        }
+        val lrmRow = (0 until height).first { row -> "LRM15" in buffer.line(row) }
         val rowColors = (0 until width).map { col -> buffer.get(col, lrmRow).style.fg }.toSet()
         assertTrue(rowColors.contains(Color.GRAY)) { "Expected disabled weapon row to use Color.GRAY, got: $rowColors" }
     }

@@ -1,12 +1,9 @@
 package battletech.tui.screen
 
-internal class ContentWriter(
-    val buffer: ScreenBuffer,
-    val x: Int,
-    val y: Int,
-    val width: Int
-) {
-    var cy = y
+internal class ContentWriter(val canvas: Canvas) {
+    val width: Int get() = canvas.width
+
+    var cy = 0
 
     fun writeHeader(label: String) {
         writeln(sectionHeader(label), CYAN_STYLE)
@@ -20,7 +17,7 @@ internal class ContentWriter(
 
     fun writeln(text: String, style: Cell.Style = Cell.Style.DEFAULT) {
         val truncated = if (CellWidth.of(text) > width) truncateToWidth(text, width - 1) + "…" else text
-        buffer.writeString(x, cy, truncated, style)
+        canvas.writeString(0, cy, truncated, style)
         cy += 1
     }
 
@@ -37,9 +34,8 @@ internal class ContentWriter(
         return text.substring(0, i)
     }
 
-    fun writeStr(padding: Int = 0, text: String, style: Cell.Style = Cell.Style.DEFAULT) {
-        val cx = x + padding
-        buffer.writeString(cx, cy, text, style)
+    fun writeStr(column: Int = 0, text: String, style: Cell.Style = Cell.Style.DEFAULT) {
+        canvas.writeString(column, cy, text, style)
     }
 
     /** Writes [left] flush to the panel's left edge and [right] flush to its right edge. */
@@ -47,8 +43,8 @@ internal class ContentWriter(
         val rightWidth = CellWidth.of(right)
         val maxLeft = (width - rightWidth - 1).coerceAtLeast(0)
         val leftText = if (CellWidth.of(left) > maxLeft) truncateToWidth(left, maxLeft - 1) + "…" else left
-        buffer.writeString(x, cy, leftText, style)
-        buffer.writeString(x + width - rightWidth, cy, right, style)
+        canvas.writeString(0, cy, leftText, style)
+        canvas.writeString(width - rightWidth, cy, right, style)
         cy += 1
     }
 

@@ -3,9 +3,9 @@ package battletech.tui.view
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.session.LogEntry
 import battletech.tui.game.PanelId
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.CellWidth
 import battletech.tui.screen.ContentWriter
-import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.TextWrap
 
 public class LogView(
@@ -13,8 +13,8 @@ public class LogView(
     private val state: PlayerGameState,
 ) : View {
 
-    override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        val content = ContentWriter(buffer, x, y, width)
+    override fun render(canvas: Canvas) {
+        val content = ContentWriter(canvas)
         var lastTurn: Int? = null
 
         for (entry in entries) {
@@ -31,7 +31,7 @@ public class LogView(
                 val prefixWidth = CellWidth.of(icon) + 1
                 val indent = " ".repeat(prefixWidth)
 
-                TextWrap.wrap(line.text, width - prefixWidth, width - prefixWidth).forEachIndexed { i, wrapped ->
+                TextWrap.wrap(line.text, content.width - prefixWidth, content.width - prefixWidth).forEachIndexed { i, wrapped ->
                     content.writeln(if (i == 0) "$icon $wrapped" else "$indent$wrapped")
                 }
             }

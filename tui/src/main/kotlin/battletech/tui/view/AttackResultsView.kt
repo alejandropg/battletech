@@ -9,17 +9,16 @@ import battletech.tui.game.PanelId
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.hex.attackOutcomeIcon
 import battletech.tui.hex.targetIcon
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.CellWidth
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
-import battletech.tui.screen.ScreenBuffer
 
 internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
-    override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        // One blank row for pixel parity with the decorator's y+1 inner-content start
-        val content = ContentWriter(buffer, x, y + 1, width)
+    override fun render(canvas: Canvas) {
+        val content = ContentWriter(canvas)
 
         val byAttacker = data.results.groupBy { it.attackerId }
 
@@ -58,10 +57,10 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         val outcomeText = "${if (hit) "HIT" else "MISS"} ${attackOutcomeIcon(hit)}"
         val outcomeColor = if (hit) Color.GREEN else Color.RED
         val rollLine = "   ${diceRollLabel(toHit)}"
-        val padding = (content.width - CellWidth.of(rollLine) - CellWidth.of(outcomeText)).coerceAtLeast(1)
-        content.writeln("$rollLine${" ".repeat(padding)}$outcomeText", WHITE_STYLE)
-        val outcomeX = content.x + content.width - CellWidth.of(outcomeText)
-        if (outcomeX >= content.x) content.buffer.writeString(outcomeX, content.cy - 1, outcomeText, Cell.Style(outcomeColor))
+        val fill = (content.width - CellWidth.of(rollLine) - CellWidth.of(outcomeText)).coerceAtLeast(1)
+        content.writeln("$rollLine${" ".repeat(fill)}$outcomeText", WHITE_STYLE)
+        val outcomeX = content.width - CellWidth.of(outcomeText)
+        if (outcomeX >= 0) content.canvas.writeString(outcomeX, content.cy - 1, outcomeText, Cell.Style(outcomeColor))
 
         // Block 3: location + damage (hit only)
         if (result is AttackResult.ClusterHit) {

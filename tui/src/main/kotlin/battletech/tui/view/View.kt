@@ -1,7 +1,7 @@
 package battletech.tui.view
 
-import battletech.tui.screen.ScreenBuffer
+import battletech.tui.screen.Canvas
 
 public interface View {
-    public fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int)
+    public fun render(canvas: Canvas)
 }

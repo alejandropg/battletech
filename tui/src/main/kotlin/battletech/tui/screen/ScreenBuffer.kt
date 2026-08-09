@@ -18,86 +18,8 @@ public class ScreenBuffer(
         cells[y][x] = cell
     }
 
-    public fun writeString(
-        x: Int,
-        y: Int,
-        text: String,
-        style: Cell.Style = Cell.Style.DEFAULT,
-    ) {
-        var cx = x
-        var i = 0
-        while (i < text.length && cx < width) {
-            val cp = text.codePointAt(i)
-            val charCount = Character.charCount(cp)
-            val w = CellWidth.of(cp)
-            if (w == 0) {
-                i += charCount
-                continue
-            }
-            set(cx, y, Cell(text.substring(i, i + charCount), style))
-            if (w == 2 && cx + 1 < width) {
-                set(cx + 1, y, Cell("", style))
-            }
-            cx += w
-            i += charCount
-        }
+    /** Raw row-slice copy backing [Canvas.blit]. Callers are responsible for clipping. */
+    internal fun copyCellsFrom(src: ScreenBuffer, srcRow: Int, srcCol: Int, destRow: Int, destCol: Int, count: Int) {
+        System.arraycopy(src.cells[srcRow], srcCol, cells[destRow], destCol, count)
     }
-
-    public fun drawBox(
-        x: Int,
-        y: Int,
-        width: Int,
-        height: Int,
-        title: String = "",
-        badge: String? = null,
-        borderColor: Color = Color.GREEN,
-        titleColor: Color = Color.BRIGHT_YELLOW,
-    ) {
-        if (width < 2 || height < 2) return
-
-        set(x, y, Cell("╭", Cell.Style(borderColor)))
-        set(x + width - 1, y, Cell("╮", Cell.Style(borderColor)))
-        set(x, y + height - 1, Cell("╰", Cell.Style(borderColor)))
-        set(x + width - 1, y + height - 1, Cell("╯", Cell.Style(borderColor)))
-
-        for (i in 1 until width - 1) {
-            set(x + i, y, Cell("─", Cell.Style(borderColor)))
-            set(x + i, y + height - 1, Cell("─", Cell.Style(borderColor)))
-        }
-
-        for (i in 1 until height - 1) {
-            set(x, y + i, Cell("│", Cell.Style(borderColor)))
-            set(x + width - 1, y + i, Cell("│", Cell.Style(borderColor)))
-        }
-
-        if (title.isNotEmpty()) {
-            if (badge != null && width > title.length + badge.length + 7) {
-                writeString(x + 2, y, "[$badge] $title", Cell.Style(titleColor))
-                set(x + 5 + badge.length + title.length, y, Cell(" ", Cell.Style(borderColor)))
-            } else if (badge == null && width > title.length + 6) {
-                set(x + 3, y, Cell(" ", Cell.Style(borderColor)))
-                writeString(x + 4, y, title, Cell.Style(titleColor))
-                set(x + 4 + title.length, y, Cell(" ", Cell.Style(borderColor)))
-            }
-        }
-    }
-
-    public fun blit(src: ScreenBuffer, srcX: Int, srcY: Int, destX: Int, destY: Int, width: Int, height: Int) {
-        val startCol = maxOf(0, -srcX, -destX)
-        val endCol = minOf(width, src.width - srcX, this.width - destX)
-        val count = endCol - startCol
-        if (count <= 0) return
-        for (row in 0 until height) {
-            val sy = srcY + row
-            if (sy < 0 || sy >= src.height) continue
-            val dy = destY + row
-            if (dy < 0 || dy >= this.height) continue
-            System.arraycopy(
-                src.cells[sy], srcX + startCol,
-                cells[dy], destX + startCol,
-                count,
-            )
-        }
-    }
-
 }

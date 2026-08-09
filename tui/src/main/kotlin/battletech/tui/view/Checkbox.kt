@@ -1,9 +1,9 @@
 package battletech.tui.view
 
 import battletech.tui.hex.checkboxIcon
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
-import battletech.tui.screen.ScreenBuffer
 
 /** Reusable single-cell NerdFont checkbox glyph. */
 public object Checkbox {
@@ -16,12 +16,12 @@ public object Checkbox {
 
     /** Draws the checkbox at (x, y); occupies exactly one cell. */
     public fun draw(
-        buffer: ScreenBuffer,
+        canvas: Canvas,
         x: Int,
         y: Int,
         state: CheckState,
         color: Color = intrinsicColor(state),
     ) {
-        buffer.writeString(x, y, checkboxIcon(state), Cell.Style(color))
+        canvas.writeString(x, y, checkboxIcon(state), Cell.Style(color))
     }
 }

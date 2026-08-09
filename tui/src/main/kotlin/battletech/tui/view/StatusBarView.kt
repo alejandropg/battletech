@@ -1,9 +1,9 @@
 package battletech.tui.view
 
 import battletech.tactical.model.TurnPhase
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
-import battletech.tui.screen.ScreenBuffer
 
 public class StatusBarView(
     private val phase: TurnPhase,
@@ -11,18 +11,16 @@ public class StatusBarView(
     private val activePlayerInfo: String? = null,
 ) : View {
 
-    override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "COMMAND")
+    override fun render(canvas: Canvas) {
+        val content = PanelChrome.draw(canvas, "COMMAND", padding = PanelChrome.STATUS_BAR_PADDING)
 
-        val cx = x + 2
-        val cy = y + 1
         val phaseLabel = if (activePlayerInfo != null) {
             "[${phase.name}] $activePlayerInfo"
         } else {
             "[${phase.name}]"
         }
-        buffer.writeString(cx, cy, phaseLabel, BRIGHT_YELLOW_STYLE)
-        buffer.writeString(cx, cy + 1, prompt, WHITE_STYLE)
+        content.writeString(0, 0, phaseLabel, BRIGHT_YELLOW_STYLE)
+        content.writeString(0, 1, prompt, WHITE_STYLE)
     }
 
     private companion object {

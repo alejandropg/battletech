@@ -3,10 +3,10 @@ package battletech.tui.view
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.PanelId
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
-import battletech.tui.screen.ScreenBuffer
 
 public class TargetsView(
     private val targets: List<TargetInfo>,
@@ -16,9 +16,8 @@ public class TargetsView(
     private val cursorWeaponIndex: Int = 0,
 ) : View {
 
-    override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        // One blank row for pixel parity with the decorator's y+1 inner-content start
-        val content = ContentWriter(buffer, x, y + 1, width)
+    override fun render(canvas: Canvas) {
+        val content = ContentWriter(canvas)
 
         if (targets.isEmpty()) {
             content.writeln("No targets", WHITE_STYLE)
@@ -70,7 +69,7 @@ public class TargetsView(
                 }
                 val row = content.cy
                 WeaponHitWidget.draw(content, left, weapon.targetDiceRoll, weapon.successChance, weapon.modifiers, color)
-                Checkbox.draw(content.buffer, content.x + 2, row, state, checkboxColor)
+                Checkbox.draw(content.canvas, 2, row, state, checkboxColor)
             }
 
             content.newLine() // blank line between targets

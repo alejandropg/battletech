@@ -16,7 +16,7 @@ internal class ScreenRendererTest {
     @Test
     fun `output starts with cursor home sequence`() {
         val buffer = ScreenBuffer(3, 1)
-        buffer.writeString(0, 0, "abc")
+        Canvas.of(buffer).writeString(0, 0, "abc")
 
         renderer.render(buffer)
 
@@ -30,7 +30,7 @@ internal class ScreenRendererTest {
     @Test
     fun `unstyled text is written without ANSI codes`() {
         val buffer = ScreenBuffer(5, 1)
-        buffer.writeString(0, 0, "hello")
+        Canvas.of(buffer).writeString(0, 0, "hello")
 
         renderer.render(buffer)
 
@@ -49,7 +49,7 @@ internal class ScreenRendererTest {
     fun `colored run emits one style per run not one per cell`() {
         // 4 cells all with fg=RED — they should be wrapped in a single SGR open+close pair
         val buffer = ScreenBuffer(4, 1)
-        buffer.writeString(0, 0, "ABCD", Cell.Style(fg = Color.RED))
+        Canvas.of(buffer).writeString(0, 0, "ABCD", Cell.Style(fg = Color.RED))
 
         renderer.render(buffer)
 
@@ -85,7 +85,7 @@ internal class ScreenRendererTest {
         // 3 consecutive cells with fg=RED + strikethrough — Mordant folds both attributes into
         // one compound SGR open (ESC[31;9m ... ESC[39;29m), and one run should emit exactly one.
         val buffer = ScreenBuffer(3, 1)
-        buffer.writeString(0, 0, "XYZ", Cell.Style(fg = Color.RED, strikethrough = true))
+        Canvas.of(buffer).writeString(0, 0, "XYZ", Cell.Style(fg = Color.RED, strikethrough = true))
 
         renderer.render(buffer)
 
@@ -115,7 +115,7 @@ internal class ScreenRendererTest {
         // the empty follow-up char (which contributes nothing), resulting in "中" appearing
         // once in the output.
         val buffer = ScreenBuffer(3, 1)
-        buffer.writeString(0, 0, "中") // 中, width=2
+        Canvas.of(buffer).writeString(0, 0, "中") // 中, width=2
 
         renderer.render(buffer)
 
@@ -128,9 +128,9 @@ internal class ScreenRendererTest {
     @Test
     fun `rows separated by carriage-return newline`() {
         val buffer = ScreenBuffer(2, 3)
-        buffer.writeString(0, 0, "AB")
-        buffer.writeString(0, 1, "CD")
-        buffer.writeString(0, 2, "EF")
+        Canvas.of(buffer).writeString(0, 0, "AB")
+        Canvas.of(buffer).writeString(0, 1, "CD")
+        Canvas.of(buffer).writeString(0, 2, "EF")
 
         renderer.render(buffer)
 

@@ -14,7 +14,6 @@ import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.targetIcon
-import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -114,22 +113,7 @@ internal class AttackResultsViewTest {
     /** Renders via the decorator — pixel-parity regression guard for box/title/coordinates. */
     private fun renderToString(results: List<AttackResult>, width: Int = 34, height: Int = 30, viewer: PlayerId = PlayerId.PLAYER_1): String {
         val view = makeView(results, viewer)
-        val decorated = ScrollablePanelView(
-            key = AttackResultsView.KEY,
-            title = AttackResultsView.TITLE,
-            content = view,
-            scrollOffset = 0,
-        )
-        val buffer = ScreenBuffer(width, height)
-        decorated.render(buffer, 0, 0, width, height)
-        return buildString {
-            for (row in 0 until height) {
-                for (col in 0 until width) {
-                    append(buffer.get(col, row).char)
-                }
-                appendLine()
-            }
-        }
+        return renderInPanel(view, key = AttackResultsView.KEY, title = AttackResultsView.TITLE, width = width, height = height).text()
     }
 
     @Test
@@ -239,20 +223,14 @@ internal class AttackResultsViewTest {
         val view = makeView(results)
         val width = 34
         val height = 10
-        val decorated = ScrollablePanelView(
+        val output = renderInPanel(
+            view,
             key = AttackResultsView.KEY,
             title = AttackResultsView.TITLE,
-            content = view,
+            width = width,
+            height = height,
             scrollOffset = 15,
-        )
-        val buffer = ScreenBuffer(width, height)
-        decorated.render(buffer, 0, 0, width, height)
-        val output = buildString {
-            for (row in 0 until height) {
-                for (col in 0 until width) append(buffer.get(col, row).char)
-                appendLine()
-            }
-        }
+        ).text()
         // With offset=15, lines before row 15 are scrolled away; later weapon entries are visible
         assertTrue(output.contains("Weapon")) { "Expected weapon lines after scroll: $output" }
     }

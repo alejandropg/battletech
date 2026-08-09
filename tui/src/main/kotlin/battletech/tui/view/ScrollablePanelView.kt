@@ -1,8 +1,8 @@
 package battletech.tui.view
 
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
-import battletech.tui.screen.ScreenBuffer
 
 internal class ScrollablePanelView(
     private val key: Char,
@@ -15,49 +15,35 @@ internal class ScrollablePanelView(
     var maxOffset: Int = 0
         private set
 
-    override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, title, badge = key.toString())
+    override fun render(canvas: Canvas) {
+        val inner = PanelChrome.draw(canvas, title, badge = key.toString())
 
-        if (width <= 4 || height <= 2) {
+        if (inner.width <= 0 || inner.height <= 0) {
             maxOffset = 0
             return
         }
 
-        val contentWidth = width - 4
-        val scratch = ScreenBuffer(contentWidth, MAX_CONTENT_ROWS)
-        content.render(scratch, 0, 0, contentWidth, MAX_CONTENT_ROWS)
+        val scratch = Canvas.offscreen(inner.width, MAX_CONTENT_ROWS)
+        content.render(scratch)
 
-        val contentHeight = measureContentHeight(scratch)
-        val viewportHeight = height - 2
-        maxOffset = (contentHeight - viewportHeight).coerceAtLeast(0)
+        val contentHeight = scratch.contentHeight()
+        maxOffset = (contentHeight - inner.height).coerceAtLeast(0)
 
         val offset = (scrollOffset ?: if (anchorBottom) maxOffset else 0).coerceIn(0, maxOffset)
 
-        buffer.blit(scratch, 0, offset, x + 2, y + 1, contentWidth, viewportHeight)
+        inner.blit(scratch, 0, offset, 0, 0, inner.width, inner.height)
 
         val thumbRange = Scrollbar.thumb(
-            track = viewportHeight,
+            track = inner.height,
             contentHeight = contentHeight,
-            viewportHeight = viewportHeight,
+            viewportHeight = inner.height,
             offset = offset,
         )
         if (thumbRange != null) {
             for (row in thumbRange) {
-                buffer.set(x + width - 1, y + 1 + row, Cell("▐", GREEN_STYLE))
+                canvas.set(canvas.width - 1, PanelChrome.CONTENT_INSET.top + row, Cell("▐", GREEN_STYLE))
             }
         }
-    }
-
-    private fun measureContentHeight(scratch: ScreenBuffer): Int {
-        for (row in scratch.height - 1 downTo 0) {
-            for (col in 0 until scratch.width) {
-                val cell = scratch.get(col, row)
-                if (cell.char != " " || cell.style.bg != Color.DEFAULT) {
-                    return row + 1
-                }
-            }
-        }
-        return 0
     }
 
     private companion object {

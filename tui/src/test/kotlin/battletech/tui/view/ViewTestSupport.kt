@@ -1,0 +1,29 @@
+package battletech.tui.view
+
+import battletech.tui.screen.Canvas
+import battletech.tui.screen.ScreenBuffer
+
+/** Renders [view] into a fresh [width]x[height] buffer and returns it for assertions. */
+internal fun render(view: View, width: Int, height: Int): ScreenBuffer {
+    val buffer = ScreenBuffer(width, height)
+    view.render(Canvas.of(buffer))
+    return buffer
+}
+
+/** Renders [content] inside the real [ScrollablePanelView] chrome — the pixel-parity regression guard. */
+internal fun renderInPanel(
+    content: View,
+    key: Char = '0',
+    title: String = "T",
+    width: Int = 28,
+    height: Int = 30,
+    scrollOffset: Int? = 0,
+    anchorBottom: Boolean = false,
+): ScreenBuffer = render(ScrollablePanelView(key, title, content, scrollOffset, anchorBottom), width, height)
+
+/** Row [y], columns [x] until [x] + [width], right-trimmed. */
+internal fun ScreenBuffer.line(y: Int, x: Int = 0, width: Int = this.width - x): String =
+    (x until x + width).joinToString("") { get(it, y).char }.trimEnd()
+
+/** The whole buffer as newline-separated rows — for `contains` assertions. */
+internal fun ScreenBuffer.text(): String = (0 until height).joinToString("\n") { line(it) }

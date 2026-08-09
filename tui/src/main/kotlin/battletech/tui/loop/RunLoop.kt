@@ -13,6 +13,7 @@ import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
 import battletech.tui.input.KeyGlyph
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
@@ -25,7 +26,6 @@ import battletech.tui.view.PanelSlot
 import battletech.tui.view.Panels
 import battletech.tui.view.ScrollablePanelView
 import battletech.tui.view.StatusBarView
-import battletech.tui.view.Viewport
 import battletech.tui.view.resolvePanel
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
@@ -201,30 +201,25 @@ internal suspend fun runLoop(
  * Overlays board content — called after the board and panels are drawn so
  * it appears on top.
  */
-private fun renderGameOverBanner(
-    buffer: ScreenBuffer,
-    boardWidth: Int,
-    boardHeight: Int,
-    boardY: Int,
-    outcome: MatchOutcome,
-) {
+private fun renderGameOverBanner(board: Canvas, outcome: MatchOutcome) {
     val winnerLine = when (outcome) {
         is MatchOutcome.Draw -> "Draw"
         is MatchOutcome.Victory -> "${playerName(outcome.winner)} wins!"
     }
     val bannerWidth = maxOf(winnerLine.length + 8, 24)
     val bannerHeight = 7
-    val bx = (boardWidth - bannerWidth) / 2
-    val by = boardY + (boardHeight - bannerHeight) / 2
-    if (bx < 0 || by < 0 || bx + bannerWidth > buffer.width || by + bannerHeight > buffer.height) return
-    buffer.drawBox(
-        bx, by, bannerWidth, bannerHeight,
+    if (bannerWidth > board.width || bannerHeight > board.height) return
+    val banner = board.region(
+        (board.width - bannerWidth) / 2, (board.height - bannerHeight) / 2,
+        bannerWidth, bannerHeight,
+    )
+    banner.drawBox(
         title = "MATCH OVER",
         borderColor = Color.BRIGHT_YELLOW,
         titleColor = Color.BRIGHT_YELLOW,
     )
-    val mx = bx + (bannerWidth - winnerLine.length) / 2
-    buffer.writeString(mx, by + 3, winnerLine, WHITE_STYLE)
+    val mx = (bannerWidth - winnerLine.length) / 2
+    banner.writeString(mx, 3, winnerLine, WHITE_STYLE)
 }
 
 private fun playerName(player: PlayerId): String = when (player) {
@@ -257,13 +252,12 @@ private fun renderFrame(
     )
 
     val buffer = ScreenBuffer(size.width, size.height)
+    val screen = Canvas.of(buffer)
     val frame = PanelFrame(appState)
 
     val renderData = appState.phase.render(appState)
-    val viewport = Viewport(0, 0, layout.boardWidth - 4, layout.boardHeight - 4)
     val boardView = BoardView(
         appState.visibleState,
-        viewport,
         cursorPosition = appState.cursor,
         hexHighlights = renderData.hexHighlights,
         reachableFacings = renderData.reachableFacings,
@@ -274,7 +268,8 @@ private fun renderFrame(
         validTargetPositions = renderData.validTargetPositions,
         selectedTargetPosition = renderData.selectedTargetPosition,
     )
-    boardView.render(buffer, 0, layout.boardY, layout.boardWidth, layout.boardHeight)
+    val board = screen.region(0, layout.boardY, layout.boardWidth, layout.boardHeight)
+    boardView.render(board)
 
     val maxOffsets = mutableMapOf<Char, Int>()
     for (slot in layout.slots) {
@@ -288,7 +283,7 @@ private fun renderFrame(
             anchorBottom = panel.anchorBottom,
         ) { panel.build(frame) }
         val view = resolvePanel(panelSlot)
-        view?.render(buffer, slot.x, layout.boardY, slot.width, layout.boardHeight)
+        view?.render(screen.region(slot.x, layout.boardY, slot.width, layout.boardHeight))
         val mo = (view as? ScrollablePanelView)?.maxOffset
         if (mo != null) maxOffsets[slot.panelKey] = mo
     }
@@ -307,10 +302,10 @@ private fun renderFrame(
     }
     val activePlayerInfo = if (matchEnded != null) null else appState.phase.activePlayerLabel(appState)
     val statusBarView = StatusBarView(appState.currentPhase, prompt, activePlayerInfo)
-    statusBarView.render(buffer, 0, 0, size.width, FrameLayout.STATUS_BAR_HEIGHT)
+    statusBarView.render(screen.region(0, 0, size.width, FrameLayout.STATUS_BAR_HEIGHT))
 
     if (matchEnded != null) {
-        renderGameOverBanner(buffer, layout.boardWidth, layout.boardHeight, layout.boardY, matchEnded.outcome)
+        renderGameOverBanner(board, matchEnded.outcome)
     }
 
     renderer.render(buffer)

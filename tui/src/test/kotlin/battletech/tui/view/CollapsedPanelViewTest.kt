@@ -1,33 +1,27 @@
 package battletech.tui.view
 
-import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class CollapsedPanelViewTest {
 
-    private fun readLine(buffer: ScreenBuffer, x: Int, y: Int, width: Int): String =
-        (x until x + width).joinToString("") { buffer.get(it, y).char }.trimEnd()
-
     @Test
     fun `renders border corners and index label for LOG panel`() {
         val view = CollapsedPanelView('0', "LOG")
-        val buffer = ScreenBuffer(7, 10)
 
-        view.render(buffer, 0, 0, 7, 10)
+        val buffer = render(view, 7, 10)
 
         assertEquals("╭", buffer.get(0, 0).char)
         assertEquals("╮", buffer.get(6, 0).char)
-        val topRow = readLine(buffer, 0, 0, 7)
+        val topRow = buffer.line(0, 0, 7)
         assert(topRow.contains("[0]")) { "Top row should contain '[0]', got: $topRow" }
     }
 
     @Test
     fun `renders vertical title chars centred for LOG panel`() {
         val view = CollapsedPanelView('0', "LOG")
-        val buffer = ScreenBuffer(7, 10)
 
-        view.render(buffer, 0, 0, 7, 10)
+        val buffer = render(view, 7, 10)
 
         // Centre column for width=7 is x + 1 + (7-2)/2 = 0 + 1 + 2 = 3
         assertEquals("L", buffer.get(3, 1).char)
@@ -41,9 +35,8 @@ internal class CollapsedPanelViewTest {
     @Test
     fun `renders UNIT STATUS title with space as blank row`() {
         val view = CollapsedPanelView('1', "UNIT STATUS")
-        val buffer = ScreenBuffer(7, 15)
 
-        view.render(buffer, 0, 0, 7, 15)
+        val buffer = render(view, 7, 15)
 
         val cx = 3 // centre for width=7
         assertEquals("U", buffer.get(cx, 1).char)
@@ -66,10 +59,9 @@ internal class CollapsedPanelViewTest {
     @Test
     fun `clips title that exceeds panel height without throwing`() {
         // Title of 20 chars in a panel of height 5 (only rows 1-3 are inner rows)
-            val view = CollapsedPanelView('2', "ABCDEFGHIJKLMNOPQRST")
-        val buffer = ScreenBuffer(7, 5)
+        val view = CollapsedPanelView('2', "ABCDEFGHIJKLMNOPQRST")
 
-        view.render(buffer, 0, 0, 7, 5)
+        val buffer = render(view, 7, 5)
 
         val cx = 3
         assertEquals("A", buffer.get(cx, 1).char)

@@ -1,6 +1,6 @@
 package battletech.tui.view
 
-import battletech.tui.screen.ScreenBuffer
+import battletech.tui.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test
 internal class PanelSlotTest {
 
     private val realView = object : View {
-        override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-            buffer.writeString(x, y, "CONTENT")
+        override fun render(canvas: Canvas) {
+            canvas.writeString(0, 0, "CONTENT")
         }
     }
 
@@ -40,13 +40,12 @@ internal class PanelSlotTest {
         val resolved = resolvePanel(slot)
 
         // Must be a ScrollablePanelView (internal class — verify via rendering)
-        val buffer = ScreenBuffer(34, 10)
-        resolved!!.render(buffer, 0, 0, 34, 10)
+        val buffer = render(resolved!!, 34, 10)
         // Box: top-left corner present
         assertEquals("╭", buffer.get(0, 0).char)
-        // Content "CONTENT" placed at x+2, y+1 (inside box)
-        assertEquals("C", buffer.get(2, 1).char)
-        assertEquals("O", buffer.get(3, 1).char)
+        // Content "CONTENT" placed at x+2, y+2 (inside box, past the padding spacer row)
+        assertEquals("C", buffer.get(2, 2).char)
+        assertEquals("O", buffer.get(3, 2).char)
     }
 
     @Test
@@ -54,8 +53,8 @@ internal class PanelSlotTest {
         // A content view with more lines than the viewport; bottom-anchor should show the last line
         val lines = 20
         val contentView = object : View {
-            override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-                for (i in 0 until lines) buffer.writeString(x, y + i, "L$i")
+            override fun render(canvas: Canvas) {
+                for (i in 0 until lines) canvas.writeString(0, i, "L$i")
             }
         }
         val slot = PanelSlot(
@@ -68,22 +67,21 @@ internal class PanelSlotTest {
         ) { contentView }
 
         val resolved = resolvePanel(slot)!!
-        val buffer = ScreenBuffer(30, 10)
-        resolved.render(buffer, 0, 0, 30, 10)
+        val buffer = render(resolved, 30, 10)
 
         // With anchorBottom=true and null offset, last lines should be visible
-        // viewport height = 10-2 = 8; maxOffset = 20-8 = 12; first visible line = L12
-        val firstVisible = (0 until 8).map { row ->
-            (2 until 8).joinToString("") { col -> buffer.get(col, 1 + row).char }.trimEnd()
+        // viewport height = 10-3 = 7; maxOffset = 20-7 = 13; first visible line = L13
+        val firstVisible = (0 until 7).map { row ->
+            (2 until 8).joinToString("") { col -> buffer.get(col, 2 + row).char }.trimEnd()
         }.first { it.isNotBlank() }
-        assertTrue(firstVisible.startsWith("L12"), "Expected first visible line to start with L12 but got: $firstVisible")
+        assertTrue(firstVisible.startsWith("L13"), "Expected first visible line to start with L13 but got: $firstVisible")
     }
 
     @Test
     fun `expanded slot passes scrollOffset into the wrapper`() {
         val contentView = object : View {
-            override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-                for (i in 0 until 20) buffer.writeString(x, y + i, "row$i")
+            override fun render(canvas: Canvas) {
+                for (i in 0 until 20) canvas.writeString(0, i, "row$i")
             }
         }
         val slot = PanelSlot(
@@ -96,11 +94,10 @@ internal class PanelSlotTest {
         ) { contentView }
 
         val resolved = resolvePanel(slot)!!
-        val buffer = ScreenBuffer(30, 10)
-        resolved.render(buffer, 0, 0, 30, 10)
+        val buffer = render(resolved, 30, 10)
 
         // offset=5 → first visible row is row5
-        val firstLine = (2 until 8).joinToString("") { buffer.get(it, 1).char }.trimEnd()
+        val firstLine = (2 until 8).joinToString("") { buffer.get(it, 2).char }.trimEnd()
         assertEquals("row5", firstLine)
     }
 

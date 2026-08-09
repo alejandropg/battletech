@@ -1,23 +1,23 @@
 package battletech.tui.view
 
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
-import battletech.tui.screen.ScreenBuffer
 
 public class CollapsedPanelView(public val key: Char, public val title: String) : View {
 
-    override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height)
-        buffer.writeString(x + 2, y, "[$key]", BRIGHT_YELLOW_STYLE)
+    override fun render(canvas: Canvas) {
+        canvas.drawBox()
+        canvas.writeString(2, 0, "[$key]", BRIGHT_YELLOW_STYLE)
 
-        val centerX = x + 1 + (width - 2) / 2
-        val bottomBorderRow = y + height - 1
+        val centerX = 1 + (canvas.width - 2) / 2
+        val bottomBorderRow = canvas.height - 1
 
         for ((i, ch) in title.withIndex()) {
-            val row = y + 1 + i
+            val row = 1 + i
             if (row >= bottomBorderRow) break
             if (ch != ' ') {
-                buffer.writeString(centerX, row, ch.toString(), BRIGHT_YELLOW_STYLE)
+                canvas.writeString(centerX, row, ch.toString(), BRIGHT_YELLOW_STYLE)
             }
         }
     }

@@ -2,11 +2,11 @@ package battletech.tui.view
 
 import battletech.tui.game.PanelId
 import battletech.tui.input.KeySection
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.CellWidth
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
-import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.TextWrap
 
 /**
@@ -17,8 +17,8 @@ import battletech.tui.screen.TextWrap
  */
 internal class HelpView(private val sections: List<KeySection>) : View {
 
-    override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        val content = ContentWriter(buffer, x, y, width)
+    override fun render(canvas: Canvas) {
+        val content = ContentWriter(canvas)
         content.writeHeader("KEYS")
 
         for ((index, section) in sections.withIndex()) {
@@ -26,7 +26,7 @@ internal class HelpView(private val sections: List<KeySection>) : View {
             for (hint in section.hints) {
                 val prefixWidth = CellWidth.of(hint.keys) + 2
                 val indent = " ".repeat(prefixWidth)
-                TextWrap.wrap(hint.description, width - prefixWidth, width - prefixWidth).forEachIndexed { i, wrapped ->
+                TextWrap.wrap(hint.description, content.width - prefixWidth, content.width - prefixWidth).forEachIndexed { i, wrapped ->
                     if (i == 0) {
                         content.writeStr(0, hint.keys, KEY_STYLE)
                         content.writeStr(prefixWidth, wrapped, DESC_STYLE)

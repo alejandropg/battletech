@@ -53,18 +53,15 @@ internal class LogViewTest {
         height: Int = 10,
         scrollOffset: Int? = null,
         anchorBottom: Boolean = false,
-    ): ScreenBuffer {
-        val decorated = ScrollablePanelView(
-            key = LogView.KEY,
-            title = LogView.TITLE,
-            content = view,
-            scrollOffset = scrollOffset,
-            anchorBottom = anchorBottom,
-        )
-        val buffer = ScreenBuffer(width, height)
-        decorated.render(buffer, 0, 0, width, height)
-        return buffer
-    }
+    ): ScreenBuffer = renderInPanel(
+        view,
+        key = LogView.KEY,
+        title = LogView.TITLE,
+        width = width,
+        height = height,
+        scrollOffset = scrollOffset,
+        anchorBottom = anchorBottom,
+    )
 
     @Test
     fun `renders a box titled LOG`() {
@@ -82,10 +79,10 @@ internal class LogViewTest {
         val view = LogView(entries = listOf(LogEntry(turn = 2, event = stoodUp())), state = emptyState)
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        // Inner content starts at x=2, y=1 (just inside the box).
-        val headerLine = readLine(buffer, x = 2, y = 1, width = 24)
+        // Inner content starts at x=2, y=2 (past the border and the padding spacer row).
+        val headerLine = buffer.line(2, 2, 24)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
-        val entryLine = readLine(buffer, x = 2, y = 2, width = 24)
+        val entryLine = buffer.line(3, 2, 24)
         assertEquals("${unitStoodUpIcon()} m stood up", entryLine)
     }
 
@@ -100,13 +97,13 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assertEquals(Color.CYAN, buffer.get(2, 1).style.fg)
-        // Only one header for the single turn: row 2 and row 3 are plain entries, not headers.
-        val headerLine = readLine(buffer, 2, 1, 24)
+        assertEquals(Color.CYAN, buffer.get(2, 2).style.fg)
+        // Only one header for the single turn: row 3 and row 4 are plain entries, not headers.
+        val headerLine = buffer.line(2, 2, 24)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
-        assert(readLine(buffer, 2, 2, 24).contains("0101→0201")) { "Expected first move entry" }
-        assert(readLine(buffer, 2, 3, 24).contains("0101→0301")) { "Expected second move entry" }
-        assertEquals(Color.DEFAULT, buffer.get(2, 2).style.fg)
+        assert(buffer.line(3, 2, 24).contains("0101→0201")) { "Expected first move entry" }
+        assert(buffer.line(4, 2, 24).contains("0101→0301")) { "Expected second move entry" }
+        assertEquals(Color.DEFAULT, buffer.get(2, 3).style.fg)
     }
 
     @Test
@@ -114,9 +111,9 @@ internal class LogViewTest {
         val view = LogView(entries = listOf(LogEntry(turn = 10, event = stoodUp())), state = emptyState)
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        val headerLine = readLine(buffer, x = 2, y = 1, width = 24)
+        val headerLine = buffer.line(2, 2, 24)
         assertEquals("── TURN 10 ─────────────", headerLine)
-        val entryLine = readLine(buffer, x = 2, y = 2, width = 24)
+        val entryLine = buffer.line(3, 2, 24)
         assertEquals("${unitStoodUpIcon()} m stood up", entryLine)
     }
 
@@ -132,12 +129,12 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assert(readLine(buffer, 2, 1, 24).startsWith("── TURN 1 ")) { "Expected header at row 1" }
-        assert(readLine(buffer, 2, 2, 24).contains("0101→0201")) { "Expected first move entry" }
-        assert(readLine(buffer, 2, 3, 24).contains("0101→0301")) { "Expected second move entry" }
-        assert(readLine(buffer, 2, 4, 24).contains("0101→0401")) { "Expected third move entry" }
+        assert(buffer.line(2, 2, 24).startsWith("── TURN 1 ")) { "Expected header at row 2" }
+        assert(buffer.line(3, 2, 24).contains("0101→0201")) { "Expected first move entry" }
+        assert(buffer.line(4, 2, 24).contains("0101→0301")) { "Expected second move entry" }
+        assert(buffer.line(5, 2, 24).contains("0101→0401")) { "Expected third move entry" }
         // Below the last entry should be empty inside the box.
-        assertEquals("", readLine(buffer, 2, 5, 24))
+        assertEquals("", buffer.line(6, 2, 24))
     }
 
     @Test
@@ -153,10 +150,10 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        // Row 1 is the turn header; the entry text starts wrapping at row 2.
-        assert(readLine(buffer, 2, 1, 24).startsWith("── TURN 2 ")) { "Expected header at row 1" }
-        val line1 = readLine(buffer, 2, 2, 24)
-        val line2 = readLine(buffer, 2, 3, 24)
+        // Row 2 is the turn header; the entry text starts wrapping at row 3.
+        assert(buffer.line(2, 2, 24).startsWith("── TURN 2 ")) { "Expected header at row 2" }
+        val line1 = buffer.line(3, 2, 24)
+        val line2 = buffer.line(4, 2, 24)
         val icon = initiativeIcon()
         assert(line1.startsWith("$icon Initiative: P1")) { "Line 1 should start with the initiative icon: '$line1'" }
         // Continuation line is indented two columns to align under the text on line 1.
@@ -170,17 +167,19 @@ internal class LogViewTest {
 
     @Test
     fun `when content overflows, the most recent line is at the bottom of the panel`() {
-        // Panel of height 6: inner height = 4 rows. Decorated with anchorBottom=true.
+        // Panel of height 6: content viewport is 3 rows. Decorated with anchorBottom=true.
         // Each entry is its own turn, so every entry is preceded by its own header row.
+        // The bottom content row stays fixed at y=4 regardless of padding — only the top
+        // of the viewport moved down — so this test's row numbers don't shift.
         val entries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val view = LogView(entries, state = emptyState)
         val buffer = renderDecorated(view, height = 6, scrollOffset = null, anchorBottom = true)
 
         // The bottom inner row (y = 4, since box bottom is y=5) should be the most recent entry.
-        val bottomInnerRow = readLine(buffer, 2, 4, 24)
+        val bottomInnerRow = buffer.line(4, 2, 24)
         assertEquals("${unitStoodUpIcon()} m stood up", bottomInnerRow)
         // The row above is that entry's own header.
-        val secondFromBottom = readLine(buffer, 2, 3, 24)
+        val secondFromBottom = buffer.line(3, 2, 24)
         assert(secondFromBottom.startsWith("── TURN 10 ")) { "Expected header above last entry: '$secondFromBottom'" }
     }
 
@@ -192,9 +191,9 @@ internal class LogViewTest {
         val buffer = renderDecorated(view, height = 6, scrollOffset = 0, anchorBottom = true)
 
         // With offset=0 the oldest entries are visible: header for turn 1, then its entry.
-        val firstLine = readLine(buffer, 2, 1, 24)
-        assert(firstLine.startsWith("── TURN 1 ")) { "Expected header at row 1: '$firstLine'" }
-        val secondLine = readLine(buffer, 2, 2, 24)
+        val firstLine = buffer.line(2, 2, 24)
+        assert(firstLine.startsWith("── TURN 1 ")) { "Expected header at row 2: '$firstLine'" }
+        val secondLine = buffer.line(3, 2, 24)
         assertEquals("${unitStoodUpIcon()} m stood up", secondLine)
     }
 
@@ -220,12 +219,10 @@ internal class LogViewTest {
             assertEquals("│", buffer.get(39, y).char, "right border at row $y")
         }
         // Each dice icon must occupy exactly one cell as a full surrogate-pair string,
-        // not a split half-surrogate per cell. Row 1 is the turn header; the entry is on row 2.
-        val entryLine = (2 until 38).joinToString("") { buffer.get(it, 2).char }.trimEnd()
+        // not a split half-surrogate per cell. Row 2 is the turn header; the entry is on row 3.
+        val entryLine = (2 until 38).joinToString("") { buffer.get(it, 3).char }.trimEnd()
         val dice4 = String(Character.toChars(0xF01CD))
         assert(entryLine.contains(dice4)) { "entry line should contain dice_4 glyph: '$entryLine'" }
     }
 
-    private fun readLine(buffer: ScreenBuffer, x: Int, y: Int, width: Int): String =
-        (x until x + width).joinToString("") { buffer.get(it, y).char }.trimEnd()
 }

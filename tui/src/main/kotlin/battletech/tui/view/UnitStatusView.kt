@@ -17,19 +17,18 @@ import battletech.tui.hex.emptyCircleIcon
 import battletech.tui.hex.filledCircleIcon
 import battletech.tui.hex.infinityIcon
 import battletech.tui.hex.pilotDeadIcon
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
-import battletech.tui.screen.ScreenBuffer
 
 public class UnitStatusView(
     private val subject: VisibleUnit?,
     private val pendingHeat: List<HeatSource> = emptyList(),
 ) : View {
 
-    override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        // One blank row for pixel parity with the decorator's y+1 inner-content start
-        val content = ContentWriter(buffer, x, y + 1, width)
+    override fun render(canvas: Canvas) {
+        val content = ContentWriter(canvas)
 
         when (subject) {
             null -> {
@@ -88,7 +87,7 @@ public class UnitStatusView(
             writeHeader("HEAT")
             writeln("Current")
             val heatBar = HeatBarWidget(barWidth = 20, maxValue = 30)
-            content.cy = heatBar.draw(buffer, content.x, content.cy, unit.currentHeat)
+            content.cy = heatBar.draw(content.canvas, 0, content.cy, unit.currentHeat)
 
             val projection = projectHeat(unit, pendingHeat)
 
@@ -104,10 +103,10 @@ public class UnitStatusView(
                 if (sink.type.sinkRatio == 1) "${sink.type.name} ${projection.dissipation}"
                 else "${sink.type.name} ${sink.units}(${projection.dissipation})"
             content.cy = HeatBarWidget(barWidth = 10, maxValue = projection.dissipation, suffix = sinkSuffix)
-                .draw(buffer, content.x, content.cy, projection.dissipated)
+                .draw(content.canvas, 0, content.cy, projection.dissipated)
 
             writeln("Projected")
-            content.cy = heatBar.draw(buffer, content.x, content.cy, projection.projected)
+            content.cy = heatBar.draw(content.canvas, 0, content.cy, projection.projected)
 
             val penalties = penaltyLines(unit.currentHeat, projection.projected)
             if (penalties.isNotEmpty()) {

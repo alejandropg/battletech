@@ -16,8 +16,8 @@ internal object WeaponHitWidget {
         color: Color,
     ) {
         val right = hitChanceLabel(targetDiceRoll, successChance)
-        val padding = (content.width - left.length - CellWidth.of(right)).coerceAtLeast(1)
-        content.writeln("$left${" ".repeat(padding)}$right", Cell.Style(color))
+        val fill = (content.width - left.length - CellWidth.of(right)).coerceAtLeast(1)
+        content.writeln("$left${" ".repeat(fill)}$right", Cell.Style(color))
         modifiers.forEach { content.writeln("    $it", Cell.Style(color)) }
     }
 }

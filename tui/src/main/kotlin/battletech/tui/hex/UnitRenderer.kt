@@ -1,14 +1,13 @@
 package battletech.tui.hex
 
 import battletech.tactical.model.HexDirection
-import battletech.tui.screen.Cell
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Color
-import battletech.tui.screen.ScreenBuffer
 
 public object UnitRenderer {
 
     public fun render(
-        buffer: ScreenBuffer,
+        canvas: Canvas,
         x: Int,
         y: Int,
         id: String,
@@ -45,7 +44,7 @@ public object UnitRenderer {
         val idBaseX = if (idShiftedForTorso) x + 3 else x + 4
         id.take(2).forEachIndexed { index, char ->
             val cellX = idBaseX + index
-            buffer.set(cellX, y + idRow, Cell(char.toString(), Cell.Style(color, buffer.get(cellX, y + idRow).style.bg)))
+            canvas.setFg(cellX, y + idRow, char.toString(), color)
         }
 
         if (isDestroyed) {
@@ -58,13 +57,13 @@ public object UnitRenderer {
             } else {
                 x + 3
             }
-            buffer.set(markerX, y + markerRow, Cell(destroyedIcon(), Cell.Style(color, buffer.get(markerX, y + markerRow).style.bg)))
+            canvas.setFg(markerX, y + markerRow, destroyedIcon(), color)
         }
 
-        buffer.set(arrowX, y + arrowRow, Cell(arrowChar, Cell.Style(color, buffer.get(arrowX, y + arrowRow).style.bg)))
+        canvas.setFg(arrowX, y + arrowRow, arrowChar, color)
 
         if (torsoChar != null && torsoX != null && torsoRow != null) {
-            buffer.set(torsoX, y + torsoRow, Cell(torsoChar, Cell.Style(color, buffer.get(torsoX, y + torsoRow).style.bg)))
+            canvas.setFg(torsoX, y + torsoRow, torsoChar, color)
         }
     }
 

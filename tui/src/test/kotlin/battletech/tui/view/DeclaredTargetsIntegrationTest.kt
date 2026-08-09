@@ -15,7 +15,6 @@ import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.WeaponAllocation
 import battletech.tui.mediumLaser
 import battletech.tui.screen.Color
-import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -55,13 +54,9 @@ internal class DeclaredTargetsIntegrationTest {
         )
 
         val renderData = phase.declaredTargetsRender(anAppState(phase, gameState = gameState, turnState = turnState))
-        val buffer = ScreenBuffer(28, 30)
-        DeclaredTargetsView(renderData).render(buffer, 0, 0, 28, 30)
+        val buffer = render(DeclaredTargetsView(renderData), 28, 30)
 
-        val rowText = { row: Int ->
-            buildString { (0 until 28).forEach { col -> append(buffer.get(col, row).char) } }
-        }
-        val wolfRow = (0 until 30).first { rowText(it).contains("wolf") }
+        val wolfRow = (0 until 30).first { buffer.line(it).contains("wolf") }
         val colors = (2 until 28).map { col -> buffer.get(col, wolfRow).style.fg }.toSet()
         assertTrue(colors.contains(Color.GRAY)) {
             "Expected wolf (draft) row to use Color.GRAY, got: $colors"
@@ -74,15 +69,8 @@ internal class DeclaredTargetsIntegrationTest {
         val phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
 
         val renderData = phase.declaredTargetsRender(anAppState(phase, gameState = gameState, turnState = turnState))
-        val buffer = ScreenBuffer(28, 20)
-        DeclaredTargetsView(renderData).render(buffer, 0, 0, 28, 20)
+        val buffer = render(DeclaredTargetsView(renderData), 28, 20)
 
-        val output = buildString {
-            for (row in 0 until 20) {
-                for (col in 0 until 28) append(buffer.get(col, row).char)
-                appendLine()
-            }
-        }
-        assertTrue(output.contains("No declarations"))
+        assertTrue(buffer.text().contains("No declarations"))
     }
 }

@@ -6,7 +6,6 @@ import battletech.tui.aUnit
 import battletech.tui.hex.HexHighlight
 import battletech.tui.hex.destroyedIcon
 import battletech.tui.screen.Color
-import battletech.tui.screen.ScreenBuffer
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.query.projectFor
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,10 +16,8 @@ internal class BoardViewTest {
     @Test
     fun `renders hex borders for a 3x3 map`() {
         val state = aGameState(map = aGameMap(cols = 3, rows = 3)).projectFor(viewer = null, revealAll = true)
-        val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
-        val buffer = ScreenBuffer(30, 16)
-
-        view.render(buffer, 0, 0, 30, 16)
+        val view = BoardView(state)
+        val buffer = render(view, 30, 16)
 
         // Content offset +2,+2 for border + padding
         // Hex at (0,0) should have '/' at charX=0+2, charY=2+2
@@ -35,10 +32,8 @@ internal class BoardViewTest {
     fun `renders unit id on hex`() {
         val unit = aUnit(id = "A1", name = "Atlas", position = HexCoordinates(0, 0))
         val state = aGameState(units = listOf(unit), map = aGameMap()).projectFor(viewer = null, revealAll = true)
-        val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
-        val buffer = ScreenBuffer(30, 16)
-
-        view.render(buffer, 0, 0, 30, 16)
+        val view = BoardView(state)
+        val buffer = render(view, 30, 16)
 
         // Unit id "A1" at hex center: charX=4+2/5+2, charY=3+2
         assertEquals("A", buffer.get(6, 5).char)
@@ -48,10 +43,8 @@ internal class BoardViewTest {
     @Test
     fun `scroll offset hides column 0`() {
         val state = aGameState(map = aGameMap(cols = 5, rows = 3)).projectFor(viewer = null, revealAll = true)
-        val view = BoardView(state, viewport = Viewport(1, 0, 26, 12))
-        val buffer = ScreenBuffer(30, 16)
-
-        view.render(buffer, 0, 0, 30, 16)
+        val view = BoardView(state, scrollCol = 1)
+        val buffer = render(view, 30, 16)
 
         // Column 0 should not be rendered in content area - check inside content area
         assertEquals(" ", buffer.get(2, 3).char)
@@ -62,10 +55,8 @@ internal class BoardViewTest {
     fun `cursor position highlights hex`() {
         val state = aGameState(map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val cursor = HexCoordinates(1, 1)
-        val view = BoardView(state, viewport = Viewport(0, 0, 26, 12), cursorPosition = cursor)
-        val buffer = ScreenBuffer(30, 16)
-
-        view.render(buffer, 0, 0, 30, 16)
+        val view = BoardView(state, cursorPosition = cursor)
+        val buffer = render(view, 30, 16)
 
         // Hex at (1,1) border '/' offset by +2,+2
         assertEquals(Color.BRIGHT_YELLOW, buffer.get(10, 9).style.fg)
@@ -75,10 +66,8 @@ internal class BoardViewTest {
     fun `renders destroyed unit with its id and a skull marker`() {
         val unit = aUnit(id = "A1", name = "Atlas", position = HexCoordinates(0, 0)).copy(isDestroyed = true)
         val state = aGameState(units = listOf(unit), map = aGameMap()).projectFor(viewer = null, revealAll = true)
-        val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
-        val buffer = ScreenBuffer(30, 16)
-
-        view.render(buffer, 0, 0, 30, 16)
+        val view = BoardView(state)
+        val buffer = render(view, 30, 16)
 
         // Unit id "A1" at hex center: charX=4+2/5+2, charY=3+2 (same cells as the id in the
         // "renders unit id on hex" test above), with a skull marker left of the id at charX=3+2.
@@ -93,10 +82,8 @@ internal class BoardViewTest {
     fun `prone unit still renders its lowercase id, distinct from destroyed`() {
         val unit = aUnit(id = "A1", name = "Atlas", position = HexCoordinates(0, 0)).copy(isProne = true)
         val state = aGameState(units = listOf(unit), map = aGameMap()).projectFor(viewer = null, revealAll = true)
-        val view = BoardView(state, viewport = Viewport(0, 0, 26, 12))
-        val buffer = ScreenBuffer(30, 16)
-
-        view.render(buffer, 0, 0, 30, 16)
+        val view = BoardView(state)
+        val buffer = render(view, 30, 16)
 
         assertEquals("a", buffer.get(6, 5).char)
         assertEquals("1", buffer.get(7, 5).char)
@@ -109,10 +96,8 @@ internal class BoardViewTest {
             HexCoordinates(1, 0) to HexHighlight.REACHABLE_WALK,
             HexCoordinates(2, 0) to HexHighlight.PATH,
         )
-        val view = BoardView(state, viewport = Viewport(0, 0, 26, 12), hexHighlights = highlights)
-        val buffer = ScreenBuffer(30, 16)
-
-        view.render(buffer, 0, 0, 30, 16)
+        val view = BoardView(state, hexHighlights = highlights)
+        val buffer = render(view, 30, 16)
 
         // Hex center is at x+4, y+2 from hex render origin
         assertEquals(".", buffer.get(13, 6).char)

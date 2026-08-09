@@ -36,17 +36,8 @@ import org.junit.jupiter.api.Test
 internal class UnitStatusViewTest {
 
     /** Render via decorator at (0,0) — pixel-parity regression guard for box/coordinates. */
-    private fun renderDecorated(view: UnitStatusView, width: Int = 28, height: Int = 30): ScreenBuffer {
-        val decorated = ScrollablePanelView(
-            key = UnitStatusView.KEY,
-            title = UnitStatusView.TITLE,
-            content = view,
-            scrollOffset = 0,
-        )
-        val buffer = ScreenBuffer(width, height)
-        decorated.render(buffer, 0, 0, width, height)
-        return buffer
-    }
+    private fun renderDecorated(view: UnitStatusView, width: Int = 28, height: Int = 30): ScreenBuffer =
+        renderInPanel(view, key = UnitStatusView.KEY, title = UnitStatusView.TITLE, width = width, height = height)
 
     private fun aForeignUnit(
         name: String = "Hunchback",

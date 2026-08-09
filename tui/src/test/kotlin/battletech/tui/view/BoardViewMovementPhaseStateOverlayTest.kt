@@ -7,7 +7,6 @@ import battletech.tactical.query.projectFor
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.hex.HexHighlight
-import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
@@ -21,10 +20,8 @@ internal class BoardViewMovementPhaseStateOverlayTest {
             HexCoordinates(1, 1) to HexHighlight.REACHABLE_WALK,
             HexCoordinates(2, 1) to HexHighlight.REACHABLE_WALK,
         )
-        val view = BoardView(state, Viewport(0, 0, 36, 20), hexHighlights = highlights)
-        val buffer = ScreenBuffer(40, 24)
-
-        view.render(buffer, 0, 0, 40, 24)
+        val view = BoardView(state, hexHighlights = highlights)
+        val buffer = render(view, 40, 24)
 
         // Hex center is at x+4, y+2 from hex render origin
         // Hex (1,1) center at (13, 10)
@@ -44,13 +41,11 @@ internal class BoardViewMovementPhaseStateOverlayTest {
             HexCoordinates(1, 1) to setOf(HexDirection.SE),
         )
         val view = BoardView(
-            state, Viewport(0, 0, 36, 20),
+            state,
             hexHighlights = highlights,
             reachableFacings = reachableFacings,
         )
-        val buffer = ScreenBuffer(40, 24)
-
-        view.render(buffer, 0, 0, 40, 24)
+        val buffer = render(view, 40, 24)
 
         // Hex (1,1) center is at (13, 10); the REACHABLE_WALK dot must be suppressed
         assertNotEquals(".", buffer.get(13, 10).char)
@@ -67,14 +62,12 @@ internal class BoardViewMovementPhaseStateOverlayTest {
             HexCoordinates(1, 0) to setOf(HexDirection.N),
         )
         val view = BoardView(
-            state, Viewport(0, 0, 36, 20),
+            state,
             hexHighlights = highlights,
             reachableFacings = reachableFacings,
             movementMode = MovementMode.WALK,
         )
-        val buffer = ScreenBuffer(40, 24)
-
-        view.render(buffer, 0, 0, 40, 24)
+        val buffer = render(view, 40, 24)
 
         // Hex (1,0) center at (13, 6); N arrow also lands at (13, 6)
         assertEquals(String(Character.toChars(0xF0583)), buffer.get(13, 6).char)
@@ -88,13 +81,11 @@ internal class BoardViewMovementPhaseStateOverlayTest {
             HexCoordinates(1, 0) to HexHighlight.PATH,
         )
         val view = BoardView(
-            state, Viewport(0, 0, 36, 20),
+            state,
             hexHighlights = highlights,
             movementMode = MovementMode.WALK,
         )
-        val buffer = ScreenBuffer(40, 24)
-
-        view.render(buffer, 0, 0, 40, 24)
+        val buffer = render(view, 40, 24)
 
         // Hex (0,0) center at (6, 4)
         assertEquals(String(Character.toChars(0xF0583)), buffer.get(6, 4).char)
@@ -110,14 +101,12 @@ internal class BoardViewMovementPhaseStateOverlayTest {
             HexCoordinates(1, 0) to allFacings,
         )
         val view = BoardView(
-            state, Viewport(0, 0, 36, 20),
+            state,
             reachableFacings = reachableFacings,
             pathDestination = HexCoordinates(1, 0),
             movementMode = MovementMode.WALK,
         )
-        val buffer = ScreenBuffer(40, 24)
-
-        view.render(buffer, 0, 0, 40, 24)
+        val buffer = render(view, 40, 24)
 
         // Hex (1,0) center at (13, 6); all-facings destination shows mode icon
         assertEquals(String(Character.toChars(0xF0583)), buffer.get(13, 6).char)

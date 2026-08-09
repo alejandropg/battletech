@@ -22,33 +22,15 @@ internal class DeclaredTargetsViewTest {
     private fun attacker(name: String, player: PlayerId, draft: Boolean, vararg targets: DeclaredTargetEntry) =
         DeclaredAttackerEntry(UnitId(name), player, draft, targets.toList())
 
-    private fun renderToString(view: DeclaredTargetsView, width: Int = 28, height: Int = 30): String {
-        val buffer = ScreenBuffer(width, height)
-        view.render(buffer, 0, 0, width, height)
-        return buildString {
-            for (row in 0 until height) {
-                for (col in 0 until width) {
-                    append(buffer.get(col, row).char)
-                }
-                appendLine()
-            }
-        }
-    }
-
     private fun colorAt(buffer: ScreenBuffer, row: Int, col: Int = 2): Color = buffer.get(col, row).style.fg
 
-    private fun rowContaining(buffer: ScreenBuffer, text: String, height: Int = 30, width: Int = 28): Int {
-        for (row in 0 until height) {
-            val line = buildString { (0 until width).forEach { col -> append(buffer.get(col, row).char) } }
-            if (text in line) return row
-        }
-        return -1
-    }
+    private fun rowContaining(buffer: ScreenBuffer, text: String): Int =
+        (0 until buffer.height).firstOrNull { row -> text in buffer.line(row) } ?: -1
 
     @Test
     fun `empty entries shows No declarations`() {
         val view = DeclaredTargetsView(DeclaredTargetsRender(emptyList()))
-        val output = renderToString(view)
+        val output = render(view, 28, 30).text()
         assertTrue(output.contains("No declarations"))
     }
 
@@ -59,7 +41,7 @@ internal class DeclaredTargetsViewTest {
                 target("Atlas", true, weapon("SRM 6", 72)),
             )
         )))
-        val output = renderToString(view)
+        val output = render(view, 28, 30).text()
         assertTrue(output.contains("Wolverine WVR-6R"))
         assertTrue(output.contains("${targetIcon()} Atlas [P]"))
         assertTrue(output.contains("SRM 6"))
@@ -74,8 +56,7 @@ internal class DeclaredTargetsViewTest {
             )
         )))
 
-        val buffer = ScreenBuffer(28, 30)
-        view.render(buffer, 0, 0, 28, 30)
+        val buffer = render(view, 28, 30)
 
         val row = rowContaining(buffer, "Wolverine")
         assertTrue(row >= 0) { "Expected to find Wolverine attacker row" }
@@ -92,8 +73,7 @@ internal class DeclaredTargetsViewTest {
             )
         )))
 
-        val buffer = ScreenBuffer(28, 30)
-        view.render(buffer, 0, 0, 28, 30)
+        val buffer = render(view, 28, 30)
 
         val row = rowContaining(buffer, "Wolverine")
         assertTrue(row >= 0)
@@ -110,8 +90,7 @@ internal class DeclaredTargetsViewTest {
             )
         )))
 
-        val buffer = ScreenBuffer(28, 30)
-        view.render(buffer, 0, 0, 28, 30)
+        val buffer = render(view, 28, 30)
 
         val row = rowContaining(buffer, "Atlas")
         assertTrue(row >= 0)
@@ -130,7 +109,7 @@ internal class DeclaredTargetsViewTest {
                 target("Atlas", true, weapon("AC/20")),
             ),
         )))
-        val output = renderToString(view)
+        val output = render(view, 28, 30).text()
         assertTrue(output.contains("Wolverine"))
         assertTrue(output.contains("Hunchback"))
     }
@@ -143,7 +122,7 @@ internal class DeclaredTargetsViewTest {
                 target("Hunchback", primary = false, weapon("Med Laser")),
             )
         )))
-        val output = renderToString(view)
+        val output = render(view, 28, 30).text()
         assertTrue(output.contains("[P]"))
         assertTrue(output.contains("[S]"))
     }
@@ -155,7 +134,7 @@ internal class DeclaredTargetsViewTest {
                 target("Atlas", true, weapon("SRM 6", 72)),
             )
         )))
-        val output = renderToString(view)
+        val output = render(view, 28, 30).text()
         assertTrue(output.contains("72%"))
     }
 
@@ -166,7 +145,7 @@ internal class DeclaredTargetsViewTest {
                 target("Atlas", true, weapon("SRM 6", chance = 72, targetRoll = 6)),
             )
         )))
-        val output = renderToString(view)
+        val output = render(view, 28, 30).text()
         assertTrue(output.contains("${diceRoll()}6 72%"))
     }
 
@@ -179,48 +158,34 @@ internal class DeclaredTargetsViewTest {
             )
         }
         val view = DeclaredTargetsView(DeclaredTargetsRender(entries))
-        val decorated = ScrollablePanelView(
-            key = DeclaredTargetsView.KEY,
-            title = DeclaredTargetsView.TITLE,
-            content = view,
-            scrollOffset = 0,
-        )
 
         val width = 28
         val height = 10
-        val buffer = ScreenBuffer(width, height)
-        decorated.render(buffer, 0, 0, width, height)
+        val buffer = renderInPanel(
+            view,
+            key = DeclaredTargetsView.KEY,
+            title = DeclaredTargetsView.TITLE,
+            width = width,
+            height = height,
+        )
 
         // The scrollbar thumb '█' must appear on the right border (col width-1) somewhere
         val thumbFound = (1 until height - 1).any { row -> buffer.get(width - 1, row).char == "▐" }
-        assertTrue(thumbFound) {
-            val output = buildString {
-                for (row in 0 until height) {
-                    for (col in 0 until width) append(buffer.get(col, row).char)
-                    appendLine()
-                }
-            }
-            "Expected scrollbar thumb '▐' on right border in:\n$output"
-        }
+        assertTrue(thumbFound) { "Expected scrollbar thumb '▐' on right border in:\n${buffer.text()}" }
     }
 
     @Test
     fun `panel title is DECLARED TARGETS`() {
         val view = DeclaredTargetsView(DeclaredTargetsRender(emptyList()))
-        val decorated = ScrollablePanelView(
+
+        val buffer = renderInPanel(
+            view,
             key = DeclaredTargetsView.KEY,
             title = DeclaredTargetsView.TITLE,
-            content = view,
-            scrollOffset = 0,
+            width = 28,
+            height = 10,
         )
-        val buffer = ScreenBuffer(28, 10)
-        decorated.render(buffer, 0, 0, 28, 10)
-        val output = buildString {
-            for (row in 0 until 10) {
-                for (col in 0 until 28) append(buffer.get(col, row).char)
-                appendLine()
-            }
-        }
-        assertTrue(output.contains("DECLARED TARGETS"))
+
+        assertTrue(buffer.text().contains("DECLARED TARGETS"))
     }
 }

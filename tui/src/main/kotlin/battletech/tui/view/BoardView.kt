@@ -10,12 +10,13 @@ import battletech.tui.hex.HexHighlight
 import battletech.tui.hex.HexLayout
 import battletech.tui.hex.HexRenderer
 import battletech.tui.hex.UnitRenderer
+import battletech.tui.screen.Canvas
 import battletech.tui.screen.Color
-import battletech.tui.screen.ScreenBuffer
 
 public class BoardView(
     private val state: PlayerGameState,
-    private val viewport: Viewport,
+    private val scrollCol: Int = 0,
+    private val scrollRow: Int = 0,
     private val cursorPosition: HexCoordinates? = null,
     private val hexHighlights: Map<HexCoordinates, HexHighlight> = emptyMap(),
     private val reachableFacings: Map<HexCoordinates, Set<HexDirection>> = emptyMap(),
@@ -27,11 +28,10 @@ public class BoardView(
     private val selectedTargetPosition: HexCoordinates? = null,
 ) : View {
 
-    override fun render(buffer: ScreenBuffer, x: Int, y: Int, width: Int, height: Int) {
-        buffer.drawBox(x, y, width, height, "TACTICAL MAP")
+    override fun render(canvas: Canvas) {
+        val map = PanelChrome.draw(canvas, "TACTICAL MAP")
 
-        val contentX = x + 2
-        val contentY = y + 2
+        val viewport = Viewport(scrollCol, scrollRow, map.width, map.height)
         val (colRange, rowRange) = viewport.visibleHexRange()
 
         for (col in colRange) {
@@ -40,8 +40,8 @@ public class BoardView(
                 val hex = state.map.hexes[coords] ?: continue
 
                 val (screenX, screenY) = HexLayout.hexToScreen(col, row)
-                val drawX = contentX + screenX - viewport.scrollCol * HexGeometry.COL_STRIDE
-                val drawY = contentY + screenY - viewport.scrollRow * HexGeometry.ROW_STRIDE
+                val drawX = screenX - scrollCol * HexGeometry.COL_STRIDE
+                val drawY = screenY - scrollRow * HexGeometry.ROW_STRIDE
 
                 val baseHighlight = when {
                     coords == cursorPosition -> HexHighlight.CURSOR
@@ -57,12 +57,12 @@ public class BoardView(
                     ) HexHighlight.NONE
                     else baseHighlight
 
-                HexRenderer.render(buffer, drawX, drawY, hex, highlight, movementMode)
+                HexRenderer.render(map, drawX, drawY, hex, highlight, movementMode)
 
                 // Facing overlays (drawn after base render, over the reachability dot)
                 when {
                     coords == cursorPosition && facingSelectionFacings != null ->
-                        HexRenderer.renderFacingNumbers(buffer, drawX, drawY, facingSelectionFacings)
+                        HexRenderer.renderFacingNumbers(map, drawX, drawY, facingSelectionFacings)
 
                     coords in reachableFacings && highlight != HexHighlight.PATH -> {
                         val facings = reachableFacings.getValue(coords)
@@ -73,7 +73,7 @@ public class BoardView(
                             else -> Color.WHITE
                         }
                         val mode = if (coords == pathDestination) movementMode else null
-                        HexRenderer.renderFacingArrows(buffer, drawX, drawY, facings, color, mode)
+                        HexRenderer.renderFacingArrows(map, drawX, drawY, facings, color, mode)
                     }
                 }
 
@@ -97,7 +97,7 @@ public class BoardView(
                     val glyph = if (unit.isProne) id.lowercase() else id
                     val renderColor = if (unit.isDestroyed) Color.GRAY else unitColor
                     UnitRenderer.render(
-                        buffer, drawX, drawY,
+                        map, drawX, drawY,
                         glyph,
                         unit.facing,
                         renderColor,
