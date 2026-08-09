@@ -1,31 +1,57 @@
 package battletech.tui.screen
 
+import com.github.ajalt.colormath.model.Ansi16
 import com.github.ajalt.colormath.model.Ansi256
+import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.TextColors
 import com.github.ajalt.mordant.rendering.TextStyle
 import java.util.EnumMap
 import com.github.ajalt.colormath.Color as ColorValue
 
-internal class TextStyleFactory {
+/**
+ * Renders [Cell.Style]s to cached open/close ANSI escape strings.
+ *
+ * Mordant styles text through [TextStyle.invoke], which runs a regex scan over the styled text —
+ * fine for occasional one-off printing, but too costly to repeat for every run of every row of
+ * every frame. Each distinct [Cell.Style] is styled through Mordant exactly once, at first use,
+ * and the result is split into an open/close pair ([Tags]) that the renderer can then paste
+ * around plain text with no further Mordant involvement.
+ *
+ * Colors are downsampled to [ansiLevel] once here too, since [ScreenRenderer] writes with
+ * [com.github.ajalt.mordant.terminal.Terminal.rawPrint], which — unlike
+ * [com.github.ajalt.mordant.terminal.Terminal.print] — bypasses Mordant's own downsampling.
+ */
+internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRUECOLOR) {
 
-    // Per-color fg/bg color caches — null means "unstyled / DEFAULT". Populated eagerly since
+    /** Cached open/close ANSI escape strings for one [Cell.Style]; either may be empty. */
+    internal class Tags(internal val open: String, internal val close: String)
+
+    // Per-color fg/bg color caches, downsampled once to `ansiLevel` — null means "unstyled /
+    // DEFAULT" (or, at AnsiLevel.NONE, simply unused — see tagsFor). Populated eagerly since
     // Color has few entries; buildStyle reads straight from these instead of re-deriving per call.
     private val colorCache: Map<Color, ColorValue> = EnumMap<Color, ColorValue>(Color::class.java).also { map ->
-        Color.entries.forEach { map[it] = toColorStyle(it)?.color }
+        Color.entries.forEach { map[it] = toColorStyle(it)?.color?.downsample(ansiLevel) }
     }
 
-    // Combined style cache, keyed by the full Cell.Style. Lazily populated on first use for each distinct Style.
-    private val styleCache: HashMap<Cell.Style, TextStyle> = HashMap()
+    // Tags cache, keyed by the full Cell.Style. Lazily populated on first use for each distinct
+    // Style — each entry pays Mordant's one-off styling cost exactly once.
+    private val tagsCache: HashMap<Cell.Style, Tags> = HashMap()
 
-    internal fun styleFor(style: Cell.Style): TextStyle? {
-        if (style == Cell.Style.DEFAULT) return null
+    /** The open/close tag pair for [style], or `null` if it renders no ANSI codes at all. */
+    internal fun tagsFor(style: Cell.Style): Tags? {
+        if (style == Cell.Style.DEFAULT || ansiLevel == AnsiLevel.NONE) return null
 
-        val cached = styleCache[style]
-        if (cached != null) return cached
+        tagsCache[style]?.let { return it }
 
-        val result = buildStyle(style)
-        styleCache[style] = result
-        return result
+        val rendered = buildStyle(style)(SENTINEL)
+        val split = rendered.indexOf(SENTINEL)
+        val tags = if (split < 0) {
+            Tags("", "")
+        } else {
+            Tags(rendered.substring(0, split), rendered.substring(split + SENTINEL.length))
+        }
+        tagsCache[style] = tags
+        return tags
     }
 
     private fun buildStyle(style: Cell.Style): TextStyle = TextStyle(
@@ -33,6 +59,13 @@ internal class TextStyleFactory {
         bgColor = colorCache[style.bg],
         strikethrough = style.strikethrough,
     )
+
+    private fun ColorValue.downsample(level: AnsiLevel): ColorValue? = when (level) {
+        AnsiLevel.NONE -> null
+        AnsiLevel.ANSI16 -> if (this is Ansi16) this else toSRGB().clamp().toAnsi16()
+        AnsiLevel.ANSI256 -> if (this is Ansi16 || this is Ansi256) this else toSRGB().clamp().toAnsi256()
+        AnsiLevel.TRUECOLOR -> this
+    }
 
     private fun toColorStyle(color: Color): TextStyle? = when (color) {
         Color.DEFAULT -> null
@@ -92,5 +125,11 @@ internal class TextStyleFactory {
 //        Color.ELEVATION_LOW_BG -> TextColors.rgb("#7C5C30")
 //        Color.ELEVATION_HIGH_BG -> TextColors.rgb("#977340")
 
+    }
+
+    private companion object {
+        // A literal space can't appear inside an SGR/OSC escape sequence, so styling a
+        // single-space sentinel safely marks the boundary between Mordant's open and close tags.
+        private const val SENTINEL = " "
     }
 }

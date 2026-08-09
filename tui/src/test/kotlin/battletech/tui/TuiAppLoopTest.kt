@@ -94,8 +94,11 @@ internal class TuiAppLoopTest {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         // Quit is included in the scripted flow — takeWhile stops on Quit and
         // merge cancels all source coroutines so the loop exits cleanly.
+        // ArrowDown, not ArrowUp: the cursor starts at (0,0) on a 5x5 map, and moveCursor()
+        // clamps to the current hex when the neighbor is off the map — north from row 0 is off
+        // the map, so ArrowUp would leave the cursor (and the render) unchanged.
         val events = flowOf<UiEvent>(
-            UiEvent.Input(KeyboardEvent("ArrowUp")),
+            UiEvent.Input(KeyboardEvent("ArrowDown")),
             UiEvent.Quit,
         )
 
@@ -107,12 +110,15 @@ internal class TuiAppLoopTest {
             initialState = buildAppState(),
         )
 
-        // Cursor-home sequence (ESC[1;1H) appears once per renderFrame call.
-        // We expect at least: initial frame + frame after Input.
+        // The diffing renderer (see ScreenRenderer) only sends a full cursor-home + repaint on
+        // the very first frame; a later frame that only moved the cursor sends setPosition(s)
+        // just for the cells that changed, not another [1;1H. So "at least 2 render passes" is
+        // checked as at least 2 distinct position writes overall, not 2 cursor-home sequences —
+        // this generalizes to both the full-repaint and the dirty-cell-diff render paths.
         val out = recorder.output()
         assertTrue(out.isNotEmpty(), "Expected non-empty recorder output")
-        val cursorHomeCount = out.countOccurrences("[1;1H")
-        assertTrue(cursorHomeCount >= 2, "Expected at least 2 render passes, got $cursorHomeCount cursor-home sequences")
+        val positionWrites = Regex("\\[\\d+;\\d+H").findAll(out).count()
+        assertTrue(positionWrites >= 2, "Expected at least 2 position writes (2 render passes), got $positionWrites")
     }
 
     // -------------------------------------------------------------------------
@@ -243,19 +249,22 @@ internal class TuiAppLoopTest {
         internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
         assertTrue(recorder.output().contains("Not your unit"), "Flash A should appear")
 
-        // Flash B: generation 2 replaces flash A (same message text, different generation).
+        // Flash B: generation 2 replaces flash A (same trigger, same message text — only the
+        // internal generation counter differs, which isn't independently visible on screen).
         internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
 
-        // Deliver stale FlashExpired for generation 1 — must NOT clear generation 2 flash.
-        // A stale expiry does not trigger a re-render. Send a subsequent Resized event to
-        // force a render so we can inspect the frame with flash B still active.
+        // Deliver stale FlashExpired for generation 1 — must NOT clear generation 2 flash. A
+        // stale expiry doesn't trigger a re-render at all (see runLoop's FlashExpired branch),
+        // so under the diffing renderer (see ScreenRenderer) the correct, directly-observable
+        // signal that generation 2 survived untouched is that nothing gets sent: if it HAD been
+        // wrongly cleared, the prompt reverting away from "Not your unit" is a real visual change
+        // and would show up as non-empty output.
         recorder.clearOutput()
         internalEvents.send(UiEvent.FlashExpired(1L))
-        internalEvents.send(UiEvent.Resized(Size(120, 40)))
 
         assertTrue(
-            recorder.output().contains("Not your unit"),
-            "Flash B should still be visible after stale FlashExpired(1) — active generation is 2",
+            recorder.output().isEmpty(),
+            "A stale FlashExpired must not trigger a render, let alone clear flash B",
         )
 
         internalEvents.send(UiEvent.Quit)
@@ -301,9 +310,15 @@ internal class TuiAppLoopTest {
         // surfacing during event handling.
         internalEvents.send(UiEvent.Resized(Size(-1, 40)))
 
-        // The loop must still be alive and processing events after the failure.
+        // The loop must still be alive and processing events after the failure. Resized to a
+        // size distinct from the terminal's original 120x40 (not back to 120x40): the diffing
+        // renderer (see ScreenRenderer) would otherwise diff this recovery frame against the
+        // last successful one — content-identical, since nothing about appState actually
+        // changed — and correctly send nothing, which would look indistinguishable from the
+        // loop being dead. A genuinely new size forces a full repaint, so non-empty output here
+        // specifically proves the loop recovered and rendered again.
         recorder.clearOutput()
-        internalEvents.send(UiEvent.Resized(Size(120, 40)))
+        internalEvents.send(UiEvent.Resized(Size(130, 42)))
         assertTrue(recorder.output().isNotEmpty(), "Expected loop to keep rendering after a handled exception")
 
         internalEvents.send(UiEvent.Quit)
@@ -506,9 +521,16 @@ internal class TuiAppLoopTest {
         recorder.clearOutput()
         internalEvents.send(UiEvent.Session(TurnEnded(1)))
 
+        // Nothing in appState actually changes for a no-resync Session event (phase, matchEnded,
+        // and lastAttackResults all fall through to their previous values), so the diffing
+        // renderer (see ScreenRenderer) sends nothing at all. That emptiness is a stronger,
+        // more direct proof that lastAttackResults specifically was untouched than re-scanning
+        // for the panel title would be: if it HAD been cleared, the panel disappearing is a real
+        // visual change and would show up as non-empty output.
         assertTrue(
-            recorder.output().contains(AttackResultsView.TITLE),
-            "No-resync Session event must not clear a pre-set lastAttackResults",
+            recorder.output().isEmpty(),
+            "No-resync Session event must not clear a pre-set lastAttackResults, and since nothing " +
+                "else changed, must not repaint anything",
         )
 
         internalEvents.send(UiEvent.Quit)
@@ -544,10 +566,15 @@ internal class TuiAppLoopTest {
         session.annotate(notice)
         internalEvents.send(UiEvent.Session(notice))
 
-        assertTrue(
-            recorder.output().contains("${sessionNoticeIcon()} Opponent connected"),
-            "Expected the SessionNotice to render in the LOG panel at its log position with the lan-connect icon",
-        )
+        // Checked as separate tokens, not one joined phrase: the diffing renderer (see
+        // ScreenRenderer) only retransmits cells that actually changed, so a separator space
+        // that was already blank in the previous frame is legitimately skipped -- the terminal
+        // still displays "Opponent connected" correctly, but the raw byte log the recorder
+        // captures may show the words as disjoint writes rather than one contiguous run.
+        val out = recorder.output()
+        assertTrue(out.contains(sessionNoticeIcon()), "Expected the lan-connect icon in the LOG panel")
+        assertTrue(out.contains("Opponent"), "Expected the SessionNotice text in the LOG panel")
+        assertTrue(out.contains("connected"), "Expected the SessionNotice text in the LOG panel")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -653,17 +680,4 @@ internal class TuiAppLoopTest {
         gunnery = 4,
         rangeBand = RangeBand.SHORT,
     )
-
-    private fun String.countOccurrences(sub: String): Int {
-        if (sub.isEmpty()) return 0
-        var count = 0
-        var idx = 0
-        while (true) {
-            idx = this.indexOf(sub, idx)
-            if (idx == -1) break
-            count++
-            idx += sub.length
-        }
-        return count
-    }
 }
