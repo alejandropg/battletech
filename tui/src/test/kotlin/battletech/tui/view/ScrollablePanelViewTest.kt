@@ -48,8 +48,24 @@ internal class ScrollablePanelViewTest {
 
         val buffer = render(view, 30, 10)
 
+        // Row 1 is the viewport's first row now that the padding scrolls with the stream.
+        assertEquals("line2", buffer.line(1, 2, 10))
         assertEquals("line3", buffer.line(2, 2, 10))
         assertEquals("line4", buffer.line(3, 2, 10))
+    }
+
+    @Test
+    fun `top padding shows at rest and is reclaimed once content scrolls`() {
+        val atRest = render(ScrollablePanelView(key = '0', title = "T", content = stubContent(20), scrollOffset = 0), 30, 10)
+        assertEquals("", atRest.line(1, 2, 10))
+        assertEquals("line0", atRest.line(2, 2, 10))
+        assertEquals("line6", atRest.line(8, 2, 10))
+
+        val scrolled = render(ScrollablePanelView(key = '0', title = "T", content = stubContent(20), scrollOffset = 1), 30, 10)
+        // Content reclaims the padding row: line0 moves up into row 1...
+        assertEquals("line0", scrolled.line(1, 2, 10))
+        // ...and one more line becomes visible at the bottom than was shown at rest.
+        assertEquals("line7", scrolled.line(8, 2, 10))
     }
 
     @Test
@@ -59,8 +75,9 @@ internal class ScrollablePanelViewTest {
 
         val buffer = render(view, 30, 10)
 
-        val viewportHeight = 7
-        val maxOffset = maxOf(0, 5 - viewportHeight)
+        val viewportHeight = 8
+        val streamHeight = 5 + 1 // the reclaimable top-padding row is prepended to the stream
+        val maxOffset = maxOf(0, streamHeight - viewportHeight)
         assertEquals("line${maxOffset}", buffer.line(2, 2, 10))
     }
 
@@ -70,8 +87,9 @@ internal class ScrollablePanelViewTest {
 
         render(view, 30, 10)
 
-        val viewportHeight = 7
-        assertEquals(20 - viewportHeight, view.maxOffset)
+        val viewportHeight = 8
+        val streamHeight = 20 + 1 // the reclaimable top-padding row is prepended to the stream
+        assertEquals(streamHeight - viewportHeight, view.maxOffset)
     }
 
     @Test
@@ -98,8 +116,9 @@ internal class ScrollablePanelViewTest {
 
         val buffer = render(view, 30, 10)
 
-        val viewportHeight = 7
-        val maxOffset = 20 - viewportHeight
+        val viewportHeight = 8
+        val streamHeight = 20 + 1 // the reclaimable top-padding row is prepended to the stream
+        val maxOffset = streamHeight - viewportHeight
         assertEquals("line${maxOffset}", buffer.line(2, 2, 10))
     }
 
@@ -109,12 +128,12 @@ internal class ScrollablePanelViewTest {
 
         val buffer = render(view, 30, 10)
 
-        // Row 1 is the padding spacer row, never part of the content viewport, so it never
-        // carries the thumb even while content overflows.
-        val thumbRange = Scrollbar.thumb(track = 7, contentHeight = 20, viewportHeight = 7, offset = 0)!!
+        // The viewport now spans the whole inner height (rows 1..8) — the padding row is part
+        // of the scrollable stream, not a fixed offset — so the thumb can occupy row 1 too.
+        val thumbRange = Scrollbar.thumb(track = 8, contentHeight = 21, viewportHeight = 8, offset = 0)!!
         for (row in 1..8) {
             val cell = buffer.get(29, row)
-            if (row >= 2 && (row - 2) in thumbRange) {
+            if ((row - 1) in thumbRange) {
                 assertEquals("▐", cell.char, "expected thumb at row $row")
                 assertEquals(Color.GREEN, cell.style.fg)
             } else {
@@ -125,8 +144,10 @@ internal class ScrollablePanelViewTest {
 
     @Test
     fun `no scrollbar cells when content exactly fits viewport`() {
-        val viewportHeight = 7
-        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(viewportHeight), scrollOffset = 0)
+        val viewportHeight = 8
+        // The stream includes one extra row for the reclaimable top padding, so
+        // `viewportHeight - 1` content lines exactly fill it with no overflow.
+        val view = ScrollablePanelView(key = '0', title = "T", content = stubContent(viewportHeight - 1), scrollOffset = 0)
 
         val buffer = render(view, 30, 10)
 

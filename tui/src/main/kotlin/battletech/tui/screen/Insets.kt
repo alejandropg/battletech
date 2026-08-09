@@ -14,6 +14,12 @@ public data class Insets(
         bottom + other.bottom,
     )
 
+    /** These insets with the vertical edges dropped. */
+    public fun horizontal(): Insets = Insets(left = left, right = right)
+
+    /** These insets with the horizontal edges dropped. */
+    public fun vertical(): Insets = Insets(top = top, bottom = bottom)
+
     public companion object {
         public val NONE: Insets = Insets()
         public fun all(n: Int): Insets = Insets(n, n, n, n)

@@ -69,12 +69,14 @@ internal class PanelSlotTest {
         val resolved = resolvePanel(slot)!!
         val buffer = render(resolved, 30, 10)
 
-        // With anchorBottom=true and null offset, last lines should be visible
-        // viewport height = 10-3 = 7; maxOffset = 20-7 = 13; first visible line = L13
-        val firstVisible = (0 until 7).map { row ->
-            (2 until 8).joinToString("") { col -> buffer.get(col, 2 + row).char }.trimEnd()
+        // With anchorBottom=true and null offset, last lines should be visible.
+        // viewport height = 10-2 = 8; maxOffset = 21-8 = 13 (the stream carries one extra row
+        // for the reclaimable top padding); first visible line = L12, in row 1 — the padding
+        // row is reclaimed by content once the panel is scrolled off the top.
+        val firstVisible = (0 until 8).map { row ->
+            (2 until 8).joinToString("") { col -> buffer.get(col, 1 + row).char }.trimEnd()
         }.first { it.isNotBlank() }
-        assertTrue(firstVisible.startsWith("L13"), "Expected first visible line to start with L13 but got: $firstVisible")
+        assertTrue(firstVisible.startsWith("L12"), "Expected first visible line to start with L12 but got: $firstVisible")
     }
 
     @Test

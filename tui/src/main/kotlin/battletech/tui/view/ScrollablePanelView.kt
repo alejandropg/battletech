@@ -16,32 +16,34 @@ internal class ScrollablePanelView(
         private set
 
     override fun render(canvas: Canvas) {
-        val inner = PanelChrome.draw(canvas, title, badge = key.toString())
+        val viewport = PanelChrome.drawScrollable(canvas, title, badge = key.toString())
 
-        if (inner.width <= 0 || inner.height <= 0) {
+        if (viewport.width <= 0 || viewport.height <= 0) {
             maxOffset = 0
             return
         }
 
-        val scratch = Canvas.offscreen(inner.width, MAX_CONTENT_ROWS)
-        content.render(scratch)
+        // The top padding is the stream's first row rather than a fixed viewport inset, so
+        // it's visible at rest and the content reclaims its row as soon as the panel scrolls.
+        val stream = Canvas.offscreen(viewport.width, MAX_CONTENT_ROWS)
+        content.render(stream.inset(PanelChrome.PADDING.vertical()))
 
-        val contentHeight = scratch.contentHeight()
-        maxOffset = (contentHeight - inner.height).coerceAtLeast(0)
+        val streamHeight = stream.contentHeight()
+        maxOffset = (streamHeight - viewport.height).coerceAtLeast(0)
 
         val offset = (scrollOffset ?: if (anchorBottom) maxOffset else 0).coerceIn(0, maxOffset)
 
-        inner.blit(scratch, 0, offset, 0, 0, inner.width, inner.height)
+        viewport.blit(stream, 0, offset, 0, 0, viewport.width, viewport.height)
 
         val thumbRange = Scrollbar.thumb(
-            track = inner.height,
-            contentHeight = contentHeight,
-            viewportHeight = inner.height,
+            track = viewport.height,
+            contentHeight = streamHeight,
+            viewportHeight = viewport.height,
             offset = offset,
         )
         if (thumbRange != null) {
             for (row in thumbRange) {
-                canvas.set(canvas.width - 1, PanelChrome.CONTENT_INSET.top + row, Cell("▐", GREEN_STYLE))
+                canvas.set(canvas.width - 1, PanelChrome.VIEWPORT_INSET.top + row, Cell("▐", GREEN_STYLE))
             }
         }
     }
