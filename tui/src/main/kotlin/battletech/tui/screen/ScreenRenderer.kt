@@ -2,6 +2,12 @@ package battletech.tui.screen
 
 import com.github.ajalt.mordant.terminal.Terminal
 
+// The alternate screen buffer (DECSET 1049) has no Mordant API — CursorMovements offers no such
+// method, and Mordant's own CSI constant is internal — so these are raw escapes, gated below on
+// terminalInfo.interactive the same way Mordant gates terminal.cursor itself.
+private const val ENTER_ALT_SCREEN = "\u001B[?1049h"
+private const val EXIT_ALT_SCREEN = "\u001B[?1049l"
+
 /**
  * Prints a [ScreenBuffer] to [terminal].
  *
@@ -38,22 +44,24 @@ public class ScreenRenderer(private val terminal: Terminal) {
         previous = buffer
     }
 
+    /**
+     * Switches to the terminal's alternate screen buffer and clears it, so the game doesn't wipe
+     * the user's scrollback. [cleanup] switches back, restoring exactly what was on screen before
+     * [clear] ran.
+     */
     public fun clear() {
+        // cursor.hide() (not a raw escape) so its JVM shutdown hook stays registered: if the
+        // process dies without reaching cleanup(), the cursor is still restored on exit.
         terminal.cursor.hide()
-        terminal.cursor.move {
-            clearScreen()
-            setPosition(0, 0)
-        }
+        val altScreen = if (terminal.terminalInfo.interactive) ENTER_ALT_SCREEN else ""
+        terminal.rawPrint(altScreen + terminal.cursor.getMoves { clearScreen(); setPosition(0, 0) })
         System.out.flush()
         previous = null
     }
 
     public fun cleanup() {
         terminal.cursor.show()
-        terminal.cursor.move {
-            clearScreen()
-            setPosition(0, 0)
-        }
+        if (terminal.terminalInfo.interactive) terminal.rawPrint(EXIT_ALT_SCREEN)
         System.out.flush()
     }
 

@@ -214,6 +214,60 @@ internal class ScreenRendererTest {
         )
     }
 
+    // ---- alternate screen buffer ----
+
+    @Test
+    fun `clear enters the alternate screen and cleanup leaves it`() {
+        renderer.clear()
+        assertTrue(
+            recorder.output().contains("\u001B[?1049h"),
+            "clear() must enter the alternate screen: ${recorder.output().repr()}",
+        )
+
+        recorder.clearOutput()
+        renderer.cleanup()
+        assertTrue(
+            recorder.output().contains("\u001B[?1049l"),
+            "cleanup() must leave the alternate screen: ${recorder.output().repr()}",
+        )
+    }
+
+    @Test
+    fun `alt-screen sequences always carry their ESC prefix`() {
+        // Regression guard for a real bug: a raw ESC byte in the source is easy to drop in an
+        // edit, and the sequence then lands on the user's shell as the literal text "[?1049l"
+        // after quitting. Counting bare vs ESC-prefixed occurrences catches exactly that.
+        renderer.clear()
+        renderer.cleanup()
+        val out = recorder.output()
+
+        assertEquals(
+            out.countOccurrences("[?1049h"),
+            out.countOccurrences("\u001B[?1049h"),
+            "Every [?1049h must be ESC-prefixed, got a bare one in: ${out.repr()}",
+        )
+        assertEquals(
+            out.countOccurrences("[?1049l"),
+            out.countOccurrences("\u001B[?1049l"),
+            "Every [?1049l must be ESC-prefixed, got a bare one in: ${out.repr()}",
+        )
+    }
+
+    @Test
+    fun `a non-interactive terminal gets no alt-screen escapes at all`() {
+        val plainRecorder = TerminalRecorder(ansiLevel = AnsiLevel.NONE)
+        val plainTerminal = Terminal(ansiLevel = AnsiLevel.NONE, terminalInterface = plainRecorder)
+        val plainRenderer = ScreenRenderer(plainTerminal)
+
+        plainRenderer.clear()
+        plainRenderer.cleanup()
+
+        assertTrue(
+            !plainRecorder.output().contains("1049"),
+            "Expected no alt-screen switching on a non-interactive terminal: ${plainRecorder.output().repr()}",
+        )
+    }
+
     // ---- ansiLevel downsampling (rawPrint bypasses Mordant's own downsampling, see TextStyleFactory) ----
 
     @Test
