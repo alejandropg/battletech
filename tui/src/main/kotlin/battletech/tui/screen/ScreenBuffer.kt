@@ -4,7 +4,7 @@ public class ScreenBuffer(
     public val width: Int,
     public val height: Int,
 ) {
-    private val cells: Array<Array<Cell>> = Array(height) { Array(width) { Cell() } }
+    private val cells: Array<Array<Cell>> = Array(height) { Array(width) { Cell.EMPTY } }
 
     public fun get(x: Int, y: Int): Cell {
         if (x < 0 || x >= width || y < 0 || y >= height) {

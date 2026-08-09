@@ -39,4 +39,7 @@ internal object Panels {
             HelpView(frame.helpSections)
         },
     )
+
+    /** [ordered] keyed by [PanelId.key], for lookups that would otherwise be a linear scan. */
+    val byKey: Map<Char, Panel> = ordered.associateBy { it.id.key }
 }

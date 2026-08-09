@@ -8,38 +8,59 @@ import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 
+// Terrain icons (nf-md-tree_outline, nf-md-tree and another Nerd Fonts icons are above U+FFFF, need surrogate pairs)
+private val NF_MD_TREE_OUTLINE = String(Character.toChars(0xF0E69))
+private val NF_MD_PINE_TREE = String(Character.toChars(0xF0531))
+private val NF_MD_WAVES = String(Character.toChars(0xF078D))
+
+// Elevation icons (nf-md-numeric_N_box_multiple_outline)
+private val NF_MD_NUMERIC_1_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03A5))
+private val NF_MD_NUMERIC_2_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03A8))
+private val NF_MD_NUMERIC_3_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03AB))
+private val NF_MD_NUMERIC_4_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03B2))
+private val NF_MD_NUMERIC_5_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03AF))
+private val NF_MD_NUMERIC_6_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03B4))
+private val NF_MD_NUMERIC_7_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03B7))
+private val NF_MD_NUMERIC_8_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03BA))
+private val NF_MD_NUMERIC_9_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03BD))
+
+// Facing arrow icons (same codepoints as UnitRenderer)
+private val NF_MD_ARROW_UP_THIN_N = String(Character.toChars(0xF09C7))
+private val NF_MD_ARROW_UP_THIN_NE = String(Character.toChars(0xF09C5))
+private val NF_MD_ARROW_UP_THIN_SE = String(Character.toChars(0xF09B9))
+private val NF_MD_ARROW_UP_THIN_S = String(Character.toChars(0xF09BF))
+private val NF_MD_ARROW_UP_THIN_SW = String(Character.toChars(0xF09B7))
+private val NF_MD_ARROW_UP_THIN_NW = String(Character.toChars(0xF09C3))
+
 public object HexRenderer {
 
-    // Terrain icons (nf-md-tree_outline, nf-md-tree and another Nerd Fonts icons are above U+FFFF, need surrogate pairs)
     private fun terrainIcon(terrain: Terrain): String = when (terrain) {
         Terrain.CLEAR       -> ""
-        Terrain.LIGHT_WOODS -> String(Character.toChars(0xF0E69))
-        Terrain.HEAVY_WOODS -> String(Character.toChars(0xF0531))
-        Terrain.WATER       -> String(Character.toChars(0xF078D))
+        Terrain.LIGHT_WOODS -> NF_MD_TREE_OUTLINE
+        Terrain.HEAVY_WOODS -> NF_MD_PINE_TREE
+        Terrain.WATER       -> NF_MD_WAVES
     }
 
-    // Elevation icons (nf-md-numeric_N_box_multiple_outline)
     private fun elevationIcon(elevation: Int): String = when (elevation) {
-        1 -> String(Character.toChars(0xF03A5))
-        2 -> String(Character.toChars(0xF03A8))
-        3 -> String(Character.toChars(0xF03AB))
-        4 -> String(Character.toChars(0xF03B2))
-        5 -> String(Character.toChars(0xF03AF))
-        6 -> String(Character.toChars(0xF03B4))
-        7 -> String(Character.toChars(0xF03B7))
-        8 -> String(Character.toChars(0xF03BA))
-        9 -> String(Character.toChars(0xF03BD))
+        1 -> NF_MD_NUMERIC_1_BOX_MULTIPLE_OUTLINE
+        2 -> NF_MD_NUMERIC_2_BOX_MULTIPLE_OUTLINE
+        3 -> NF_MD_NUMERIC_3_BOX_MULTIPLE_OUTLINE
+        4 -> NF_MD_NUMERIC_4_BOX_MULTIPLE_OUTLINE
+        5 -> NF_MD_NUMERIC_5_BOX_MULTIPLE_OUTLINE
+        6 -> NF_MD_NUMERIC_6_BOX_MULTIPLE_OUTLINE
+        7 -> NF_MD_NUMERIC_7_BOX_MULTIPLE_OUTLINE
+        8 -> NF_MD_NUMERIC_8_BOX_MULTIPLE_OUTLINE
+        9 -> NF_MD_NUMERIC_9_BOX_MULTIPLE_OUTLINE
         else -> error("No elevation icon for elevation: $elevation")
     }
 
-    // Facing arrow icons (same codepoints as UnitRenderer)
     private fun facingIcon(direction: HexDirection): String = when (direction) {
-        HexDirection.N  -> String(Character.toChars(0xF09C7))
-        HexDirection.NE -> String(Character.toChars(0xF09C5))
-        HexDirection.SE -> String(Character.toChars(0xF09B9))
-        HexDirection.S  -> String(Character.toChars(0xF09BF))
-        HexDirection.SW -> String(Character.toChars(0xF09B7))
-        HexDirection.NW -> String(Character.toChars(0xF09C3))
+        HexDirection.N  -> NF_MD_ARROW_UP_THIN_N
+        HexDirection.NE -> NF_MD_ARROW_UP_THIN_NE
+        HexDirection.SE -> NF_MD_ARROW_UP_THIN_SE
+        HexDirection.S  -> NF_MD_ARROW_UP_THIN_S
+        HexDirection.SW -> NF_MD_ARROW_UP_THIN_SW
+        HexDirection.NW -> NF_MD_ARROW_UP_THIN_NW
     }
 
     // Arrow positions within hex: (col-offset, row-offset) relative to hex origin

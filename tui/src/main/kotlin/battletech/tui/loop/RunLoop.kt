@@ -90,7 +90,7 @@ internal suspend fun runLoop(
                         val delta = InputMapper.scrollDelta(event, overPanel = slot != null)
                         if (delta != null) {
                             if (slot != null) {
-                                val panel = Panels.ordered.first { it.id.key == slot.panelKey }
+                                val panel = Panels.byKey.getValue(slot.panelKey)
                                 appState = appState.copy(
                                     panelScrollOffsets = PanelScroll.update(
                                         appState.panelScrollOffsets,
@@ -273,7 +273,7 @@ private fun renderFrame(
 
     val maxOffsets = mutableMapOf<Char, Int>()
     for (slot in layout.slots) {
-        val panel = Panels.ordered.first { it.id.key == slot.panelKey }
+        val panel = Panels.byKey.getValue(slot.panelKey)
         val panelSlot = PanelSlot(
             key = slot.panelKey,
             width = slot.width,
