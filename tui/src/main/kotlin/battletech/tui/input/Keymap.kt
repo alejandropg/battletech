@@ -62,8 +62,8 @@ internal object Keymap {
 
     /** Mirrors [InputMapper.mapAttackEvent] as used by weapon-attack declaration. */
     val WEAPON_DECLARING: List<KeyHint> = listOf(
-        KeyHint("←→", "twist torso"),
-        KeyHint("↑↓", "navigate weapons"),
+        KeyHint("←→/ad", "twist torso"),
+        KeyHint("↑↓/ws", "navigate weapons"),
         KeyHint(KeyGlyph.SPACE, "toggle weapon"),
         KeyHint(KeyGlyph.ESC, "back"),
         KeyHint(KeyGlyph.TAB, "next attacker"),

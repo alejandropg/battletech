@@ -56,10 +56,10 @@ public object InputMapper {
     }
 
     public fun mapAttackEvent(event: KeyboardEvent): AttackAction? = when (event.key) {
-        "ArrowRight" -> AttackAction.TwistTorso(clockwise = true)
-        "ArrowLeft" -> AttackAction.TwistTorso(clockwise = false)
-        "ArrowUp" -> AttackAction.NavigateWeapons(delta = -1)
-        "ArrowDown" -> AttackAction.NavigateWeapons(delta = 1)
+        "ArrowRight", "d" -> AttackAction.TwistTorso(clockwise = true)
+        "ArrowLeft", "a" -> AttackAction.TwistTorso(clockwise = false)
+        "ArrowUp", "w" -> AttackAction.NavigateWeapons(delta = -1)
+        "ArrowDown", "s" -> AttackAction.NavigateWeapons(delta = 1)
         " " -> AttackAction.ToggleWeapon
         "Escape" -> AttackAction.Cancel
         "Tab" -> AttackAction.NextAttacker

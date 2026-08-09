@@ -179,6 +179,16 @@ internal class InputMapperTest {
         }
 
         @Test
+        fun `d maps to TwistTorso clockwise`() {
+            assertEquals(AttackAction.TwistTorso(clockwise = true), InputMapper.mapAttackEvent(key("d")))
+        }
+
+        @Test
+        fun `a maps to TwistTorso counterclockwise`() {
+            assertEquals(AttackAction.TwistTorso(clockwise = false), InputMapper.mapAttackEvent(key("a")))
+        }
+
+        @Test
         fun `arrow up maps to NavigateWeapons -1`() {
             assertEquals(AttackAction.NavigateWeapons(delta = -1), InputMapper.mapAttackEvent(key("ArrowUp")))
         }
@@ -186,6 +196,16 @@ internal class InputMapperTest {
         @Test
         fun `arrow down maps to NavigateWeapons +1`() {
             assertEquals(AttackAction.NavigateWeapons(delta = 1), InputMapper.mapAttackEvent(key("ArrowDown")))
+        }
+
+        @Test
+        fun `w maps to NavigateWeapons -1`() {
+            assertEquals(AttackAction.NavigateWeapons(delta = -1), InputMapper.mapAttackEvent(key("w")))
+        }
+
+        @Test
+        fun `s maps to NavigateWeapons +1`() {
+            assertEquals(AttackAction.NavigateWeapons(delta = 1), InputMapper.mapAttackEvent(key("s")))
         }
 
         @Test

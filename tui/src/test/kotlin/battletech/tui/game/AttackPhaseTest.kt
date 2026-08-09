@@ -144,6 +144,20 @@ internal class AttackPhaseTest {
         }
 
         @Test
+        fun `d key twists torso clockwise same as arrow right`() {
+            val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
+            val gameState = GameState(UnitRoster(listOf(unit)), map5x5)
+            val turnState = baseTurnState()
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
+            val state = anAppState(phase, gameState, turnState, cursor = unit.position)
+
+            val result = phase.handle(KeyboardEvent("d"), state)
+
+            val newPhase = result!!.app.phase as AttackPhase.Declaring
+            assertEquals(HexDirection.NE, newPhase.torsoFacing)
+        }
+
+        @Test
         fun `torso twist beyond one hex-side is rejected`() {
             val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
             val gameState = GameState(UnitRoster(listOf(unit)), map5x5)
