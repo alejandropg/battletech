@@ -21,6 +21,10 @@ These accumulate across every intervening woods hex plus the target hex.
 
 **Example.** One intervening heavy-woods hex → +2 to hit (LOS is still drawn).
 
+Rough terrain is not woods: it costs extra MP to enter (§4 of
+[`movement.md`](movement.md)) but adds no to-hit modifier and never blocks LOS, whether
+intervening or in the target's own hex.
+
 ---
 
 ## 2. Blocked Line of Sight

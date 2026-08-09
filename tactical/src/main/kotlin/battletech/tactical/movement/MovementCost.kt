@@ -11,6 +11,7 @@ public object MovementCost {
         Terrain.LIGHT_WOODS -> 2
         Terrain.HEAVY_WOODS -> 3
         Terrain.WATER -> 2
+        Terrain.ROUGH -> 2
     }
 
     public fun enterHexCost(from: Hex, to: Hex): Int {

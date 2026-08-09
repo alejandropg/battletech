@@ -5,4 +5,5 @@ public enum class Terrain {
     LIGHT_WOODS,
     HEAVY_WOODS,
     WATER,
+    ROUGH,
 }

@@ -12,6 +12,7 @@ import battletech.tui.screen.Color
 private val NF_MD_TREE_OUTLINE = String(Character.toChars(0xF0E69))
 private val NF_MD_PINE_TREE = String(Character.toChars(0xF0531))
 private val NF_MD_WAVES = String(Character.toChars(0xF078D))
+private val NF_MD_GRAIN = String(Character.toChars(0xF0D7C))
 
 // Elevation icons (nf-md-numeric_N_box_multiple_outline)
 private val NF_MD_NUMERIC_1_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03A5))
@@ -39,6 +40,7 @@ public object HexRenderer {
         Terrain.LIGHT_WOODS -> NF_MD_TREE_OUTLINE
         Terrain.HEAVY_WOODS -> NF_MD_PINE_TREE
         Terrain.WATER       -> NF_MD_WAVES
+        Terrain.ROUGH       -> NF_MD_GRAIN
     }
 
     private fun elevationIcon(elevation: Int): String = when (elevation) {
@@ -150,6 +152,7 @@ public object HexRenderer {
         hex.terrain == Terrain.WATER       -> if (hex.depth <= 1) Color.WATER_SHALLOW_BG else Color.WATER_DEEP_BG
         hex.terrain == Terrain.LIGHT_WOODS -> Color.WOODS_LIGHT_BG
         hex.terrain == Terrain.HEAVY_WOODS -> Color.WOODS_HEAVY_BG
+        hex.terrain == Terrain.ROUGH       -> Color.ROUGH_BG
         hex.elevation >= 1                 -> if (hex.elevation == 1) Color.ELEVATION_LOW_BG else Color.ELEVATION_HIGH_BG
         else                               -> Color.DEFAULT
     }
@@ -160,6 +163,7 @@ public object HexRenderer {
             Terrain.LIGHT_WOODS -> Color.GREEN
             Terrain.HEAVY_WOODS -> Color.DARK_GREEN
             Terrain.WATER       -> Color.BLUE
+            Terrain.ROUGH       -> Color.BROWN
         }
         canvas.set(x + 2, y + 1, Cell(terrainIcon(terrain), Cell.Style(color, bg)))
     }

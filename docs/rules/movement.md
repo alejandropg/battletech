@@ -91,6 +91,7 @@ being entered plus any elevation climbed:
 | Light Woods  |      2      |
 | Heavy Woods  |      3      |
 | Water        |      2      |
+| Rough        |      2      |
 
 * **Elevation:** add **+1 MP per level of elevation gained** entering the hex.
   Descending costs no extra MP.

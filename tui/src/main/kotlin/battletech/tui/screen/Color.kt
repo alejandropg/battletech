@@ -25,7 +25,8 @@ public enum class Color {
     WATER_SHALLOW_BG,
     WATER_DEEP_BG,
     ELEVATION_LOW_BG,
-    ELEVATION_HIGH_BG;
+    ELEVATION_HIGH_BG,
+    ROUGH_BG;
 
     internal companion object {
         /** Uncommitted / preview content the player has not committed yet. */

@@ -69,7 +69,9 @@ public fun lineOfSight(attackerPosition: HexCoordinates, targetPosition: HexCoor
             partialCoverFound = true
         }
 
-        // Accumulate woods levels for the blocking threshold.
+        // Accumulate woods levels for the blocking threshold. ROUGH (and CLEAR/WATER) fall
+        // through to 0 deliberately — rough terrain never blocks LOS or adds a to-hit modifier
+        // (docs/rules/line-of-sight.md §1).
         val hexWoodsLevels = when (hex?.terrain) {
             Terrain.LIGHT_WOODS -> 1
             Terrain.HEAVY_WOODS -> 2
@@ -90,6 +92,7 @@ public fun lineOfSight(attackerPosition: HexCoordinates, targetPosition: HexCoor
     val blocked = woodsBlocked || elevationBlocked
 
     // Target's own hex woods add to the to-hit modifier but not to the blocking threshold.
+    // ROUGH falls through to 0 deliberately, same as above.
     val targetHexWoods = when (map.hexes[targetPosition]?.terrain) {
         Terrain.LIGHT_WOODS -> 1
         Terrain.HEAVY_WOODS -> 2

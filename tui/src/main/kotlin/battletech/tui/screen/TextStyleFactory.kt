@@ -92,6 +92,7 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
 //        Color.WATER_DEEP_BG -> TextColors.rgb("#1F2A33")
 //        Color.ELEVATION_LOW_BG -> TextColors.rgb("#332A20")
 //        Color.ELEVATION_HIGH_BG -> TextColors.rgb("#3D3428")
+//        Color.ROUGH_BG -> TextColors.rgb("#332C24")
 
         // SOFT
 //        Color.WOODS_LIGHT_BG -> TextColors.rgb("#34402E")
@@ -100,6 +101,7 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
 //        Color.WATER_DEEP_BG -> TextColors.rgb("#1F2D3D")
 //        Color.ELEVATION_LOW_BG -> TextColors.rgb("#3D3020")
 //        Color.ELEVATION_HIGH_BG -> TextColors.rgb("#4A3C29")
+//        Color.ROUGH_BG -> TextColors.rgb("#3D3226")
 
         // FRESH
         Color.WOODS_LIGHT_BG -> TextColors.rgb("#3E5E33")
@@ -108,6 +110,7 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
         Color.WATER_DEEP_BG -> TextColors.rgb("#234C68")
         Color.ELEVATION_LOW_BG -> TextColors.rgb("#5A4327")
         Color.ELEVATION_HIGH_BG -> TextColors.rgb("#6B5433")
+        Color.ROUGH_BG -> TextColors.rgb("#4A4030")
 
         // VIVID
 //        Color.WOODS_LIGHT_BG -> TextColors.rgb("#47762F")
@@ -116,6 +119,7 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
 //        Color.WATER_DEEP_BG -> TextColors.rgb("#245B7E")
 //        Color.ELEVATION_LOW_BG -> TextColors.rgb("#6E4E28")
 //        Color.ELEVATION_HIGH_BG -> TextColors.rgb("#866437")
+//        Color.ROUGH_BG -> TextColors.rgb("#5C4E38")
 
         // MEADOW (brighter / cheerful)
 //        Color.WOODS_LIGHT_BG -> TextColors.rgb("#4C7A3A")
@@ -124,6 +128,7 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
 //        Color.WATER_DEEP_BG -> TextColors.rgb("#256A8E")
 //        Color.ELEVATION_LOW_BG -> TextColors.rgb("#7C5C30")
 //        Color.ELEVATION_HIGH_BG -> TextColors.rgb("#977340")
+//        Color.ROUGH_BG -> TextColors.rgb("#665640")
 
     }
 

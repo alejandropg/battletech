@@ -16,6 +16,7 @@ internal class MovementCostTest {
         "LIGHT_WOODS, 2",
         "HEAVY_WOODS, 3",
         "WATER, 2",
+        "ROUGH, 2",
     )
     fun `terrain has its movement cost`(terrain: Terrain, expected: Int) {
         assertEquals(expected, MovementCost.terrainCost(terrain))
