@@ -1,8 +1,6 @@
 package battletech.tui.view
 
 import battletech.tui.screen.Canvas
-import battletech.tui.screen.Cell
-import battletech.tui.screen.Color
 import battletech.tui.screen.FocusRect
 
 /** A 2D scroll offset, in characters. */
@@ -76,13 +74,14 @@ internal class ScrollableView(
         private set
 
     override fun render(canvas: Canvas) {
-        val viewport = PanelChrome.drawScrollable(canvas, title, badge)
+        val chrome = PanelChrome.drawScrollable(canvas, title, badge)
+        val viewport = chrome.viewport
         if (viewport.width <= 0 || viewport.height <= 0) {
             scroll = ScrollState.NONE
             return
         }
 
-        val padding = PanelChrome.PADDING.vertical()
+        val padding = chrome.streamPadding
         val streamWidth = when (extent) {
             is ContentExtent.Measured -> viewport.width
             is ContentExtent.Fixed -> extent.width
@@ -118,8 +117,11 @@ internal class ScrollableView(
 
         viewport.blit(stream, offsetX, offsetY, 0, 0, viewport.width, viewport.height)
 
-        drawThumb(canvas, vertical = true, track = viewport.height, contentSize = streamHeight, viewportSize = viewport.height, offset = offsetY)
-        drawThumb(canvas, vertical = false, track = viewport.width, contentSize = streamWidth, viewportSize = viewport.width, offset = offsetX)
+        PanelChrome.drawThumbs(
+            canvas,
+            vertical = Scrollbar.thumb(track = viewport.height, contentHeight = streamHeight, viewportHeight = viewport.height, offset = offsetY),
+            horizontal = Scrollbar.thumb(track = viewport.width, contentHeight = streamWidth, viewportHeight = viewport.width, offset = offsetX),
+        )
 
         scroll = ScrollState(ScrollOffset(offsetX, offsetY), ScrollOffset(maxOffsetX, maxOffsetY), focus)
     }
@@ -135,20 +137,5 @@ internal class ScrollableView(
         recenter -> ScrollFollow.center(focusRange.first, focusRange.second, viewportSize, maxOffset)
         shouldFollow -> ScrollFollow.follow(base, focusRange.first, focusRange.second, viewportSize, maxOffset)
         else -> base.coerceIn(0, maxOffset)
-    }
-
-    private fun drawThumb(canvas: Canvas, vertical: Boolean, track: Int, contentSize: Int, viewportSize: Int, offset: Int) {
-        val thumbRange = Scrollbar.thumb(track, contentSize, viewportSize, offset) ?: return
-        for (i in thumbRange) {
-            if (vertical) {
-                canvas.set(canvas.width - 1, PanelChrome.VIEWPORT_INSET.top + i, Cell("▐", GREEN_STYLE))
-            } else {
-                canvas.set(PanelChrome.VIEWPORT_INSET.left + i, canvas.height - 1, Cell("▬", GREEN_STYLE))
-            }
-        }
-    }
-
-    private companion object {
-        private val GREEN_STYLE = Cell.Style(Color.GREEN)
     }
 }
