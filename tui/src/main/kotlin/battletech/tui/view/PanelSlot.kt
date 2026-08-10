@@ -6,9 +6,8 @@ import battletech.tui.screen.FocusRect
 /**
  * Per-frame description of one side panel: where it is in the layout ([width]),
  * what it is ([key]/[title]), whether the user has collapsed it, the current
- * scroll offset (null = anchored default), the bottom-anchor flag, the focus rect
- * this panel reported last render ([previousFocus]), and how to build its full
- * content view on demand.
+ * scroll offset (null = default, top), the focus rect this panel reported last
+ * render ([previousFocus]), and how to build its full content view on demand.
  *
  * [buildReal] is only invoked when the panel is expanded, so any data gathering
  * for the full view is skipped while collapsed.
@@ -19,7 +18,6 @@ internal class PanelSlot(
     val title: String,
     val collapsed: Boolean,
     val scrollOffset: Int? = null,
-    val anchorBottom: Boolean = false,
     val previousFocus: FocusRect? = null,
     val buildReal: () -> View?,
 )
@@ -41,8 +39,7 @@ internal fun resolvePanel(slot: PanelSlot): View? = when {
             badge = slot.key.key.toString(),
             content = content,
             extent = ContentExtent.Measured(),
-            offset = slot.scrollOffset?.let { ScrollOffset(0, it) },
-            anchorBottom = slot.anchorBottom,
+            offset = slot.scrollOffset?.let { ScrollOffset(0, it) } ?: ScrollOffset.ZERO,
             previousFocus = slot.previousFocus,
         )
     }

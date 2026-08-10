@@ -32,7 +32,7 @@ internal object Panels {
         Panel(PanelId.UNIT_STATUS, UnitStatusView.TITLE, width = 28) { frame ->
             UnitStatusView(frame.unitStatus, frame.pendingHeat)
         },
-        Panel(PanelId.LOG, LogView.TITLE, width = 28, anchorBottom = true) { frame ->
+        Panel(PanelId.LOG, LogView.TITLE, width = 28) { frame ->
             LogView(entries = frame.logEntries, state = frame.visibleState)
         },
         Panel(PanelId.HELP, HelpView.TITLE, width = 28, collapsedWidth = 0) { frame ->

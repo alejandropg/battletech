@@ -66,8 +66,7 @@ internal class ScrollableView(
     private val badge: String?,
     private val content: View,
     private val extent: ContentExtent,
-    private val offset: ScrollOffset?,
-    private val anchorBottom: Boolean = false,
+    private val offset: ScrollOffset = ScrollOffset.ZERO,
     private val previousFocus: FocusRect? = null,
     private val recenter: Boolean = false,
 ) : View {
@@ -107,8 +106,8 @@ internal class ScrollableView(
         val maxOffsetY = (streamHeight - viewport.height).coerceAtLeast(0)
 
         val focus = stream.focusRect()
-        val baseX = offset?.x ?: 0
-        val baseY = offset?.y ?: if (anchorBottom) maxOffsetY else 0
+        val baseX = offset.x
+        val baseY = offset.y
 
         // Follow only when the focus moved (or a recenter was explicitly asked for); otherwise the
         // given offset stands, so a manual pan/scroll survives every subsequent render.

@@ -18,6 +18,5 @@ internal class Panel(
     val title: String,
     val width: Int,
     val collapsedWidth: Int = FrameLayout.COLLAPSED_STUB_WIDTH,
-    val anchorBottom: Boolean = false,
     val build: (PanelFrame) -> View?,
 )

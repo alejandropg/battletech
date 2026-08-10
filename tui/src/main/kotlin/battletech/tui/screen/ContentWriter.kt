@@ -57,6 +57,11 @@ internal class ContentWriter(val canvas: Canvas) {
         canvas.markFocus(0, cy, width, height)
     }
 
+    /** Marks [row] (full width), rather than the current row, as the content to keep visible. */
+    fun markFocusAt(row: Int, height: Int = 1) {
+        canvas.markFocus(0, row, width, height)
+    }
+
     private companion object {
         private val CYAN_STYLE = Cell.Style(fg = Color.CYAN)
     }

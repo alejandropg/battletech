@@ -8,103 +8,56 @@ import org.junit.jupiter.api.Test
 
 internal class PanelScrollTest {
 
-    // ── update: top-anchored ─────────────────────────────────────────────────
+    // ── update ────────────────────────────────────────────────────────────────
 
     @Test
-    fun `top-anchored absent entry + wheelDown delta adds entry`() {
+    fun `absent entry + wheelDown delta adds entry`() {
         val result = PanelScroll.update(
             offsets = emptyMap(),
             panelKey = PanelId.UNIT_STATUS,
             delta = PanelScroll.STEP,
             currentOffset = 0,
             maxOffset = 20,
-            anchorBottom = false,
         )
         assertEquals(mapOf(PanelId.UNIT_STATUS to PanelScroll.STEP), result)
     }
 
     @Test
-    fun `top-anchored scrolling back to 0 removes entry`() {
+    fun `scrolling back to 0 removes entry`() {
         val result = PanelScroll.update(
             offsets = mapOf(PanelId.UNIT_STATUS to PanelScroll.STEP),
             panelKey = PanelId.UNIT_STATUS,
             delta = -PanelScroll.STEP,
             currentOffset = PanelScroll.STEP,
             maxOffset = 20,
-            anchorBottom = false,
         )
         assertEquals(emptyMap<PanelId, Int>(), result)
     }
 
     @Test
-    fun `top-anchored offset clamps at maxOffset`() {
+    fun `offset clamps at maxOffset`() {
         val result = PanelScroll.update(
             offsets = mapOf(PanelId.UNIT_STATUS to 18),
             panelKey = PanelId.UNIT_STATUS,
             delta = PanelScroll.STEP,
             currentOffset = 18,
             maxOffset = 18,
-            anchorBottom = false,
         )
         // 18 + 2 would be 20, clamped to maxOffset=18 which IS the clamped value;
-        // but 18 == maxOffset for top-anchored is NOT the anchor (anchor=0), so entry stays
+        // but 18 == maxOffset is NOT the anchor (anchor=0), so entry stays
         assertEquals(mapOf(PanelId.UNIT_STATUS to 18), result)
     }
 
     @Test
-    fun `top-anchored large delta clamps at maxOffset`() {
+    fun `large delta clamps at maxOffset`() {
         val result = PanelScroll.update(
             offsets = emptyMap(),
             panelKey = PanelId.DECLARED_TARGETS,
             delta = 999,
             currentOffset = 0,
             maxOffset = 10,
-            anchorBottom = false,
         )
         assertEquals(mapOf(PanelId.DECLARED_TARGETS to 10), result)
-    }
-
-    // ── update: bottom-anchored (LOG) ────────────────────────────────────────
-
-    @Test
-    fun `bottom-anchored absent entry + wheelUp scrolls away from bottom`() {
-        val result = PanelScroll.update(
-            offsets = emptyMap(),
-            panelKey = PanelId.ATTACK_RESULTS,
-            delta = -PanelScroll.STEP,
-            currentOffset = 20,
-            maxOffset = 20,
-            anchorBottom = true,
-        )
-        // effective = maxOffset=20; 20 + (-2) = 18 — not equal to anchor(20), keep entry
-        assertEquals(mapOf(PanelId.ATTACK_RESULTS to 18), result)
-    }
-
-    @Test
-    fun `bottom-anchored scrolling back to maxOffset removes entry (re-stick)`() {
-        val result = PanelScroll.update(
-            offsets = mapOf(PanelId.ATTACK_RESULTS to 18),
-            panelKey = PanelId.ATTACK_RESULTS,
-            delta = PanelScroll.STEP,
-            currentOffset = 18,
-            maxOffset = 20,
-            anchorBottom = true,
-        )
-        // 18 + 2 = 20 == maxOffset == anchor → remove entry
-        assertEquals(emptyMap<PanelId, Int>(), result)
-    }
-
-    @Test
-    fun `bottom-anchored large negative delta clamps at 0`() {
-        val result = PanelScroll.update(
-            offsets = emptyMap(),
-            panelKey = PanelId.ATTACK_RESULTS,
-            delta = -999,
-            currentOffset = 20,
-            maxOffset = 20,
-            anchorBottom = true,
-        )
-        assertEquals(mapOf(PanelId.ATTACK_RESULTS to 0), result)
     }
 
     // ── update: maxOffset = 0 ────────────────────────────────────────────────
@@ -118,7 +71,6 @@ internal class PanelScrollTest {
             delta = PanelScroll.STEP,
             currentOffset = 8,
             maxOffset = 0,
-            anchorBottom = false,
         )
         // TARGETS' stale entry is removed; UNIT_STATUS is unaffected
         assertEquals(mapOf(PanelId.UNIT_STATUS to 5), result)
@@ -132,7 +84,6 @@ internal class PanelScrollTest {
             delta = 0,
             currentOffset = 5,
             maxOffset = 0,
-            anchorBottom = false,
         )
         assertEquals(emptyMap<PanelId, Int>(), result)
     }
@@ -149,7 +100,6 @@ internal class PanelScrollTest {
             delta = -PanelScroll.STEP,
             currentOffset = 15,
             maxOffset = 30,
-            anchorBottom = false,
         )
         assertEquals(mapOf(PanelId.TARGETS to 13), result)
     }

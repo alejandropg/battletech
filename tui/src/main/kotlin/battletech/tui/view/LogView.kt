@@ -7,6 +7,12 @@ import battletech.tui.screen.CellWidth
 import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.TextWrap
 
+/**
+ * Marks its last written row as focus, so the enclosing [ScrollableView] follows new entries to
+ * the bottom exactly as [TargetsView]'s cursor row does — the same mechanism, not a bespoke
+ * bottom-anchor. A consequence: a new entry always scrolls to the bottom, even if the reader had
+ * scrolled up to review history.
+ */
 public class LogView(
     private val entries: List<LogEntry>,
     private val state: PlayerGameState,
@@ -35,6 +41,8 @@ public class LogView(
                 }
             }
         }
+
+        if (content.cy > 0) content.markFocusAt(content.cy - 1)
     }
 
     internal companion object {

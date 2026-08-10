@@ -7,9 +7,8 @@ import battletech.tui.view.PanelSlotLayout
  * Pure scroll-offset update logic for side panels.
  *
  * Scroll state is kept in [AppState.panelScrollOffsets] as a minimal map:
- * **absent = anchored** (0 for top-anchored, maxOffset for bottom-anchored panels).
- * When a wheel update would land back on the anchor value the entry is removed,
- * which naturally implements LOG's re-stick behaviour.
+ * **absent = anchored at the top**. When a wheel update would land back at the top the entry
+ * is removed.
  */
 internal object PanelScroll {
 
@@ -20,14 +19,13 @@ internal object PanelScroll {
      * Returns a new offsets map after applying [delta] to the panel at [panelKey], starting from
      * [currentOffset] — the panel's actually-visible offset as of the last render, which the
      * caller reads back from [battletech.tui.view.ScrollableView.state] rather than from this map.
-     * That indirection matters once a panel auto-follows (see
-     * [battletech.tui.view.ScrollableView]'s `followMode`): a followed panel's true on-screen
-     * offset can be well away from its stale "absent = anchored" entry here, and basing a wheel
-     * delta on the stale entry would jump the panel instead of nudging it.
+     * That indirection matters once a panel auto-follows (see [battletech.tui.view.ScrollableView]'s
+     * KDoc): a followed panel's true on-screen offset can be well away from its stale
+     * "absent = anchored" entry here, and basing a wheel delta on the stale entry would jump the
+     * panel instead of nudging it.
      *
      * - Clamps the result to `0..maxOffset`.
-     * - Removes the entry when the new offset equals the anchor value
-     *   (0 for top-anchored, [maxOffset] for bottom-anchored).
+     * - Removes the entry when the new offset is `0` (the top).
      * - When [maxOffset] <= 0 cleans any stale entry for [panelKey] and
      *   returns without further mutation.
      */
@@ -37,14 +35,12 @@ internal object PanelScroll {
         delta: Int,
         currentOffset: Int,
         maxOffset: Int,
-        anchorBottom: Boolean,
     ): Map<PanelId, Int> {
         if (maxOffset <= 0) {
             return if (panelKey in offsets) offsets - panelKey else offsets
         }
-        val anchorValue = if (anchorBottom) maxOffset else 0
         val next = (currentOffset + delta).coerceIn(0, maxOffset)
-        return if (next == anchorValue) {
+        return if (next == 0) {
             offsets - panelKey
         } else {
             offsets + (panelKey to next)

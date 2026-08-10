@@ -124,7 +124,6 @@ internal suspend fun runLoop(
                         val delta = InputMapper.scrollDelta(event, overPanel = slot != null)
                         if (delta != null) {
                             if (slot != null) {
-                                val panel = Panels.byId.getValue(slot.panelKey)
                                 appState = appState.copy(
                                     panelScrollOffsets = PanelScroll.update(
                                         appState.panelScrollOffsets,
@@ -132,7 +131,6 @@ internal suspend fun runLoop(
                                         delta,
                                         frame.panelOffsets[slot.panelKey] ?: 0,
                                         frame.maxOffsets[slot.panelKey] ?: 0,
-                                        panel.anchorBottom,
                                     ),
                                 )
                             }
@@ -345,7 +343,6 @@ private fun renderFrame(
             title = panel.title,
             collapsed = slot.collapsed,
             scrollOffset = appState.panelScrollOffsets[slot.panelKey],
-            anchorBottom = panel.anchorBottom,
             previousFocus = previous?.panelFocus?.get(slot.panelKey),
         ) { panel.build(frame) }
         val view = resolvePanel(panelSlot)

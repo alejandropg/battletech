@@ -53,7 +53,6 @@ internal class LogViewTest {
         width: Int = 28,
         height: Int = 10,
         scrollOffset: Int? = null,
-        anchorBottom: Boolean = false,
     ): ScreenBuffer = renderInPanel(
         view,
         key = PanelId.LOG.key,
@@ -61,7 +60,6 @@ internal class LogViewTest {
         width = width,
         height = height,
         scrollOffset = scrollOffset,
-        anchorBottom = anchorBottom,
     )
 
     @Test
@@ -168,13 +166,15 @@ internal class LogViewTest {
 
     @Test
     fun `when content overflows, the most recent line is at the bottom of the panel`() {
-        // Panel of height 6: content viewport is 3 rows. Decorated with anchorBottom=true.
+        // Panel of height 6: content viewport is 3 rows. A fresh render has no previousFocus, so
+        // LogView's last-row focus (see its KDoc) always follows into view — the same mechanism
+        // TargetsView's cursor row uses, not a bespoke bottom-anchor.
         // Each entry is its own turn, so every entry is preceded by its own header row.
         // The bottom content row stays fixed at y=4 regardless of padding — only the top
         // of the viewport moved down — so this test's row numbers don't shift.
         val entries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val view = LogView(entries, state = emptyState)
-        val buffer = renderDecorated(view, height = 6, scrollOffset = null, anchorBottom = true)
+        val buffer = renderDecorated(view, height = 6, scrollOffset = null)
 
         // The bottom inner row (y = 4, since box bottom is y=5) should be the most recent entry.
         val bottomInnerRow = buffer.line(4, 2, 24)
@@ -185,17 +185,83 @@ internal class LogViewTest {
     }
 
     @Test
-    fun `scrollOffset 0 with overflowing content shows the oldest entries`() {
+    fun `a manual scroll to the top survives a re-render while the log is unchanged`() {
+        // The panel-side half of the pan-snap-back defect (see PanelSlotTest's TARGETS
+        // equivalent): once the user has wheeled to a position and the focus row (the last
+        // line) hasn't moved since, that position must stick rather than re-following.
         val entries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val view = LogView(entries, state = emptyState)
-        // anchorBottom=true but scrollOffset=0 detaches scroll to top
-        val buffer = renderDecorated(view, height = 6, scrollOffset = 0, anchorBottom = true)
 
-        // With offset=0 the oldest entries are visible: header for turn 1, then its entry.
+        // First render: no previousFocus, so it follows to the bottom — establishes the focus.
+        val first = ScrollableView(
+            title = LogView.TITLE,
+            badge = PanelId.LOG.key.toString(),
+            content = view,
+            extent = ContentExtent.Measured(),
+        )
+        render(first, 28, 6)
+        val focus = first.state.focus!!
+
+        // Second render: the user has wheeled back to the top; the log hasn't changed, so the
+        // focus row is identical — the manual offset must be respected, not re-followed.
+        val second = ScrollableView(
+            title = LogView.TITLE,
+            badge = PanelId.LOG.key.toString(),
+            content = view,
+            extent = ContentExtent.Measured(),
+            offset = ScrollOffset(0, 0),
+            previousFocus = focus,
+        )
+        val buffer = render(second, 28, 6)
+
+        assertEquals(0, second.state.offset.y, "a manual scroll to the top must not snap back to the bottom")
         val firstLine = buffer.line(2, 2, 24)
         assert(firstLine.startsWith("── TURN 1 ")) { "Expected header at row 2: '$firstLine'" }
         val secondLine = buffer.line(3, 2, 24)
         assertEquals("${unitStoodUpIcon()} m stood up", secondLine)
+    }
+
+    @Test
+    fun `a new entry re-sticks to the bottom even while manually scrolled away`() {
+        // Accepted tradeoff of following the last-row focus like TargetsView's cursor: a growing
+        // log always chases its newest line, the same as it would chase a moving cursor row —
+        // there is no bespoke "let the reader linger on history" carve-out anymore.
+        val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
+        val scrolledAway = ScrollableView(
+            title = LogView.TITLE,
+            badge = PanelId.LOG.key.toString(),
+            content = LogView(tenEntries, state = emptyState),
+            extent = ContentExtent.Measured(),
+        )
+        render(scrolledAway, 28, 6)
+        val focusAtTen = scrolledAway.state.focus!!
+        val manuallyScrolledUp = ScrollableView(
+            title = LogView.TITLE,
+            badge = PanelId.LOG.key.toString(),
+            content = LogView(tenEntries, state = emptyState),
+            extent = ContentExtent.Measured(),
+            offset = ScrollOffset(0, 0),
+            previousFocus = focusAtTen,
+        )
+        render(manuallyScrolledUp, 28, 6)
+        assertEquals(0, manuallyScrolledUp.state.offset.y, "sanity check: scrolled away from the bottom")
+
+        // An eleventh entry arrives; the focus row moves, so the view follows it to the bottom.
+        val elevenEntries = tenEntries + LogEntry(turn = 11, event = stoodUp())
+        val newEntryArrives = ScrollableView(
+            title = LogView.TITLE,
+            badge = PanelId.LOG.key.toString(),
+            content = LogView(elevenEntries, state = emptyState),
+            extent = ContentExtent.Measured(),
+            offset = manuallyScrolledUp.state.offset,
+            previousFocus = manuallyScrolledUp.state.focus,
+        )
+        val buffer = render(newEntryArrives, 28, 6)
+
+        val bottomInnerRow = buffer.line(4, 2, 24)
+        assertEquals("${unitStoodUpIcon()} m stood up", bottomInnerRow)
+        val secondFromBottom = buffer.line(3, 2, 24)
+        assert(secondFromBottom.startsWith("── TURN 11 ")) { "Expected header above last entry: '$secondFromBottom'" }
     }
 
     @Test

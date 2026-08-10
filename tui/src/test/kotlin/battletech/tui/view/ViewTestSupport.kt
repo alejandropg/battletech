@@ -18,15 +18,13 @@ internal fun renderInPanel(
     width: Int = 28,
     height: Int = 30,
     scrollOffset: Int? = 0,
-    anchorBottom: Boolean = false,
 ): ScreenBuffer = render(
     ScrollableView(
         title = title,
         badge = key.toString(),
         content = content,
         extent = ContentExtent.Measured(),
-        offset = scrollOffset?.let { ScrollOffset(0, it) },
-        anchorBottom = anchorBottom,
+        offset = scrollOffset?.let { ScrollOffset(0, it) } ?: ScrollOffset.ZERO,
     ),
     width,
     height,

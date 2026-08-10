@@ -32,7 +32,6 @@ internal class ScrollableViewTest {
         key: Char = '0',
         title: String = "T",
         scrollOffset: Int? = 0,
-        anchorBottom: Boolean = false,
         previousFocus: FocusRect? = null,
         recenter: Boolean = false,
     ) = ScrollableView(
@@ -40,8 +39,7 @@ internal class ScrollableViewTest {
         badge = key.toString(),
         content = content,
         extent = ContentExtent.Measured(),
-        offset = scrollOffset?.let { ScrollOffset(0, it) },
-        anchorBottom = anchorBottom,
+        offset = scrollOffset?.let { ScrollOffset(0, it) } ?: ScrollOffset.ZERO,
         previousFocus = previousFocus,
         recenter = recenter,
     )
@@ -136,24 +134,12 @@ internal class ScrollableViewTest {
     }
 
     @Test
-    fun `null scrollOffset with anchorBottom false shows top of content`() {
-        val view = panel(stubContent(20), scrollOffset = null, anchorBottom = false)
+    fun `null scrollOffset with no marked focus shows top of content`() {
+        val view = panel(stubContent(20), scrollOffset = null)
 
         val buffer = render(view, 30, 10)
 
         assertEquals("line0", buffer.line(2, 2, 10))
-    }
-
-    @Test
-    fun `null scrollOffset with anchorBottom true shows bottom of content`() {
-        val view = panel(stubContent(20), scrollOffset = null, anchorBottom = true)
-
-        val buffer = render(view, 30, 10)
-
-        val viewportHeight = 8
-        val streamHeight = 20 + 1 // the reclaimable top-padding row is prepended to the stream
-        val maxOffset = streamHeight - viewportHeight
-        assertEquals("line${maxOffset}", buffer.line(2, 2, 10))
     }
 
     @Test

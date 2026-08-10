@@ -38,7 +38,6 @@ internal class PanelSlotTest {
             title = AttackResultsView.TITLE,
             collapsed = false,
             scrollOffset = null,
-            anchorBottom = false,
         ) { realView }
 
         val resolved = resolvePanel(slot)
@@ -50,37 +49,6 @@ internal class PanelSlotTest {
         // Content "CONTENT" placed at x+2, y+2 (inside box, past the padding spacer row)
         assertEquals("C", buffer.get(2, 2).char)
         assertEquals("O", buffer.get(3, 2).char)
-    }
-
-    @Test
-    fun `expanded slot with anchorBottom passes flag to ScrollableView`() {
-        // A content view with more lines than the viewport; bottom-anchor should show the last line
-        val lines = 20
-        val contentView = object : View {
-            override fun render(canvas: Canvas) {
-                for (i in 0 until lines) canvas.writeString(0, i, "L$i")
-            }
-        }
-        val slot = PanelSlot(
-            key = PanelId.LOG,
-            width = 30,
-            title = "T",
-            collapsed = false,
-            scrollOffset = null,
-            anchorBottom = true,
-        ) { contentView }
-
-        val resolved = resolvePanel(slot)!!
-        val buffer = render(resolved, 30, 10)
-
-        // With anchorBottom=true and null offset, last lines should be visible.
-        // viewport height = 10-2 = 8; maxOffset = 21-8 = 13 (the stream carries one extra row
-        // for the reclaimable top padding); first visible line = L12, in row 1 — the padding
-        // row is reclaimed by content once the panel is scrolled off the top.
-        val firstVisible = (0 until 8).map { row ->
-            (2 until 8).joinToString("") { col -> buffer.get(col, 1 + row).char }.trimEnd()
-        }.first { it.isNotBlank() }
-        assertTrue(firstVisible.startsWith("L12"), "Expected first visible line to start with L12 but got: $firstVisible")
     }
 
     @Test
@@ -96,7 +64,6 @@ internal class PanelSlotTest {
             title = "T",
             collapsed = false,
             scrollOffset = 5,
-            anchorBottom = false,
         ) { contentView }
 
         val resolved = resolvePanel(slot)!!
@@ -148,7 +115,7 @@ internal class PanelSlotTest {
         )
         val slot = PanelSlot(
             key = PanelId.TARGETS, width = 30, title = "TARGETS", collapsed = false,
-            scrollOffset = null, anchorBottom = false,
+            scrollOffset = null,
         ) { content }
 
         val resolved = resolvePanel(slot)!!
@@ -184,7 +151,7 @@ internal class PanelSlotTest {
         // First render establishes where the focus is.
         val firstSlot = PanelSlot(
             key = PanelId.TARGETS, width = 30, title = "TARGETS", collapsed = false,
-            scrollOffset = null, anchorBottom = false,
+            scrollOffset = null,
         ) { content() }
         val first = resolvePanel(firstSlot) as ScrollableView
         render(first, 30, 12)
@@ -193,7 +160,7 @@ internal class PanelSlotTest {
         // Second render: user has wheeled back to the top, focus unchanged.
         val secondSlot = PanelSlot(
             key = PanelId.TARGETS, width = 30, title = "TARGETS", collapsed = false,
-            scrollOffset = 0, anchorBottom = false, previousFocus = focus,
+            scrollOffset = 0, previousFocus = focus,
         ) { content() }
         val second = resolvePanel(secondSlot) as ScrollableView
         val buffer = render(second, 30, 12)
@@ -213,7 +180,6 @@ internal class PanelSlotTest {
             title = "T",
             collapsed = false,
             scrollOffset = null,
-            anchorBottom = false,
         ) { null }
 
         assertNull(resolvePanel(slot))
