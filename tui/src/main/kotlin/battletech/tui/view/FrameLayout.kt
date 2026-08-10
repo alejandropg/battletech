@@ -10,6 +10,18 @@ internal data class FrameLayout(
     val boardY: Int,
     val slots: List<PanelSlotLayout>,
 ) {
+    /**
+     * Returns the expanded (non-collapsed) [PanelSlotLayout] that contains
+     * screen column [x] at screen row [y], or `null` if none matches.
+     *
+     * Only rows `boardY until boardY + boardHeight` are considered; clicks on
+     * the status bar, board area, or collapsed stubs return null.
+     */
+    fun slotAt(x: Int, y: Int): PanelSlotLayout? {
+        if (y < boardY || y >= boardY + boardHeight) return null
+        return slots.firstOrNull { slot -> !slot.collapsed && x >= slot.x && x < slot.x + slot.width }
+    }
+
     internal companion object {
         /** Rows consumed by the status bar above the board and panels. */
         const val STATUS_BAR_HEIGHT: Int = 4

@@ -2,6 +2,7 @@ package battletech.tui.view
 
 import battletech.tui.game.PanelId
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -173,5 +174,72 @@ internal class FrameLayoutTest {
         // boardWidth = 220 - (174 + 28) = 18; HELP is last, so its x is 18 + 174 (the six
         // preceding panels' combined width) = 192.
         assertEquals(PanelSlotLayout(panelKey = PanelId.HELP, x = 192, width = 28, collapsed = false), helpSlot)
+    }
+
+    // ── slotAt ───────────────────────────────────────────────────────────────
+
+    private fun layout(
+        boardWidth: Int,
+        boardHeight: Int,
+        slots: List<PanelSlotLayout>,
+        boardY: Int = FrameLayout.STATUS_BAR_HEIGHT,
+    ) = FrameLayout(boardWidth, boardHeight, boardY, slots)
+
+    @Test
+    fun `slotAt returns the matching expanded slot`() {
+        val slot = PanelSlotLayout(panelKey = PanelId.UNIT_STATUS, x = 100, width = 28, collapsed = false)
+        val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot))
+
+        assertEquals(slot, layout.slotAt(x = 110, y = layout.boardY + 10))
+    }
+
+    @Test
+    fun `slotAt returns null when x is in board area`() {
+        val slot = PanelSlotLayout(panelKey = PanelId.UNIT_STATUS, x = 100, width = 28, collapsed = false)
+        val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot))
+
+        assertNull(layout.slotAt(x = 50, y = layout.boardY + 10))
+    }
+
+    @Test
+    fun `slotAt returns null when y is above boardY (status bar)`() {
+        val slot = PanelSlotLayout(panelKey = PanelId.UNIT_STATUS, x = 100, width = 28, collapsed = false)
+        val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot))
+
+        assertNull(layout.slotAt(x = 110, y = 0))
+    }
+
+    @Test
+    fun `slotAt returns null when y is at or past boardY + boardHeight`() {
+        val slot = PanelSlotLayout(panelKey = PanelId.UNIT_STATUS, x = 100, width = 28, collapsed = false)
+        val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot))
+
+        assertNull(layout.slotAt(x = 110, y = layout.boardY + 40))
+    }
+
+    @Test
+    fun `slotAt returns null for collapsed slot`() {
+        val slot = PanelSlotLayout(panelKey = PanelId.UNIT_STATUS, x = 100, width = 7, collapsed = true)
+        val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot))
+
+        assertNull(layout.slotAt(x = 103, y = layout.boardY + 10))
+    }
+
+    @Test
+    fun `slotAt returns null when x is past the last panel`() {
+        val slot = PanelSlotLayout(panelKey = PanelId.UNIT_STATUS, x = 100, width = 28, collapsed = false)
+        val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot))
+
+        assertNull(layout.slotAt(x = 130, y = layout.boardY + 10))
+    }
+
+    @Test
+    fun `slotAt returns correct slot from multiple slots`() {
+        val slot1 = PanelSlotLayout(panelKey = PanelId.UNIT_STATUS, x = 100, width = 28, collapsed = false)
+        val slot2 = PanelSlotLayout(panelKey = PanelId.DECLARED_TARGETS, x = 128, width = 28, collapsed = false)
+        val layout = layout(boardWidth = 100, boardHeight = 40, slots = listOf(slot1, slot2))
+
+        assertEquals(slot2, layout.slotAt(x = 128, y = layout.boardY + 10))
+        assertEquals(slot1, layout.slotAt(x = 100, y = layout.boardY + 10))
     }
 }

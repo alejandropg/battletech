@@ -2,13 +2,15 @@ package battletech.tui.input
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tui.game.PanelScroll
 import battletech.tui.hex.HexGeometry
 import battletech.tui.hex.HexLayout
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 
 public object InputMapper {
+
+    /** Number of rows scrolled per wheel tick (matches lazygit default). */
+    public const val SCROLL_STEP: Int = 2
 
     public fun isQuit(event: KeyboardEvent): Boolean =
         event.ctrl && event.key == "c"
@@ -103,10 +105,10 @@ public object InputMapper {
      * A button *release* arrives with all button flags false and yields null.
      */
     public fun scrollDelta(event: MouseEvent, overPanel: Boolean): Int? = when {
-        event.wheelUp -> -PanelScroll.STEP
-        event.wheelDown -> PanelScroll.STEP
-        overPanel && event.left -> -PanelScroll.STEP
-        overPanel && event.right -> PanelScroll.STEP
+        event.wheelUp -> -SCROLL_STEP
+        event.wheelDown -> SCROLL_STEP
+        overPanel && event.left -> -SCROLL_STEP
+        overPanel && event.right -> SCROLL_STEP
         else -> null
     }
 

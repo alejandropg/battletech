@@ -8,7 +8,6 @@ import battletech.tactical.session.MatchEnded
 import battletech.tui.game.AppState
 import battletech.tui.game.FlashMessage
 import battletech.tui.game.PanelId
-import battletech.tui.game.PanelScroll
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
@@ -28,6 +27,7 @@ import battletech.tui.view.PanelMetrics
 import battletech.tui.view.PanelSlot
 import battletech.tui.view.Panels
 import battletech.tui.view.ScrollOffset
+import battletech.tui.view.ScrollState
 import battletech.tui.view.ScrollableView
 import battletech.tui.view.StatusBarView
 import battletech.tui.view.resolvePanel
@@ -47,17 +47,16 @@ import kotlinx.coroutines.launch
 private val WHITE_STYLE = Cell.Style(Color.WHITE)
 
 /**
- * What the last render settled on. [boardFocus] and [panelFocus] are fed back into the next
- * render as each scrollable's `previousFocus`: [ScrollableView] auto-follows only when the focus
- * has actually moved, which is what lets a manual pan or wheel-scroll survive subsequent renders.
+ * What the last render settled on. [boardFocus] and each panel's [ScrollState.focus] are fed back
+ * into the next render as each scrollable's `previousFocus`: [ScrollableView] auto-follows only
+ * when the focus has actually moved, which is what lets a manual pan or wheel-scroll survive
+ * subsequent renders.
  */
 private data class RenderedFrame(
     val layout: FrameLayout,
-    val maxOffsets: Map<PanelId, Int>,
-    val panelOffsets: Map<PanelId, Int>,
+    val panels: Map<PanelId, ScrollState>,
     val boardScroll: ScrollOffset,
     val boardFocus: FocusRect?,
-    val panelFocus: Map<PanelId, FocusRect?>,
 )
 
 /**
@@ -80,16 +79,31 @@ internal suspend fun runLoop(
     var flashJob: Job? = null
     var size = currentSize(terminal)
 
+    /**
+     * Folds one rendered frame's settled scroll positions back into [appState]: the board's
+     * dense [AppState.boardScroll], and every panel actually rendered expanded this frame merged
+     * into [AppState.panelScrollOffsets] (panels invisible or collapsed this frame keep whatever
+     * they last had, so re-expanding one restores its position). Both must happen before the next
+     * event is handled — otherwise a click or wheel tick right after a pan/follow would hit-test
+     * or scroll from a stale offset.
+     */
+    fun syncScroll(rendered: RenderedFrame) {
+        appState = appState.copy(
+            boardScroll = rendered.boardScroll,
+            panelScrollOffsets = appState.panelScrollOffsets + rendered.panels.mapValues { it.value.offset.y },
+        )
+    }
+
     // Render the initial frame before collecting any events. No previous frame, so every
     // scrollable follows its focus into view for the first time.
     var frame = renderFrame(size, renderer, appState, activeFlash, previous = null)
-    appState = appState.copy(boardScroll = frame.boardScroll)
+    syncScroll(frame)
 
     /**
-     * Every subsequent render goes through here so that (a) the board's effective scroll is
-     * synced back into appState before the next event is handled — otherwise a click right after
-     * a pan/follow would hit-test against a stale offset — and (b) the previous frame's focus
-     * rects are carried forward, which is what makes auto-follow fire on focus movement only.
+     * Every subsequent render goes through here so that (a) the settled scroll positions are
+     * synced back into appState before the next event is handled (see [syncScroll]) and (b) the
+     * previous frame's focus rects are carried forward, which is what makes auto-follow fire on
+     * focus movement only.
      *
      * [forgetFocus] drops that carry-forward so everything re-follows: used on resize, where the
      * viewport changes but content-space focus does not, and a shrink could otherwise strand the
@@ -101,7 +115,7 @@ internal suspend fun runLoop(
             previous = if (forgetFocus) null else frame,
             recenterBoard = recenterBoard,
         )
-        appState = appState.copy(boardScroll = frame.boardScroll)
+        syncScroll(frame)
     }
 
     events.takeWhile { it != UiEvent.Quit }.collect { ui ->
@@ -120,18 +134,13 @@ internal suspend fun runLoop(
                     // which applies the Mordant posix wheel-parsing workaround (left/right
                     // press over a panel treated as wheel-up/down; see InputMapper.scrollDelta).
                     if (event is MouseEvent) {
-                        val slot = PanelScroll.slotAt(frame.layout, event.x, event.y)
+                        val slot = frame.layout.slotAt(event.x, event.y)
                         val delta = InputMapper.scrollDelta(event, overPanel = slot != null)
                         if (delta != null) {
                             if (slot != null) {
+                                val current = appState.panelScrollOffsets[slot.panelKey] ?: 0
                                 appState = appState.copy(
-                                    panelScrollOffsets = PanelScroll.update(
-                                        appState.panelScrollOffsets,
-                                        slot.panelKey,
-                                        delta,
-                                        frame.panelOffsets[slot.panelKey] ?: 0,
-                                        frame.maxOffsets[slot.panelKey] ?: 0,
-                                    ),
+                                    panelScrollOffsets = appState.panelScrollOffsets + (slot.panelKey to (current + delta)),
                                 )
                             }
                             render()
@@ -332,9 +341,7 @@ private fun renderFrame(
     val board = screen.region(0, layout.boardY, layout.boardWidth, layout.boardHeight)
     boardScrollable.render(board)
 
-    val maxOffsets = mutableMapOf<PanelId, Int>()
-    val panelOffsets = mutableMapOf<PanelId, Int>()
-    val panelFocus = mutableMapOf<PanelId, FocusRect?>()
+    val panels = mutableMapOf<PanelId, ScrollState>()
     for (slot in layout.slots) {
         val panel = Panels.byId.getValue(slot.panelKey)
         val panelSlot = PanelSlot(
@@ -343,14 +350,12 @@ private fun renderFrame(
             title = panel.title,
             collapsed = slot.collapsed,
             scrollOffset = appState.panelScrollOffsets[slot.panelKey],
-            previousFocus = previous?.panelFocus?.get(slot.panelKey),
+            previousFocus = previous?.panels?.get(slot.panelKey)?.focus,
         ) { panel.build(frame) }
         val view = resolvePanel(panelSlot)
         view?.render(screen.region(slot.x, layout.boardY, slot.width, layout.boardHeight))
         if (view is ScrollableView) {
-            maxOffsets[slot.panelKey] = view.state.maxOffset.y
-            panelOffsets[slot.panelKey] = view.state.offset.y
-            panelFocus[slot.panelKey] = view.state.focus
+            panels[slot.panelKey] = view.state
         }
     }
 
@@ -376,9 +381,8 @@ private fun renderFrame(
 
     renderer.render(buffer)
     return RenderedFrame(
-        layout, maxOffsets, panelOffsets,
+        layout, panels,
         boardScroll = boardScrollable.state.offset,
         boardFocus = boardScrollable.state.focus,
-        panelFocus = panelFocus,
     )
 }

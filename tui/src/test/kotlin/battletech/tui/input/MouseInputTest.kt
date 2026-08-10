@@ -1,7 +1,6 @@
 package battletech.tui.input
 
 import battletech.tactical.model.HexCoordinates
-import battletech.tui.game.PanelScroll
 import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -61,42 +60,42 @@ internal class MouseInputTest {
     fun `wheelUp over panel returns negative delta`() {
         val event = MouseEvent(x = 10, y = 10, wheelUp = true)
 
-        assertEquals(-PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = true))
+        assertEquals(-InputMapper.SCROLL_STEP, InputMapper.scrollDelta(event, overPanel = true))
     }
 
     @Test
     fun `wheelUp not over panel returns negative delta`() {
         val event = MouseEvent(x = 10, y = 10, wheelUp = true)
 
-        assertEquals(-PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = false))
+        assertEquals(-InputMapper.SCROLL_STEP, InputMapper.scrollDelta(event, overPanel = false))
     }
 
     @Test
     fun `wheelDown over panel returns positive delta`() {
         val event = MouseEvent(x = 10, y = 10, wheelDown = true)
 
-        assertEquals(PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = true))
+        assertEquals(InputMapper.SCROLL_STEP, InputMapper.scrollDelta(event, overPanel = true))
     }
 
     @Test
     fun `wheelDown not over panel returns positive delta`() {
         val event = MouseEvent(x = 10, y = 10, wheelDown = true)
 
-        assertEquals(PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = false))
+        assertEquals(InputMapper.SCROLL_STEP, InputMapper.scrollDelta(event, overPanel = false))
     }
 
     @Test
     fun `left press over panel returns negative delta (Mordant wheel workaround)`() {
         val event = MouseEvent(x = 10, y = 10, left = true)
 
-        assertEquals(-PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = true))
+        assertEquals(-InputMapper.SCROLL_STEP, InputMapper.scrollDelta(event, overPanel = true))
     }
 
     @Test
     fun `right press over panel returns positive delta (Mordant wheel workaround)`() {
         val event = MouseEvent(x = 10, y = 10, right = true)
 
-        assertEquals(PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = true))
+        assertEquals(InputMapper.SCROLL_STEP, InputMapper.scrollDelta(event, overPanel = true))
     }
 
     @Test
@@ -124,6 +123,6 @@ internal class MouseInputTest {
     fun `wheelUp takes precedence over overPanel=false`() {
         val event = MouseEvent(x = 10, y = 10, wheelUp = true)
 
-        assertEquals(-PanelScroll.STEP, InputMapper.scrollDelta(event, overPanel = false))
+        assertEquals(-InputMapper.SCROLL_STEP, InputMapper.scrollDelta(event, overPanel = false))
     }
 }
