@@ -9,6 +9,8 @@ import battletech.tui.aGameState
 import battletech.tui.aTurnState
 import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackPhase
+import battletech.tui.game.phase.BOARD_ORIGIN_X
+import battletech.tui.game.phase.BOARD_ORIGIN_Y
 import battletech.tui.game.phase.MovementPhase
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
@@ -38,9 +40,12 @@ internal class SeatGuardTest {
     private fun cKey(): KeyboardEvent = KeyboardEvent("c")
     private fun arrowUp(): KeyboardEvent = KeyboardEvent("ArrowUp")
 
-    // Maps to hex (0, 0) at BOARD_ORIGIN_X/Y = 2, 2 — see InputMapperTest's
-    // `left click maps to hex coordinates`.
-    private fun clickOnOrigin(): MouseEvent = MouseEvent(x = 5, y = 3, left = true)
+    // A click in the middle of hex (0, 0), expressed relative to the board origin rather than as
+    // fixed screen coordinates — the previous hardcoded (5, 3) silently encoded a BOARD_ORIGIN_Y
+    // that ignored the status bar, and would have to be edited again on any chrome change.
+    // (+4, +3) is the hex's centre cell; see BoardClickMappingTest for the real round-trip.
+    private fun clickOnOrigin(): MouseEvent =
+        MouseEvent(x = BOARD_ORIGIN_X + 4, y = BOARD_ORIGIN_Y + 3, left = true)
 
     @Nested
     inner class MovementIdleBlockedOnOpponentTurn {
