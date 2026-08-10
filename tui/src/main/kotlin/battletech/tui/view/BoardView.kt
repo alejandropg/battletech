@@ -16,12 +16,12 @@ import battletech.tui.screen.Color
 
 /**
  * The tactical map's content: every hex, highlight, and unit glyph, drawn at its unscrolled
- * screen position. Purely content — chrome and scrolling belong to the [ScrollableView] that
+ * screen position. Purely content — chrome and scrolling belong to the [Bordered]/[Scrolled] that
  * wraps this view (see its construction in `RunLoop.renderFrame`); the only thing this view
  * contributes to scrolling is marking the cursor hex as focus via [Canvas.markFocus], so
  * auto-follow keeps it visible.
  */
-public class BoardView(
+internal class BoardView(
     private val state: PlayerGameState,
     private val cursorPosition: HexCoordinates? = null,
     private val hexHighlights: Map<HexCoordinates, HexHighlight> = emptyMap(),

@@ -2,7 +2,6 @@ package battletech.tui.view
 
 import battletech.tui.screen.Canvas
 import battletech.tui.screen.Color
-import battletech.tui.screen.ContentWriter
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue

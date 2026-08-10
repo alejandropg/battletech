@@ -41,10 +41,18 @@ internal data class AppState(
     val seats: Map<PlayerId, GameSession>,
     val phase: Phase,
     val cursor: HexCoordinates,
-    val collapsedPanels: Set<PanelId> = setOf(PanelId.HELP),
+    // Whether the HELP panel exists this frame — a user action recorded here (like any other
+    // AppState field a phase or event can drive), NOT a display preference. It feeds
+    // battletech.tui.game.PanelVisibility, which battletech.tui.view.Panel cannot see; a panel's
+    // own collapsed-vs-expanded choice, in contrast, has no reader outside its own rendering and
+    // so lives on the Panel instead. See PanelVisibility's KDoc for the `Alt+h` vs `Alt+<key>`
+    // distinction this split exists to express.
+    val helpOpen: Boolean = false,
     val lastAttackResults: List<AttackResult>? = null,
-    val panelScrollOffsets: Map<PanelId, Int> = emptyMap(),
     val matchEnded: MatchEnded? = null,
+    // Read by both rendering (Workspace) and input mapping (SelectingCommon's click-to-hex),
+    // unlike a side panel's scroll — which only rendering ever reads, and so lives on the Panel
+    // itself (see Panel's KDoc) — so this one stays here, the one place both readers can see it.
     val boardScroll: ScrollOffset = ScrollOffset.ZERO,
 ) {
     /**

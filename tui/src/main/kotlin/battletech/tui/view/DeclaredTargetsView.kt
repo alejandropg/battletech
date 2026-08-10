@@ -6,7 +6,6 @@ import battletech.tui.hex.targetIcon
 import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
-import battletech.tui.screen.ContentWriter
 
 internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {
 

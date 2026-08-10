@@ -10,7 +10,7 @@ internal fun render(view: View, width: Int, height: Int): ScreenBuffer {
     return buffer
 }
 
-/** Renders [content] inside the real [ScrollableView] panel chrome — the pixel-parity regression guard. */
+/** Renders [content] inside the real [scrollingPanel] chrome — the pixel-parity regression guard. */
 internal fun renderInPanel(
     content: View,
     key: Char = '0',
@@ -19,7 +19,7 @@ internal fun renderInPanel(
     height: Int = 30,
     scrollOffset: Int? = 0,
 ): ScreenBuffer = render(
-    ScrollableView(
+    scrollingPanel(
         title = title,
         badge = key.toString(),
         content = content,

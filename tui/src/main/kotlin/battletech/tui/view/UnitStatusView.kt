@@ -19,9 +19,8 @@ import battletech.tui.hex.pilotDeadIcon
 import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
-import battletech.tui.screen.ContentWriter
 
-public class UnitStatusView(
+internal class UnitStatusView(
     private val subject: VisibleUnit?,
     private val pendingHeat: List<HeatSource> = emptyList(),
 ) : View {

@@ -1,4 +1,9 @@
-package battletech.tui.screen
+package battletech.tui.view
+
+import battletech.tui.screen.Canvas
+import battletech.tui.screen.Cell
+import battletech.tui.screen.CellWidth
+import battletech.tui.screen.Color
 
 internal class ContentWriter(private val canvas: Canvas) {
     val width: Int get() = canvas.width

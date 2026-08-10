@@ -3,13 +3,15 @@ package battletech.tui.game
 import battletech.tactical.model.TurnPhase
 
 /**
- * Decides which side panels are visible this frame, as a set of [PanelId] values. Composes
- * three kinds of owner:
+ * Decides which side panels EXIST this frame, as a set of [PanelId] values. Composes four kinds
+ * of owner:
  *
- *  - **Always-on** structural panels (LOG, UNIT STATUS, HELP). HELP is structurally always part
- *    of the layout — `battletech.tui.view.Panel.collapsedWidth` being `0` for HELP plus
- *    [AppState.collapsedPanels] (closed by default) are what actually keep it off screen the
- *    rest of the time.
+ *  - **Always-on** structural panels (LOG, UNIT STATUS).
+ *  - **User-opened** panels (HELP) — [AppState.helpOpen], toggled by `Alt+h`. Unlike every other
+ *    panel's `Alt+<key>`, which toggles collapse on a panel that already exists (a display
+ *    preference owned by `battletech.tui.view.Panel` itself), `Alt+h` toggles whether HELP
+ *    exists AT ALL — a different action, so it is a different piece of state, and one that
+ *    belongs here rather than on the panel (see [AppState.helpOpen]'s KDoc).
  *  - **Cross-phase** state-driven panels (ATTACK RESULTS) whose visibility spans
  *    several phases and depends on [AppState] rather than any single phase.
  *  - **Phase-local** panels, delegated to the active phase via
@@ -21,7 +23,7 @@ internal object PanelVisibility {
     fun visiblePanels(appState: AppState): Set<PanelId> = buildSet {
         add(PanelId.LOG)
         add(PanelId.UNIT_STATUS)
-        add(PanelId.HELP)
+        if (appState.helpOpen) add(PanelId.HELP)
 
         // Results stay visible from weapon resolution onward (through physical
         // attack + movement). Only the weapon-attack flow hides them.

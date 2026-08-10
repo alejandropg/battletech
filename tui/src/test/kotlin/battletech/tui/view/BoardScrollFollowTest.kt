@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * The board composed the way [composeFrame] composes it — real [BoardView] content inside a
- * [ScrollableView] — driven across consecutive renders with focus carried forward, which is the
+ * The board composed the way [Workspace.render] composes it — real [BoardView] content inside a
+ * [scrollingPanel] — driven across consecutive renders with focus carried forward, which is the
  * only place the pan-then-snap-back defect was observable.
  */
 internal class BoardScrollFollowTest {
@@ -26,9 +26,9 @@ internal class BoardScrollFollowTest {
         offset: ScrollOffset,
         previousFocus: FocusRect?,
         recenter: Boolean = false,
-    ): ScrollableView {
+    ): Bordered {
         val (w, h) = BoardView.contentSize(state.map)
-        return ScrollableView(
+        return scrollingPanel(
             title = "TACTICAL MAP",
             badge = null,
             content = BoardView(state, cursorPosition = cursor),

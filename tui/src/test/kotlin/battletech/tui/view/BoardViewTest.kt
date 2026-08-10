@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * [BoardView] is now plain content — no chrome, no scroll, no clipping; that's all
- * [ScrollableView]'s job (see `ScrollableViewTest` and `RunLoop`'s composition of the two). Every
+ * [Scrolled]'s job (see `ScrolledTest` and `RunLoop`'s composition of the two). Every
  * coordinate here is therefore the RAW, unscrolled position [HexLayout.hexToScreen] gives a hex,
  * with no border/padding offset added.
  */
@@ -51,7 +51,7 @@ internal class BoardViewTest {
     }
 
     @Test
-    fun `marks the cursor hex as focus, for the enclosing ScrollableView to auto-follow`() {
+    fun `marks the cursor hex as focus, for the enclosing Scrolled to auto-follow`() {
         val state = aGameState(map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val cursor = HexCoordinates(1, 1)
         val view = BoardView(state, cursorPosition = cursor)

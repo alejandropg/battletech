@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test
 /**
  * Round-trips a click through the REAL frame composition: a unit is rendered onto the board
  * exactly as `RunLoop.renderFrame` composes it (status bar, board region at
- * [FrameLayout.STATUS_BAR_HEIGHT], [ScrollableView] chrome, [BoardView] content), its glyph is
+ * [Workspace.STATUS_BAR_HEIGHT], [scrollingPanel] chrome, [BoardView] content), its glyph is
  * located by scanning the resulting screen buffer, and that screen position is fed back through
  * [InputMapper.mapMouseToHex].
  *
@@ -41,16 +41,16 @@ internal class BoardClickMappingTest {
     private fun renderFrame(state: PlayerGameState, width: Int = 100, height: Int = 30): ScreenBuffer {
         val buffer = ScreenBuffer(width, height)
         val screen = Canvas.of(buffer)
-        val boardHeight = height - FrameLayout.STATUS_BAR_HEIGHT
+        val boardHeight = height - Workspace.STATUS_BAR_HEIGHT
         val (mapWidth, mapHeight) = BoardView.contentSize(state.map)
-        val board = ScrollableView(
+        val board = scrollingPanel(
             title = "TACTICAL MAP",
             badge = null,
             content = BoardView(state),
             extent = ContentExtent.Fixed(mapWidth, mapHeight),
             offset = ScrollOffset.ZERO,
         )
-        board.render(screen.region(0, FrameLayout.STATUS_BAR_HEIGHT, width, boardHeight))
+        board.render(screen.region(0, Workspace.STATUS_BAR_HEIGHT, width, boardHeight))
         return buffer
     }
 

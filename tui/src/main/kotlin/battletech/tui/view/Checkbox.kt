@@ -3,7 +3,6 @@ package battletech.tui.view
 import battletech.tui.hex.checkboxIcon
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
-import battletech.tui.screen.ContentWriter
 
 /** Reusable single-cell NerdFont checkbox glyph. */
 internal object Checkbox {

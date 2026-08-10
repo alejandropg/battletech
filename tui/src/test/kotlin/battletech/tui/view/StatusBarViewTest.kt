@@ -42,7 +42,7 @@ internal class StatusBarViewTest {
     fun `at production height, label and prompt sit flush against the borders with no clipping`() {
         val view = StatusBarView(TurnPhase.MOVEMENT, "Select destination")
 
-        val buffer = render(view, 50, FrameLayout.STATUS_BAR_HEIGHT)
+        val buffer = render(view, 50, Workspace.STATUS_BAR_HEIGHT)
 
         assertEquals("╭", buffer.get(0, 0).char)
         val phaseLabel = (2 until 12).joinToString("") { buffer.get(it, 1).char }

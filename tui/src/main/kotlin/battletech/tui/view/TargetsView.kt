@@ -5,9 +5,8 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
-import battletech.tui.screen.ContentWriter
 
-public class TargetsView(
+internal class TargetsView(
     private val targets: List<TargetInfo>,
     private val weaponAssignments: Map<UnitId, Set<Int>>,
     private val primaryTargetId: UnitId?,

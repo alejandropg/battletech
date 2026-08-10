@@ -13,7 +13,7 @@ internal data class ScrollOffset(val x: Int = 0, val y: Int = 0) {
 }
 
 /**
- * What a [ScrollableView] actually rendered at: the offset it settled on, each axis's max, and the
+ * What a [Scrolled] actually rendered at: the offset it settled on, each axis's max, and the
  * [focus] its content marked. [focus] must be carried back in as the next render's
  * `previousFocus` — that comparison is what distinguishes "the focus moved, chase it" from "the
  * user scrolled, leave it alone".
@@ -29,7 +29,7 @@ internal data class ScrollState(
 }
 
 /**
- * How much content a [ScrollableView] must accommodate, and how to find out.
+ * How much content a [Scrolled] must accommodate, and how to find out.
  *
  * Which axes actually scroll is never chosen explicitly — it falls out of the extent: an axis's
  * max offset is `contentSize - viewportSize`, so [Measured] content (always exactly
@@ -44,9 +44,10 @@ internal sealed interface ContentExtent {
 }
 
 /**
- * The one place in the TUI that knows how to scroll: chrome, an offscreen content stream,
- * clamping, blitting, and per-axis scrollbars — used identically by side panels (vertical,
- * measured content) and the tactical board (both axes, fixed content).
+ * The one place in the TUI that knows how to scroll: an offscreen content stream, clamping, and
+ * blitting into whatever canvas it is given — that canvas IS the viewport, at full size, with no
+ * border or padding of its own. Chrome (border, title, padding, scrollbars) is a separate
+ * decorator; see [scrollingPanel] for how side panels and the tactical board compose the two.
  *
  * Content opts into auto-follow with nothing more than [Canvas.markFocus] — see its KDoc. Content
  * that never marks focus scrolls manually only, exactly as before this class existed.
@@ -59,42 +60,36 @@ internal sealed interface ContentExtent {
  * coordinates, independent of scroll, so "focus differs" means exactly "the thing worth watching
  * moved" and never "the user scrolled". Callers persist [ScrollState.focus] between renders.
  */
-internal class ScrollableView(
-    private val title: String,
-    private val badge: String?,
+internal class Scrolled(
     private val content: View,
     private val extent: ContentExtent,
     private val offset: ScrollOffset = ScrollOffset.ZERO,
     private val previousFocus: FocusRect? = null,
     private val recenter: Boolean = false,
-) : Pane {
+) : View {
 
     /** What was actually rendered — the effective offset and each axis's max. Set by [render]. */
-    override var scroll: ScrollState = ScrollState.NONE
+    var scroll: ScrollState = ScrollState.NONE
         private set
 
     override fun render(canvas: Canvas) {
-        val chrome = PanelChrome.drawScrollable(canvas, title, badge)
-        val viewport = chrome.viewport
+        val viewport = canvas
         if (viewport.width <= 0 || viewport.height <= 0) {
             scroll = ScrollState.NONE
             return
         }
 
-        val padding = chrome.streamPadding
         val streamWidth = when (extent) {
             is ContentExtent.Measured -> viewport.width
             is ContentExtent.Fixed -> extent.width
         }
         val allocatedHeight = when (extent) {
             is ContentExtent.Measured -> extent.maxHeight
-            is ContentExtent.Fixed -> extent.height + padding.top + padding.bottom
+            is ContentExtent.Fixed -> extent.height
         }
 
-        // The top padding row is reserved inside the stream, not baked into the viewport inset,
-        // so it reads as a spacer at rest and content reclaims it the moment the view scrolls.
         val stream = Canvas.offscreen(streamWidth, allocatedHeight)
-        content.render(stream.inset(padding))
+        content.render(stream)
 
         val streamHeight = when (extent) {
             is ContentExtent.Measured -> stream.contentHeight()
@@ -117,12 +112,6 @@ internal class ScrollableView(
 
         viewport.blit(stream, offsetX, offsetY, 0, 0, viewport.width, viewport.height)
 
-        PanelChrome.drawThumbs(
-            canvas,
-            vertical = Scrollbar.thumb(track = viewport.height, contentHeight = streamHeight, viewportHeight = viewport.height, offset = offsetY),
-            horizontal = Scrollbar.thumb(track = viewport.width, contentHeight = streamWidth, viewportHeight = viewport.width, offset = offsetX),
-        )
-
         scroll = ScrollState(ScrollOffset(offsetX, offsetY), ScrollOffset(maxOffsetX, maxOffsetY), focus)
     }
 
@@ -138,4 +127,40 @@ internal class ScrollableView(
         shouldFollow -> ScrollFollow.follow(base, focusRange.first, focusRange.second, viewportSize, maxOffset)
         else -> base.coerceIn(0, maxOffset)
     }
+}
+
+/**
+ * Composes a bordered, scrolling panel: [Bordered] for the box, [Scrolled] for the scroll math,
+ * and [Padded] for the reclaimable top spacer row — the single construction site every scrolling
+ * panel (side panels and the tactical board alike) goes through, so the three decorators are
+ * wired together exactly once.
+ *
+ * The vertical component of [Bordered.PADDING] is folded into the content stream (via [Padded],
+ * and — for [ContentExtent.Fixed] — into the extent's height) rather than the viewport, which is
+ * what makes it a spacer at rest that the content reclaims the moment the view scrolls. The
+ * horizontal component becomes [gutters][Bordered], a pure viewport concern.
+ */
+internal fun scrollingPanel(
+    title: String,
+    badge: String?,
+    content: View,
+    extent: ContentExtent,
+    offset: ScrollOffset = ScrollOffset.ZERO,
+    previousFocus: FocusRect? = null,
+    recenter: Boolean = false,
+): Bordered {
+    val verticalPadding = Bordered.PADDING.vertical()
+    val paddedContent = Padded(verticalPadding, content)
+    val paddedExtent = when (extent) {
+        is ContentExtent.Measured -> extent
+        is ContentExtent.Fixed -> ContentExtent.Fixed(extent.width, extent.height + verticalPadding.top + verticalPadding.bottom)
+    }
+    val scrolled = Scrolled(paddedContent, paddedExtent, offset, previousFocus, recenter)
+    return Bordered(
+        content = scrolled,
+        title = title,
+        badge = badge,
+        gutters = Bordered.PADDING.horizontal(),
+        thumbsFrom = scrolled,
+    )
 }

@@ -21,7 +21,7 @@ internal class PanelVisibilityTest {
     private val cursor = HexCoordinates(0, 0)
 
     @Test
-    fun `movement phase shows only LOG, UNIT STATUS and HELP`() {
+    fun `movement phase shows only LOG and UNIT STATUS by default`() {
         val appState = AppState(
             gameState = emptyState,
             phase = MovementPhase.SelectingUnit,
@@ -30,7 +30,7 @@ internal class PanelVisibilityTest {
 
         val visible = PanelVisibility.visiblePanels(appState)
 
-        assertEquals(setOf(PanelId.LOG, PanelId.UNIT_STATUS, PanelId.HELP), visible)
+        assertEquals(setOf(PanelId.LOG, PanelId.UNIT_STATUS), visible)
     }
 
     @Test
@@ -80,12 +80,25 @@ internal class PanelVisibilityTest {
     }
 
     @Test
-    fun `HELP is visible even though it starts collapsed by default`() {
+    fun `HELP is closed by default`() {
         val appState = AppState(
             gameState = emptyState,
             phase = MovementPhase.SelectingUnit,
             cursor = cursor,
         )
+
+        val visible = PanelVisibility.visiblePanels(appState)
+
+        assertFalse(visible.contains(PanelId.HELP))
+    }
+
+    @Test
+    fun `HELP becomes visible once opened`() {
+        val appState = AppState(
+            gameState = emptyState,
+            phase = MovementPhase.SelectingUnit,
+            cursor = cursor,
+        ).copy(helpOpen = true)
 
         val visible = PanelVisibility.visiblePanels(appState)
 

@@ -2,7 +2,6 @@ package battletech.tui.view
 
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
-import battletech.tui.screen.ContentWriter
 
 internal class HeatBarWidget(
     private val barWidth: Int,

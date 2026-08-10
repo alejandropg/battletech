@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 internal class PanelIdTest {
 
     /**
-     * The key doubles as the user-facing `Alt+<key>` chord and the `drawBox`
+     * The key doubles as the user-facing `Alt+<key>` chord and the `Bordered`
      * decoration badge. Pin the values so a future reorder of the enum
      * can't silently remap which panel each keystroke acts on.
      */

@@ -11,9 +11,8 @@ import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
 import battletech.tui.input.PanAction
 import battletech.tui.screen.ScreenRenderer
-import battletech.tui.view.Frame
 import battletech.tui.view.ScrollOffset
-import battletech.tui.view.composeFrame
+import battletech.tui.view.Workspace
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.rendering.Size
@@ -47,48 +46,30 @@ internal suspend fun runLoop(
     var flashJob: Job? = null
     var size = currentSize(terminal)
 
-    /**
-     * Folds one composed frame's settled scroll positions back into [appState]: the board's
-     * dense [AppState.boardScroll], and every panel actually rendered expanded this frame merged
-     * into [AppState.panelScrollOffsets] (panels invisible or collapsed this frame keep whatever
-     * they last had, so re-expanding one restores its position). Both must happen before the next
-     * event is handled — otherwise a click or wheel tick right after a pan/follow would hit-test
-     * or scroll from a stale offset.
-     */
-    fun syncScroll(composed: Frame) {
-        appState = appState.copy(
-            boardScroll = composed.board.offset,
-            panelScrollOffsets = appState.panelScrollOffsets + composed.panels.mapValues { it.value.offset.y },
-        )
-    }
-
-    // Render the initial frame before collecting any events. No previous frame, so every
-    // scrollable follows its focus into view for the first time.
-    val (initialBuffer, initialFrame) = composeFrame(appState, size.width, size.height, activeFlash, previous = null)
-    renderer.render(initialBuffer)
-    var frame = initialFrame
-    syncScroll(frame)
+    // One Workspace for this whole run: every panel remembers its own collapsed state, scroll
+    // offset, and auto-follow focus across frames (see Panel's KDoc) — nothing but the board's
+    // scroll offset round-trips back through appState (see AppState.boardScroll's KDoc).
+    val workspace = Workspace()
 
     /**
-     * Every subsequent render goes through here so that (a) the settled scroll positions are
-     * synced back into appState before the next event is handled (see [syncScroll]) and (b) the
-     * previous frame's focus rects are carried forward, which is what makes auto-follow fire on
-     * focus movement only.
+     * Every render goes through here so the board's settled scroll offset is folded back into
+     * [appState] before the next event is handled — otherwise a click or wheel tick right after a
+     * pan/follow would hit-test or scroll from a stale offset.
      *
-     * [forgetFocus] drops that carry-forward so everything re-follows: used on resize, where the
+     * [forgetFocus] tells every panel (and the board) to treat their content's focus as freshly
+     * arrived rather than compared against what was last settled: used on resize, where the
      * viewport changes but content-space focus does not, and a shrink could otherwise strand the
      * cursor off-screen.
      */
     fun render(recenterBoard: Boolean = false, forgetFocus: Boolean = false) {
-        val (buffer, next) = composeFrame(
-            appState, size.width, size.height, activeFlash,
-            previous = if (forgetFocus) null else frame,
-            recenterBoard = recenterBoard,
-        )
+        val buffer = workspace.render(appState, size.width, size.height, activeFlash, recenterBoard, forgetFocus)
         renderer.render(buffer)
-        frame = next
-        syncScroll(frame)
+        appState = appState.copy(boardScroll = workspace.boardOffset)
     }
+
+    // Render the initial frame before collecting any events. forgetFocus = true so every panel
+    // (and the board) follows its focus into view for the first time, exactly as a resize does.
+    render(forgetFocus = true)
 
     events.takeWhile { it != UiEvent.Quit }.collect { ui ->
         // A single bad event must not propagate out of collect: that would cancel this
@@ -102,19 +83,14 @@ internal suspend fun runLoop(
                     val event = ui.event
 
                     // Handle scroll events before any other input dispatch.
-                    // Slot is computed first so overPanel can be passed to scrollDelta,
+                    // The panel is looked up first so overPanel can be passed to scrollDelta,
                     // which applies the Mordant posix wheel-parsing workaround (left/right
                     // press over a panel treated as wheel-up/down; see InputMapper.scrollDelta).
                     if (event is MouseEvent) {
-                        val slot = frame.layout.slotAt(event.x, event.y)
-                        val delta = InputMapper.scrollDelta(event, overPanel = slot != null)
+                        val panelId = workspace.panelAt(event.x, event.y)
+                        val delta = InputMapper.scrollDelta(event, overPanel = panelId != null)
                         if (delta != null) {
-                            if (slot != null) {
-                                val current = appState.panelScrollOffsets[slot.id] ?: 0
-                                appState = appState.copy(
-                                    panelScrollOffsets = appState.panelScrollOffsets + (slot.id to (current + delta)),
-                                )
-                            }
+                            panelId?.let { workspace.scrollPanel(it, delta) }
                             render()
                             return@collect  // scroll events never reach phases
                         }
@@ -122,10 +98,17 @@ internal suspend fun runLoop(
 
                     val panel = (event as? KeyboardEvent)?.let(InputMapper::panelKey)?.let(PanelId::byKey)
                     if (panel != null) {
-                        if (panel in PanelVisibility.visiblePanels(appState)) {
-                            val current = appState.collapsedPanels
-                            val next = if (panel in current) current - panel else current + panel
-                            appState = appState.copy(collapsedPanels = next)
+                        // Alt+h is a different action from every other panel's Alt+<key>: it
+                        // toggles whether HELP EXISTS this frame (an AppState fact PanelVisibility
+                        // reads), not a display preference the panel remembers about itself — see
+                        // AppState.helpOpen's KDoc. Every other panel's key toggles its own
+                        // collapsed-vs-expanded state directly, and only when it's actually shown
+                        // this frame — collapsing a panel that isn't on screen would be a no-op
+                        // anyway, so the guard just makes that explicit.
+                        if (panel == PanelId.HELP) {
+                            appState = appState.copy(helpOpen = !appState.helpOpen)
+                        } else if (panel in PanelVisibility.visiblePanels(appState)) {
+                            workspace.toggleCollapsed(panel)
                         }
                         render()
                         return@collect

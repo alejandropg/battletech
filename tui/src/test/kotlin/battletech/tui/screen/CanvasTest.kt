@@ -128,114 +128,13 @@ internal class CanvasTest {
     }
 
     @Test
-    fun `drawBox renders corners around the whole canvas`() {
-        val canvas = Canvas.offscreen(10, 5)
-
-        canvas.drawBox()
-
-        assertEquals("╭", canvas.get(0, 0).char)
-        assertEquals("╮", canvas.get(9, 0).char)
-        assertEquals("╰", canvas.get(0, 4).char)
-        assertEquals("╯", canvas.get(9, 4).char)
-    }
-
-    @Test
-    fun `drawBox renders horizontal and vertical borders`() {
-        val canvas = Canvas.offscreen(6, 4)
-
-        canvas.drawBox()
-
-        for (i in 1..4) {
-            assertEquals("─", canvas.get(i, 0).char)
-            assertEquals("─", canvas.get(i, 3).char)
-        }
-        for (i in 1..2) {
-            assertEquals("│", canvas.get(0, i).char)
-            assertEquals("│", canvas.get(5, i).char)
-        }
-    }
-
-    @Test
-    fun `drawBox renders title`() {
-        val canvas = Canvas.offscreen(20, 3)
-
-        canvas.drawBox("TEST")
-
-        assertEquals(" ", canvas.get(3, 0).char)
-        assertEquals("T", canvas.get(4, 0).char)
-        assertEquals("E", canvas.get(5, 0).char)
-        assertEquals("S", canvas.get(6, 0).char)
-        assertEquals("T", canvas.get(7, 0).char)
-        assertEquals(" ", canvas.get(8, 0).char)
-        assertEquals(Color.BRIGHT_YELLOW, canvas.get(4, 0).style.fg)
-        assertEquals(Color.GREEN, canvas.get(0, 0).style.fg)
-    }
-
-    @Test
-    fun `drawBox uses specified colors`() {
-        val canvas = Canvas.offscreen(10, 3)
-
-        canvas.drawBox("", borderColor = Color.RED, titleColor = Color.WHITE)
-
-        assertEquals(Color.RED, canvas.get(0, 0).style.fg)
-    }
-
-    @Test
-    fun `drawBox renders single-char badge title`() {
-        val canvas = Canvas.offscreen(20, 3)
-
-        canvas.drawBox("TEST", badge = "2")
-
-        assertEquals("[", canvas.get(2, 0).char)
-        assertEquals("2", canvas.get(3, 0).char)
-        assertEquals("]", canvas.get(4, 0).char)
-        assertEquals(" ", canvas.get(5, 0).char)
-        assertEquals("T", canvas.get(6, 0).char)
-        assertEquals("E", canvas.get(7, 0).char)
-        assertEquals("S", canvas.get(8, 0).char)
-        assertEquals("T", canvas.get(9, 0).char)
-        assertEquals(" ", canvas.get(10, 0).char)
-        assertEquals(Color.BRIGHT_YELLOW, canvas.get(2, 0).style.fg)
-        assertEquals(Color.BRIGHT_YELLOW, canvas.get(6, 0).style.fg)
-    }
-
-    @Test
-    fun `drawBox renders letter badge title, e g HELP`() {
-        val canvas = Canvas.offscreen(20, 3)
-
-        canvas.drawBox("HELP", badge = "h")
-
-        assertEquals("[", canvas.get(2, 0).char)
-        assertEquals("h", canvas.get(3, 0).char)
-        assertEquals("]", canvas.get(4, 0).char)
-        assertEquals(" ", canvas.get(5, 0).char)
-        assertEquals("H", canvas.get(6, 0).char)
-        assertEquals("E", canvas.get(7, 0).char)
-        assertEquals("L", canvas.get(8, 0).char)
-        assertEquals("P", canvas.get(9, 0).char)
-        assertEquals(" ", canvas.get(10, 0).char)
-        assertEquals(Color.BRIGHT_YELLOW, canvas.get(3, 0).style.fg)
-        assertEquals(Color.BRIGHT_YELLOW, canvas.get(6, 0).style.fg)
-    }
-
-    @Test
-    fun `drawBox skips title when box too narrow`() {
-        val canvas = Canvas.offscreen(8, 3)
-
-        canvas.drawBox("TOOLONG")
-
-        assertEquals("─", canvas.get(3, 0).char)
-    }
-
-    @Test
     fun `region derives a canvas at a local offset`() {
         val buffer = ScreenBuffer(15, 8)
         val canvas = Canvas.of(buffer).region(2, 1, 10, 5)
 
-        canvas.drawBox()
+        canvas.set(0, 0, Cell("X"))
 
-        assertEquals("╭", buffer.get(2, 1).char)
-        assertEquals("╯", buffer.get(11, 5).char)
+        assertEquals(Cell("X"), buffer.get(2, 1))
     }
 
     @Test

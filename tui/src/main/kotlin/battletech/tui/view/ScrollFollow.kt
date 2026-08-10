@@ -1,7 +1,7 @@
 package battletech.tui.view
 
 /**
- * Pure, single-axis scroll-offset math shared by every [ScrollableView] instance — the one
+ * Pure, single-axis scroll-offset math shared by every [Scrolled] instance — the one
  * place "keep this visible" and "center on this" are computed, so no view reimplements either.
  */
 internal object ScrollFollow {

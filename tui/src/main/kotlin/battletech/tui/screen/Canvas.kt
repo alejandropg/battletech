@@ -93,7 +93,7 @@ public class Canvas private constructor(
      * Stored on the backing [ScreenBuffer] in absolute coords (translated through this canvas's
      * origin, like [set]), so it survives [region]/[inset] nesting and is readable from any
      * canvas over the same buffer via [focusRect]. A scrolling container (see
-     * `battletech.tui.view.ScrollableView`) reads it back to auto-follow. Clips like [set]:
+     * `battletech.tui.view.Scrolled`) reads it back to auto-follow. Clips like [set]:
      * a rect (partly) outside this canvas is clamped, and no-ops if left empty. At most one
      * focus rect exists per buffer — a later call overwrites an earlier one.
      */
@@ -110,42 +110,6 @@ public class Canvas private constructor(
     public fun focusRect(): FocusRect? {
         val focus = buffer.focus ?: return null
         return FocusRect(focus.x - originX, focus.y - originY, focus.width, focus.height)
-    }
-
-    /** Draws the border around the WHOLE canvas. No-op below 2x2. */
-    public fun drawBox(
-        title: String = "",
-        badge: String? = null,
-        borderColor: Color = Color.GREEN,
-        titleColor: Color = Color.BRIGHT_YELLOW,
-    ) {
-        if (width < 2 || height < 2) return
-
-        set(0, 0, Cell("╭", Cell.Style(borderColor)))
-        set(width - 1, 0, Cell("╮", Cell.Style(borderColor)))
-        set(0, height - 1, Cell("╰", Cell.Style(borderColor)))
-        set(width - 1, height - 1, Cell("╯", Cell.Style(borderColor)))
-
-        for (i in 1 until width - 1) {
-            set(i, 0, Cell("─", Cell.Style(borderColor)))
-            set(i, height - 1, Cell("─", Cell.Style(borderColor)))
-        }
-
-        for (i in 1 until height - 1) {
-            set(0, i, Cell("│", Cell.Style(borderColor)))
-            set(width - 1, i, Cell("│", Cell.Style(borderColor)))
-        }
-
-        if (title.isNotEmpty()) {
-            if (badge != null && width > title.length + badge.length + 7) {
-                writeString(2, 0, "[$badge] $title", Cell.Style(titleColor))
-                set(5 + badge.length + title.length, 0, Cell(" ", Cell.Style(borderColor)))
-            } else if (badge == null && width > title.length + 6) {
-                set(3, 0, Cell(" ", Cell.Style(borderColor)))
-                writeString(4, 0, title, Cell.Style(titleColor))
-                set(4 + title.length, 0, Cell(" ", Cell.Style(borderColor)))
-            }
-        }
     }
 
     /**

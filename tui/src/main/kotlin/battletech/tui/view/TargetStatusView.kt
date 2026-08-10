@@ -4,9 +4,8 @@ import battletech.tactical.unit.ForeignUnit
 import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
-import battletech.tui.screen.ContentWriter
 
-public class TargetStatusView(private val unit: ForeignUnit?) : View {
+internal class TargetStatusView(private val unit: ForeignUnit?) : View {
 
     override fun render(canvas: Canvas) {
         val content = ContentWriter(canvas)

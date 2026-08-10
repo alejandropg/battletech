@@ -193,7 +193,7 @@ internal class LogViewTest {
         val view = LogView(entries, state = emptyState)
 
         // First render: no previousFocus, so it follows to the bottom — establishes the focus.
-        val first = ScrollableView(
+        val first = scrollingPanel(
             title = LogView.TITLE,
             badge = PanelId.LOG.key.toString(),
             content = view,
@@ -204,7 +204,7 @@ internal class LogViewTest {
 
         // Second render: the user has wheeled back to the top; the log hasn't changed, so the
         // focus row is identical — the manual offset must be respected, not re-followed.
-        val second = ScrollableView(
+        val second = scrollingPanel(
             title = LogView.TITLE,
             badge = PanelId.LOG.key.toString(),
             content = view,
@@ -227,7 +227,7 @@ internal class LogViewTest {
         // log always chases its newest line, the same as it would chase a moving cursor row —
         // there is no bespoke "let the reader linger on history" carve-out anymore.
         val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
-        val scrolledAway = ScrollableView(
+        val scrolledAway = scrollingPanel(
             title = LogView.TITLE,
             badge = PanelId.LOG.key.toString(),
             content = LogView(tenEntries, state = emptyState),
@@ -235,7 +235,7 @@ internal class LogViewTest {
         )
         render(scrolledAway, 28, 6)
         val focusAtTen = scrolledAway.scroll.focus!!
-        val manuallyScrolledUp = ScrollableView(
+        val manuallyScrolledUp = scrollingPanel(
             title = LogView.TITLE,
             badge = PanelId.LOG.key.toString(),
             content = LogView(tenEntries, state = emptyState),
@@ -248,7 +248,7 @@ internal class LogViewTest {
 
         // An eleventh entry arrives; the focus row moves, so the view follows it to the bottom.
         val elevenEntries = tenEntries + LogEntry(turn = 11, event = stoodUp())
-        val newEntryArrives = ScrollableView(
+        val newEntryArrives = scrollingPanel(
             title = LogView.TITLE,
             badge = PanelId.LOG.key.toString(),
             content = LogView(elevenEntries, state = emptyState),
