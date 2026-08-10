@@ -86,7 +86,7 @@ public class UnitStatusView(
             writeHeader("HEAT")
             writeln("Current")
             val heatBar = HeatBarWidget(barWidth = 20, maxValue = 30)
-            content.cy = heatBar.draw(content.canvas, 0, content.cy, unit.currentHeat)
+            heatBar.draw(content, 0, unit.currentHeat)
 
             val projection = projectHeat(unit, pendingHeat)
 
@@ -101,11 +101,11 @@ public class UnitStatusView(
             val sinkSuffix =
                 if (sink.type.sinkRatio == 1) "${sink.type.name} ${projection.dissipation}"
                 else "${sink.type.name} ${sink.units}(${projection.dissipation})"
-            content.cy = HeatBarWidget(barWidth = 10, maxValue = projection.dissipation, suffix = sinkSuffix)
-                .draw(content.canvas, 0, content.cy, projection.dissipated)
+            HeatBarWidget(barWidth = 10, maxValue = projection.dissipation, suffix = sinkSuffix)
+                .draw(content, 0, projection.dissipated)
 
             writeln("Projected")
-            content.cy = heatBar.draw(content.canvas, 0, content.cy, projection.projected)
+            heatBar.draw(content, 0, projection.projected)
 
             val penalties = penaltyLines(unit.currentHeat, projection.projected)
             if (penalties.isNotEmpty()) {

@@ -1,27 +1,27 @@
 package battletech.tui.view
 
 import battletech.tui.hex.checkboxIcon
-import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
+import battletech.tui.screen.ContentWriter
 
 /** Reusable single-cell NerdFont checkbox glyph. */
-public object Checkbox {
+internal object Checkbox {
 
     /** Default per-state color when the surrounding row does not override it. */
-    public fun intrinsicColor(state: CheckState): Color = when (state) {
+    fun intrinsicColor(state: CheckState): Color = when (state) {
         CheckState.CHECKED -> Color.BRIGHT_GREEN
         else -> Color.GRAY
     }
 
-    /** Draws the checkbox at (x, y); occupies exactly one cell. */
-    public fun draw(
-        canvas: Canvas,
-        x: Int,
-        y: Int,
+    /** Overlays the checkbox onto [row] at [column]; occupies exactly one cell. */
+    fun draw(
+        content: ContentWriter,
+        column: Int,
+        row: Int,
         state: CheckState,
         color: Color = intrinsicColor(state),
     ) {
-        canvas.writeString(x, y, checkboxIcon(state), Cell.Style(color))
+        content.writeAt(column, row, checkboxIcon(state), Cell.Style(color))
     }
 }

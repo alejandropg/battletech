@@ -66,10 +66,10 @@ public class TargetsView(
                     isDisabled -> Color.DISABLED
                     else -> Checkbox.intrinsicColor(state)
                 }
-                val row = content.cy
+                val row = content.row
                 if (isCursorHere) content.markFocus()
                 WeaponHitWidget.draw(content, left, weapon.targetDiceRoll, weapon.successChance, weapon.modifiers, color)
-                Checkbox.draw(content.canvas, 2, row, state, checkboxColor)
+                Checkbox.draw(content, 2, row, state, checkboxColor)
             }
 
             content.newLine() // blank line between targets

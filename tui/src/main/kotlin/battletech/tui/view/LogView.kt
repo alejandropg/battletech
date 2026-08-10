@@ -42,7 +42,7 @@ public class LogView(
             }
         }
 
-        if (content.cy > 0) content.markFocusAt(content.cy - 1)
+        if (content.row > 0) content.markFocusAt(content.row - 1)
     }
 
     internal companion object {

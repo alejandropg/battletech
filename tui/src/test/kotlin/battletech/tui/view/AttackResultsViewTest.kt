@@ -13,6 +13,7 @@ import battletech.tactical.unit.UnitRoster
 import battletech.tui.aUnit
 import battletech.tui.game.PanelId
 import battletech.tui.game.phase.AttackResultsRender
+import battletech.tui.hex.attackOutcomeIcon
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.targetIcon
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -195,6 +196,18 @@ internal class AttackResultsViewTest {
     fun `roll line shows both faces and total`() {
         val output = renderToString(listOf(aHitResult(toHitRoll = DiceRoll(4, 5))))
         assertTrue(output.contains("${diceIcon(4)}+${diceIcon(5)}=9")) { "Expected dice icons and total in roll line: $output" }
+    }
+
+    @Test
+    fun `roll-and-outcome row keeps the outcome fully visible even when the panel is too narrow for the roll`() {
+        // Content width = panel width - 4 (border + padding); width=14 -> content width 10,
+        // narrower than the roll line ("   <die>+<die>=9", 8 cells) plus the outcome ("HIT <icon>",
+        // 5 cells) plus a 1-cell gap. writeRow prioritizes the right-aligned outcome, truncating
+        // the roll instead — unlike padding-then-overwrite, which could clip the outcome itself.
+        val output = renderToString(listOf(aHitResult(toHitRoll = DiceRoll(4, 5))), width = 14)
+
+        assertTrue(output.contains("HIT")) { "Expected outcome text to stay fully visible at a narrow width: $output" }
+        assertTrue(output.contains(attackOutcomeIcon(true))) { "Expected outcome icon to stay fully visible: $output" }
     }
 
     @Test

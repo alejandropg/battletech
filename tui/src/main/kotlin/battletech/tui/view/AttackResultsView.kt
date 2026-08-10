@@ -10,7 +10,6 @@ import battletech.tui.hex.attackOutcomeIcon
 import battletech.tui.hex.targetIcon
 import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
-import battletech.tui.screen.CellWidth
 import battletech.tui.screen.Color
 import battletech.tui.screen.ContentWriter
 
@@ -50,16 +49,13 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         val breakdown = if (isOwnAttacker) toHitBreakdownLabels(result.gunnery, result.modifiers) else result.modifiers.displayLabels()
         WeaponHitWidget.draw(content, "  ${result.weaponName}", result.targetNumber, successChance, breakdown, Color.WHITE)
 
-        // Block 2: raw roll + outcome (right-aligned, outcome overwritten in color)
+        // Block 2: raw roll (left) + outcome (right-aligned, in its own color)
         val hit = result is AttackResult.Hit
         val toHit = result.toHitRoll
         val outcomeText = "${if (hit) "HIT" else "MISS"} ${attackOutcomeIcon(hit)}"
         val outcomeColor = if (hit) Color.GREEN else Color.RED
         val rollLine = "   ${diceRollLabel(toHit)}"
-        val fill = (content.width - CellWidth.of(rollLine) - CellWidth.of(outcomeText)).coerceAtLeast(1)
-        content.writeln("$rollLine${" ".repeat(fill)}$outcomeText", WHITE_STYLE)
-        val outcomeX = content.width - CellWidth.of(outcomeText)
-        if (outcomeX >= 0) content.canvas.writeString(outcomeX, content.cy - 1, outcomeText, Cell.Style(outcomeColor))
+        content.writeRow(rollLine, outcomeText, WHITE_STYLE, Cell.Style(outcomeColor))
 
         // Block 3: location + damage (hit only)
         if (result is AttackResult.ClusterHit) {
