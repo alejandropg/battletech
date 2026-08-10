@@ -2,7 +2,6 @@ package battletech.tui.view
 
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.session.LogEntry
-import battletech.tui.game.PanelId
 import battletech.tui.screen.Canvas
 import battletech.tui.screen.CellWidth
 import battletech.tui.screen.ContentWriter
@@ -39,7 +38,6 @@ public class LogView(
     }
 
     internal companion object {
-        internal val KEY: Char = PanelId.LOG.key
         internal const val TITLE: String = "LOG"
     }
 }

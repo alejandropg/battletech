@@ -11,6 +11,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.UnitRoster
 import battletech.tui.aUnit
+import battletech.tui.game.PanelId
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.hex.diceIcon
 import battletech.tui.hex.targetIcon
@@ -113,7 +114,7 @@ internal class AttackResultsViewTest {
     /** Renders via the decorator — pixel-parity regression guard for box/title/coordinates. */
     private fun renderToString(results: List<AttackResult>, width: Int = 34, height: Int = 30, viewer: PlayerId = PlayerId.PLAYER_1): String {
         val view = makeView(results, viewer)
-        return renderInPanel(view, key = AttackResultsView.KEY, title = AttackResultsView.TITLE, width = width, height = height).text()
+        return renderInPanel(view, key = PanelId.ATTACK_RESULTS.key, title = AttackResultsView.TITLE, width = width, height = height).text()
     }
 
     @Test
@@ -225,7 +226,7 @@ internal class AttackResultsViewTest {
         val height = 10
         val output = renderInPanel(
             view,
-            key = AttackResultsView.KEY,
+            key = PanelId.ATTACK_RESULTS.key,
             title = AttackResultsView.TITLE,
             width = width,
             height = height,

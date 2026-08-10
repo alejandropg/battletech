@@ -11,7 +11,6 @@ import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 import battletech.tactical.unit.VisibleUnit
 import battletech.tactical.unit.availableAmmoBins
 import battletech.tactical.unit.criticalDamageStatus
-import battletech.tui.game.PanelId
 import battletech.tui.hex.ammoIcon
 import battletech.tui.hex.emptyCircleIcon
 import battletech.tui.hex.filledCircleIcon
@@ -279,7 +278,6 @@ public class UnitStatusView(
     }
 
     internal companion object {
-        internal val KEY: Char = PanelId.UNIT_STATUS.key
         internal const val TITLE: String = "UNIT STATUS"
 
         private val WHITE_STYLE = Cell.Style(Color.WHITE)

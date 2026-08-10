@@ -35,11 +35,11 @@ internal object Panels {
         Panel(PanelId.LOG, LogView.TITLE, width = 28, anchorBottom = true) { frame ->
             LogView(entries = frame.logEntries, state = frame.visibleState)
         },
-        Panel(PanelId.HELP, HelpView.TITLE, width = 28) { frame ->
+        Panel(PanelId.HELP, HelpView.TITLE, width = 28, collapsedWidth = 0) { frame ->
             HelpView(frame.helpSections)
         },
     )
 
-    /** [ordered] keyed by [PanelId.key], for lookups that would otherwise be a linear scan. */
-    val byKey: Map<Char, Panel> = ordered.associateBy { it.id.key }
+    /** [ordered] keyed by [PanelId], for lookups that would otherwise be a linear scan. */
+    val byId: Map<PanelId, Panel> = ordered.associateBy { it.id }
 }

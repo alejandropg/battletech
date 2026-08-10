@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.unit.UnitId
+import battletech.tui.game.PanelId
 import battletech.tui.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -19,20 +20,20 @@ internal class PanelSlotTest {
 
     @Test
     fun `collapsed slot resolves to a CollapsedPanelView carrying the key and title`() {
-        val slot = PanelSlot(AttackResultsView.KEY, 7, AttackResultsView.TITLE, collapsed = true) { realView }
+        val slot = PanelSlot(PanelId.ATTACK_RESULTS, 7, AttackResultsView.TITLE, collapsed = true) { realView }
 
         val resolved = resolvePanel(slot)
 
         assertTrue(resolved is CollapsedPanelView) { "Expected CollapsedPanelView, got $resolved" }
         resolved as CollapsedPanelView
-        assertEquals(AttackResultsView.KEY, resolved.key)
+        assertEquals(PanelId.ATTACK_RESULTS.key, resolved.key)
         assertEquals(AttackResultsView.TITLE, resolved.title)
     }
 
     @Test
     fun `expanded slot wraps content in ScrollableView and renders box plus content`() {
         val slot = PanelSlot(
-            key = AttackResultsView.KEY,
+            key = PanelId.ATTACK_RESULTS,
             width = 34,
             title = AttackResultsView.TITLE,
             collapsed = false,
@@ -61,7 +62,7 @@ internal class PanelSlotTest {
             }
         }
         val slot = PanelSlot(
-            key = '0',
+            key = PanelId.LOG,
             width = 30,
             title = "T",
             collapsed = false,
@@ -90,7 +91,7 @@ internal class PanelSlotTest {
             }
         }
         val slot = PanelSlot(
-            key = '0',
+            key = PanelId.LOG,
             width = 30,
             title = "T",
             collapsed = false,
@@ -108,7 +109,7 @@ internal class PanelSlotTest {
 
     @Test
     fun `slot with no width resolves to null`() {
-        val slot = PanelSlot(AttackResultsView.KEY, 0, AttackResultsView.TITLE, collapsed = true) { realView }
+        val slot = PanelSlot(PanelId.ATTACK_RESULTS, 0, AttackResultsView.TITLE, collapsed = true) { realView }
 
         assertNull(resolvePanel(slot))
     }
@@ -116,7 +117,7 @@ internal class PanelSlotTest {
     @Test
     fun `buildReal is not invoked for a collapsed slot`() {
         var built = false
-        val slot = PanelSlot(AttackResultsView.KEY, 7, AttackResultsView.TITLE, collapsed = true) {
+        val slot = PanelSlot(PanelId.ATTACK_RESULTS, 7, AttackResultsView.TITLE, collapsed = true) {
             built = true
             realView
         }
@@ -146,7 +147,7 @@ internal class PanelSlotTest {
             cursorWeaponIndex = 18,
         )
         val slot = PanelSlot(
-            key = '3', width = 30, title = "TARGETS", collapsed = false,
+            key = PanelId.TARGETS, width = 30, title = "TARGETS", collapsed = false,
             scrollOffset = null, anchorBottom = false,
         ) { content }
 
@@ -182,7 +183,7 @@ internal class PanelSlotTest {
 
         // First render establishes where the focus is.
         val firstSlot = PanelSlot(
-            key = '3', width = 30, title = "TARGETS", collapsed = false,
+            key = PanelId.TARGETS, width = 30, title = "TARGETS", collapsed = false,
             scrollOffset = null, anchorBottom = false,
         ) { content() }
         val first = resolvePanel(firstSlot) as ScrollableView
@@ -191,7 +192,7 @@ internal class PanelSlotTest {
 
         // Second render: user has wheeled back to the top, focus unchanged.
         val secondSlot = PanelSlot(
-            key = '3', width = 30, title = "TARGETS", collapsed = false,
+            key = PanelId.TARGETS, width = 30, title = "TARGETS", collapsed = false,
             scrollOffset = 0, anchorBottom = false, previousFocus = focus,
         ) { content() }
         val second = resolvePanel(secondSlot) as ScrollableView
@@ -207,7 +208,7 @@ internal class PanelSlotTest {
     @Test
     fun `null buildReal result for expanded slot resolves to null`() {
         val slot = PanelSlot(
-            key = '0',
+            key = PanelId.LOG,
             width = 30,
             title = "T",
             collapsed = false,

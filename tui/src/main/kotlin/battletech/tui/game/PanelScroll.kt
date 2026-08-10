@@ -32,13 +32,13 @@ internal object PanelScroll {
      *   returns without further mutation.
      */
     fun update(
-        offsets: Map<Char, Int>,
-        panelKey: Char,
+        offsets: Map<PanelId, Int>,
+        panelKey: PanelId,
         delta: Int,
         currentOffset: Int,
         maxOffset: Int,
         anchorBottom: Boolean,
-    ): Map<Char, Int> {
+    ): Map<PanelId, Int> {
         if (maxOffset <= 0) {
             return if (panelKey in offsets) offsets - panelKey else offsets
         }

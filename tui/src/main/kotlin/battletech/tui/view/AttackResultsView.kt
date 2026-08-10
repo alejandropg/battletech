@@ -5,7 +5,6 @@ import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.displayLabels
 import battletech.tactical.attack.toHitBreakdownLabels
 import battletech.tactical.dice.twoD6AtLeastProbability
-import battletech.tui.game.PanelId
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.hex.attackOutcomeIcon
 import battletech.tui.hex.targetIcon
@@ -91,7 +90,6 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
     }
 
     internal companion object {
-        val KEY: Char = PanelId.ATTACK_RESULTS.key
         const val TITLE: String = "ATTACK RESULTS"
 
         private val WHITE_STYLE = Cell.Style(Color.WHITE)

@@ -1,5 +1,7 @@
 package battletech.tui.view
 
+import battletech.tui.game.PanelId
+
 /**
  * Pure arithmetic description of one rendered frame, derived solely from
  * terminal dimensions and visibility state — no UI, no rendering, no I/O.
@@ -16,8 +18,8 @@ package battletech.tui.view
  *                    position and allocated width
  */
 internal data class PanelSlotLayout(
-    /** Matches [battletech.tui.game.PanelId.key] of the corresponding panel. */
-    val panelKey: Char,
+    /** Identifies the corresponding panel. */
+    val panelKey: PanelId,
     /** Left edge (column) of this panel in screen coordinates. */
     val x: Int,
     /** Allocated width in columns; never zero (hidden panels are absent from the list). */

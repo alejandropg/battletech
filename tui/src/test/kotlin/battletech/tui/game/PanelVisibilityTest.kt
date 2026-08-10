@@ -10,11 +10,6 @@ import battletech.tui.aGameState
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.PhysicalAttackPhase
-import battletech.tui.view.AttackResultsView
-import battletech.tui.view.DeclaredTargetsView
-import battletech.tui.view.HelpView
-import battletech.tui.view.LogView
-import battletech.tui.view.UnitStatusView
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -33,9 +28,9 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         )
 
-        val visible = PanelVisibility.visibleKeys(appState)
+        val visible = PanelVisibility.visiblePanels(appState)
 
-        assertEquals(setOf(LogView.KEY, UnitStatusView.KEY, HelpView.KEY), visible)
+        assertEquals(setOf(PanelId.LOG, PanelId.UNIT_STATUS, PanelId.HELP), visible)
     }
 
     @Test
@@ -46,11 +41,11 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         )
 
-        val visible = PanelVisibility.visibleKeys(appState)
+        val visible = PanelVisibility.visiblePanels(appState)
 
-        assertTrue(visible.contains(LogView.KEY))
-        assertTrue(visible.contains(UnitStatusView.KEY))
-        assertTrue(visible.contains(DeclaredTargetsView.KEY))
+        assertTrue(visible.contains(PanelId.LOG))
+        assertTrue(visible.contains(PanelId.UNIT_STATUS))
+        assertTrue(visible.contains(PanelId.DECLARED_TARGETS))
     }
 
     @Test
@@ -64,9 +59,9 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         )
 
-        val visible = PanelVisibility.visibleKeys(appState)
+        val visible = PanelVisibility.visiblePanels(appState)
 
-        assertFalse(visible.contains(DeclaredTargetsView.KEY))
+        assertFalse(visible.contains(PanelId.DECLARED_TARGETS))
     }
 
     @Test
@@ -77,11 +72,11 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         )
 
-        val visible = PanelVisibility.visibleKeys(appState)
+        val visible = PanelVisibility.visiblePanels(appState)
 
-        assertFalse(visible.contains(DeclaredTargetsView.KEY))
-        assertFalse(visible.contains('3')) // TARGETS
-        assertFalse(visible.contains('4')) // TARGET STATUS
+        assertFalse(visible.contains(PanelId.DECLARED_TARGETS))
+        assertFalse(visible.contains(PanelId.TARGETS))
+        assertFalse(visible.contains(PanelId.TARGET_STATUS))
     }
 
     @Test
@@ -92,9 +87,9 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         )
 
-        val visible = PanelVisibility.visibleKeys(appState)
+        val visible = PanelVisibility.visiblePanels(appState)
 
-        assertTrue(visible.contains(HelpView.KEY))
+        assertTrue(visible.contains(PanelId.HELP))
     }
 
     private fun aResult() = AttackResult.Miss(
@@ -115,9 +110,9 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         ).copy(lastAttackResults = listOf(aResult()))
 
-        val visible = PanelVisibility.visibleKeys(appState)
+        val visible = PanelVisibility.visiblePanels(appState)
 
-        assertTrue(visible.contains(AttackResultsView.KEY))
+        assertTrue(visible.contains(PanelId.ATTACK_RESULTS))
     }
 
     @Test
@@ -128,9 +123,9 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         ).copy(lastAttackResults = listOf(aResult()))
 
-        val visible = PanelVisibility.visibleKeys(appState)
+        val visible = PanelVisibility.visiblePanels(appState)
 
-        assertTrue(visible.contains(AttackResultsView.KEY))
+        assertTrue(visible.contains(PanelId.ATTACK_RESULTS))
     }
 
     @Test
@@ -141,8 +136,8 @@ internal class PanelVisibilityTest {
             cursor = cursor,
         ).copy(lastAttackResults = listOf(aResult()))
 
-        val visible = PanelVisibility.visibleKeys(appState)
+        val visible = PanelVisibility.visiblePanels(appState)
 
-        assertFalse(visible.contains(AttackResultsView.KEY))
+        assertFalse(visible.contains(PanelId.ATTACK_RESULTS))
     }
 }

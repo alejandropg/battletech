@@ -2,7 +2,6 @@ package battletech.tui.view
 
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.unit.UnitId
-import battletech.tui.game.PanelId
 import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
@@ -78,7 +77,6 @@ public class TargetsView(
     }
 
     internal companion object {
-        internal val KEY: Char = PanelId.TARGETS.key
         internal const val TITLE: String = "TARGETS"
 
         private val WHITE_STYLE = Cell.Style(Color.WHITE)

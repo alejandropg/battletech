@@ -1,6 +1,8 @@
 package battletech.tui.view
 
-internal data class PanelMetrics(val key: Char, val expandedWidth: Int, val collapsedWidth: Int)
+import battletech.tui.game.PanelId
+
+internal data class PanelMetrics(val key: PanelId, val expandedWidth: Int, val collapsedWidth: Int)
 
 internal data class FrameLayout(
     val boardWidth: Int,
@@ -20,18 +22,16 @@ internal data class FrameLayout(
          *
          * @param termWidth       full terminal width in columns
          * @param termHeight      full terminal height in rows
-         * @param visiblePanels   set of [battletech.tui.game.PanelId.key] values that
-         *                        should appear this frame
-         * @param collapsedPanels set of [battletech.tui.game.PanelId.key] values that
-         *                        the user has collapsed
+         * @param visiblePanels   [PanelId]s that should appear this frame
+         * @param collapsedPanels [PanelId]s the user has collapsed
          * @param panelDescriptors ordered [PanelMetrics], matching the left-to-right
          *                         render order of [Panels.ordered]
          */
         fun compute(
             termWidth: Int,
             termHeight: Int,
-            visiblePanels: Set<Char>,
-            collapsedPanels: Set<Char>,
+            visiblePanels: Set<PanelId>,
+            collapsedPanels: Set<PanelId>,
             panelDescriptors: List<PanelMetrics>,
         ): FrameLayout {
             fun allocatedWidth(panel: PanelMetrics): Int = when (panel.key) {

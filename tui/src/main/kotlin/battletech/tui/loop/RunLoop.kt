@@ -53,11 +53,11 @@ private val WHITE_STYLE = Cell.Style(Color.WHITE)
  */
 private data class RenderedFrame(
     val layout: FrameLayout,
-    val maxOffsets: Map<Char, Int>,
-    val panelOffsets: Map<Char, Int>,
+    val maxOffsets: Map<PanelId, Int>,
+    val panelOffsets: Map<PanelId, Int>,
     val boardScroll: ScrollOffset,
     val boardFocus: FocusRect?,
-    val panelFocus: Map<Char, FocusRect?>,
+    val panelFocus: Map<PanelId, FocusRect?>,
 )
 
 /**
@@ -124,7 +124,7 @@ internal suspend fun runLoop(
                         val delta = InputMapper.scrollDelta(event, overPanel = slot != null)
                         if (delta != null) {
                             if (slot != null) {
-                                val panel = Panels.byKey.getValue(slot.panelKey)
+                                val panel = Panels.byId.getValue(slot.panelKey)
                                 appState = appState.copy(
                                     panelScrollOffsets = PanelScroll.update(
                                         appState.panelScrollOffsets,
@@ -143,9 +143,9 @@ internal suspend fun runLoop(
 
                     val panel = (event as? KeyboardEvent)?.let(InputMapper::panelKey)?.let(PanelId::byKey)
                     if (panel != null) {
-                        if (panel.key in PanelVisibility.visibleKeys(appState)) {
+                        if (panel in PanelVisibility.visiblePanels(appState)) {
                             val current = appState.collapsedPanels
-                            val next = if (panel.key in current) current - panel.key else current + panel.key
+                            val next = if (panel in current) current - panel else current + panel
                             appState = appState.copy(collapsedPanels = next)
                         }
                         render()
@@ -293,14 +293,14 @@ private fun renderFrame(
     previous: RenderedFrame?,
     recenterBoard: Boolean = false,
 ): RenderedFrame {
-    val visible = PanelVisibility.visibleKeys(appState)
+    val visible = PanelVisibility.visiblePanels(appState)
     val layout = FrameLayout.compute(
         termWidth = size.width,
         termHeight = size.height,
         visiblePanels = visible,
         collapsedPanels = appState.collapsedPanels,
         panelDescriptors = Panels.ordered.map {
-            PanelMetrics(it.id.key, it.width, if (it.id.hidden) 0 else FrameLayout.COLLAPSED_STUB_WIDTH)
+            PanelMetrics(it.id, it.width, it.collapsedWidth)
         },
     )
 
@@ -334,11 +334,11 @@ private fun renderFrame(
     val board = screen.region(0, layout.boardY, layout.boardWidth, layout.boardHeight)
     boardScrollable.render(board)
 
-    val maxOffsets = mutableMapOf<Char, Int>()
-    val panelOffsets = mutableMapOf<Char, Int>()
-    val panelFocus = mutableMapOf<Char, FocusRect?>()
+    val maxOffsets = mutableMapOf<PanelId, Int>()
+    val panelOffsets = mutableMapOf<PanelId, Int>()
+    val panelFocus = mutableMapOf<PanelId, FocusRect?>()
     for (slot in layout.slots) {
-        val panel = Panels.byKey.getValue(slot.panelKey)
+        val panel = Panels.byId.getValue(slot.panelKey)
         val panelSlot = PanelSlot(
             key = slot.panelKey,
             width = slot.width,

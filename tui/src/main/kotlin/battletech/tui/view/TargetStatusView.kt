@@ -1,7 +1,6 @@
 package battletech.tui.view
 
 import battletech.tactical.unit.ForeignUnit
-import battletech.tui.game.PanelId
 import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
@@ -21,7 +20,6 @@ public class TargetStatusView(private val unit: ForeignUnit?) : View {
     }
 
     internal companion object {
-        internal val KEY: Char = PanelId.TARGET_STATUS.key
         internal const val TITLE: String = "TARGET STATUS"
 
         private val WHITE_STYLE = Cell.Style(Color.WHITE)

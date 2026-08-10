@@ -1,8 +1,6 @@
 package battletech.tui.game
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 internal class PanelIdTest {
@@ -21,14 +19,6 @@ internal class PanelIdTest {
         assertEquals('4', PanelId.TARGET_STATUS.key)
         assertEquals('5', PanelId.ATTACK_RESULTS.key)
         assertEquals('h', PanelId.HELP.key)
-    }
-
-    @Test
-    fun `HELP is the only hidden panel`() {
-        assertTrue(PanelId.HELP.hidden)
-        for (panel in PanelId.entries - PanelId.HELP) {
-            assertFalse(panel.hidden) { "$panel should not be hidden" }
-        }
     }
 
     @Test

@@ -1,5 +1,6 @@
 package battletech.tui.view
 
+import battletech.tui.game.PanelId
 import battletech.tui.screen.FocusRect
 
 /**
@@ -12,15 +13,15 @@ import battletech.tui.screen.FocusRect
  * [buildReal] is only invoked when the panel is expanded, so any data gathering
  * for the full view is skipped while collapsed.
  */
-public class PanelSlot internal constructor(
-    public val key: Char,
-    public val width: Int,
-    public val title: String,
-    public val collapsed: Boolean,
-    public val scrollOffset: Int? = null,
-    public val anchorBottom: Boolean = false,
-    internal val previousFocus: FocusRect? = null,
-    public val buildReal: () -> View?,
+internal class PanelSlot(
+    val key: PanelId,
+    val width: Int,
+    val title: String,
+    val collapsed: Boolean,
+    val scrollOffset: Int? = null,
+    val anchorBottom: Boolean = false,
+    val previousFocus: FocusRect? = null,
+    val buildReal: () -> View?,
 )
 
 /**
@@ -30,14 +31,14 @@ public class PanelSlot internal constructor(
  * Expanded panels are wrapped in [ScrollableView] so scrolling, offset
  * clamping, and scrollbar rendering are handled generically.
  */
-public fun resolvePanel(slot: PanelSlot): View? = when {
+internal fun resolvePanel(slot: PanelSlot): View? = when {
     slot.width <= 0 -> null
-    slot.collapsed -> CollapsedPanelView(slot.key, slot.title)
+    slot.collapsed -> CollapsedPanelView(slot.key.key, slot.title)
     else -> {
         val content = slot.buildReal() ?: return null
         ScrollableView(
             title = slot.title,
-            badge = slot.key.toString(),
+            badge = slot.key.key.toString(),
             content = content,
             extent = ContentExtent.Measured(),
             offset = slot.scrollOffset?.let { ScrollOffset(0, it) },

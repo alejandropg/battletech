@@ -1,6 +1,5 @@
 package battletech.tui.view
 
-import battletech.tui.game.PanelId
 import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.game.phase.DeclaredWeaponEntry
 import battletech.tui.hex.targetIcon
@@ -58,7 +57,6 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
     }
 
     internal companion object {
-        val KEY: Char = PanelId.DECLARED_TARGETS.key
         const val TITLE: String = "DECLARED TARGETS"
 
         private val WHITE_STYLE = Cell.Style(Color.WHITE)

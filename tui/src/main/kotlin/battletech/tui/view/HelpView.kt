@@ -1,6 +1,5 @@
 package battletech.tui.view
 
-import battletech.tui.game.PanelId
 import battletech.tui.input.KeySection
 import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
@@ -41,7 +40,6 @@ internal class HelpView(private val sections: List<KeySection>) : View {
     }
 
     internal companion object {
-        internal val KEY: Char = PanelId.HELP.key
         internal const val TITLE: String = "HELP"
 
         private val SUBSECTION_STYLE = Cell.Style(Color.BRIGHT_YELLOW)

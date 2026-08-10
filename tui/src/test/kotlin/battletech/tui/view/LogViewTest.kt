@@ -16,6 +16,7 @@ import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.unit.PilotingSkillRoll
 import battletech.tactical.unit.UnitRoster
 import battletech.tui.aUnit
+import battletech.tui.game.PanelId
 import battletech.tui.hex.initiativeIcon
 import battletech.tui.hex.unitStoodUpIcon
 import battletech.tui.screen.Color
@@ -55,7 +56,7 @@ internal class LogViewTest {
         anchorBottom: Boolean = false,
     ): ScreenBuffer = renderInPanel(
         view,
-        key = LogView.KEY,
+        key = PanelId.LOG.key,
         title = LogView.TITLE,
         width = width,
         height = height,

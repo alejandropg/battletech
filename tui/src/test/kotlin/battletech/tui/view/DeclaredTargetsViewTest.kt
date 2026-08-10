@@ -5,6 +5,7 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.game.phase.DeclaredAttackerEntry
 import battletech.tui.game.phase.DeclaredTargetEntry
 import battletech.tui.game.phase.DeclaredTargetsRender
+import battletech.tui.game.PanelId
 import battletech.tui.game.phase.DeclaredWeaponEntry
 import battletech.tui.hex.diceRoll
 import battletech.tui.hex.targetIcon
@@ -163,7 +164,7 @@ internal class DeclaredTargetsViewTest {
         val height = 10
         val buffer = renderInPanel(
             view,
-            key = DeclaredTargetsView.KEY,
+            key = PanelId.DECLARED_TARGETS.key,
             title = DeclaredTargetsView.TITLE,
             width = width,
             height = height,
@@ -180,7 +181,7 @@ internal class DeclaredTargetsViewTest {
 
         val buffer = renderInPanel(
             view,
-            key = DeclaredTargetsView.KEY,
+            key = PanelId.DECLARED_TARGETS.key,
             title = DeclaredTargetsView.TITLE,
             width = 28,
             height = 10,
