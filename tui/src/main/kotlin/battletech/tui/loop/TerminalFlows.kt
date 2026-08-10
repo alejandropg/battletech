@@ -5,6 +5,7 @@ import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseTracking
 import com.github.ajalt.mordant.input.enterRawMode
+import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -75,12 +76,23 @@ private fun Terminal.rawModePollingFlow(
  * Produces a [UiEvent.Resized] flow by polling [Terminal.updateSize] at [period] intervals.
  *
  * The first emission fires once at startup (resulting in a harmless extra render); subsequent
- * emissions only occur when the terminal size actually changes ([distinctUntilChanged]).
+ * emissions only occur when the terminal size actually changes.
+ *
+ * ### Mordant 3.0.2: `Size` has no `equals`
+ * [com.github.ajalt.mordant.rendering.Size] is a plain class, not a data class, so it inherits
+ * identity equality — and [Terminal.updateSize] hands back a **fresh instance every call**.
+ * Deduplicating on `Size` itself therefore never suppresses anything: every poll would emit, and
+ * the loop would do a full re-render several times a second forever. Worse than wasteful, that
+ * repaint is indistinguishable from a real resize, so anything keyed off "the terminal resized"
+ * (see `RunLoop`'s `forgetFocus`, which deliberately re-follows the board's focus) would fire on
+ * a timer and stomp the user's manual scroll. Dedupe on the dimensions instead, which do compare
+ * by value, then rebuild the [Size] for the event.
  *
  * This flow intentionally has **no** [flowOn] — it must run on the collector's (main) thread
  * so that size reads and redraws are co-located and no cross-thread synchronisation is needed.
  */
 internal fun Terminal.resizeEvents(period: Duration = 200.milliseconds): Flow<UiEvent> =
     flow { while (true) { emit(updateSize()); delay(period) } }
+        .map { it.width to it.height }
         .distinctUntilChanged()
-        .map { UiEvent.Resized(it) }
+        .map { (width, height) -> UiEvent.Resized(Size(width, height)) }

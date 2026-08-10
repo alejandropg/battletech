@@ -73,7 +73,7 @@ internal sealed interface AttackPhase : Phase {
             // indexes into that sequence and would throw, so only cursor movement is safe here.
             // Mirrors MovementPhase.SelectingUnit's `turnState.movement.isComplete` guard.
             if (turnState.attack.isComplete) {
-                val action = mapIdleInput(event) ?: return null
+                val action = mapIdleInput(event, app) ?: return null
                 return if (action is IdleAction.MoveCursor) handleCursorMove(app, action) else Transition(app)
             }
             return handleUnitSelection(
@@ -138,8 +138,10 @@ internal sealed interface AttackPhase : Phase {
         override fun handle(event: InputEvent, app: AppState): Transition? {
             val action = when (event) {
                 is KeyboardEvent -> InputMapper.mapAttackEvent(event)
-                is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y)
-                    ?.let { AttackAction.ClickTarget(it) }
+                is MouseEvent -> InputMapper.mapMouseToHex(
+                    event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y,
+                    scrollX = app.boardScroll.x, scrollY = app.boardScroll.y,
+                )?.let { AttackAction.ClickTarget(it) }
             } ?: return null
 
             // Compute view + targets once per event; pass into pure allocation methods.

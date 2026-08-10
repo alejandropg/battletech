@@ -10,7 +10,7 @@ internal fun render(view: View, width: Int, height: Int): ScreenBuffer {
     return buffer
 }
 
-/** Renders [content] inside the real [ScrollablePanelView] chrome — the pixel-parity regression guard. */
+/** Renders [content] inside the real [ScrollableView] panel chrome — the pixel-parity regression guard. */
 internal fun renderInPanel(
     content: View,
     key: Char = '0',
@@ -19,7 +19,18 @@ internal fun renderInPanel(
     height: Int = 30,
     scrollOffset: Int? = 0,
     anchorBottom: Boolean = false,
-): ScreenBuffer = render(ScrollablePanelView(key, title, content, scrollOffset, anchorBottom), width, height)
+): ScreenBuffer = render(
+    ScrollableView(
+        title = title,
+        badge = key.toString(),
+        content = content,
+        extent = ContentExtent.Measured(),
+        offset = scrollOffset?.let { ScrollOffset(0, it) },
+        anchorBottom = anchorBottom,
+    ),
+    width,
+    height,
+)
 
 /** Row [y], columns [x] until [x] + [width], right-trimmed. */
 internal fun ScreenBuffer.line(y: Int, x: Int = 0, width: Int = this.width - x): String =

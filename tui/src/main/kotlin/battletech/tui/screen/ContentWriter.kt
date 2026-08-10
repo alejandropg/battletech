@@ -52,6 +52,11 @@ internal class ContentWriter(val canvas: Canvas) {
         cy += 1
     }
 
+    /** Marks the current row (full width) as the content the enclosing scrollable view should keep visible. */
+    fun markFocus(height: Int = 1) {
+        canvas.markFocus(0, cy, width, height)
+    }
+
     private companion object {
         private val CYAN_STYLE = Cell.Style(fg = Color.CYAN)
     }

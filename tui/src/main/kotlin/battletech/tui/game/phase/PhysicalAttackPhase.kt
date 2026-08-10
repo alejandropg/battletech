@@ -50,7 +50,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
             // (shared) attack impulse sequence may not be seeded yet, and every other field this
             // phase touches indexes into it.
             if (turnState.attack.isComplete) {
-                val action = mapIdleInput(event) ?: return null
+                val action = mapIdleInput(event, app) ?: return null
                 return if (action is IdleAction.MoveCursor) handleCursorMove(app, action) else Transition(app)
             }
             return handleUnitSelection(

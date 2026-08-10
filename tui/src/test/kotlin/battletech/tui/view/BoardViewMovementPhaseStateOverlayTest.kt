@@ -24,10 +24,10 @@ internal class BoardViewMovementPhaseStateOverlayTest {
         val buffer = render(view, 40, 24)
 
         // Hex center is at x+4, y+2 from hex render origin
-        // Hex (1,1) center at (13, 10)
-        assertEquals(".", buffer.get(13, 10).char)
-        // Hex (2,1) center at (20, 8)
-        assertEquals(".", buffer.get(20, 8).char)
+        // Hex (1,1) center at (11, 8)
+        assertEquals(".", buffer.get(11, 8).char)
+        // Hex (2,1) center at (18, 6)
+        assertEquals(".", buffer.get(18, 6).char)
     }
 
     @Test
@@ -47,8 +47,8 @@ internal class BoardViewMovementPhaseStateOverlayTest {
         )
         val buffer = render(view, 40, 24)
 
-        // Hex (1,1) center is at (13, 10); the REACHABLE_WALK dot must be suppressed
-        assertNotEquals(".", buffer.get(13, 10).char)
+        // Hex (1,1) center is at (11, 8); the REACHABLE_WALK dot must be suppressed
+        assertNotEquals(".", buffer.get(11, 8).char)
     }
 
     @Test
@@ -69,8 +69,8 @@ internal class BoardViewMovementPhaseStateOverlayTest {
         )
         val buffer = render(view, 40, 24)
 
-        // Hex (1,0) center at (13, 6); N arrow also lands at (13, 6)
-        assertEquals(String(Character.toChars(0xF0583)), buffer.get(13, 6).char)
+        // Hex (1,0) center at (11, 4); N arrow also lands at (11, 4)
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(11, 4).char)
     }
 
     @Test
@@ -87,10 +87,10 @@ internal class BoardViewMovementPhaseStateOverlayTest {
         )
         val buffer = render(view, 40, 24)
 
-        // Hex (0,0) center at (6, 4)
-        assertEquals(String(Character.toChars(0xF0583)), buffer.get(6, 4).char)
-        // Hex (1,0) center at (13, 6)
-        assertEquals(String(Character.toChars(0xF0583)), buffer.get(13, 6).char)
+        // Hex (0,0) center at (4, 2)
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(4, 2).char)
+        // Hex (1,0) center at (11, 4)
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(11, 4).char)
     }
 
     @Test
@@ -108,7 +108,7 @@ internal class BoardViewMovementPhaseStateOverlayTest {
         )
         val buffer = render(view, 40, 24)
 
-        // Hex (1,0) center at (13, 6); all-facings destination shows mode icon
-        assertEquals(String(Character.toChars(0xF0583)), buffer.get(13, 6).char)
+        // Hex (1,0) center at (11, 4); all-facings destination shows mode icon
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(11, 4).char)
     }
 }

@@ -13,18 +13,22 @@ import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
 import battletech.tui.input.KeyGlyph
+import battletech.tui.input.PanAction
 import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
+import battletech.tui.screen.FocusRect
 import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
 import battletech.tui.view.BoardView
+import battletech.tui.view.ContentExtent
 import battletech.tui.view.FrameLayout
 import battletech.tui.view.PanelFrame
 import battletech.tui.view.PanelMetrics
 import battletech.tui.view.PanelSlot
 import battletech.tui.view.Panels
-import battletech.tui.view.ScrollablePanelView
+import battletech.tui.view.ScrollOffset
+import battletech.tui.view.ScrollableView
 import battletech.tui.view.StatusBarView
 import battletech.tui.view.resolvePanel
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -42,9 +46,18 @@ import kotlinx.coroutines.launch
 
 private val WHITE_STYLE = Cell.Style(Color.WHITE)
 
+/**
+ * What the last render settled on. [boardFocus] and [panelFocus] are fed back into the next
+ * render as each scrollable's `previousFocus`: [ScrollableView] auto-follows only when the focus
+ * has actually moved, which is what lets a manual pan or wheel-scroll survive subsequent renders.
+ */
 private data class RenderedFrame(
     val layout: FrameLayout,
     val maxOffsets: Map<Char, Int>,
+    val panelOffsets: Map<Char, Int>,
+    val boardScroll: ScrollOffset,
+    val boardFocus: FocusRect?,
+    val panelFocus: Map<Char, FocusRect?>,
 )
 
 /**
@@ -67,8 +80,29 @@ internal suspend fun runLoop(
     var flashJob: Job? = null
     var size = currentSize(terminal)
 
-    // Render the initial frame before collecting any events.
-    var frame = renderFrame(size, renderer, appState, activeFlash)
+    // Render the initial frame before collecting any events. No previous frame, so every
+    // scrollable follows its focus into view for the first time.
+    var frame = renderFrame(size, renderer, appState, activeFlash, previous = null)
+    appState = appState.copy(boardScroll = frame.boardScroll)
+
+    /**
+     * Every subsequent render goes through here so that (a) the board's effective scroll is
+     * synced back into appState before the next event is handled — otherwise a click right after
+     * a pan/follow would hit-test against a stale offset — and (b) the previous frame's focus
+     * rects are carried forward, which is what makes auto-follow fire on focus movement only.
+     *
+     * [forgetFocus] drops that carry-forward so everything re-follows: used on resize, where the
+     * viewport changes but content-space focus does not, and a shrink could otherwise strand the
+     * cursor off-screen.
+     */
+    fun render(recenterBoard: Boolean = false, forgetFocus: Boolean = false) {
+        frame = renderFrame(
+            size, renderer, appState, activeFlash,
+            previous = if (forgetFocus) null else frame,
+            recenterBoard = recenterBoard,
+        )
+        appState = appState.copy(boardScroll = frame.boardScroll)
+    }
 
     events.takeWhile { it != UiEvent.Quit }.collect { ui ->
         // A single bad event must not propagate out of collect: that would cancel this
@@ -96,12 +130,13 @@ internal suspend fun runLoop(
                                         appState.panelScrollOffsets,
                                         slot.panelKey,
                                         delta,
+                                        frame.panelOffsets[slot.panelKey] ?: 0,
                                         frame.maxOffsets[slot.panelKey] ?: 0,
                                         panel.anchorBottom,
                                     ),
                                 )
                             }
-                            frame = renderFrame(size, renderer, appState, activeFlash)
+                            render()
                             return@collect  // scroll events never reach phases
                         }
                     }
@@ -113,20 +148,34 @@ internal suspend fun runLoop(
                             val next = if (panel.key in current) current - panel.key else current + panel.key
                             appState = appState.copy(collapsedPanels = next)
                         }
-                        frame = renderFrame(size, renderer, appState, activeFlash)
+                        render()
+                        return@collect
+                    }
+
+                    // Manual board panning: independent of game phase and, like scroll and
+                    // panel-collapse above, still active once the match has ended.
+                    val pan = (event as? KeyboardEvent)?.let(InputMapper::mapPanEvent)
+                    if (pan != null) {
+                        when (pan) {
+                            is PanAction.Pan -> {
+                                appState = appState.copy(boardScroll = appState.boardScroll + ScrollOffset(pan.dx, pan.dy))
+                                render()
+                            }
+                            PanAction.Recenter -> render(recenterBoard = true)
+                        }
                         return@collect
                     }
 
                     // Block game input (movement/attacks) once the match is over.
-                    // Scroll and panel-collapse are handled above and remain active.
+                    // Scroll, panel-collapse, and board panning are handled above and remain active.
                     // Only quit (handled by takeWhile) exits the loop.
                     if (appState.matchEnded != null) {
-                        frame = renderFrame(size, renderer, appState, activeFlash)
+                        render()
                         return@collect
                     }
 
                     val transition = appState.phase.handle(event, appState) ?: run {
-                        frame = renderFrame(size, renderer, appState, activeFlash)
+                        render()
                         return@collect
                     }
                     appState = transition.app
@@ -143,18 +192,20 @@ internal suspend fun runLoop(
                         }
                     }
 
-                    frame = renderFrame(size, renderer, appState, activeFlash)
+                    render()
                 }
 
                 is UiEvent.Resized -> {
                     size = ui.size
-                    frame = renderFrame(size, renderer, appState, activeFlash)
+                    // Content-space focus doesn't change on resize, so without forgetting it a
+                    // shrink could leave the cursor stranded outside the new viewport.
+                    render(forgetFocus = true)
                 }
 
                 is UiEvent.FlashExpired -> {
                     if (ui.generation == flashGeneration) {
                         activeFlash = null
-                        frame = renderFrame(size, renderer, appState, activeFlash)
+                        render()
                     }
                     // Stale expiry (earlier flash replaced by a newer one): ignore.
                 }
@@ -177,7 +228,7 @@ internal suspend fun runLoop(
                             else -> appState.lastAttackResults
                         },
                     )
-                    frame = renderFrame(size, renderer, appState, activeFlash)
+                    render()
                 }
 
                 UiEvent.Quit -> {
@@ -239,6 +290,8 @@ private fun renderFrame(
     renderer: ScreenRenderer,
     appState: AppState,
     flash: FlashMessage? = null,
+    previous: RenderedFrame?,
+    recenterBoard: Boolean = false,
 ): RenderedFrame {
     val visible = PanelVisibility.visibleKeys(appState)
     val layout = FrameLayout.compute(
@@ -256,7 +309,7 @@ private fun renderFrame(
     val frame = PanelFrame(appState)
 
     val renderData = appState.phase.render(appState)
-    val boardView = BoardView(
+    val boardContent = BoardView(
         appState.visibleState,
         cursorPosition = appState.cursor,
         hexHighlights = renderData.hexHighlights,
@@ -268,10 +321,22 @@ private fun renderFrame(
         validTargetPositions = renderData.validTargetPositions,
         selectedTargetPosition = renderData.selectedTargetPosition,
     )
+    val (mapWidth, mapHeight) = BoardView.contentSize(appState.visibleState.map)
+    val boardScrollable = ScrollableView(
+        title = "TACTICAL MAP",
+        badge = null,
+        content = boardContent,
+        extent = ContentExtent.Fixed(mapWidth, mapHeight),
+        offset = appState.boardScroll,
+        previousFocus = previous?.boardFocus,
+        recenter = recenterBoard,
+    )
     val board = screen.region(0, layout.boardY, layout.boardWidth, layout.boardHeight)
-    boardView.render(board)
+    boardScrollable.render(board)
 
     val maxOffsets = mutableMapOf<Char, Int>()
+    val panelOffsets = mutableMapOf<Char, Int>()
+    val panelFocus = mutableMapOf<Char, FocusRect?>()
     for (slot in layout.slots) {
         val panel = Panels.byKey.getValue(slot.panelKey)
         val panelSlot = PanelSlot(
@@ -281,11 +346,15 @@ private fun renderFrame(
             collapsed = slot.collapsed,
             scrollOffset = appState.panelScrollOffsets[slot.panelKey],
             anchorBottom = panel.anchorBottom,
+            previousFocus = previous?.panelFocus?.get(slot.panelKey),
         ) { panel.build(frame) }
         val view = resolvePanel(panelSlot)
         view?.render(screen.region(slot.x, layout.boardY, slot.width, layout.boardHeight))
-        val mo = (view as? ScrollablePanelView)?.maxOffset
-        if (mo != null) maxOffsets[slot.panelKey] = mo
+        if (view is ScrollableView) {
+            maxOffsets[slot.panelKey] = view.state.maxOffset.y
+            panelOffsets[slot.panelKey] = view.state.offset.y
+            panelFocus[slot.panelKey] = view.state.focus
+        }
     }
 
     val matchEnded = appState.matchEnded
@@ -309,5 +378,10 @@ private fun renderFrame(
     }
 
     renderer.render(buffer)
-    return RenderedFrame(layout, maxOffsets)
+    return RenderedFrame(
+        layout, maxOffsets, panelOffsets,
+        boardScroll = boardScrollable.state.offset,
+        boardFocus = boardScrollable.state.focus,
+        panelFocus = panelFocus,
+    )
 }

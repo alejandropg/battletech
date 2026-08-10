@@ -666,6 +666,89 @@ internal class TuiAppLoopTest {
         loopJob.join()
     }
 
+    // -------------------------------------------------------------------------
+    // Test 13: a manual board pan must survive subsequent renders. Auto-follow
+    // fires on focus MOVEMENT, not on every render — otherwise the board springs
+    // back to the cursor on the next event of any kind, undoing the pan.
+    // -------------------------------------------------------------------------
+
+    /**
+     * A map far wider than the 120-column test terminal, so the board genuinely scrolls.
+     *
+     * The "QQ" marker unit deliberately sits AWAY from the cursor: the cursor-driven panels
+     * (UNIT_STATUS / TARGET_STATUS) render the id of whatever unit is under the cursor, which
+     * would make "QQ" appear in the frame for reasons that have nothing to do with the board's
+     * scroll position. Off the cursor, "QQ" appears only as a board glyph.
+     */
+    private fun buildWideMapAppState(): AppState {
+        val p2Unit = aUnit(id = "QQ", owner = PlayerId.PLAYER_2, position = HexCoordinates(2, 2))
+        val p1Unit = aUnit(
+            id = "ally",
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(1, 1),
+            walkingMP = 3,
+            runningMP = 5,
+        )
+        return AppState(
+            gameState = aGameState(units = listOf(p1Unit, p2Unit), map = aGameMap(cols = 40, rows = 20)),
+            turnState = aTurnState(),
+            phase = MovementPhase.SelectingUnit,
+            cursor = HexCoordinates(0, 0),
+        )
+    }
+
+    @Test
+    fun `a board pan survives an unrelated re-render, and cursor movement re-engages follow`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    terminal = terminal,
+                    renderer = renderer,
+                    initialState = buildWideMapAppState(),
+                )
+            }
+
+            // The marker unit at (2,2) is near the left edge, so it is on screen at rest.
+            assertTrue(recorder.output().contains("QQ"), "marker unit should be visible before panning")
+
+            // Pan right far enough to push the marker off the left edge. The recorder accumulates
+            // every frame, so the output is cleared before the LAST press and asserted on that
+            // frame alone — by then the marker has long since scrolled away, and a pan redraws
+            // the whole board area, so it would be retransmitted if it were still on screen.
+            repeat(19) { internalEvents.send(UiEvent.Input(KeyboardEvent("l"))) }
+            recorder.clearOutput()
+            internalEvents.send(UiEvent.Input(KeyboardEvent("l")))
+            assertFalse(
+                recorder.output().contains("QQ"),
+                "panning right should scroll the marker unit out of view",
+            )
+
+            // An unrelated event re-renders. If auto-follow ran unconditionally it would drag the
+            // board back to the cursor and redraw the unit — the diffing renderer emits exactly
+            // the cells that changed, so its reappearance would show up here.
+            recorder.clearOutput()
+            internalEvents.send(UiEvent.Input(KeyboardEvent("h", alt = true)))
+            assertFalse(
+                recorder.output().contains("QQ"),
+                "an unrelated re-render must not snap the board back to the cursor",
+            )
+
+            // Moving the cursor is a focus change, so follow re-engages and brings it back.
+            recorder.clearOutput()
+            internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
+            assertTrue(
+                recorder.output().contains("QQ"),
+                "cursor movement should follow the board back to the cursor",
+            )
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+
     // ---- helpers ----
 
     // attackerId defaults to "ally" (buildAppState()'s PLAYER_1 unit) since AttackResultsView

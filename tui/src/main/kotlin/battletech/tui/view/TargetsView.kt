@@ -68,6 +68,7 @@ public class TargetsView(
                     else -> Checkbox.intrinsicColor(state)
                 }
                 val row = content.cy
+                if (isCursorHere) content.markFocus()
                 WeaponHitWidget.draw(content, left, weapon.targetDiceRoll, weapon.successChance, weapon.modifiers, color)
                 Checkbox.draw(content.canvas, 2, row, state, checkboxColor)
             }

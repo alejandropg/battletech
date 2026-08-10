@@ -17,4 +17,8 @@ public object HexGeometry {
     public const val COL_STRIDE: Int = 7
     public const val ROW_STRIDE: Int = 4
     public const val ODD_COL_ROW_OFFSET: Int = 2
+
+    /** A hex glyph's own footprint (see the diagram above) — distinct from the stride between glyphs. */
+    public const val HEX_WIDTH: Int = 9
+    public const val HEX_HEIGHT: Int = 5
 }

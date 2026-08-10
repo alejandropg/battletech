@@ -10,13 +10,21 @@ import battletech.tui.game.FlashMessage
 import battletech.tui.game.moveCursor
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
+import battletech.tui.view.PanelChrome
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 
-/** Board-origin constants used by all idle-selecting states. */
-internal const val BOARD_ORIGIN_X = 2
-internal const val BOARD_ORIGIN_Y = 2
+/**
+ * Board-origin constants used by all idle-selecting states: where the board's own content
+ * (unscrolled) starts on screen, inside the [ScrollableView][battletech.tui.view.ScrollableView]
+ * chrome that wraps it. Derived from [PanelChrome] rather than hardcoded so they can't drift from
+ * the chrome that actually draws the board — [PanelChrome.VIEWPORT_INSET] accounts for the
+ * border and horizontal gutters, and the vertical padding row (reclaimed once the board scrolls,
+ * same as any scrollable panel) adds one more to the top.
+ */
+internal val BOARD_ORIGIN_X = PanelChrome.VIEWPORT_INSET.left
+internal val BOARD_ORIGIN_Y = PanelChrome.VIEWPORT_INSET.top + PanelChrome.PADDING.vertical().top
 
 /**
  * A short flash for a rejected command, or null if [result] was accepted.
@@ -42,10 +50,12 @@ internal fun rejectionFlash(result: CommandResult): FlashMessage? = when (result
  * used by [MovementPhase.SelectingUnit], [AttackPhase.SelectingAttacker], and
  * [PhysicalAttackPhase.SelectingAttacker].
  */
-internal fun mapIdleInput(event: InputEvent): IdleAction? = when (event) {
+internal fun mapIdleInput(event: InputEvent, app: AppState): IdleAction? = when (event) {
     is KeyboardEvent -> InputMapper.mapIdleEvent(event)
-    is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y)
-        ?.let { IdleAction.ClickHex(it) }
+    is MouseEvent -> InputMapper.mapMouseToHex(
+        event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y,
+        scrollX = app.boardScroll.x, scrollY = app.boardScroll.y,
+    )?.let { IdleAction.ClickHex(it) }
 }
 
 /**
@@ -139,7 +149,7 @@ internal fun handleUnitSelection(
     onCommit: (AppState) -> Transition = { Transition(it) },
     enterFor: (CombatUnit, AppState) -> Transition,
 ): Transition? {
-    val action = mapIdleInput(event) ?: return null
+    val action = mapIdleInput(event, app) ?: return null
     // [activePlayer] and [selectableUnits] are evaluated lazily: cursor moves must not touch
     // turn-state fields that may be absent (e.g. TurnState.NULL) when no unit selection is
     // actually happening. Every other branch is an acting move and calls [activePlayer]

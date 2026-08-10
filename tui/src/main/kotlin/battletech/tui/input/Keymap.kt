@@ -86,6 +86,8 @@ internal object Keymap {
             KeyHint("${KeyGlyph.ALT}h", "toggle HELP"),
             KeyHint("${KeyGlyph.ALT}0-5", "collapse/expand a panel"),
             KeyHint("wheel", "scroll a panel"),
+            KeyHint("hjkl/${KeyGlyph.CTRL}←→↑↓", "pan board"),
+            KeyHint("Home", "recenter board on cursor"),
             KeyHint("${KeyGlyph.CTRL}c", "quit"),
         ),
     )

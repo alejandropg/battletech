@@ -3,6 +3,7 @@ package battletech.tui.input
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tui.game.PanelScroll
+import battletech.tui.hex.HexGeometry
 import battletech.tui.hex.HexLayout
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
@@ -109,12 +110,41 @@ public object InputMapper {
         else -> null
     }
 
-    public fun mapMouseToHex(event: MouseEvent, boardX: Int, boardY: Int): HexCoordinates? {
+    public fun mapMouseToHex(event: MouseEvent, boardX: Int, boardY: Int, scrollX: Int = 0, scrollY: Int = 0): HexCoordinates? {
         if (!event.left) return null
         val x = event.x - boardX
         val y = event.y - boardY
         if (x < 0 || y < 0) return null
-        return HexLayout.screenToHex(x, y, scrollX = 0, scrollY = 0)
+        return HexLayout.screenToHex(x, y, scrollX, scrollY)
+    }
+
+    /** Board pan step per key press — one hex stride, so panning stays visually grid-aligned. */
+    private val PAN_KEYS: Map<String, PanAction.Pan> = mapOf(
+        "h" to PanAction.Pan(-HexGeometry.COL_STRIDE, 0),
+        "l" to PanAction.Pan(HexGeometry.COL_STRIDE, 0),
+        "k" to PanAction.Pan(0, -HexGeometry.ROW_STRIDE),
+        "j" to PanAction.Pan(0, HexGeometry.ROW_STRIDE),
+    )
+
+    private val CTRL_ARROW_PAN_KEYS: Map<String, PanAction.Pan> = mapOf(
+        "ArrowLeft" to PanAction.Pan(-HexGeometry.COL_STRIDE, 0),
+        "ArrowRight" to PanAction.Pan(HexGeometry.COL_STRIDE, 0),
+        "ArrowUp" to PanAction.Pan(0, -HexGeometry.ROW_STRIDE),
+        "ArrowDown" to PanAction.Pan(0, HexGeometry.ROW_STRIDE),
+    )
+
+    /**
+     * Manual board panning: `hjkl` or ctrl+arrows shift the viewport by one hex stride; `Home`
+     * recenters on the cursor. Bound globally (see `RunLoop`'s dispatch), so it never competes
+     * with plain arrows/wasd (cursor movement) or the attack-declaring torso-twist/weapon-nav
+     * bindings on arrows — `hjkl` and `Home` are unused everywhere else, and ctrl+arrow is a
+     * distinct key from plain arrow.
+     */
+    internal fun mapPanEvent(event: KeyboardEvent): PanAction? = when {
+        event.key == "Home" -> PanAction.Recenter
+        event.ctrl -> CTRL_ARROW_PAN_KEYS[event.key]
+        !event.alt -> PAN_KEYS[event.key]
+        else -> null
     }
 
 }

@@ -20,6 +20,7 @@ import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.Phase
 import battletech.tui.game.phase.PhysicalAttackPhase
+import battletech.tui.view.ScrollOffset
 
 /**
  * The TUI's UI-shell state. [seats] is the set of seats this process drives, each mapped to the
@@ -44,6 +45,7 @@ internal data class AppState(
     val lastAttackResults: List<AttackResult>? = null,
     val panelScrollOffsets: Map<Char, Int> = emptyMap(),
     val matchEnded: MatchEnded? = null,
+    val boardScroll: ScrollOffset = ScrollOffset.ZERO,
 ) {
     /**
      * Any seat's session — safe ONLY for fields every replica agrees on ([turnState],

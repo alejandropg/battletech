@@ -54,7 +54,7 @@ internal sealed interface MovementPhase : Phase {
             // field this phase touches (activePlayer, selectableUnits) indexes into that
             // sequence and would throw, so only cursor movement is safe here.
             if (turnState.movement.isComplete) {
-                val action = mapIdleInput(event) ?: return null
+                val action = mapIdleInput(event, app) ?: return null
                 return if (action is IdleAction.MoveCursor) handleCursorMove(app, action) else Transition(app)
             }
             return handleUnitSelection(
@@ -143,8 +143,10 @@ internal sealed interface MovementPhase : Phase {
         override fun handle(event: InputEvent, app: AppState): Transition? {
             val action = when (event) {
                 is KeyboardEvent -> InputMapper.mapBrowsingEvent(event)
-                is MouseEvent -> InputMapper.mapMouseToHex(event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y)
-                    ?.let { BrowsingAction.ClickHex(it) }
+                is MouseEvent -> InputMapper.mapMouseToHex(
+                    event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y,
+                    scrollX = app.boardScroll.x, scrollY = app.boardScroll.y,
+                )?.let { BrowsingAction.ClickHex(it) }
             } ?: return null
 
             val newCursor = when (action) {

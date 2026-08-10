@@ -10,6 +10,9 @@ package battletech.tui.screen
  * can only ever narrow: a child can't widen its way back out to a wider rect than it started
  * with.
  */
+/** A rect, in some [Canvas]'s local coords, that content wants kept visible — see [Canvas.markFocus]. */
+public data class FocusRect(val x: Int, val y: Int, val width: Int, val height: Int)
+
 public class Canvas private constructor(
     private val buffer: ScreenBuffer,
     private val originX: Int,
@@ -83,6 +86,30 @@ public class Canvas private constructor(
             cx += w
             i += charCount
         }
+    }
+
+    /**
+     * Marks the rect content most wants visible — e.g. a cursor hex, a highlighted row.
+     * Stored on the backing [ScreenBuffer] in absolute coords (translated through this canvas's
+     * origin, like [set]), so it survives [region]/[inset] nesting and is readable from any
+     * canvas over the same buffer via [focusRect]. A scrolling container (see
+     * `battletech.tui.view.ScrollableView`) reads it back to auto-follow. Clips like [set]:
+     * a rect (partly) outside this canvas is clamped, and no-ops if left empty. At most one
+     * focus rect exists per buffer — a later call overwrites an earlier one.
+     */
+    public fun markFocus(x: Int, y: Int, width: Int, height: Int) {
+        val left = x.coerceIn(0, this.width)
+        val top = y.coerceIn(0, this.height)
+        val w = width.coerceIn(0, this.width - left)
+        val h = height.coerceIn(0, this.height - top)
+        if (w <= 0 || h <= 0) return
+        buffer.focus = FocusRect(originX + left, originY + top, w, h)
+    }
+
+    /** The rect last marked via [markFocus], translated into THIS canvas's local coords, or `null` if none. */
+    public fun focusRect(): FocusRect? {
+        val focus = buffer.focus ?: return null
+        return FocusRect(focus.x - originX, focus.y - originY, focus.width, focus.height)
     }
 
     /** Draws the border around the WHOLE canvas. No-op below 2x2. */

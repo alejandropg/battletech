@@ -6,6 +6,9 @@ public class ScreenBuffer(
 ) {
     private val cells: Array<Array<Cell>> = Array(height) { Array(width) { Cell.EMPTY } }
 
+    /** The focus rect last marked via [Canvas.markFocus], in this buffer's own absolute coords. */
+    internal var focus: FocusRect? = null
+
     public fun get(x: Int, y: Int): Cell {
         if (x < 0 || x >= width || y < 0 || y >= height) {
             throw IndexOutOfBoundsException("($x, $y) out of bounds for ${width}x$height buffer")

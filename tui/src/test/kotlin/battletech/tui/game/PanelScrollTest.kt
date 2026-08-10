@@ -16,6 +16,7 @@ internal class PanelScrollTest {
             offsets = emptyMap(),
             panelKey = '1',
             delta = PanelScroll.STEP,
+            currentOffset = 0,
             maxOffset = 20,
             anchorBottom = false,
         )
@@ -28,6 +29,7 @@ internal class PanelScrollTest {
             offsets = mapOf('1' to PanelScroll.STEP),
             panelKey = '1',
             delta = -PanelScroll.STEP,
+            currentOffset = PanelScroll.STEP,
             maxOffset = 20,
             anchorBottom = false,
         )
@@ -40,6 +42,7 @@ internal class PanelScrollTest {
             offsets = mapOf('1' to 18),
             panelKey = '1',
             delta = PanelScroll.STEP,
+            currentOffset = 18,
             maxOffset = 18,
             anchorBottom = false,
         )
@@ -54,6 +57,7 @@ internal class PanelScrollTest {
             offsets = emptyMap(),
             panelKey = '2',
             delta = 999,
+            currentOffset = 0,
             maxOffset = 10,
             anchorBottom = false,
         )
@@ -68,6 +72,7 @@ internal class PanelScrollTest {
             offsets = emptyMap(),
             panelKey = '5',
             delta = -PanelScroll.STEP,
+            currentOffset = 20,
             maxOffset = 20,
             anchorBottom = true,
         )
@@ -81,6 +86,7 @@ internal class PanelScrollTest {
             offsets = mapOf('5' to 18),
             panelKey = '5',
             delta = PanelScroll.STEP,
+            currentOffset = 18,
             maxOffset = 20,
             anchorBottom = true,
         )
@@ -94,6 +100,7 @@ internal class PanelScrollTest {
             offsets = emptyMap(),
             panelKey = '5',
             delta = -999,
+            currentOffset = 20,
             maxOffset = 20,
             anchorBottom = true,
         )
@@ -109,6 +116,7 @@ internal class PanelScrollTest {
             offsets = existing,
             panelKey = '3',
             delta = PanelScroll.STEP,
+            currentOffset = 8,
             maxOffset = 0,
             anchorBottom = false,
         )
@@ -122,10 +130,28 @@ internal class PanelScrollTest {
             offsets = mapOf('3' to 5),
             panelKey = '3',
             delta = 0,
+            currentOffset = 5,
             maxOffset = 0,
             anchorBottom = false,
         )
         assertEquals(emptyMap<Char, Int>(), result)
+    }
+
+    @Test
+    fun `wheel delta is based on currentOffset, not the stale stored entry`() {
+        // Simulates a panel that auto-followed away from its stored (absent = anchored-top)
+        // entry: the map still has no entry for '3', but the panel's true on-screen offset
+        // (as reported back from the last render) is 15. A wheel-up tick must nudge from 15,
+        // not from the stale anchor.
+        val result = PanelScroll.update(
+            offsets = emptyMap(),
+            panelKey = '3',
+            delta = -PanelScroll.STEP,
+            currentOffset = 15,
+            maxOffset = 30,
+            anchorBottom = false,
+        )
+        assertEquals(mapOf('3' to 13), result)
     }
 
     // ── slotAt ───────────────────────────────────────────────────────────────
