@@ -16,9 +16,9 @@ import org.junit.jupiter.api.Test
 
 internal class PlacedPanelTest {
 
-    // build lambdas below all ignore their PanelFrame argument, so this stand-in never needs to
+    // build lambdas below all ignore their PanelInputs argument, so this stand-in never needs to
     // be a realistic frame — only a valid one to pass through.
-    private val frame = PanelFrame(AppState(gameState = aGameState(), phase = MovementPhase.SelectingUnit, cursor = HexCoordinates(0, 0)))
+    private val frame = PanelInputs(AppState(gameState = aGameState(), phase = MovementPhase.SelectingUnit, cursor = HexCoordinates(0, 0)))
 
     private val realView = object : View {
         override fun render(canvas: Canvas) {
@@ -31,7 +31,7 @@ internal class PlacedPanelTest {
         width: Int = 30,
         title: String = "T",
         collapsed: Boolean = false,
-        build: (PanelFrame) -> View? = { realView },
+        build: (PanelInputs) -> View? = { realView },
     ) = PlacedPanel(Panel(id, title, width, build = build), x = 0, width = width, collapsed = collapsed)
 
     @Test

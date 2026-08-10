@@ -14,7 +14,7 @@ import battletech.tui.input.Keymap
  * This is the single place that interprets [AppState] into view inputs; the
  * panels themselves only read these prepared values.
  */
-internal class PanelFrame(private val appState: AppState) {
+internal class PanelInputs(private val appState: AppState) {
 
     val visibleState get() = appState.visibleState
 

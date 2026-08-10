@@ -1,7 +1,5 @@
 package battletech.tui.loop
 
-import battletech.tactical.model.MatchOutcome
-import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.MatchEnded
@@ -11,23 +9,11 @@ import battletech.tui.game.PanelId
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
-import battletech.tui.input.KeyGlyph
 import battletech.tui.input.PanAction
-import battletech.tui.screen.Canvas
-import battletech.tui.screen.Cell
-import battletech.tui.screen.Color
-import battletech.tui.screen.FocusRect
-import battletech.tui.screen.ScreenBuffer
 import battletech.tui.screen.ScreenRenderer
-import battletech.tui.view.BoardView
-import battletech.tui.view.ContentExtent
-import battletech.tui.view.FrameLayout
-import battletech.tui.view.PanelFrame
-import battletech.tui.view.Panels
+import battletech.tui.view.Frame
 import battletech.tui.view.ScrollOffset
-import battletech.tui.view.ScrollState
-import battletech.tui.view.ScrollableView
-import battletech.tui.view.StatusBarView
+import battletech.tui.view.composeFrame
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.rendering.Size
@@ -40,21 +26,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
-
-private val WHITE_STYLE = Cell.Style(Color.WHITE)
-
-/**
- * What the last render settled on. [boardFocus] and each panel's [ScrollState.focus] are fed back
- * into the next render as each scrollable's `previousFocus`: [ScrollableView] auto-follows only
- * when the focus has actually moved, which is what lets a manual pan or wheel-scroll survive
- * subsequent renders.
- */
-private data class RenderedFrame(
-    val layout: FrameLayout,
-    val panels: Map<PanelId, ScrollState>,
-    val boardScroll: ScrollOffset,
-    val boardFocus: FocusRect?,
-)
 
 /**
  * Headless-testable event loop. Collects [events] until [UiEvent.Quit] is seen.
@@ -77,23 +48,25 @@ internal suspend fun runLoop(
     var size = currentSize(terminal)
 
     /**
-     * Folds one rendered frame's settled scroll positions back into [appState]: the board's
+     * Folds one composed frame's settled scroll positions back into [appState]: the board's
      * dense [AppState.boardScroll], and every panel actually rendered expanded this frame merged
      * into [AppState.panelScrollOffsets] (panels invisible or collapsed this frame keep whatever
      * they last had, so re-expanding one restores its position). Both must happen before the next
      * event is handled — otherwise a click or wheel tick right after a pan/follow would hit-test
      * or scroll from a stale offset.
      */
-    fun syncScroll(rendered: RenderedFrame) {
+    fun syncScroll(composed: Frame) {
         appState = appState.copy(
-            boardScroll = rendered.boardScroll,
-            panelScrollOffsets = appState.panelScrollOffsets + rendered.panels.mapValues { it.value.offset.y },
+            boardScroll = composed.board.offset,
+            panelScrollOffsets = appState.panelScrollOffsets + composed.panels.mapValues { it.value.offset.y },
         )
     }
 
     // Render the initial frame before collecting any events. No previous frame, so every
     // scrollable follows its focus into view for the first time.
-    var frame = renderFrame(size, renderer, appState, activeFlash, previous = null)
+    val (initialBuffer, initialFrame) = composeFrame(appState, size.width, size.height, activeFlash, previous = null)
+    renderer.render(initialBuffer)
+    var frame = initialFrame
     syncScroll(frame)
 
     /**
@@ -107,11 +80,13 @@ internal suspend fun runLoop(
      * cursor off-screen.
      */
     fun render(recenterBoard: Boolean = false, forgetFocus: Boolean = false) {
-        frame = renderFrame(
-            size, renderer, appState, activeFlash,
+        val (buffer, next) = composeFrame(
+            appState, size.width, size.height, activeFlash,
             previous = if (forgetFocus) null else frame,
             recenterBoard = recenterBoard,
         )
+        renderer.render(buffer)
+        frame = next
         syncScroll(frame)
     }
 
@@ -251,128 +226,9 @@ internal suspend fun runLoop(
     flashJob?.cancel()
 }
 
-/**
- * Renders a centered overlay box in the board area declaring the match result.
- * Overlays board content — called after the board and panels are drawn so
- * it appears on top.
- */
-private fun renderGameOverBanner(board: Canvas, outcome: MatchOutcome) {
-    val winnerLine = when (outcome) {
-        is MatchOutcome.Draw -> "Draw"
-        is MatchOutcome.Victory -> "${playerName(outcome.winner)} wins!"
-    }
-    val bannerWidth = maxOf(winnerLine.length + 8, 24)
-    val bannerHeight = 7
-    if (bannerWidth > board.width || bannerHeight > board.height) return
-    val banner = board.region(
-        (board.width - bannerWidth) / 2, (board.height - bannerHeight) / 2,
-        bannerWidth, bannerHeight,
-    )
-    banner.drawBox(
-        title = "MATCH OVER",
-        borderColor = Color.BRIGHT_YELLOW,
-        titleColor = Color.BRIGHT_YELLOW,
-    )
-    val mx = (bannerWidth - winnerLine.length) / 2
-    banner.writeString(mx, 3, winnerLine, WHITE_STYLE)
-}
-
-private fun playerName(player: PlayerId): String = when (player) {
-    PlayerId.PLAYER_1 -> "P1"
-    PlayerId.PLAYER_2 -> "P2"
-}
-
 private fun currentSize(terminal: Terminal): Size {
     val size = terminal.updateSize()
     check(size.width > 0) { "Terminal width must be positive, got: $size" }
     check(size.height > 0) { "Terminal height must be positive, got: $size" }
     return Size(size.width, size.height)
-}
-
-private fun renderFrame(
-    size: Size,
-    renderer: ScreenRenderer,
-    appState: AppState,
-    flash: FlashMessage? = null,
-    previous: RenderedFrame?,
-    recenterBoard: Boolean = false,
-): RenderedFrame {
-    val visible = PanelVisibility.visiblePanels(appState)
-    val layout = FrameLayout.compute(
-        termWidth = size.width,
-        termHeight = size.height,
-        visiblePanels = visible,
-        collapsedPanels = appState.collapsedPanels,
-        panels = Panels.ordered,
-    )
-
-    val buffer = ScreenBuffer(size.width, size.height)
-    val screen = Canvas.of(buffer)
-    val frame = PanelFrame(appState)
-
-    val renderData = appState.phase.render(appState)
-    val boardContent = BoardView(
-        appState.visibleState,
-        cursorPosition = appState.cursor,
-        hexHighlights = renderData.hexHighlights,
-        reachableFacings = renderData.reachableFacings,
-        facingSelectionFacings = renderData.facingSelection?.facings,
-        pathDestination = appState.phase.pathDestination(),
-        movementMode = appState.phase.movementMode(),
-        torsoFacings = renderData.torsoFacings,
-        validTargetPositions = renderData.validTargetPositions,
-        selectedTargetPosition = renderData.selectedTargetPosition,
-    )
-    val (mapWidth, mapHeight) = BoardView.contentSize(appState.visibleState.map)
-    val boardScrollable = ScrollableView(
-        title = "TACTICAL MAP",
-        badge = null,
-        content = boardContent,
-        extent = ContentExtent.Fixed(mapWidth, mapHeight),
-        offset = appState.boardScroll,
-        previousFocus = previous?.boardFocus,
-        recenter = recenterBoard,
-    )
-    val board = screen.region(0, layout.boardY, layout.boardWidth, layout.boardHeight)
-    boardScrollable.render(board)
-
-    val panels = mutableMapOf<PanelId, ScrollState>()
-    for (slot in layout.slots) {
-        val view = slot.pane(
-            frame,
-            scrollOffset = appState.panelScrollOffsets[slot.id],
-            previousFocus = previous?.panels?.get(slot.id)?.focus,
-        )
-        view?.render(screen.region(slot.x, layout.boardY, slot.width, layout.boardHeight))
-        if (view is ScrollableView) {
-            panels[slot.id] = view.scroll
-        }
-    }
-
-    val matchEnded = appState.matchEnded
-    val prompt = when {
-        matchEnded != null -> {
-            val outcomeText = when (val outcome = matchEnded.outcome) {
-                is MatchOutcome.Draw -> "Draw"
-                is MatchOutcome.Victory -> "${playerName(outcome.winner)} wins!"
-            }
-            "Match over — $outcomeText  |  ${KeyGlyph.CTRL}c: quit"
-        }
-        flash != null -> flash.text
-        else -> appState.phase.prompt(appState)
-    }
-    val activePlayerInfo = if (matchEnded != null) null else appState.phase.activePlayerLabel(appState)
-    val statusBarView = StatusBarView(appState.currentPhase, prompt, activePlayerInfo)
-    statusBarView.render(screen.region(0, 0, size.width, FrameLayout.STATUS_BAR_HEIGHT))
-
-    if (matchEnded != null) {
-        renderGameOverBanner(board, matchEnded.outcome)
-    }
-
-    renderer.render(buffer)
-    return RenderedFrame(
-        layout, panels,
-        boardScroll = boardScrollable.scroll.offset,
-        boardFocus = boardScrollable.scroll.focus,
-    )
 }

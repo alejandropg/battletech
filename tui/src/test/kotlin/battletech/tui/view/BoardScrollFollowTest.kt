@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * The board composed the way `RunLoop.renderFrame` composes it — real [BoardView] content inside a
+ * The board composed the way [composeFrame] composes it — real [BoardView] content inside a
  * [ScrollableView] — driven across consecutive renders with focus carried forward, which is the
  * only place the pan-then-snap-back defect was observable.
  */

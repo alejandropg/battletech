@@ -27,11 +27,11 @@ internal data class PlacedPanel(
      * Expanded panels are wrapped in [ScrollableView] so scrolling, offset clamping, and
      * scrollbar rendering are handled generically.
      */
-    fun pane(frame: PanelFrame, scrollOffset: Int?, previousFocus: FocusRect?): Pane? = when {
+    fun pane(inputs: PanelInputs, scrollOffset: Int?, previousFocus: FocusRect?): Pane? = when {
         width <= 0 -> null
         collapsed -> CollapsedPanelView(panel.id.key, panel.title)
         else -> {
-            val content = panel.build(frame) ?: return null
+            val content = panel.build(inputs) ?: return null
             ScrollableView(
                 title = panel.title,
                 badge = panel.id.key.toString(),
