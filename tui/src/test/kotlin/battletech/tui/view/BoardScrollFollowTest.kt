@@ -48,7 +48,7 @@ internal class BoardScrollFollowTest {
     ): ScrollState {
         val view = board(cursor, offset, previousFocus, recenter)
         render(view, 80, 24)
-        return view.state
+        return view.scroll
     }
 
     @Test

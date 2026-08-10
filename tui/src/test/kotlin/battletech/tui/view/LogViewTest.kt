@@ -200,7 +200,7 @@ internal class LogViewTest {
             extent = ContentExtent.Measured(),
         )
         render(first, 28, 6)
-        val focus = first.state.focus!!
+        val focus = first.scroll.focus!!
 
         // Second render: the user has wheeled back to the top; the log hasn't changed, so the
         // focus row is identical — the manual offset must be respected, not re-followed.
@@ -214,7 +214,7 @@ internal class LogViewTest {
         )
         val buffer = render(second, 28, 6)
 
-        assertEquals(0, second.state.offset.y, "a manual scroll to the top must not snap back to the bottom")
+        assertEquals(0, second.scroll.offset.y, "a manual scroll to the top must not snap back to the bottom")
         val firstLine = buffer.line(2, 2, 24)
         assert(firstLine.startsWith("── TURN 1 ")) { "Expected header at row 2: '$firstLine'" }
         val secondLine = buffer.line(3, 2, 24)
@@ -234,7 +234,7 @@ internal class LogViewTest {
             extent = ContentExtent.Measured(),
         )
         render(scrolledAway, 28, 6)
-        val focusAtTen = scrolledAway.state.focus!!
+        val focusAtTen = scrolledAway.scroll.focus!!
         val manuallyScrolledUp = ScrollableView(
             title = LogView.TITLE,
             badge = PanelId.LOG.key.toString(),
@@ -244,7 +244,7 @@ internal class LogViewTest {
             previousFocus = focusAtTen,
         )
         render(manuallyScrolledUp, 28, 6)
-        assertEquals(0, manuallyScrolledUp.state.offset.y, "sanity check: scrolled away from the bottom")
+        assertEquals(0, manuallyScrolledUp.scroll.offset.y, "sanity check: scrolled away from the bottom")
 
         // An eleventh entry arrives; the focus row moves, so the view follows it to the bottom.
         val elevenEntries = tenEntries + LogEntry(turn = 11, event = stoodUp())
@@ -253,8 +253,8 @@ internal class LogViewTest {
             badge = PanelId.LOG.key.toString(),
             content = LogView(elevenEntries, state = emptyState),
             extent = ContentExtent.Measured(),
-            offset = manuallyScrolledUp.state.offset,
-            previousFocus = manuallyScrolledUp.state.focus,
+            offset = manuallyScrolledUp.scroll.offset,
+            previousFocus = manuallyScrolledUp.scroll.focus,
         )
         val buffer = render(newEntryArrives, 28, 6)
 

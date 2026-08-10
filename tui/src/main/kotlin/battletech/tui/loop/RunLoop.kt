@@ -23,14 +23,11 @@ import battletech.tui.view.BoardView
 import battletech.tui.view.ContentExtent
 import battletech.tui.view.FrameLayout
 import battletech.tui.view.PanelFrame
-import battletech.tui.view.PanelMetrics
-import battletech.tui.view.PanelSlot
 import battletech.tui.view.Panels
 import battletech.tui.view.ScrollOffset
 import battletech.tui.view.ScrollState
 import battletech.tui.view.ScrollableView
 import battletech.tui.view.StatusBarView
-import battletech.tui.view.resolvePanel
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.rendering.Size
@@ -138,9 +135,9 @@ internal suspend fun runLoop(
                         val delta = InputMapper.scrollDelta(event, overPanel = slot != null)
                         if (delta != null) {
                             if (slot != null) {
-                                val current = appState.panelScrollOffsets[slot.panelKey] ?: 0
+                                val current = appState.panelScrollOffsets[slot.id] ?: 0
                                 appState = appState.copy(
-                                    panelScrollOffsets = appState.panelScrollOffsets + (slot.panelKey to (current + delta)),
+                                    panelScrollOffsets = appState.panelScrollOffsets + (slot.id to (current + delta)),
                                 )
                             }
                             render()
@@ -306,9 +303,7 @@ private fun renderFrame(
         termHeight = size.height,
         visiblePanels = visible,
         collapsedPanels = appState.collapsedPanels,
-        panelDescriptors = Panels.ordered.map {
-            PanelMetrics(it.id, it.width, it.collapsedWidth)
-        },
+        panels = Panels.ordered,
     )
 
     val buffer = ScreenBuffer(size.width, size.height)
@@ -343,19 +338,14 @@ private fun renderFrame(
 
     val panels = mutableMapOf<PanelId, ScrollState>()
     for (slot in layout.slots) {
-        val panel = Panels.byId.getValue(slot.panelKey)
-        val panelSlot = PanelSlot(
-            key = slot.panelKey,
-            width = slot.width,
-            title = panel.title,
-            collapsed = slot.collapsed,
-            scrollOffset = appState.panelScrollOffsets[slot.panelKey],
-            previousFocus = previous?.panels?.get(slot.panelKey)?.focus,
-        ) { panel.build(frame) }
-        val view = resolvePanel(panelSlot)
+        val view = slot.pane(
+            frame,
+            scrollOffset = appState.panelScrollOffsets[slot.id],
+            previousFocus = previous?.panels?.get(slot.id)?.focus,
+        )
         view?.render(screen.region(slot.x, layout.boardY, slot.width, layout.boardHeight))
         if (view is ScrollableView) {
-            panels[slot.panelKey] = view.state
+            panels[slot.id] = view.scroll
         }
     }
 
@@ -382,7 +372,7 @@ private fun renderFrame(
     renderer.render(buffer)
     return RenderedFrame(
         layout, panels,
-        boardScroll = boardScrollable.state.offset,
-        boardFocus = boardScrollable.state.focus,
+        boardScroll = boardScrollable.scroll.offset,
+        boardFocus = boardScrollable.scroll.focus,
     )
 }

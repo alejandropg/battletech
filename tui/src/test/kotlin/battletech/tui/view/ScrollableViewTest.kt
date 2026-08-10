@@ -121,7 +121,7 @@ internal class ScrollableViewTest {
 
         val viewportHeight = 8
         val streamHeight = 20 + 1 // the reclaimable top-padding row is prepended to the stream
-        assertEquals(streamHeight - viewportHeight, view.state.maxOffset.y)
+        assertEquals(streamHeight - viewportHeight, view.scroll.maxOffset.y)
     }
 
     @Test
@@ -130,7 +130,7 @@ internal class ScrollableViewTest {
 
         render(view, 30, 10)
 
-        assertEquals(0, view.state.maxOffset.y)
+        assertEquals(0, view.scroll.maxOffset.y)
     }
 
     @Test
@@ -184,7 +184,7 @@ internal class ScrollableViewTest {
 
         assertEquals("╭", buffer.get(0, 0).char)
         assertEquals("╰", buffer.get(0, 1).char)
-        assertEquals(0, view.state.maxOffset.y)
+        assertEquals(0, view.scroll.maxOffset.y)
     }
 
     @Test
@@ -194,7 +194,7 @@ internal class ScrollableViewTest {
         val buffer = render(view, 4, 10)
 
         assertEquals("╭", buffer.get(0, 0).char)
-        assertEquals(0, view.state.maxOffset.y)
+        assertEquals(0, view.scroll.maxOffset.y)
     }
 
     @Test
@@ -226,8 +226,8 @@ internal class ScrollableViewTest {
         render(view, 30, 10)
 
         // viewport ~= (30-4)x(10-2)=26x8; maxOffsetX = 50-26=24, maxOffsetY = (40+1)-8=33
-        assertEquals(24, view.state.maxOffset.x)
-        assertEquals(33, view.state.maxOffset.y)
+        assertEquals(24, view.scroll.maxOffset.x)
+        assertEquals(33, view.scroll.maxOffset.y)
     }
 
     @Test
@@ -236,8 +236,8 @@ internal class ScrollableViewTest {
 
         render(view, 30, 10)
 
-        assertEquals(0, view.state.maxOffset.x)
-        assertEquals(0, view.state.offset.x)
+        assertEquals(0, view.scroll.maxOffset.x)
+        assertEquals(0, view.scroll.offset.x)
     }
 
     // ── auto-follow: fires on focus MOVEMENT, not on every render ──────────────────────────────
@@ -248,7 +248,7 @@ internal class ScrollableViewTest {
 
         render(view, 30, 10)
 
-        assertEquals(3, view.state.offset.y)
+        assertEquals(3, view.scroll.offset.y)
     }
 
     @Test
@@ -260,7 +260,7 @@ internal class ScrollableViewTest {
 
         // viewport height = 8; focus (stream row 16, after the +1 padding shift) must be visible:
         // offset + 8 > 16 => offset >= 9; minimal shift => offset lands focus at the bottom edge.
-        val offset = view.state.offset.y
+        val offset = view.scroll.offset.y
         val streamFocusRow = 15 + 1
         assertEquals(true, streamFocusRow in offset until (offset + 8), "focus row not visible at offset $offset")
     }
@@ -271,7 +271,7 @@ internal class ScrollableViewTest {
 
         render(view, 30, 10)
 
-        assertEquals(0, view.state.offset.y)
+        assertEquals(0, view.scroll.offset.y)
     }
 
     /**
@@ -290,7 +290,7 @@ internal class ScrollableViewTest {
 
         render(view, 30, 10)
 
-        assertEquals(3, view.state.offset.y)
+        assertEquals(3, view.scroll.offset.y)
     }
 
     @Test
@@ -303,7 +303,7 @@ internal class ScrollableViewTest {
 
         render(view, 30, 10)
 
-        val offset = view.state.offset.y
+        val offset = view.scroll.offset.y
         val streamFocusRow = 20 + 1
         assertEquals(true, streamFocusRow in offset until (offset + 8), "focus row not visible at offset $offset")
     }
@@ -314,7 +314,7 @@ internal class ScrollableViewTest {
 
         render(view, 30, 10)
 
-        assertEquals(focusAt(5), view.state.focus)
+        assertEquals(focusAt(5), view.scroll.focus)
     }
 
     @Test
@@ -332,8 +332,8 @@ internal class ScrollableViewTest {
         // Centering a 1-row-tall focus: offset = focusStart - (viewportSize - focusSize) / 2.
         val viewportHeight = 8
         val streamFocusRow = focusRow + 1
-        val expected = (streamFocusRow - (viewportHeight - 1) / 2).coerceIn(0, view.state.maxOffset.y)
-        assertEquals(expected, view.state.offset.y)
+        val expected = (streamFocusRow - (viewportHeight - 1) / 2).coerceIn(0, view.scroll.maxOffset.y)
+        assertEquals(expected, view.scroll.offset.y)
     }
 
     @Test
@@ -342,6 +342,6 @@ internal class ScrollableViewTest {
 
         render(view, 30, 2) // border alone consumes the whole height; render bails early
 
-        assertEquals(ScrollState.NONE, view.state)
+        assertEquals(ScrollState.NONE, view.scroll)
     }
 }

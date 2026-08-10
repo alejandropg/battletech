@@ -69,16 +69,16 @@ internal class ScrollableView(
     private val offset: ScrollOffset = ScrollOffset.ZERO,
     private val previousFocus: FocusRect? = null,
     private val recenter: Boolean = false,
-) : View {
+) : Pane {
 
     /** What was actually rendered — the effective offset and each axis's max. Set by [render]. */
-    var state: ScrollState = ScrollState.NONE
+    override var scroll: ScrollState = ScrollState.NONE
         private set
 
     override fun render(canvas: Canvas) {
         val viewport = PanelChrome.drawScrollable(canvas, title, badge)
         if (viewport.width <= 0 || viewport.height <= 0) {
-            state = ScrollState.NONE
+            scroll = ScrollState.NONE
             return
         }
 
@@ -121,7 +121,7 @@ internal class ScrollableView(
         drawThumb(canvas, vertical = true, track = viewport.height, contentSize = streamHeight, viewportSize = viewport.height, offset = offsetY)
         drawThumb(canvas, vertical = false, track = viewport.width, contentSize = streamWidth, viewportSize = viewport.width, offset = offsetX)
 
-        state = ScrollState(ScrollOffset(offsetX, offsetY), ScrollOffset(maxOffsetX, maxOffsetY), focus)
+        scroll = ScrollState(ScrollOffset(offsetX, offsetY), ScrollOffset(maxOffsetX, maxOffsetY), focus)
     }
 
     private fun resolveAxis(

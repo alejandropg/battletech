@@ -4,7 +4,9 @@ import battletech.tui.screen.Canvas
 import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 
-public class CollapsedPanelView(public val key: Char, public val title: String) : View {
+internal class CollapsedPanelView(val key: Char, val title: String) : Pane {
+
+    override val scroll: ScrollState = ScrollState.NONE
 
     override fun render(canvas: Canvas) {
         canvas.drawBox()
