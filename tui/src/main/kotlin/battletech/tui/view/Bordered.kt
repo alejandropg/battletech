@@ -19,8 +19,8 @@ internal class Bordered(
     private val title: String = "",
     private val badge: String? = null,
     private val gutters: Insets = Insets.NONE,
-    private val borderColor: Color = Color.GREEN,
-    private val titleColor: Color = Color.BRIGHT_YELLOW,
+    private val borderColor: Color = Color.PANEL_BORDER,
+    private val titleColor: Color = Color.ACCENT,
     private val thumbsFrom: Scrolled? = null,
 ) : View {
 
@@ -86,18 +86,18 @@ internal class Bordered(
             contentHeight = scroll.maxOffset.y + viewportHeight,
             viewportHeight = viewportHeight,
             offset = scroll.offset.y,
-        )?.forEach { i -> canvas.set(canvas.width - 1, inset.top + i, Cell("▐", GREEN_STYLE)) }
+        )?.forEach { i -> canvas.set(canvas.width - 1, inset.top + i, Cell("▐", PANEL_BORDER_STYLE)) }
 
         Scrollbar.thumb(
             track = viewportWidth,
             contentHeight = scroll.maxOffset.x + viewportWidth,
             viewportHeight = viewportWidth,
             offset = scroll.offset.x,
-        )?.forEach { i -> canvas.set(inset.left + i, canvas.height - 1, Cell("▬", GREEN_STYLE)) }
+        )?.forEach { i -> canvas.set(inset.left + i, canvas.height - 1, Cell("▬", PANEL_BORDER_STYLE)) }
     }
 
     internal companion object {
-        private val GREEN_STYLE = Cell.Style(Color.GREEN)
+        private val PANEL_BORDER_STYLE = Cell.Style(Color.PANEL_BORDER)
 
         /** One cell on each side, consumed by every [Bordered] box. */
         val BORDER: Insets = Insets.all(1)

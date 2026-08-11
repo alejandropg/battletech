@@ -58,8 +58,8 @@ internal class DeclaredTargetsIntegrationTest {
 
         val wolfRow = (0 until 30).first { buffer.line(it).contains("wolf") }
         val colors = (2 until 28).map { col -> buffer.get(col, wolfRow).style.fg }.toSet()
-        assertTrue(colors.contains(Color.GRAY)) {
-            "Expected wolf (draft) row to use Color.GRAY, got: $colors"
+        assertTrue(colors.contains(Color.DRAFT)) {
+            "Expected wolf (draft) row to use Color.DRAFT, got: $colors"
         }
     }
 

@@ -16,10 +16,17 @@ private const val EXIT_ALT_SCREEN = "\u001B[?1049l"
  * (a cursor nudge, a panel toggle) is otherwise tens of KB on a large terminal. The very first
  * render, and any render after the terminal is resized or [clear] runs, has no previous frame to
  * diff against and falls back to a full repaint.
+ *
+ * [theme] selects which [TuiPalette] every [Color] role resolves through; `null` auto-selects
+ * from [terminal]'s detected [com.github.ajalt.mordant.rendering.AnsiLevel] (see
+ * [TuiTheme.autoFor]). An explicit [theme] is honored even if it exceeds that detected level —
+ * only [com.github.ajalt.mordant.rendering.AnsiLevel.NONE] (the terminal cannot render color at
+ * all) still suppresses every SGR tag, regardless of [theme].
  */
-public class ScreenRenderer(private val terminal: Terminal) {
+public class ScreenRenderer(private val terminal: Terminal, theme: TuiTheme? = null) {
 
-    private val styleFactory = TextStyleFactory(terminal.terminalInfo.ansiLevel)
+    private val resolvedTheme: TuiTheme = theme ?: TuiTheme.autoFor(terminal.terminalInfo.ansiLevel)
+    private val styleFactory = TextStyleFactory(TuiPalette.forTheme(resolvedTheme), terminal.terminalInfo.ansiLevel)
 
     // The last buffer actually sent to the terminal, or null if nothing has been sent yet (or
     // [clear] just ran) — either way, the next render() has nothing to diff against.
@@ -48,13 +55,21 @@ public class ScreenRenderer(private val terminal: Terminal) {
      * Switches to the terminal's alternate screen buffer and clears it, so the game doesn't wipe
      * the user's scrollback. [cleanup] switches back, restoring exactly what was on screen before
      * [clear] ran.
+     *
+     * The default style's SGR tag is emitted before `clearScreen()` (which erases using whatever
+     * SGR is currently active) so the freshly cleared screen paints [resolvedTheme]'s background
+     * immediately — otherwise the terminal's OWN default background shows through for the instant
+     * between entering the alternate screen and the first [render], which flashes the wrong color
+     * whenever the theme and the terminal's own background disagree (e.g. a light theme on a
+     * dark-background terminal).
      */
     public fun clear() {
         // cursor.hide() (not a raw escape) so its JVM shutdown hook stays registered: if the
         // process dies without reaching cleanup(), the cursor is still restored on exit.
         terminal.cursor.hide()
         val altScreen = if (terminal.terminalInfo.interactive) ENTER_ALT_SCREEN else ""
-        terminal.rawPrint(altScreen + terminal.cursor.getMoves { clearScreen(); setPosition(0, 0) })
+        val defaultStyle = styleFactory.tagsFor(Cell.Style.DEFAULT)?.open.orEmpty()
+        terminal.rawPrint(altScreen + defaultStyle + terminal.cursor.getMoves { clearScreen(); setPosition(0, 0) })
         System.out.flush()
         previous = null
     }
@@ -113,11 +128,12 @@ public class ScreenRenderer(private val terminal: Terminal) {
      * Appends styled text for `buffer[xStart, xEnd)` on row [y] to [sb], grouping consecutive
      * same-style cells into runs and emitting only the ANSI tags needed at each run boundary.
      *
-     * Closing the previous run before opening the next is only skippable when the next run's
-     * colors fully overwrite whatever the previous run set: a channel the previous style left
-     * non-default (fg or bg) must also be non-default in the next style, or its color would bleed
-     * through — SGR color-set codes are absolute, but Mordant only emits one for a channel that
-     * differs from default, so a style that leaves a channel at default doesn't reset it.
+     * Closing the previous run before opening the next is skippable whenever both runs have tags
+     * at all: every opening tag now establishes BOTH foreground and background explicitly (even
+     * for [Color.DEFAULT], which resolves to the theme's default surface rather than leaving a
+     * channel unset), so the next run's open tag always fully overwrites whatever the previous
+     * run set — nothing can bleed through. Only a strikethrough-state change still needs the
+     * close, since strikethrough has no "close" bundled into every open tag the way color does.
      */
     private fun renderSpan(sb: StringBuilder, buffer: ScreenBuffer, y: Int, xStart: Int, xEnd: Int) {
         var x = xStart
@@ -138,10 +154,7 @@ public class ScreenRenderer(private val terminal: Terminal) {
                 activeStyle = null
                 activeTags = null
             } else {
-                val skipClose = activeStyle != null &&
-                    (activeStyle.fg == Color.DEFAULT || runStyle.fg != Color.DEFAULT) &&
-                    (activeStyle.bg == Color.DEFAULT || runStyle.bg != Color.DEFAULT) &&
-                    activeStyle.strikethrough == runStyle.strikethrough
+                val skipClose = activeStyle != null && activeStyle.strikethrough == runStyle.strikethrough
                 if (!skipClose) activeTags?.let { sb.append(it.close) }
                 sb.append(tags.open)
                 activeStyle = runStyle

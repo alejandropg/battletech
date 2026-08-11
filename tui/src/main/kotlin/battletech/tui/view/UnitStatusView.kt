@@ -30,7 +30,7 @@ internal class UnitStatusView(
 
         when (subject) {
             null -> {
-                content.writeln("No unit selected", WHITE_STYLE)
+                content.writeln("No unit selected", TEXT_PRIMARY_STYLE)
                 return
             }
             is ForeignUnit -> {
@@ -44,7 +44,7 @@ internal class UnitStatusView(
 
         // UNIT
         with(content) {
-            writeln(UnitLabel.of(unit), BRIGHT_YELLOW_STYLE)
+            writeln(UnitLabel.of(unit), ACCENT_STYLE)
             newLine()
         }
 
@@ -56,27 +56,27 @@ internal class UnitStatusView(
             // upward, each one forcing a Consciousness roll (PilotHits.kt).
             val hitsLabel = "Hits".padEnd(9) + ": "
             val hits = unit.pilotHits.coerceIn(0, PILOT_DEATH_THRESHOLD)
-            content.writeStr(0, hitsLabel, WHITE_STYLE)
+            content.writeStr(0, hitsLabel, TEXT_PRIMARY_STYLE)
             var hitCol = hitsLabel.length
             for (i in 0 until hits) {
                 // The 6th hit kills the pilot outright (PILOT_DEATH_THRESHOLD) — mark that
                 // final box with a skull instead of a plain filled dot.
                 val icon = if (i == PILOT_DEATH_THRESHOLD - 1) pilotDeadIcon() else filledCircleIcon()
-                content.writeStr(hitCol, icon, RED_STYLE)
+                content.writeStr(hitCol, icon, DANGER_STYLE)
                 hitCol += 1
             }
-            repeat(PILOT_DEATH_THRESHOLD - hits) { content.writeStr(hitCol, emptyCircleIcon(), WHITE_STYLE); hitCol += 1 }
+            repeat(PILOT_DEATH_THRESHOLD - hits) { content.writeStr(hitCol, emptyCircleIcon(), TEXT_PRIMARY_STYLE); hitCol += 1 }
             content.newLine()
-            writeln("Gunnery  : ${unit.gunnerySkill}", WHITE_STYLE)
-            writeln("Piloting : ${unit.pilotingSkill}", WHITE_STYLE)
+            writeln("Gunnery  : ${unit.gunnerySkill}", TEXT_PRIMARY_STYLE)
+            writeln("Piloting : ${unit.pilotingSkill}", TEXT_PRIMARY_STYLE)
             newLine()
         }
 
         // MOVEMENT
         with(content) {
             writeHeader("MOVEMENT")
-            writeln("Walk : ${unit.walkingMP}    Run : ${unit.runningMP}", WHITE_STYLE)
-            if (unit.jumpMP > 0) writeln("Jump : ${unit.jumpMP}", WHITE_STYLE)
+            writeln("Walk : ${unit.walkingMP}    Run : ${unit.runningMP}", TEXT_PRIMARY_STYLE)
+            if (unit.jumpMP > 0) writeln("Jump : ${unit.jumpMP}", TEXT_PRIMARY_STYLE)
             newLine()
         }
 
@@ -121,42 +121,42 @@ internal class UnitStatusView(
             val armor = unit.armor
             val is_ = unit.internalStructure
             writeHeader("ARMOR")
-            writeLocation(9, "HD", armor.head, is_.head, Color.CYAN)
+            writeLocation(9, "HD", armor.head, is_.head, Color.INFO)
             newLine()
-            writeLocation(2, "LT", armor.leftTorso, is_.leftTorso, Color.GREEN)
-            writeLocation(9, "CT", armor.centerTorso, is_.centerTorso, Color.BRIGHT_YELLOW)
-            writeLocation(16, "RT", armor.rightTorso, is_.rightTorso, Color.GREEN)
+            writeLocation(2, "LT", armor.leftTorso, is_.leftTorso, Color.SUCCESS)
+            writeLocation(9, "CT", armor.centerTorso, is_.centerTorso, Color.ACCENT)
+            writeLocation(16, "RT", armor.rightTorso, is_.rightTorso, Color.SUCCESS)
             newLine()
             writeStr(3, "r:%2d".format(armor.leftTorsoRear), Cell.Style.DEFAULT)
             writeStr(10, "r:%2d".format(armor.centerTorsoRear), Cell.Style.DEFAULT)
             writeStr(17, "r:%2d".format(armor.rightTorsoRear), Cell.Style.DEFAULT)
             newLine()
-            writeLocation(0, "LA", armor.leftArm, is_.leftArm, Color.GREEN)
-            writeLocation(17, "RA", armor.rightArm, is_.rightArm, Color.GREEN)
+            writeLocation(0, "LA", armor.leftArm, is_.leftArm, Color.SUCCESS)
+            writeLocation(17, "RA", armor.rightArm, is_.rightArm, Color.SUCCESS)
             newLine()
-            writeLocation(3, "LL", armor.leftLeg, is_.leftLeg, Color.GREEN)
-            writeLocation(14, "RL", armor.rightLeg, is_.rightLeg, Color.GREEN)
+            writeLocation(3, "LL", armor.leftLeg, is_.leftLeg, Color.SUCCESS)
+            writeLocation(14, "RL", armor.rightLeg, is_.rightLeg, Color.SUCCESS)
             newLine()
             newLine()
 
-            writeln("Critical hit points", WHITE_STYLE)
+            writeln("Critical hit points", TEXT_PRIMARY_STYLE)
             for (status in unit.criticalDamageStatus()) {
                 writeCritDots(content, status)
             }
             newLine()
 
-            writeln("Internal Structure", WHITE_STYLE)
-            writeLocation(9, "HD", is_.head, is_.head, Color.CYAN)
+            writeln("Internal Structure", TEXT_PRIMARY_STYLE)
+            writeLocation(9, "HD", is_.head, is_.head, Color.INFO)
             newLine()
-            writeLocation(2, "LT", is_.leftTorso, is_.leftTorso, Color.GREEN)
-            writeLocation(9, "CT", is_.centerTorso, is_.centerTorso, Color.BRIGHT_YELLOW)
-            writeLocation(16, "RT", is_.rightTorso, is_.rightTorso, Color.GREEN)
+            writeLocation(2, "LT", is_.leftTorso, is_.leftTorso, Color.SUCCESS)
+            writeLocation(9, "CT", is_.centerTorso, is_.centerTorso, Color.ACCENT)
+            writeLocation(16, "RT", is_.rightTorso, is_.rightTorso, Color.SUCCESS)
             newLine()
-            writeLocation(0, "LA", is_.leftArm, is_.leftArm, Color.GREEN)
-            writeLocation(17, "RA", is_.rightArm, is_.rightArm, Color.GREEN)
+            writeLocation(0, "LA", is_.leftArm, is_.leftArm, Color.SUCCESS)
+            writeLocation(17, "RA", is_.rightArm, is_.rightArm, Color.SUCCESS)
             newLine()
-            writeLocation(3, "LL", is_.leftLeg, is_.leftLeg, Color.GREEN)
-            writeLocation(14, "RL", is_.rightLeg, is_.rightLeg, Color.GREEN)
+            writeLocation(3, "LL", is_.leftLeg, is_.leftLeg, Color.SUCCESS)
+            writeLocation(14, "RL", is_.rightLeg, is_.rightLeg, Color.SUCCESS)
             repeat(2) { newLine() }
         }
 
@@ -164,7 +164,7 @@ internal class UnitStatusView(
         with(content) {
             writeHeader("WEAPONS")
             for (weapon in unit.weapons) {
-                val style = if (weapon.destroyed) DESTROYED_STYLE else WHITE_STYLE
+                val style = if (weapon.destroyed) DESTROYED_STYLE else TEXT_PRIMARY_STYLE
                 val right = weapon.ammoType?.let { type ->
                     // Only count available ammo (bins in locations with IS > 0).
                     val remaining = unit.availableAmmoBins()
@@ -251,20 +251,20 @@ internal class UnitStatusView(
         val capacity = status.capacity
         val destroyedCount = status.hits.coerceIn(0, capacity)
         val label6 = label.padEnd(7)
-        content.writeStr(2, "$label6: ", WHITE_STYLE)
+        content.writeStr(2, "$label6: ", TEXT_PRIMARY_STYLE)
         val dotsStart = 2 + "$label6: ".length
         var col = dotsStart
         repeat(destroyedCount) {
-            content.writeStr(col, filledCircleIcon(), RED_STYLE)
+            content.writeStr(col, filledCircleIcon(), DANGER_STYLE)
             col += 2
         }
         repeat(capacity - destroyedCount) {
-            content.writeStr(col, emptyCircleIcon(), WHITE_STYLE)
+            content.writeStr(col, emptyCircleIcon(), TEXT_PRIMARY_STYLE)
             col += 2
         }
         content.newLine()
         for (penalty in status.penalties) {
-            content.writeStr(4, penalty, RED_STYLE)
+            content.writeStr(4, penalty, DANGER_STYLE)
             content.newLine()
         }
     }
@@ -279,10 +279,10 @@ internal class UnitStatusView(
     internal companion object {
         internal const val TITLE: String = "UNIT STATUS"
 
-        private val WHITE_STYLE = Cell.Style(Color.WHITE)
-        private val BRIGHT_YELLOW_STYLE = Cell.Style(Color.BRIGHT_YELLOW)
-        private val RED_STYLE = Cell.Style(Color.RED)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
+        private val ACCENT_STYLE = Cell.Style(Color.ACCENT)
+        private val DANGER_STYLE = Cell.Style(Color.DANGER)
         private val DRAFT_STYLE = Cell.Style(Color.DRAFT)
-        private val DESTROYED_STYLE = Cell.Style(Color.RED, strikethrough = true)
+        private val DESTROYED_STYLE = Cell.Style(Color.DESTROYED, strikethrough = true)
     }
 }

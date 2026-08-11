@@ -61,13 +61,13 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Wolverine")
         assertTrue(row >= 0) { "Expected to find Wolverine attacker row" }
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == Color.GRAY }) {
-            "Expected attacker row to contain Color.GRAY"
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == Color.DRAFT }) {
+            "Expected attacker row to contain Color.DRAFT"
         }
     }
 
     @Test
-    fun `committed P1 attacker line uses Color BLUE`() {
+    fun `committed P1 attacker line uses Color PLAYER_1`() {
         val view = DeclaredTargetsView(DeclaredTargetsRender(listOf(
             attacker("Wolverine", PlayerId.PLAYER_1, draft = false,
                 target("Atlas", true, weapon("Med Laser")),
@@ -78,13 +78,13 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Wolverine")
         assertTrue(row >= 0)
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == Color.BLUE }) {
-            "Expected P1 committed attacker row to use Color.BLUE"
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == Color.PLAYER_1 }) {
+            "Expected P1 committed attacker row to use Color.PLAYER_1"
         }
     }
 
     @Test
-    fun `committed P2 attacker line uses Color MAGENTA`() {
+    fun `committed P2 attacker line uses Color PLAYER_2`() {
         val view = DeclaredTargetsView(DeclaredTargetsRender(listOf(
             attacker("Atlas AS7-D", PlayerId.PLAYER_2, draft = false,
                 target("Wolverine", true, weapon("AC/20", 58)),
@@ -95,8 +95,8 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Atlas")
         assertTrue(row >= 0)
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == Color.MAGENTA }) {
-            "Expected P2 committed attacker row to use Color.MAGENTA"
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == Color.PLAYER_2 }) {
+            "Expected P2 committed attacker row to use Color.PLAYER_2"
         }
     }
 

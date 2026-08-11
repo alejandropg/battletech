@@ -56,6 +56,13 @@ public object HexRenderer {
         else -> error("No elevation icon for elevation: $elevation")
     }
 
+    /** The badge background role for a non-zero [elevation] — see [renderElevation]. */
+    private fun elevationBadgeBg(elevation: Int): Color = when (elevation) {
+        1 -> Color.ELEVATION_1_BADGE_BG
+        2 -> Color.ELEVATION_2_BADGE_BG
+        else -> Color.ELEVATION_HIGH_BADGE_BG
+    }
+
     private fun facingIcon(direction: HexDirection): String = when (direction) {
         HexDirection.N  -> NF_MD_ARROW_UP_THIN_N
         HexDirection.NE -> NF_MD_ARROW_UP_THIN_NE
@@ -106,68 +113,69 @@ public object HexRenderer {
 
     /**
      * Renders number labels (1-6) for available facings during facing selection.
-     * Drawn in BRIGHT_YELLOW.
+     * Drawn in [Color.BOARD_ACTIVE] — same role as the cursor and the active path, since facing
+     * selection is itself an active-cursor interaction.
      */
     public fun renderFacingNumbers(canvas: Canvas, x: Int, y: Int, facings: Set<HexDirection>) {
         for (direction in facings) {
             val (dx, dy) = facingPosition(direction)
-            canvas.setFg(x + dx, y + dy, facingNumber(direction), Color.BRIGHT_YELLOW)
+            canvas.setFg(x + dx, y + dy, facingNumber(direction), Color.BOARD_ACTIVE)
         }
     }
 
     public fun render(canvas: Canvas, x: Int, y: Int, hex: Hex, highlight: HexHighlight, movementMode: MovementMode? = null) {
-        val bg = terrainBackground(hex)
+        val bg = terrainFill(hex)
         val borderFg =
-            if (highlight == HexHighlight.CURSOR) Color.BRIGHT_YELLOW
-            else Color.GRAY
+            if (highlight == HexHighlight.CURSOR) Color.BOARD_ACTIVE
+            else Color.BOARD_BORDER
 
         renderBorder(canvas, x, y, borderFg, bg)
         renderContent(canvas, x, y, bg)
         renderTerrain(canvas, x, y, hex.terrain, bg)
-        renderElevation(canvas, x, y, hex.elevation, bg)
+        renderElevation(canvas, x, y, hex.elevation)
         when (highlight) {
-            HexHighlight.REACHABLE_WALK -> renderOverlayChar(canvas, x, y, ".", Color.WHITE)
-            HexHighlight.REACHABLE_RUN -> renderOverlayChar(canvas, x, y, ".", Color.ORANGE)
-            HexHighlight.REACHABLE_JUMP -> renderOverlayChar(canvas, x, y, ".", Color.CYAN)
-            HexHighlight.ATTACK_RANGE -> renderOverlayChar(canvas, x, y, ".", Color.GRAY)
-            HexHighlight.LINE_OF_SIGHT -> renderOverlayChar(canvas, x, y, ".", Color.YELLOW)
-            HexHighlight.LINE_OF_SIGHT_SELECTED -> renderOverlayChar(canvas, x, y, targetIcon(), Color.RED)
+            HexHighlight.REACHABLE_WALK -> renderOverlayChar(canvas, x, y, ".", Color.MOVE_WALK)
+            HexHighlight.REACHABLE_RUN -> renderOverlayChar(canvas, x, y, ".", Color.MOVE_RUN)
+            HexHighlight.REACHABLE_JUMP -> renderOverlayChar(canvas, x, y, ".", Color.MOVE_JUMP)
+            HexHighlight.ATTACK_RANGE -> renderOverlayChar(canvas, x, y, ".", Color.ATTACK_RANGE)
+            HexHighlight.LINE_OF_SIGHT -> renderMarker(canvas, x, y, ".", Color.LINE_OF_SIGHT)
+            HexHighlight.LINE_OF_SIGHT_SELECTED -> renderMarker(canvas, x, y, targetIcon(), Color.TARGET_SELECTED)
             HexHighlight.PATH -> {
                 val icon = if (movementMode != null) movementModeIcon(movementMode) else "*"
-                renderOverlayChar(canvas, x, y, icon, Color.BRIGHT_YELLOW)
+                renderOverlayChar(canvas, x, y, icon, Color.BOARD_ACTIVE)
             }
             else -> Unit
         }
     }
 
+    /** Movement/range/path overlays: the safe bottom-center cell, clear of terrain icon and elevation badge. */
     private fun renderOverlayChar(canvas: Canvas, x: Int, y: Int, char: String, color: Color) {
         canvas.setFg(x + 4, y + 2, char, color)
     }
 
-    // Soft background tint for a hex, driven by terrain. One cell has one background, so when a
-    // hex has both a terrain type and elevation the precedence is WATER > woods > elevation: an
-    // elevated forest stays green (its height still shows via the elevation number icon), and the
-    // brown elevation tint appears only on clear elevated hills.
-    private fun terrainBackground(hex: Hex): Color = when {
-        hex.terrain == Terrain.WATER       -> if (hex.depth <= 1) Color.WATER_SHALLOW_BG else Color.WATER_DEEP_BG
-        hex.terrain == Terrain.LIGHT_WOODS -> Color.WOODS_LIGHT_BG
-        hex.terrain == Terrain.HEAVY_WOODS -> Color.WOODS_HEAVY_BG
-        hex.terrain == Terrain.ROUGH       -> Color.ROUGH_BG
-        hex.elevation == 1                 -> Color.ELEVATION_1_BG
-        hex.elevation == 2                 -> Color.ELEVATION_2_BG
-        hex.elevation >= 3                 -> Color.ELEVATION_HIGH_BG
-        else                               -> Color.DEFAULT
+    /**
+     * Line-of-sight and selected-target markers: the safe top-center cell. Distinct from
+     * [renderOverlayChar]'s row so a LOS/target marker and a movement overlay drawn on the same
+     * hex can never collide — units, which occupy the lower rows (see `UnitRenderer`), cannot
+     * overwrite either.
+     */
+    private fun renderMarker(canvas: Canvas, x: Int, y: Int, char: String, color: Color) {
+        canvas.setFg(x + 4, y + 1, char, color)
     }
 
-    private fun renderTerrain(canvas: Canvas, x: Int, y: Int, terrain: Terrain, bg: Color) {
-        val color = when (terrain) {
-            Terrain.CLEAR       -> return
-            Terrain.LIGHT_WOODS -> Color.GREEN
-            Terrain.HEAVY_WOODS -> Color.DARK_GREEN
-            Terrain.WATER       -> Color.BLUE
-            Terrain.ROUGH       -> Color.BROWN
-        }
-        canvas.set(x + 2, y + 1, Cell(terrainIcon(terrain), Cell.Style(color, bg)))
+    /**
+     * The hex's whole-hex fill. A material terrain (woods, water, rough) always wins outright —
+     * elevation never changes it, so an elevated forest stays green and its height shows only via
+     * the elevation badge. A CLEAR hex has no material of its own, so elevation gets to fill the
+     * whole hex instead of just the badge cell: an elevated clear hex reads as a hill, not a plain
+     * with a small numbered sticker on it. WATER's shallow/deep split is the only terrain sub-case.
+     */
+    private fun terrainFill(hex: Hex): Color = when (hex.terrain) {
+        Terrain.LIGHT_WOODS -> Color.TERRAIN_WOODS_LIGHT_BG
+        Terrain.HEAVY_WOODS -> Color.TERRAIN_WOODS_HEAVY_BG
+        Terrain.WATER       -> if (hex.depth <= 1) Color.TERRAIN_WATER_SHALLOW_BG else Color.TERRAIN_WATER_DEEP_BG
+        Terrain.ROUGH       -> Color.TERRAIN_ROUGH_BG
+        Terrain.CLEAR       -> if (hex.elevation > 0) elevationBadgeBg(hex.elevation) else Color.TERRAIN_CLEAR_BG
     }
 
     // The border glyphs carry the terrain `bg` too, so the whole hexagon reads as filled rather
@@ -217,10 +225,30 @@ public object HexRenderer {
         }
     }
 
-    private fun renderElevation(canvas: Canvas, x: Int, y: Int, elevation: Int, bg: Color) {
+    private fun renderTerrain(canvas: Canvas, x: Int, y: Int, terrain: Terrain, bg: Color) {
+        val color = when (terrain) {
+            Terrain.CLEAR       -> return
+            Terrain.LIGHT_WOODS -> Color.TERRAIN_WOODS_LIGHT_ICON
+            Terrain.HEAVY_WOODS -> Color.TERRAIN_WOODS_HEAVY_ICON
+            Terrain.WATER       -> Color.TERRAIN_WATER_ICON
+            Terrain.ROUGH       -> Color.TERRAIN_ROUGH_ICON
+        }
+        canvas.set(x + 2, y + 1, Cell(terrainIcon(terrain), Cell.Style(color, bg)))
+    }
+
+    /**
+     * The elevation badge glyph. On a material terrain (woods/water/rough), [terrainFill] left
+     * the whole hex in that terrain's own color, so this cell is where this badge intentionally
+     * replaces it for its single cell — the one place elevation tier survives at every color
+     * depth there, since the reduced themes fold every `TERRAIN_*_BG` role into the default
+     * surface (see the palette plan's "Fidelity" table). On a CLEAR hex, [terrainFill] already
+     * filled the whole hex with this same elevation color, so this only draws the glyph itself.
+     * Elevation zero renders no badge at all, leaving the terrain fill intact either way.
+     */
+    private fun renderElevation(canvas: Canvas, x: Int, y: Int, elevation: Int) {
         if (elevation == 0) return
         val icon = elevationIcon(elevation)
-        canvas.set(x + 6, y + 1, Cell(icon, Cell.Style(Color.WHITE, bg)))
+        canvas.set(x + 6, y + 1, Cell(icon, Cell.Style(Color.ELEVATION_BADGE_FG, elevationBadgeBg(elevation))))
     }
 
 }

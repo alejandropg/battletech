@@ -10,6 +10,7 @@ import battletech.tui.loop.resizeEvents
 import battletech.tui.loop.runLoop
 import battletech.tui.loop.terminalInputEvents
 import battletech.tui.screen.ScreenRenderer
+import battletech.tui.screen.TuiTheme
 import com.github.ajalt.mordant.input.MouseTracking
 import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.channels.Channel
@@ -26,8 +27,11 @@ import kotlinx.coroutines.runBlocking
  * fires its own kickstart once the roster completes, and a `--join`ed
  * [battletech.network.client.ClientGameSession] never kickstarts at all. This class never builds
  * a session or calls `advance()` itself.
+ *
+ * [theme] selects the color theme; `null` auto-selects from the terminal's detected color
+ * support (see [ScreenRenderer]'s KDoc and [TuiTheme.autoFor]).
  */
-public class TuiApp(private val seats: Map<PlayerId, GameSession>) {
+public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val theme: TuiTheme? = null) {
 
     /**
      * Entry point. Wires a subscription for every seat's session into [internalEvents], merges
@@ -52,7 +56,7 @@ public class TuiApp(private val seats: Map<PlayerId, GameSession>) {
      */
     public fun run() {
         val terminal = Terminal()
-        val renderer = ScreenRenderer(terminal)
+        val renderer = ScreenRenderer(terminal, theme)
 
         val appState = AppState(
             seats = seats,

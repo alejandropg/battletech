@@ -27,7 +27,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
             for ((targetId, targetResults) in byTarget) {
                 val targetLine = "${targetIcon()} ${targetId.value}"
-                content.writeln(targetLine, WHITE_STYLE)
+                content.writeln(targetLine, TEXT_PRIMARY_STYLE)
 
                 for (result in targetResults) {
                     renderWeaponResult(content, result)
@@ -46,30 +46,30 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         // + sum(modifiers), so gunnery stays derivable by subtraction from what's shown here.
         val isOwnAttacker = data.units.byId(result.attackerId).owner == data.viewer
         val breakdown = if (isOwnAttacker) toHitBreakdownLabels(result.gunnery, result.modifiers) else result.modifiers.displayLabels()
-        WeaponHitWidget.draw(content, "  ${result.weaponName}", result.targetNumber, successChance, breakdown, Color.WHITE)
+        WeaponHitWidget.draw(content, "  ${result.weaponName}", result.targetNumber, successChance, breakdown, Color.TEXT_PRIMARY)
 
         // Block 2: raw roll (left) + outcome (right-aligned, in its own color)
         val hit = result is AttackResult.Hit
         val toHit = result.toHitRoll
         val outcomeText = "${if (hit) "HIT" else "MISS"} ${attackOutcomeIcon(hit)}"
-        val outcomeColor = if (hit) Color.GREEN else Color.RED
+        val outcomeColor = if (hit) Color.SUCCESS else Color.DANGER
         val rollLine = "   ${diceRollLabel(toHit)}"
-        content.writeRow(rollLine, outcomeText, WHITE_STYLE, Cell.Style(outcomeColor))
+        content.writeRow(rollLine, outcomeText, TEXT_PRIMARY_STYLE, Cell.Style(outcomeColor))
 
         // Block 3: location + damage (hit only)
         if (result is AttackResult.ClusterHit) {
             val total = result.locationHits.sumOf { it.damage }
-            content.writeRow("   ${result.missilesHit} missiles", "$total dmg", WHITE_STYLE)
+            content.writeRow("   ${result.missilesHit} missiles", "$total dmg", TEXT_PRIMARY_STYLE)
             val byLocation = LinkedHashMap<HitLocation, Int>()
             for (locationHit in result.locationHits) {
                 byLocation.merge(locationHit.location, locationHit.damage, Int::plus)
             }
             for ((loc, dmg) in byLocation) {
-                content.writeRow("   → ${hitLocationName(loc)}", "$dmg dmg", WHITE_STYLE)
+                content.writeRow("   → ${hitLocationName(loc)}", "$dmg dmg", TEXT_PRIMARY_STYLE)
             }
         } else if (result is AttackResult.SingleHit) {
             val hitLoc = result.locationHits.first().location
-            content.writeln("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", WHITE_STYLE)
+            content.writeln("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", TEXT_PRIMARY_STYLE)
         }
     }
 
@@ -87,6 +87,6 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
     internal companion object {
         const val TITLE: String = "ATTACK RESULTS"
 
-        private val WHITE_STYLE = Cell.Style(Color.WHITE)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
     }
 }

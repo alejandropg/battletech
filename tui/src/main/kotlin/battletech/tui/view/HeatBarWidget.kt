@@ -26,10 +26,10 @@ internal class HeatBarWidget(
         content.newLine()
     }
 
-    // Color thresholds: red at 70 %+ of max, yellow at 30 %+, light blue below.
+    // Color thresholds: danger at 70 %+ of max, warning at 30 %+, cool/info below.
     private fun colorFor(value: Int): Color = when {
-        value >= maxValue * 0.7 -> Color.RED
-        value >= maxValue * 0.3 -> Color.YELLOW
-        else -> Color.LIGHT_BLUE
+        value >= maxValue * 0.7 -> Color.DANGER
+        value >= maxValue * 0.3 -> Color.WARNING
+        else -> Color.INFO
     }
 }

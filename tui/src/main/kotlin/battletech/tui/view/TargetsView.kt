@@ -18,7 +18,7 @@ internal class TargetsView(
         val content = ContentWriter(canvas)
 
         if (targets.isEmpty()) {
-            content.writeln("No targets", WHITE_STYLE)
+            content.writeln("No targets", TEXT_PRIMARY_STYLE)
             return
         }
 
@@ -29,7 +29,7 @@ internal class TargetsView(
                 target.unitId == primaryTargetId -> " [P]"
                 else -> " [S]"
             }
-            val nameColor = if (isCursorOnTarget) Color.BRIGHT_YELLOW else Color.WHITE
+            val nameColor = if (isCursorOnTarget) Color.ACCENT else Color.TEXT_PRIMARY
             val nameLine = "${UnitLabel.of(target.unitId, target.unitName)}$tag"
             content.writeln(nameLine, Cell.Style(nameColor))
 
@@ -56,12 +56,12 @@ internal class TargetsView(
                 val left = "$cursor   ${weapon.weaponName}"
 
                 val color = when {
-                    isCursorHere -> Color.BRIGHT_YELLOW
+                    isCursorHere -> Color.ACCENT
                     isDisabled -> Color.DISABLED
-                    else -> Color.WHITE
+                    else -> Color.TEXT_PRIMARY
                 }
                 val checkboxColor = when {
-                    isCursorHere -> Color.BRIGHT_YELLOW
+                    isCursorHere -> Color.ACCENT
                     isDisabled -> Color.DISABLED
                     else -> Checkbox.intrinsicColor(state)
                 }
@@ -78,6 +78,6 @@ internal class TargetsView(
     internal companion object {
         internal const val TITLE: String = "TARGETS"
 
-        private val WHITE_STYLE = Cell.Style(Color.WHITE)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
     }
 }

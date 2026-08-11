@@ -13,23 +13,23 @@ import battletech.tui.screen.Color
  */
 internal object ForeignUnitPanel {
 
-    private val BRIGHT_YELLOW_STYLE = Cell.Style(Color.BRIGHT_YELLOW)
-    private val WHITE_STYLE = Cell.Style(Color.WHITE)
-    private val CYAN_STYLE = Cell.Style(Color.CYAN)
-    private val GREEN_STYLE = Cell.Style(Color.GREEN)
+    private val ACCENT_STYLE = Cell.Style(Color.ACCENT)
+    private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
+    private val INFO_STYLE = Cell.Style(Color.INFO)
+    private val SUCCESS_STYLE = Cell.Style(Color.SUCCESS)
 
     fun render(content: ContentWriter, unit: ForeignUnit) {
         // UNIT
         with(content) {
-            writeln(UnitLabel.of(unit), BRIGHT_YELLOW_STYLE)
+            writeln(UnitLabel.of(unit), ACCENT_STYLE)
             newLine()
         }
 
         // MOVEMENT
         with(content) {
             writeHeader("MOVEMENT")
-            writeln("Walk : ${unit.walkingMP}    Run : ${unit.runningMP}", WHITE_STYLE)
-            if (unit.jumpMP > 0) writeln("Jump : ${unit.jumpMP}", WHITE_STYLE)
+            writeln("Walk : ${unit.walkingMP}    Run : ${unit.runningMP}", TEXT_PRIMARY_STYLE)
+            if (unit.jumpMP > 0) writeln("Jump : ${unit.jumpMP}", TEXT_PRIMARY_STYLE)
             newLine()
         }
 
@@ -37,21 +37,21 @@ internal object ForeignUnitPanel {
         with(content) {
             val armor = unit.armor
             writeHeader("ARMOR")
-            writeStr(9, "HD:%2d".format(armor.head), CYAN_STYLE)
+            writeStr(9, "HD:%2d".format(armor.head), INFO_STYLE)
             newLine()
-            writeStr(2, "LT:%2d".format(armor.leftTorso), GREEN_STYLE)
-            writeStr(9, "CT:%2d".format(armor.centerTorso), BRIGHT_YELLOW_STYLE)
-            writeStr(16, "RT:%2d".format(armor.rightTorso), GREEN_STYLE)
+            writeStr(2, "LT:%2d".format(armor.leftTorso), SUCCESS_STYLE)
+            writeStr(9, "CT:%2d".format(armor.centerTorso), ACCENT_STYLE)
+            writeStr(16, "RT:%2d".format(armor.rightTorso), SUCCESS_STYLE)
             newLine()
             writeStr(3, "r:%2d".format(armor.leftTorsoRear), Cell.Style.DEFAULT)
             writeStr(10, "r:%2d".format(armor.centerTorsoRear), Cell.Style.DEFAULT)
             writeStr(17, "r:%2d".format(armor.rightTorsoRear), Cell.Style.DEFAULT)
             newLine()
-            writeStr(0, "LA:%2d".format(armor.leftArm), GREEN_STYLE)
-            writeStr(17, "RA:%2d".format(armor.rightArm), GREEN_STYLE)
+            writeStr(0, "LA:%2d".format(armor.leftArm), SUCCESS_STYLE)
+            writeStr(17, "RA:%2d".format(armor.rightArm), SUCCESS_STYLE)
             newLine()
-            writeStr(3, "LL:%2d".format(armor.leftLeg), GREEN_STYLE)
-            writeStr(14, "RL:%2d".format(armor.rightLeg), GREEN_STYLE)
+            writeStr(3, "LL:%2d".format(armor.leftLeg), SUCCESS_STYLE)
+            writeStr(14, "RL:%2d".format(armor.rightLeg), SUCCESS_STYLE)
             repeat(2) { newLine() }
         }
 
@@ -59,7 +59,7 @@ internal object ForeignUnitPanel {
         with(content) {
             writeHeader("WEAPONS")
             for (weapon in unit.weapons) {
-                writeln("  ${weapon.name}", WHITE_STYLE)
+                writeln("  ${weapon.name}", TEXT_PRIMARY_STYLE)
             }
         }
     }

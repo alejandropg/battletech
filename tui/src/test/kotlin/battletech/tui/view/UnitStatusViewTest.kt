@@ -111,7 +111,7 @@ internal class UnitStatusViewTest {
         assertEquals(4, line.split(emptyCircleIcon()).size - 1)
         // First hit dot is red, matching the destroyed-slot convention used elsewhere in this panel.
         val firstDotCol = (2 until 26).first { buffer.get(it, 5).char == filledCircleIcon() }
-        assertEquals(Color.RED, buffer.get(firstDotCol, 5).style.fg)
+        assertEquals(Color.DANGER, buffer.get(firstDotCol, 5).style.fg)
     }
 
     @Test
@@ -125,7 +125,7 @@ internal class UnitStatusViewTest {
         assertEquals(PILOT_DEATH_THRESHOLD - 1, line.split(filledCircleIcon()).size - 1)
         assertEquals(0, line.split(emptyCircleIcon()).size - 1)
         val skullCol = (2 until 26).first { buffer.get(it, 5).char == pilotDeadIcon() }
-        assertEquals(Color.RED, buffer.get(skullCol, 5).style.fg)
+        assertEquals(Color.DANGER, buffer.get(skullCol, 5).style.fg)
     }
 
     @Test
@@ -245,7 +245,7 @@ internal class UnitStatusViewTest {
         val view = UnitStatusView(unit)
         val buffer = renderDecorated(view, height = 20)
 
-        assertEquals(Color.RED, buffer.get(2, 14).style.fg)
+        assertEquals(Color.DANGER, buffer.get(2, 14).style.fg)
     }
 
     @Test
@@ -261,7 +261,7 @@ internal class UnitStatusViewTest {
     }
 
     @Test
-    fun `renders head armor value in cyan`() {
+    fun `renders head armor value in info`() {
         val unit = aUnit(armor = anArmorLayout(head = 9))
         val view = UnitStatusView(unit)
         val buffer = renderDecorated(view, height = 30)
@@ -270,7 +270,7 @@ internal class UnitStatusViewTest {
         val line = (2 until 26).joinToString("") { buffer.get(it, 23).char }
         assertTrue(line.contains("HD"))
         assertTrue(line.contains("9"))
-        assertEquals(Color.CYAN, buffer.get(11, 23).style.fg) // 'H' of "HD: 9"
+        assertEquals(Color.INFO, buffer.get(11, 23).style.fg) // 'H' of "HD: 9"
     }
 
     @Test
@@ -282,7 +282,7 @@ internal class UnitStatusViewTest {
         val buffer = renderDecorated(view, height = 30)
 
         // HD value row: cy=23, "HD: 9" starts at cx+9=11
-        assertEquals(Color.RED, buffer.get(11, 23).style.fg)
+        assertEquals(Color.DESTROYED, buffer.get(11, 23).style.fg)
         assertTrue(buffer.get(11, 23).style.strikethrough)
     }
 
@@ -297,7 +297,7 @@ internal class UnitStatusViewTest {
     }
 
     @Test
-    fun `renders center torso armor in bright yellow`() {
+    fun `renders center torso armor in accent`() {
         val unit = aUnit(armor = anArmorLayout(centerTorso = 47))
         val view = UnitStatusView(unit)
         val buffer = renderDecorated(view, height = 30)
@@ -306,7 +306,7 @@ internal class UnitStatusViewTest {
         val line = (2 until 26).joinToString("") { buffer.get(it, 24).char }
         assertTrue(line.contains("CT"))
         assertTrue(line.contains("47"))
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(11, 24).style.fg) // 'C' of "CT:47"
+        assertEquals(Color.ACCENT, buffer.get(11, 24).style.fg) // 'C' of "CT:47"
     }
 
     @Test
@@ -358,7 +358,7 @@ internal class UnitStatusViewTest {
 
         val line = (2 until 26).joinToString("") { buffer.get(it, 16).char }
         assertTrue(line.contains("Walking +1"))
-        assertEquals(Color.GRAY, buffer.get(2, 16).style.fg)
+        assertEquals(Color.DRAFT, buffer.get(2, 16).style.fg)
     }
 
     @Test
@@ -403,7 +403,7 @@ internal class UnitStatusViewTest {
         val view = UnitStatusView(unit)
         val buffer = renderDecorated(view, height = 20)
 
-        assertEquals(Color.RED, buffer.get(2, 17).style.fg)
+        assertEquals(Color.DANGER, buffer.get(2, 17).style.fg)
     }
 
     @Test
@@ -526,7 +526,7 @@ internal class UnitStatusViewTest {
 
         // First dot column should be red (destroyed slot 0 is an Engine slot in CENTER_TORSO).
         val firstDotCol = (2 until 26).first { buffer.get(it, row).char == filledCircleIcon() }
-        assertEquals(Color.RED, buffer.get(firstDotCol, row).style.fg)
+        assertEquals(Color.DANGER, buffer.get(firstDotCol, row).style.fg)
     }
 
     @Test
@@ -574,7 +574,7 @@ internal class UnitStatusViewTest {
 
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).char }
         assertEquals("u1: Hunchback", line)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 2).style.fg)
+        assertEquals(Color.ACCENT, buffer.get(2, 2).style.fg)
     }
 
     @Test

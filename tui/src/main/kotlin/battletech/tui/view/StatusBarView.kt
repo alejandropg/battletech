@@ -22,13 +22,13 @@ internal class StatusBarView(
             } else {
                 "[${phase.name}]"
             }
-            canvas.writeString(0, 0, phaseLabel, BRIGHT_YELLOW_STYLE)
-            canvas.writeString(0, 1, prompt, WHITE_STYLE)
+            canvas.writeString(0, 0, phaseLabel, ACCENT_STYLE)
+            canvas.writeString(0, 1, prompt, TEXT_PRIMARY_STYLE)
         }
     }
 
     private companion object {
-        private val BRIGHT_YELLOW_STYLE = Cell.Style(Color.BRIGHT_YELLOW)
-        private val WHITE_STYLE = Cell.Style(Color.WHITE)
+        private val ACCENT_STYLE = Cell.Style(Color.ACCENT)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
     }
 }

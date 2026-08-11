@@ -36,8 +36,8 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-1 MP" to Color.GRAY,
-                "+1 To-Hit" to Color.GRAY,
+                "-1 MP" to Color.DRAFT,
+                "+1 To-Hit" to Color.DRAFT,
             ),
             lines,
         )
@@ -51,10 +51,10 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-3 MP" to Color.GRAY,
-                "+2 To-Hit" to Color.GRAY,
-                "Shutdown 4+" to Color.GRAY,
-                "Ammo 4+" to Color.GRAY,
+                "-3 MP" to Color.DRAFT,
+                "+2 To-Hit" to Color.DRAFT,
+                "Shutdown 4+" to Color.DRAFT,
+                "Ammo 4+" to Color.DRAFT,
             ),
             lines,
         )
@@ -82,10 +82,10 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-3 MP" to Color.GRAY,
-                "+2 To-Hit" to Color.GRAY,
-                "Shutdown 6+" to Color.GRAY,
-                "Ammo 4+" to Color.GRAY,
+                "-3 MP" to Color.DRAFT,
+                "+2 To-Hit" to Color.DRAFT,
+                "Shutdown 6+" to Color.DRAFT,
+                "Ammo 4+" to Color.DRAFT,
             ),
             lines,
         )
@@ -98,10 +98,10 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-5 MP" to Color.GRAY,
-                "+4 To-Hit" to Color.GRAY,
-                "Shutdown AUTO" to Color.GRAY,
-                "Ammo 10+" to Color.GRAY,
+                "-5 MP" to Color.DRAFT,
+                "+4 To-Hit" to Color.DRAFT,
+                "Shutdown AUTO" to Color.DRAFT,
+                "Ammo 10+" to Color.DRAFT,
             ),
             lines,
         )
@@ -129,10 +129,10 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-3 MP" to Color.GRAY,
-                "+2 To-Hit" to Color.GRAY,
-                "Shutdown 4+" to Color.GRAY,
-                "Ammo 4+" to Color.GRAY,
+                "-3 MP" to Color.DRAFT,
+                "+2 To-Hit" to Color.DRAFT,
+                "Shutdown 4+" to Color.DRAFT,
+                "Ammo 4+" to Color.DRAFT,
             ),
             lines,
         )

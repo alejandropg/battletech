@@ -41,8 +41,8 @@ internal class HelpView(private val sections: List<KeySection>) : View {
     internal companion object {
         internal const val TITLE: String = "HELP"
 
-        private val SUBSECTION_STYLE = Cell.Style(Color.BRIGHT_YELLOW)
-        private val KEY_STYLE = Cell.Style(Color.CYAN)
-        private val DESC_STYLE = Cell.Style(Color.WHITE)
+        private val SUBSECTION_STYLE = Cell.Style(Color.ACCENT)
+        private val KEY_STYLE = Cell.Style(Color.INFO)
+        private val DESC_STYLE = Cell.Style(Color.TEXT_PRIMARY)
     }
 }

@@ -195,10 +195,10 @@ internal class TargetsViewTest {
         val width = 28
         val height = 30
         val buffer = render(view, width, height)
-        // Find the row containing "LRM15" and verify its color is GRAY
+        // Find the row containing "LRM15" and verify its color is DISABLED
         val lrmRow = (0 until height).first { row -> "LRM15" in buffer.line(row) }
         val rowColors = (0 until width).map { col -> buffer.get(col, lrmRow).style.fg }.toSet()
-        assertTrue(rowColors.contains(Color.GRAY)) { "Expected disabled weapon row to use Color.GRAY, got: $rowColors" }
+        assertTrue(rowColors.contains(Color.DISABLED)) { "Expected disabled weapon row to use Color.DISABLED, got: $rowColors" }
     }
 
     @Test

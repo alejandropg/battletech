@@ -13,13 +13,13 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
         val content = ContentWriter(canvas)
 
         if (data.entries.isEmpty()) {
-            content.writeln("No declarations", WHITE_STYLE)
+            content.writeln("No declarations", TEXT_PRIMARY_STYLE)
             return
         }
 
         for ((index, entry) in data.entries.withIndex()) {
             val attackerColor = if (entry.isDraft) Color.DRAFT else playerColor(entry.ownerPlayer)
-            val contentColor = if (entry.isDraft) Color.DRAFT else Color.WHITE
+            val contentColor = if (entry.isDraft) Color.DRAFT else Color.TEXT_PRIMARY
 
             content.writeln(entry.attackerId.value, Cell.Style(attackerColor))
 
@@ -58,6 +58,6 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
     internal companion object {
         const val TITLE: String = "DECLARED TARGETS"
 
-        private val WHITE_STYLE = Cell.Style(Color.WHITE)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
     }
 }

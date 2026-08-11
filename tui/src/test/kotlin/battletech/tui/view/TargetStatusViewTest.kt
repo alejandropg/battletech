@@ -65,14 +65,14 @@ internal class TargetStatusViewTest {
     }
 
     @Test
-    fun `renders unit name in BRIGHT_YELLOW`() {
+    fun `renders unit name in ACCENT`() {
         val unit = aForeignUnit(name = "Hunchback")
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).char }
         assertEquals("u1: Hunchback", line)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 2).style.fg)
+        assertEquals(Color.ACCENT, buffer.get(2, 2).style.fg)
     }
 
     @Test

@@ -9,8 +9,8 @@ internal object Checkbox {
 
     /** Default per-state color when the surrounding row does not override it. */
     fun intrinsicColor(state: CheckState): Color = when (state) {
-        CheckState.CHECKED -> Color.BRIGHT_GREEN
-        else -> Color.GRAY
+        CheckState.CHECKED -> Color.SUCCESS
+        else -> Color.TEXT_MUTED
     }
 
     /** Overlays the checkbox onto [row] at [column]; occupies exactly one cell. */

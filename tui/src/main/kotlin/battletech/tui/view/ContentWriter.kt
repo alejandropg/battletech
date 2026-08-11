@@ -13,7 +13,7 @@ internal class ContentWriter(private val canvas: Canvas) {
         private set
 
     fun writeHeader(label: String) {
-        writeln(sectionHeader(label), CYAN_STYLE)
+        writeln(sectionHeader(label), INFO_STYLE)
     }
 
     private fun sectionHeader(label: String): String {
@@ -85,6 +85,6 @@ internal class ContentWriter(private val canvas: Canvas) {
     }
 
     private companion object {
-        private val CYAN_STYLE = Cell.Style(fg = Color.CYAN)
+        private val INFO_STYLE = Cell.Style(fg = Color.INFO)
     }
 }

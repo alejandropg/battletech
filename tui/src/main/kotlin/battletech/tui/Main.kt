@@ -12,6 +12,7 @@ import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.map.resolveMap
 import battletech.tactical.query.projectFor
 import battletech.tactical.session.GameEvent
+import battletech.tui.screen.TuiTheme
 import battletech.tui.view.GameLogFormatter
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
@@ -30,9 +31,9 @@ internal const val DEFAULT_MAP_NAME: String = "default"
  * [Server] starts a headless dedicated server — no TUI — and both players connect via [Join].
  */
 internal sealed interface Mode {
-    data class Local(val mapName: String? = null) : Mode
-    data class Host(val port: Int = DEFAULT_PORT, val mapName: String? = null) : Mode
-    data class Join(val host: String, val port: Int = DEFAULT_PORT, val sessionId: String) : Mode
+    data class Local(val mapName: String? = null, val theme: TuiTheme? = null) : Mode
+    data class Host(val port: Int = DEFAULT_PORT, val mapName: String? = null, val theme: TuiTheme? = null) : Mode
+    data class Join(val host: String, val port: Int = DEFAULT_PORT, val sessionId: String, val theme: TuiTheme? = null) : Mode
     data class Server(val port: Int = DEFAULT_PORT, val mapName: String? = null) : Mode
 }
 
@@ -47,40 +48,62 @@ internal class ArgsException(message: String) : Exception(message)
  *
  * Syntax:
  * - (no args): [Mode.Local]
- * - `--host [--port N] [--map <name|path>]`: [Mode.Host]
- * - `--join <ip[:port]> --session <id>`: [Mode.Join]
+ * - `--host [--port N] [--map <name|path>] [--theme <name>]`: [Mode.Host]
+ * - `--join <ip[:port]> --session <id> [--theme <name>]`: [Mode.Join]
  * - `--server [--port N] [--map <name|path>]`: [Mode.Server]
  * - `[--map <name|path>]` may additionally appear anywhere for hot-seat/host/server (invalid with `--join`).
+ * - `[--theme <name>]` may additionally appear anywhere for hot-seat/host/join (invalid with `--server`).
  */
 internal fun parseArgs(args: Array<String>): Mode {
-    val (mapName, rest) = extractMapArg(args)
+    val (mapName, afterMap) = extractMapArg(args)
+    val (themeFlag, rest) = extractThemeArg(afterMap)
+    val theme = themeFlag?.let(::parseTheme)
 
-    if (rest.isEmpty()) return Mode.Local(mapName = mapName)
+    if (rest.isEmpty()) return Mode.Local(mapName = mapName, theme = theme)
 
     return when (rest[0]) {
-        "--host" -> Mode.Host(parsePort(rest), mapName)
+        "--host" -> Mode.Host(parsePort(rest), mapName, theme)
         "--join" -> {
             if (mapName != null) throw ArgsException("--map cannot be combined with --join")
-            parseJoin(rest)
+            parseJoin(rest, theme)
         }
-        "--server" -> Mode.Server(parsePort(rest), mapName)
+        "--server" -> {
+            if (theme != null) throw ArgsException("--theme cannot be combined with --server")
+            Mode.Server(parsePort(rest), mapName)
+        }
         else -> throw ArgsException("Unknown argument: ${rest[0]}")
     }
 }
 
 /**
- * Pulls the first `--map <value>` pair out of [args], wherever it appears, returning the map
- * name (or null if absent) alongside the remaining args in their original relative order.
- * Throws [ArgsException] if `--map` is present with no following value.
+ * Pulls the first `<flag> <value>` pair out of [args], wherever it appears, returning the value
+ * (or null if absent) alongside the remaining args in their original relative order. Throws
+ * [ArgsException] if [flag] is present with no following value.
+ *
+ * Only the FIRST occurrence is extracted — a second [flag] is left in the residual args, where it
+ * falls through to "Unknown argument: <flag>" the same way any other unrecognized argument does.
+ * That is deliberate: every extracted flag shares this one duplicate-flag behavior instead of each
+ * growing its own bespoke message.
  */
-private fun extractMapArg(args: Array<String>): Pair<String?, Array<String>> {
-    val index = args.indexOf("--map")
+private fun extractFlagArg(args: Array<String>, flag: String, missingValueMessage: String): Pair<String?, Array<String>> {
+    val index = args.indexOf(flag)
     if (index == -1) return null to args
 
-    val value = args.getOrNull(index + 1) ?: throw ArgsException("--map requires a value")
+    val value = args.getOrNull(index + 1) ?: throw ArgsException(missingValueMessage)
     val remaining = args.filterIndexed { i, _ -> i != index && i != index + 1 }.toTypedArray()
     return value to remaining
 }
+
+private fun extractMapArg(args: Array<String>): Pair<String?, Array<String>> =
+    extractFlagArg(args, "--map", "--map requires a value")
+
+private fun extractThemeArg(args: Array<String>): Pair<String?, Array<String>> =
+    extractFlagArg(args, "--theme", "--theme requires a value")
+
+private fun parseTheme(value: String): TuiTheme =
+    TuiTheme.fromFlag(value) ?: throw ArgsException(
+        "Unknown theme: $value (expected dark, light, dark-256, light-256, dark-16 or light-16)",
+    )
 
 private fun parsePort(args: Array<String>): Int {
     var port = DEFAULT_PORT
@@ -98,7 +121,7 @@ private fun parsePort(args: Array<String>): Int {
     return port
 }
 
-private fun parseJoin(args: Array<String>): Mode.Join {
+private fun parseJoin(args: Array<String>, theme: TuiTheme?): Mode.Join {
     val hostArg = args.getOrNull(1) ?: throw ArgsException("--join requires a host argument")
     var sessionId: String? = null
     var i = 2
@@ -125,7 +148,7 @@ private fun parseJoin(args: Array<String>): Mode.Join {
     }
     if (host.isEmpty()) throw ArgsException("Malformed --join host: $hostArg")
 
-    return Mode.Join(host = host, port = port, sessionId = id)
+    return Mode.Join(host = host, port = port, sessionId = id, theme = theme)
 }
 
 private fun printUsageAndExit(message: String): Nothing {
@@ -133,13 +156,15 @@ private fun printUsageAndExit(message: String): Nothing {
     System.err.println(
         """
         Usage:
-          battletech-tui [--map <name|path>]                        hot-seat (both players share this terminal)
-          battletech-tui --host [--port N] [--map <name|path>]      host a session (default port $DEFAULT_PORT)
-          battletech-tui --join <ip[:port]> --session <id>          join a hosted session
-          battletech-tui --server [--port N] [--map <name|path>]    headless dedicated server (both players join remotely)
+          battletech-tui [--map <name|path>] [--theme <name>]                        hot-seat (both players share this terminal)
+          battletech-tui --host [--port N] [--map <name|path>] [--theme <name>]      host a session (default port $DEFAULT_PORT)
+          battletech-tui --join <ip[:port]> --session <id> [--theme <name>]          join a hosted session
+          battletech-tui --server [--port N] [--map <name|path>]                     headless dedicated server (both players join remotely)
 
           --map <name|path>  built-in map id (e.g. "$DEFAULT_MAP_NAME") or a path to a map file;
                               default is "$DEFAULT_MAP_NAME". Invalid with --join (the map comes from the host).
+          --theme <name>     dark|light|dark-256|light-256|dark-16|light-16; default is chosen from
+                              the terminal's detected color support. Invalid with --server.
         """.trimIndent(),
     )
     kotlin.system.exitProcess(2)
@@ -212,7 +237,7 @@ public fun main(args: Array<String>) {
             // TuiApp reads currentPhase to build its initial AppState, so composition must
             // absorb the kickstart race here — see awaitKickstart's KDoc.
             awaitKickstart(server, seats)
-            server.use { TuiApp(seats).run() }
+            server.use { TuiApp(seats, mode.theme).run() }
         }
 
         is Mode.Host -> {
@@ -226,7 +251,7 @@ public fun main(args: Array<String>) {
             println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
             acceptor.use {
                 server.use {
-                    TuiApp(seats = mapOf(localSession.playerId to localSession)).run()
+                    TuiApp(seats = mapOf(localSession.playerId to localSession), theme = mode.theme).run()
                 }
             }
         }
@@ -242,7 +267,7 @@ public fun main(args: Array<String>) {
                 kotlin.system.exitProcess(1)
             }
             remote.use { remote ->
-                TuiApp(seats = mapOf(remote.playerId to remote)).run()
+                TuiApp(seats = mapOf(remote.playerId to remote), theme = mode.theme).run()
             }
         }
 

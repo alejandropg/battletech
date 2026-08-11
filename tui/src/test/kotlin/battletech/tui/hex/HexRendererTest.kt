@@ -9,6 +9,7 @@ import battletech.tui.screen.Canvas
 import battletech.tui.screen.Color
 import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 
 internal class HexRendererTest {
@@ -38,38 +39,78 @@ internal class HexRendererTest {
         assertEquals("/", buffer.get(7, 4).char)
     }
 
+    // ---- terrain fill roles (theme-independent — assert the role, not a resolved color) --------
+
     @Test
-    fun `water hex renders terrain icon with blue foreground`() {
+    fun `clear hex fills with TERRAIN_CLEAR_BG`() {
         val buffer = ScreenBuffer(10, 6)
-        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER)
+        val hex = Hex(HexCoordinates(0, 0))
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals(Color.BLUE, buffer.get(2, 1).style.fg)
+        assertEquals(Color.TERRAIN_CLEAR_BG, buffer.get(4, 3).style.bg)
     }
 
     @Test
-    fun `light woods hex renders terrain icon with green foreground`() {
+    fun `light woods hex fills with TERRAIN_WOODS_LIGHT_BG and icons with TERRAIN_WOODS_LIGHT_ICON`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals(Color.GREEN, buffer.get(2, 1).style.fg)
+        assertEquals(Color.TERRAIN_WOODS_LIGHT_BG, buffer.get(4, 3).style.bg)
+        assertEquals(Color.TERRAIN_WOODS_LIGHT_ICON, buffer.get(2, 1).style.fg)
     }
 
     @Test
-    fun `heavy woods hex renders terrain icon with dark green foreground`() {
+    fun `heavy woods hex fills with TERRAIN_WOODS_HEAVY_BG and icons with TERRAIN_WOODS_HEAVY_ICON`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.HEAVY_WOODS)
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals(Color.DARK_GREEN, buffer.get(2, 1).style.fg)
+        assertEquals(Color.TERRAIN_WOODS_HEAVY_BG, buffer.get(4, 3).style.bg)
+        assertEquals(Color.TERRAIN_WOODS_HEAVY_ICON, buffer.get(2, 1).style.fg)
     }
 
     @Test
-    fun `elevation is rendered in content area`() {
+    fun `rough hex fills with TERRAIN_ROUGH_BG and icons with TERRAIN_ROUGH_ICON`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.ROUGH)
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+        assertEquals(Color.TERRAIN_ROUGH_BG, buffer.get(4, 3).style.bg)
+        assertEquals(Color.TERRAIN_ROUGH_ICON, buffer.get(2, 1).style.fg)
+    }
+
+    @Test
+    fun `shallow water (depth less than or equal to 1) fills with TERRAIN_WATER_SHALLOW_BG`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 1)
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+        assertEquals(Color.TERRAIN_WATER_SHALLOW_BG, buffer.get(4, 3).style.bg)
+        assertEquals(Color.TERRAIN_WATER_ICON, buffer.get(2, 1).style.fg)
+    }
+
+    @Test
+    fun `deep water (depth greater than or equal to 2) fills with TERRAIN_WATER_DEEP_BG`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 3)
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+        assertEquals(Color.TERRAIN_WATER_DEEP_BG, buffer.get(4, 3).style.bg)
+        // The icon color does not vary with depth — only the fill does.
+        assertEquals(Color.TERRAIN_WATER_ICON, buffer.get(2, 1).style.fg)
+    }
+
+    // ---- elevation: badge only, terrain fill never changes ---------------------------------
+
+    @Test
+    fun `elevation is rendered as a numeric badge glyph`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), elevation = 2)
 
@@ -79,94 +120,106 @@ internal class HexRendererTest {
     }
 
     @Test
-    fun `light woods hex tints background with soft light green`() {
-        val buffer = ScreenBuffer(10, 6)
-        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
-
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
-
-        assertEquals(Color.WOODS_LIGHT_BG, buffer.get(4, 3).style.bg)
-    }
-
-    @Test
-    fun `heavy woods hex tints background with darker green`() {
-        val buffer = ScreenBuffer(10, 6)
-        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.HEAVY_WOODS)
-
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
-
-        assertEquals(Color.WOODS_HEAVY_BG, buffer.get(4, 3).style.bg)
-    }
-
-    @Test
-    fun `shallow water hex tints background with lighter blue`() {
-        val buffer = ScreenBuffer(10, 6)
-        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 1)
-
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
-
-        assertEquals(Color.WATER_SHALLOW_BG, buffer.get(4, 3).style.bg)
-    }
-
-    @Test
-    fun `deep water hex tints background with darker blue`() {
-        val buffer = ScreenBuffer(10, 6)
-        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 3)
-
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
-
-        assertEquals(Color.WATER_DEEP_BG, buffer.get(4, 3).style.bg)
-    }
-
-    @Test
-    fun `elevation 1 hill tints background with darker brown`() {
-        val buffer = ScreenBuffer(10, 6)
-        val hex = Hex(HexCoordinates(0, 0), elevation = 1)
-
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
-
-        assertEquals(Color.ELEVATION_1_BG, buffer.get(4, 3).style.bg)
-    }
-
-    @Test
-    fun `elevation 2 hill tints background with elevation 2 brown`() {
-        val buffer = ScreenBuffer(10, 6)
-        val hex = Hex(HexCoordinates(0, 0), elevation = 2)
-
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
-
-        assertEquals(Color.ELEVATION_2_BG, buffer.get(4, 3).style.bg)
-    }
-
-    @Test
-    fun `elevation 3 hill tints background with lighter brown`() {
-        val buffer = ScreenBuffer(10, 6)
-        val hex = Hex(HexCoordinates(0, 0), elevation = 3)
-
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
-
-        assertEquals(Color.ELEVATION_HIGH_BG, buffer.get(4, 3).style.bg)
-    }
-
-    @Test
-    fun `clear level-0 hex has no background tint`() {
+    fun `elevation zero renders no badge — content stays the plain terrain fill`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals(Color.DEFAULT, buffer.get(4, 3).style.bg)
+        assertEquals(Color.TERRAIN_CLEAR_BG, buffer.get(6, 1).style.bg)
     }
 
     @Test
-    fun `terrain wins over elevation - elevated forest stays green`() {
+    fun `elevation never changes a material terrain's fill (woods, water, rough)`() {
+        val cases = listOf(
+            Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS, elevation = 2) to Color.TERRAIN_WOODS_LIGHT_BG,
+            Hex(HexCoordinates(0, 0), terrain = Terrain.HEAVY_WOODS, elevation = 1) to Color.TERRAIN_WOODS_HEAVY_BG,
+            Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 1, elevation = 3) to Color.TERRAIN_WATER_SHALLOW_BG,
+            Hex(HexCoordinates(0, 0), terrain = Terrain.ROUGH, elevation = 2) to Color.TERRAIN_ROUGH_BG,
+        )
+        for ((hex, expectedFill) in cases) {
+            val buffer = ScreenBuffer(10, 6)
+            HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+            // Content cell away from the badge column (x+6) — the fill, not the badge.
+            assertEquals(expectedFill, buffer.get(4, 3).style.bg, "terrain=${hex.terrain} elevation=${hex.elevation}")
+        }
+    }
+
+    @Test
+    fun `a CLEAR hex with no elevation still fills with TERRAIN_CLEAR_BG`() {
         val buffer = ScreenBuffer(10, 6)
-        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS, elevation = 2)
+        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.CLEAR, elevation = 0)
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals(Color.WOODS_LIGHT_BG, buffer.get(4, 3).style.bg)
+        assertEquals(Color.TERRAIN_CLEAR_BG, buffer.get(4, 3).style.bg)
     }
+
+    @Test
+    fun `a CLEAR elevated hex fills the WHOLE hex with its elevation tier color, not just the badge cell`() {
+        // With no material terrain of its own, an elevated clear hex reads as a hill: the
+        // elevation color fills the entire hex (border, content, and badge cell alike), unlike a
+        // material terrain, where elevation only tints the single badge cell.
+        val cases = listOf(1 to Color.ELEVATION_1_BADGE_BG, 2 to Color.ELEVATION_2_BADGE_BG, 3 to Color.ELEVATION_HIGH_BADGE_BG)
+        for ((elevation, expectedFill) in cases) {
+            val buffer = ScreenBuffer(10, 6)
+            val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.CLEAR, elevation = elevation)
+
+            HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+            assertEquals(expectedFill, buffer.get(4, 3).style.bg, "content cell, elevation=$elevation")
+            assertEquals(expectedFill, buffer.get(0, 2).style.bg, "border cell, elevation=$elevation")
+            assertEquals(expectedFill, buffer.get(6, 1).style.bg, "badge cell, elevation=$elevation")
+        }
+    }
+
+    @Test
+    fun `elevation 1 badge uses ELEVATION_1_BADGE_BG and ELEVATION_BADGE_FG at the badge cell`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0), elevation = 1)
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+        val badge = buffer.get(6, 1)
+        assertEquals(Color.ELEVATION_1_BADGE_BG, badge.style.bg)
+        assertEquals(Color.ELEVATION_BADGE_FG, badge.style.fg)
+    }
+
+    @Test
+    fun `elevation 2 badge uses ELEVATION_2_BADGE_BG`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0), elevation = 2)
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+        assertEquals(Color.ELEVATION_2_BADGE_BG, buffer.get(6, 1).style.bg)
+    }
+
+    @Test
+    fun `elevation 3 and up badge uses ELEVATION_HIGH_BADGE_BG`() {
+        for (elevation in listOf(3, 5, 9)) {
+            val buffer = ScreenBuffer(10, 6)
+            val hex = Hex(HexCoordinates(0, 0), elevation = elevation)
+
+            HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+            assertEquals(Color.ELEVATION_HIGH_BADGE_BG, buffer.get(6, 1).style.bg, "elevation=$elevation")
+        }
+    }
+
+    @Test
+    fun `the badge replaces the terrain fill only for its own cell`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS, elevation = 1)
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+        assertEquals(Color.ELEVATION_1_BADGE_BG, buffer.get(6, 1).style.bg, "badge cell")
+        assertNotEquals(Color.ELEVATION_1_BADGE_BG, buffer.get(4, 3).style.bg, "content cell keeps the terrain fill")
+        assertEquals(Color.TERRAIN_WOODS_LIGHT_BG, buffer.get(4, 3).style.bg)
+    }
+
+    // ---- background inheritance across the border / adjacent hexes -----------------------------
 
     @Test
     fun `border glyphs carry the terrain background tint`() {
@@ -176,7 +229,7 @@ internal class HexRendererTest {
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals("/", buffer.get(0, 2).char) // left border glyph
-        assertEquals(Color.WOODS_LIGHT_BG, buffer.get(0, 2).style.bg)
+        assertEquals(Color.TERRAIN_WOODS_LIGHT_BG, buffer.get(0, 2).style.bg)
     }
 
     @Test
@@ -189,7 +242,7 @@ internal class HexRendererTest {
         // Top edge (row 0) belongs to the hex above — inherited, so DEFAULT here.
         assertEquals(Color.DEFAULT, buffer.get(2, 0).style.bg)
         // Bottom edge (row 4) is this hex's own — tinted.
-        assertEquals(Color.WOODS_LIGHT_BG, buffer.get(2, 4).style.bg)
+        assertEquals(Color.TERRAIN_WOODS_LIGHT_BG, buffer.get(2, 4).style.bg)
     }
 
     @Test
@@ -203,7 +256,7 @@ internal class HexRendererTest {
         HexRenderer.render(Canvas.of(buffer), 0, 0, woods, HexHighlight.NONE)
         HexRenderer.render(Canvas.of(buffer), 0, HexGeometry.ROW_STRIDE, clear, HexHighlight.NONE)
 
-        assertEquals(Color.WOODS_LIGHT_BG, buffer.get(2, HexGeometry.ROW_STRIDE).style.bg)
+        assertEquals(Color.TERRAIN_WOODS_LIGHT_BG, buffer.get(2, HexGeometry.ROW_STRIDE).style.bg)
     }
 
     @Test
@@ -214,7 +267,7 @@ internal class HexRendererTest {
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.REACHABLE_WALK)
 
         assertEquals(".", buffer.get(4, 2).char)
-        assertEquals(Color.WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
+        assertEquals(Color.TERRAIN_WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
     }
 
     @Test
@@ -223,14 +276,14 @@ internal class HexRendererTest {
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
-        HexRenderer.renderFacingArrows(Canvas.of(buffer), 0, 0, setOf(HexDirection.N), Color.WHITE)
+        HexRenderer.renderFacingArrows(Canvas.of(buffer), 0, 0, setOf(HexDirection.N), Color.MOVE_WALK)
 
         // N arrow sits at (x+4, y+2)
-        assertEquals(Color.WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
+        assertEquals(Color.TERRAIN_WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
     }
 
     @Test
-    fun `facing numbers inherit the terrain background`() {
+    fun `facing numbers inherit the terrain background and render in BOARD_ACTIVE`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
@@ -238,40 +291,76 @@ internal class HexRendererTest {
         HexRenderer.renderFacingNumbers(Canvas.of(buffer), 0, 0, setOf(HexDirection.N))
 
         assertEquals("1", buffer.get(4, 2).char)
-        assertEquals(Color.WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
+        assertEquals(Color.BOARD_ACTIVE, buffer.get(4, 2).style.fg)
+        assertEquals(Color.TERRAIN_WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
     }
 
+    // ---- cursor / highlight colors --------------------------------------------------------------
+
     @Test
-    fun `cursor highlight changes border color to yellow`() {
+    fun `cursor highlight changes border color to BOARD_ACTIVE`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.CURSOR)
 
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(1, 1).style.fg) // '/' border
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(7, 1).style.fg) // '\' border
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 0).style.fg) // '_' top
+        assertEquals(Color.BOARD_ACTIVE, buffer.get(1, 1).style.fg) // '/' border
+        assertEquals(Color.BOARD_ACTIVE, buffer.get(7, 1).style.fg) // '\' border
+        assertEquals(Color.BOARD_ACTIVE, buffer.get(2, 0).style.fg) // '_' top
     }
 
     @Test
-    fun `reachable highlight shows dot marker at center`() {
+    fun `ordinary hex border uses BOARD_BORDER`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0))
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+        assertEquals(Color.BOARD_BORDER, buffer.get(1, 1).style.fg)
+    }
+
+    @Test
+    fun `reachable walk highlight shows a MOVE_WALK dot at the overlay cell`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.REACHABLE_WALK)
 
         assertEquals(".", buffer.get(4, 2).char)
-        assertEquals(Color.DEFAULT, buffer.get(4, 2).style.bg)
+        assertEquals(Color.MOVE_WALK, buffer.get(4, 2).style.fg)
     }
 
     @Test
-    fun `path highlight without mode shows star`() {
+    fun `reachable run highlight shows a MOVE_RUN dot`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0))
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.REACHABLE_RUN)
+
+        assertEquals(".", buffer.get(4, 2).char)
+        assertEquals(Color.MOVE_RUN, buffer.get(4, 2).style.fg)
+    }
+
+    @Test
+    fun `reachable jump highlight shows a MOVE_JUMP dot`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0))
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.REACHABLE_JUMP)
+
+        assertEquals(".", buffer.get(4, 2).char)
+        assertEquals(Color.MOVE_JUMP, buffer.get(4, 2).style.fg)
+    }
+
+    @Test
+    fun `path highlight without mode shows star at the movement overlay cell`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.PATH)
 
         assertEquals("*", buffer.get(4, 2).char)
+        assertEquals(Color.BOARD_ACTIVE, buffer.get(4, 2).style.fg)
     }
 
     @Test
@@ -305,35 +394,53 @@ internal class HexRendererTest {
     }
 
     @Test
-    fun `attack range highlight shows gray dot at center`() {
+    fun `attack range highlight shows an ATTACK_RANGE dot at the movement overlay cell`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.ATTACK_RANGE)
 
         assertEquals(".", buffer.get(4, 2).char)
-        assertEquals(Color.GRAY, buffer.get(4, 2).style.fg)
+        assertEquals(Color.ATTACK_RANGE, buffer.get(4, 2).style.fg)
     }
 
+    // ---- LOS / selected-target markers: relocated to the safe top-center cell (x+4, y+1) --------
+
     @Test
-    fun `line of sight highlight shows white dot at center`() {
+    fun `line of sight highlight shows a LINE_OF_SIGHT dot at the top-center marker cell`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.LINE_OF_SIGHT)
 
-        assertEquals(".", buffer.get(4, 2).char)
-        assertEquals(Color.YELLOW, buffer.get(4, 2).style.fg)
+        assertEquals(".", buffer.get(4, 1).char)
+        assertEquals(Color.LINE_OF_SIGHT, buffer.get(4, 1).style.fg)
+        // Not at the movement-overlay cell — LOS and movement overlays never collide.
+        assertNotEquals(".", buffer.get(4, 2).char)
     }
 
     @Test
-    fun `line of sight selected highlight shows red icon at center`() {
+    fun `line of sight selected highlight shows the target icon at the top-center marker cell`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.LINE_OF_SIGHT_SELECTED)
 
-        assertEquals(targetIcon(), buffer.get(4, 2).char)
-        assertEquals(Color.RED, buffer.get(4, 2).style.fg)
+        assertEquals(targetIcon(), buffer.get(4, 1).char)
+        assertEquals(Color.TARGET_SELECTED, buffer.get(4, 1).style.fg)
+    }
+
+    @Test
+    fun `a unit rendered on the same hex cannot overwrite the top-center LOS marker`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0))
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.LINE_OF_SIGHT)
+        // UnitRenderer only ever writes to rows 2 and 3 (id row, facing-arrow row) — never row 1,
+        // where the LOS/target marker lives — so the marker must survive a unit drawn on top.
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.PLAYER_1)
+
+        assertEquals(".", buffer.get(4, 1).char, "LOS marker must still be present after the unit renders")
+        assertEquals(Color.LINE_OF_SIGHT, buffer.get(4, 1).style.fg)
     }
 }

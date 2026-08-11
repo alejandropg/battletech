@@ -29,19 +29,19 @@ internal class UnitRendererTest {
     fun `renders unit id at hex center`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.CYAN)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.PLAYER_1)
 
         assertEquals("A", buffer.get(4, 3).char)
         assertEquals("1", buffer.get(5, 3).char)
-        assertEquals(Color.CYAN, buffer.get(4, 3).style.fg)
-        assertEquals(Color.CYAN, buffer.get(5, 3).style.fg)
+        assertEquals(Color.PLAYER_1, buffer.get(4, 3).style.fg)
+        assertEquals(Color.PLAYER_1, buffer.get(5, 3).style.fg)
     }
 
     @Test
     fun `renders only the chars present when id is shorter than 2 chars`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A", HexDirection.N, Color.CYAN)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A", HexDirection.N, Color.PLAYER_1)
 
         assertEquals("A", buffer.get(4, 3).char)
         assertEquals(" ", buffer.get(5, 3).char)
@@ -51,7 +51,7 @@ internal class UnitRendererTest {
     fun `takes at most 2 chars from a longer id`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "ABC", HexDirection.N, Color.CYAN)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "ABC", HexDirection.N, Color.PLAYER_1)
 
         assertEquals("A", buffer.get(4, 3).char)
         assertEquals("B", buffer.get(5, 3).char)
@@ -62,19 +62,19 @@ internal class UnitRendererTest {
     fun `renders destroyed marker left of id when destroyed and id row is not crowded`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.CYAN, isDestroyed = true)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.PLAYER_1, isDestroyed = true)
 
         assertEquals("A", buffer.get(4, 3).char)
         assertEquals("1", buffer.get(5, 3).char)
         assertEquals(ICON_ROBOT_DEAD, buffer.get(3, 3).char)
-        assertEquals(Color.CYAN, buffer.get(3, 3).style.fg)
+        assertEquals(Color.PLAYER_1, buffer.get(3, 3).style.fg)
     }
 
     @Test
     fun `renders north facing arrow`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.CYAN)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.PLAYER_1)
 
         assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
     }
@@ -83,7 +83,7 @@ internal class UnitRendererTest {
     fun `renders south facing arrow`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.S, Color.CYAN)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.S, Color.PLAYER_1)
 
         assertEquals(ICON_FACING_S, buffer.get(4, 3).char)
         assertEquals("A", buffer.get(4, 2).char)
@@ -94,7 +94,7 @@ internal class UnitRendererTest {
     fun `renders northeast facing arrow`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NE, Color.CYAN)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NE, Color.PLAYER_1)
 
         assertEquals(ICON_FACING_NE, buffer.get(5, 2).char)
     }
@@ -103,7 +103,7 @@ internal class UnitRendererTest {
     fun `renders southeast facing arrow`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SE, Color.CYAN)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SE, Color.PLAYER_1)
 
         assertEquals(ICON_FACING_SE, buffer.get(5, 3).char)
         assertEquals("A", buffer.get(4, 2).char)
@@ -113,7 +113,7 @@ internal class UnitRendererTest {
     fun `renders southwest facing arrow`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SW, Color.CYAN)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SW, Color.PLAYER_1)
 
         assertEquals(ICON_FACING_SW, buffer.get(3, 3).char)
         assertEquals("A", buffer.get(4, 2).char)
@@ -123,7 +123,7 @@ internal class UnitRendererTest {
     fun `renders northwest facing arrow`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, Color.CYAN)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, Color.PLAYER_1)
 
         assertEquals(ICON_FACING_NW, buffer.get(3, 2).char)
     }
@@ -132,7 +132,7 @@ internal class UnitRendererTest {
     fun `no torso arrow when torso equals leg facing`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.CYAN, torsoFacing = HexDirection.N)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.PLAYER_1, torsoFacing = HexDirection.N)
 
         // No extra arrow should be rendered - just the normal facing arrow at (4,2)
         assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
@@ -144,7 +144,7 @@ internal class UnitRendererTest {
     fun `clockwise twist with N legs places torso arrow at NE slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.CYAN, torsoFacing = HexDirection.NE)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.PLAYER_1, torsoFacing = HexDirection.NE)
 
         assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
         assertEquals(ICON_TORSO_NE, buffer.get(5, 2).char)
@@ -154,7 +154,7 @@ internal class UnitRendererTest {
     fun `counterclockwise twist with N legs places torso arrow at NW slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.CYAN, torsoFacing = HexDirection.NW)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.PLAYER_1, torsoFacing = HexDirection.NW)
 
         assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
         assertEquals(ICON_TORSO_NW, buffer.get(3, 2).char)
@@ -164,7 +164,7 @@ internal class UnitRendererTest {
     fun `clockwise twist with NE legs places torso arrow at SE slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NE, Color.CYAN, torsoFacing = HexDirection.SE)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NE, Color.PLAYER_1, torsoFacing = HexDirection.SE)
 
         assertEquals(ICON_FACING_NE, buffer.get(5, 2).char)
         assertEquals(ICON_TORSO_SE, buffer.get(5, 3).char)
@@ -174,7 +174,7 @@ internal class UnitRendererTest {
     fun `counterclockwise twist with NE legs places torso arrow at N slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NE, Color.CYAN, torsoFacing = HexDirection.N)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NE, Color.PLAYER_1, torsoFacing = HexDirection.N)
 
         assertEquals(ICON_FACING_NE, buffer.get(5, 2).char)
         assertEquals(ICON_TORSO_N, buffer.get(4, 2).char)
@@ -184,7 +184,7 @@ internal class UnitRendererTest {
     fun `clockwise twist with SE legs places torso arrow at S slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SE, Color.CYAN, torsoFacing = HexDirection.S)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SE, Color.PLAYER_1, torsoFacing = HexDirection.S)
 
         assertEquals(ICON_FACING_SE, buffer.get(5, 3).char)
         assertEquals(ICON_TORSO_S, buffer.get(4, 3).char)
@@ -194,7 +194,7 @@ internal class UnitRendererTest {
     fun `counterclockwise twist with SE legs places torso arrow at NE slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SE, Color.CYAN, torsoFacing = HexDirection.NE)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SE, Color.PLAYER_1, torsoFacing = HexDirection.NE)
 
         assertEquals(ICON_FACING_SE, buffer.get(5, 3).char)
         assertEquals(ICON_TORSO_NE, buffer.get(5, 2).char)
@@ -204,7 +204,7 @@ internal class UnitRendererTest {
     fun `clockwise twist with S legs places torso arrow at SW slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.S, Color.CYAN, torsoFacing = HexDirection.SW)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.S, Color.PLAYER_1, torsoFacing = HexDirection.SW)
 
         assertEquals(ICON_FACING_S, buffer.get(4, 3).char)
         assertEquals(ICON_TORSO_SW, buffer.get(3, 3).char)
@@ -214,7 +214,7 @@ internal class UnitRendererTest {
     fun `counterclockwise twist with S legs places torso arrow at SE slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.S, Color.CYAN, torsoFacing = HexDirection.SE)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.S, Color.PLAYER_1, torsoFacing = HexDirection.SE)
 
         assertEquals(ICON_FACING_S, buffer.get(4, 3).char)
         assertEquals(ICON_TORSO_SE, buffer.get(5, 3).char)
@@ -224,7 +224,7 @@ internal class UnitRendererTest {
     fun `clockwise twist with SW legs places torso arrow at NW slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SW, Color.CYAN, torsoFacing = HexDirection.NW)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SW, Color.PLAYER_1, torsoFacing = HexDirection.NW)
 
         assertEquals(ICON_FACING_SW, buffer.get(3, 3).char)
         assertEquals(ICON_TORSO_NW, buffer.get(3, 2).char)
@@ -234,7 +234,7 @@ internal class UnitRendererTest {
     fun `counterclockwise twist with SW legs places torso arrow at S slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SW, Color.CYAN, torsoFacing = HexDirection.S)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SW, Color.PLAYER_1, torsoFacing = HexDirection.S)
 
         assertEquals(ICON_FACING_SW, buffer.get(3, 3).char)
         assertEquals(ICON_TORSO_S, buffer.get(4, 3).char)
@@ -244,7 +244,7 @@ internal class UnitRendererTest {
     fun `clockwise twist with NW legs places torso arrow at N slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, Color.CYAN, torsoFacing = HexDirection.N)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, Color.PLAYER_1, torsoFacing = HexDirection.N)
 
         assertEquals(ICON_FACING_NW, buffer.get(3, 2).char)
         assertEquals(ICON_TORSO_N, buffer.get(4, 2).char)
@@ -254,7 +254,7 @@ internal class UnitRendererTest {
     fun `counterclockwise twist with NW legs places torso arrow at SW slot`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, Color.CYAN, torsoFacing = HexDirection.SW)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, Color.PLAYER_1, torsoFacing = HexDirection.SW)
 
         assertEquals(ICON_FACING_NW, buffer.get(3, 2).char)
         assertEquals(ICON_TORSO_SW, buffer.get(3, 3).char)
@@ -271,7 +271,7 @@ internal class UnitRendererTest {
     fun `id does not shift when facing NW and torso SW puts the torso arrow at x+3 in the id row`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, Color.CYAN, torsoFacing = HexDirection.SW)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, Color.PLAYER_1, torsoFacing = HexDirection.SW)
 
         // Torso arrow unaffected, still at its own slot (x+3, id row).
         assertEquals(ICON_TORSO_SW, buffer.get(3, 3).char)
@@ -286,7 +286,7 @@ internal class UnitRendererTest {
     fun `id does not shift when facing SW and torso NW puts the torso arrow at x+3 in the id row`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SW, Color.CYAN, torsoFacing = HexDirection.NW)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SW, Color.PLAYER_1, torsoFacing = HexDirection.NW)
 
         // Facing SW: id row is y+2 (SW is "south" -> arrow at y+3, id at y+2).
         // Torso NW: not "south" -> torso row y+2 (== id row), offset 3 (x+3) — no collision
@@ -301,7 +301,7 @@ internal class UnitRendererTest {
     fun `id shifts left when facing SE and torso NE puts the torso arrow at x+5 in the id row`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SE, Color.CYAN, torsoFacing = HexDirection.NE)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SE, Color.PLAYER_1, torsoFacing = HexDirection.NE)
 
         // Facing SE: id row is y+2 (SE is "south" -> arrow at y+3, id at y+2).
         // Torso NE: not "south" -> torso row y+2 (== id row), offset 5 (x+5) — collides with
@@ -319,7 +319,7 @@ internal class UnitRendererTest {
         val buffer = ScreenBuffer(10, 6)
 
         UnitRenderer.render(
-            Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, Color.CYAN,
+            Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, Color.PLAYER_1,
             torsoFacing = HexDirection.SW, isDestroyed = true,
         )
 
@@ -343,7 +343,7 @@ internal class UnitRendererTest {
         // torso arrow fill x+3..x+5), so the marker must still relocate to the arrow row rather
         // than collide with the torso arrow.
         UnitRenderer.render(
-            Canvas.of(buffer), 0, 0, "A1", HexDirection.NE, Color.CYAN,
+            Canvas.of(buffer), 0, 0, "A1", HexDirection.NE, Color.PLAYER_1,
             torsoFacing = HexDirection.SE, isDestroyed = true,
         )
 
@@ -359,7 +359,7 @@ internal class UnitRendererTest {
     fun `destroyed unit with an uncrowded id row puts the marker left of the id`() {
         val buffer = ScreenBuffer(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.CYAN, isDestroyed = true)
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, Color.PLAYER_1, isDestroyed = true)
 
         assertEquals("A", buffer.get(4, 3).char)
         assertEquals("1", buffer.get(5, 3).char)

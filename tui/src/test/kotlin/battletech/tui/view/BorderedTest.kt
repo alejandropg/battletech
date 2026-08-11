@@ -54,17 +54,17 @@ internal class BorderedTest {
         assertEquals("S", buffer.get(6, 0).char)
         assertEquals("T", buffer.get(7, 0).char)
         assertEquals(" ", buffer.get(8, 0).char)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(4, 0).style.fg)
-        assertEquals(Color.GREEN, buffer.get(0, 0).style.fg)
+        assertEquals(Color.ACCENT, buffer.get(4, 0).style.fg)
+        assertEquals(Color.PANEL_BORDER, buffer.get(0, 0).style.fg)
     }
 
     @Test
     fun `uses specified colors`() {
-        val view = Bordered(blank, borderColor = Color.RED, titleColor = Color.WHITE)
+        val view = Bordered(blank, borderColor = Color.DANGER, titleColor = Color.TEXT_PRIMARY)
 
         val buffer = render(view, 10, 3)
 
-        assertEquals(Color.RED, buffer.get(0, 0).style.fg)
+        assertEquals(Color.DANGER, buffer.get(0, 0).style.fg)
     }
 
     @Test
@@ -82,8 +82,8 @@ internal class BorderedTest {
         assertEquals("S", buffer.get(8, 0).char)
         assertEquals("T", buffer.get(9, 0).char)
         assertEquals(" ", buffer.get(10, 0).char)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(2, 0).style.fg)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(6, 0).style.fg)
+        assertEquals(Color.ACCENT, buffer.get(2, 0).style.fg)
+        assertEquals(Color.ACCENT, buffer.get(6, 0).style.fg)
     }
 
     @Test
@@ -101,8 +101,8 @@ internal class BorderedTest {
         assertEquals("L", buffer.get(8, 0).char)
         assertEquals("P", buffer.get(9, 0).char)
         assertEquals(" ", buffer.get(10, 0).char)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(3, 0).style.fg)
-        assertEquals(Color.BRIGHT_YELLOW, buffer.get(6, 0).style.fg)
+        assertEquals(Color.ACCENT, buffer.get(3, 0).style.fg)
+        assertEquals(Color.ACCENT, buffer.get(6, 0).style.fg)
     }
 
     @Test
@@ -185,7 +185,7 @@ internal class BorderedTest {
             val cell = buffer.get(29, row)
             if ((row - 1) in thumbRange) {
                 assertEquals("▐", cell.char, "expected thumb at row $row")
-                assertEquals(Color.GREEN, cell.style.fg)
+                assertEquals(Color.PANEL_BORDER, cell.style.fg)
             } else {
                 assertEquals("│", cell.char, "expected border at row $row")
             }

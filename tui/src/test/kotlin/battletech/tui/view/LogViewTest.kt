@@ -86,7 +86,7 @@ internal class LogViewTest {
     }
 
     @Test
-    fun `header row foreground is cyan and a single turn produces exactly one header`() {
+    fun `header row foreground is info and a single turn produces exactly one header`() {
         val view = LogView(
             entries = listOf(
                 LogEntry(2, movedTo(1)),
@@ -96,7 +96,7 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assertEquals(Color.CYAN, buffer.get(2, 2).style.fg)
+        assertEquals(Color.INFO, buffer.get(2, 2).style.fg)
         // Only one header for the single turn: row 3 and row 4 are plain entries, not headers.
         val headerLine = buffer.line(2, 2, 24)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }

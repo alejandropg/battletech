@@ -10,7 +10,7 @@ internal class CanvasTest {
     @Test
     fun `get and set within bounds`() {
         val canvas = Canvas.offscreen(5, 5)
-        val cell = Cell("A", Cell.Style(Color.RED, Color.BLUE))
+        val cell = Cell("A", Cell.Style(Color.DANGER, Color.INFO))
 
         canvas.set(2, 3, cell)
 
@@ -43,10 +43,10 @@ internal class CanvasTest {
     fun `writeString places characters horizontally`() {
         val canvas = Canvas.offscreen(10, 1)
 
-        canvas.writeString(2, 0, "Hi", Cell.Style(Color.GREEN, Color.BLACK))
+        canvas.writeString(2, 0, "Hi", Cell.Style(Color.SUCCESS, Color.TEXT_MUTED))
 
-        assertEquals(Cell("H", Cell.Style(Color.GREEN, Color.BLACK)), canvas.get(2, 0))
-        assertEquals(Cell("i", Cell.Style(Color.GREEN, Color.BLACK)), canvas.get(3, 0))
+        assertEquals(Cell("H", Cell.Style(Color.SUCCESS, Color.TEXT_MUTED)), canvas.get(2, 0))
+        assertEquals(Cell("i", Cell.Style(Color.SUCCESS, Color.TEXT_MUTED)), canvas.get(3, 0))
         assertEquals(Cell(" "), canvas.get(4, 0))
     }
 
@@ -179,19 +179,19 @@ internal class CanvasTest {
     @Test
     fun `setFg preserves the existing background`() {
         val canvas = Canvas.offscreen(5, 1)
-        canvas.set(0, 0, Cell(" ", Cell.Style(Color.DEFAULT, Color.BLUE)))
+        canvas.set(0, 0, Cell(" ", Cell.Style(Color.DEFAULT, Color.INFO)))
 
-        canvas.setFg(0, 0, "X", Color.RED)
+        canvas.setFg(0, 0, "X", Color.DANGER)
 
-        assertEquals(Cell("X", Cell.Style(Color.RED, Color.BLUE)), canvas.get(0, 0))
+        assertEquals(Cell("X", Cell.Style(Color.DANGER, Color.INFO)), canvas.get(0, 0))
     }
 
     @Test
     fun `setFg outside the canvas is a silent no-op, never throws`() {
         val canvas = Canvas.offscreen(3, 3)
 
-        canvas.setFg(-1, 0, "X", Color.RED)
-        canvas.setFg(3, 0, "X", Color.RED)
+        canvas.setFg(-1, 0, "X", Color.DANGER)
+        canvas.setFg(3, 0, "X", Color.DANGER)
 
         assertEquals(Cell(" "), canvas.get(0, 0))
     }
@@ -199,37 +199,37 @@ internal class CanvasTest {
     @Test
     fun `blit copies cell char fg and bg from source to destination`() {
         val src = Canvas.offscreen(5, 5)
-        src.set(1, 2, Cell("X", Cell.Style(Color.RED, Color.BLUE)))
+        src.set(1, 2, Cell("X", Cell.Style(Color.DANGER, Color.INFO)))
         val dest = Canvas.offscreen(10, 10)
 
         dest.blit(src, 1, 2, 3, 4, 1, 1)
 
-        assertEquals(Cell("X", Cell.Style(Color.RED, Color.BLUE)), dest.get(3, 4))
+        assertEquals(Cell("X", Cell.Style(Color.DANGER, Color.INFO)), dest.get(3, 4))
     }
 
     @Test
     fun `blit clips at destination right and bottom edges`() {
         val src = Canvas.offscreen(5, 5)
-        src.set(0, 0, Cell("A", Cell.Style(Color.GREEN)))
-        src.set(1, 0, Cell("B", Cell.Style(Color.GREEN)))
-        src.set(2, 0, Cell("C", Cell.Style(Color.GREEN)))
+        src.set(0, 0, Cell("A", Cell.Style(Color.SUCCESS)))
+        src.set(1, 0, Cell("B", Cell.Style(Color.SUCCESS)))
+        src.set(2, 0, Cell("C", Cell.Style(Color.SUCCESS)))
         val dest = Canvas.offscreen(4, 4)
 
         dest.blit(src, 0, 0, 3, 0, 3, 1)
 
-        assertEquals(Cell("A", Cell.Style(Color.GREEN)), dest.get(3, 0))
+        assertEquals(Cell("A", Cell.Style(Color.SUCCESS)), dest.get(3, 0))
         assertEquals(Cell(" "), dest.get(2, 0))
     }
 
     @Test
     fun `blit skips source rows and cols beyond source bounds`() {
         val src = Canvas.offscreen(2, 2)
-        src.set(0, 0, Cell("Z", Cell.Style(Color.CYAN)))
+        src.set(0, 0, Cell("Z", Cell.Style(Color.ACCENT)))
         val dest = Canvas.offscreen(10, 10)
 
         dest.blit(src, 0, 0, 0, 0, 5, 5)
 
-        assertEquals(Cell("Z", Cell.Style(Color.CYAN)), dest.get(0, 0))
+        assertEquals(Cell("Z", Cell.Style(Color.ACCENT)), dest.get(0, 0))
         assertEquals(Cell(" "), dest.get(2, 0))
         assertEquals(Cell(" "), dest.get(0, 2))
     }

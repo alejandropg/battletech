@@ -13,7 +13,7 @@ import battletech.tui.screen.Color
 import battletech.tui.screen.FocusRect
 import battletech.tui.screen.ScreenBuffer
 
-private val WHITE_STYLE = Cell.Style(Color.WHITE)
+private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
 
 /**
  * Owns every side panel and the tactical board's scroll bookkeeping for one
@@ -199,8 +199,8 @@ private fun renderGameOverBanner(board: Canvas, outcome: MatchOutcome) {
     val mx = (bannerWidth - winnerLine.length) / 2
     Bordered(
         title = "MATCH OVER",
-        borderColor = Color.BRIGHT_YELLOW,
-        titleColor = Color.BRIGHT_YELLOW,
+        borderColor = Color.ACCENT,
+        titleColor = Color.ACCENT,
         content = BannerLine(winnerLine, column = mx - 1, row = 2),
     ).render(banner)
 }
@@ -208,7 +208,7 @@ private fun renderGameOverBanner(board: Canvas, outcome: MatchOutcome) {
 /** [text] at a fixed local ([column], [row]) — the banner's win/draw line, inside [Bordered]'s border inset. */
 private class BannerLine(private val text: String, private val column: Int, private val row: Int) : View {
     override fun render(canvas: Canvas) {
-        canvas.writeString(column, row, text, WHITE_STYLE)
+        canvas.writeString(column, row, text, TEXT_PRIMARY_STYLE)
     }
 }
 

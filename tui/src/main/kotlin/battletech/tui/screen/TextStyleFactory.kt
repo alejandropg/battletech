@@ -2,8 +2,8 @@ package battletech.tui.screen
 
 import com.github.ajalt.colormath.model.Ansi16
 import com.github.ajalt.colormath.model.Ansi256
+import com.github.ajalt.colormath.model.RGB
 import com.github.ajalt.mordant.rendering.AnsiLevel
-import com.github.ajalt.mordant.rendering.TextColors
 import com.github.ajalt.mordant.rendering.TextStyle
 import java.util.EnumMap
 import com.github.ajalt.colormath.Color as ColorValue
@@ -17,20 +17,25 @@ import com.github.ajalt.colormath.Color as ColorValue
  * and the result is split into an open/close pair ([Tags]) that the renderer can then paste
  * around plain text with no further Mordant involvement.
  *
- * Colors are downsampled to [ansiLevel] once here too, since [ScreenRenderer] writes with
- * [com.github.ajalt.mordant.terminal.Terminal.rawPrint], which — unlike
- * [com.github.ajalt.mordant.terminal.Terminal.print] — bypasses Mordant's own downsampling.
+ * [palette] resolves every [Color] role to a [PaletteColor] already authored in the right color
+ * space for [ansiLevel] — there is no downsampling here or anywhere else in this class.
+ * [ansiLevel] is used for exactly one thing: [AnsiLevel.NONE] suppresses tags entirely. Do not
+ * grow it back into a conversion knob — that job now belongs to which [TuiTheme] was selected.
  */
-internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRUECOLOR) {
+internal class TextStyleFactory(private val palette: TuiPalette, private val ansiLevel: AnsiLevel) {
 
     /** Cached open/close ANSI escape strings for one [Cell.Style]; either may be empty. */
     internal class Tags(internal val open: String, internal val close: String)
 
-    // Per-color fg/bg color caches, downsampled once to `ansiLevel` — null means "unstyled /
-    // DEFAULT" (or, at AnsiLevel.NONE, simply unused — see tagsFor). Populated eagerly since
-    // Color has few entries; buildStyle reads straight from these instead of re-deriving per call.
-    private val colorCache: Map<Color, ColorValue> = EnumMap<Color, ColorValue>(Color::class.java).also { map ->
-        Color.entries.forEach { map[it] = toColorStyle(it)?.color?.downsample(ansiLevel) }
+    // Per-role fg/bg color caches. Separate maps because Color.DEFAULT resolves to different
+    // foreground and background values — a single cache keyed by Color could not represent that.
+    // Populated eagerly since Color has few entries; buildStyle reads straight from these instead
+    // of re-deriving per call.
+    private val foregroundCache: Map<Color, ColorValue> = EnumMap<Color, ColorValue>(Color::class.java).also { map ->
+        Color.entries.forEach { map[it] = palette.foreground(it).toColormathColor() }
+    }
+    private val backgroundCache: Map<Color, ColorValue> = EnumMap<Color, ColorValue>(Color::class.java).also { map ->
+        Color.entries.forEach { map[it] = palette.background(it).toColormathColor() }
     }
 
     // Tags cache, keyed by the full Cell.Style. Lazily populated on first use for each distinct
@@ -39,7 +44,7 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
 
     /** The open/close tag pair for [style], or `null` if it renders no ANSI codes at all. */
     internal fun tagsFor(style: Cell.Style): Tags? {
-        if (style == Cell.Style.DEFAULT || ansiLevel == AnsiLevel.NONE) return null
+        if (ansiLevel == AnsiLevel.NONE) return null
 
         tagsCache[style]?.let { return it }
 
@@ -55,83 +60,16 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
     }
 
     private fun buildStyle(style: Cell.Style): TextStyle = TextStyle(
-        color = colorCache[style.fg],
-        bgColor = colorCache[style.bg],
+        color = foregroundCache[style.fg],
+        bgColor = backgroundCache[style.bg],
         strikethrough = style.strikethrough,
     )
 
-    private fun ColorValue.downsample(level: AnsiLevel): ColorValue? = when (level) {
-        AnsiLevel.NONE -> null
-        AnsiLevel.ANSI16 -> if (this is Ansi16) this else toSRGB().clamp().toAnsi16()
-        AnsiLevel.ANSI256 -> if (this is Ansi16 || this is Ansi256) this else toSRGB().clamp().toAnsi256()
-        AnsiLevel.TRUECOLOR -> this
-    }
-
-    private fun toColorStyle(color: Color): TextStyle? = when (color) {
-        Color.DEFAULT -> null
-        Color.BLACK -> TextColors.black
-        Color.RED -> TextColors.red
-        Color.GREEN -> TextColors.green
-        Color.BLUE -> TextColors.blue
-        Color.YELLOW -> TextColors.yellow
-        Color.CYAN -> TextColors.cyan
-        Color.WHITE -> TextColors.white
-        Color.DARK_GREEN -> TextColors.color(Ansi256(22))
-        Color.BROWN -> TextColors.color(Ansi256(130))
-        Color.BRIGHT_YELLOW -> TextColors.brightYellow
-        Color.BRIGHT_GREEN -> TextColors.brightGreen
-        Color.ORANGE -> TextColors.color(Ansi256(208))
-        Color.MAGENTA -> TextColors.magenta
-        Color.LIGHT_BLUE -> TextColors.color(Ansi256(117))
-        Color.DARK_GRAY -> TextColors.color(Ansi256(238))
-        Color.GRAY -> TextColors.gray
-
-        // WHISPER
-//        Color.WOODS_LIGHT_BG -> TextColors.rgb("#2B3327")
-//        Color.WOODS_HEAVY_BG -> TextColors.rgb("#222B20")
-//        Color.WATER_SHALLOW_BG -> TextColors.rgb("#26333F")
-//        Color.WATER_DEEP_BG -> TextColors.rgb("#1F2A33")
-//        Color.ELEVATION_1_BG -> TextColors.rgb("#332A20")
-//        Color.ELEVATION_2_BG -> TextColors.rgb("#3D3428")
-//        Color.ROUGH_BG -> TextColors.rgb("#332C24")
-
-        // SOFT
-//        Color.WOODS_LIGHT_BG -> TextColors.rgb("#34402E")
-//        Color.WOODS_HEAVY_BG -> TextColors.rgb("#253018")
-//        Color.WATER_SHALLOW_BG -> TextColors.rgb("#2C3F52")
-//        Color.WATER_DEEP_BG -> TextColors.rgb("#1F2D3D")
-//        Color.ELEVATION_1_BG -> TextColors.rgb("#3D3020")
-//        Color.ELEVATION_2_BG -> TextColors.rgb("#4A3C29")
-//        Color.ROUGH_BG -> TextColors.rgb("#3D3226")
-
-        // FRESH
-        Color.WOODS_LIGHT_BG -> TextColors.rgb("#3E5E33")
-        Color.WOODS_HEAVY_BG -> TextColors.rgb("#2C4826")
-        Color.WATER_SHALLOW_BG -> TextColors.rgb("#2F5E7E")
-        Color.WATER_DEEP_BG -> TextColors.rgb("#234C68")
-        Color.ELEVATION_1_BG -> TextColors.rgb("#5A4327")
-        Color.ELEVATION_2_BG -> TextColors.rgb("#6B5433")
-        Color.ELEVATION_HIGH_BG -> TextColors.rgb("#7C653F")
-        Color.ROUGH_BG -> TextColors.rgb("#4A4030")
-
-        // VIVID
-//        Color.WOODS_LIGHT_BG -> TextColors.rgb("#47762F")
-//        Color.WOODS_HEAVY_BG -> TextColors.rgb("#356027")
-//        Color.WATER_SHALLOW_BG -> TextColors.rgb("#2E6E96")
-//        Color.WATER_DEEP_BG -> TextColors.rgb("#245B7E")
-//        Color.ELEVATION_1_BG -> TextColors.rgb("#6E4E28")
-//        Color.ELEVATION_2_BG -> TextColors.rgb("#866437")
-//        Color.ROUGH_BG -> TextColors.rgb("#5C4E38")
-
-        // MEADOW (brighter / cheerful)
-//        Color.WOODS_LIGHT_BG -> TextColors.rgb("#4C7A3A")
-//        Color.WOODS_HEAVY_BG -> TextColors.rgb("#38652C")
-//        Color.WATER_SHALLOW_BG -> TextColors.rgb("#2F7CA2")
-//        Color.WATER_DEEP_BG -> TextColors.rgb("#256A8E")
-//        Color.ELEVATION_1_BG -> TextColors.rgb("#7C5C30")
-//        Color.ELEVATION_2_BG -> TextColors.rgb("#977340")
-//        Color.ROUGH_BG -> TextColors.rgb("#665640")
-
+    /** [PaletteColor] -> its colormath equivalent, matching the color space it was authored in. */
+    private fun PaletteColor.toColormathColor(): ColorValue = when (this) {
+        is PaletteColor.TrueColor -> RGB.from255(red, green, blue)
+        is PaletteColor.Indexed -> Ansi256(index)
+        is PaletteColor.Basic -> Ansi16(code)
     }
 
     private companion object {

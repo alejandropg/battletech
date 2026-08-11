@@ -21,7 +21,7 @@ internal class ScreenBufferTest {
     @Test
     fun `set and get cell`() {
         val buffer = ScreenBuffer(5, 5)
-        val cell = Cell("A", Cell.Style(Color.RED, Color.BLUE))
+        val cell = Cell("A", Cell.Style(Color.DANGER, Color.INFO))
 
         buffer.set(2, 3, cell)
 

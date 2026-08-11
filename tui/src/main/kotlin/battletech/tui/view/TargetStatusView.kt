@@ -11,7 +11,7 @@ internal class TargetStatusView(private val unit: ForeignUnit?) : View {
         val content = ContentWriter(canvas)
 
         if (unit == null) {
-            content.writeln("No target selected", WHITE_STYLE)
+            content.writeln("No target selected", TEXT_PRIMARY_STYLE)
             return
         }
 
@@ -21,6 +21,6 @@ internal class TargetStatusView(private val unit: ForeignUnit?) : View {
     internal companion object {
         internal const val TITLE: String = "TARGET STATUS"
 
-        private val WHITE_STYLE = Cell.Style(Color.WHITE)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
     }
 }

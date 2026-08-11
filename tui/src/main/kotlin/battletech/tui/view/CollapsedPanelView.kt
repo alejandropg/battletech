@@ -17,12 +17,12 @@ internal class CollapsedPanelView(val key: Char, val title: String) : View {
             val centerX = canvas.width / 2
             for ((row, ch) in title.withIndex()) {
                 if (row >= canvas.height) break
-                if (ch != ' ') canvas.writeString(centerX, row, ch.toString(), BRIGHT_YELLOW_STYLE)
+                if (ch != ' ') canvas.writeString(centerX, row, ch.toString(), ACCENT_STYLE)
             }
         }
     }
 
     private companion object {
-        private val BRIGHT_YELLOW_STYLE = Cell.Style(Color.BRIGHT_YELLOW)
+        private val ACCENT_STYLE = Cell.Style(Color.ACCENT)
     }
 }

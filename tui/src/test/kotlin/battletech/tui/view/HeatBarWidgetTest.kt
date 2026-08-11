@@ -59,36 +59,36 @@ internal class HeatBarWidgetTest {
     }
 
     @Test
-    fun `colors red at seventy percent of max`() {
+    fun `colors danger at seventy percent of max`() {
         val widget = HeatBarWidget(20, 30)
         val (content, buffer) = content()
 
         widget.draw(content, 2, 21)
 
-        assertEquals(Color.RED, buffer.get(2, 0).style.fg)
+        assertEquals(Color.DANGER, buffer.get(2, 0).style.fg)
         // value "21" is 2 chars; filled = 21*20/30 = 14, anchorCol = 2+14 = 16
         // "21" written at (16 - 2 + 1, 1) = (15, 1)
-        assertEquals(Color.RED, buffer.get(15, 1).style.fg)
+        assertEquals(Color.DANGER, buffer.get(15, 1).style.fg)
     }
 
     @Test
-    fun `colors yellow at thirty percent of max`() {
+    fun `colors warning at thirty percent of max`() {
         val widget = HeatBarWidget(20, 30)
         val (content, buffer) = content()
 
         widget.draw(content, 2, 9)
 
-        assertEquals(Color.YELLOW, buffer.get(2, 0).style.fg)
+        assertEquals(Color.WARNING, buffer.get(2, 0).style.fg)
     }
 
     @Test
-    fun `colors light blue below thirty percent`() {
+    fun `colors info (cool) below thirty percent`() {
         val widget = HeatBarWidget(20, 30)
         val (content, buffer) = content()
 
         widget.draw(content, 2, 8)
 
-        assertEquals(Color.LIGHT_BLUE, buffer.get(2, 0).style.fg)
+        assertEquals(Color.INFO, buffer.get(2, 0).style.fg)
     }
 
     @Test
@@ -112,6 +112,6 @@ internal class HeatBarWidgetTest {
 
         val row0 = (2 until 28).joinToString("") { buffer.get(it, 0).char }
         assertTrue(row0.contains("░".repeat(10)))
-        assertEquals(Color.RED, buffer.get(2, 0).style.fg)
+        assertEquals(Color.DANGER, buffer.get(2, 0).style.fg)
     }
 }
