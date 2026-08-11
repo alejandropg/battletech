@@ -2,6 +2,7 @@ package battletech.tui.hex
 
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
+import battletech.tactical.model.Terrain
 import battletech.tactical.unit.CriticalSlotContent
 import battletech.tui.view.CheckState
 
@@ -48,6 +49,42 @@ private val NF_MD_TROPHY = String(Character.toChars(0xF0538))
 private val NF_MD_PISTOL = String(Character.toChars(0xF0703))
 private val NF_MD_BOXING_GLOVE = String(Character.toChars(0xF0B65))
 
+// Terrain icons (nf-md-tree_outline, nf-md-tree and another Nerd Fonts icons are above U+FFFF, need surrogate pairs)
+private val NF_MD_TREE_OUTLINE = String(Character.toChars(0xF0E69))
+private val NF_MD_PINE_TREE = String(Character.toChars(0xF0531))
+private val NF_MD_WAVES = String(Character.toChars(0xF078D))
+private val NF_MD_GRAIN = String(Character.toChars(0xF0D7C))
+
+// Elevation icons (nf-md-numeric_N_box_multiple)
+private val NF_MD_NUMERIC_1_BOX_MULTIPLE = String(Character.toChars(0xF0F0F))
+private val NF_MD_NUMERIC_2_BOX_MULTIPLE = String(Character.toChars(0xF0F10))
+private val NF_MD_NUMERIC_3_BOX_MULTIPLE = String(Character.toChars(0xF0F11))
+private val NF_MD_NUMERIC_4_BOX_MULTIPLE = String(Character.toChars(0xF0F12))
+private val NF_MD_NUMERIC_5_BOX_MULTIPLE = String(Character.toChars(0xF0F13))
+private val NF_MD_NUMERIC_6_BOX_MULTIPLE = String(Character.toChars(0xF0F14))
+private val NF_MD_NUMERIC_7_BOX_MULTIPLE = String(Character.toChars(0xF0F15))
+private val NF_MD_NUMERIC_8_BOX_MULTIPLE = String(Character.toChars(0xF0F16))
+private val NF_MD_NUMERIC_9_BOX_MULTIPLE = String(Character.toChars(0xF0F17))
+
+// Depth icons (nf-md-numeric_N_box_multiple_outline)
+private val NF_MD_NUMERIC_1_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03A5))
+private val NF_MD_NUMERIC_2_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03A8))
+private val NF_MD_NUMERIC_3_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03AB))
+private val NF_MD_NUMERIC_4_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03B2))
+private val NF_MD_NUMERIC_5_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03AF))
+private val NF_MD_NUMERIC_6_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03B4))
+private val NF_MD_NUMERIC_7_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03B7))
+private val NF_MD_NUMERIC_8_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03BA))
+private val NF_MD_NUMERIC_9_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03BD))
+
+// Hex facing arrow icons (same codepoints as UnitRenderer)
+private val NF_MD_ARROW_UP_THIN_N = String(Character.toChars(0xF09C7))
+private val NF_MD_ARROW_UP_THIN_NE = String(Character.toChars(0xF09C5))
+private val NF_MD_ARROW_UP_THIN_SE = String(Character.toChars(0xF09B9))
+private val NF_MD_ARROW_UP_THIN_S = String(Character.toChars(0xF09BF))
+private val NF_MD_ARROW_UP_THIN_SW = String(Character.toChars(0xF09B7))
+private val NF_MD_ARROW_UP_THIN_NW = String(Character.toChars(0xF09C3))
+
 // Leg facing arrows (larger arrows)
 private val NF_MD_ARROW_UP_BOLD_OUTLINE = String(Character.toChars(0xF09C7))
 private val NF_MD_ARROW_TOP_RIGHT_BOLD_OUTLINE = String(Character.toChars(0xF09C5))
@@ -63,6 +100,59 @@ private val NF_MD_ARROW_BOTTOM_RIGHT = String(Character.toChars(0xF0043))
 private val NF_MD_ARROW_DOWN  = String(Character.toChars(0xF0045))
 private val NF_MD_ARROW_BOTTOM_LEFT = String(Character.toChars(0xF0042))
 private val NF_MD_ARROW_TOP_LEFT = String(Character.toChars(0xF005B))
+
+internal fun terrainIcon(terrain: Terrain): String = when (terrain) {
+    Terrain.CLEAR       -> ""
+    Terrain.LIGHT_WOODS -> NF_MD_TREE_OUTLINE
+    Terrain.HEAVY_WOODS -> NF_MD_PINE_TREE
+    Terrain.WATER       -> NF_MD_WAVES
+    Terrain.ROUGH       -> NF_MD_GRAIN
+}
+
+internal fun elevationIcon(elevation: Int): String = when (elevation) {
+    1 -> NF_MD_NUMERIC_1_BOX_MULTIPLE
+    2 -> NF_MD_NUMERIC_2_BOX_MULTIPLE
+    3 -> NF_MD_NUMERIC_3_BOX_MULTIPLE
+    4 -> NF_MD_NUMERIC_4_BOX_MULTIPLE
+    5 -> NF_MD_NUMERIC_5_BOX_MULTIPLE
+    6 -> NF_MD_NUMERIC_6_BOX_MULTIPLE
+    7 -> NF_MD_NUMERIC_7_BOX_MULTIPLE
+    8 -> NF_MD_NUMERIC_8_BOX_MULTIPLE
+    9 -> NF_MD_NUMERIC_9_BOX_MULTIPLE
+    else -> error("No elevation icon for elevation: $elevation")
+}
+
+internal fun depthIcon(depth: Int): String = when (depth) {
+    1 -> NF_MD_NUMERIC_1_BOX_MULTIPLE_OUTLINE
+    2 -> NF_MD_NUMERIC_2_BOX_MULTIPLE_OUTLINE
+    3 -> NF_MD_NUMERIC_3_BOX_MULTIPLE_OUTLINE
+    4 -> NF_MD_NUMERIC_4_BOX_MULTIPLE_OUTLINE
+    5 -> NF_MD_NUMERIC_5_BOX_MULTIPLE_OUTLINE
+    6 -> NF_MD_NUMERIC_6_BOX_MULTIPLE_OUTLINE
+    7 -> NF_MD_NUMERIC_7_BOX_MULTIPLE_OUTLINE
+    8 -> NF_MD_NUMERIC_8_BOX_MULTIPLE_OUTLINE
+    9 -> NF_MD_NUMERIC_9_BOX_MULTIPLE_OUTLINE
+    else -> error("No depth icon for depth: $depth")
+}
+
+internal fun facingIcon(direction: HexDirection): String = when (direction) {
+    HexDirection.N  -> NF_MD_ARROW_UP_THIN_N
+    HexDirection.NE -> NF_MD_ARROW_UP_THIN_NE
+    HexDirection.SE -> NF_MD_ARROW_UP_THIN_SE
+    HexDirection.S  -> NF_MD_ARROW_UP_THIN_S
+    HexDirection.SW -> NF_MD_ARROW_UP_THIN_SW
+    HexDirection.NW -> NF_MD_ARROW_UP_THIN_NW
+}
+
+// Number mapping: 1=N, 2=NE, 3=SE, 4=S, 5=SW, 6=NW
+internal fun facingNumber(direction: HexDirection): String = when (direction) {
+    HexDirection.N  -> "1"
+    HexDirection.NE -> "2"
+    HexDirection.SE -> "3"
+    HexDirection.S  -> "4"
+    HexDirection.SW -> "5"
+    HexDirection.NW -> "6"
+}
 
 internal fun facingArrowIcon(direction: HexDirection): Pair<String, Int> = when (direction) {
     HexDirection.N  -> NF_MD_ARROW_UP_BOLD_OUTLINE  to 4
