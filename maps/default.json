@@ -2,17 +2,23 @@
   "width": 10,
   "height": 10,
   "hexes": [
-    { "col": 4, "row": 3, "terrain": "LIGHT_WOODS" },
+    { "col": 4, "row": 3, "terrain": "LIGHT_WOODS", "elevation": 1 },
     { "col": 4, "row": 4, "terrain": "LIGHT_WOODS" },
     { "col": 4, "row": 5, "terrain": "LIGHT_WOODS" },
     { "col": 4, "row": 6, "terrain": "LIGHT_WOODS" },
-    { "col": 5, "row": 4, "terrain": "HEAVY_WOODS" },
+    { "col": 5, "row": 4, "terrain": "HEAVY_WOODS", "elevation": 2 },
     { "col": 5, "row": 5, "terrain": "HEAVY_WOODS" },
-    { "col": 7, "row": 2, "terrain": "WATER" },
-    { "col": 7, "row": 3, "terrain": "WATER" },
-    { "col": 7, "row": 4, "terrain": "WATER" },
+    { "col": 7, "row": 2, "terrain": "WATER", "depth": 1 },
+    { "col": 7, "row": 3, "terrain": "WATER", "depth": 2 },
+    { "col": 7, "row": 4, "terrain": "WATER", "depth": 1 },
+    { "col": 6, "row": 2, "elevation": 3 },
     { "col": 6, "row": 3, "elevation": 2 },
     { "col": 6, "row": 4, "elevation": 1 },
-    { "col": 6, "row": 5, "elevation": 1 }
+    { "col": 6, "row": 5, "elevation": 1 },
+    { "col": 2, "row": 7, "terrain": "ROUGH" },
+    { "col": 2, "row": 8, "terrain": "ROUGH", "elevation": 1 },
+    { "col": 3, "row": 7, "terrain": "ROUGH", "elevation": 1 },
+    { "col": 3, "row": 8, "terrain": "ROUGH", "elevation": 2 },
+    { "col": 3, "row": 9, "terrain": "ROUGH" }
   ]
 }

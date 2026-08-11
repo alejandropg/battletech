@@ -28,7 +28,7 @@ internal class MapCatalogTest {
     }
 
     @Test
-    fun `defaultMap reproduces the original terrain and elevation rules`() {
+    fun `defaultMap preserves the original terrain and elevation families`() {
         val map = MapCatalog.defaultMap()
 
         // Light woods family: col 3, row 2..5
@@ -56,5 +56,50 @@ internal class MapCatalogTest {
         assertThat(clear.terrain).isEqualTo(Terrain.CLEAR)
         assertThat(clear.elevation).isEqualTo(0)
         assertThat(clear.depth).isEqualTo(0)
+    }
+
+    @Test
+    fun `defaultMap adds elevation, depth, and rough terrain refinements`() {
+        val map = MapCatalog.defaultMap()
+
+        // Clear hilltop family: col 5, rows 1..4 — the level-2 hill at row 2 grows a level-3 peak
+        // at row 1, and the level-1 rows extend down to row 4.
+        assertThat(map.hexes.getValue(HexCoordinates(5, 1)).elevation).isEqualTo(3)
+        assertThat(map.hexes.getValue(HexCoordinates(5, 3)).elevation).isEqualTo(1)
+
+        // Light/heavy woods hexes gain an elevated corner, everything else in the family stays e0.
+        assertThat(map.hexes.getValue(HexCoordinates(3, 2)).elevation).isEqualTo(1)
+        assertThat(map.hexes.getValue(HexCoordinates(3, 3)).elevation).isEqualTo(0)
+        assertThat(map.hexes.getValue(HexCoordinates(4, 3)).elevation).isEqualTo(2)
+        assertThat(map.hexes.getValue(HexCoordinates(4, 4)).elevation).isEqualTo(0)
+
+        // Water depth: shallow (<=1) at rows 1 and 3, deep (>=2) at row 2.
+        assertThat(map.hexes.getValue(HexCoordinates(6, 1)).depth).isEqualTo(1)
+        assertThat(map.hexes.getValue(HexCoordinates(6, 2)).depth).isEqualTo(2)
+        assertThat(map.hexes.getValue(HexCoordinates(6, 3)).depth).isEqualTo(1)
+
+        // New rough patch: col 1 rows 6..7, col 2 rows 6..8 — absent from the map before this change.
+        assertThat(map.hexes.getValue(HexCoordinates(1, 6)).terrain).isEqualTo(Terrain.ROUGH)
+        assertThat(map.hexes.getValue(HexCoordinates(1, 6)).elevation).isEqualTo(0)
+        assertThat(map.hexes.getValue(HexCoordinates(1, 7)).terrain).isEqualTo(Terrain.ROUGH)
+        assertThat(map.hexes.getValue(HexCoordinates(1, 7)).elevation).isEqualTo(1)
+        assertThat(map.hexes.getValue(HexCoordinates(2, 6)).terrain).isEqualTo(Terrain.ROUGH)
+        assertThat(map.hexes.getValue(HexCoordinates(2, 6)).elevation).isEqualTo(1)
+        assertThat(map.hexes.getValue(HexCoordinates(2, 7)).terrain).isEqualTo(Terrain.ROUGH)
+        assertThat(map.hexes.getValue(HexCoordinates(2, 7)).elevation).isEqualTo(2)
+        assertThat(map.hexes.getValue(HexCoordinates(2, 8)).terrain).isEqualTo(Terrain.ROUGH)
+        assertThat(map.hexes.getValue(HexCoordinates(2, 8)).elevation).isEqualTo(0)
+        assertThat(map.hexes.getValue(HexCoordinates(3, 6)).terrain).isEqualTo(Terrain.CLEAR)
+    }
+
+    @Test
+    fun `defaultMap keeps the sample spawn cells clear at elevation zero`() {
+        val map = MapCatalog.defaultMap()
+
+        for (coords in listOf(HexCoordinates(1, 1), HexCoordinates(2, 3), HexCoordinates(7, 3), HexCoordinates(8, 5))) {
+            val hex = map.hexes.getValue(coords)
+            assertThat(hex.terrain).describedAs("terrain at $coords").isEqualTo(Terrain.CLEAR)
+            assertThat(hex.elevation).describedAs("elevation at $coords").isEqualTo(0)
+        }
     }
 }
