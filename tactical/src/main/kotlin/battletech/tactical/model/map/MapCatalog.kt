@@ -24,7 +24,7 @@ public object MapCatalog {
      * The 10x10 board used before map loading was introduced. No longer byte-for-byte the
      * original layout: elevation, water depth, and a rough-terrain patch were added to give the
      * TUI's terrain color roles something to exercise. All original terrain families, and every
-     * sample spawn cell, are unchanged. Kept in sync with `maps/default.json` — see
+     * sample spawn cell, are unchanged. Kept in sync with `map/default.json` — see
      * `MapSourceTest`.
      */
     public fun defaultMap(): GameMap {

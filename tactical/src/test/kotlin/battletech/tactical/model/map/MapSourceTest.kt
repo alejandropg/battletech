@@ -17,16 +17,16 @@ internal class MapSourceTest {
 
     /**
      * [resolveMap]`("default")` returns [MapCatalog.defaultMap] directly and never reads
-     * `maps/default.json` — a built-in id always wins over the file-loader fallback (see
+     * `map/default.json` — a built-in id always wins over the file-loader fallback (see
      * [resolveMap]'s KDoc). That means the test above proves nothing about the file: the two
      * representations could silently drift and no other test would catch it. This one loads
-     * `maps/default.json` explicitly and compares every cell against [MapCatalog.defaultMap],
+     * `map/default.json` explicitly and compares every cell against [MapCatalog.defaultMap],
      * cell by cell rather than via `GameMap` equality, so a mismatch names the coordinate and the
      * field, not just "not equal".
      */
     @Test
     fun `maps default json matches MapCatalog defaultMap`() {
-        val file = repoRoot().resolve("maps/default.json")
+        val file = repoRoot().resolve("map/default.json")
         val fromFile = GameMapLoader().load(file)
         val fromCatalog = MapCatalog.defaultMap()
 
