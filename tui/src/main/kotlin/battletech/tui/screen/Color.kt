@@ -16,6 +16,7 @@ public enum class Color {
     ORANGE,
     MAGENTA,
     LIGHT_BLUE,
+    DARK_GRAY,
     GRAY,
 
     // Soft terrain background tints (truecolor). Used only as backgrounds — dark and

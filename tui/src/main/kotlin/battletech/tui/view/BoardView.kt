@@ -12,14 +12,15 @@ import battletech.tui.hex.HexLayout
 import battletech.tui.hex.HexRenderer
 import battletech.tui.hex.UnitRenderer
 import battletech.tui.screen.Canvas
+import battletech.tui.screen.Cell
 import battletech.tui.screen.Color
 
 /**
- * The tactical map's content: every hex, highlight, and unit glyph, drawn at its unscrolled
- * screen position. Purely content — chrome and scrolling belong to the [Bordered]/[Scrolled] that
- * wraps this view (see its construction in `RunLoop.renderFrame`); the only thing this view
- * contributes to scrolling is marking the cursor hex as focus via [Canvas.markFocus], so
- * auto-follow keeps it visible.
+ * The tactical map's content: coordinate labels, every hex, highlight, and unit glyph, drawn at
+ * its unscrolled screen position. Purely content — chrome and scrolling belong to the
+ * [Bordered]/[Scrolled] that wraps this view (see its construction in `RunLoop.renderFrame`); the
+ * only thing this view contributes to scrolling is marking the cursor hex as focus via
+ * [Canvas.markFocus], so auto-follow keeps it visible.
  */
 internal class BoardView(
     private val state: PlayerGameState,
@@ -35,8 +36,13 @@ internal class BoardView(
 ) : View {
 
     override fun render(canvas: Canvas) {
+        val (mapWidth, mapHeight) = mapSize(state.map)
+        renderCoordinates(canvas, mapWidth, mapHeight)
+
         for ((coords, hex) in state.map.hexes) {
-            val (x, y) = HexLayout.hexToScreen(coords.col, coords.row)
+            val (rawX, rawY) = HexLayout.hexToScreen(coords.col, coords.row)
+            val x = MAP_ORIGIN_X + rawX
+            val y = MAP_ORIGIN_Y + rawY
 
             val baseHighlight = when {
                 coords == cursorPosition -> HexHighlight.CURSOR
@@ -107,9 +113,54 @@ internal class BoardView(
         }
     }
 
+    private fun renderCoordinates(canvas: Canvas, mapWidth: Int, mapHeight: Int) {
+        val coordinates = state.map.hexes.keys
+        val maxCol = coordinates.maxOfOrNull { it.col } ?: return
+        val maxRow = coordinates.maxOfOrNull { it.row } ?: return
+
+        for (col in 0..maxCol) {
+            val label = coordinateLabel(col + 1)
+            val centerX = MAP_ORIGIN_X + col * HexGeometry.COL_STRIDE + HexGeometry.HEX_WIDTH / 2
+            val labelX = centerX - label.length / 2
+            canvas.writeString(labelX, 0, label, COORDINATE_STYLE)
+            canvas.writeString(
+                labelX,
+                MAP_ORIGIN_Y + mapHeight + BOTTOM_LABEL_GAP,
+                label,
+                COORDINATE_STYLE,
+            )
+        }
+
+        for (row in 0..maxRow) {
+            val label = coordinateLabel(row + 1)
+            val labelY = MAP_ORIGIN_Y + row * HexGeometry.ROW_STRIDE + HexGeometry.HEX_HEIGHT / 2
+            canvas.writeString(0, labelY, label, COORDINATE_STYLE)
+            canvas.writeString(MAP_ORIGIN_X + mapWidth + SIDE_LABEL_GAP, labelY, label, COORDINATE_STYLE)
+        }
+    }
+
+    private fun coordinateLabel(value: Int): String = value.toString().padStart(2, '0')
+
     internal companion object {
-        /** The unscrolled content size needed to draw every hex in [map] — the board's [ContentExtent.Fixed]. */
+        /** Horizontal and vertical margins reserved for the map's 1-based coordinate labels. */
+        private const val SIDE_LABEL_WIDTH: Int = 2
+        private const val SIDE_LABEL_GAP: Int = 2
+
+        internal const val MAP_ORIGIN_X: Int = SIDE_LABEL_WIDTH + SIDE_LABEL_GAP
+        internal const val MAP_ORIGIN_Y: Int = 1
+        internal const val BOTTOM_LABEL_GAP: Int = 1
+
+        private val COORDINATE_STYLE: Cell.Style = Cell.Style(Color.DARK_GRAY)
+
+        /** The unscrolled content size needed to draw [map] and its coordinate labels. */
         internal fun contentSize(map: GameMap): Pair<Int, Int> {
+            val (mapWidth, mapHeight) = mapSize(map)
+            val width = mapWidth + MAP_ORIGIN_X + SIDE_LABEL_GAP + SIDE_LABEL_WIDTH
+            val height = mapHeight + MAP_ORIGIN_Y + BOTTOM_LABEL_GAP + 1
+            return width to height
+        }
+
+        private fun mapSize(map: GameMap): Pair<Int, Int> {
             val coords = map.hexes.keys
             val maxCol = coords.maxOfOrNull { it.col } ?: 0
             val maxRow = coords.maxOfOrNull { it.row } ?: 0

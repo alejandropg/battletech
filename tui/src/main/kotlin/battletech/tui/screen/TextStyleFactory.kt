@@ -83,6 +83,7 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
         Color.ORANGE -> TextColors.color(Ansi256(208))
         Color.MAGENTA -> TextColors.magenta
         Color.LIGHT_BLUE -> TextColors.color(Ansi256(117))
+        Color.DARK_GRAY -> TextColors.color(Ansi256(238))
         Color.GRAY -> TextColors.gray
 
         // WHISPER

@@ -11,15 +11,16 @@ import battletech.tui.game.moveCursor
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
 import battletech.tui.view.Bordered
+import battletech.tui.view.BoardView
 import battletech.tui.view.Workspace
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 
 /**
- * Where the board's own content — hex (0,0)'s top-left corner at zero scroll — sits in ABSOLUTE
- * screen coordinates, which is what a [MouseEvent] carries. Used by all idle-selecting states to
- * turn a click into a hex.
+ * Where the board's hex (0,0)'s top-left corner at zero scroll — after the coordinate-label
+ * margins — sits in ABSOLUTE screen coordinates, which is what a [MouseEvent] carries. Used by
+ * all idle-selecting states to turn a click into a hex.
  *
  * Every term is derived rather than hardcoded so these cannot drift from the code that actually
  * places the board:
@@ -31,12 +32,14 @@ import com.github.ajalt.mordant.input.MouseEvent
  * - [Bordered.VIEWPORT_INSET] — the border and horizontal gutters around the viewport.
  * - [Bordered.PADDING]`.vertical().top` — the spacer row that lives at the top of the
  *   scrollable content stream (reclaimed once the board scrolls, same as any scrollable panel).
+ * - [BoardView.MAP_ORIGIN_X]/[BoardView.MAP_ORIGIN_Y] — the margins reserved for the board's
+ *   1-based coordinate labels.
  *
  * The board region itself starts at x = 0, so no horizontal counterpart to the status bar exists.
  */
-internal val BOARD_ORIGIN_X = Bordered.VIEWPORT_INSET.left
-internal val BOARD_ORIGIN_Y =
-    Workspace.STATUS_BAR_HEIGHT + Bordered.VIEWPORT_INSET.top + Bordered.PADDING.vertical().top
+internal val BOARD_ORIGIN_X: Int = Bordered.VIEWPORT_INSET.left + BoardView.MAP_ORIGIN_X
+internal val BOARD_ORIGIN_Y: Int =
+    Workspace.STATUS_BAR_HEIGHT + Bordered.VIEWPORT_INSET.top + Bordered.PADDING.vertical().top + BoardView.MAP_ORIGIN_Y
 
 /**
  * A short flash for a rejected command, or null if [result] was accepted.
