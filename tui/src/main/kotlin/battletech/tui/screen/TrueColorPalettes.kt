@@ -20,8 +20,8 @@ internal object DarkPalette : RolePalette {
         Color.SUCCESS -> rgb(0x8BD17C)
         Color.WARNING -> rgb(0xF3D36A)
         Color.DANGER -> rgb(0xFF9999)
-        Color.PLAYER_1 -> rgb(0x8BCBFF)
-        Color.PLAYER_2 -> rgb(0xFF94D6)
+        Color.PLAYER_1 -> rgb(0xA8D8FF)
+        Color.PLAYER_2 -> rgb(0xFFC0E7)
         Color.DRAFT -> rgb(0xA6ADB4)
         Color.DISABLED -> rgb(0x899198)
         Color.DESTROYED -> rgb(0xC0C6CB)
@@ -31,26 +31,25 @@ internal object DarkPalette : RolePalette {
         Color.BOARD_BORDER -> rgb(0x686E75)
         Color.BOARD_ACTIVE -> rgb(0xFFD166)
         Color.MOVE_WALK -> rgb(0xF1F3F5)
-        Color.MOVE_RUN -> rgb(0xFFAD66)
+        // Brightened to preserve the board's contrast floor over the restored shallow-water fill.
+        Color.MOVE_RUN -> rgb(0xFFC797)
         Color.MOVE_JUMP -> rgb(0x7FE1E5)
-        Color.ATTACK_RANGE -> rgb(0xB8C0C7)
+        Color.ATTACK_RANGE -> rgb(0xCDD3D8)
         Color.LINE_OF_SIGHT -> rgb(0xFFE17A)
         Color.TARGET_VALID -> rgb(0xFFE17A)
-        Color.TARGET_SELECTED -> rgb(0xFF9999)
+        Color.TARGET_SELECTED -> rgb(0xFFC4C4)
         Color.TERRAIN_CLEAR_BG -> rgb(0x15191C)
-        // Lightened back toward the more saturated greens/blues the literal-color scheme used —
-        // WATER_SHALLOW barely moved: DANGER/TARGET_SELECTED's 4.5:1 guarantee against it left
-        // almost no headroom (any brighter and a selected unit standing in shallow water loses
-        // that guarantee). WOODS_HEAVY and WATER_DEEP had the most room and reuse the original
-        // literal values outright.
-        Color.TERRAIN_WOODS_LIGHT_BG -> rgb(0x334E2D)
+        // Restored from the literal-color palette in e51fecd6. These fills are intentionally
+        // brighter than the first semantic-theme pass; affected board foregrounds above and the
+        // water icon below are raised just enough to retain the palette's contrast guarantee.
+        Color.TERRAIN_WOODS_LIGHT_BG -> rgb(0x3E5E33)
         Color.TERRAIN_WOODS_HEAVY_BG -> rgb(0x2C4826)
-        Color.TERRAIN_WATER_SHALLOW_BG -> rgb(0x284B62)
-        Color.TERRAIN_WATER_DEEP_BG -> rgb(0x234A66)
+        Color.TERRAIN_WATER_SHALLOW_BG -> rgb(0x2F5E7E)
+        Color.TERRAIN_WATER_DEEP_BG -> rgb(0x234C68)
         Color.TERRAIN_ROUGH_BG -> rgb(0x3C3A35)
         Color.TERRAIN_WOODS_LIGHT_ICON -> rgb(0xA7D99A)
         Color.TERRAIN_WOODS_HEAVY_ICON -> rgb(0x86C979)
-        Color.TERRAIN_WATER_ICON -> rgb(0x8FD8FF)
+        Color.TERRAIN_WATER_ICON -> rgb(0x98DBFF)
         Color.TERRAIN_ROUGH_ICON -> rgb(0xD7B98B)
         // Darkened so an elevated clear hex — now a whole-hex fill, not just the badge cell —
         // doesn't out-compete the mechs standing on it for attention.

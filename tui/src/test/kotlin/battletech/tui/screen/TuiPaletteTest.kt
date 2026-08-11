@@ -15,8 +15,9 @@ import org.junit.jupiter.api.Test
  *
  * Deliberately does NOT assert the ~36 non-default role values one by one — that would duplicate
  * the palette source in the test and fail on every deliberate tweak while catching nothing these
- * properties don't already cover. Only the two default-surface values are pinned exactly, because
- * the screen-renderer tests assert literal escape sequences built from them.
+ * properties don't already cover. The two default-surface values and the four intentionally
+ * restored dark-theme terrain fills are pinned exactly: renderer output depends on the former,
+ * while the latter are an explicit compatibility target from the previous palette.
  */
 internal class TuiPaletteTest {
 
@@ -46,6 +47,16 @@ internal class TuiPaletteTest {
         val light = TuiPalette.forTheme(TuiTheme.LIGHT)
         assertThat(light.foreground(Color.DEFAULT)).isEqualTo(rgb(0x20, 0x24, 0x28))
         assertThat(light.background(Color.DEFAULT)).isEqualTo(rgb(0xF8, 0xF5, 0xEE))
+    }
+
+    @Test
+    fun `dark truecolor terrain fills restore the previous palette values`() {
+        val dark = TuiPalette.forTheme(TuiTheme.DARK)
+
+        assertThat(dark.background(Color.TERRAIN_WOODS_LIGHT_BG)).isEqualTo(rgb(0x3E, 0x5E, 0x33))
+        assertThat(dark.background(Color.TERRAIN_WOODS_HEAVY_BG)).isEqualTo(rgb(0x2C, 0x48, 0x26))
+        assertThat(dark.background(Color.TERRAIN_WATER_SHALLOW_BG)).isEqualTo(rgb(0x2F, 0x5E, 0x7E))
+        assertThat(dark.background(Color.TERRAIN_WATER_DEEP_BG)).isEqualTo(rgb(0x23, 0x4C, 0x68))
     }
 
     @Test
