@@ -17,8 +17,8 @@ import com.github.ajalt.colormath.Color as ColorValue
  * and the result is split into an open/close pair ([Tags]) that the renderer can then paste
  * around plain text with no further Mordant involvement.
  *
- * [palette] resolves every [Color] role to a [PaletteColor] already authored in the right color
- * space for [ansiLevel] — there is no downsampling here or anywhere else in this class.
+ * [palette] resolves every [Color] role to a [PaletteColor] already authored in the selected
+ * theme's color space — there is no downsampling here or anywhere else in this class.
  * [ansiLevel] is used for exactly one thing: [AnsiLevel.NONE] suppresses tags entirely. Do not
  * grow it back into a conversion knob — that job now belongs to which [TuiTheme] was selected.
  */

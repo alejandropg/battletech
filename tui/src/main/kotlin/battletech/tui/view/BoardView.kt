@@ -138,7 +138,6 @@ internal class BoardView(
     private fun coordinateLabel(value: Int): String = value.toString().padStart(2, '0')
 
     internal companion object {
-        /** Horizontal and vertical margins reserved for the map's 1-based coordinate labels. */
         private const val SIDE_LABEL_WIDTH: Int = 2
         private const val SIDE_LABEL_GAP: Int = 2
 

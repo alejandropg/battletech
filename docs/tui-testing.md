@@ -67,8 +67,10 @@ them; `-e` keeps the escape sequences in the captured text.
   woods, shallow water, deep water, and rough are six visibly different hex fills. At `*-256` and
   `*-16`, every terrain hex shares the same fill; material reads from the icon glyph and color
   instead — do not expect fill differences there.
-- Light woods vs. heavy woods, and shallow vs. deep water: light/shallow reads visibly brighter
-  than heavy/deep (truecolor and `*-256`; glyph-only at `*-16`).
+- Terrain brightness (**truecolor themes only** — `dark`/`light`): light woods and shallow water
+  read visibly brighter than heavy woods and deep water. In `*-256` and `*-16`, terrain fills are
+  shared; woods density is carried by glyph/color, while shallow and deep water intentionally share
+  the same glyph/color.
 - Elevation badges: elevation 1, 2, and 3+ hexes show distinct badge-background tiers at every
   theme, since the badge is the one place elevation tier survives even in the reduced themes.
 - Player contrast over water: a Player 1 unit is legible over both shallow and deep water (the

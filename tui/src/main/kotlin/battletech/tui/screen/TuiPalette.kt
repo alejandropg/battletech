@@ -1,9 +1,9 @@
 package battletech.tui.screen
 
 /**
- * Resolves semantic [Color] roles to [PaletteColor]s for one [TuiTheme]. Rendering views must
- * only ever see [Color] — this and [PaletteColor] are the only places a theme-specific value
- * exists.
+ * Resolves semantic [Color] roles to [PaletteColor]s for one [TuiTheme]. Rendering views only ever
+ * see [Color]; theme-specific RGB, xterm, and SGR values live in [RolePalette] implementations
+ * and are exposed here as [PaletteColor].
  */
 internal class TuiPalette(private val roles: RolePalette) {
     /** [role]'s foreground. For [Color.DEFAULT] this is the theme's default foreground — the only role where [foreground] and [background] differ. */

@@ -32,7 +32,6 @@ public enum class TuiTheme(
             AnsiLevel.NONE -> DARK
         }
 
-        /** The [TuiTheme] whose [flag] is [value], or null if no theme matches. */
         internal fun fromFlag(value: String): TuiTheme? = entries.find { it.flag == value }
     }
 }

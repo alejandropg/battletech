@@ -2,8 +2,8 @@ package battletech.tui.screen
 
 /**
  * A semantic color role. Every role resolves to a concrete color through the active
- * [TuiTheme]/[TuiPalette] — nothing in this package or its callers knows an RGB value, an xterm
- * index, or an SGR code directly.
+ * [TuiTheme]/[TuiPalette]. Rendering callers use only these roles; concrete RGB, xterm, and SGR
+ * values are confined to the [RolePalette] implementations.
  *
  * Several roles deliberately resolve to the same value in some themes (e.g. [ACCENT]/
  * [BOARD_ACTIVE], [DANGER]/[TARGET_SELECTED], [LINE_OF_SIGHT]/[TARGET_VALID]). That is
