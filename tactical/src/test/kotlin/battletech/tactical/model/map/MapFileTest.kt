@@ -21,19 +21,19 @@ internal class MapFileTest {
     }
 
     @Test
-    fun `listed hexes overlay their terrain elevation and depth`() {
+    fun `listed one-based hexes overlay zero-based internal coordinates`() {
         val mapFile = MapFile(
             width = 3,
             height = 3,
             hexes = listOf(
                 HexSpec(col = 1, row = 1, terrain = Terrain.WATER, elevation = 0, depth = 2),
-                HexSpec(col = 2, row = 0, terrain = Terrain.HEAVY_WOODS, elevation = 1),
+                HexSpec(col = 3, row = 1, terrain = Terrain.HEAVY_WOODS, elevation = 1),
             ),
         )
 
         val map = mapFile.toGameMap()
 
-        val special = map.hexes.getValue(HexCoordinates(1, 1))
+        val special = map.hexes.getValue(HexCoordinates(0, 0))
         assertThat(special.terrain).isEqualTo(Terrain.WATER)
         assertThat(special.depth).isEqualTo(2)
 
@@ -41,20 +41,34 @@ internal class MapFileTest {
         assertThat(woods.terrain).isEqualTo(Terrain.HEAVY_WOODS)
         assertThat(woods.elevation).isEqualTo(1)
 
-        val untouched = map.hexes.getValue(HexCoordinates(0, 0))
+        val untouched = map.hexes.getValue(HexCoordinates(1, 1))
         assertThat(untouched.terrain).isEqualTo(Terrain.CLEAR)
     }
 
     @Test
-    fun `out of bounds column throws MapLoadException`() {
-        val mapFile = MapFile(width = 2, height = 2, hexes = listOf(HexSpec(col = 5, row = 0)))
+    fun `zero column throws MapLoadException`() {
+        val mapFile = MapFile(width = 2, height = 2, hexes = listOf(HexSpec(col = 0, row = 1)))
 
         assertThrows<MapLoadException> { mapFile.toGameMap() }
     }
 
     @Test
-    fun `out of bounds row throws MapLoadException`() {
-        val mapFile = MapFile(width = 2, height = 2, hexes = listOf(HexSpec(col = 0, row = 5)))
+    fun `column greater than width throws MapLoadException`() {
+        val mapFile = MapFile(width = 2, height = 2, hexes = listOf(HexSpec(col = 3, row = 1)))
+
+        assertThrows<MapLoadException> { mapFile.toGameMap() }
+    }
+
+    @Test
+    fun `zero row throws MapLoadException`() {
+        val mapFile = MapFile(width = 2, height = 2, hexes = listOf(HexSpec(col = 1, row = 0)))
+
+        assertThrows<MapLoadException> { mapFile.toGameMap() }
+    }
+
+    @Test
+    fun `row greater than height throws MapLoadException`() {
+        val mapFile = MapFile(width = 2, height = 2, hexes = listOf(HexSpec(col = 1, row = 3)))
 
         assertThrows<MapLoadException> { mapFile.toGameMap() }
     }

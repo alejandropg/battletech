@@ -8,6 +8,7 @@ import kotlinx.serialization.Serializable
 
 /**
  * On-disk shape of a compact map file: a board size plus only the non-default hexes.
+ * Hex coordinates in the file are 1-based, matching BattleTech map notation.
  * Every hex not listed in [hexes] is generated as [Terrain.CLEAR] at elevation/depth 0.
  */
 @Serializable
@@ -17,7 +18,7 @@ public data class MapFile(
     public val hexes: List<HexSpec> = emptyList(),
 ) {
 
-    /** Expands this compact description into a full [GameMap], validating bounds. */
+    /** Expands this compact description into a full 0-based [GameMap], validating bounds. */
     public fun toGameMap(): GameMap {
         if (width <= 0) throw MapLoadException("Map width must be positive, was $width")
         if (height <= 0) throw MapLoadException("Map height must be positive, was $height")
@@ -31,12 +32,13 @@ public data class MapFile(
         }
 
         for (spec in hexes) {
-            if (spec.col !in 0 until width || spec.row !in 0 until height) {
+            if (spec.col !in 1..width || spec.row !in 1..height) {
                 throw MapLoadException(
-                    "Hex (${spec.col}, ${spec.row}) is out of bounds for a ${width}x$height map"
+                    "Hex (${spec.col}, ${spec.row}) is out of bounds for a ${width}x$height map " +
+                        "using 1-based coordinates"
                 )
             }
-            val coords = HexCoordinates(spec.col, spec.row)
+            val coords = HexCoordinates(spec.col - 1, spec.row - 1)
             grid[coords] = Hex(coords, spec.terrain, spec.elevation, spec.depth)
         }
 
@@ -44,7 +46,7 @@ public data class MapFile(
     }
 }
 
-/** A single non-default hex override in a [MapFile]. */
+/** A single non-default hex override in a [MapFile], using 1-based coordinates. */
 @Serializable
 public data class HexSpec(
     public val col: Int,

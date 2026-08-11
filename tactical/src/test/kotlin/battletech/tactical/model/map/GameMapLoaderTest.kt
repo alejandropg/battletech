@@ -18,7 +18,7 @@ internal class GameMapLoaderTest {
         val file = tempDir.resolve("map.json")
         file.writeText(
             """
-            {"width":2,"height":2,"hexes":[{"col":1,"row":0,"terrain":"WATER","depth":1}]}
+            {"width":2,"height":2,"hexes":[{"col":2,"row":1,"terrain":"WATER","depth":1}]}
             """.trimIndent()
         )
 
