@@ -103,24 +103,63 @@ internal class HexRendererTest {
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(Color.TERRAIN_WATER_DEEP_BG, buffer.get(4, 3).style.bg)
-        // The icon color does not vary with depth — only the fill does.
+        // The water terrain icon color does not vary with depth — only the fill does.
         assertEquals(Color.TERRAIN_WATER_ICON, buffer.get(2, 1).style.fg)
     }
 
-    // ---- elevation: badge only, terrain fill never changes ---------------------------------
-
     @Test
-    fun `elevation is rendered as a numeric badge glyph`() {
-        val buffer = ScreenBuffer(10, 6)
-        val hex = Hex(HexCoordinates(0, 0), elevation = 2)
+    fun `elevations use solid numeric badge glyphs`() {
+        val codePoints = 0xF0F0F..0xF0F17
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        for ((elevation, codePoint) in (1..9).zip(codePoints)) {
+            val buffer = ScreenBuffer(10, 6)
+            val hex = Hex(HexCoordinates(0, 0), elevation = elevation)
 
-        assertEquals(String(Character.toChars(0xF03A8)), buffer.get(6, 1).char)
+            HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+            assertEquals(String(Character.toChars(codePoint)), buffer.get(6, 1).char, "elevation=$elevation")
+        }
     }
 
     @Test
-    fun `elevation zero renders no badge — content stays the plain terrain fill`() {
+    fun `depths use outline numeric badge glyphs`() {
+        val codePoints = listOf(
+            0xF03A5,
+            0xF03A8,
+            0xF03AB,
+            0xF03B2,
+            0xF03AF,
+            0xF03B4,
+            0xF03B7,
+            0xF03BA,
+            0xF03BD,
+        )
+
+        for ((depth, codePoint) in (1..9).zip(codePoints)) {
+            val buffer = ScreenBuffer(10, 6)
+            val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = depth)
+
+            HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+            val badge = buffer.get(6, 1)
+            val expectedBg = if (depth == 1) Color.TERRAIN_WATER_SHALLOW_BG else Color.TERRAIN_WATER_DEEP_BG
+            assertEquals(String(Character.toChars(codePoint)), badge.char, "depth=$depth")
+            assertEquals(expectedBg, badge.style.bg, "depth=$depth")
+        }
+    }
+
+    @Test
+    fun `elevation badge is rendered instead of depth badge when both are present`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, elevation = 2, depth = 3)
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+        assertEquals(String(Character.toChars(0xF0F10)), buffer.get(6, 1).char)
+    }
+
+    @Test
+    fun `zero elevation and depth render no badge — content stays the plain terrain fill`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 

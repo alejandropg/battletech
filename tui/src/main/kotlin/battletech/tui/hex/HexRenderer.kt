@@ -14,7 +14,18 @@ private val NF_MD_PINE_TREE = String(Character.toChars(0xF0531))
 private val NF_MD_WAVES = String(Character.toChars(0xF078D))
 private val NF_MD_GRAIN = String(Character.toChars(0xF0D7C))
 
-// Elevation icons (nf-md-numeric_N_box_multiple_outline)
+// Elevation icons (nf-md-numeric_N_box_multiple)
+private val NF_MD_NUMERIC_1_BOX_MULTIPLE = String(Character.toChars(0xF0F0F))
+private val NF_MD_NUMERIC_2_BOX_MULTIPLE = String(Character.toChars(0xF0F10))
+private val NF_MD_NUMERIC_3_BOX_MULTIPLE = String(Character.toChars(0xF0F11))
+private val NF_MD_NUMERIC_4_BOX_MULTIPLE = String(Character.toChars(0xF0F12))
+private val NF_MD_NUMERIC_5_BOX_MULTIPLE = String(Character.toChars(0xF0F13))
+private val NF_MD_NUMERIC_6_BOX_MULTIPLE = String(Character.toChars(0xF0F14))
+private val NF_MD_NUMERIC_7_BOX_MULTIPLE = String(Character.toChars(0xF0F15))
+private val NF_MD_NUMERIC_8_BOX_MULTIPLE = String(Character.toChars(0xF0F16))
+private val NF_MD_NUMERIC_9_BOX_MULTIPLE = String(Character.toChars(0xF0F17))
+
+// Depth icons (nf-md-numeric_N_box_multiple_outline)
 private val NF_MD_NUMERIC_1_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03A5))
 private val NF_MD_NUMERIC_2_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03A8))
 private val NF_MD_NUMERIC_3_BOX_MULTIPLE_OUTLINE = String(Character.toChars(0xF03AB))
@@ -44,6 +55,19 @@ public object HexRenderer {
     }
 
     private fun elevationIcon(elevation: Int): String = when (elevation) {
+        1 -> NF_MD_NUMERIC_1_BOX_MULTIPLE
+        2 -> NF_MD_NUMERIC_2_BOX_MULTIPLE
+        3 -> NF_MD_NUMERIC_3_BOX_MULTIPLE
+        4 -> NF_MD_NUMERIC_4_BOX_MULTIPLE
+        5 -> NF_MD_NUMERIC_5_BOX_MULTIPLE
+        6 -> NF_MD_NUMERIC_6_BOX_MULTIPLE
+        7 -> NF_MD_NUMERIC_7_BOX_MULTIPLE
+        8 -> NF_MD_NUMERIC_8_BOX_MULTIPLE
+        9 -> NF_MD_NUMERIC_9_BOX_MULTIPLE
+        else -> error("No elevation icon for elevation: $elevation")
+    }
+
+    private fun depthIcon(depth: Int): String = when (depth) {
         1 -> NF_MD_NUMERIC_1_BOX_MULTIPLE_OUTLINE
         2 -> NF_MD_NUMERIC_2_BOX_MULTIPLE_OUTLINE
         3 -> NF_MD_NUMERIC_3_BOX_MULTIPLE_OUTLINE
@@ -53,10 +77,9 @@ public object HexRenderer {
         7 -> NF_MD_NUMERIC_7_BOX_MULTIPLE_OUTLINE
         8 -> NF_MD_NUMERIC_8_BOX_MULTIPLE_OUTLINE
         9 -> NF_MD_NUMERIC_9_BOX_MULTIPLE_OUTLINE
-        else -> error("No elevation icon for elevation: $elevation")
+        else -> error("No depth icon for depth: $depth")
     }
 
-    /** The badge background role for a non-zero [elevation] — see [renderElevation]. */
     private fun elevationBadgeBg(elevation: Int): Color = when (elevation) {
         1 -> Color.ELEVATION_1_BADGE_BG
         2 -> Color.ELEVATION_2_BADGE_BG
@@ -132,7 +155,7 @@ public object HexRenderer {
         renderBorder(canvas, x, y, borderFg, bg)
         renderContent(canvas, x, y, bg)
         renderTerrain(canvas, x, y, hex.terrain, bg)
-        renderElevation(canvas, x, y, hex.elevation)
+        renderLevelBadge(canvas, x, y, hex.elevation, hex.depth)
         when (highlight) {
             HexHighlight.REACHABLE_WALK -> renderOverlayChar(canvas, x, y, ".", Color.MOVE_WALK)
             HexHighlight.REACHABLE_RUN -> renderOverlayChar(canvas, x, y, ".", Color.MOVE_RUN)
@@ -237,18 +260,19 @@ public object HexRenderer {
     }
 
     /**
-     * The elevation badge glyph. On a material terrain (woods/water/rough), [terrainFill] left
-     * the whole hex in that terrain's own color, so this cell is where this badge intentionally
-     * replaces it for its single cell — the one place elevation tier survives at every color
-     * depth there, since the reduced themes fold every `TERRAIN_*_BG` role into the default
-     * surface (see the palette plan's "Fidelity" table). On a CLEAR hex, [terrainFill] already
-     * filled the whole hex with this same elevation color, so this only draws the glyph itself.
-     * Elevation zero renders no badge at all, leaving the terrain fill intact either way.
+     * The elevation/depth badge glyph. Elevation takes precedence when both values are non-zero.
+     * An elevation glyph uses its tier's badge background. A depth glyph changes only the cell's
+     * foreground, preserving the background painted by [terrainFill].
+     * A hex with neither elevation nor depth renders no badge at all, leaving the terrain fill
+     * intact either way.
      */
-    private fun renderElevation(canvas: Canvas, x: Int, y: Int, elevation: Int) {
-        if (elevation == 0) return
-        val icon = elevationIcon(elevation)
-        canvas.set(x + 6, y + 1, Cell(icon, Cell.Style(Color.ELEVATION_BADGE_FG, elevationBadgeBg(elevation))))
+    private fun renderLevelBadge(canvas: Canvas, x: Int, y: Int, elevation: Int, depth: Int) {
+        if (elevation != 0) {
+            val style = Cell.Style(Color.ELEVATION_BADGE_FG, elevationBadgeBg(elevation))
+            canvas.set(x + 6, y + 1, Cell(elevationIcon(elevation), style))
+        } else if (depth != 0) {
+            canvas.setFg(x + 6, y + 1, depthIcon(depth), Color.ELEVATION_BADGE_FG)
+        }
     }
 
 }
