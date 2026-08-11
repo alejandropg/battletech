@@ -153,7 +153,9 @@ public object HexRenderer {
         hex.terrain == Terrain.LIGHT_WOODS -> Color.WOODS_LIGHT_BG
         hex.terrain == Terrain.HEAVY_WOODS -> Color.WOODS_HEAVY_BG
         hex.terrain == Terrain.ROUGH       -> Color.ROUGH_BG
-        hex.elevation >= 1                 -> if (hex.elevation == 1) Color.ELEVATION_LOW_BG else Color.ELEVATION_HIGH_BG
+        hex.elevation == 1                 -> Color.ELEVATION_1_BG
+        hex.elevation == 2                 -> Color.ELEVATION_2_BG
+        hex.elevation >= 3                 -> Color.ELEVATION_HIGH_BG
         else                               -> Color.DEFAULT
     }
 

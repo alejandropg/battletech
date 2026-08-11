@@ -91,8 +91,8 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
 //        Color.WOODS_HEAVY_BG -> TextColors.rgb("#222B20")
 //        Color.WATER_SHALLOW_BG -> TextColors.rgb("#26333F")
 //        Color.WATER_DEEP_BG -> TextColors.rgb("#1F2A33")
-//        Color.ELEVATION_LOW_BG -> TextColors.rgb("#332A20")
-//        Color.ELEVATION_HIGH_BG -> TextColors.rgb("#3D3428")
+//        Color.ELEVATION_1_BG -> TextColors.rgb("#332A20")
+//        Color.ELEVATION_2_BG -> TextColors.rgb("#3D3428")
 //        Color.ROUGH_BG -> TextColors.rgb("#332C24")
 
         // SOFT
@@ -100,8 +100,8 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
 //        Color.WOODS_HEAVY_BG -> TextColors.rgb("#253018")
 //        Color.WATER_SHALLOW_BG -> TextColors.rgb("#2C3F52")
 //        Color.WATER_DEEP_BG -> TextColors.rgb("#1F2D3D")
-//        Color.ELEVATION_LOW_BG -> TextColors.rgb("#3D3020")
-//        Color.ELEVATION_HIGH_BG -> TextColors.rgb("#4A3C29")
+//        Color.ELEVATION_1_BG -> TextColors.rgb("#3D3020")
+//        Color.ELEVATION_2_BG -> TextColors.rgb("#4A3C29")
 //        Color.ROUGH_BG -> TextColors.rgb("#3D3226")
 
         // FRESH
@@ -109,8 +109,9 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
         Color.WOODS_HEAVY_BG -> TextColors.rgb("#2C4826")
         Color.WATER_SHALLOW_BG -> TextColors.rgb("#2F5E7E")
         Color.WATER_DEEP_BG -> TextColors.rgb("#234C68")
-        Color.ELEVATION_LOW_BG -> TextColors.rgb("#5A4327")
-        Color.ELEVATION_HIGH_BG -> TextColors.rgb("#6B5433")
+        Color.ELEVATION_1_BG -> TextColors.rgb("#5A4327")
+        Color.ELEVATION_2_BG -> TextColors.rgb("#6B5433")
+        Color.ELEVATION_HIGH_BG -> TextColors.rgb("#7C653F")
         Color.ROUGH_BG -> TextColors.rgb("#4A4030")
 
         // VIVID
@@ -118,8 +119,8 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
 //        Color.WOODS_HEAVY_BG -> TextColors.rgb("#356027")
 //        Color.WATER_SHALLOW_BG -> TextColors.rgb("#2E6E96")
 //        Color.WATER_DEEP_BG -> TextColors.rgb("#245B7E")
-//        Color.ELEVATION_LOW_BG -> TextColors.rgb("#6E4E28")
-//        Color.ELEVATION_HIGH_BG -> TextColors.rgb("#866437")
+//        Color.ELEVATION_1_BG -> TextColors.rgb("#6E4E28")
+//        Color.ELEVATION_2_BG -> TextColors.rgb("#866437")
 //        Color.ROUGH_BG -> TextColors.rgb("#5C4E38")
 
         // MEADOW (brighter / cheerful)
@@ -127,8 +128,8 @@ internal class TextStyleFactory(private val ansiLevel: AnsiLevel = AnsiLevel.TRU
 //        Color.WOODS_HEAVY_BG -> TextColors.rgb("#38652C")
 //        Color.WATER_SHALLOW_BG -> TextColors.rgb("#2F7CA2")
 //        Color.WATER_DEEP_BG -> TextColors.rgb("#256A8E")
-//        Color.ELEVATION_LOW_BG -> TextColors.rgb("#7C5C30")
-//        Color.ELEVATION_HIGH_BG -> TextColors.rgb("#977340")
+//        Color.ELEVATION_1_BG -> TextColors.rgb("#7C5C30")
+//        Color.ELEVATION_2_BG -> TextColors.rgb("#977340")
 //        Color.ROUGH_BG -> TextColors.rgb("#665640")
 
     }

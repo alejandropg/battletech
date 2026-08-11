@@ -293,6 +293,20 @@ internal class ScreenRendererTest {
     }
 
     @Test
+    fun `truecolor high elevation tint uses evenly spaced brown`() {
+        val buffer = ScreenBuffer(1, 1)
+        buffer.set(0, 0, Cell("X", Cell.Style(bg = Color.ELEVATION_HIGH_BG)))
+
+        renderer.render(buffer)
+
+        val out = recorder.output()
+        assertTrue(
+            out.contains("48;2;124;101;63m"),
+            "Expected high elevation RGB 124,101,63 in output: ${out.repr()}",
+        )
+    }
+
+    @Test
     fun `AnsiLevel NONE emits no SGR codes at all`() {
         val noneRecorder = TerminalRecorder(ansiLevel = AnsiLevel.NONE)
         val noneTerminal = Terminal(ansiLevel = AnsiLevel.NONE, terminalInterface = noneRecorder)

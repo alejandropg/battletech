@@ -125,11 +125,21 @@ internal class HexRendererTest {
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals(Color.ELEVATION_LOW_BG, buffer.get(4, 3).style.bg)
+        assertEquals(Color.ELEVATION_1_BG, buffer.get(4, 3).style.bg)
     }
 
     @Test
-    fun `higher elevation hill tints background with lighter brown`() {
+    fun `elevation 2 hill tints background with elevation 2 brown`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0), elevation = 2)
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+        assertEquals(Color.ELEVATION_2_BG, buffer.get(4, 3).style.bg)
+    }
+
+    @Test
+    fun `elevation 3 hill tints background with lighter brown`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), elevation = 3)
 

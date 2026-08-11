@@ -25,7 +25,8 @@ public enum class Color {
     WOODS_HEAVY_BG,
     WATER_SHALLOW_BG,
     WATER_DEEP_BG,
-    ELEVATION_LOW_BG,
+    ELEVATION_1_BG,
+    ELEVATION_2_BG,
     ELEVATION_HIGH_BG,
     ROUGH_BG;
 
