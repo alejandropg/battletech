@@ -21,7 +21,7 @@ Two tiers, distinguished by **how they load** — not by topic:
 
 ## Package layout per module
 
-- **`tactical/`** (`battletech.tactical.*`): `attack/` (incl. `physical/`, `weapon/` — attack resolution/declarations/crit tables for melee vs. gunnery), `dice/` (`DiceRoller` abstraction), `heat/` (generation/dissipation/phase resolution), `model/` (incl. `map/` — core `GameState`/`GameMap`/hex coordinates, map file loading/catalog), `movement/` (cost/reachability/phase handler), `query/` (per-player read/projection layer — `PlayerView`, `ForeignUnit`/`OwnUnit` redaction types), `session/` (`BattleSession`, `GameCommand`/`GameEvent`, phase handlers, redaction), `unit/`.
+- **`tactical/`** (`battletech.tactical.*`): `attack/` (incl. `physical/`, `weapon/` — attack resolution/declarations/crit tables for melee vs. gunnery), `dice/` (`DiceRoller` abstraction), `heat/` (generation/dissipation/phase resolution), `model/` (incl. `map/` — core `GameState`/`GameMap`/hex coordinates, filesystem/classpath map loading), `movement/` (cost/reachability/phase handler), `query/` (per-player read/projection layer — `PlayerView`, `ForeignUnit`/`OwnUnit` redaction types), `session/` (`BattleSession`, `GameCommand`/`GameEvent`, phase handlers, redaction), `unit/`.
 - **`network/`** (`battletech.network.*`): `client/` (`ClientGameSession`), `server/` (`GameServer`, `SocketAcceptor`), `transport/` (`ServerConnection`/`ClientConnection` port + the `JsonLineConnection` and `InMemoryConnection` adapters), `wire/` (`Messages`, `SessionId`, `WireJson`). Reuses `tactical.session`/`tactical.query` types directly as wire DTOs (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) rather than redefining them.
 - **`tui/`** (`battletech.tui.*`): `game/` (incl. `phase/` — app state, phase-specific UI logic like `AttackPhase`/`MovementPhase`/`WeaponAllocation`), `hex/` (hex-grid rendering/geometry), `input/` (keyboard input mapping per mode), `loop/` (terminal event flows + `runLoop`, the headless-testable event/render loop), `screen/` (low-level terminal screen buffer/diffing), `view/` (widget/panel rendering).
 
@@ -57,6 +57,8 @@ Intent: `model/` and `dice/` are leaf packages — nothing above them may be imp
 ## TUI packaging
 
 `tui/build.gradle.kts` applies `alias(libs.plugins.shadow)` — `com.gradleup.shadow`, version `9.4.2` per `gradle/libs.versions.toml`.
+
+Tactical's `processResources` copies the repository's root `map/` directory into the tactical runtime resources under `map/`. Because `tui` depends on `tactical`, Shadow JAR assembly includes those packaged maps transitively; map resources are not configured separately on `shadowJar`.
 
 `tasks.shadowJar` is configured with `archiveBaseName = "tui"`, `archiveClassifier = ""`, `archiveVersion = ""`, so the fat jar lands at exactly `tui/build/libs/tui.jar` (no `-all`/version suffix). `mergeServiceFiles()` is set to correctly merge `META-INF/services` entries from bundled dependencies.
 

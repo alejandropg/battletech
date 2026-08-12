@@ -1,3 +1,5 @@
+import org.gradle.language.jvm.tasks.ProcessResources
+
 plugins {
     id("battletech.kotlin-library")
     id("battletech.kotlin-serialization")
@@ -9,4 +11,10 @@ dependencies {
     api(libs.findLibrary("kotlinx-serialization-core").get())
     implementation(libs.findLibrary("kotlinx-serialization-json").get())
     testImplementation(libs.findLibrary("konsist").get())
+}
+
+tasks.named<ProcessResources>("processResources") {
+    from(rootProject.layout.projectDirectory.dir("map")) {
+        into("map")
+    }
 }

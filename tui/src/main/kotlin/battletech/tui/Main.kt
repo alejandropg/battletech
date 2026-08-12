@@ -20,7 +20,7 @@ import java.util.concurrent.CountDownLatch
 /** Default TCP port for `--host`/`--join`/`--server` when `--port`/an explicit port is not supplied. */
 internal const val DEFAULT_PORT: Int = 2470
 
-/** Built-in map id used when `--map` is not supplied. */
+/** Built-in map name used when `--map` is not supplied. */
 internal const val DEFAULT_MAP_NAME: String = "default"
 
 /**
@@ -161,8 +161,9 @@ private fun printUsageAndExit(message: String): Nothing {
           battletech-tui --join <ip[:port]> --session <id> [--theme <name>]          join a hosted session
           battletech-tui --server [--port N] [--map <name|path>]                     headless dedicated server (both players join remotely)
 
-          --map <name|path>  built-in map id (e.g. "$DEFAULT_MAP_NAME") or a path to a map file;
-                              default is "$DEFAULT_MAP_NAME". Invalid with --join (the map comes from the host).
+          --map <name|path>  built-in map name (e.g. "battletech-classic") or an existing
+                              map-file path; default is "$DEFAULT_MAP_NAME". Invalid with --join
+                              (the map comes from the host).
           --theme <name>     dark|light|dark-256|light-256|dark-16|light-16; default is chosen from
                               the terminal's detected color support. Invalid with --server.
         """.trimIndent(),
@@ -171,9 +172,9 @@ private fun printUsageAndExit(message: String): Nothing {
 }
 
 /**
- * Resolves a `--map` name (or [DEFAULT_MAP_NAME] when absent) to a [battletech.tactical.model.GameMap],
- * mirroring the arg-error exit style: on [MapLoadException], print the message to stderr and exit(2)
- * with no stack trace.
+ * Resolves a `--map` built-in name or existing path (or [DEFAULT_MAP_NAME] when absent) to a
+ * [battletech.tactical.model.GameMap], mirroring the arg-error exit style: on [MapLoadException],
+ * print the message to stderr and exit(2) with no stack trace.
  */
 private fun resolveMapOrExit(mapName: String?) = try {
     resolveMap(mapName ?: DEFAULT_MAP_NAME)

@@ -1,66 +1,126 @@
 package battletech.tactical.model.map
 
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.Terrain
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
-import kotlin.io.path.exists
 import kotlin.io.path.writeText
 
 internal class MapSourceTest {
 
     @Test
-    fun `built-in id resolves to the catalog map`() {
-        assertThat(resolveMap("default")).isEqualTo(MapCatalog.defaultMap())
-    }
+    fun `packaged default name resolves the expected terrain families`() {
+        val map = resolveMap("default")
 
-    /**
-     * [resolveMap]`("default")` returns [MapCatalog.defaultMap] directly and never reads
-     * `map/default.json` — a built-in id always wins over the file-loader fallback (see
-     * [resolveMap]'s KDoc). That means the test above proves nothing about the file: the two
-     * representations could silently drift and no other test would catch it. This one loads
-     * `map/default.json` explicitly and compares every cell against [MapCatalog.defaultMap],
-     * cell by cell rather than via `GameMap` equality, so a mismatch names the coordinate and the
-     * field, not just "not equal".
-     */
-    @Test
-    fun `maps default json matches MapCatalog defaultMap`() {
-        val file = repoRoot().resolve("map/default.json")
-        val fromFile = GameMapLoader().load(file)
-        val fromCatalog = MapCatalog.defaultMap()
+        assertThat(map.hexes).hasSize(100)
 
-        assertThat(fromFile.hexes.keys).isEqualTo(fromCatalog.hexes.keys)
-        for (coords in fromCatalog.hexes.keys) {
-            val expected = fromCatalog.hexes.getValue(coords)
-            val actual = fromFile.hexes.getValue(coords)
-            assertThat(actual.terrain).describedAs("terrain at $coords").isEqualTo(expected.terrain)
-            assertThat(actual.elevation).describedAs("elevation at $coords").isEqualTo(expected.elevation)
-            assertThat(actual.depth).describedAs("depth at $coords").isEqualTo(expected.depth)
-        }
-    }
+        assertThat(map.hexes.getValue(HexCoordinates(3, 2)).terrain).isEqualTo(Terrain.LIGHT_WOODS)
+        assertThat(map.hexes.getValue(HexCoordinates(3, 5)).terrain).isEqualTo(Terrain.LIGHT_WOODS)
+        assertThat(map.hexes.getValue(HexCoordinates(3, 6)).terrain).isEqualTo(Terrain.CLEAR)
 
-    /** Walks upward from the working directory to the directory containing `settings.gradle.kts`, so this test resolves `maps/` under both Gradle's and an IDE's working directory. */
-    private fun repoRoot(): Path {
-        var dir = Path.of("").toAbsolutePath()
-        while (!dir.resolve("settings.gradle.kts").exists()) {
-            dir = dir.parent ?: error("Could not locate settings.gradle.kts above ${Path.of("").toAbsolutePath()}")
-        }
-        return dir
+        assertThat(map.hexes.getValue(HexCoordinates(4, 3)).terrain).isEqualTo(Terrain.HEAVY_WOODS)
+        assertThat(map.hexes.getValue(HexCoordinates(4, 4)).terrain).isEqualTo(Terrain.HEAVY_WOODS)
+        assertThat(map.hexes.getValue(HexCoordinates(4, 5)).terrain).isEqualTo(Terrain.CLEAR)
+
+        assertThat(map.hexes.getValue(HexCoordinates(6, 1)).terrain).isEqualTo(Terrain.WATER)
+        assertThat(map.hexes.getValue(HexCoordinates(6, 3)).terrain).isEqualTo(Terrain.WATER)
+        assertThat(map.hexes.getValue(HexCoordinates(6, 4)).terrain).isEqualTo(Terrain.CLEAR)
+
+        val clear = map.hexes.getValue(HexCoordinates(0, 0))
+        assertThat(clear.terrain).isEqualTo(Terrain.CLEAR)
+        assertThat(clear.elevation).isEqualTo(0)
+        assertThat(clear.depth).isEqualTo(0)
     }
 
     @Test
-    fun `unknown spec resolves via the file loader`(@TempDir tempDir: Path) {
+    fun `packaged default map preserves elevation depth and rough terrain`() {
+        val map = resolveMap("default")
+
+        assertThat(map.hexes.getValue(HexCoordinates(5, 1)).elevation).isEqualTo(3)
+        assertThat(map.hexes.getValue(HexCoordinates(5, 2)).elevation).isEqualTo(2)
+        assertThat(map.hexes.getValue(HexCoordinates(5, 3)).elevation).isEqualTo(1)
+        assertThat(map.hexes.getValue(HexCoordinates(5, 4)).elevation).isEqualTo(1)
+        assertThat(map.hexes.getValue(HexCoordinates(5, 5)).elevation).isEqualTo(0)
+
+        assertThat(map.hexes.getValue(HexCoordinates(3, 2)).elevation).isEqualTo(1)
+        assertThat(map.hexes.getValue(HexCoordinates(3, 3)).elevation).isEqualTo(0)
+        assertThat(map.hexes.getValue(HexCoordinates(4, 3)).elevation).isEqualTo(2)
+        assertThat(map.hexes.getValue(HexCoordinates(4, 4)).elevation).isEqualTo(0)
+
+        assertThat(map.hexes.getValue(HexCoordinates(6, 1)).depth).isEqualTo(1)
+        assertThat(map.hexes.getValue(HexCoordinates(6, 2)).depth).isEqualTo(2)
+        assertThat(map.hexes.getValue(HexCoordinates(6, 3)).depth).isEqualTo(1)
+
+        assertThat(map.hexes.getValue(HexCoordinates(1, 6)).terrain).isEqualTo(Terrain.ROUGH)
+        assertThat(map.hexes.getValue(HexCoordinates(1, 6)).elevation).isEqualTo(0)
+        assertThat(map.hexes.getValue(HexCoordinates(1, 7)).terrain).isEqualTo(Terrain.ROUGH)
+        assertThat(map.hexes.getValue(HexCoordinates(1, 7)).elevation).isEqualTo(1)
+        assertThat(map.hexes.getValue(HexCoordinates(2, 6)).terrain).isEqualTo(Terrain.ROUGH)
+        assertThat(map.hexes.getValue(HexCoordinates(2, 6)).elevation).isEqualTo(1)
+        assertThat(map.hexes.getValue(HexCoordinates(2, 7)).terrain).isEqualTo(Terrain.ROUGH)
+        assertThat(map.hexes.getValue(HexCoordinates(2, 7)).elevation).isEqualTo(2)
+        assertThat(map.hexes.getValue(HexCoordinates(2, 8)).terrain).isEqualTo(Terrain.ROUGH)
+        assertThat(map.hexes.getValue(HexCoordinates(2, 8)).elevation).isEqualTo(0)
+        assertThat(map.hexes.getValue(HexCoordinates(3, 6)).terrain).isEqualTo(Terrain.CLEAR)
+    }
+
+    @Test
+    fun `packaged default map keeps sample spawn cells clear at elevation zero`() {
+        val map = resolveMap("default")
+
+        for (coords in listOf(HexCoordinates(1, 1), HexCoordinates(2, 3), HexCoordinates(7, 3), HexCoordinates(8, 5))) {
+            val hex = map.hexes.getValue(coords)
+            assertThat(hex.terrain).describedAs("terrain at $coords").isEqualTo(Terrain.CLEAR)
+            assertThat(hex.elevation).describedAs("elevation at $coords").isEqualTo(0)
+        }
+    }
+
+    @Test
+    fun `packaged classic name gains a json suffix automatically`() {
+        val map = resolveMap("battletech-classic")
+
+        assertThat(map.hexes).hasSize(255)
+        val translated = map.hexes.getValue(HexCoordinates(6, 7))
+        assertThat(translated.terrain).isEqualTo(Terrain.WATER)
+        assertThat(translated.depth).isEqualTo(2)
+    }
+
+    @Test
+    fun `existing filesystem path loads its map`(@TempDir tempDir: Path) {
         val file = tempDir.resolve("map.json")
-        file.writeText("""{"width":1,"height":1,"hexes":[]}""")
+        file.writeText(
+            """
+            {"width":2,"height":2,"hexes":[{"col":2,"row":1,"terrain":"WATER","depth":1}]}
+            """.trimIndent()
+        )
 
         val map = resolveMap(file.toString())
 
-        assertThat(map).isEqualTo(GameMapLoader().load(file))
+        assertThat(map.hexes).hasSize(4)
+        val special = map.hexes.getValue(HexCoordinates(1, 0))
+        assertThat(special.terrain).isEqualTo(Terrain.WATER)
+        assertThat(special.depth).isEqualTo(1)
     }
 
     @Test
-    fun `unknown id that is not a real file throws MapLoadException`() {
-        assertThrows<MapLoadException> { resolveMap("not-a-builtin-and-not-a-file.json") }
+    fun `malformed existing filesystem path is authoritative`(@TempDir tempDir: Path) {
+        val file = tempDir.resolve("default")
+        file.writeText("{ not valid json")
+
+        val exception = assertThrows<MapLoadException> { resolveMap(file.toString()) }
+
+        assertThat(exception.message).contains("Malformed map file: $file")
+    }
+
+    @Test
+    fun `missing packaged name identifies the generated resource path`() {
+        val spec = "not-a-packaged-map-for-test"
+
+        val exception = assertThrows<MapLoadException> { resolveMap(spec) }
+
+        assertThat(exception.message).isEqualTo("Map resource not found: map/$spec.json")
     }
 }
