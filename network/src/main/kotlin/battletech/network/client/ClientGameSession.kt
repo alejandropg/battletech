@@ -218,7 +218,7 @@ public class ClientGameSession internal constructor(
 
         connectionLost = true
         pendingReply.offer(ServerMessage.CommandReply(UNSOLICITED_REQUEST_ID, CommandResult.Rejected(CommandRejection.OpponentUnavailable)))
-        val notice = SessionNotice("Disconnected from host — restart with --join <host> --session <id> to rejoin")
+        val notice = SessionNotice("Disconnected from host — restart with 'battletech-tui join <host> --session <id>' to rejoin")
         log.append(LogEntry(snapshot.turnState.turnNumber, notice))
         dispatch(notice)
     }

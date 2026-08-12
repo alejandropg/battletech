@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test
  * [ClientGameSession.stateFor] for the unit and its [ClientGameSession.viewFor] for
  * reachability — never the host's. That is deliberate: routing client queries through
  * [GameServer.viewFor] would let a completely broken remote client pass this test, which is
- * exactly how a `--join`ed client that crashed on entering movement once slipped through a
+ * exactly how a `join`ed client that crashed on entering movement once slipped through a
  * green suite.
  *
  * The last test in this file ("hot-seat-style composition…") swaps the real socket for a second

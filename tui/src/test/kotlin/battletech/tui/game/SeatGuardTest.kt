@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test
  * ([MovementPhase.SelectingUnit], [AttackPhase.SelectingAttacker]).
  *
  * A client may act only for a seat present in [AppState.seats]. Host/join play puts exactly one
- * seat there — PLAYER_1 for a `--host` process (its own local seat), PLAYER_2 for a joiner —
+ * seat there — PLAYER_1 for a `host` process (its own local seat), PLAYER_2 for a joiner —
  * so this client may act only while that seat is the active player, regardless of whether that
  * seat's own session happens to be local or remote. Tab, Enter, click, and 'c' must all be
  * blocked with the "Waiting for opponent" flash on the opponent's turn — previously only

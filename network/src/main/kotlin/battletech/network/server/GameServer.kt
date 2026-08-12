@@ -71,9 +71,9 @@ import kotlin.concurrent.thread
  * [connectLocal] client or a socket client. [attach] is that single trigger point (`kickstarted`
  * inside its synchronized block), so this holds uniformly across all three compositions:
  * - **hot-seat**: two [connectLocal] calls; the second one's [attach] call completes the roster.
- * - **`--host`**: one [connectLocal] call + one socket join; whichever completes the roster
+ * - **`host`**: one [connectLocal] call + one socket join; whichever completes the roster
  *   fires it — see [connectLocal]'s KDoc for why the local seat is guaranteed to be first.
- * - **`--server`**: two socket joins; the second fires it.
+ * - **`serve`**: two socket joins; the second fires it.
  *
  * The `everStarted` flag (checked and set inside the same synchronized block that runs
  * [BattleSession.advance]) makes a second firing impossible, and [disconnect]'s identity check
@@ -147,7 +147,7 @@ public class GameServer(
      * client half the SAME [ClientMessage.Join] handshake a socket client performs
      * ([ClientGameSession.handshake]). The seat this call is assigned, the snapshot it starts
      * with, and every event it receives afterward are therefore produced by the identical code
-     * path a `--join`ed client goes through — there is no way for the returned session to behave
+     * path a `join`ed client goes through — there is no way for the returned session to behave
      * differently from a socket client's, because it isn't a different implementation, it's the
      * same one over a different [battletech.network.transport.ClientConnection].
      *
@@ -156,7 +156,7 @@ public class GameServer(
      * ([ClientGameSession.playerId]) to know which seat it is playing, and widening the return
      * type here would only force that caller to downcast to get it back.
      *
-     * **Determinism for `--host`:** seat assignment is `(allSeats - clients.keys).min()` — first
+     * **Determinism for `host`:** seat assignment is `(allSeats - clients.keys).min()` — first
      * attach wins [PlayerId.PLAYER_1]. [Companion.host] deliberately does not start any
      * [SocketAcceptor] itself, so as long as a caller calls this method before constructing (or
      * at least before [SocketAcceptor.start]ing) an acceptor for the same server, no socket

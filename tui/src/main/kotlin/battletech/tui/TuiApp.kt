@@ -23,8 +23,8 @@ import kotlinx.coroutines.runBlocking
  * acts and reads through — see [AppState]'s KDoc for the full rationale. The caller composes this
  * map and hands it a session that has already been started (kickstarted, if applicable):
  * hot-seat's shared [battletech.tactical.session.BattleSession] has already had
- * [battletech.tactical.session.BattleSession.advance] called on it, a `--host` seat's server
- * fires its own kickstart once the roster completes, and a `--join`ed
+ * [battletech.tactical.session.BattleSession.advance] called on it, a `host` seat's server
+ * fires its own kickstart once the roster completes, and a `join`ed
  * [battletech.network.client.ClientGameSession] never kickstarts at all. This class never builds
  * a session or calls `advance()` itself.
  *

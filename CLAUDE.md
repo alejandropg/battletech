@@ -49,7 +49,7 @@ Dependencies flow: `tui` → `tactical` + `network`; `network` → (`api`) `tact
 
 - **`tactical/`** — the engine: tactical-level rules (combat, to-hit, movement, heat). Delivery-agnostic — no UI assumptions, no I/O. Every delivery (TUI, `network`, any future web UI) consumes it through the same public surface.
 - **`network/`** — client/server layer over `tactical` (`GameServer`, `SocketAcceptor`, `ClientGameSession`, the `transport/` connection port, wire protocol). No UI. Depends on `tactical` via `api` and reuses its types as wire DTOs rather than redefining them.
-- **`tui/`** — terminal UI using [Mordant](https://github.com/ajalt/mordant). Entry point `battletech.tui.MainKt`.
+- **`tui/`** — terminal UI using [Mordant](https://github.com/ajalt/mordant) for rendering and [Clikt](https://github.com/ajalt/clikt) for the CLI (`host`/`join`/`serve` subcommands, bare invocation = hot-seat). Entry point `battletech.tui.MainKt`.
 - **`strategic/` + `bt/`** — placeholders. `strategic` holds one stub class (`calculateCampaignMovement(d) = d * 2`); `bt` (`battletech.MainKt`) is a hello-world that prints it. Ignore unless explicitly asked.
 
 `docs/architecture.md` — package layout inside each module, buildSrc convention plugins, invariant rationale, and the rule for which tier (this file or `docs/`) owns a given piece of context. Read when navigating inside a module, touching the build, or moving content between docs; not needed for everyday context.

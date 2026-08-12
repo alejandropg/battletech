@@ -22,6 +22,7 @@ tasks.named<JavaExec>("run") {
 dependencies {
     implementation(project(":tactical"))
     implementation(project(":network"))
+    implementation(libs.clikt)
     implementation(libs.mordant)
     implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.kotlinx.coroutines.test)

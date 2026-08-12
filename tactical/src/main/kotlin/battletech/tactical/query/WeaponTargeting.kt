@@ -17,7 +17,7 @@ import battletech.tactical.unit.cannotFireFromSensorDamage
 
 /**
  * Weapon targeting over a per-viewer [PlayerGameState] — the same projection a remote
- * client holds, so a `--join`ed seat answers targeting queries locally with the identical
+ * client holds, so a `join`ed seat answers targeting queries locally with the identical
  * code the host runs.
  *
  * The attacker is resolved via [PlayerGameState.ownUnitById] (to-hit math needs its gunnery,

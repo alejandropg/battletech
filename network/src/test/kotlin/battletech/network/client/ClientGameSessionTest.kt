@@ -104,7 +104,7 @@ internal class ClientGameSessionTest {
     }
 
     /**
-     * The regression guard for remote play: a `--join`ed client must be able to answer
+     * The regression guard for remote play: a `join`ed client must be able to answer
      * "what is legal right now?" from its OWN projected snapshot, with no round trip and
      * WITHOUT borrowing the host's [GameServer.viewFor]. Routing this through the server
      * is the shortcut that previously hid a totally broken remote client behind a green
@@ -197,7 +197,7 @@ internal class ClientGameSessionTest {
         awaitTrue { remote.turnState.movement.activePlayer == PlayerId.PLAYER_2 }
 
         // Built entirely from the replica's own surface — no host queries — so this exercises
-        // the real client path a --join'ed seat takes.
+        // the real client path a join'ed seat takes.
         val unit = remote.turnState.selectableUnits(remote.stateFor(remote.playerId).units).first()
         val reachability = remote.viewFor(remote.playerId).legalMovementsFor(unit.id).first()
         val destination = reachability.destinations.first()
@@ -263,7 +263,7 @@ internal class ClientGameSessionTest {
         remote.subscribe { events += it }
 
         connection.closeServerSide()
-        val expectedNotice = SessionNotice("Disconnected from host — restart with --join <host> --session <id> to rejoin")
+        val expectedNotice = SessionNotice("Disconnected from host — restart with 'battletech-tui join <host> --session <id>' to rejoin")
         awaitTrue { events.contains(expectedNotice) }
         assertThat(remote.gameLog.snapshot().map { it.event }).contains(expectedNotice)
 

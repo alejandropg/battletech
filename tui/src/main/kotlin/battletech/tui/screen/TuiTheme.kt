@@ -31,7 +31,5 @@ public enum class TuiTheme(
             AnsiLevel.ANSI16 -> DARK_16
             AnsiLevel.NONE -> DARK
         }
-
-        internal fun fromFlag(value: String): TuiTheme? = entries.find { it.flag == value }
     }
 }

@@ -8,4 +8,13 @@ glyph instead of a hex fill. The theme is auto-selected from the terminal's dete
 (`dark`, `dark-256`, or `dark-16`), or set explicitly with
 `--theme dark|light|dark-256|light-256|dark-16|light-16`.
 
-Supports hot seat and network play.
+Supports hot seat and network play:
+
+```
+battletech-tui                                  hot-seat (both players share this terminal)
+battletech-tui host [--port N]                  host a session
+battletech-tui join <ip[:port]> --session <id>  join a hosted session
+battletech-tui serve [--port N]                 headless dedicated server
+```
+
+Run any form with `--help` for its full option list.
