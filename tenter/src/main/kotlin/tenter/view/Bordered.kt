@@ -4,11 +4,11 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ColorRole
 import tenter.screen.Insets
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 
 /**
  * Decorates [content] with a box border, an optional title/badge in the top border, and — when
- * [thumbsFrom] is given — scrollbar thumbs synchronized to that [Scrolled]'s settled position.
+ * [thumbsFrom] is given — scrollbar thumbs synchronized to that [Viewport]'s settled position.
  * [gutters] is extra inset consumed between the border and [content], beyond the 1-cell border
  * itself (e.g. the horizontal breathing room a scrolling panel's viewport wants); pass
  * [Insets.NONE] for a border with nothing but the border between it and content.
@@ -20,17 +20,14 @@ public class Bordered(
     private val title: String = "",
     private val badge: String? = null,
     private val gutters: Insets = Insets.NONE,
-    private val borderColor: ColorRole = UiRole.PANEL_BORDER,
-    private val titleColor: ColorRole = UiRole.ACCENT,
-    private val thumbsFrom: Scrolled? = null,
+    private val borderColor: ColorRole = ChromeRole.PANEL_BORDER,
+    private val titleColor: ColorRole = ChromeRole.ACCENT,
+    private val thumbsFrom: Viewport? = null,
 ) : View {
 
-    /** What [thumbsFrom] settled on this render, or [ScrollState.NONE] if this box doesn't scroll. */
-    public val scroll: ScrollState get() = thumbsFrom?.scroll ?: ScrollState.NONE
-
-    override fun render(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         drawBorder(canvas)
-        content.render(canvas.inset(BORDER + gutters))
+        content.draw(canvas.inset(BORDER + gutters))
         thumbsFrom?.let { drawThumbs(canvas, it) }
     }
 
@@ -73,32 +70,32 @@ public class Bordered(
 
     /**
      * Draws a scrollbar thumb on the right border ([ScrollState.maxOffset]`.y > 0`) and/or bottom
-     * border (`.x > 0`), at the ranges [Scrollbar.thumb] computes from [scrolled]'s settled state
-     * and this box's own viewport size — the same region [content] was just rendered into.
+     * border (`.x > 0`), at the ranges [ScrollGeometry.thumb] computes from [viewport]'s settled
+     * state and this box's own viewport size — the same region [content] was just rendered into.
      */
-    private fun drawThumbs(canvas: Canvas, scrolled: Scrolled) {
+    private fun drawThumbs(canvas: Canvas, viewport: Viewport) {
         val inset = BORDER + gutters
         val viewportWidth = canvas.width - inset.left - inset.right
         val viewportHeight = canvas.height - inset.top - inset.bottom
-        val scroll = scrolled.scroll
+        val scroll = viewport.scroll
 
-        Scrollbar.thumb(
+        ScrollGeometry.thumb(
             track = viewportHeight,
-            contentHeight = scroll.maxOffset.y + viewportHeight,
-            viewportHeight = viewportHeight,
+            contentLength = scroll.maxOffset.y + viewportHeight,
+            viewportLength = viewportHeight,
             offset = scroll.offset.y,
         )?.forEach { i -> canvas.set(canvas.width - 1, inset.top + i, Cell("▐", PANEL_BORDER_STYLE)) }
 
-        Scrollbar.thumb(
+        ScrollGeometry.thumb(
             track = viewportWidth,
-            contentHeight = scroll.maxOffset.x + viewportWidth,
-            viewportHeight = viewportWidth,
+            contentLength = scroll.maxOffset.x + viewportWidth,
+            viewportLength = viewportWidth,
             offset = scroll.offset.x,
         )?.forEach { i -> canvas.set(inset.left + i, canvas.height - 1, Cell("▬", PANEL_BORDER_STYLE)) }
     }
 
     public companion object {
-        private val PANEL_BORDER_STYLE = Cell.Style(UiRole.PANEL_BORDER)
+        private val PANEL_BORDER_STYLE = Cell.Style(ChromeRole.PANEL_BORDER)
 
         /** One cell on each side, consumed by every [Bordered] box. */
         public val BORDER: Insets = Insets.all(1)

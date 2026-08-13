@@ -30,7 +30,7 @@ internal class PanelVisibilityTest {
 
         val visible = PanelVisibility.visiblePanels(appState)
 
-        assertEquals(setOf(PanelId.LOG, PanelId.UNIT_STATUS), visible)
+        assertEquals(setOf(GamePanelId.LOG, GamePanelId.UNIT_STATUS), visible)
     }
 
     @Test
@@ -43,9 +43,9 @@ internal class PanelVisibilityTest {
 
         val visible = PanelVisibility.visiblePanels(appState)
 
-        assertTrue(visible.contains(PanelId.LOG))
-        assertTrue(visible.contains(PanelId.UNIT_STATUS))
-        assertTrue(visible.contains(PanelId.DECLARED_TARGETS))
+        assertTrue(visible.contains(GamePanelId.LOG))
+        assertTrue(visible.contains(GamePanelId.UNIT_STATUS))
+        assertTrue(visible.contains(GamePanelId.DECLARED_TARGETS))
     }
 
     @Test
@@ -61,7 +61,7 @@ internal class PanelVisibilityTest {
 
         val visible = PanelVisibility.visiblePanels(appState)
 
-        assertFalse(visible.contains(PanelId.DECLARED_TARGETS))
+        assertFalse(visible.contains(GamePanelId.DECLARED_TARGETS))
     }
 
     @Test
@@ -74,9 +74,9 @@ internal class PanelVisibilityTest {
 
         val visible = PanelVisibility.visiblePanels(appState)
 
-        assertFalse(visible.contains(PanelId.DECLARED_TARGETS))
-        assertFalse(visible.contains(PanelId.TARGETS))
-        assertFalse(visible.contains(PanelId.TARGET_STATUS))
+        assertFalse(visible.contains(GamePanelId.DECLARED_TARGETS))
+        assertFalse(visible.contains(GamePanelId.TARGETS))
+        assertFalse(visible.contains(GamePanelId.TARGET_STATUS))
     }
 
     @Test
@@ -89,7 +89,7 @@ internal class PanelVisibilityTest {
 
         val visible = PanelVisibility.visiblePanels(appState)
 
-        assertFalse(visible.contains(PanelId.HELP))
+        assertFalse(visible.contains(GamePanelId.HELP))
     }
 
     @Test
@@ -102,7 +102,7 @@ internal class PanelVisibilityTest {
 
         val visible = PanelVisibility.visiblePanels(appState)
 
-        assertTrue(visible.contains(PanelId.HELP))
+        assertTrue(visible.contains(GamePanelId.HELP))
     }
 
     private fun aResult() = AttackResult.Miss(
@@ -125,7 +125,7 @@ internal class PanelVisibilityTest {
 
         val visible = PanelVisibility.visiblePanels(appState)
 
-        assertTrue(visible.contains(PanelId.ATTACK_RESULTS))
+        assertTrue(visible.contains(GamePanelId.ATTACK_RESULTS))
     }
 
     @Test
@@ -138,7 +138,7 @@ internal class PanelVisibilityTest {
 
         val visible = PanelVisibility.visiblePanels(appState)
 
-        assertTrue(visible.contains(PanelId.ATTACK_RESULTS))
+        assertTrue(visible.contains(GamePanelId.ATTACK_RESULTS))
     }
 
     @Test
@@ -151,6 +151,6 @@ internal class PanelVisibilityTest {
 
         val visible = PanelVisibility.visiblePanels(appState)
 
-        assertFalse(visible.contains(PanelId.ATTACK_RESULTS))
+        assertFalse(visible.contains(GamePanelId.ATTACK_RESULTS))
     }
 }

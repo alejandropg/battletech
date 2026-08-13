@@ -1,4 +1,4 @@
-package tenter.view
+package tenter.widget
 
 public enum class CheckState {
     UNCHECKED,

@@ -16,13 +16,13 @@ import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.unit.PilotingSkillRoll
 import battletech.tactical.unit.UnitRoster
 import battletech.tui.aUnit
-import battletech.tui.game.PanelId
+import battletech.tui.game.GamePanelId
 import battletech.tui.hex.initiativeIcon
 import battletech.tui.hex.unitStoodUpIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.ScreenBuffer
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.ContentExtent
 import tenter.view.ScrollOffset
 import tenter.view.line
@@ -61,7 +61,7 @@ internal class LogViewTest {
         scrollOffset: Int? = null,
     ): ScreenBuffer = renderInPanel(
         view,
-        badge = PanelId.LOG.badge,
+        badge = GamePanelId.LOG.badge,
         title = LogView.TITLE,
         width = width,
         height = height,
@@ -102,13 +102,13 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assertEquals(UiRole.INFO, buffer.get(2, 2).style.fg)
+        assertEquals(ChromeRole.INFO, buffer.get(2, 2).style.fg)
         // Only one header for the single turn: row 3 and row 4 are plain entries, not headers.
         val headerLine = buffer.line(2, 2, 24)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
         assert(buffer.line(3, 2, 24).contains("0101→0201")) { "Expected first move entry" }
         assert(buffer.line(4, 2, 24).contains("0101→0301")) { "Expected second move entry" }
-        assertEquals(UiRole.DEFAULT, buffer.get(2, 3).style.fg)
+        assertEquals(ChromeRole.DEFAULT, buffer.get(2, 3).style.fg)
     }
 
     @Test
@@ -172,8 +172,8 @@ internal class LogViewTest {
 
     @Test
     fun `when content overflows, the most recent line is at the bottom of the panel`() {
-        // Panel of height 6: content viewport is 3 rows. A fresh render has no previousFocus, so
-        // LogView's last-row focus (see its KDoc) always follows into view — the same mechanism
+        // Panel of height 6: content viewport is 3 rows. A fresh render has no previousReveal, so
+        // LogView's last-row reveal (see its KDoc) always follows into view — the same mechanism
         // TargetsView's cursor row uses, not a bespoke bottom-anchor.
         // Each entry is its own turn, so every entry is preceded by its own header row.
         // The bottom content row stays fixed at y=4 regardless of padding — only the top
@@ -193,30 +193,30 @@ internal class LogViewTest {
     @Test
     fun `a manual scroll to the top survives a re-render while the log is unchanged`() {
         // The panel-side half of the pan-snap-back defect (see PanelSlotTest's TARGETS
-        // equivalent): once the user has wheeled to a position and the focus row (the last
+        // equivalent): once the user has wheeled to a position and the reveal row (the last
         // line) hasn't moved since, that position must stick rather than re-following.
         val entries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val view = LogView(entries, state = emptyState)
 
-        // First render: no previousFocus, so it follows to the bottom — establishes the focus.
+        // First render: no previousReveal, so it follows to the bottom — establishes the reveal.
         val first = scrollingPanel(
             title = LogView.TITLE,
-            badge = PanelId.LOG.badge.toString(),
+            badge = GamePanelId.LOG.badge.toString(),
             content = view,
             extent = ContentExtent.Measured(),
         )
         render(first, 28, 6)
-        val focus = first.scroll.focus!!
+        val revealed = first.scroll.revealed!!
 
         // Second render: the user has wheeled back to the top; the log hasn't changed, so the
-        // focus row is identical — the manual offset must be respected, not re-followed.
+        // reveal row is identical — the manual offset must be respected, not re-followed.
         val second = scrollingPanel(
             title = LogView.TITLE,
-            badge = PanelId.LOG.badge.toString(),
+            badge = GamePanelId.LOG.badge.toString(),
             content = view,
             extent = ContentExtent.Measured(),
             offset = ScrollOffset(0, 0),
-            previousFocus = focus,
+            previousReveal = revealed,
         )
         val buffer = render(second, 28, 6)
 
@@ -229,38 +229,38 @@ internal class LogViewTest {
 
     @Test
     fun `a new entry re-sticks to the bottom even while manually scrolled away`() {
-        // Accepted tradeoff of following the last-row focus like TargetsView's cursor: a growing
-        // log always chases its newest line, the same as it would chase a moving cursor row —
-        // there is no bespoke "let the reader linger on history" carve-out anymore.
+        // Accepted tradeoff of following the last-row reveal target like TargetsView's cursor: a
+        // growing log always chases its newest line, the same as it would chase a moving cursor
+        // row — there is no bespoke "let the reader linger on history" carve-out anymore.
         val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val scrolledAway = scrollingPanel(
             title = LogView.TITLE,
-            badge = PanelId.LOG.badge.toString(),
+            badge = GamePanelId.LOG.badge.toString(),
             content = LogView(tenEntries, state = emptyState),
             extent = ContentExtent.Measured(),
         )
         render(scrolledAway, 28, 6)
-        val focusAtTen = scrolledAway.scroll.focus!!
+        val revealedAtTen = scrolledAway.scroll.revealed!!
         val manuallyScrolledUp = scrollingPanel(
             title = LogView.TITLE,
-            badge = PanelId.LOG.badge.toString(),
+            badge = GamePanelId.LOG.badge.toString(),
             content = LogView(tenEntries, state = emptyState),
             extent = ContentExtent.Measured(),
             offset = ScrollOffset(0, 0),
-            previousFocus = focusAtTen,
+            previousReveal = revealedAtTen,
         )
         render(manuallyScrolledUp, 28, 6)
         assertEquals(0, manuallyScrolledUp.scroll.offset.y, "sanity check: scrolled away from the bottom")
 
-        // An eleventh entry arrives; the focus row moves, so the view follows it to the bottom.
+        // An eleventh entry arrives; the reveal row moves, so the view follows it to the bottom.
         val elevenEntries = tenEntries + LogEntry(turn = 11, event = stoodUp())
         val newEntryArrives = scrollingPanel(
             title = LogView.TITLE,
-            badge = PanelId.LOG.badge.toString(),
+            badge = GamePanelId.LOG.badge.toString(),
             content = LogView(elevenEntries, state = emptyState),
             extent = ContentExtent.Measured(),
             offset = manuallyScrolledUp.scroll.offset,
-            previousFocus = manuallyScrolledUp.scroll.focus,
+            previousReveal = manuallyScrolledUp.scroll.revealed,
         )
         val buffer = render(newEntryArrives, 28, 6)
 

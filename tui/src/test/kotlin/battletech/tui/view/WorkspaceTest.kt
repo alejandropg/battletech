@@ -6,7 +6,7 @@ import battletech.tactical.session.MatchEnded
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.anAppState
-import battletech.tui.game.PanelId
+import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.MovementPhase
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -40,7 +40,7 @@ internal class WorkspaceTest {
         assertTrue(buffer.text().contains(LogView.TITLE))
         // LOG is last among MOVEMENT's visible panels in Panels.build()'s order, so it sits
         // flush against the right edge.
-        assertEquals(PanelId.LOG, workspace.panelAt(118, 10))
+        assertEquals(GamePanelId.LOG, workspace.panelAt(118, 10))
     }
 
     @Test
@@ -59,7 +59,7 @@ internal class WorkspaceTest {
         val workspace = Workspace()
         workspace.render(appState, width = 120, height = 40, flash = null)
 
-        workspace.toggleCollapsed(PanelId.LOG)
+        workspace.toggleCollapsed(GamePanelId.LOG)
         val buffer = workspace.render(appState, width = 120, height = 40, flash = null)
 
         assertFalse(buffer.text().contains(LogView.TITLE), "collapsed panel draws its title one letter per row")
@@ -80,7 +80,7 @@ internal class WorkspaceTest {
         val workspace = Workspace()
         workspace.render(appState, width = 120, height = 40, flash = null)
 
-        workspace.scrollPanel(PanelId.UNIT_STATUS, delta = 3)
+        workspace.scrollPanel(GamePanelId.UNIT_STATUS, delta = 3)
         workspace.render(appState, width = 120, height = 40, flash = null)
 
         assertEquals(ScrollOffset.ZERO, workspace.boardOffset, "scrolling a panel must not touch the board")
@@ -91,7 +91,7 @@ internal class WorkspaceTest {
         val workspace = Workspace()
         workspace.render(appState, width = 120, height = 40, flash = null) // TARGETS isn't visible in MOVEMENT
 
-        workspace.scrollPanel(PanelId.TARGETS, delta = 3) // must not throw
+        workspace.scrollPanel(GamePanelId.TARGETS, delta = 3) // must not throw
         val buffer = workspace.render(appState, width = 120, height = 40, flash = null)
 
         assertFalse(buffer.text().contains(TargetsView.TITLE))
@@ -103,7 +103,7 @@ internal class WorkspaceTest {
         val workspace = Workspace()
 
         // First render follows the cursor into view — same as any first render. The cursor doesn't
-        // move on the second render, so its focus doesn't either, and the given offset sticks.
+        // move on the second render, so its reveal target doesn't either, and the given offset sticks.
         workspace.render(wideMap, width = 80, height = 30, flash = null)
         workspace.render(wideMap.copy(boardScroll = ScrollOffset(5, 0)), width = 80, height = 30, flash = null)
 

@@ -1,5 +1,10 @@
 package tenter.screen
 
+import tenter.text.CellWidth
+
+/** A rect, in some [Canvas]'s local coords, that content wants kept visible — see [Canvas.markReveal]. */
+public data class RevealRect(val x: Int, val y: Int, val width: Int, val height: Int)
+
 /**
  * A rectangular, clipped, origin-translated region of a [ScreenBuffer]. All coordinates
  * passed to its methods are LOCAL: `(0, 0)` is this region's own top-left corner. Writes
@@ -10,9 +15,6 @@ package tenter.screen
  * can only ever narrow: a child can't widen its way back out to a wider rect than it started
  * with.
  */
-/** A rect, in some [Canvas]'s local coords, that content wants kept visible — see [Canvas.markFocus]. */
-public data class FocusRect(val x: Int, val y: Int, val width: Int, val height: Int)
-
 public class Canvas private constructor(
     private val buffer: ScreenBuffer,
     private val originX: Int,
@@ -92,24 +94,24 @@ public class Canvas private constructor(
      * Marks the rect content most wants visible — e.g. a cursor hex, a highlighted row.
      * Stored on the backing [ScreenBuffer] in absolute coords (translated through this canvas's
      * origin, like [set]), so it survives [region]/[inset] nesting and is readable from any
-     * canvas over the same buffer via [focusRect]. A scrolling container (see `Scrolled`) reads
+     * canvas over the same buffer via [revealRect]. A scrolling container (see `Viewport`) reads
      * it back to auto-follow. Clips like [set]: a rect (partly) outside this canvas is clamped,
-     * and no-ops if left empty. At most one focus rect exists per buffer — a later call
+     * and no-ops if left empty. At most one reveal rect exists per buffer — a later call
      * overwrites an earlier one.
      */
-    public fun markFocus(x: Int, y: Int, width: Int, height: Int) {
+    public fun markReveal(x: Int, y: Int, width: Int, height: Int) {
         val left = x.coerceIn(0, this.width)
         val top = y.coerceIn(0, this.height)
         val w = width.coerceIn(0, this.width - left)
         val h = height.coerceIn(0, this.height - top)
         if (w <= 0 || h <= 0) return
-        buffer.focus = FocusRect(originX + left, originY + top, w, h)
+        buffer.reveal = RevealRect(originX + left, originY + top, w, h)
     }
 
-    /** The rect last marked via [markFocus], translated into THIS canvas's local coords, or `null` if none. */
-    public fun focusRect(): FocusRect? {
-        val focus = buffer.focus ?: return null
-        return FocusRect(focus.x - originX, focus.y - originY, focus.width, focus.height)
+    /** The rect last marked via [markReveal], translated into THIS canvas's local coords, or `null` if none. */
+    public fun revealRect(): RevealRect? {
+        val reveal = buffer.reveal ?: return null
+        return RevealRect(reveal.x - originX, reveal.y - originY, reveal.width, reveal.height)
     }
 
     /**
@@ -145,7 +147,7 @@ public class Canvas private constructor(
         for (row in height - 1 downTo 0) {
             for (col in 0 until width) {
                 val cell = get(col, row)
-                if (cell.char != " " || cell.style.bg != UiRole.DEFAULT) return row + 1
+                if (cell.char != " " || cell.style.bg != ChromeRole.DEFAULT) return row + 1
             }
         }
         return 0

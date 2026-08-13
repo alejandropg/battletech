@@ -5,13 +5,13 @@ import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.screen.Insets
 import tenter.screen.ScreenBuffer
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 
 /** Pixel parity for [Bordered]'s border, title, badge, gutters, and scrollbar-thumb decoration. */
 internal class BorderedTest {
 
     private val blank: View = object : View {
-        override fun render(canvas: Canvas) = Unit
+        override fun draw(canvas: Canvas) = Unit
     }
 
     @Test
@@ -54,17 +54,17 @@ internal class BorderedTest {
         assertEquals("S", buffer.get(6, 0).char)
         assertEquals("T", buffer.get(7, 0).char)
         assertEquals(" ", buffer.get(8, 0).char)
-        assertEquals(UiRole.ACCENT, buffer.get(4, 0).style.fg)
-        assertEquals(UiRole.PANEL_BORDER, buffer.get(0, 0).style.fg)
+        assertEquals(ChromeRole.ACCENT, buffer.get(4, 0).style.fg)
+        assertEquals(ChromeRole.PANEL_BORDER, buffer.get(0, 0).style.fg)
     }
 
     @Test
     fun `uses specified colors`() {
-        val view = Bordered(blank, borderColor = UiRole.DANGER, titleColor = UiRole.TEXT_PRIMARY)
+        val view = Bordered(blank, borderColor = ChromeRole.DANGER, titleColor = ChromeRole.TEXT_PRIMARY)
 
         val buffer = render(view, 10, 3)
 
-        assertEquals(UiRole.DANGER, buffer.get(0, 0).style.fg)
+        assertEquals(ChromeRole.DANGER, buffer.get(0, 0).style.fg)
     }
 
     @Test
@@ -82,8 +82,8 @@ internal class BorderedTest {
         assertEquals("S", buffer.get(8, 0).char)
         assertEquals("T", buffer.get(9, 0).char)
         assertEquals(" ", buffer.get(10, 0).char)
-        assertEquals(UiRole.ACCENT, buffer.get(2, 0).style.fg)
-        assertEquals(UiRole.ACCENT, buffer.get(6, 0).style.fg)
+        assertEquals(ChromeRole.ACCENT, buffer.get(2, 0).style.fg)
+        assertEquals(ChromeRole.ACCENT, buffer.get(6, 0).style.fg)
     }
 
     @Test
@@ -101,8 +101,8 @@ internal class BorderedTest {
         assertEquals("L", buffer.get(8, 0).char)
         assertEquals("P", buffer.get(9, 0).char)
         assertEquals(" ", buffer.get(10, 0).char)
-        assertEquals(UiRole.ACCENT, buffer.get(3, 0).style.fg)
-        assertEquals(UiRole.ACCENT, buffer.get(6, 0).style.fg)
+        assertEquals(ChromeRole.ACCENT, buffer.get(3, 0).style.fg)
+        assertEquals(ChromeRole.ACCENT, buffer.get(6, 0).style.fg)
     }
 
     @Test
@@ -137,7 +137,7 @@ internal class BorderedTest {
     @Test
     fun `content renders inside the border, offset by gutters`() {
         val content = object : View {
-            override fun render(canvas: Canvas) {
+            override fun draw(canvas: Canvas) {
                 canvas.writeString(0, 0, "HI")
             }
         }
@@ -152,22 +152,22 @@ internal class BorderedTest {
     @Test
     fun `content rendered at offset position within parent buffer`() {
         val view = Bordered(object : View {
-            override fun render(canvas: Canvas) {
+            override fun draw(canvas: Canvas) {
                 canvas.writeString(0, 0, "X")
             }
         })
         val buffer = ScreenBuffer(40, 20)
 
-        view.render(Canvas.of(buffer).region(5, 3, 20, 10))
+        view.draw(Canvas.of(buffer).region(5, 3, 20, 10))
 
         assertEquals("╭", buffer.get(5, 3).char)
         assertEquals("X", buffer.get(6, 4).char)
     }
 
-    // ── scrollbar thumbs, synchronized with a Scrolled ─────────────────────────────────────────
+    // ── scrollbar thumbs, synchronized with a Viewport ─────────────────────────────────────────
 
     private fun stubContent(lines: Int): View = object : View {
-        override fun render(canvas: Canvas) {
+        override fun draw(canvas: Canvas) {
             for (i in 0 until lines) canvas.writeString(0, i, "line$i")
         }
     }
@@ -180,12 +180,12 @@ internal class BorderedTest {
 
         // The viewport spans the whole inner height (rows 1..8) — the padding row is part of the
         // scrollable stream, not a fixed offset — so the thumb can occupy row 1 too.
-        val thumbRange = Scrollbar.thumb(track = 8, contentHeight = 21, viewportHeight = 8, offset = 0)!!
+        val thumbRange = ScrollGeometry.thumb(track = 8, contentLength = 21, viewportLength = 8, offset = 0)!!
         for (row in 1..8) {
             val cell = buffer.get(29, row)
             if ((row - 1) in thumbRange) {
                 assertEquals("▐", cell.char, "expected thumb at row $row")
-                assertEquals(UiRole.PANEL_BORDER, cell.style.fg)
+                assertEquals(ChromeRole.PANEL_BORDER, cell.style.fg)
             } else {
                 assertEquals("│", cell.char, "expected border at row $row")
             }
@@ -213,7 +213,7 @@ internal class BorderedTest {
         val buffer = render(view, 30, 10)
 
         for (row in 1..8) {
-            assertEquals("│", buffer.get(29, row).char, "expected plain border, no thumb without a Scrolled")
+            assertEquals("│", buffer.get(29, row).char, "expected plain border, no thumb without a Viewport")
         }
     }
 }

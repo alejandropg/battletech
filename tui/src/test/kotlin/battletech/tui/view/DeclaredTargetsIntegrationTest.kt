@@ -16,7 +16,7 @@ import battletech.tui.game.phase.WeaponAllocation
 import battletech.tui.mediumLaser
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.line
 import tenter.view.render
 import tenter.view.text
@@ -61,8 +61,8 @@ internal class DeclaredTargetsIntegrationTest {
 
         val wolfRow = (0 until 30).first { buffer.line(it).contains("wolf") }
         val colors = (2 until 28).map { col -> buffer.get(col, wolfRow).style.fg }.toSet()
-        assertTrue(colors.contains(UiRole.DRAFT)) {
-            "Expected wolf (draft) row to use UiRole.DRAFT, got: $colors"
+        assertTrue(colors.contains(ChromeRole.DRAFT)) {
+            "Expected wolf (draft) row to use ChromeRole.DRAFT, got: $colors"
         }
     }
 

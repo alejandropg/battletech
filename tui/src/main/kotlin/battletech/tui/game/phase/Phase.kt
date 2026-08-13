@@ -7,7 +7,7 @@ import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
-import battletech.tui.game.PanelId
+import battletech.tui.game.GamePanelId
 import battletech.tui.game.RenderData
 import com.github.ajalt.mordant.input.InputEvent
 import tenter.input.KeyHint
@@ -51,7 +51,7 @@ internal sealed interface Phase {
      * [battletech.tui.game.PanelVisibility], not here — a phase only declares
      * the panels that belong to its own workflow.
      */
-    fun visiblePanels(app: AppState): Set<PanelId> = emptySet()
+    fun visiblePanels(app: AppState): Set<GamePanelId> = emptySet()
 
     fun declaredTargetsRender(app: AppState): DeclaredTargetsRender? = null
 

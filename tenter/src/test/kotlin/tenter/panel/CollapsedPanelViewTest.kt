@@ -1,7 +1,9 @@
-package tenter.view
+package tenter.panel
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import tenter.view.line
+import tenter.view.render
 
 internal class CollapsedPanelViewTest {
 

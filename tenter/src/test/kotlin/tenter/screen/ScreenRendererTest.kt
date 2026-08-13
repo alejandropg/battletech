@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 /**
  * A minimal, fully-authored [RolePalette] for exercising [ScreenRenderer]'s own mechanics —
  * diffing, run coalescing, alt-screen switching — independent of any host application's actual
- * theme. Every [UiRole] is resolved so [ScreenRenderer] can be exercised with an arbitrary
+ * theme. Every [ChromeRole] is resolved so [ScreenRenderer] can be exercised with an arbitrary
  * [Cell.Style], not just the handful of roles individual tests reference.
  */
 private fun rgb(r: Int, g: Int, b: Int) = PaletteColor.TrueColor(r, g, b)
@@ -18,31 +18,31 @@ private fun rgb(r: Int, g: Int, b: Int) = PaletteColor.TrueColor(r, g, b)
 private object FixturePalette : RolePalette {
     override val defaultBackground: PaletteColor = rgb(16, 20, 24)
 
-    override fun resolve(role: ColorRole): PaletteColor = when (role) {
-        is UiRole -> when (role) {
-            UiRole.DEFAULT -> rgb(221, 226, 229)
-            UiRole.TEXT_PRIMARY -> rgb(241, 243, 245)
-            UiRole.TEXT_MUTED -> rgb(166, 173, 180)
-            UiRole.TEXT_SUBTLE -> rgb(76, 80, 84)
-            UiRole.ACCENT -> rgb(255, 209, 102)
-            UiRole.INFO -> rgb(119, 212, 232)
-            UiRole.SUCCESS -> rgb(139, 209, 124)
-            UiRole.WARNING -> rgb(243, 211, 106)
-            UiRole.DANGER -> rgb(255, 153, 153)
-            UiRole.DRAFT -> rgb(166, 173, 180)
-            UiRole.DISABLED -> rgb(137, 145, 152)
-            UiRole.PANEL_BORDER -> rgb(114, 191, 114)
+    override fun foreground(role: ColorRole): PaletteColor = when (role) {
+        is ChromeRole -> when (role) {
+            ChromeRole.DEFAULT -> rgb(221, 226, 229)
+            ChromeRole.TEXT_PRIMARY -> rgb(241, 243, 245)
+            ChromeRole.TEXT_MUTED -> rgb(166, 173, 180)
+            ChromeRole.TEXT_SUBTLE -> rgb(76, 80, 84)
+            ChromeRole.ACCENT -> rgb(255, 209, 102)
+            ChromeRole.INFO -> rgb(119, 212, 232)
+            ChromeRole.SUCCESS -> rgb(139, 209, 124)
+            ChromeRole.WARNING -> rgb(243, 211, 106)
+            ChromeRole.DANGER -> rgb(255, 153, 153)
+            ChromeRole.DRAFT -> rgb(166, 173, 180)
+            ChromeRole.DISABLED -> rgb(137, 145, 152)
+            ChromeRole.PANEL_BORDER -> rgb(114, 191, 114)
         }
-        else -> error("FixturePalette only resolves UiRole, got: $role")
+        else -> error("FixturePalette only resolves ChromeRole, got: $role")
     }
 }
 
 private object AltFixturePalette : RolePalette {
     override val defaultBackground: PaletteColor = rgb(248, 245, 238)
 
-    override fun resolve(role: ColorRole): PaletteColor = when (role) {
-        is UiRole -> rgb(32, 36, 40)
-        else -> error("AltFixturePalette only resolves UiRole, got: $role")
+    override fun foreground(role: ColorRole): PaletteColor = when (role) {
+        is ChromeRole -> rgb(32, 36, 40)
+        else -> error("AltFixturePalette only resolves ChromeRole, got: $role")
     }
 }
 
@@ -69,7 +69,7 @@ internal class ScreenRendererTest {
 
     @Test
     fun `default cell emits the palette's explicit foreground and background truecolor sequences`() {
-        // UiRole.DEFAULT resolves to a real color — there is no "unstyled" cell on an
+        // ChromeRole.DEFAULT resolves to a real color — there is no "unstyled" cell on an
         // ANSI-capable terminal.
         val buffer = ScreenBuffer(5, 1)
         Canvas.of(buffer).writeString(0, 0, "hello")
@@ -101,7 +101,7 @@ internal class ScreenRendererTest {
     fun `colored run emits one style per run not one per cell`() {
         // 4 cells all with fg=DANGER — they should be wrapped in a single SGR open+close pair
         val buffer = ScreenBuffer(4, 1)
-        Canvas.of(buffer).writeString(0, 0, "ABCD", Cell.Style(fg = UiRole.DANGER))
+        Canvas.of(buffer).writeString(0, 0, "ABCD", Cell.Style(fg = ChromeRole.DANGER))
 
         renderer.render(buffer)
 
@@ -111,7 +111,7 @@ internal class ScreenRendererTest {
 
         // Count closing/reset sequences for fg: ESC[39m is always the fg-reset code, regardless
         // of the foreground's own color space (truecolor/256/16) — see AnsiCodes.fgColorReset.
-        // UiRole.DEFAULT now sets a real background too, so every style sets both channels and
+        // ChromeRole.DEFAULT now sets a real background too, so every style sets both channels and
         // the close tag is always the combined "39;49m" (fg+bg reset in one SGR), never a bare
         // "39m" — see ScreenRenderer.renderSpan's KDoc. Each run emits exactly one close tag;
         // with one run we expect exactly one.
@@ -125,7 +125,7 @@ internal class ScreenRendererTest {
         // Contrast: 4 consecutive DANGER cells → 1 reset (run-length) vs 4 resets (per-cell, old).
         val buffer = ScreenBuffer(4, 1)
         for (x in 0 until 4) {
-            buffer.set(x, 0, Cell("X", Cell.Style(fg = UiRole.DANGER)))
+            buffer.set(x, 0, Cell("X", Cell.Style(fg = ChromeRole.DANGER)))
         }
 
         renderer.render(buffer)
@@ -141,7 +141,7 @@ internal class ScreenRendererTest {
         // 3 consecutive cells with fg=DANGER + strikethrough — Mordant folds both attributes into
         // one compound SGR open, and one run should emit exactly one.
         val buffer = ScreenBuffer(3, 1)
-        Canvas.of(buffer).writeString(0, 0, "XYZ", Cell.Style(fg = UiRole.DANGER, strikethrough = true))
+        Canvas.of(buffer).writeString(0, 0, "XYZ", Cell.Style(fg = ChromeRole.DANGER, strikethrough = true))
 
         renderer.render(buffer)
 
@@ -166,13 +166,13 @@ internal class ScreenRendererTest {
 
     @Test
     fun `transitions between default and semantic roles do not leak either color channel`() {
-        // Every open tag now sets BOTH channels explicitly (UiRole.DEFAULT resolves to real
+        // Every open tag now sets BOTH channels explicitly (ChromeRole.DEFAULT resolves to real
         // colors too), so the run-length skip-close optimization never needs to special-case
         // DEFAULT — see ScreenRenderer.renderSpan's KDoc. Regression guard: a cell that follows a
         // differently-colored one must still get its own explicit fg AND bg, not inherit either
         // channel from the previous run.
         val buffer = ScreenBuffer(2, 1)
-        buffer.set(0, 0, Cell("A", Cell.Style(fg = UiRole.DANGER, bg = UiRole.SUCCESS)))
+        buffer.set(0, 0, Cell("A", Cell.Style(fg = ChromeRole.DANGER, bg = ChromeRole.SUCCESS)))
         buffer.set(1, 0, Cell("B", Cell.Style.DEFAULT))
 
         renderer.render(buffer)
@@ -217,7 +217,7 @@ internal class ScreenRendererTest {
 
         val out = recorder.output()
         // Rows joined with \r\n, last row has no trailing \r\n. Each row is its own styled run
-        // now (UiRole.DEFAULT sets real colors), so "AB" and "CD" are no longer literally
+        // now (ChromeRole.DEFAULT sets real colors), so "AB" and "CD" are no longer literally
         // adjacent to the \r\n — a close tag sits between the text and the separator — so this
         // checks ordering and separator count rather than one contiguous substring.
         val firstBreak = out.indexOf("\r\n")
@@ -384,7 +384,7 @@ internal class ScreenRendererTest {
         val noneRenderer = ScreenRenderer(noneTerminal, FixturePalette)
 
         val buffer = ScreenBuffer(3, 1)
-        Canvas.of(buffer).writeString(0, 0, "abc", Cell.Style(fg = UiRole.DANGER, strikethrough = true))
+        Canvas.of(buffer).writeString(0, 0, "abc", Cell.Style(fg = ChromeRole.DANGER, strikethrough = true))
         noneRenderer.render(buffer)
 
         val out = noneRecorder.output()

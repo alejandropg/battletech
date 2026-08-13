@@ -27,7 +27,7 @@ private const val EXIT_ALT_SCREEN = "[?1049l"
  */
 public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette) {
 
-    private val styleFactory = TextStyleFactory(palette, terminal.terminalInfo.ansiLevel)
+    private val styleTagCache = StyleTagCache(palette, terminal.terminalInfo.ansiLevel)
 
     // The last buffer actually sent to the terminal, or null if nothing has been sent yet (or
     // [clear] just ran) — either way, the next render() has nothing to diff against.
@@ -68,7 +68,7 @@ public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette
         // process dies without reaching cleanup(), the cursor is still restored on exit.
         terminal.cursor.hide()
         val altScreen = if (terminal.terminalInfo.interactive) ENTER_ALT_SCREEN else ""
-        val defaultStyle = styleFactory.tagsFor(Cell.Style.DEFAULT)?.open.orEmpty()
+        val defaultStyle = styleTagCache.tagsFor(Cell.Style.DEFAULT)?.open.orEmpty()
         terminal.rawPrint(altScreen + defaultStyle + terminal.cursor.getMoves { clearScreen(); setPosition(0, 0) })
         System.out.flush()
         previous = null
@@ -130,7 +130,7 @@ public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette
      *
      * Closing the previous run before opening the next is skippable whenever both runs have tags
      * at all: every opening tag now establishes BOTH foreground and background explicitly (even
-     * for [UiRole.DEFAULT], which resolves to the palette's default surface rather than leaving a
+     * for [ChromeRole.DEFAULT], which resolves to the palette's default surface rather than leaving a
      * channel unset), so the next run's open tag always fully overwrites whatever the previous
      * run set — nothing can bleed through. Only a strikethrough-state change still needs the
      * close, since strikethrough has no "close" bundled into every open tag the way color does.
@@ -138,7 +138,7 @@ public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette
     private fun renderSpan(sb: StringBuilder, buffer: ScreenBuffer, y: Int, xStart: Int, xEnd: Int) {
         var x = xStart
         var activeStyle: Cell.Style? = null
-        var activeTags: TextStyleFactory.Tags? = null
+        var activeTags: StyleTagCache.Tags? = null
         while (x < xEnd) {
             val runStyle = buffer.get(x, y).style
             val runChars = StringBuilder()
@@ -148,7 +148,7 @@ public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette
                 runChars.append(cell.char)
                 x++
             }
-            val tags = styleFactory.tagsFor(runStyle)
+            val tags = styleTagCache.tagsFor(runStyle)
             if (tags == null) {
                 activeTags?.let { sb.append(it.close) }
                 activeStyle = null

@@ -2,18 +2,18 @@ package tenter.view
 
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.CellWidth
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
+import tenter.text.CellWidth
 
-public class ContentWriter(private val canvas: Canvas) {
+public class TextCursor(private val canvas: Canvas) {
     public val width: Int get() = canvas.width
 
-    /** The row the next [writeln]/[writeRow] lands on. */
+    /** The row the next [writeLine]/[writeRow] lands on. */
     public var row: Int = 0
         private set
 
     public fun writeHeader(label: String) {
-        writeln(sectionHeader(label), INFO_STYLE)
+        writeLine(sectionHeader(label), INFO_STYLE)
     }
 
     private fun sectionHeader(label: String): String {
@@ -23,7 +23,7 @@ public class ContentWriter(private val canvas: Canvas) {
     }
 
     /** Writes [text] on the current row and advances. Returns the row it was written to. */
-    public fun writeln(text: String, style: Cell.Style = Cell.Style.DEFAULT): Int {
+    public fun writeLine(text: String, style: Cell.Style = Cell.Style.DEFAULT): Int {
         val truncated = if (CellWidth.of(text) > width) truncateToWidth(text, width - 1) + "…" else text
         val written = row
         canvas.writeString(0, written, truncated, style)
@@ -45,7 +45,7 @@ public class ContentWriter(private val canvas: Canvas) {
     }
 
     /** Writes [text] at [column] on the current row, without advancing. */
-    public fun writeStr(column: Int, text: String, style: Cell.Style = Cell.Style.DEFAULT) {
+    public fun write(column: Int, text: String, style: Cell.Style = Cell.Style.DEFAULT) {
         canvas.writeString(column, row, text, style)
     }
 
@@ -70,13 +70,13 @@ public class ContentWriter(private val canvas: Canvas) {
     }
 
     /** Marks the current row (full width) as the content the enclosing scrollable view should keep visible. */
-    public fun markFocus(height: Int = 1) {
-        canvas.markFocus(0, row, width, height)
+    public fun markReveal(height: Int = 1) {
+        canvas.markReveal(0, row, width, height)
     }
 
     /** Marks [atRow] (full width), rather than the current row, as the content to keep visible. */
-    public fun markFocusAt(atRow: Int, height: Int = 1) {
-        canvas.markFocus(0, atRow, width, height)
+    public fun markRevealAt(atRow: Int, height: Int = 1) {
+        canvas.markReveal(0, atRow, width, height)
     }
 
     /** Overlays [text] onto an already-written [atRow] at [column] — for repainting part of a finished row. */
@@ -85,6 +85,6 @@ public class ContentWriter(private val canvas: Canvas) {
     }
 
     private companion object {
-        private val INFO_STYLE = Cell.Style(fg = UiRole.INFO)
+        private val INFO_STYLE = Cell.Style(fg = ChromeRole.INFO)
     }
 }

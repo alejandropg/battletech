@@ -5,7 +5,7 @@ package tenter.panel
  * [compute] each call. Panels are laid out right-to-left, filling the space to the right of the
  * main content area; [contentX]/[contentY]/[contentWidth]/[contentHeight] describe what's left.
  */
-public class PanelLayout<K : PanelKey, I> private constructor(
+public class PanelLayout<K : PanelId, I> private constructor(
     public val contentX: Int,
     public val contentY: Int,
     public val contentWidth: Int,
@@ -13,7 +13,7 @@ public class PanelLayout<K : PanelKey, I> private constructor(
     public val slots: List<Slot<K, I>>,
 ) {
     /** One panel's placement this frame: which [panel], and its left column [x] (its width is `panel.width`). */
-    public data class Slot<K : PanelKey, I>(val panel: Panel<K, I>, val x: Int)
+    public data class Slot<K : PanelId, I>(val panel: Panel<K, I>, val x: Int)
 
     /**
      * The expanded (non-collapsed) [Slot] at screen column [x], row [y], or `null` if none
@@ -30,7 +30,7 @@ public class PanelLayout<K : PanelKey, I> private constructor(
          * Lays out [visible] panels along the right edge of a [width]x[height] screen, reserving
          * [reservedTop] rows at the top (e.g. for a status bar) above the content area.
          */
-        public fun <K : PanelKey, I> compute(
+        public fun <K : PanelId, I> compute(
             width: Int,
             height: Int,
             reservedTop: Int,

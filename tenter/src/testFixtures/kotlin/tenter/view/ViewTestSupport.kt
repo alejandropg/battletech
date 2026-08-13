@@ -6,7 +6,7 @@ import tenter.screen.ScreenBuffer
 /** Renders [view] into a fresh [width]x[height] buffer and returns it for assertions. */
 public fun render(view: View, width: Int, height: Int): ScreenBuffer {
     val buffer = ScreenBuffer(width, height)
-    view.render(Canvas.of(buffer))
+    view.draw(Canvas.of(buffer))
     return buffer
 }
 

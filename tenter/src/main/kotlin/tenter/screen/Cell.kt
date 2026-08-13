@@ -11,8 +11,8 @@ public data class Cell(
     }
 
     public data class Style(
-        val fg: ColorRole = UiRole.DEFAULT,
-        val bg: ColorRole = UiRole.DEFAULT,
+        val fg: ColorRole = ChromeRole.DEFAULT,
+        val bg: ColorRole = ChromeRole.DEFAULT,
         val strikethrough: Boolean = false,
     ) {
         public companion object {

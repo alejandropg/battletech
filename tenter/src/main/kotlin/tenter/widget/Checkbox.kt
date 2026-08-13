@@ -1,8 +1,9 @@
-package tenter.view
+package tenter.widget
 
 import tenter.screen.Cell
 import tenter.screen.ColorRole
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
+import tenter.view.TextCursor
 
 // Nerd Fonts icons (https://www.nerdfonts.com/cheat-sheet)
 private val NF_MD_CHECKBOX_BLANK_OUTLINE = String(Character.toChars(0xF0131))
@@ -21,13 +22,13 @@ public object Checkbox {
 
     /** Default per-state color when the surrounding row does not override it. */
     public fun intrinsicColor(state: CheckState): ColorRole = when (state) {
-        CheckState.CHECKED -> UiRole.SUCCESS
-        else -> UiRole.TEXT_MUTED
+        CheckState.CHECKED -> ChromeRole.SUCCESS
+        else -> ChromeRole.TEXT_MUTED
     }
 
     /** Overlays the checkbox onto [row] at [column]; occupies exactly one cell. */
     public fun draw(
-        content: ContentWriter,
+        content: TextCursor,
         column: Int,
         row: Int,
         state: CheckState,

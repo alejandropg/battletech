@@ -10,27 +10,27 @@ import battletech.tui.hex.attackOutcomeIcon
 import battletech.tui.hex.targetIcon
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.UiRole
-import tenter.view.ContentWriter
-import tenter.view.ValueRow
+import tenter.screen.ChromeRole
+import tenter.view.TextCursor
+import tenter.widget.ValueRow
 import tenter.view.View
 
 internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
-    override fun render(canvas: Canvas) {
-        val content = ContentWriter(canvas)
+    override fun draw(canvas: Canvas) {
+        val content = TextCursor(canvas)
 
         val byAttacker = data.results.groupBy { it.attackerId }
 
         for ((attackerId, attackerResults) in byAttacker) {
             val attackerColor = playerColor(data.units.byId(attackerId).owner)
-            content.writeln(attackerId.value, Cell.Style(attackerColor))
+            content.writeLine(attackerId.value, Cell.Style(attackerColor))
 
             val byTarget = attackerResults.groupBy { it.targetId }
 
             for ((targetId, targetResults) in byTarget) {
                 val targetLine = "${targetIcon()} ${targetId.value}"
-                content.writeln(targetLine, TEXT_PRIMARY_STYLE)
+                content.writeLine(targetLine, TEXT_PRIMARY_STYLE)
 
                 for (result in targetResults) {
                     renderWeaponResult(content, result)
@@ -39,7 +39,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         }
     }
 
-    private fun renderWeaponResult(content: ContentWriter, result: AttackResult) {
+    private fun renderWeaponResult(content: TextCursor, result: AttackResult) {
         // Block 1: unified hit widget (weapon name, TN, success %, modifiers)
         val successChance = twoD6AtLeastProbability(result.targetNumber)
         // The TN and modifier breakdown are both observable (announced at the table), so
@@ -49,13 +49,13 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         // + sum(modifiers), so gunnery stays derivable by subtraction from what's shown here.
         val isOwnAttacker = data.units.byId(result.attackerId).owner == data.viewer
         val breakdown = if (isOwnAttacker) toHitBreakdownLabels(result.gunnery, result.modifiers) else result.modifiers.displayLabels()
-        ValueRow.draw(content, "  ${result.weaponName}", hitChanceLabel(result.targetNumber, successChance), breakdown, UiRole.TEXT_PRIMARY)
+        ValueRow.draw(content, "  ${result.weaponName}", hitChanceLabel(result.targetNumber, successChance), breakdown, ChromeRole.TEXT_PRIMARY)
 
         // Block 2: raw roll (left) + outcome (right-aligned, in its own color)
         val hit = result is AttackResult.Hit
         val toHit = result.toHitRoll
         val outcomeText = "${if (hit) "HIT" else "MISS"} ${attackOutcomeIcon(hit)}"
-        val outcomeColor = if (hit) UiRole.SUCCESS else UiRole.DANGER
+        val outcomeColor = if (hit) ChromeRole.SUCCESS else ChromeRole.DANGER
         val rollLine = "   ${diceRollLabel(toHit)}"
         content.writeRow(rollLine, outcomeText, TEXT_PRIMARY_STYLE, Cell.Style(outcomeColor))
 
@@ -72,7 +72,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
             }
         } else if (result is AttackResult.SingleHit) {
             val hitLoc = result.locationHits.first().location
-            content.writeln("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", TEXT_PRIMARY_STYLE)
+            content.writeLine("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", TEXT_PRIMARY_STYLE)
         }
     }
 
@@ -90,6 +90,6 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
     internal companion object {
         const val TITLE: String = "ATTACK RESULTS"
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
     }
 }

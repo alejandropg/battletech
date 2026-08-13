@@ -669,8 +669,8 @@ internal class TuiAppLoopTest {
 
     // -------------------------------------------------------------------------
     // Test 13: a manual board pan must survive subsequent renders. Auto-follow
-    // fires on focus MOVEMENT, not on every render — otherwise the board springs
-    // back to the cursor on the next event of any kind, undoing the pan.
+    // fires on reveal-target MOVEMENT, not on every render — otherwise the board
+    // springs back to the cursor on the next event of any kind, undoing the pan.
     // -------------------------------------------------------------------------
 
     /**
@@ -738,7 +738,7 @@ internal class TuiAppLoopTest {
                 "an unrelated re-render must not snap the board back to the cursor",
             )
 
-            // Moving the cursor is a focus change, so follow re-engages and brings it back.
+            // Moving the cursor is a reveal-target change, so follow re-engages and brings it back.
             recorder.clearOutput()
             internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
             assertTrue(

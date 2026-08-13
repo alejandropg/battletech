@@ -2,7 +2,7 @@ package battletech.tui.view
 
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
-import battletech.tui.game.PanelId
+import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.DeclaredAttackerEntry
 import battletech.tui.game.phase.DeclaredTargetEntry
 import battletech.tui.game.phase.DeclaredTargetsRender
@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.ColorRole
 import tenter.screen.ScreenBuffer
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.line
 import tenter.view.render
 import tenter.view.renderInPanel
@@ -67,8 +67,8 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Wolverine")
         assertTrue(row >= 0) { "Expected to find Wolverine attacker row" }
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == UiRole.DRAFT }) {
-            "Expected attacker row to contain UiRole.DRAFT"
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == ChromeRole.DRAFT }) {
+            "Expected attacker row to contain ChromeRole.DRAFT"
         }
     }
 
@@ -170,7 +170,7 @@ internal class DeclaredTargetsViewTest {
         val height = 10
         val buffer = renderInPanel(
             view,
-            badge = PanelId.DECLARED_TARGETS.badge,
+            badge = GamePanelId.DECLARED_TARGETS.badge,
             title = DeclaredTargetsView.TITLE,
             width = width,
             height = height,
@@ -187,7 +187,7 @@ internal class DeclaredTargetsViewTest {
 
         val buffer = renderInPanel(
             view,
-            badge = PanelId.DECLARED_TARGETS.badge,
+            badge = GamePanelId.DECLARED_TARGETS.badge,
             title = DeclaredTargetsView.TITLE,
             width = 28,
             height = 10,

@@ -13,17 +13,17 @@ import battletech.tui.hex.UnitRenderer
 import battletech.tui.screen.BoardRole
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.Bordered
-import tenter.view.Scrolled
+import tenter.view.Viewport
 import tenter.view.View
 
 /**
  * The tactical map's content: coordinate labels, every hex, highlight, and unit glyph, drawn at
  * its unscrolled screen position. Purely content — chrome and scrolling belong to the
- * [Bordered]/[Scrolled] that wraps this view (see its construction in `RunLoop.renderFrame`); the
- * only thing this view contributes to scrolling is marking the cursor hex as focus via
- * [Canvas.markFocus], so auto-follow keeps it visible.
+ * [Bordered]/[Viewport] that wraps this view (see its construction in `RunLoop.renderFrame`); the
+ * only thing this view contributes to scrolling is marking the cursor hex for reveal via
+ * [Canvas.markReveal], so auto-follow keeps it visible.
  */
 internal class BoardView(
     private val state: PlayerGameState,
@@ -38,7 +38,7 @@ internal class BoardView(
     private val selectedTargetPosition: HexCoordinates? = null,
 ) : View {
 
-    override fun render(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         val (mapWidth, mapHeight) = mapSize(state.map)
         renderCoordinates(canvas, mapWidth, mapHeight)
 
@@ -108,7 +108,7 @@ internal class BoardView(
             }
 
             if (coords == cursorPosition) {
-                canvas.markFocus(x, y, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT)
+                canvas.markReveal(x, y, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT)
             }
         }
     }
@@ -149,7 +149,7 @@ internal class BoardView(
         internal const val MAP_ORIGIN_Y: Int = 1
         internal const val BOTTOM_LABEL_GAP: Int = 1
 
-        private val COORDINATE_STYLE: Cell.Style = Cell.Style(UiRole.TEXT_SUBTLE)
+        private val COORDINATE_STYLE: Cell.Style = Cell.Style(ChromeRole.TEXT_SUBTLE)
 
         /** The unscrolled content size needed to draw [map] and its coordinate labels. */
         internal fun contentSize(map: GameMap): Pair<Int, Int> {

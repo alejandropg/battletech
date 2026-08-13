@@ -4,11 +4,11 @@ import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.unit.UnitId
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.UiRole
-import tenter.view.CheckState
-import tenter.view.Checkbox
-import tenter.view.ContentWriter
-import tenter.view.ValueRow
+import tenter.screen.ChromeRole
+import tenter.widget.CheckState
+import tenter.widget.Checkbox
+import tenter.view.TextCursor
+import tenter.widget.ValueRow
 import tenter.view.View
 
 internal class TargetsView(
@@ -19,11 +19,11 @@ internal class TargetsView(
     private val cursorWeaponIndex: Int = 0,
 ) : View {
 
-    override fun render(canvas: Canvas) {
-        val content = ContentWriter(canvas)
+    override fun draw(canvas: Canvas) {
+        val content = TextCursor(canvas)
 
         if (targets.isEmpty()) {
-            content.writeln("No targets", TEXT_PRIMARY_STYLE)
+            content.writeLine("No targets", TEXT_PRIMARY_STYLE)
             return
         }
 
@@ -34,9 +34,9 @@ internal class TargetsView(
                 target.unitId == primaryTargetId -> " [P]"
                 else -> " [S]"
             }
-            val nameColor = if (isCursorOnTarget) UiRole.ACCENT else UiRole.TEXT_PRIMARY
+            val nameColor = if (isCursorOnTarget) ChromeRole.ACCENT else ChromeRole.TEXT_PRIMARY
             val nameLine = "${UnitLabel.of(target.unitId, target.unitName)}$tag"
-            content.writeln(nameLine, Cell.Style(nameColor))
+            content.writeLine(nameLine, Cell.Style(nameColor))
 
             val assignedToThisTarget = weaponAssignments[target.unitId] ?: emptySet()
             val assignedToOtherTargets = weaponAssignments.entries
@@ -61,17 +61,17 @@ internal class TargetsView(
                 val left = "$cursor   ${weapon.weaponName}"
 
                 val color = when {
-                    isCursorHere -> UiRole.ACCENT
-                    isDisabled -> UiRole.DISABLED
-                    else -> UiRole.TEXT_PRIMARY
+                    isCursorHere -> ChromeRole.ACCENT
+                    isDisabled -> ChromeRole.DISABLED
+                    else -> ChromeRole.TEXT_PRIMARY
                 }
                 val checkboxColor = when {
-                    isCursorHere -> UiRole.ACCENT
-                    isDisabled -> UiRole.DISABLED
+                    isCursorHere -> ChromeRole.ACCENT
+                    isDisabled -> ChromeRole.DISABLED
                     else -> Checkbox.intrinsicColor(state)
                 }
                 val row = content.row
-                if (isCursorHere) content.markFocus()
+                if (isCursorHere) content.markReveal()
                 ValueRow.draw(content, left, hitChanceLabel(weapon.targetDiceRoll, weapon.successChance), weapon.modifiers, color)
                 Checkbox.draw(content, 2, row, state, checkboxColor)
             }
@@ -83,6 +83,6 @@ internal class TargetsView(
     internal companion object {
         internal const val TITLE: String = "TARGETS"
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
     }
 }

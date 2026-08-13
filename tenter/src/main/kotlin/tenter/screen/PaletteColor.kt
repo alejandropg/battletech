@@ -3,7 +3,7 @@ package tenter.screen
 /**
  * A color in whatever space its palette was authored in. Never converted between spaces — a
  * palette picks one [PaletteColor] subtype for every role it defines, matching the terminal
- * capability that palette targets, and [TextStyleFactory] renders each subtype with the matching
+ * capability that palette targets, and [StyleTagCache] renders each subtype with the matching
  * ANSI encoding directly. There is no nearest-color downsampling anywhere in this package.
  */
 public sealed interface PaletteColor {
@@ -21,14 +21,14 @@ public sealed interface PaletteColor {
      * user's terminal theme, so their contrast is unknowable at build time — `16..255` are fixed
      * by the xterm specification and therefore both reproducible and testable.
      */
-    public data class Indexed(val index: Int) : PaletteColor {
+    public data class Xterm256(val index: Int) : PaletteColor {
         init {
             require(index in 16..255) { "index must be in 16..255, got: $index" }
         }
     }
 
     /** ANSI-16 SGR foreground code: `30..37` or `90..97`. Mordant derives the background code from it. */
-    public data class Basic(val code: Int) : PaletteColor {
+    public data class Ansi16(val code: Int) : PaletteColor {
         init {
             require(code in 30..37 || code in 90..97) { "code must be in 30..37 or 90..97, got: $code" }
         }

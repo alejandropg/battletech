@@ -7,7 +7,7 @@ import battletech.tactical.model.Terrain
 import battletech.tui.screen.BoardRole
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 
 public object HexRenderer {
 
@@ -144,7 +144,7 @@ public object HexRenderer {
     }
 
     private fun renderContent(canvas: Canvas, x: Int, y: Int, bg: BoardRole) {
-        val style = Cell.Style(UiRole.DEFAULT, bg)
+        val style = Cell.Style(ChromeRole.DEFAULT, bg)
         val cell = Cell(" ", style)
         // Row 1 content (narrow): x+2..x+6
         for (i in 2..6) {

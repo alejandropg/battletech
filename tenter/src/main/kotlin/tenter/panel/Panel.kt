@@ -1,15 +1,14 @@
 package tenter.panel
 
 import tenter.screen.Canvas
-import tenter.screen.FocusRect
-import tenter.view.CollapsedPanelView
+import tenter.screen.RevealRect
 import tenter.view.ContentExtent
 import tenter.view.ScrollOffset
 import tenter.view.View
 import tenter.view.scrollingPanel
 
 /** Stable identity for a [Panel]: what [Panel.render] shows as its `[badge]` when collapsed or bordered. */
-public interface PanelKey {
+public interface PanelId {
     public val badge: Char
 }
 
@@ -31,14 +30,14 @@ public interface PanelKey {
  * a fresh registry of panels per screen, never a global singleton, so one test's collapsed/
  * scrolled panel can never leak into another's.
  */
-public class Panel<K : PanelKey, I>(
+public class Panel<K : PanelId, I>(
     public val id: K,
     public val title: String,
     private val expandedWidth: Int,
     private val build: (I) -> View?,
 ) {
     private var scroll = ScrollOffset.ZERO
-    private var lastFocus: FocusRect? = null
+    private var lastReveal: RevealRect? = null
 
     /** Whether the user has shrunk this panel to its stub — see [toggleCollapsed]. */
     public var collapsed: Boolean = false
@@ -57,32 +56,32 @@ public class Panel<K : PanelKey, I>(
 
     /**
      * Renders this panel's chrome and content into [canvas], absorbing whatever scroll offset and
-     * focus rect it settles on — the next call picks up right where this one left off. No-op if
+     * reveal rect it settles on — the next call picks up right where this one left off. No-op if
      * [build] declines to build content for an expanded panel (e.g. its per-frame data is
      * momentarily absent); a collapsed panel always has content (its own title).
      *
-     * [forgetFocus] is a one-shot override for the resize case: the viewport just changed size, so
-     * this render should treat any content focus as freshly arrived (auto-follow into view) rather
-     * than compare it against [lastFocus] from before the resize. The settled focus this render
-     * still becomes [lastFocus] for the next call — it is not a permanent reset.
+     * [forgetReveal] is a one-shot override for the resize case: the viewport just changed size, so
+     * this render should treat any content reveal as freshly arrived (auto-follow into view) rather
+     * than compare it against [lastReveal] from before the resize. The settled reveal this render
+     * still becomes [lastReveal] for the next call — it is not a permanent reset.
      */
-    public fun render(canvas: Canvas, inputs: I, forgetFocus: Boolean = false) {
+    public fun render(canvas: Canvas, inputs: I, forgetReveal: Boolean = false) {
         if (collapsed) {
-            CollapsedPanelView(id.badge, title).render(canvas)
+            CollapsedPanelView(id.badge, title).draw(canvas)
             return
         }
         val content = build(inputs) ?: return
-        val bordered = scrollingPanel(
+        val panel = scrollingPanel(
             title = title,
             badge = id.badge.toString(),
             content = content,
             extent = ContentExtent.Measured(),
             offset = scroll,
-            previousFocus = if (forgetFocus) null else lastFocus,
+            previousReveal = if (forgetReveal) null else lastReveal,
         )
-        bordered.render(canvas)
-        scroll = bordered.scroll.offset
-        lastFocus = bordered.scroll.focus
+        panel.draw(canvas)
+        scroll = panel.scroll.offset
+        lastReveal = panel.scroll.revealed
     }
 
     public companion object {

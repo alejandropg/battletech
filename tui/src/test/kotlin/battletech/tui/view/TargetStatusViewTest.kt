@@ -9,13 +9,13 @@ import battletech.tactical.unit.PublicWeapon
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.WeaponMountId
 import battletech.tui.anArmorLayout
-import battletech.tui.game.PanelId
+import battletech.tui.game.GamePanelId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.ScreenBuffer
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.renderInPanel
 
 internal class TargetStatusViewTest {
@@ -48,7 +48,7 @@ internal class TargetStatusViewTest {
 
     /** Render via decorator at (0,0) — pixel-parity regression guard for box/coordinates. */
     private fun renderDecorated(view: TargetStatusView, width: Int = 28, height: Int = 30): ScreenBuffer =
-        renderInPanel(view, badge = PanelId.TARGET_STATUS.badge, title = TargetStatusView.TITLE, width = width, height = height)
+        renderInPanel(view, badge = GamePanelId.TARGET_STATUS.badge, title = TargetStatusView.TITLE, width = width, height = height)
 
     @Test
     fun `renders box border with title TARGET STATUS`() {
@@ -73,7 +73,7 @@ internal class TargetStatusViewTest {
 
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).char }
         assertEquals("u1: Hunchback", line)
-        assertEquals(UiRole.ACCENT, buffer.get(2, 2).style.fg)
+        assertEquals(ChromeRole.ACCENT, buffer.get(2, 2).style.fg)
     }
 
     @Test

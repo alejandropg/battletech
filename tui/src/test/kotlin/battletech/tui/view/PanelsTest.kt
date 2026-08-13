@@ -1,6 +1,6 @@
 package battletech.tui.view
 
-import battletech.tui.game.PanelId
+import battletech.tui.game.GamePanelId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.panel.Panel
@@ -11,13 +11,13 @@ internal class PanelsTest {
     fun `registry is in left-to-right render order, HELP rightmost`() {
         assertEquals(
             listOf(
-                PanelId.TARGET_STATUS,
-                PanelId.TARGETS,
-                PanelId.DECLARED_TARGETS,
-                PanelId.ATTACK_RESULTS,
-                PanelId.UNIT_STATUS,
-                PanelId.LOG,
-                PanelId.HELP,
+                GamePanelId.TARGET_STATUS,
+                GamePanelId.TARGETS,
+                GamePanelId.DECLARED_TARGETS,
+                GamePanelId.ATTACK_RESULTS,
+                GamePanelId.UNIT_STATUS,
+                GamePanelId.LOG,
+                GamePanelId.HELP,
             ),
             Panels.build().map { it.id },
         )
@@ -26,16 +26,16 @@ internal class PanelsTest {
     @Test
     fun `all panels are the same width`() {
         val byId = Panels.build().associateBy { it.id }
-        assertEquals(28, byId.getValue(PanelId.ATTACK_RESULTS).width)
-        assertEquals(28, byId.getValue(PanelId.LOG).width)
-        assertEquals(28, byId.getValue(PanelId.TARGETS).width)
-        assertEquals(28, byId.getValue(PanelId.HELP).width)
+        assertEquals(28, byId.getValue(GamePanelId.ATTACK_RESULTS).width)
+        assertEquals(28, byId.getValue(GamePanelId.LOG).width)
+        assertEquals(28, byId.getValue(GamePanelId.TARGETS).width)
+        assertEquals(28, byId.getValue(GamePanelId.HELP).width)
     }
 
     @Test
     fun `every panel id appears exactly once`() {
-        assertEquals(PanelId.entries.toSet(), Panels.build().map { it.id }.toSet())
-        assertEquals(PanelId.entries.size, Panels.build().size)
+        assertEquals(GamePanelId.entries.toSet(), Panels.build().map { it.id }.toSet())
+        assertEquals(GamePanelId.entries.size, Panels.build().size)
     }
 
     @Test
@@ -51,10 +51,10 @@ internal class PanelsTest {
 
     @Test
     fun `build returns a fresh, independent instance every call`() {
-        val first = Panels.build().first { it.id == PanelId.LOG }
+        val first = Panels.build().first { it.id == GamePanelId.LOG }
         first.toggleCollapsed()
 
-        val second = Panels.build().first { it.id == PanelId.LOG }
+        val second = Panels.build().first { it.id == GamePanelId.LOG }
 
         assertEquals(false, second.collapsed, "a later Panels.build() must not see an earlier call's state")
     }
