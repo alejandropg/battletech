@@ -272,6 +272,48 @@ internal class AttackPhaseTest {
         }
 
         @Test
+        fun `escape leaves the twisted unit's draft torso visible in SelectingAttacker's render`() {
+            val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
+            val gameState = GameState(UnitRoster(listOf(unit)), map5x5)
+            val turnState = baseTurnState()
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
+            val state = anAppState(phase, gameState, turnState, cursor = unit.position)
+
+            val twisted = phase.handle(KeyboardEvent("ArrowRight"), state)!!
+            val twistedPhase = twisted.app.phase as AttackPhase.Declaring
+            assertEquals(HexDirection.NE, twistedPhase.torsoFacing)
+
+            val cancelled = twistedPhase.handle(KeyboardEvent("Escape"), twisted.app)!!
+            val selecting = cancelled.app.phase as AttackPhase.SelectingAttacker
+
+            assertEquals(HexDirection.NE, selecting.render(cancelled.app).draftTorsoFacings[unit.position])
+        }
+
+        @Test
+        fun `commit clears drafted torso overrides from the next SelectingAttacker render`() {
+            // Two impulses (player 1, then player 2 — aTurnState()'s default order) so the
+            // WEAPON_ATTACK phase isn't complete after player 1's commit — unlike baseTurnState()'s
+            // single-impulse order used in "commit after weapon assignment saves declaration" above
+            // — leaving a fresh SelectingAttacker to inspect.
+            val unit = aUnit(weapons = listOf(mediumLaser()), position = HexCoordinates(2, 2), facing = HexDirection.N)
+            val enemy = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(3, 1))
+            val gameState = GameState(UnitRoster(listOf(unit, enemy)), map5x5)
+            val turnState = aTurnState()
+            val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
+            val state = anAppState(phase, gameState, turnState, cursor = unit.position)
+
+            val twisted = phase.handle(KeyboardEvent("ArrowRight"), state)!!
+            val twistedPhase = twisted.app.phase as AttackPhase.Declaring
+
+            val committed = commitAttackImpulse(twisted.app, TurnPhase.WEAPON_ATTACK, twistedPhase.allDrafts())
+
+            assertEquals(TurnPhase.WEAPON_ATTACK, committed.app.currentPhase)
+            val selecting = committed.app.phase as AttackPhase.SelectingAttacker
+            assertTrue(selecting.drafts.isEmpty())
+            assertEquals(RenderData.EMPTY, selecting.render(committed.app))
+        }
+
+        @Test
         fun `toggle off last weapon on primary promotes secondary to primary`() {
             val unit = aUnit(
                 weapons = listOf(mediumLaser(), mediumLaser()),

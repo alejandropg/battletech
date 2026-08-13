@@ -2,6 +2,7 @@ package battletech.tui.game.phase
 
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.heat.weaponHeatSource
+import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
@@ -104,6 +105,9 @@ internal sealed interface AttackPhase : Phase {
         override fun declaredTargetsRender(app: AppState): DeclaredTargetsRender =
             buildDeclaredTargetsRender(app, declaredTargetsViewingPlayer(app.turnState), drafts)
 
+        override fun render(app: AppState): RenderData =
+            if (drafts.isEmpty()) RenderData.EMPTY else RenderData(draftTorsoFacings = draftTorsoFacings(app, drafts))
+
         override fun keyContext(): String = "WEAPON ATTACK"
 
         override fun keyHints(): List<KeyHint> = Keymap.ATTACK_IDLE
@@ -190,7 +194,6 @@ internal sealed interface AttackPhase : Phase {
             val validIds = view.validTargets(unitId, torsoFacing)
             val targets = targetTable(view)
             val arcHighlights = arc.associateWith { HexHighlight.ATTACK_RANGE }
-            val torsoFacings = mapOf(attacker.position to torsoFacing)
             val targetPositions = view.resolveTargetPositions(validIds)
             val selectedTargetPosition = targets.getOrNull(cursorTargetIndex)
                 ?.let { visibleState.units.byId(it.unitId).position }
@@ -200,7 +203,7 @@ internal sealed interface AttackPhase : Phase {
                 ?: emptyMap()
             return RenderData(
                 hexHighlights = arcHighlights + los + selectedLos,
-                torsoFacings = torsoFacings,
+                draftTorsoFacings = draftTorsoFacings(app, allDrafts()),
                 validTargetPositions = targetPositions,
                 selectedTargetPosition = selectedTargetPosition,
             )
@@ -366,6 +369,20 @@ internal fun declaredTargetsViewingPlayer(turnState: TurnState): PlayerId =
     } else {
         turnState.attack.activePlayer
     }
+
+/**
+ * Board overrides for every torso twist the viewer has drafted but not committed, keyed by the
+ * attacker's hex. Only twists that differ from the unit's committed facing are included — an
+ * untouched draft renders identically to committed state and must not be greyed.
+ */
+internal fun draftTorsoFacings(
+    app: AppState,
+    drafts: Map<UnitId, UnitDeclaration>,
+): Map<HexCoordinates, HexDirection> =
+    drafts.values.mapNotNull { decl ->
+        val unit = app.visibleState.units.byId(decl.unitId)
+        if (decl.torsoFacing == unit.torsoFacing) null else unit.position to decl.torsoFacing
+    }.toMap()
 
 /**
  * Committed entries come from [PlayerView.declaredWeaponAttacks] — the same server-authoritative

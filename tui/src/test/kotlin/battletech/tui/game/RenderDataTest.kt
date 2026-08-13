@@ -11,6 +11,7 @@ import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
+import battletech.tactical.session.UnitDeclaration
 import battletech.tactical.unit.UnitId
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
@@ -374,6 +375,59 @@ internal class RenderDataTest {
 
             assertEquals(HexHighlight.LINE_OF_SIGHT, result.hexHighlights[HexCoordinates(0, 1)])
             assertEquals(HexHighlight.LINE_OF_SIGHT, result.hexHighlights[HexCoordinates(0, 2)])
+        }
+
+        @Test
+        fun `render includes a draft torso override for the focused unit's own twist`() {
+            val attacker = aUnit(
+                id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
+                facing = HexDirection.N, weapons = listOf(mediumLaser()),
+            )
+            val gameState = aGameState(units = listOf(attacker), map = aGameMap(cols = 3, rows = 3))
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.NE)
+
+            val result = phase.render(anAppState(phase, gameState = gameState))
+
+            assertEquals(HexDirection.NE, result.draftTorsoFacings[attacker.position])
+        }
+
+        @Test
+        fun `render omits the draft torso override when the twist matches the committed facing`() {
+            val attacker = aUnit(
+                id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
+                facing = HexDirection.N, weapons = listOf(mediumLaser()),
+            )
+            val gameState = aGameState(units = listOf(attacker), map = aGameMap(cols = 3, rows = 3))
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.N)
+
+            val result = phase.render(anAppState(phase, gameState = gameState))
+
+            assertEquals(emptyMap<HexCoordinates, HexDirection>(), result.draftTorsoFacings)
+        }
+
+        @Test
+        fun `render carries forward another unit's stashed torso draft alongside the focused unit's own twist`() {
+            val attacker = aUnit(
+                id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
+                facing = HexDirection.N, weapons = listOf(mediumLaser()),
+            )
+            val other = aUnit(
+                id = "other", position = HexCoordinates(1, 0), owner = PlayerId.PLAYER_1,
+                facing = HexDirection.N, weapons = listOf(mediumLaser()),
+            )
+            val gameState = aGameState(units = listOf(attacker, other), map = aGameMap(cols = 3, rows = 3))
+            val otherDraft = UnitDeclaration(
+                unitId = other.id,
+                torsoFacing = HexDirection.NW,
+                primaryTargetId = null,
+                weaponAssignments = emptyMap(),
+            )
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.NE).copy(drafts = mapOf(other.id to otherDraft))
+
+            val result = phase.render(anAppState(phase, gameState = gameState))
+
+            assertEquals(HexDirection.NE, result.draftTorsoFacings[attacker.position])
+            assertEquals(HexDirection.NW, result.draftTorsoFacings[other.position])
         }
     }
 }

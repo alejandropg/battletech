@@ -3,6 +3,7 @@ package battletech.tui.hex
 import battletech.tactical.model.HexDirection
 import battletech.tui.screen.BoardRole
 import tenter.screen.Canvas
+import tenter.screen.ColorRole
 
 public object UnitRenderer {
 
@@ -14,6 +15,7 @@ public object UnitRenderer {
         facing: HexDirection,
         color: BoardRole,
         torsoFacing: HexDirection? = null,
+        torsoColor: ColorRole = color,
         isDestroyed: Boolean = false,
     ) {
         val (arrowChar, arrowOffset) = facingArrowIcon(facing)
@@ -63,7 +65,7 @@ public object UnitRenderer {
         canvas.setFg(arrowX, y + arrowRow, arrowChar, color)
 
         if (torsoChar != null && torsoX != null && torsoRow != null) {
-            canvas.setFg(torsoX, y + torsoRow, torsoChar, color)
+            canvas.setFg(torsoX, y + torsoRow, torsoChar, torsoColor)
         }
     }
 

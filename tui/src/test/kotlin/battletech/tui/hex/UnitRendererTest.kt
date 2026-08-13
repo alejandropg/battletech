@@ -5,6 +5,7 @@ import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
+import tenter.screen.ChromeRole
 import tenter.screen.ScreenBuffer
 
 internal class UnitRendererTest {
@@ -138,6 +139,32 @@ internal class UnitRendererTest {
         assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
         // Position 5,2 should be empty (no torso arrow)
         assertEquals(" ", buffer.get(5, 2).char)
+    }
+
+    @Test
+    fun `torso arrow uses torsoColor when given, independent of unit color`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(
+            Canvas.of(buffer), 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1,
+            torsoFacing = HexDirection.NE,
+            torsoColor = ChromeRole.DRAFT,
+        )
+
+        assertEquals(ICON_TORSO_NE, buffer.get(5, 2).char)
+        assertEquals(ChromeRole.DRAFT, buffer.get(5, 2).style.fg)
+        // Id and leg-facing arrow stay in the unit color.
+        assertEquals(BoardRole.PLAYER_1, buffer.get(4, 3).style.fg)
+        assertEquals(BoardRole.PLAYER_1, buffer.get(4, 2).style.fg)
+    }
+
+    @Test
+    fun `torso arrow defaults to unit color when torsoColor is omitted`() {
+        val buffer = ScreenBuffer(10, 6)
+
+        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, torsoFacing = HexDirection.NE)
+
+        assertEquals(BoardRole.PLAYER_1, buffer.get(5, 2).style.fg)
     }
 
     @Test

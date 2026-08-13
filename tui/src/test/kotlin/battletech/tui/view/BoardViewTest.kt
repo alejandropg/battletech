@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.query.projectFor
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
@@ -173,6 +174,22 @@ internal class BoardViewTest {
 
         assertEquals("a", buffer.get(8, 4).char)
         assertEquals("1", buffer.get(9, 4).char)
+    }
+
+    @Test
+    fun `draft torso override paints the arrow in ChromeRole DRAFT, distinct from a committed torso twist`() {
+        val draftUnit = aUnit(id = "A1", position = HexCoordinates(0, 0), facing = HexDirection.N)
+        val committedUnit = aUnit(id = "B1", position = HexCoordinates(1, 0), facing = HexDirection.N)
+            .copy(torsoFacing = HexDirection.NE)
+        val state = aGameState(units = listOf(draftUnit, committedUnit), map = aGameMap())
+            .projectFor(viewer = null, revealAll = true)
+        val view = BoardView(state, draftTorsoFacings = mapOf(HexCoordinates(0, 0) to HexDirection.NE))
+        val buffer = render(view, 32, 18)
+
+        // Draft unit (hex 0,0): torso NE slot is at x+5,y+2 = (9,3) — draft color.
+        assertEquals(ChromeRole.DRAFT, buffer.get(9, 3).style.fg)
+        // Committed unit (hex 1,0): torso NE slot is at x+5,y+2 = (16,5) — player color, no draft entry.
+        assertEquals(BoardRole.PLAYER_1, buffer.get(16, 5).style.fg)
     }
 
     @Test

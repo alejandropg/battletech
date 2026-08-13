@@ -33,7 +33,7 @@ internal class BoardView(
     private val facingSelectionFacings: Set<HexDirection>? = null,
     private val pathDestination: HexCoordinates? = null,
     private val movementMode: MovementMode? = null,
-    private val torsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
+    private val draftTorsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
     private val validTargetPositions: Set<HexCoordinates> = emptySet(),
     private val selectedTargetPosition: HexCoordinates? = null,
 ) : View {
@@ -90,7 +90,8 @@ internal class BoardView(
                     isValidTarget -> BoardRole.TARGET_VALID
                     else -> playerColor(unit.owner)
                 }
-                val effectiveTorso = torsoFacings[coords] ?: unit.torsoFacing
+                val draftTorso = draftTorsoFacings[coords]
+                val effectiveTorso = draftTorso ?: unit.torsoFacing
                 val torsoFacing = if (effectiveTorso != unit.facing) effectiveTorso else null
                 // Prone units (still active) are drawn with a lowercased id;
                 // otherwise the unit's id is used as-is.
@@ -103,6 +104,7 @@ internal class BoardView(
                     unit.facing,
                     renderColor,
                     torsoFacing = torsoFacing,
+                    torsoColor = if (draftTorso != null) ChromeRole.DRAFT else renderColor,
                     isDestroyed = unit.isDestroyed,
                 )
             }

@@ -95,7 +95,7 @@ internal class Workspace {
             facingSelectionFacings = renderData.facingSelection?.facings,
             pathDestination = appState.phase.pathDestination(),
             movementMode = appState.phase.movementMode(),
-            torsoFacings = renderData.torsoFacings,
+            draftTorsoFacings = renderData.draftTorsoFacings,
             validTargetPositions = renderData.validTargetPositions,
             selectedTargetPosition = renderData.selectedTargetPosition,
         )

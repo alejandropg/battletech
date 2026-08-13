@@ -12,7 +12,13 @@ public data class RenderData(
     val hexHighlights: Map<HexCoordinates, HexHighlight> = emptyMap(),
     val reachableFacings: Map<HexCoordinates, Set<HexDirection>> = emptyMap(),
     val facingSelection: FacingSelection? = null,
-    val torsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
+    /**
+     * Torso overrides for uncommitted twists, keyed by the attacker's hex. Every entry here
+     * differs from that unit's committed `torsoFacing` — an untouched draft is indistinguishable
+     * from committed state and must not appear, since [BoardView][battletech.tui.view.BoardView]
+     * paints every entry in the draft color.
+     */
+    val draftTorsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
     val validTargetPositions: Set<HexCoordinates> = emptySet(),
     val selectedTargetPosition: HexCoordinates? = null,
 ) {
