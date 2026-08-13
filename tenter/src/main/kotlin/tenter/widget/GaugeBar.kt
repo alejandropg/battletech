@@ -1,7 +1,8 @@
-package tenter.view
+package tenter.widget
 
 import tenter.screen.Cell
 import tenter.screen.UiRole
+import tenter.view.TextCursor
 
 /** A proportional `[███░░░]value` bar, colored by how full it is (info/warning/danger tiers). */
 public class GaugeBar(

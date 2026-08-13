@@ -1,8 +1,9 @@
-package tenter.view
+package tenter.widget
 
 import tenter.screen.Cell
 import tenter.screen.ColorRole
 import tenter.screen.UiRole
+import tenter.view.TextCursor
 
 // Nerd Fonts icons (https://www.nerdfonts.com/cheat-sheet)
 private val NF_MD_CHECKBOX_BLANK_OUTLINE = String(Character.toChars(0xF0131))

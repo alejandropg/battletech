@@ -21,7 +21,7 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.UiRole
 import tenter.view.TextCursor
-import tenter.view.GaugeBar
+import tenter.widget.GaugeBar
 import tenter.view.View
 
 internal class UnitStatusView(

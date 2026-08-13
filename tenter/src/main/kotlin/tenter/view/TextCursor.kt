@@ -2,8 +2,8 @@ package tenter.view
 
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.CellWidth
 import tenter.screen.UiRole
+import tenter.text.CellWidth
 
 public class TextCursor(private val canvas: Canvas) {
     public val width: Int get() = canvas.width

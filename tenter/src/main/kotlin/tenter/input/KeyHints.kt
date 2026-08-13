@@ -8,7 +8,7 @@ public data class KeySection(val title: String, val hints: List<KeyHint>)
 
 /**
  * Single-cell glyphs standing in for special keys in [KeyHint] labels. Each codepoint is
- * confirmed width-1 by [tenter.screen.CellWidth] (none fall in its wide-glyph ranges), which is
+ * confirmed width-1 by [tenter.text.CellWidth] (none fall in its wide-glyph ranges), which is
  * what keeps a help panel's key column aligned.
  */
 public object KeyGlyph {

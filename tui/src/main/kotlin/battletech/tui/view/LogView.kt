@@ -3,8 +3,8 @@ package battletech.tui.view
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.session.LogEntry
 import tenter.screen.Canvas
-import tenter.screen.CellWidth
-import tenter.screen.TextWrap
+import tenter.text.CellWidth
+import tenter.text.TextWrap
 import tenter.view.TextCursor
 import tenter.view.Viewport
 import tenter.view.View

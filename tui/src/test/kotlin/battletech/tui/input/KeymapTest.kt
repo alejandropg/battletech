@@ -3,7 +3,7 @@ package battletech.tui.input
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.input.KeyHint
-import tenter.screen.CellWidth
+import tenter.text.CellWidth
 
 /**
  * Guards [HelpView][tenter.view.HelpView]'s column alignment: every hint's `keys`

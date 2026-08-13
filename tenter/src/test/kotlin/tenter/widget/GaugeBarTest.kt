@@ -1,4 +1,4 @@
-package tenter.view
+package tenter.widget
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.screen.ScreenBuffer
 import tenter.screen.UiRole
+import tenter.view.TextCursor
 
 internal class GaugeBarTest {
 

@@ -1,4 +1,4 @@
-package tenter.screen
+package tenter.text
 
 public object TextWrap {
 

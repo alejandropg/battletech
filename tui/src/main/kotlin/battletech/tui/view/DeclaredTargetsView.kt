@@ -7,7 +7,7 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.UiRole
 import tenter.view.TextCursor
-import tenter.view.ValueRow
+import tenter.widget.ValueRow
 import tenter.view.View
 
 internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {

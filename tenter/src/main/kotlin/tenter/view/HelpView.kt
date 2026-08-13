@@ -3,9 +3,9 @@ package tenter.view
 import tenter.input.KeySection
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.CellWidth
-import tenter.screen.TextWrap
 import tenter.screen.UiRole
+import tenter.text.CellWidth
+import tenter.text.TextWrap
 
 /**
  * Content for a HELP panel: a single `KEYS` section (the top-level rule, via

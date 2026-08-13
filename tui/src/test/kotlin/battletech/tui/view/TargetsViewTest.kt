@@ -7,8 +7,8 @@ import battletech.tui.hex.diceRoll
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.UiRole
-import tenter.view.CheckState
-import tenter.view.checkboxIcon
+import tenter.widget.CheckState
+import tenter.widget.checkboxIcon
 import tenter.view.line
 import tenter.view.render
 import tenter.view.text
