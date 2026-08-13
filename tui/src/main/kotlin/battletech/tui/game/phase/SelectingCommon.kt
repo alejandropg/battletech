@@ -6,7 +6,7 @@ import battletech.tactical.session.CommandResult
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
-import tenter.panel.FlashMessage
+import tenter.view.FlashMessage
 import battletech.tui.game.moveCursor
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper

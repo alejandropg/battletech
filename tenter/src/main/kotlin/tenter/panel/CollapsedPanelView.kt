@@ -1,8 +1,10 @@
-package tenter.view
+package tenter.panel
 
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.UiRole
+import tenter.view.Bordered
+import tenter.view.View
 
 /** A panel shrunk to its stub width: a plain box carrying only the `[badge]` and the panel's title, one letter per row. */
 public class CollapsedPanelView(public val badge: Char, public val title: String) : View {

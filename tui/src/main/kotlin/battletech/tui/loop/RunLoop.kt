@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import tenter.input.ChromeInput
 import tenter.input.PanAction
-import tenter.panel.FlashMessage
+import tenter.view.FlashMessage
 import tenter.screen.ScreenRenderer
 import tenter.view.ScrollOffset
 

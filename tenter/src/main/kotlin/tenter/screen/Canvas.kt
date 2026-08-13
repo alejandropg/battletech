@@ -1,5 +1,8 @@
 package tenter.screen
 
+/** A rect, in some [Canvas]'s local coords, that content wants kept visible — see [Canvas.markFocus]. */
+public data class FocusRect(val x: Int, val y: Int, val width: Int, val height: Int)
+
 /**
  * A rectangular, clipped, origin-translated region of a [ScreenBuffer]. All coordinates
  * passed to its methods are LOCAL: `(0, 0)` is this region's own top-left corner. Writes
@@ -10,9 +13,6 @@ package tenter.screen
  * can only ever narrow: a child can't widen its way back out to a wider rect than it started
  * with.
  */
-/** A rect, in some [Canvas]'s local coords, that content wants kept visible — see [Canvas.markFocus]. */
-public data class FocusRect(val x: Int, val y: Int, val width: Int, val height: Int)
-
 public class Canvas private constructor(
     private val buffer: ScreenBuffer,
     private val originX: Int,

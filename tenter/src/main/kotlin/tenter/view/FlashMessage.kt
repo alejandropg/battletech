@@ -1,4 +1,4 @@
-package tenter.panel
+package tenter.view
 
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds

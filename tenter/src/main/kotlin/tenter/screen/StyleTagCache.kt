@@ -21,7 +21,7 @@ import com.github.ajalt.colormath.Color as ColorValue
  * used for exactly one thing: [AnsiLevel.NONE] suppresses tags entirely. Do not grow it back
  * into a conversion knob — that job belongs to which [RolePalette] the caller chose.
  */
-internal class TextStyleFactory(private val palette: RolePalette, private val ansiLevel: AnsiLevel) {
+internal class StyleTagCache(private val palette: RolePalette, private val ansiLevel: AnsiLevel) {
 
     /** Cached open/close ANSI escape strings for one [Cell.Style]; either may be empty. */
     internal class Tags(internal val open: String, internal val close: String)

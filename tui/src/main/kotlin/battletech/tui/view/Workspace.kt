@@ -6,7 +6,7 @@ import battletech.tui.game.AppState
 import battletech.tui.game.PanelId
 import battletech.tui.game.PanelVisibility
 import tenter.input.KeyGlyph
-import tenter.panel.FlashMessage
+import tenter.view.FlashMessage
 import tenter.panel.PanelLayout
 import tenter.screen.Canvas
 import tenter.screen.Cell

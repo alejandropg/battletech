@@ -18,7 +18,7 @@ import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
-import tenter.panel.FlashMessage
+import tenter.view.FlashMessage
 import battletech.tui.game.RenderData
 import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase

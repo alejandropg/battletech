@@ -2,7 +2,6 @@ package tenter.panel
 
 import tenter.screen.Canvas
 import tenter.screen.FocusRect
-import tenter.view.CollapsedPanelView
 import tenter.view.ContentExtent
 import tenter.view.ScrollOffset
 import tenter.view.View
