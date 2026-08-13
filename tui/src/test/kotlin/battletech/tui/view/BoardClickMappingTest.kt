@@ -9,11 +9,14 @@ import battletech.tui.aUnit
 import battletech.tui.game.phase.BOARD_ORIGIN_X
 import battletech.tui.game.phase.BOARD_ORIGIN_Y
 import battletech.tui.input.InputMapper
-import battletech.tui.screen.Canvas
-import battletech.tui.screen.ScreenBuffer
 import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import tenter.screen.Canvas
+import tenter.screen.ScreenBuffer
+import tenter.view.ContentExtent
+import tenter.view.ScrollOffset
+import tenter.view.scrollingPanel
 
 /**
  * Round-trips a click through the REAL frame composition: a unit is rendered onto the board

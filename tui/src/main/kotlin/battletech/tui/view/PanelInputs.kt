@@ -2,7 +2,7 @@ package battletech.tui.view
 
 import battletech.tui.game.AppState
 import battletech.tui.game.phase.AttackResultsRender
-import battletech.tui.input.KeySection
+import tenter.input.KeySection
 import battletech.tui.input.Keymap
 
 /**

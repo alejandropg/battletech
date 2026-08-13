@@ -23,16 +23,19 @@ Two tiers, distinguished by **how they load** — not by topic:
 
 - **`tactical/`** (`battletech.tactical.*`): `attack/` (incl. `physical/`, `weapon/` — attack resolution/declarations/crit tables for melee vs. gunnery), `dice/` (`DiceRoller` abstraction), `heat/` (generation/dissipation/phase resolution), `model/` (incl. `map/` — core `GameState`/`GameMap`/hex coordinates, filesystem/classpath map loading), `movement/` (cost/reachability/phase handler), `query/` (per-player read/projection layer — `PlayerView`, `ForeignUnit`/`OwnUnit` redaction types), `session/` (`BattleSession`, `GameCommand`/`GameEvent`, phase handlers, redaction), `unit/`.
 - **`network/`** (`battletech.network.*`): `client/` (`ClientGameSession`), `server/` (`GameServer`, `SocketAcceptor`), `transport/` (`ServerConnection`/`ClientConnection` port + the `JsonLineConnection` and `InMemoryConnection` adapters), `wire/` (`Messages`, `SessionId`, `WireJson`). Reuses `tactical.session`/`tactical.query` types directly as wire DTOs (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) rather than redefining them.
-- **`tui/`** (`battletech.tui.*`): `game/` (incl. `phase/` — app state, phase-specific UI logic like `AttackPhase`/`MovementPhase`/`WeaponAllocation`), `hex/` (hex-grid rendering/geometry), `input/` (keyboard input mapping per mode), `loop/` (terminal event flows + `runLoop`, the headless-testable event/render loop), `screen/` (low-level terminal screen buffer/diffing), `view/` (widget/panel rendering).
+- **`tenter/`** (`tenter.*`): `screen/` (`Canvas`/`ScreenBuffer`/`Cell`/`Insets`/`CellWidth`/`TextWrap`, `ColorRole`/`UiRole`/`PaletteColor`/`RolePalette`, the diffing `ScreenRenderer`), `view/` (`View`, layout decorators `Padded`/`Bordered`/`Scrolled`/`scrollingPanel`, widgets `ContentWriter`/`CollapsedPanelView`/`Checkbox`/`HelpView`/`GaugeBar`/`ValueRow`), `panel/` (`PanelKey`, the generic `Panel<K, I>`, `PanelLayout`, `FlashMessage`), `input/` (`ChromeInput` — quit/panel-chord/scroll/pan mappings — plus `KeyGlyph`/`KeyHint`/`KeySection`/`PanAction`), `terminal/` (`TerminalEvent` + the raw-mode/resize `Flow` producers), `icons/` (`NerdFont` — raw glyph codepoints only, no domain meaning). No `battletech.*` imports anywhere in this module — see the invariant in `CLAUDE.md` and `tenter/src/test/kotlin/tenter/ArchitectureTest.kt`.
+- **`tui/`** (`battletech.tui.*`): `game/` (incl. `phase/` — app state, phase-specific UI logic like `AttackPhase`/`MovementPhase`/`WeaponAllocation`), `hex/` (hex-grid rendering/geometry — a `HexRole`-flavored consumer of `tenter.screen`), `input/` (`InputMapper` — the domain key mappings; `Keymap`'s BattleTech hint strings), `loop/` (`RunLoop` + `UiEvent`, the headless-testable event/render loop — composes `tenter.terminal`'s flows and `tenter.panel`'s `Panel`/`PanelLayout` into the game's own frame), `screen/` (`BoardRole` — the terrain/movement/player color roles — plus `TuiTheme` and the six concrete `RolePalette`s), `view/` (board/panel rendering built on `tenter.view`'s decorators and `tenter.panel`'s `Panel<PanelId, PanelInputs>`, aliased `GamePanel`).
 
 ## buildSrc convention plugins
 
 Applied via `id("battletech.<name>")`:
 
 - **`battletech.kotlin-common`** — base for every module: applies `kotlin("jvm")`, sets the JVM toolchain (JVM 21 when `CLAUDE_CODE` env var is set — Claude Cloud constraint — otherwise the catalog version), enables `explicitApi()`, configures JUnit Platform + test logging, wires standard test deps (JUnit BOM/bundle, MockK, AssertJ).
-- **`battletech.kotlin-library`** — applies `kotlin-common`; used by `strategic`, `tactical`, `network`.
+- **`battletech.kotlin-library`** — applies `kotlin-common`; used by `strategic`, `tactical`, `network`, `tenter`.
 - **`battletech.kotlin-application`** — applies `kotlin-common` + the `application` plugin; used by `bt`, `tui`.
 - **`battletech.kotlin-serialization`** — applies the Kotlin serialization plugin; used by `tactical` and `network` (both need kotlinx-serialization for `GameState`/wire types).
+
+`tenter/build.gradle.kts` additionally applies the stock `java-test-fixtures` plugin (not a `battletech.*` convention plugin) to publish `ViewTestSupport.kt`'s `render`/`renderInPanel`/buffer helpers as `testFixtures(project(":tenter"))`, consumed by `tui`'s own tests — a fixture used across module boundaries belongs in `testFixtures`, not duplicated per consumer.
 
 ## Enforced package boundaries
 
@@ -51,8 +54,8 @@ Intent: `model/` and `dice/` are leaf packages — nothing above them may be imp
 
 - `network → tactical`: `api(project(":tactical"))` in `network/build.gradle.kts` — deliberately transitive (not `implementation`). `network` re-exports `tactical` types (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) directly as wire DTOs instead of redefining them, so consumers of `network` need `tactical`'s types on their compile classpath too.
 - `bt → strategic`, `bt → tactical`: both `implementation(project(...))` in `bt/build.gradle.kts`.
-- `tui → tactical`, `tui → network`: both `implementation(project(...))` in `tui/build.gradle.kts`.
-- `strategic` and `tactical` declare no `project(...)` dependencies on other modules (`strategic/build.gradle.kts`, `tactical/build.gradle.kts`).
+- `tui → tactical`, `tui → network`, `tui → tenter`: all `implementation(project(...))` in `tui/build.gradle.kts`; `tui` additionally takes `testImplementation(testFixtures(project(":tenter")))` for shared rendering test helpers.
+- `strategic`, `tactical`, and `tenter` declare no `project(...)` dependencies on other modules (`strategic/build.gradle.kts`, `tactical/build.gradle.kts`, `tenter/build.gradle.kts`). `tenter` depends only on `mordant` and `kotlinx-coroutines-core` (both `api`, since `Terminal`/`InputEvent`/`Flow` types appear in its own public surface) — no BattleTech module may appear on its classpath, enforced per the invariant in `CLAUDE.md`.
 
 ## TUI packaging
 
@@ -63,6 +66,25 @@ Tactical's `processResources` copies the repository's root `map/` directory into
 `tasks.shadowJar` is configured with `archiveBaseName = "tui"`, `archiveClassifier = ""`, `archiveVersion = ""`, so the fat jar lands at exactly `tui/build/libs/tui.jar` (no `-all`/version suffix). `mergeServiceFiles()` is set to correctly merge `META-INF/services` entries from bundled dependencies.
 
 The `createExecutable` task (group `distribution`) depends on `shadowJar` and prepends a POSIX shell stub — `#!/bin/sh\nexec java -jar "$0" "$@"\n` — to the shadow jar's bytes, writing the result to `build/tui` and marking it executable. A shell script prepended to a zip/jar is still a valid jar (the JVM's zip reader scans from the end of the file), so `build/tui` is simultaneously a runnable shell script and a runnable jar.
+
+## Why `RunLoop` and `Workspace` stayed in `tui`
+
+`tenter` took the render core, the view/layout decorators, the panel framework, and the terminal
+input/event plumbing — everything that was already generic as written. Two pieces that look
+similarly mechanical stayed behind on purpose:
+
+- **`RunLoop`** (`tui/loop/RunLoop.kt`) is BattleTech's own event-dispatch policy — phase
+  handling, match-over gating, flash-message lifecycle, session resync — built *from*
+  `tenter.terminal`'s event flows and `tenter.panel`'s `Panel`/`PanelLayout`, not a generic loop
+  itself. Generalizing it would mean inventing an event-loop abstraction with exactly one client
+  today; that's a seam with nothing on the other side of it yet.
+- **`Workspace`** (`tui/view/Workspace.kt`) is the frame *composition* — where the board and
+  which panels go, in what order, under what title — for this one game. `tenter.panel.PanelLayout`
+  already extracted the actual geometry math (`compute`/`slotAt`) that `Workspace` calls into;
+  what's left is BattleTech-specific composition, not reusable machinery.
+
+If a second delivery (a future web UI) ever needs the same event-loop shape, that's the signal to
+extract it — not before.
 
 ## Invariants: rationale
 

@@ -10,6 +10,7 @@ import battletech.tui.hex.HexHighlight
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
+import tenter.view.render
 
 internal class BoardViewMovementPhaseStateOverlayTest {
 

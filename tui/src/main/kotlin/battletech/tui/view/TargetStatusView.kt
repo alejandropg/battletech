@@ -1,9 +1,11 @@
 package battletech.tui.view
 
 import battletech.tactical.unit.ForeignUnit
-import battletech.tui.screen.Canvas
-import battletech.tui.screen.Cell
-import battletech.tui.screen.Color
+import tenter.screen.Canvas
+import tenter.screen.Cell
+import tenter.screen.UiRole
+import tenter.view.ContentWriter
+import tenter.view.View
 
 internal class TargetStatusView(private val unit: ForeignUnit?) : View {
 
@@ -21,6 +23,6 @@ internal class TargetStatusView(private val unit: ForeignUnit?) : View {
     internal companion object {
         internal const val TITLE: String = "TARGET STATUS"
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
     }
 }

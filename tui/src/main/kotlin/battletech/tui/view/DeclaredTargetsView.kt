@@ -3,9 +3,12 @@ package battletech.tui.view
 import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.game.phase.DeclaredWeaponEntry
 import battletech.tui.hex.targetIcon
-import battletech.tui.screen.Canvas
-import battletech.tui.screen.Cell
-import battletech.tui.screen.Color
+import tenter.screen.Canvas
+import tenter.screen.Cell
+import tenter.screen.UiRole
+import tenter.view.ContentWriter
+import tenter.view.ValueRow
+import tenter.view.View
 
 internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {
 
@@ -18,8 +21,8 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
         }
 
         for ((index, entry) in data.entries.withIndex()) {
-            val attackerColor = if (entry.isDraft) Color.DRAFT else playerColor(entry.ownerPlayer)
-            val contentColor = if (entry.isDraft) Color.DRAFT else Color.TEXT_PRIMARY
+            val attackerColor = if (entry.isDraft) UiRole.DRAFT else playerColor(entry.ownerPlayer)
+            val contentColor = if (entry.isDraft) UiRole.DRAFT else UiRole.TEXT_PRIMARY
 
             content.writeln(entry.attackerId.value, Cell.Style(attackerColor))
 
@@ -30,11 +33,10 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
 
                 for (weapon in target.weapons) {
                     when (weapon) {
-                        is DeclaredWeaponEntry.Detailed -> WeaponHitWidget.draw(
+                        is DeclaredWeaponEntry.Detailed -> ValueRow.draw(
                             content,
                             "    ${weapon.weaponName}",
-                            weapon.targetDiceRoll,
-                            weapon.successChance,
+                            hitChanceLabel(weapon.targetDiceRoll, weapon.successChance),
                             weapon.modifiers,
                             contentColor,
                         )
@@ -58,6 +60,6 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
     internal companion object {
         const val TITLE: String = "DECLARED TARGETS"
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
     }
 }

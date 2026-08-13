@@ -18,7 +18,7 @@ import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
-import battletech.tui.game.FlashMessage
+import tenter.panel.FlashMessage
 import battletech.tui.game.RenderData
 import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
@@ -29,11 +29,11 @@ import battletech.tui.input.BrowsingAction
 import battletech.tui.input.FacingAction
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
-import battletech.tui.input.KeyHint
 import battletech.tui.input.Keymap
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
+import tenter.input.KeyHint
 
 internal val FACING_ORDER: List<HexDirection> = listOf(
     HexDirection.N, HexDirection.NE, HexDirection.SE,

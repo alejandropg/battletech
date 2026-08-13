@@ -1,9 +1,9 @@
 package battletech.tui.view
 
 import battletech.tui.aUnit
-import battletech.tui.screen.Color
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import tenter.screen.UiRole
 
 /** Focused tests for [UnitStatusView.penaltyLines] — the pure current/projected heat penalty mapping. */
 internal class UnitStatusViewPenaltiesTest {
@@ -12,7 +12,7 @@ internal class UnitStatusViewPenaltiesTest {
 
     @Test
     fun `cool unit has no penalties`() {
-        assertEquals(emptyList<Pair<String, Color>>(), view.penaltyLines(current = 0, projected = 0))
+        assertEquals(emptyList<Pair<String, UiRole>>(), view.penaltyLines(current = 0, projected = 0))
     }
 
     @Test
@@ -22,8 +22,8 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-1 MP" to Color.DEFAULT,
-                "+1 To-Hit" to Color.DEFAULT,
+                "-1 MP" to UiRole.DEFAULT,
+                "+1 To-Hit" to UiRole.DEFAULT,
             ),
             lines,
         )
@@ -36,8 +36,8 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-1 MP" to Color.DRAFT,
-                "+1 To-Hit" to Color.DRAFT,
+                "-1 MP" to UiRole.DRAFT,
+                "+1 To-Hit" to UiRole.DRAFT,
             ),
             lines,
         )
@@ -51,10 +51,10 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-3 MP" to Color.DRAFT,
-                "+2 To-Hit" to Color.DRAFT,
-                "Shutdown 4+" to Color.DRAFT,
-                "Ammo 4+" to Color.DRAFT,
+                "-3 MP" to UiRole.DRAFT,
+                "+2 To-Hit" to UiRole.DRAFT,
+                "Shutdown 4+" to UiRole.DRAFT,
+                "Ammo 4+" to UiRole.DRAFT,
             ),
             lines,
         )
@@ -67,9 +67,9 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-2 MP" to Color.DEFAULT,
-                "+2 To-Hit" to Color.DEFAULT,
-                "Shutdown 4+" to Color.DEFAULT,
+                "-2 MP" to UiRole.DEFAULT,
+                "+2 To-Hit" to UiRole.DEFAULT,
+                "Shutdown 4+" to UiRole.DEFAULT,
             ),
             lines,
         )
@@ -82,10 +82,10 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-3 MP" to Color.DRAFT,
-                "+2 To-Hit" to Color.DRAFT,
-                "Shutdown 6+" to Color.DRAFT,
-                "Ammo 4+" to Color.DRAFT,
+                "-3 MP" to UiRole.DRAFT,
+                "+2 To-Hit" to UiRole.DRAFT,
+                "Shutdown 6+" to UiRole.DRAFT,
+                "Ammo 4+" to UiRole.DRAFT,
             ),
             lines,
         )
@@ -98,10 +98,10 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-5 MP" to Color.DRAFT,
-                "+4 To-Hit" to Color.DRAFT,
-                "Shutdown AUTO" to Color.DRAFT,
-                "Ammo 10+" to Color.DRAFT,
+                "-5 MP" to UiRole.DRAFT,
+                "+4 To-Hit" to UiRole.DRAFT,
+                "Shutdown AUTO" to UiRole.DRAFT,
+                "Ammo 10+" to UiRole.DRAFT,
             ),
             lines,
         )
@@ -113,10 +113,10 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-5 MP" to Color.DEFAULT,
-                "+4 To-Hit" to Color.DEFAULT,
-                "Shutdown AUTO" to Color.DEFAULT,
-                "Ammo 10+" to Color.DEFAULT,
+                "-5 MP" to UiRole.DEFAULT,
+                "+4 To-Hit" to UiRole.DEFAULT,
+                "Shutdown AUTO" to UiRole.DEFAULT,
+                "Ammo 10+" to UiRole.DEFAULT,
             ),
             lines,
         )
@@ -129,10 +129,10 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-3 MP" to Color.DRAFT,
-                "+2 To-Hit" to Color.DRAFT,
-                "Shutdown 4+" to Color.DRAFT,
-                "Ammo 4+" to Color.DRAFT,
+                "-3 MP" to UiRole.DRAFT,
+                "+2 To-Hit" to UiRole.DRAFT,
+                "Shutdown 4+" to UiRole.DRAFT,
+                "Ammo 4+" to UiRole.DRAFT,
             ),
             lines,
         )
@@ -145,10 +145,10 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-3 MP" to Color.DEFAULT,
-                "+3 To-Hit" to Color.DEFAULT,
-                "Shutdown 6+" to Color.DEFAULT,
-                "Ammo 6+" to Color.DEFAULT,
+                "-3 MP" to UiRole.DEFAULT,
+                "+3 To-Hit" to UiRole.DEFAULT,
+                "Shutdown 6+" to UiRole.DEFAULT,
+                "Ammo 6+" to UiRole.DEFAULT,
             ),
             lines,
         )
@@ -161,10 +161,10 @@ internal class UnitStatusViewPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-3 MP" to Color.DEFAULT,
-                "+2 To-Hit" to Color.DEFAULT,
-                "Shutdown 4+" to Color.DEFAULT,
-                "Ammo 4+" to Color.DEFAULT,
+                "-3 MP" to UiRole.DEFAULT,
+                "+2 To-Hit" to UiRole.DEFAULT,
+                "Shutdown 4+" to UiRole.DEFAULT,
+                "Ammo 4+" to UiRole.DEFAULT,
             ),
             lines,
         )

@@ -20,7 +20,7 @@ import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.Phase
 import battletech.tui.game.phase.PhysicalAttackPhase
-import battletech.tui.view.ScrollOffset
+import tenter.view.ScrollOffset
 
 /**
  * The TUI's UI-shell state. [seats] is the set of seats this process drives, each mapped to the

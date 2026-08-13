@@ -2,9 +2,12 @@ package battletech.tui.view
 
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.session.LogEntry
-import battletech.tui.screen.Canvas
-import battletech.tui.screen.CellWidth
-import battletech.tui.screen.TextWrap
+import tenter.screen.Canvas
+import tenter.screen.CellWidth
+import tenter.screen.TextWrap
+import tenter.view.ContentWriter
+import tenter.view.Scrolled
+import tenter.view.View
 
 /**
  * Marks its last written row as focus, so the enclosing [Scrolled] follows new entries to

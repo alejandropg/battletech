@@ -19,10 +19,16 @@ import battletech.tui.aUnit
 import battletech.tui.game.PanelId
 import battletech.tui.hex.initiativeIcon
 import battletech.tui.hex.unitStoodUpIcon
-import battletech.tui.screen.Color
-import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import tenter.screen.ScreenBuffer
+import tenter.screen.UiRole
+import tenter.view.ContentExtent
+import tenter.view.ScrollOffset
+import tenter.view.line
+import tenter.view.render
+import tenter.view.renderInPanel
+import tenter.view.scrollingPanel
 
 internal class LogViewTest {
 
@@ -55,7 +61,7 @@ internal class LogViewTest {
         scrollOffset: Int? = null,
     ): ScreenBuffer = renderInPanel(
         view,
-        key = PanelId.LOG.key,
+        badge = PanelId.LOG.badge,
         title = LogView.TITLE,
         width = width,
         height = height,
@@ -96,13 +102,13 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assertEquals(Color.INFO, buffer.get(2, 2).style.fg)
+        assertEquals(UiRole.INFO, buffer.get(2, 2).style.fg)
         // Only one header for the single turn: row 3 and row 4 are plain entries, not headers.
         val headerLine = buffer.line(2, 2, 24)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
         assert(buffer.line(3, 2, 24).contains("0101→0201")) { "Expected first move entry" }
         assert(buffer.line(4, 2, 24).contains("0101→0301")) { "Expected second move entry" }
-        assertEquals(Color.DEFAULT, buffer.get(2, 3).style.fg)
+        assertEquals(UiRole.DEFAULT, buffer.get(2, 3).style.fg)
     }
 
     @Test
@@ -195,7 +201,7 @@ internal class LogViewTest {
         // First render: no previousFocus, so it follows to the bottom — establishes the focus.
         val first = scrollingPanel(
             title = LogView.TITLE,
-            badge = PanelId.LOG.key.toString(),
+            badge = PanelId.LOG.badge.toString(),
             content = view,
             extent = ContentExtent.Measured(),
         )
@@ -206,7 +212,7 @@ internal class LogViewTest {
         // focus row is identical — the manual offset must be respected, not re-followed.
         val second = scrollingPanel(
             title = LogView.TITLE,
-            badge = PanelId.LOG.key.toString(),
+            badge = PanelId.LOG.badge.toString(),
             content = view,
             extent = ContentExtent.Measured(),
             offset = ScrollOffset(0, 0),
@@ -229,7 +235,7 @@ internal class LogViewTest {
         val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val scrolledAway = scrollingPanel(
             title = LogView.TITLE,
-            badge = PanelId.LOG.key.toString(),
+            badge = PanelId.LOG.badge.toString(),
             content = LogView(tenEntries, state = emptyState),
             extent = ContentExtent.Measured(),
         )
@@ -237,7 +243,7 @@ internal class LogViewTest {
         val focusAtTen = scrolledAway.scroll.focus!!
         val manuallyScrolledUp = scrollingPanel(
             title = LogView.TITLE,
-            badge = PanelId.LOG.key.toString(),
+            badge = PanelId.LOG.badge.toString(),
             content = LogView(tenEntries, state = emptyState),
             extent = ContentExtent.Measured(),
             offset = ScrollOffset(0, 0),
@@ -250,7 +256,7 @@ internal class LogViewTest {
         val elevenEntries = tenEntries + LogEntry(turn = 11, event = stoodUp())
         val newEntryArrives = scrollingPanel(
             title = LogView.TITLE,
-            badge = PanelId.LOG.key.toString(),
+            badge = PanelId.LOG.badge.toString(),
             content = LogView(elevenEntries, state = emptyState),
             extent = ContentExtent.Measured(),
             offset = manuallyScrolledUp.scroll.offset,

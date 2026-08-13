@@ -2,9 +2,14 @@ package battletech.tui.view
 
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.unit.UnitId
-import battletech.tui.screen.Canvas
-import battletech.tui.screen.Cell
-import battletech.tui.screen.Color
+import tenter.screen.Canvas
+import tenter.screen.Cell
+import tenter.screen.UiRole
+import tenter.view.CheckState
+import tenter.view.Checkbox
+import tenter.view.ContentWriter
+import tenter.view.ValueRow
+import tenter.view.View
 
 internal class TargetsView(
     private val targets: List<TargetInfo>,
@@ -29,7 +34,7 @@ internal class TargetsView(
                 target.unitId == primaryTargetId -> " [P]"
                 else -> " [S]"
             }
-            val nameColor = if (isCursorOnTarget) Color.ACCENT else Color.TEXT_PRIMARY
+            val nameColor = if (isCursorOnTarget) UiRole.ACCENT else UiRole.TEXT_PRIMARY
             val nameLine = "${UnitLabel.of(target.unitId, target.unitName)}$tag"
             content.writeln(nameLine, Cell.Style(nameColor))
 
@@ -56,18 +61,18 @@ internal class TargetsView(
                 val left = "$cursor   ${weapon.weaponName}"
 
                 val color = when {
-                    isCursorHere -> Color.ACCENT
-                    isDisabled -> Color.DISABLED
-                    else -> Color.TEXT_PRIMARY
+                    isCursorHere -> UiRole.ACCENT
+                    isDisabled -> UiRole.DISABLED
+                    else -> UiRole.TEXT_PRIMARY
                 }
                 val checkboxColor = when {
-                    isCursorHere -> Color.ACCENT
-                    isDisabled -> Color.DISABLED
+                    isCursorHere -> UiRole.ACCENT
+                    isDisabled -> UiRole.DISABLED
                     else -> Checkbox.intrinsicColor(state)
                 }
                 val row = content.row
                 if (isCursorHere) content.markFocus()
-                WeaponHitWidget.draw(content, left, weapon.targetDiceRoll, weapon.successChance, weapon.modifiers, color)
+                ValueRow.draw(content, left, hitChanceLabel(weapon.targetDiceRoll, weapon.successChance), weapon.modifiers, color)
                 Checkbox.draw(content, 2, row, state, checkboxColor)
             }
 
@@ -78,6 +83,6 @@ internal class TargetsView(
     internal companion object {
         internal const val TITLE: String = "TARGETS"
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
     }
 }

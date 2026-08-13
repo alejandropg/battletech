@@ -4,14 +4,10 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.MatchEnded
 import battletech.tui.game.AppState
-import battletech.tui.game.FlashMessage
 import battletech.tui.game.PanelId
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
-import battletech.tui.input.PanAction
-import battletech.tui.screen.ScreenRenderer
-import battletech.tui.view.ScrollOffset
 import battletech.tui.view.Workspace
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
@@ -25,6 +21,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
+import tenter.input.ChromeInput
+import tenter.input.PanAction
+import tenter.panel.FlashMessage
+import tenter.screen.ScreenRenderer
+import tenter.view.ScrollOffset
 
 /**
  * Headless-testable event loop. Collects [events] until [UiEvent.Quit] is seen.
@@ -85,10 +86,10 @@ internal suspend fun runLoop(
                     // Handle scroll events before any other input dispatch.
                     // The panel is looked up first so overPanel can be passed to scrollDelta,
                     // which applies the Mordant posix wheel-parsing workaround (left/right
-                    // press over a panel treated as wheel-up/down; see InputMapper.scrollDelta).
+                    // press over a panel treated as wheel-up/down; see ChromeInput.scrollDelta).
                     if (event is MouseEvent) {
                         val panelId = workspace.panelAt(event.x, event.y)
-                        val delta = InputMapper.scrollDelta(event, overPanel = panelId != null)
+                        val delta = ChromeInput.scrollDelta(event, overPanel = panelId != null)
                         if (delta != null) {
                             panelId?.let { workspace.scrollPanel(it, delta) }
                             render()
@@ -96,7 +97,7 @@ internal suspend fun runLoop(
                         }
                     }
 
-                    val panel = (event as? KeyboardEvent)?.let(InputMapper::panelKey)?.let(PanelId::byKey)
+                    val panel = (event as? KeyboardEvent)?.let(ChromeInput::panelKey)?.let(PanelId::byBadge)
                     if (panel != null) {
                         // Alt+h is a different action from every other panel's Alt+<key>: it
                         // toggles whether HELP EXISTS this frame (an AppState fact PanelVisibility

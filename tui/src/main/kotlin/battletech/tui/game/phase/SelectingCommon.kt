@@ -6,11 +6,11 @@ import battletech.tactical.session.CommandResult
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
-import battletech.tui.game.FlashMessage
+import tenter.panel.FlashMessage
 import battletech.tui.game.moveCursor
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
-import battletech.tui.view.Bordered
+import tenter.view.Bordered
 import battletech.tui.view.BoardView
 import battletech.tui.view.Workspace
 import com.github.ajalt.mordant.input.InputEvent

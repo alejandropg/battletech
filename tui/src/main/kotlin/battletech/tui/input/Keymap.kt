@@ -1,25 +1,8 @@
 package battletech.tui.input
 
-/** One key (or chord) and what it does, as shown in the HELP panel. */
-internal data class KeyHint(val keys: String, val description: String)
-
-/** A titled group of [hints] — one "local" section (current phase) or the "global" section. */
-internal data class KeySection(val title: String, val hints: List<KeyHint>)
-
-/**
- * Single-cell glyphs standing in for special keys in [KeyHint] labels, matching the arrow
- * glyphs already used for cursor movement. Each codepoint is confirmed width-1 by
- * [battletech.tui.screen.CellWidth] (none fall in its wide-glyph ranges), which is what keeps
- * the HELP panel's key column aligned.
- */
-internal object KeyGlyph {
-    const val ENTER: String = "⏎"
-    const val TAB: String = "⇥"
-    const val ESC: String = "⎋"
-    const val SPACE: String = "␣"
-    const val CTRL: String = "⌃"
-    const val ALT: String = "⌥"
-}
+import tenter.input.KeyGlyph
+import tenter.input.KeyHint
+import tenter.input.KeySection
 
 /**
  * The keybinding hints shown in the HELP panel, kept next to the `InputMapper.map*Event`

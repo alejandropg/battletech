@@ -13,6 +13,9 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.view.HelpView
+import tenter.view.ScrollOffset
+import tenter.view.text
 
 /**
  * [Workspace] composes the board, every visible side panel, the status bar, and the game-over

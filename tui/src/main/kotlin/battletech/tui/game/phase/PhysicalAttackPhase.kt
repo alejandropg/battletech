@@ -11,7 +11,7 @@ import battletech.tactical.session.CommitPhysicalAttackImpulse
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
-import battletech.tui.game.FlashMessage
+import tenter.panel.FlashMessage
 import battletech.tui.game.PanelId
 import battletech.tui.game.attackPlayerLabel
 import battletech.tui.game.displayName
@@ -19,7 +19,7 @@ import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.AttackAction
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
-import battletech.tui.input.KeyHint
+import tenter.input.KeyHint
 import battletech.tui.input.Keymap
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent

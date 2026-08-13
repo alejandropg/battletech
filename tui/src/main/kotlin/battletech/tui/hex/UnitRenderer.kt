@@ -1,8 +1,8 @@
 package battletech.tui.hex
 
 import battletech.tactical.model.HexDirection
-import battletech.tui.screen.Canvas
-import battletech.tui.screen.Color
+import battletech.tui.screen.BoardRole
+import tenter.screen.Canvas
 
 public object UnitRenderer {
 
@@ -12,7 +12,7 @@ public object UnitRenderer {
         y: Int,
         id: String,
         facing: HexDirection,
-        color: Color,
+        color: BoardRole,
         torsoFacing: HexDirection? = null,
         isDestroyed: Boolean = false,
     ) {

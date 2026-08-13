@@ -30,11 +30,11 @@ import battletech.tui.hex.HexHighlight
 import battletech.tui.input.AttackAction
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
-import battletech.tui.input.KeyHint
 import battletech.tui.input.Keymap
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
+import tenter.input.KeyHint
 
 internal const val DECLARING_PROMPT = "Declare weapon fire"
 

@@ -5,30 +5,15 @@ import battletech.tactical.model.HexDirection
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import tenter.input.PanAction
 
 internal class InputMapperTest {
 
     private fun key(key: String, ctrl: Boolean = false, alt: Boolean = false): KeyboardEvent =
         KeyboardEvent(key, ctrl = ctrl, alt = alt)
-
-    @Nested
-    inner class IsQuitTest {
-        @Test
-        fun `ctrl+c is quit`() {
-            assertTrue(InputMapper.isQuit(key("c", ctrl = true)))
-        }
-
-        @Test
-        fun `other keys are not quit`() {
-            assertFalse(InputMapper.isQuit(key("ArrowUp")))
-            assertFalse(InputMapper.isQuit(key("Enter")))
-        }
-    }
 
     @Nested
     inner class MapIdlePhaseStateEventTest {
@@ -236,39 +221,6 @@ internal class InputMapperTest {
         @Test
         fun `unknown key returns null`() {
             assertNull(InputMapper.mapAttackEvent(key("q")))
-        }
-    }
-
-    @Nested
-    inner class PanelKeyTest {
-        @Test
-        fun `Alt+3 returns '3'`() {
-            assertEquals('3', InputMapper.panelKey(key("3", alt = true)))
-        }
-
-        @Test
-        fun `Alt+0 returns '0'`() {
-            assertEquals('0', InputMapper.panelKey(key("0", alt = true)))
-        }
-
-        @Test
-        fun `Alt+h returns 'h'`() {
-            assertEquals('h', InputMapper.panelKey(key("h", alt = true)))
-        }
-
-        @Test
-        fun `Alt+H is lowercased to 'h'`() {
-            assertEquals('h', InputMapper.panelKey(key("H", alt = true)))
-        }
-
-        @Test
-        fun `plain 3 without alt returns null`() {
-            assertNull(InputMapper.panelKey(key("3")))
-        }
-
-        @Test
-        fun `Ctrl+3 without alt returns null`() {
-            assertNull(InputMapper.panelKey(key("3", ctrl = true)))
         }
     }
 

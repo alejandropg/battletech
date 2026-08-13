@@ -6,17 +6,21 @@ import battletech.tactical.session.GameSession
 import battletech.tui.game.AppState
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.loop.UiEvent
-import battletech.tui.loop.resizeEvents
 import battletech.tui.loop.runLoop
-import battletech.tui.loop.terminalInputEvents
-import battletech.tui.screen.ScreenRenderer
 import battletech.tui.screen.TuiTheme
+import battletech.tui.screen.toRolePalette
 import com.github.ajalt.mordant.input.MouseTracking
+import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
+import tenter.screen.ScreenRenderer
+import tenter.terminal.TerminalEvent
+import tenter.terminal.inputEvents
+import tenter.terminal.resizeEvents
 
 /**
  * [seats] is the set of seats this process drives, each mapped to the [GameSession] that seat
@@ -47,16 +51,18 @@ public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val t
      * ### Single-thread confinement
      * All session mutations, AppState updates, and rendering run on the single
      * [runBlocking] (main) thread. Only the terminal input producer runs on
-     * Dispatchers.IO — that is handled internally by [terminalInputEvents].
+     * Dispatchers.IO — that is handled internally by [tenter.terminal.inputEvents].
      *
      * ### Quit is not flow cancellation
-     * Quit is detected inside [terminalInputEvents] (ctrl+c) which emits [UiEvent.Quit]
-     * and then naturally completes its flow. We never cancel the flow externally as a
-     * quit mechanism — doing so would leave the terminal in raw mode.
+     * Quit is detected inside [tenter.terminal.inputEvents] (ctrl+c) which emits a
+     * [TerminalEvent.Quit], mapped below to [UiEvent.Quit], and then naturally completes its
+     * flow. We never cancel the flow externally as a quit mechanism — doing so would leave the
+     * terminal in raw mode.
      */
     public fun run() {
         val terminal = Terminal()
-        val renderer = ScreenRenderer(terminal, theme)
+        val resolvedTheme = theme ?: TuiTheme.autoFor(terminal.terminalInfo.ansiLevel)
+        val renderer = ScreenRenderer(terminal, resolvedTheme.toRolePalette())
 
         val appState = AppState(
             seats = seats,
@@ -74,8 +80,8 @@ public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val t
                 try {
                     runLoop(
                         events = merge(
-                            terminal.terminalInputEvents(MouseTracking.Normal),
-                            terminal.resizeEvents(),
+                            terminal.inputEvents(MouseTracking.Normal).map { it.toUiEvent() },
+                            terminal.resizeEvents().map { it.toUiEvent() },
                             internalEvents.receiveAsFlow(),
                         ),
                         internalEvents = internalEvents,
@@ -91,4 +97,11 @@ public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val t
             renderer.cleanup()
         }
     }
+}
+
+/** tenter's generic [TerminalEvent] mapped onto this app's own [UiEvent] hierarchy — see [UiEvent]'s KDoc for why it has a [UiEvent.Session] arm tenter cannot know about. */
+private fun TerminalEvent.toUiEvent(): UiEvent = when (this) {
+    is TerminalEvent.Input -> UiEvent.Input(event)
+    is TerminalEvent.Resized -> UiEvent.Resized(Size(size.width, size.height))
+    TerminalEvent.Quit -> UiEvent.Quit
 }

@@ -19,6 +19,8 @@ import battletech.tui.hex.targetIcon
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.view.renderInPanel
+import tenter.view.text
 
 internal class AttackResultsViewTest {
 
@@ -115,7 +117,7 @@ internal class AttackResultsViewTest {
     /** Renders via the decorator — pixel-parity regression guard for box/title/coordinates. */
     private fun renderToString(results: List<AttackResult>, width: Int = 34, height: Int = 30, viewer: PlayerId = PlayerId.PLAYER_1): String {
         val view = makeView(results, viewer)
-        return renderInPanel(view, key = PanelId.ATTACK_RESULTS.key, title = AttackResultsView.TITLE, width = width, height = height).text()
+        return renderInPanel(view, badge = PanelId.ATTACK_RESULTS.badge, title = AttackResultsView.TITLE, width = width, height = height).text()
     }
 
     @Test
@@ -239,7 +241,7 @@ internal class AttackResultsViewTest {
         val height = 10
         val output = renderInPanel(
             view,
-            key = PanelId.ATTACK_RESULTS.key,
+            badge = PanelId.ATTACK_RESULTS.badge,
             title = AttackResultsView.TITLE,
             width = width,
             height = height,

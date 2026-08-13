@@ -1,5 +1,7 @@
 package battletech.tui.view
 
+import battletech.tactical.model.HexCoordinates
+import battletech.tactical.query.projectFor
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit
@@ -7,14 +9,16 @@ import battletech.tui.hex.HexGeometry
 import battletech.tui.hex.HexHighlight
 import battletech.tui.hex.HexLayout
 import battletech.tui.hex.destroyedIcon
-import battletech.tui.screen.Canvas
-import battletech.tui.screen.Color
-import battletech.tui.screen.FocusRect
-import battletech.tui.screen.ScreenBuffer
-import battletech.tactical.model.HexCoordinates
-import battletech.tactical.query.projectFor
+import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import tenter.screen.Canvas
+import tenter.screen.FocusRect
+import tenter.screen.ScreenBuffer
+import tenter.screen.UiRole
+import tenter.view.Scrolled
+import tenter.view.line
+import tenter.view.render
 
 /**
  * [BoardView] is now plain content — no chrome, no scroll, no clipping; that's all
@@ -61,8 +65,8 @@ internal class BoardViewTest {
             assertEquals(coordinateLabels[index], buffer.line(y, rightLabelX, 2))
         }
 
-        assertEquals(Color.TEXT_SUBTLE, buffer.get(columnLabelStarts[0], 0).style.fg)
-        assertEquals(Color.TEXT_SUBTLE, buffer.get(0, rowCenters[0]).style.fg)
+        assertEquals(UiRole.TEXT_SUBTLE, buffer.get(columnLabelStarts[0], 0).style.fg)
+        assertEquals(UiRole.TEXT_SUBTLE, buffer.get(0, rowCenters[0]).style.fg)
 
         assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X - 1, rowCenters[0]).char)
         assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X - 2, rowCenters[0]).char)
@@ -141,7 +145,7 @@ internal class BoardViewTest {
         val buffer = render(view, 30, 18)
 
         // Hex at (1,1) border '/' offset by +1,+1 within the hex glyph (row1)
-        assertEquals(Color.BOARD_ACTIVE, buffer.get(12, 8).style.fg)
+        assertEquals(BoardRole.BOARD_ACTIVE, buffer.get(12, 8).style.fg)
     }
 
     @Test
@@ -155,9 +159,9 @@ internal class BoardViewTest {
         // "renders unit id on hex" test above), with a skull marker left of the id at charX=7.
         assertEquals("A", buffer.get(8, 4).char)
         assertEquals("1", buffer.get(9, 4).char)
-        assertEquals(Color.DESTROYED, buffer.get(9, 4).style.fg)
+        assertEquals(BoardRole.DESTROYED, buffer.get(9, 4).style.fg)
         assertEquals(destroyedIcon(), buffer.get(7, 4).char)
-        assertEquals(Color.DESTROYED, buffer.get(7, 4).style.fg)
+        assertEquals(BoardRole.DESTROYED, buffer.get(7, 4).style.fg)
     }
 
     @Test

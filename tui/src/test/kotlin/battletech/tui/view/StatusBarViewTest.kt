@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tactical.model.TurnPhase
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import tenter.view.render
 
 internal class StatusBarViewTest {
 

@@ -1,8 +1,9 @@
 package battletech.tui.view
 
 import battletech.tactical.unit.ForeignUnit
-import battletech.tui.screen.Cell
-import battletech.tui.screen.Color
+import tenter.screen.Cell
+import tenter.screen.UiRole
+import tenter.view.ContentWriter
 
 /**
  * Renders a [ForeignUnit] — name, movement, armor (front + rear values only,
@@ -13,10 +14,10 @@ import battletech.tui.screen.Color
  */
 internal object ForeignUnitPanel {
 
-    private val ACCENT_STYLE = Cell.Style(Color.ACCENT)
-    private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
-    private val INFO_STYLE = Cell.Style(Color.INFO)
-    private val SUCCESS_STYLE = Cell.Style(Color.SUCCESS)
+    private val ACCENT_STYLE = Cell.Style(UiRole.ACCENT)
+    private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
+    private val INFO_STYLE = Cell.Style(UiRole.INFO)
+    private val SUCCESS_STYLE = Cell.Style(UiRole.SUCCESS)
 
     fun render(content: ContentWriter, unit: ForeignUnit) {
         // UNIT

@@ -9,8 +9,8 @@ import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.PanelId
 import battletech.tui.game.RenderData
-import battletech.tui.input.KeyHint
 import com.github.ajalt.mordant.input.InputEvent
+import tenter.input.KeyHint
 
 /**
  * UI sub-state machine for the active player phase. Phases are pure

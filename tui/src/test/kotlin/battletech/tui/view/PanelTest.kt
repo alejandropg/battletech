@@ -5,13 +5,17 @@ import battletech.tui.aGameState
 import battletech.tui.game.AppState
 import battletech.tui.game.PanelId
 import battletech.tui.game.phase.MovementPhase
-import battletech.tui.screen.Canvas
-import battletech.tui.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.panel.Panel
+import tenter.screen.Canvas
+import tenter.screen.ScreenBuffer
+import tenter.view.View
+import tenter.view.render
+import tenter.view.text
 
 /**
  * [Panel] owns its own collapsed state, scroll offset, and auto-follow focus across renders — see
@@ -31,7 +35,7 @@ internal class PanelTest {
         }
     }
 
-    private fun renderPanel(panel: Panel, width: Int = 30, height: Int = 10, forgetFocus: Boolean = false): ScreenBuffer {
+    private fun renderPanel(panel: GamePanel, width: Int = 30, height: Int = 10, forgetFocus: Boolean = false): ScreenBuffer {
         val buffer = ScreenBuffer(width, height)
         panel.render(Canvas.of(buffer), inputs, forgetFocus)
         return buffer
@@ -39,7 +43,7 @@ internal class PanelTest {
 
     @Test
     fun `starts expanded at its expandedWidth`() {
-        val panel = Panel(PanelId.LOG, "T", expandedWidth = 28) { stubContent(3) }
+        val panel: GamePanel = Panel(PanelId.LOG, "T", expandedWidth = 28) { stubContent(3) }
 
         assertEquals(28, panel.width)
         assertFalse(panel.collapsed)
@@ -47,7 +51,7 @@ internal class PanelTest {
 
     @Test
     fun `toggleCollapsed shrinks to the stub width and back`() {
-        val panel = Panel(PanelId.LOG, "T", expandedWidth = 28) { stubContent(3) }
+        val panel: GamePanel = Panel(PanelId.LOG, "T", expandedWidth = 28) { stubContent(3) }
 
         panel.toggleCollapsed()
         assertEquals(Panel.COLLAPSED_WIDTH, panel.width)
@@ -60,7 +64,7 @@ internal class PanelTest {
 
     @Test
     fun `collapsed state persists across renders with no external round trip`() {
-        val panel = Panel(PanelId.LOG, "T", expandedWidth = 28) { stubContent(3) }
+        val panel: GamePanel = Panel(PanelId.LOG, "T", expandedWidth = 28) { stubContent(3) }
         panel.toggleCollapsed()
 
         renderPanel(panel)
@@ -72,7 +76,7 @@ internal class PanelTest {
     @Test
     fun `a collapsed panel never calls build`() {
         var built = false
-        val panel = Panel(PanelId.LOG, "T", expandedWidth = 28) {
+        val panel: GamePanel = Panel(PanelId.LOG, "T", expandedWidth = 28) {
             built = true
             stubContent(3)
         }
@@ -85,7 +89,7 @@ internal class PanelTest {
 
     @Test
     fun `an expanded panel whose build returns null renders nothing`() {
-        val panel = Panel(PanelId.LOG, "T", expandedWidth = 28) { null }
+        val panel: GamePanel = Panel(PanelId.LOG, "T", expandedWidth = 28) { null }
 
         val buffer = renderPanel(panel)
 
@@ -94,7 +98,7 @@ internal class PanelTest {
 
     @Test
     fun `scroll offset persists across renders with no explicit re-scroll`() {
-        fun freshPanel() = Panel(PanelId.LOG, "T", expandedWidth = 30) { stubContent(20) }
+        fun freshPanel(): GamePanel = Panel(PanelId.LOG, "T", expandedWidth = 30) { stubContent(20) }
 
         val unscrolled = renderPanel(freshPanel())
 
@@ -115,7 +119,7 @@ internal class PanelTest {
                 canvas.markFocus(0, 15, canvas.width, 1)
             }
         }
-        val panel = Panel(PanelId.LOG, "T", expandedWidth = 30) { focused }
+        val panel: GamePanel = Panel(PanelId.LOG, "T", expandedWidth = 30) { focused }
 
         renderPanel(panel) // first render follows the focus into view
         panel.scrollBy(-100) // manual scroll away; clamped to 0 on the next render

@@ -3,11 +3,15 @@ package battletech.tui.view
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.unit.UnitId
-import battletech.tui.hex.checkboxIcon
 import battletech.tui.hex.diceRoll
-import battletech.tui.screen.Color
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.screen.UiRole
+import tenter.view.CheckState
+import tenter.view.checkboxIcon
+import tenter.view.line
+import tenter.view.render
+import tenter.view.text
 
 internal class TargetsViewTest {
 
@@ -198,7 +202,7 @@ internal class TargetsViewTest {
         // Find the row containing "LRM15" and verify its color is DISABLED
         val lrmRow = (0 until height).first { row -> "LRM15" in buffer.line(row) }
         val rowColors = (0 until width).map { col -> buffer.get(col, lrmRow).style.fg }.toSet()
-        assertTrue(rowColors.contains(Color.DISABLED)) { "Expected disabled weapon row to use Color.DISABLED, got: $rowColors" }
+        assertTrue(rowColors.contains(UiRole.DISABLED)) { "Expected disabled weapon row to use UiRole.DISABLED, got: $rowColors" }
     }
 
     @Test

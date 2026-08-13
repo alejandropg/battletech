@@ -19,9 +19,10 @@ import battletech.tui.game.phase.MovementPhase
 import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.loop.UiEvent
 import battletech.tui.loop.runLoop
-import battletech.tui.screen.ScreenRenderer
+import battletech.tui.screen.DarkPalette
+import tenter.screen.ScreenRenderer
 import battletech.tui.view.AttackResultsView
-import battletech.tui.view.HelpView
+import tenter.view.HelpView
 import battletech.tui.view.LogView
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.rendering.AnsiLevel
@@ -49,7 +50,7 @@ internal class TuiAppLoopTest {
     // Width/height must be positive to pass TuiApp.currentSize() checks.
     private val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = 120, height = 40)
     private val terminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
-    private val renderer = ScreenRenderer(terminal)
+    private val renderer = ScreenRenderer(terminal, DarkPalette)
 
     /**
      * Build a minimal AppState backed by a real BattleSession positioned at

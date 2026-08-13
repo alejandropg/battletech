@@ -2,17 +2,23 @@ package battletech.tui.view
 
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
+import battletech.tui.game.PanelId
 import battletech.tui.game.phase.DeclaredAttackerEntry
 import battletech.tui.game.phase.DeclaredTargetEntry
 import battletech.tui.game.phase.DeclaredTargetsRender
-import battletech.tui.game.PanelId
 import battletech.tui.game.phase.DeclaredWeaponEntry
 import battletech.tui.hex.diceRoll
 import battletech.tui.hex.targetIcon
-import battletech.tui.screen.Color
-import battletech.tui.screen.ScreenBuffer
+import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.screen.ColorRole
+import tenter.screen.ScreenBuffer
+import tenter.screen.UiRole
+import tenter.view.line
+import tenter.view.render
+import tenter.view.renderInPanel
+import tenter.view.text
 
 internal class DeclaredTargetsViewTest {
 
@@ -23,7 +29,7 @@ internal class DeclaredTargetsViewTest {
     private fun attacker(name: String, player: PlayerId, draft: Boolean, vararg targets: DeclaredTargetEntry) =
         DeclaredAttackerEntry(UnitId(name), player, draft, targets.toList())
 
-    private fun colorAt(buffer: ScreenBuffer, row: Int, col: Int = 2): Color = buffer.get(col, row).style.fg
+    private fun colorAt(buffer: ScreenBuffer, row: Int, col: Int = 2): ColorRole = buffer.get(col, row).style.fg
 
     private fun rowContaining(buffer: ScreenBuffer, text: String): Int =
         (0 until buffer.height).firstOrNull { row -> text in buffer.line(row) } ?: -1
@@ -61,8 +67,8 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Wolverine")
         assertTrue(row >= 0) { "Expected to find Wolverine attacker row" }
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == Color.DRAFT }) {
-            "Expected attacker row to contain Color.DRAFT"
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == UiRole.DRAFT }) {
+            "Expected attacker row to contain UiRole.DRAFT"
         }
     }
 
@@ -78,8 +84,8 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Wolverine")
         assertTrue(row >= 0)
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == Color.PLAYER_1 }) {
-            "Expected P1 committed attacker row to use Color.PLAYER_1"
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == BoardRole.PLAYER_1 }) {
+            "Expected P1 committed attacker row to use BoardRole.PLAYER_1"
         }
     }
 
@@ -95,8 +101,8 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Atlas")
         assertTrue(row >= 0)
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == Color.PLAYER_2 }) {
-            "Expected P2 committed attacker row to use Color.PLAYER_2"
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == BoardRole.PLAYER_2 }) {
+            "Expected P2 committed attacker row to use BoardRole.PLAYER_2"
         }
     }
 
@@ -164,7 +170,7 @@ internal class DeclaredTargetsViewTest {
         val height = 10
         val buffer = renderInPanel(
             view,
-            key = PanelId.DECLARED_TARGETS.key,
+            badge = PanelId.DECLARED_TARGETS.badge,
             title = DeclaredTargetsView.TITLE,
             width = width,
             height = height,
@@ -181,7 +187,7 @@ internal class DeclaredTargetsViewTest {
 
         val buffer = renderInPanel(
             view,
-            key = PanelId.DECLARED_TARGETS.key,
+            badge = PanelId.DECLARED_TARGETS.badge,
             title = DeclaredTargetsView.TITLE,
             width = 28,
             height = 10,

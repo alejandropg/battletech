@@ -10,9 +10,13 @@ import battletech.tui.hex.HexHighlight
 import battletech.tui.hex.HexLayout
 import battletech.tui.hex.HexRenderer
 import battletech.tui.hex.UnitRenderer
-import battletech.tui.screen.Canvas
-import battletech.tui.screen.Cell
-import battletech.tui.screen.Color
+import battletech.tui.screen.BoardRole
+import tenter.screen.Canvas
+import tenter.screen.Cell
+import tenter.screen.UiRole
+import tenter.view.Bordered
+import tenter.view.Scrolled
+import tenter.view.View
 
 /**
  * The tactical map's content: coordinate labels, every hex, highlight, and unit glyph, drawn at
@@ -67,10 +71,10 @@ internal class BoardView(
                 coords in reachableFacings && highlight != HexHighlight.PATH -> {
                     val facings = reachableFacings.getValue(coords)
                     val color = when {
-                        coords == pathDestination -> Color.BOARD_ACTIVE
-                        baseHighlight == HexHighlight.REACHABLE_RUN -> Color.MOVE_RUN
-                        baseHighlight == HexHighlight.REACHABLE_JUMP -> Color.MOVE_JUMP
-                        else -> Color.MOVE_WALK
+                        coords == pathDestination -> BoardRole.BOARD_ACTIVE
+                        baseHighlight == HexHighlight.REACHABLE_RUN -> BoardRole.MOVE_RUN
+                        baseHighlight == HexHighlight.REACHABLE_JUMP -> BoardRole.MOVE_JUMP
+                        else -> BoardRole.MOVE_WALK
                     }
                     val mode = if (coords == pathDestination) movementMode else null
                     HexRenderer.renderFacingArrows(canvas, x, y, facings, color, mode)
@@ -82,8 +86,8 @@ internal class BoardView(
                 val isValidTarget = coords in validTargetPositions
                 val isSelectedTarget = coords == selectedTargetPosition
                 val unitColor = when {
-                    isSelectedTarget -> Color.TARGET_SELECTED
-                    isValidTarget -> Color.TARGET_VALID
+                    isSelectedTarget -> BoardRole.TARGET_SELECTED
+                    isValidTarget -> BoardRole.TARGET_VALID
                     else -> playerColor(unit.owner)
                 }
                 val effectiveTorso = torsoFacings[coords] ?: unit.torsoFacing
@@ -92,7 +96,7 @@ internal class BoardView(
                 // otherwise the unit's id is used as-is.
                 val id = unit.id.value.take(2)
                 val glyph = if (unit.isProne) id.lowercase() else id
-                val renderColor = if (unit.isDestroyed) Color.DESTROYED else unitColor
+                val renderColor = if (unit.isDestroyed) BoardRole.DESTROYED else unitColor
                 UnitRenderer.render(
                     canvas, x, y,
                     glyph,
@@ -145,7 +149,7 @@ internal class BoardView(
         internal const val MAP_ORIGIN_Y: Int = 1
         internal const val BOTTOM_LABEL_GAP: Int = 1
 
-        private val COORDINATE_STYLE: Cell.Style = Cell.Style(Color.TEXT_SUBTLE)
+        private val COORDINATE_STYLE: Cell.Style = Cell.Style(UiRole.TEXT_SUBTLE)
 
         /** The unscrolled content size needed to draw [map] and its coordinate labels. */
         internal fun contentSize(map: GameMap): Pair<Int, Int> {

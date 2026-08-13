@@ -5,5 +5,6 @@ include(
     "tactical",
     "network",
     "bt",
+    "tenter",
     "tui"
 )

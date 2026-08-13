@@ -1,11 +1,12 @@
 package battletech.tui.input
 
-import battletech.tui.screen.CellWidth
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import tenter.input.KeyHint
+import tenter.screen.CellWidth
 
 /**
- * Guards [HelpView][battletech.tui.view.HelpView]'s column alignment: every hint's `keys`
+ * Guards [HelpView][tenter.view.HelpView]'s column alignment: every hint's `keys`
  * label is measured with [CellWidth.of] to size the description column, so a label containing
  * a wide (2-cell) codepoint would silently misalign every row after it.
  */

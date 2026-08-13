@@ -2,18 +2,19 @@ package battletech.tui.hex
 
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexDirection
-import battletech.tactical.model.Terrain
 import battletech.tactical.model.MovementMode
-import battletech.tui.screen.Canvas
-import battletech.tui.screen.Cell
-import battletech.tui.screen.Color
+import battletech.tactical.model.Terrain
+import battletech.tui.screen.BoardRole
+import tenter.screen.Canvas
+import tenter.screen.Cell
+import tenter.screen.UiRole
 
 public object HexRenderer {
 
-    private fun elevationBadgeBg(elevation: Int): Color = when (elevation) {
-        1 -> Color.ELEVATION_1_BADGE_BG
-        2 -> Color.ELEVATION_2_BADGE_BG
-        else -> Color.ELEVATION_HIGH_BADGE_BG
+    private fun elevationBadgeBg(elevation: Int): BoardRole = when (elevation) {
+        1 -> BoardRole.ELEVATION_1_BADGE_BG
+        2 -> BoardRole.ELEVATION_2_BADGE_BG
+        else -> BoardRole.ELEVATION_HIGH_BADGE_BG
     }
 
     // Arrow positions within hex: (col-offset, row-offset) relative to hex origin
@@ -33,7 +34,7 @@ public object HexRenderer {
      * If all 6 facings are reachable, renders a dot at center (same as before).
      * Otherwise, renders individual arrows at their hex positions.
      */
-    public fun renderFacingArrows(canvas: Canvas, x: Int, y: Int, facings: Set<HexDirection>, color: Color, movementMode: MovementMode? = null) {
+    public fun renderFacingArrows(canvas: Canvas, x: Int, y: Int, facings: Set<HexDirection>, color: BoardRole, movementMode: MovementMode? = null) {
         if (facings.size == HexDirection.entries.size) {
             val icon = if (movementMode != null) movementModeIcon(movementMode) else "."
             renderOverlayChar(canvas, x, y, icon, color)
@@ -47,43 +48,43 @@ public object HexRenderer {
 
     /**
      * Renders number labels (1-6) for available facings during facing selection.
-     * Drawn in [Color.BOARD_ACTIVE] — same role as the cursor and the active path, since facing
+     * Drawn in [BoardRole.BOARD_ACTIVE] — same role as the cursor and the active path, since facing
      * selection is itself an active-cursor interaction.
      */
     public fun renderFacingNumbers(canvas: Canvas, x: Int, y: Int, facings: Set<HexDirection>) {
         for (direction in facings) {
             val (dx, dy) = facingPosition(direction)
-            canvas.setFg(x + dx, y + dy, facingNumber(direction), Color.BOARD_ACTIVE)
+            canvas.setFg(x + dx, y + dy, facingNumber(direction), BoardRole.BOARD_ACTIVE)
         }
     }
 
     public fun render(canvas: Canvas, x: Int, y: Int, hex: Hex, highlight: HexHighlight, movementMode: MovementMode? = null) {
         val bg = terrainFill(hex)
         val borderFg =
-            if (highlight == HexHighlight.CURSOR) Color.BOARD_ACTIVE
-            else Color.BOARD_BORDER
+            if (highlight == HexHighlight.CURSOR) BoardRole.BOARD_ACTIVE
+            else BoardRole.BOARD_BORDER
 
         renderBorder(canvas, x, y, borderFg, bg)
         renderContent(canvas, x, y, bg)
         renderTerrain(canvas, x, y, hex.terrain, bg)
         renderLevelBadge(canvas, x, y, hex.elevation, hex.depth)
         when (highlight) {
-            HexHighlight.REACHABLE_WALK -> renderOverlayChar(canvas, x, y, ".", Color.MOVE_WALK)
-            HexHighlight.REACHABLE_RUN -> renderOverlayChar(canvas, x, y, ".", Color.MOVE_RUN)
-            HexHighlight.REACHABLE_JUMP -> renderOverlayChar(canvas, x, y, ".", Color.MOVE_JUMP)
-            HexHighlight.ATTACK_RANGE -> renderOverlayChar(canvas, x, y, ".", Color.ATTACK_RANGE)
-            HexHighlight.LINE_OF_SIGHT -> renderMarker(canvas, x, y, ".", Color.LINE_OF_SIGHT)
-            HexHighlight.LINE_OF_SIGHT_SELECTED -> renderMarker(canvas, x, y, targetIcon(), Color.TARGET_SELECTED)
+            HexHighlight.REACHABLE_WALK -> renderOverlayChar(canvas, x, y, ".", BoardRole.MOVE_WALK)
+            HexHighlight.REACHABLE_RUN -> renderOverlayChar(canvas, x, y, ".", BoardRole.MOVE_RUN)
+            HexHighlight.REACHABLE_JUMP -> renderOverlayChar(canvas, x, y, ".", BoardRole.MOVE_JUMP)
+            HexHighlight.ATTACK_RANGE -> renderOverlayChar(canvas, x, y, ".", BoardRole.ATTACK_RANGE)
+            HexHighlight.LINE_OF_SIGHT -> renderMarker(canvas, x, y, ".", BoardRole.LINE_OF_SIGHT)
+            HexHighlight.LINE_OF_SIGHT_SELECTED -> renderMarker(canvas, x, y, targetIcon(), BoardRole.TARGET_SELECTED)
             HexHighlight.PATH -> {
                 val icon = if (movementMode != null) movementModeIcon(movementMode) else "*"
-                renderOverlayChar(canvas, x, y, icon, Color.BOARD_ACTIVE)
+                renderOverlayChar(canvas, x, y, icon, BoardRole.BOARD_ACTIVE)
             }
             else -> Unit
         }
     }
 
     /** Movement/range/path overlays: the safe bottom-center cell, clear of terrain icon and elevation badge. */
-    private fun renderOverlayChar(canvas: Canvas, x: Int, y: Int, char: String, color: Color) {
+    private fun renderOverlayChar(canvas: Canvas, x: Int, y: Int, char: String, color: BoardRole) {
         canvas.setFg(x + 4, y + 2, char, color)
     }
 
@@ -93,7 +94,7 @@ public object HexRenderer {
      * hex can never collide — units, which occupy the lower rows (see `UnitRenderer`), cannot
      * overwrite either.
      */
-    private fun renderMarker(canvas: Canvas, x: Int, y: Int, char: String, color: Color) {
+    private fun renderMarker(canvas: Canvas, x: Int, y: Int, char: String, color: BoardRole) {
         canvas.setFg(x + 4, y + 1, char, color)
     }
 
@@ -104,19 +105,19 @@ public object HexRenderer {
      * whole hex instead of just the badge cell: an elevated clear hex reads as a hill, not a plain
      * with a small numbered sticker on it. WATER's shallow/deep split is the only terrain sub-case.
      */
-    private fun terrainFill(hex: Hex): Color = when (hex.terrain) {
-        Terrain.LIGHT_WOODS -> Color.TERRAIN_WOODS_LIGHT_BG
-        Terrain.HEAVY_WOODS -> Color.TERRAIN_WOODS_HEAVY_BG
-        Terrain.WATER       -> if (hex.depth <= 1) Color.TERRAIN_WATER_SHALLOW_BG else Color.TERRAIN_WATER_DEEP_BG
-        Terrain.ROUGH       -> Color.TERRAIN_ROUGH_BG
-        Terrain.CLEAR       -> if (hex.elevation > 0) elevationBadgeBg(hex.elevation) else Color.TERRAIN_CLEAR_BG
+    private fun terrainFill(hex: Hex): BoardRole = when (hex.terrain) {
+        Terrain.LIGHT_WOODS -> BoardRole.TERRAIN_WOODS_LIGHT_BG
+        Terrain.HEAVY_WOODS -> BoardRole.TERRAIN_WOODS_HEAVY_BG
+        Terrain.WATER       -> if (hex.depth <= 1) BoardRole.TERRAIN_WATER_SHALLOW_BG else BoardRole.TERRAIN_WATER_DEEP_BG
+        Terrain.ROUGH       -> BoardRole.TERRAIN_ROUGH_BG
+        Terrain.CLEAR       -> if (hex.elevation > 0) elevationBadgeBg(hex.elevation) else BoardRole.TERRAIN_CLEAR_BG
     }
 
     // The border glyphs carry the terrain `bg` too, so the whole hexagon reads as filled rather
     // than an outline floating on the terminal background. Adjacent hexes share their edge columns
     // (9-col glyph, 7-col stride, last-write-wins), so a shared edge column adopts the neighbour's
     // tint — negligible with these soft colors.
-    private fun renderBorder(canvas: Canvas, x: Int, y: Int, fg: Color, bg: Color) {
+    private fun renderBorder(canvas: Canvas, x: Int, y: Int, fg: BoardRole, bg: BoardRole) {
         // Row 0: "  _____  " — the top edge. Its cells coincide with the hex-above's bottom edge
         // (row 4), so keep whatever background is already painted there rather than tinting: the
         // top edge belongs to the upper hex. Tinting it would paint a coloured band protruding
@@ -142,8 +143,8 @@ public object HexRenderer {
         canvas.set(x + 7, y + 4, Cell("/", style))
     }
 
-    private fun renderContent(canvas: Canvas, x: Int, y: Int, bg: Color) {
-        val style = Cell.Style(Color.DEFAULT, bg)
+    private fun renderContent(canvas: Canvas, x: Int, y: Int, bg: BoardRole) {
+        val style = Cell.Style(UiRole.DEFAULT, bg)
         val cell = Cell(" ", style)
         // Row 1 content (narrow): x+2..x+6
         for (i in 2..6) {
@@ -159,13 +160,13 @@ public object HexRenderer {
         }
     }
 
-    private fun renderTerrain(canvas: Canvas, x: Int, y: Int, terrain: Terrain, bg: Color) {
+    private fun renderTerrain(canvas: Canvas, x: Int, y: Int, terrain: Terrain, bg: BoardRole) {
         val color = when (terrain) {
             Terrain.CLEAR       -> return
-            Terrain.LIGHT_WOODS -> Color.TERRAIN_WOODS_LIGHT_ICON
-            Terrain.HEAVY_WOODS -> Color.TERRAIN_WOODS_HEAVY_ICON
-            Terrain.WATER       -> Color.TERRAIN_WATER_ICON
-            Terrain.ROUGH       -> Color.TERRAIN_ROUGH_ICON
+            Terrain.LIGHT_WOODS -> BoardRole.TERRAIN_WOODS_LIGHT_ICON
+            Terrain.HEAVY_WOODS -> BoardRole.TERRAIN_WOODS_HEAVY_ICON
+            Terrain.WATER       -> BoardRole.TERRAIN_WATER_ICON
+            Terrain.ROUGH       -> BoardRole.TERRAIN_ROUGH_ICON
         }
         canvas.set(x + 2, y + 1, Cell(terrainIcon(terrain), Cell.Style(color, bg)))
     }
@@ -179,10 +180,10 @@ public object HexRenderer {
      */
     private fun renderLevelBadge(canvas: Canvas, x: Int, y: Int, elevation: Int, depth: Int) {
         if (elevation != 0) {
-            val style = Cell.Style(Color.ELEVATION_BADGE_FG, elevationBadgeBg(elevation))
+            val style = Cell.Style(BoardRole.ELEVATION_BADGE_FG, elevationBadgeBg(elevation))
             canvas.set(x + 6, y + 1, Cell(elevationIcon(elevation), style))
         } else if (depth != 0) {
-            canvas.setFg(x + 6, y + 1, depthIcon(depth), Color.ELEVATION_BADGE_FG)
+            canvas.setFg(x + 6, y + 1, depthIcon(depth), BoardRole.ELEVATION_BADGE_FG)
         }
     }
 

@@ -1,9 +1,12 @@
 package battletech.tui.view
 
 import battletech.tactical.model.TurnPhase
-import battletech.tui.screen.Canvas
-import battletech.tui.screen.Cell
-import battletech.tui.screen.Color
+import tenter.screen.Canvas
+import tenter.screen.Cell
+import tenter.screen.Insets
+import tenter.screen.UiRole
+import tenter.view.Bordered
+import tenter.view.View
 
 internal class StatusBarView(
     private val phase: TurnPhase,
@@ -12,7 +15,7 @@ internal class StatusBarView(
 ) : View {
 
     override fun render(canvas: Canvas) {
-        Bordered(title = "COMMAND", gutters = Bordered.STATUS_BAR_PADDING, content = Content()).render(canvas)
+        Bordered(title = "COMMAND", gutters = STATUS_BAR_PADDING, content = Content()).render(canvas)
     }
 
     private inner class Content : View {
@@ -28,7 +31,14 @@ internal class StatusBarView(
     }
 
     private companion object {
-        private val ACCENT_STYLE = Cell.Style(Color.ACCENT)
-        private val TEXT_PRIMARY_STYLE = Cell.Style(Color.TEXT_PRIMARY)
+        private val ACCENT_STYLE = Cell.Style(UiRole.ACCENT)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
+
+        /**
+         * The status bar is only [Workspace.STATUS_BAR_HEIGHT] = 4 rows tall: border alone
+         * takes 2, and it needs 2 content rows (phase label + prompt), so it cannot afford
+         * [Bordered.PADDING]'s spacer row — `top = 0`.
+         */
+        private val STATUS_BAR_PADDING = Insets(left = 1, top = 0, right = 1, bottom = 0)
     }
 }

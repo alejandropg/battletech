@@ -6,14 +6,10 @@ import battletech.tui.hex.HexGeometry
 import battletech.tui.hex.HexLayout
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
+import tenter.input.ChromeInput
+import tenter.input.PanAction
 
 public object InputMapper {
-
-    /** Number of rows scrolled per wheel tick (matches lazygit default). */
-    public const val SCROLL_STEP: Int = 2
-
-    public fun isQuit(event: KeyboardEvent): Boolean =
-        event.ctrl && event.key == "c"
 
     private fun keyToDirection(key: String): HexDirection? = when (key) {
         "ArrowUp", "w" -> HexDirection.N
@@ -70,48 +66,6 @@ public object InputMapper {
         else -> null
     }
 
-    /**
-     * The panel key an alt-chord names, if any: `alt+0` -> `'0'`, `alt+H` -> `'h'`. Resolving
-     * the key to a [battletech.tui.game.PanelId] and deciding what the chord does (collapse vs
-     * open) is [battletech.tui.game.PanelId.byKey]'s and the caller's job, not this mapper's.
-     */
-    public fun panelKey(event: KeyboardEvent): Char? {
-        if (!event.alt) return null
-        return event.key.singleOrNull()?.lowercaseChar()
-    }
-
-    /**
-     * Returns the scroll delta for a mouse event: negative for scroll-up, positive for
-     * scroll-down, null when the event carries no scroll intent.
-     *
-     * [overPanel] must be true when the pointer is over a scrollable panel slot; false
-     * when it is over the board or any other non-panel area.
-     *
-     * ### Mordant 3.0.2 wheel-parsing workaround
-     * Mordant's posix event parser checks `wheelUp = cb == 64` and `wheelDown = cb == 65`,
-     * but real terminals in X10/1005 encoding (which Mordant enables) transmit wheel events
-     * as button-code-plus-32: cb 96 (wheel up) and cb 97 (wheel down).
-     * `96 and 3 == 0` → Mordant decodes wheel-up as `left = true`; `97 and 3 == 1` →
-     * `right = true`.  Consequently, on any real posix terminal `wheelUp` and `wheelDown`
-     * are never true and a physical wheel tick is indistinguishable from a button press.
-     *
-     * Workaround: over a scrollable panel slot, treat a left press as wheel-up and a right
-     * press as wheel-down.  Panels have no click semantics of their own, so nothing is lost.
-     * Board click handling (`mapMouseToHex`) requires left and is unaffected because it is
-     * reached only when [overPanel] is false.  The canonical `wheelUp`/`wheelDown` branches
-     * keep precedence so the code is correct on Windows and future-proof once Mordant is
-     * patched upstream.
-     *
-     * A button *release* arrives with all button flags false and yields null.
-     */
-    public fun scrollDelta(event: MouseEvent, overPanel: Boolean): Int? = when {
-        event.wheelUp -> -SCROLL_STEP
-        event.wheelDown -> SCROLL_STEP
-        overPanel && event.left -> -SCROLL_STEP
-        overPanel && event.right -> SCROLL_STEP
-        else -> null
-    }
-
     public fun mapMouseToHex(event: MouseEvent, boardX: Int, boardY: Int, scrollX: Int = 0, scrollY: Int = 0): HexCoordinates? {
         if (!event.left) return null
         val x = event.x - boardX
@@ -120,33 +74,15 @@ public object InputMapper {
         return HexLayout.screenToHex(x, y, scrollX, scrollY)
     }
 
-    /** Board pan step per key press — one hex stride, so panning stays visually grid-aligned. */
-    private val PAN_KEYS: Map<String, PanAction.Pan> = mapOf(
-        "h" to PanAction.Pan(-HexGeometry.COL_STRIDE, 0),
-        "l" to PanAction.Pan(HexGeometry.COL_STRIDE, 0),
-        "k" to PanAction.Pan(0, -HexGeometry.ROW_STRIDE),
-        "j" to PanAction.Pan(0, HexGeometry.ROW_STRIDE),
-    )
-
-    private val CTRL_ARROW_PAN_KEYS: Map<String, PanAction.Pan> = mapOf(
-        "ArrowLeft" to PanAction.Pan(-HexGeometry.COL_STRIDE, 0),
-        "ArrowRight" to PanAction.Pan(HexGeometry.COL_STRIDE, 0),
-        "ArrowUp" to PanAction.Pan(0, -HexGeometry.ROW_STRIDE),
-        "ArrowDown" to PanAction.Pan(0, HexGeometry.ROW_STRIDE),
-    )
-
     /**
      * Manual board panning: `hjkl` or ctrl+arrows shift the viewport by one hex stride; `Home`
      * recenters on the cursor. Bound globally (see `RunLoop`'s dispatch), so it never competes
      * with plain arrows/wasd (cursor movement) or the attack-declaring torso-twist/weapon-nav
      * bindings on arrows — `hjkl` and `Home` are unused everywhere else, and ctrl+arrow is a
-     * distinct key from plain arrow.
+     * distinct key from plain arrow. Delegates the actual key mapping to [ChromeInput.panAction],
+     * supplying the hex grid's own stride as the pan step.
      */
-    internal fun mapPanEvent(event: KeyboardEvent): PanAction? = when {
-        event.key == "Home" -> PanAction.Recenter
-        event.ctrl -> CTRL_ARROW_PAN_KEYS[event.key]
-        !event.alt -> PAN_KEYS[event.key]
-        else -> null
-    }
+    internal fun mapPanEvent(event: KeyboardEvent): PanAction? =
+        ChromeInput.panAction(event, HexGeometry.COL_STRIDE, HexGeometry.ROW_STRIDE)
 
 }

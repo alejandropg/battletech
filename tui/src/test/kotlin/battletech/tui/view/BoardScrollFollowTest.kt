@@ -5,11 +5,17 @@ import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.projectFor
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
-import battletech.tui.screen.FocusRect
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.screen.FocusRect
+import tenter.view.Bordered
+import tenter.view.ContentExtent
+import tenter.view.ScrollOffset
+import tenter.view.ScrollState
+import tenter.view.render
+import tenter.view.scrollingPanel
 
 /**
  * The board composed the way [Workspace.render] composes it — real [BoardView] content inside a

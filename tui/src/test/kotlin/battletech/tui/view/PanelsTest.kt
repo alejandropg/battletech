@@ -3,6 +3,7 @@ package battletech.tui.view
 import battletech.tui.game.PanelId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import tenter.panel.Panel
 
 internal class PanelsTest {
 

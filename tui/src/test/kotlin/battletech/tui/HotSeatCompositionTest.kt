@@ -16,7 +16,8 @@ import battletech.tui.game.phase.BOARD_ORIGIN_Y
 import battletech.tui.hex.HexLayout
 import battletech.tui.loop.UiEvent
 import battletech.tui.loop.runLoop
-import battletech.tui.screen.ScreenRenderer
+import battletech.tui.screen.DarkPalette
+import tenter.screen.ScreenRenderer
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.rendering.AnsiLevel
@@ -65,7 +66,7 @@ internal class HotSeatCompositionTest {
 
     private val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = 120, height = 40)
     private val terminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
-    private val renderer = ScreenRenderer(terminal)
+    private val renderer = ScreenRenderer(terminal, DarkPalette)
 
     private lateinit var server: GameServer
     private lateinit var seats: Map<PlayerId, ClientGameSession>

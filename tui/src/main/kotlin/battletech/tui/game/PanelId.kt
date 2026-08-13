@@ -1,20 +1,22 @@
 package battletech.tui.game
 
+import tenter.panel.PanelKey
+
 /**
- * Stable identity for each side panel: its name and its user-facing `Alt+<key>` chord /
- * `Bordered` decoration badge. [key] is fixed per panel and intentionally **independent of the
+ * Stable identity for each side panel: its name and its user-facing `Alt+<badge>` chord /
+ * bordered-decoration badge. [badge] is fixed per panel and intentionally **independent of the
  * left-to-right render order** — `Alt+0` always means the LOG panel regardless of which panels
  * happen to be visible in the current phase.
  *
- * `Alt+<key>` toggles a display preference for every panel EXCEPT HELP: `battletech.tui.view.Panel`
+ * `Alt+<badge>` toggles a display preference for every panel EXCEPT HELP: `tenter.panel.Panel`
  * remembers its own collapsed-vs-expanded state, keyed by the [PanelId] declared here. `Alt+h` is
  * the one exception — it toggles `AppState.helpOpen` instead, since HELP's key controls whether it
  * EXISTS this frame rather than how it's displayed; see `AppState.helpOpen`'s KDoc.
  *
- * This enum carries no layout facts of its own — those live on `battletech.tui.view.Panel`,
+ * This enum carries no layout facts of its own — those live on `tenter.panel.Panel`,
  * keyed by the [PanelId] declared here.
  */
-internal enum class PanelId(val key: Char) {
+internal enum class PanelId(override val badge: Char) : PanelKey {
     LOG('0'),
     UNIT_STATUS('1'),
     DECLARED_TARGETS('2'),
@@ -25,6 +27,6 @@ internal enum class PanelId(val key: Char) {
     ;
 
     internal companion object {
-        fun byKey(key: Char): PanelId? = entries.firstOrNull { it.key == key }
+        fun byBadge(badge: Char): PanelId? = entries.firstOrNull { it.badge == badge }
     }
 }

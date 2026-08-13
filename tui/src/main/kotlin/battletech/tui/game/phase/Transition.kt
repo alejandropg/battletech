@@ -1,7 +1,7 @@
 package battletech.tui.game.phase
 
 import battletech.tui.game.AppState
-import battletech.tui.game.FlashMessage
+import tenter.panel.FlashMessage
 
 internal data class Transition(
     val app: AppState,

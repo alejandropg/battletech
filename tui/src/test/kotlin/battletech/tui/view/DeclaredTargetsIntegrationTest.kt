@@ -8,15 +8,18 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.Impulse
 import battletech.tactical.unit.UnitRoster
 import battletech.tui.aGameMap
-import battletech.tui.anAppState
 import battletech.tui.aTurnState
 import battletech.tui.aUnit
+import battletech.tui.anAppState
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.WeaponAllocation
 import battletech.tui.mediumLaser
-import battletech.tui.screen.Color
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.screen.UiRole
+import tenter.view.line
+import tenter.view.render
+import tenter.view.text
 
 /**
  * End-to-end integration: AppState → declaredTargetsRender → DeclaredTargetsView.render.
@@ -58,8 +61,8 @@ internal class DeclaredTargetsIntegrationTest {
 
         val wolfRow = (0 until 30).first { buffer.line(it).contains("wolf") }
         val colors = (2 until 28).map { col -> buffer.get(col, wolfRow).style.fg }.toSet()
-        assertTrue(colors.contains(Color.DRAFT)) {
-            "Expected wolf (draft) row to use Color.DRAFT, got: $colors"
+        assertTrue(colors.contains(UiRole.DRAFT)) {
+            "Expected wolf (draft) row to use UiRole.DRAFT, got: $colors"
         }
     }
 
