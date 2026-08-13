@@ -25,9 +25,6 @@ public class Bordered(
     private val thumbsFrom: Scrolled? = null,
 ) : View {
 
-    /** What [thumbsFrom] settled on this render, or [ScrollState.NONE] if this box doesn't scroll. */
-    public val scroll: ScrollState get() = thumbsFrom?.scroll ?: ScrollState.NONE
-
     override fun render(canvas: Canvas) {
         drawBorder(canvas)
         content.render(canvas.inset(BORDER + gutters))
@@ -82,17 +79,17 @@ public class Bordered(
         val viewportHeight = canvas.height - inset.top - inset.bottom
         val scroll = scrolled.scroll
 
-        Scrollbar.thumb(
+        ScrollGeometry.thumb(
             track = viewportHeight,
-            contentHeight = scroll.maxOffset.y + viewportHeight,
-            viewportHeight = viewportHeight,
+            contentLength = scroll.maxOffset.y + viewportHeight,
+            viewportLength = viewportHeight,
             offset = scroll.offset.y,
         )?.forEach { i -> canvas.set(canvas.width - 1, inset.top + i, Cell("▐", PANEL_BORDER_STYLE)) }
 
-        Scrollbar.thumb(
+        ScrollGeometry.thumb(
             track = viewportWidth,
-            contentHeight = scroll.maxOffset.x + viewportWidth,
-            viewportHeight = viewportWidth,
+            contentLength = scroll.maxOffset.x + viewportWidth,
+            viewportLength = viewportWidth,
             offset = scroll.offset.x,
         )?.forEach { i -> canvas.set(inset.left + i, canvas.height - 1, Cell("▬", PANEL_BORDER_STYLE)) }
     }

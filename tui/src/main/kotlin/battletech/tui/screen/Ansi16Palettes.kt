@@ -17,7 +17,7 @@ private fun code(value: Int): PaletteColor.Basic = PaletteColor.Basic(value)
 internal object Dark16Palette : RolePalette {
     override val defaultBackground: PaletteColor = code(30)
 
-    override fun resolve(role: ColorRole): PaletteColor = when (role) {
+    override fun foreground(role: ColorRole): PaletteColor = when (role) {
         is UiRole -> ui(role)
         is BoardRole -> board(role)
         else -> error("Unknown color role: $role")
@@ -76,7 +76,7 @@ internal object Dark16Palette : RolePalette {
 internal object Light16Palette : RolePalette {
     override val defaultBackground: PaletteColor = code(97)
 
-    override fun resolve(role: ColorRole): PaletteColor = when (role) {
+    override fun foreground(role: ColorRole): PaletteColor = when (role) {
         is UiRole -> ui(role)
         is BoardRole -> board(role)
         else -> error("Unknown color role: $role")

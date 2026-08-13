@@ -18,7 +18,7 @@ private fun rgb(r: Int, g: Int, b: Int) = PaletteColor.TrueColor(r, g, b)
 private object FixturePalette : RolePalette {
     override val defaultBackground: PaletteColor = rgb(16, 20, 24)
 
-    override fun resolve(role: ColorRole): PaletteColor = when (role) {
+    override fun foreground(role: ColorRole): PaletteColor = when (role) {
         is UiRole -> when (role) {
             UiRole.DEFAULT -> rgb(221, 226, 229)
             UiRole.TEXT_PRIMARY -> rgb(241, 243, 245)
@@ -40,7 +40,7 @@ private object FixturePalette : RolePalette {
 private object AltFixturePalette : RolePalette {
     override val defaultBackground: PaletteColor = rgb(248, 245, 238)
 
-    override fun resolve(role: ColorRole): PaletteColor = when (role) {
+    override fun foreground(role: ColorRole): PaletteColor = when (role) {
         is UiRole -> rgb(32, 36, 40)
         else -> error("AltFixturePalette only resolves UiRole, got: $role")
     }

@@ -18,7 +18,7 @@ private fun idx(index: Int): PaletteColor.Indexed = PaletteColor.Indexed(index)
 internal object Dark256Palette : RolePalette {
     override val defaultBackground: PaletteColor = idx(233)
 
-    override fun resolve(role: ColorRole): PaletteColor = when (role) {
+    override fun foreground(role: ColorRole): PaletteColor = when (role) {
         is UiRole -> ui(role)
         is BoardRole -> board(role)
         else -> error("Unknown color role: $role")
@@ -79,7 +79,7 @@ internal object Dark256Palette : RolePalette {
 internal object Light256Palette : RolePalette {
     override val defaultBackground: PaletteColor = idx(255)
 
-    override fun resolve(role: ColorRole): PaletteColor = when (role) {
+    override fun foreground(role: ColorRole): PaletteColor = when (role) {
         is UiRole -> ui(role)
         is BoardRole -> board(role)
         else -> error("Unknown color role: $role")

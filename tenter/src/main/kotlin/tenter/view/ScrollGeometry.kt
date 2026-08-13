@@ -1,10 +1,11 @@
 package tenter.view
 
 /**
- * Pure, single-axis scroll-offset math shared by every [Scrolled] instance — the one
- * place "keep this visible" and "center on this" are computed, so no view reimplements either.
+ * Pure, single-axis scroll math shared by every [Scrolled] and [Bordered] instance — the one
+ * place "keep this visible", "center on this", and "where does the thumb sit" are computed, so
+ * no view reimplements any of them.
  */
-public object ScrollFollow {
+public object ScrollGeometry {
 
     /**
      * The minimal offset that brings `[focusStart, focusEnd)` into `[offset, offset + viewportSize)`,
@@ -33,5 +34,27 @@ public object ScrollFollow {
         val focusSize = focusEnd - focusStart
         val centered = focusStart - (viewportSize - focusSize) / 2
         return centered.coerceIn(0, maxOffset)
+    }
+
+    /**
+     * The scrollbar thumb's range within a [track]-cell-long scrollbar, or `null` if the content
+     * fits entirely in the viewport (no thumb to draw). [contentLength] and [viewportLength] are
+     * both in the same units as [track] and [offset] — cells along the scrolled axis, so this
+     * one function serves both a vertical (heights) and a horizontal (widths) scrollbar.
+     */
+    public fun thumb(track: Int, contentLength: Int, viewportLength: Int, offset: Int): IntRange? {
+        if (track <= 0) return null
+        if (contentLength <= viewportLength) return null
+
+        val thumbSize = maxOf(1, track * viewportLength / contentLength)
+        val maxOffset = contentLength - viewportLength
+
+        val thumbStart = if (maxOffset == 0) {
+            0
+        } else {
+            (offset * (track - thumbSize) + maxOffset / 2) / maxOffset
+        }
+
+        return thumbStart until thumbStart + thumbSize
     }
 }

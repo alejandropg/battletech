@@ -68,7 +68,11 @@ public class Scrolled(
     private val recenter: Boolean = false,
 ) : View {
 
-    /** What was actually rendered — the effective offset and each axis's max. Set by [render]. */
+    /**
+     * What was actually rendered — the effective offset and each axis's max. Set by [render].
+     * Consumers outside this file should generally prefer [ScrollingPanel.scroll], which reaches
+     * this without callers needing to know a [Bordered] box wraps a [Scrolled] internally.
+     */
     public var scroll: ScrollState = ScrollState.NONE
         private set
 
@@ -123,43 +127,8 @@ public class Scrolled(
         shouldFollow: Boolean,
     ): Int = when {
         focusRange == null -> base.coerceIn(0, maxOffset)
-        recenter -> ScrollFollow.center(focusRange.first, focusRange.second, viewportSize, maxOffset)
-        shouldFollow -> ScrollFollow.follow(base, focusRange.first, focusRange.second, viewportSize, maxOffset)
+        recenter -> ScrollGeometry.center(focusRange.first, focusRange.second, viewportSize, maxOffset)
+        shouldFollow -> ScrollGeometry.follow(base, focusRange.first, focusRange.second, viewportSize, maxOffset)
         else -> base.coerceIn(0, maxOffset)
     }
-}
-
-/**
- * Composes a bordered, scrolling panel: [Bordered] for the box, [Scrolled] for the scroll math,
- * and [Padded] for the reclaimable top spacer row — the single construction site every scrolling
- * panel goes through, so the three decorators are wired together exactly once.
- *
- * The vertical component of [Bordered.PADDING] is folded into the content stream (via [Padded],
- * and — for [ContentExtent.Fixed] — into the extent's height) rather than the viewport, which is
- * what makes it a spacer at rest that the content reclaims the moment the view scrolls. The
- * horizontal component becomes [gutters][Bordered], a pure viewport concern.
- */
-public fun scrollingPanel(
-    title: String,
-    badge: String?,
-    content: View,
-    extent: ContentExtent,
-    offset: ScrollOffset = ScrollOffset.ZERO,
-    previousFocus: FocusRect? = null,
-    recenter: Boolean = false,
-): Bordered {
-    val verticalPadding = Bordered.PADDING.vertical()
-    val paddedContent = Padded(verticalPadding, content)
-    val paddedExtent = when (extent) {
-        is ContentExtent.Measured -> extent
-        is ContentExtent.Fixed -> ContentExtent.Fixed(extent.width, extent.height + verticalPadding.top + verticalPadding.bottom)
-    }
-    val scrolled = Scrolled(paddedContent, paddedExtent, offset, previousFocus, recenter)
-    return Bordered(
-        content = scrolled,
-        title = title,
-        badge = badge,
-        gutters = Bordered.PADDING.horizontal(),
-        thumbsFrom = scrolled,
-    )
 }

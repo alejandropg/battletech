@@ -71,7 +71,7 @@ public class Panel<K : PanelKey, I>(
             return
         }
         val content = build(inputs) ?: return
-        val bordered = scrollingPanel(
+        val panel = scrollingPanel(
             title = title,
             badge = id.badge.toString(),
             content = content,
@@ -79,9 +79,9 @@ public class Panel<K : PanelKey, I>(
             offset = scroll,
             previousFocus = if (forgetFocus) null else lastFocus,
         )
-        bordered.render(canvas)
-        scroll = bordered.scroll.offset
-        lastFocus = bordered.scroll.focus
+        panel.render(canvas)
+        scroll = panel.scroll.offset
+        lastFocus = panel.scroll.focus
     }
 
     public companion object {

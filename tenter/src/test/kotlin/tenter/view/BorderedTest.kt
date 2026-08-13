@@ -180,7 +180,7 @@ internal class BorderedTest {
 
         // The viewport spans the whole inner height (rows 1..8) — the padding row is part of the
         // scrollable stream, not a fixed offset — so the thumb can occupy row 1 too.
-        val thumbRange = Scrollbar.thumb(track = 8, contentHeight = 21, viewportHeight = 8, offset = 0)!!
+        val thumbRange = ScrollGeometry.thumb(track = 8, contentLength = 21, viewportLength = 8, offset = 0)!!
         for (row in 1..8) {
             val cell = buffer.get(29, row)
             if ((row - 1) in thumbRange) {

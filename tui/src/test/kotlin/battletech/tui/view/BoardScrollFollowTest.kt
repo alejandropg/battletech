@@ -10,10 +10,10 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.FocusRect
-import tenter.view.Bordered
 import tenter.view.ContentExtent
 import tenter.view.ScrollOffset
 import tenter.view.ScrollState
+import tenter.view.ScrollingPanel
 import tenter.view.render
 import tenter.view.scrollingPanel
 
@@ -32,7 +32,7 @@ internal class BoardScrollFollowTest {
         offset: ScrollOffset,
         previousFocus: FocusRect?,
         recenter: Boolean = false,
-    ): Bordered {
+    ): ScrollingPanel {
         val (w, h) = BoardView.contentSize(state.map)
         return scrollingPanel(
             title = "TACTICAL MAP",
