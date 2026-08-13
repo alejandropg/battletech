@@ -4,87 +4,98 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.Terrain
 import battletech.tactical.unit.CriticalSlotContent
-import tenter.icons.NF_FA_BOMB
-import tenter.icons.NF_FA_CHAIN_BROKEN
-import tenter.icons.NF_FA_INFINITY
-import tenter.icons.NF_MD_ACCOUNT_ALERT
-import tenter.icons.NF_MD_ACCOUNT_CIRCLE
-import tenter.icons.NF_MD_AMMUNITION
-import tenter.icons.NF_MD_ARROW_BOTTOM_LEFT
-import tenter.icons.NF_MD_ARROW_BOTTOM_LEFT_BOLD_OUTLINE
-import tenter.icons.NF_MD_ARROW_BOTTOM_RIGHT
-import tenter.icons.NF_MD_ARROW_BOTTOM_RIGHT_BOLD_OUTLINE
-import tenter.icons.NF_MD_ARROW_DOWN
-import tenter.icons.NF_MD_ARROW_DOWN_BOLD_OUTLINE
-import tenter.icons.NF_MD_ARROW_TOP_LEFT
-import tenter.icons.NF_MD_ARROW_TOP_LEFT_BOLD_OUTLINE
-import tenter.icons.NF_MD_ARROW_TOP_RIGHT
-import tenter.icons.NF_MD_ARROW_TOP_RIGHT_BOLD_OUTLINE
-import tenter.icons.NF_MD_ARROW_UP
-import tenter.icons.NF_MD_ARROW_UP_BOLD_OUTLINE
-import tenter.icons.NF_MD_ARROW_UP_THIN_N
-import tenter.icons.NF_MD_ARROW_UP_THIN_NE
-import tenter.icons.NF_MD_ARROW_UP_THIN_NW
-import tenter.icons.NF_MD_ARROW_UP_THIN_S
-import tenter.icons.NF_MD_ARROW_UP_THIN_SE
-import tenter.icons.NF_MD_ARROW_UP_THIN_SW
-import tenter.icons.NF_MD_BOXING_GLOVE
-import tenter.icons.NF_MD_BULLSEYE_ARROW
-import tenter.icons.NF_MD_CHECKBOX_BLANK_CIRCLE_OUTLINE
-import tenter.icons.NF_MD_CROSSHAIRS_OFF
-import tenter.icons.NF_MD_DICE_1
-import tenter.icons.NF_MD_DICE_2
-import tenter.icons.NF_MD_DICE_3
-import tenter.icons.NF_MD_DICE_4
-import tenter.icons.NF_MD_DICE_5
-import tenter.icons.NF_MD_DICE_6
-import tenter.icons.NF_MD_DICE_MULTIPLE_OUTLINE
-import tenter.icons.NF_MD_EYE_CIRCLE
-import tenter.icons.NF_MD_GRAIN
-import tenter.icons.NF_MD_IMAGE_BROKEN
-import tenter.icons.NF_MD_LAN_CONNECT
-import tenter.icons.NF_MD_NUMERIC_1_BOX_MULTIPLE
-import tenter.icons.NF_MD_NUMERIC_1_BOX_MULTIPLE_OUTLINE
-import tenter.icons.NF_MD_NUMERIC_2_BOX_MULTIPLE
-import tenter.icons.NF_MD_NUMERIC_2_BOX_MULTIPLE_OUTLINE
-import tenter.icons.NF_MD_NUMERIC_3_BOX_MULTIPLE
-import tenter.icons.NF_MD_NUMERIC_3_BOX_MULTIPLE_OUTLINE
-import tenter.icons.NF_MD_NUMERIC_4_BOX_MULTIPLE
-import tenter.icons.NF_MD_NUMERIC_4_BOX_MULTIPLE_OUTLINE
-import tenter.icons.NF_MD_NUMERIC_5_BOX_MULTIPLE
-import tenter.icons.NF_MD_NUMERIC_5_BOX_MULTIPLE_OUTLINE
-import tenter.icons.NF_MD_NUMERIC_6_BOX_MULTIPLE
-import tenter.icons.NF_MD_NUMERIC_6_BOX_MULTIPLE_OUTLINE
-import tenter.icons.NF_MD_NUMERIC_7_BOX_MULTIPLE
-import tenter.icons.NF_MD_NUMERIC_7_BOX_MULTIPLE_OUTLINE
-import tenter.icons.NF_MD_NUMERIC_8_BOX_MULTIPLE
-import tenter.icons.NF_MD_NUMERIC_8_BOX_MULTIPLE_OUTLINE
-import tenter.icons.NF_MD_NUMERIC_9_BOX_MULTIPLE
-import tenter.icons.NF_MD_NUMERIC_9_BOX_MULTIPLE_OUTLINE
-import tenter.icons.NF_MD_PINE_TREE
-import tenter.icons.NF_MD_PISTOL
-import tenter.icons.NF_MD_POWER
-import tenter.icons.NF_MD_RADIOACTIVE_CIRCLE
-import tenter.icons.NF_MD_RESTART
-import tenter.icons.NF_MD_ROBOT_DEAD
-import tenter.icons.NF_MD_ROCKET_LAUNCH
-import tenter.icons.NF_MD_RUN_FAST
-import tenter.icons.NF_MD_SKULL
-import tenter.icons.NF_MD_SLEEP
-import tenter.icons.NF_MD_SLEEP_OFF
-import tenter.icons.NF_MD_SYNC_CIRCLE
-import tenter.icons.NF_MD_TARGET
-import tenter.icons.NF_MD_THERMOMETER_CHEVRON_DOWN
-import tenter.icons.NF_MD_THERMOMETER_CHEVRON_UP
-import tenter.icons.NF_MD_TRANSFER_DOWN
-import tenter.icons.NF_MD_TRANSFER_UP
-import tenter.icons.NF_MD_TREE_OUTLINE
-import tenter.icons.NF_MD_TROPHY
-import tenter.icons.NF_MD_WALK
-import tenter.icons.NF_MD_WAVES
 
-// Nerd Font glyph codepoints live in tenter.icons.NerdFont; this file only maps them onto
-// BattleTech domain concepts (terrain, facing, criticals, log events, ...).
+// Nerd Fonts icons (https://www.nerdfonts.com/cheat-sheet)
+private val NF_MD_DICE_1: String = String(Character.toChars(0xF01CA))
+private val NF_MD_DICE_2: String = String(Character.toChars(0xF01CB))
+private val NF_MD_DICE_3: String = String(Character.toChars(0xF01CC))
+private val NF_MD_DICE_4: String = String(Character.toChars(0xF01CD))
+private val NF_MD_DICE_5: String = String(Character.toChars(0xF01CE))
+private val NF_MD_DICE_6: String = String(Character.toChars(0xF01CF))
+private val NF_MD_WALK: String = String(Character.toChars(0xF0583))
+private val NF_MD_RUN_FAST: String = String(Character.toChars(0xF046E))
+private val NF_MD_ROCKET_LAUNCH: String = String(Character.toChars(0xF14DE))
+private val NF_MD_TARGET: String = String(Character.toChars(0xF04FE))
+private val NF_MD_BULLSEYE_ARROW: String = String(Character.toChars(0xF08C9))
+private val NF_MD_CROSSHAIRS_OFF: String = String(Character.toChars(0xF0F45))
+private val NF_MD_DICE_MULTIPLE_OUTLINE: String = String(Character.toChars(0xF1156))
+private val NF_MD_CHECKBOX_BLANK_CIRCLE_OUTLINE: String = String(Character.toChars(0xF0130))
+private val NF_MD_AMMUNITION: String = String(Character.toChars(0xF0CE8))
+private val NF_FA_INFINITY: String = String(Character.toChars(0xEDFE))
+private val NF_MD_IMAGE_BROKEN: String = String(Character.toChars(0xF02ED))
+private val NF_FA_CHAIN_BROKEN: String = String(Character.toChars(0xF127))
+private val NF_FA_BOMB: String = String(Character.toChars(0xF1E2))
+private val NF_MD_RADIOACTIVE_CIRCLE: String = String(Character.toChars(0xF185D))
+private val NF_MD_SYNC_CIRCLE: String = String(Character.toChars(0xF1378))
+private val NF_MD_EYE_CIRCLE: String = String(Character.toChars(0xF0B94))
+private val NF_MD_ACCOUNT_CIRCLE: String = String(Character.toChars(0xF0009))
+private val NF_MD_SKULL: String = String(Character.toChars(0xF068C))
+private val NF_MD_ROBOT_DEAD: String = String(Character.toChars(0xF16A1))
+private val NF_MD_LAN_CONNECT: String = String(Character.toChars(0xF0318))
+private val NF_MD_TRANSFER_DOWN: String = String(Character.toChars(0xF0DA1))
+private val NF_MD_TRANSFER_UP: String = String(Character.toChars(0xF0DA3))
+private val NF_MD_ACCOUNT_ALERT: String = String(Character.toChars(0xF0005))
+private val NF_MD_SLEEP: String = String(Character.toChars(0xF04B2))
+private val NF_MD_SLEEP_OFF: String = String(Character.toChars(0xF04B3))
+private val NF_MD_THERMOMETER_CHEVRON_DOWN: String = String(Character.toChars(0xF0E02))
+private val NF_MD_THERMOMETER_CHEVRON_UP: String = String(Character.toChars(0xF0E03))
+private val NF_MD_POWER: String = String(Character.toChars(0xF0425))
+private val NF_MD_RESTART: String = String(Character.toChars(0xF0709))
+private val NF_MD_TROPHY: String = String(Character.toChars(0xF0538))
+private val NF_MD_PISTOL: String = String(Character.toChars(0xF0703))
+private val NF_MD_BOXING_GLOVE: String = String(Character.toChars(0xF0B65))
+
+// Terrain icons (nf-md-tree_outline, nf-md-tree and another Nerd Fonts icons are above U+FFFF, need surrogate pairs)
+private val NF_MD_TREE_OUTLINE: String = String(Character.toChars(0xF0E69))
+private val NF_MD_PINE_TREE: String = String(Character.toChars(0xF0531))
+private val NF_MD_WAVES: String = String(Character.toChars(0xF078D))
+private val NF_MD_GRAIN: String = String(Character.toChars(0xF0D7C))
+
+// Numeric badge icons (nf-md-numeric_N_box_multiple)
+private val NF_MD_NUMERIC_1_BOX_MULTIPLE: String = String(Character.toChars(0xF0F0F))
+private val NF_MD_NUMERIC_2_BOX_MULTIPLE: String = String(Character.toChars(0xF0F10))
+private val NF_MD_NUMERIC_3_BOX_MULTIPLE: String = String(Character.toChars(0xF0F11))
+private val NF_MD_NUMERIC_4_BOX_MULTIPLE: String = String(Character.toChars(0xF0F12))
+private val NF_MD_NUMERIC_5_BOX_MULTIPLE: String = String(Character.toChars(0xF0F13))
+private val NF_MD_NUMERIC_6_BOX_MULTIPLE: String = String(Character.toChars(0xF0F14))
+private val NF_MD_NUMERIC_7_BOX_MULTIPLE: String = String(Character.toChars(0xF0F15))
+private val NF_MD_NUMERIC_8_BOX_MULTIPLE: String = String(Character.toChars(0xF0F16))
+private val NF_MD_NUMERIC_9_BOX_MULTIPLE: String = String(Character.toChars(0xF0F17))
+
+// Numeric badge outline icons (nf-md-numeric_N_box_multiple_outline)
+private val NF_MD_NUMERIC_1_BOX_MULTIPLE_OUTLINE: String = String(Character.toChars(0xF03A5))
+private val NF_MD_NUMERIC_2_BOX_MULTIPLE_OUTLINE: String = String(Character.toChars(0xF03A8))
+private val NF_MD_NUMERIC_3_BOX_MULTIPLE_OUTLINE: String = String(Character.toChars(0xF03AB))
+private val NF_MD_NUMERIC_4_BOX_MULTIPLE_OUTLINE: String = String(Character.toChars(0xF03B2))
+private val NF_MD_NUMERIC_5_BOX_MULTIPLE_OUTLINE: String = String(Character.toChars(0xF03AF))
+private val NF_MD_NUMERIC_6_BOX_MULTIPLE_OUTLINE: String = String(Character.toChars(0xF03B4))
+private val NF_MD_NUMERIC_7_BOX_MULTIPLE_OUTLINE: String = String(Character.toChars(0xF03B7))
+private val NF_MD_NUMERIC_8_BOX_MULTIPLE_OUTLINE: String = String(Character.toChars(0xF03BA))
+private val NF_MD_NUMERIC_9_BOX_MULTIPLE_OUTLINE: String = String(Character.toChars(0xF03BD))
+
+// Thin arrow icons
+private val NF_MD_ARROW_UP_THIN_N: String = String(Character.toChars(0xF09C7))
+private val NF_MD_ARROW_UP_THIN_NE: String = String(Character.toChars(0xF09C5))
+private val NF_MD_ARROW_UP_THIN_SE: String = String(Character.toChars(0xF09B9))
+private val NF_MD_ARROW_UP_THIN_S: String = String(Character.toChars(0xF09BF))
+private val NF_MD_ARROW_UP_THIN_SW: String = String(Character.toChars(0xF09B7))
+private val NF_MD_ARROW_UP_THIN_NW: String = String(Character.toChars(0xF09C3))
+
+// Bold outline arrow icons (larger arrows)
+private val NF_MD_ARROW_UP_BOLD_OUTLINE: String = String(Character.toChars(0xF09C7))
+private val NF_MD_ARROW_TOP_RIGHT_BOLD_OUTLINE: String = String(Character.toChars(0xF09C5))
+private val NF_MD_ARROW_BOTTOM_RIGHT_BOLD_OUTLINE: String = String(Character.toChars(0xF09B9))
+private val NF_MD_ARROW_DOWN_BOLD_OUTLINE: String = String(Character.toChars(0xF09BF))
+private val NF_MD_ARROW_BOTTOM_LEFT_BOLD_OUTLINE: String = String(Character.toChars(0xF09B7))
+private val NF_MD_ARROW_TOP_LEFT_BOLD_OUTLINE: String = String(Character.toChars(0xF09C3))
+
+// Plain arrow icons (smaller arrows)
+private val NF_MD_ARROW_UP: String = String(Character.toChars(0xF005D))
+private val NF_MD_ARROW_TOP_RIGHT: String = String(Character.toChars(0xF005C))
+private val NF_MD_ARROW_BOTTOM_RIGHT: String = String(Character.toChars(0xF0043))
+private val NF_MD_ARROW_DOWN: String = String(Character.toChars(0xF0045))
+private val NF_MD_ARROW_BOTTOM_LEFT: String = String(Character.toChars(0xF0042))
+private val NF_MD_ARROW_TOP_LEFT: String = String(Character.toChars(0xF005B))
 
 internal fun terrainIcon(terrain: Terrain): String = when (terrain) {
     Terrain.CLEAR       -> ""
