@@ -18,14 +18,14 @@ internal class ViewportTest {
     private val viewportHeight = 8
 
     private fun stubContent(lines: Int): View = object : View {
-        override fun render(canvas: Canvas) {
+        override fun draw(canvas: Canvas) {
             for (i in 0 until lines) canvas.writeString(0, i, "line$i")
         }
     }
 
     /** [lines] rows of content; row [revealRow] marks itself for reveal (for auto-follow tests). */
     private fun revealingContent(lines: Int, revealRow: Int): View = object : View {
-        override fun render(canvas: Canvas) {
+        override fun draw(canvas: Canvas) {
             for (i in 0 until lines) {
                 canvas.writeString(0, i, "line$i")
                 if (i == revealRow) canvas.markReveal(0, i, canvas.width, 1)
@@ -47,7 +47,7 @@ internal class ViewportTest {
     ): Pair<Viewport, ScreenBuffer> {
         val scrolled = Viewport(content, extent, offset, previousReveal, recenter)
         val buffer = ScreenBuffer(width, height)
-        scrolled.render(Canvas.of(buffer))
+        scrolled.draw(Canvas.of(buffer))
         return scrolled to buffer
     }
 
@@ -94,7 +94,7 @@ internal class ViewportTest {
     @Test
     fun `Fixed extent uses the given size without scanning content`() {
         val content = object : View {
-            override fun render(canvas: Canvas) {
+            override fun draw(canvas: Canvas) {
                 canvas.writeString(0, 0, "X")
             }
         }
@@ -190,7 +190,7 @@ internal class ViewportTest {
     fun `degenerate viewport leaves state at ScrollState_NONE`() {
         val scrolled = Viewport(stubContent(0), ContentExtent.Measured())
 
-        scrolled.render(Canvas.offscreen(30, 0)) // no rows to render into; bails early
+        scrolled.draw(Canvas.offscreen(30, 0)) // no rows to render into; bails early
 
         assertEquals(ScrollState.NONE, scrolled.scroll)
     }

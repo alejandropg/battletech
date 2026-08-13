@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.ScreenBuffer
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.renderInPanel
 
 internal class TargetStatusViewTest {
@@ -73,7 +73,7 @@ internal class TargetStatusViewTest {
 
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).char }
         assertEquals("u1: Hunchback", line)
-        assertEquals(UiRole.ACCENT, buffer.get(2, 2).style.fg)
+        assertEquals(ChromeRole.ACCENT, buffer.get(2, 2).style.fg)
     }
 
     @Test

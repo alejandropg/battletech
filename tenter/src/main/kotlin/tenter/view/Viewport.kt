@@ -69,14 +69,14 @@ public class Viewport(
 ) : View {
 
     /**
-     * What was actually rendered — the effective offset and each axis's max. Set by [render].
+     * What was actually rendered — the effective offset and each axis's max. Set by [draw].
      * Consumers outside this file should generally prefer [ScrollingPanel.scroll], which reaches
      * this without callers needing to know a [Bordered] box wraps a [Viewport] internally.
      */
     public var scroll: ScrollState = ScrollState.NONE
         private set
 
-    override fun render(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         val viewport = canvas
         if (viewport.width <= 0 || viewport.height <= 0) {
             scroll = ScrollState.NONE
@@ -93,7 +93,7 @@ public class Viewport(
         }
 
         val stream = Canvas.offscreen(streamWidth, allocatedHeight)
-        content.render(stream)
+        content.draw(stream)
 
         val streamHeight = when (extent) {
             is ContentExtent.Measured -> stream.contentHeight()

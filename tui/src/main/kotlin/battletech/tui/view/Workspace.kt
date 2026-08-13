@@ -12,14 +12,14 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.RevealRect
 import tenter.screen.ScreenBuffer
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.Bordered
 import tenter.view.ContentExtent
 import tenter.view.ScrollOffset
 import tenter.view.View
 import tenter.view.scrollingPanel
 
-private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
+private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
 
 /**
  * Owns every side panel and the tactical board's scroll bookkeeping for one
@@ -110,7 +110,7 @@ internal class Workspace {
             recenter = recenterBoard,
         )
         val board = screen.region(layout.contentX, layout.contentY, layout.contentWidth, layout.contentHeight)
-        boardBordered.render(board)
+        boardBordered.draw(board)
         boardOffset = boardBordered.scroll.offset
         boardReveal = boardBordered.scroll.revealed
 
@@ -136,7 +136,7 @@ internal class Workspace {
         }
         val activePlayerInfo = if (matchEnded != null) null else appState.phase.activePlayerLabel(appState)
         val statusBarView = StatusBarView(appState.currentPhase, prompt, activePlayerInfo)
-        statusBarView.render(screen.region(0, 0, width, STATUS_BAR_HEIGHT))
+        statusBarView.draw(screen.region(0, 0, width, STATUS_BAR_HEIGHT))
 
         if (matchEnded != null) {
             renderGameOverBanner(board, matchEnded.outcome)
@@ -171,15 +171,15 @@ private fun renderGameOverBanner(board: Canvas, outcome: MatchOutcome) {
     val mx = (bannerWidth - winnerLine.length) / 2
     Bordered(
         title = "MATCH OVER",
-        borderColor = UiRole.ACCENT,
-        titleColor = UiRole.ACCENT,
+        borderColor = ChromeRole.ACCENT,
+        titleColor = ChromeRole.ACCENT,
         content = BannerLine(winnerLine, column = mx - 1, row = 2),
-    ).render(banner)
+    ).draw(banner)
 }
 
 /** [text] at a fixed local ([column], [row]) — the banner's win/draw line, inside [Bordered]'s border inset. */
 private class BannerLine(private val text: String, private val column: Int, private val row: Int) : View {
-    override fun render(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         canvas.writeString(column, row, text, TEXT_PRIMARY_STYLE)
     }
 }

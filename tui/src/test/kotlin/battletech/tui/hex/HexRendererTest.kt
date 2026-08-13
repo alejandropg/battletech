@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.screen.ScreenBuffer
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 
 internal class HexRendererTest {
 
@@ -280,7 +280,7 @@ internal class HexRendererTest {
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         // Top edge (row 0) belongs to the hex above — inherited, so DEFAULT here.
-        assertEquals(UiRole.DEFAULT, buffer.get(2, 0).style.bg)
+        assertEquals(ChromeRole.DEFAULT, buffer.get(2, 0).style.bg)
         // Bottom edge (row 4) is this hex's own — tinted.
         assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, buffer.get(2, 4).style.bg)
     }

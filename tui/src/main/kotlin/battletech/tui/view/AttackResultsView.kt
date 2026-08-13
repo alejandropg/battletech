@@ -10,14 +10,14 @@ import battletech.tui.hex.attackOutcomeIcon
 import battletech.tui.hex.targetIcon
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.TextCursor
 import tenter.widget.ValueRow
 import tenter.view.View
 
 internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
-    override fun render(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         val content = TextCursor(canvas)
 
         val byAttacker = data.results.groupBy { it.attackerId }
@@ -49,13 +49,13 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         // + sum(modifiers), so gunnery stays derivable by subtraction from what's shown here.
         val isOwnAttacker = data.units.byId(result.attackerId).owner == data.viewer
         val breakdown = if (isOwnAttacker) toHitBreakdownLabels(result.gunnery, result.modifiers) else result.modifiers.displayLabels()
-        ValueRow.draw(content, "  ${result.weaponName}", hitChanceLabel(result.targetNumber, successChance), breakdown, UiRole.TEXT_PRIMARY)
+        ValueRow.draw(content, "  ${result.weaponName}", hitChanceLabel(result.targetNumber, successChance), breakdown, ChromeRole.TEXT_PRIMARY)
 
         // Block 2: raw roll (left) + outcome (right-aligned, in its own color)
         val hit = result is AttackResult.Hit
         val toHit = result.toHitRoll
         val outcomeText = "${if (hit) "HIT" else "MISS"} ${attackOutcomeIcon(hit)}"
-        val outcomeColor = if (hit) UiRole.SUCCESS else UiRole.DANGER
+        val outcomeColor = if (hit) ChromeRole.SUCCESS else ChromeRole.DANGER
         val rollLine = "   ${diceRollLabel(toHit)}"
         content.writeRow(rollLine, outcomeText, TEXT_PRIMARY_STYLE, Cell.Style(outcomeColor))
 
@@ -90,6 +90,6 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
     internal companion object {
         const val TITLE: String = "ATTACK RESULTS"
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
     }
 }

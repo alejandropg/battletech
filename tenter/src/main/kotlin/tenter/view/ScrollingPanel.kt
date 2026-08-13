@@ -18,8 +18,8 @@ public class ScrollingPanel internal constructor(
     /** What this panel's content actually settled on this render — see [ScrollState]. */
     public val scroll: ScrollState get() = viewport.scroll
 
-    override fun render(canvas: Canvas) {
-        bordered.render(canvas)
+    override fun draw(canvas: Canvas) {
+        bordered.draw(canvas)
     }
 }
 

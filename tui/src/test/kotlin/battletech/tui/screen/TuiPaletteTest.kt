@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import tenter.screen.ColorRole
 import tenter.screen.PaletteColor
 import tenter.screen.RolePalette
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 
 /**
  * Verifies each theme's [RolePalette] (via [toRolePalette]) against the guarantees laid out in
@@ -31,8 +31,8 @@ internal class TuiPaletteTest {
     private val ansi16Themes = TuiTheme.entries.filter { it.level == AnsiLevel.ANSI16 }
     private val reducedThemes = TuiTheme.entries.filter { it.level != AnsiLevel.TRUECOLOR }
 
-    /** Every role this module resolves: [UiRole] plus the board-specific [BoardRole]s. */
-    private val allRoles: List<ColorRole> = UiRole.entries + BoardRole.entries
+    /** Every role this module resolves: [ChromeRole] plus the board-specific [BoardRole]s. */
+    private val allRoles: List<ColorRole> = ChromeRole.entries + BoardRole.entries
 
     /**
      * Every semantic role except the six terrain fills, four terrain icons, three badge
@@ -40,7 +40,7 @@ internal class TuiPaletteTest {
      * paints text with. [SUBTLE_ROLES] (checked separately, at a lower bar) are excluded too.
      */
     private val generalRoles = allRoles.filterNot {
-        it == UiRole.DEFAULT || it in TERRAIN_FILLS || it in TERRAIN_ICONS || it in BADGE_BACKGROUNDS ||
+        it == ChromeRole.DEFAULT || it in TERRAIN_FILLS || it in TERRAIN_ICONS || it in BADGE_BACKGROUNDS ||
             it == BoardRole.ELEVATION_BADGE_FG || it in SUBTLE_ROLES
     }
 
@@ -49,12 +49,12 @@ internal class TuiPaletteTest {
     @Test
     fun `truecolor default surfaces match the exact authored hex values`() {
         val dark = TuiTheme.DARK.toRolePalette()
-        assertThat(dark.foreground(UiRole.DEFAULT)).isEqualTo(rgb(0xDD, 0xE2, 0xE5))
-        assertThat(dark.background(UiRole.DEFAULT)).isEqualTo(rgb(0x10, 0x14, 0x18))
+        assertThat(dark.foreground(ChromeRole.DEFAULT)).isEqualTo(rgb(0xDD, 0xE2, 0xE5))
+        assertThat(dark.background(ChromeRole.DEFAULT)).isEqualTo(rgb(0x10, 0x14, 0x18))
 
         val light = TuiTheme.LIGHT.toRolePalette()
-        assertThat(light.foreground(UiRole.DEFAULT)).isEqualTo(rgb(0x20, 0x24, 0x28))
-        assertThat(light.background(UiRole.DEFAULT)).isEqualTo(rgb(0xF8, 0xF5, 0xEE))
+        assertThat(light.foreground(ChromeRole.DEFAULT)).isEqualTo(rgb(0x20, 0x24, 0x28))
+        assertThat(light.background(ChromeRole.DEFAULT)).isEqualTo(rgb(0xF8, 0xF5, 0xEE))
     }
 
     @Test
@@ -70,23 +70,23 @@ internal class TuiPaletteTest {
     @Test
     fun `ansi256 default surfaces match the exact authored indices`() {
         val dark256 = TuiTheme.DARK_256.toRolePalette()
-        assertThat(dark256.foreground(UiRole.DEFAULT)).isEqualTo(PaletteColor.Indexed(253))
-        assertThat(dark256.background(UiRole.DEFAULT)).isEqualTo(PaletteColor.Indexed(233))
+        assertThat(dark256.foreground(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Xterm256(253))
+        assertThat(dark256.background(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Xterm256(233))
 
         val light256 = TuiTheme.LIGHT_256.toRolePalette()
-        assertThat(light256.foreground(UiRole.DEFAULT)).isEqualTo(PaletteColor.Indexed(235))
-        assertThat(light256.background(UiRole.DEFAULT)).isEqualTo(PaletteColor.Indexed(255))
+        assertThat(light256.foreground(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Xterm256(235))
+        assertThat(light256.background(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Xterm256(255))
     }
 
     @Test
     fun `ansi16 default surfaces match the exact authored codes`() {
         val dark16 = TuiTheme.DARK_16.toRolePalette()
-        assertThat(dark16.foreground(UiRole.DEFAULT)).isEqualTo(PaletteColor.Basic(37))
-        assertThat(dark16.background(UiRole.DEFAULT)).isEqualTo(PaletteColor.Basic(30))
+        assertThat(dark16.foreground(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Ansi16(37))
+        assertThat(dark16.background(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Ansi16(30))
 
         val light16 = TuiTheme.LIGHT_16.toRolePalette()
-        assertThat(light16.foreground(UiRole.DEFAULT)).isEqualTo(PaletteColor.Basic(30))
-        assertThat(light16.background(UiRole.DEFAULT)).isEqualTo(PaletteColor.Basic(97))
+        assertThat(light16.foreground(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Ansi16(30))
+        assertThat(light16.background(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Ansi16(97))
     }
 
     // ---- every theme resolves every role, in its own color space ------------------------------
@@ -99,8 +99,8 @@ internal class TuiPaletteTest {
                 val fg = palette.foreground(role)
                 val expectedType = when (theme.level) {
                     AnsiLevel.TRUECOLOR -> PaletteColor.TrueColor::class
-                    AnsiLevel.ANSI256 -> PaletteColor.Indexed::class
-                    AnsiLevel.ANSI16 -> PaletteColor.Basic::class
+                    AnsiLevel.ANSI256 -> PaletteColor.Xterm256::class
+                    AnsiLevel.ANSI16 -> PaletteColor.Ansi16::class
                     AnsiLevel.NONE -> error("no theme targets AnsiLevel.NONE")
                 }
                 assertThat(fg).describedAs("$theme.foreground($role)").isInstanceOf(expectedType.java)
@@ -186,9 +186,9 @@ internal class TuiPaletteTest {
     fun `truecolor and ansi256- every general role clears 4point5 to 1 against the default background, except DISABLED at 3 to 1`() {
         for (theme in truecolorThemes + ansi256Themes) {
             val palette = theme.toRolePalette()
-            val defaultBg = luminance(palette.background(UiRole.DEFAULT))
+            val defaultBg = luminance(palette.background(ChromeRole.DEFAULT))
             for (role in generalRoles) {
-                val required = if (role == UiRole.DISABLED) 3.0 else 4.5
+                val required = if (role == ChromeRole.DISABLED) 3.0 else 4.5
                 val ratio = contrast(luminance(palette.foreground(role)), defaultBg)
                 assertThat(ratio).describedAs("$theme: $role on default background").isGreaterThanOrEqualTo(required)
             }
@@ -207,7 +207,7 @@ internal class TuiPaletteTest {
         // section.
         for (theme in truecolorThemes + ansi256Themes) {
             val palette = theme.toRolePalette()
-            val defaultBg = luminance(palette.background(UiRole.DEFAULT))
+            val defaultBg = luminance(palette.background(ChromeRole.DEFAULT))
             for (role in SUBTLE_ROLES) {
                 val ratio = contrast(luminance(palette.foreground(role)), defaultBg)
                 assertThat(ratio).describedAs("$theme: $role on default background").isGreaterThanOrEqualTo(2.0)
@@ -219,7 +219,7 @@ internal class TuiPaletteTest {
     fun `truecolor and ansi256- default foreground clears 4point5 to 1 against default background`() {
         for (theme in truecolorThemes + ansi256Themes) {
             val palette = theme.toRolePalette()
-            val ratio = contrast(luminance(palette.foreground(UiRole.DEFAULT)), luminance(palette.background(UiRole.DEFAULT)))
+            val ratio = contrast(luminance(palette.foreground(ChromeRole.DEFAULT)), luminance(palette.background(ChromeRole.DEFAULT)))
             assertThat(ratio).describedAs("$theme default fg/bg").isGreaterThanOrEqualTo(4.5)
         }
     }
@@ -245,7 +245,7 @@ internal class TuiPaletteTest {
         for (theme in ansi256Themes) {
             val palette = theme.toRolePalette()
             for (role in allRoles) {
-                val index = (palette.foreground(role) as PaletteColor.Indexed).index
+                val index = (palette.foreground(role) as PaletteColor.Xterm256).index
                 assertThat(index).describedAs("$theme: $role index").isBetween(16, 255)
             }
         }
@@ -277,7 +277,7 @@ internal class TuiPaletteTest {
         for (theme in ansi16Themes) {
             val palette = theme.toRolePalette()
             for (role in allRoles) {
-                val code = (palette.foreground(role) as PaletteColor.Basic).code
+                val code = (palette.foreground(role) as PaletteColor.Ansi16).code
                 assertThat(code).describedAs("$theme: $role code").matches { it in 30..37 || it in 90..97 }
             }
         }
@@ -306,7 +306,7 @@ internal class TuiPaletteTest {
     fun `reduced themes- every terrain fill role resolves to the default background`() {
         for (theme in reducedThemes) {
             val palette = theme.toRolePalette()
-            val defaultBg = palette.background(UiRole.DEFAULT)
+            val defaultBg = palette.background(ChromeRole.DEFAULT)
             for (fill in TERRAIN_FILLS) {
                 assertThat(palette.background(fill)).describedAs("$theme: $fill").isEqualTo(defaultBg)
             }
@@ -315,7 +315,7 @@ internal class TuiPaletteTest {
 
     private companion object {
         /** Deliberately lower-contrast general roles — see the "subtle roles" test's KDoc. */
-        private val SUBTLE_ROLES: List<ColorRole> = listOf(UiRole.TEXT_SUBTLE, BoardRole.BOARD_BORDER)
+        private val SUBTLE_ROLES: List<ColorRole> = listOf(ChromeRole.TEXT_SUBTLE, BoardRole.BOARD_BORDER)
         private val TERRAIN_FILLS = listOf(
             BoardRole.TERRAIN_CLEAR_BG,
             BoardRole.TERRAIN_WOODS_LIGHT_BG,
@@ -336,7 +336,7 @@ internal class TuiPaletteTest {
             BoardRole.ELEVATION_HIGH_BADGE_BG,
         )
         private val CRITICAL_BOARD_FOREGROUNDS: List<ColorRole> = listOf(
-            UiRole.TEXT_PRIMARY, BoardRole.MOVE_WALK, BoardRole.MOVE_RUN, BoardRole.MOVE_JUMP,
+            ChromeRole.TEXT_PRIMARY, BoardRole.MOVE_WALK, BoardRole.MOVE_RUN, BoardRole.MOVE_JUMP,
             BoardRole.PLAYER_1, BoardRole.PLAYER_2, BoardRole.ATTACK_RANGE, BoardRole.BOARD_ACTIVE,
             BoardRole.LINE_OF_SIGHT, BoardRole.TARGET_VALID, BoardRole.TARGET_SELECTED,
         )
@@ -349,12 +349,12 @@ internal class TuiPaletteTest {
 
         private fun rgb(r: Int, g: Int, b: Int) = PaletteColor.TrueColor(r, g, b)
 
-        /** WCAG sRGB relative luminance. [PaletteColor.Basic] (ANSI-16) has no defined luminance — never call this on one. */
+        /** WCAG sRGB relative luminance. [PaletteColor.Ansi16] (ANSI-16) has no defined luminance — never call this on one. */
         private fun luminance(color: PaletteColor): Double {
             val (r, g, b) = when (color) {
                 is PaletteColor.TrueColor -> Triple(color.red, color.green, color.blue)
-                is PaletteColor.Indexed -> ansi256Rgb(color.index)
-                is PaletteColor.Basic -> error("ANSI-16 codes have no defined sRGB value — see this file's class KDoc")
+                is PaletteColor.Xterm256 -> ansi256Rgb(color.index)
+                is PaletteColor.Ansi16 -> error("ANSI-16 codes have no defined sRGB value — see this file's class KDoc")
             }
             fun channel(c: Int): Double {
                 val cs = c / 255.0

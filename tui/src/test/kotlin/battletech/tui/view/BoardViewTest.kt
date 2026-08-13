@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.screen.RevealRect
 import tenter.screen.ScreenBuffer
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.Viewport
 import tenter.view.line
 import tenter.view.render
@@ -65,8 +65,8 @@ internal class BoardViewTest {
             assertEquals(coordinateLabels[index], buffer.line(y, rightLabelX, 2))
         }
 
-        assertEquals(UiRole.TEXT_SUBTLE, buffer.get(columnLabelStarts[0], 0).style.fg)
-        assertEquals(UiRole.TEXT_SUBTLE, buffer.get(0, rowCenters[0]).style.fg)
+        assertEquals(ChromeRole.TEXT_SUBTLE, buffer.get(columnLabelStarts[0], 0).style.fg)
+        assertEquals(ChromeRole.TEXT_SUBTLE, buffer.get(0, rowCenters[0]).style.fg)
 
         assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X - 1, rowCenters[0]).char)
         assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X - 2, rowCenters[0]).char)
@@ -94,7 +94,7 @@ internal class BoardViewTest {
         val view = BoardView(state, cursorPosition = cursor)
         val canvas = Canvas.of(ScreenBuffer(32, 18))
 
-        view.render(canvas)
+        view.draw(canvas)
 
         val (x, y) = HexLayout.hexToScreen(cursor.col, cursor.row)
         assertEquals(
@@ -114,7 +114,7 @@ internal class BoardViewTest {
         val view = BoardView(state, cursorPosition = null)
         val canvas = Canvas.of(ScreenBuffer(32, 18))
 
-        view.render(canvas)
+        view.draw(canvas)
 
         assertEquals(null, canvas.revealRect())
     }

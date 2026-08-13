@@ -22,7 +22,7 @@ import battletech.tui.hex.unitStoodUpIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.ScreenBuffer
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.ContentExtent
 import tenter.view.ScrollOffset
 import tenter.view.line
@@ -102,13 +102,13 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assertEquals(UiRole.INFO, buffer.get(2, 2).style.fg)
+        assertEquals(ChromeRole.INFO, buffer.get(2, 2).style.fg)
         // Only one header for the single turn: row 3 and row 4 are plain entries, not headers.
         val headerLine = buffer.line(2, 2, 24)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
         assert(buffer.line(3, 2, 24).contains("0101→0201")) { "Expected first move entry" }
         assert(buffer.line(4, 2, 24).contains("0101→0301")) { "Expected second move entry" }
-        assertEquals(UiRole.DEFAULT, buffer.get(2, 3).style.fg)
+        assertEquals(ChromeRole.DEFAULT, buffer.get(2, 3).style.fg)
     }
 
     @Test

@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.ScreenBuffer
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.renderInPanel
 
 internal class UnitStatusViewTest {
@@ -113,7 +113,7 @@ internal class UnitStatusViewTest {
         assertEquals(4, line.split(emptyCircleIcon()).size - 1)
         // First hit dot is red, matching the destroyed-slot convention used elsewhere in this panel.
         val firstDotCol = (2 until 26).first { buffer.get(it, 5).char == filledCircleIcon() }
-        assertEquals(UiRole.DANGER, buffer.get(firstDotCol, 5).style.fg)
+        assertEquals(ChromeRole.DANGER, buffer.get(firstDotCol, 5).style.fg)
     }
 
     @Test
@@ -127,7 +127,7 @@ internal class UnitStatusViewTest {
         assertEquals(PILOT_DEATH_THRESHOLD - 1, line.split(filledCircleIcon()).size - 1)
         assertEquals(0, line.split(emptyCircleIcon()).size - 1)
         val skullCol = (2 until 26).first { buffer.get(it, 5).char == pilotDeadIcon() }
-        assertEquals(UiRole.DANGER, buffer.get(skullCol, 5).style.fg)
+        assertEquals(ChromeRole.DANGER, buffer.get(skullCol, 5).style.fg)
     }
 
     @Test
@@ -247,7 +247,7 @@ internal class UnitStatusViewTest {
         val view = UnitStatusView(unit)
         val buffer = renderDecorated(view, height = 20)
 
-        assertEquals(UiRole.DANGER, buffer.get(2, 14).style.fg)
+        assertEquals(ChromeRole.DANGER, buffer.get(2, 14).style.fg)
     }
 
     @Test
@@ -272,7 +272,7 @@ internal class UnitStatusViewTest {
         val line = (2 until 26).joinToString("") { buffer.get(it, 23).char }
         assertTrue(line.contains("HD"))
         assertTrue(line.contains("9"))
-        assertEquals(UiRole.INFO, buffer.get(11, 23).style.fg) // 'H' of "HD: 9"
+        assertEquals(ChromeRole.INFO, buffer.get(11, 23).style.fg) // 'H' of "HD: 9"
     }
 
     @Test
@@ -308,7 +308,7 @@ internal class UnitStatusViewTest {
         val line = (2 until 26).joinToString("") { buffer.get(it, 24).char }
         assertTrue(line.contains("CT"))
         assertTrue(line.contains("47"))
-        assertEquals(UiRole.ACCENT, buffer.get(11, 24).style.fg) // 'C' of "CT:47"
+        assertEquals(ChromeRole.ACCENT, buffer.get(11, 24).style.fg) // 'C' of "CT:47"
     }
 
     @Test
@@ -320,7 +320,7 @@ internal class UnitStatusViewTest {
         // Rear row: cy=25, CT rear "r: 8" starts at cx+10=12
         val line = (2 until 26).joinToString("") { buffer.get(it, 25).char }
         assertTrue(line.contains("r"))
-        assertEquals(UiRole.DEFAULT, buffer.get(12, 25).style.fg) // 'r' of CT rear
+        assertEquals(ChromeRole.DEFAULT, buffer.get(12, 25).style.fg) // 'r' of CT rear
     }
 
     @Test
@@ -349,7 +349,7 @@ internal class UnitStatusViewTest {
         // Source line under the bar and the heat value line (row 16).
         val line = (2 until 26).joinToString("") { buffer.get(it, 16).char }
         assertTrue(line.contains("Running +2"))
-        assertEquals(UiRole.DEFAULT, buffer.get(2, 16).style.fg)
+        assertEquals(ChromeRole.DEFAULT, buffer.get(2, 16).style.fg)
     }
 
     @Test
@@ -360,7 +360,7 @@ internal class UnitStatusViewTest {
 
         val line = (2 until 26).joinToString("") { buffer.get(it, 16).char }
         assertTrue(line.contains("Walking +1"))
-        assertEquals(UiRole.DRAFT, buffer.get(2, 16).style.fg)
+        assertEquals(ChromeRole.DRAFT, buffer.get(2, 16).style.fg)
     }
 
     @Test
@@ -405,7 +405,7 @@ internal class UnitStatusViewTest {
         val view = UnitStatusView(unit)
         val buffer = renderDecorated(view, height = 20)
 
-        assertEquals(UiRole.DANGER, buffer.get(2, 17).style.fg)
+        assertEquals(ChromeRole.DANGER, buffer.get(2, 17).style.fg)
     }
 
     @Test
@@ -528,7 +528,7 @@ internal class UnitStatusViewTest {
 
         // First dot column should be red (destroyed slot 0 is an Engine slot in CENTER_TORSO).
         val firstDotCol = (2 until 26).first { buffer.get(it, row).char == filledCircleIcon() }
-        assertEquals(UiRole.DANGER, buffer.get(firstDotCol, row).style.fg)
+        assertEquals(ChromeRole.DANGER, buffer.get(firstDotCol, row).style.fg)
     }
 
     @Test
@@ -576,7 +576,7 @@ internal class UnitStatusViewTest {
 
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).char }
         assertEquals("u1: Hunchback", line)
-        assertEquals(UiRole.ACCENT, buffer.get(2, 2).style.fg)
+        assertEquals(ChromeRole.ACCENT, buffer.get(2, 2).style.fg)
     }
 
     @Test

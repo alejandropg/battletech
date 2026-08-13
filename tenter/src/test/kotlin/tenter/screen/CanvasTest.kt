@@ -10,7 +10,7 @@ internal class CanvasTest {
     @Test
     fun `get and set within bounds`() {
         val canvas = Canvas.offscreen(5, 5)
-        val cell = Cell("A", Cell.Style(UiRole.DANGER, UiRole.INFO))
+        val cell = Cell("A", Cell.Style(ChromeRole.DANGER, ChromeRole.INFO))
 
         canvas.set(2, 3, cell)
 
@@ -43,10 +43,10 @@ internal class CanvasTest {
     fun `writeString places characters horizontally`() {
         val canvas = Canvas.offscreen(10, 1)
 
-        canvas.writeString(2, 0, "Hi", Cell.Style(UiRole.SUCCESS, UiRole.TEXT_MUTED))
+        canvas.writeString(2, 0, "Hi", Cell.Style(ChromeRole.SUCCESS, ChromeRole.TEXT_MUTED))
 
-        assertEquals(Cell("H", Cell.Style(UiRole.SUCCESS, UiRole.TEXT_MUTED)), canvas.get(2, 0))
-        assertEquals(Cell("i", Cell.Style(UiRole.SUCCESS, UiRole.TEXT_MUTED)), canvas.get(3, 0))
+        assertEquals(Cell("H", Cell.Style(ChromeRole.SUCCESS, ChromeRole.TEXT_MUTED)), canvas.get(2, 0))
+        assertEquals(Cell("i", Cell.Style(ChromeRole.SUCCESS, ChromeRole.TEXT_MUTED)), canvas.get(3, 0))
         assertEquals(Cell(" "), canvas.get(4, 0))
     }
 
@@ -79,7 +79,7 @@ internal class CanvasTest {
 
         canvas.writeString(0, 0, "AB")
 
-        assertEquals(Cell("A", Cell.Style(UiRole.DEFAULT, UiRole.DEFAULT)), canvas.get(0, 0))
+        assertEquals(Cell("A", Cell.Style(ChromeRole.DEFAULT, ChromeRole.DEFAULT)), canvas.get(0, 0))
     }
 
     @Test
@@ -179,19 +179,19 @@ internal class CanvasTest {
     @Test
     fun `setFg preserves the existing background`() {
         val canvas = Canvas.offscreen(5, 1)
-        canvas.set(0, 0, Cell(" ", Cell.Style(UiRole.DEFAULT, UiRole.INFO)))
+        canvas.set(0, 0, Cell(" ", Cell.Style(ChromeRole.DEFAULT, ChromeRole.INFO)))
 
-        canvas.setFg(0, 0, "X", UiRole.DANGER)
+        canvas.setFg(0, 0, "X", ChromeRole.DANGER)
 
-        assertEquals(Cell("X", Cell.Style(UiRole.DANGER, UiRole.INFO)), canvas.get(0, 0))
+        assertEquals(Cell("X", Cell.Style(ChromeRole.DANGER, ChromeRole.INFO)), canvas.get(0, 0))
     }
 
     @Test
     fun `setFg outside the canvas is a silent no-op, never throws`() {
         val canvas = Canvas.offscreen(3, 3)
 
-        canvas.setFg(-1, 0, "X", UiRole.DANGER)
-        canvas.setFg(3, 0, "X", UiRole.DANGER)
+        canvas.setFg(-1, 0, "X", ChromeRole.DANGER)
+        canvas.setFg(3, 0, "X", ChromeRole.DANGER)
 
         assertEquals(Cell(" "), canvas.get(0, 0))
     }
@@ -199,37 +199,37 @@ internal class CanvasTest {
     @Test
     fun `blit copies cell char fg and bg from source to destination`() {
         val src = Canvas.offscreen(5, 5)
-        src.set(1, 2, Cell("X", Cell.Style(UiRole.DANGER, UiRole.INFO)))
+        src.set(1, 2, Cell("X", Cell.Style(ChromeRole.DANGER, ChromeRole.INFO)))
         val dest = Canvas.offscreen(10, 10)
 
         dest.blit(src, 1, 2, 3, 4, 1, 1)
 
-        assertEquals(Cell("X", Cell.Style(UiRole.DANGER, UiRole.INFO)), dest.get(3, 4))
+        assertEquals(Cell("X", Cell.Style(ChromeRole.DANGER, ChromeRole.INFO)), dest.get(3, 4))
     }
 
     @Test
     fun `blit clips at destination right and bottom edges`() {
         val src = Canvas.offscreen(5, 5)
-        src.set(0, 0, Cell("A", Cell.Style(UiRole.SUCCESS)))
-        src.set(1, 0, Cell("B", Cell.Style(UiRole.SUCCESS)))
-        src.set(2, 0, Cell("C", Cell.Style(UiRole.SUCCESS)))
+        src.set(0, 0, Cell("A", Cell.Style(ChromeRole.SUCCESS)))
+        src.set(1, 0, Cell("B", Cell.Style(ChromeRole.SUCCESS)))
+        src.set(2, 0, Cell("C", Cell.Style(ChromeRole.SUCCESS)))
         val dest = Canvas.offscreen(4, 4)
 
         dest.blit(src, 0, 0, 3, 0, 3, 1)
 
-        assertEquals(Cell("A", Cell.Style(UiRole.SUCCESS)), dest.get(3, 0))
+        assertEquals(Cell("A", Cell.Style(ChromeRole.SUCCESS)), dest.get(3, 0))
         assertEquals(Cell(" "), dest.get(2, 0))
     }
 
     @Test
     fun `blit skips source rows and cols beyond source bounds`() {
         val src = Canvas.offscreen(2, 2)
-        src.set(0, 0, Cell("Z", Cell.Style(UiRole.ACCENT)))
+        src.set(0, 0, Cell("Z", Cell.Style(ChromeRole.ACCENT)))
         val dest = Canvas.offscreen(10, 10)
 
         dest.blit(src, 0, 0, 0, 0, 5, 5)
 
-        assertEquals(Cell("Z", Cell.Style(UiRole.ACCENT)), dest.get(0, 0))
+        assertEquals(Cell("Z", Cell.Style(ChromeRole.ACCENT)), dest.get(0, 0))
         assertEquals(Cell(" "), dest.get(2, 0))
         assertEquals(Cell(" "), dest.get(0, 2))
     }

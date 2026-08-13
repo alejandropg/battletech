@@ -1,11 +1,11 @@
 package tenter.widget
 
 import tenter.screen.Cell
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.TextCursor
 
 /** A proportional `[███░░░]value` bar, colored by how full it is (info/warning/danger tiers). */
-public class GaugeBar(
+public class Gauge(
     private val barWidth: Int,
     private val maxValue: Int,
     private val suffix: String = maxValue.toString(),
@@ -28,9 +28,9 @@ public class GaugeBar(
         content.newLine()
     }
 
-    private fun colorFor(value: Int): UiRole = when {
-        value >= maxValue * 0.7 -> UiRole.DANGER
-        value >= maxValue * 0.3 -> UiRole.WARNING
-        else -> UiRole.INFO
+    private fun colorFor(value: Int): ChromeRole = when {
+        value >= maxValue * 0.7 -> ChromeRole.DANGER
+        value >= maxValue * 0.3 -> ChromeRole.WARNING
+        else -> ChromeRole.INFO
     }
 }

@@ -19,9 +19,9 @@ import battletech.tui.hex.pilotDeadIcon
 import battletech.tui.screen.BoardRole
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.TextCursor
-import tenter.widget.GaugeBar
+import tenter.widget.Gauge
 import tenter.view.View
 
 internal class UnitStatusView(
@@ -29,7 +29,7 @@ internal class UnitStatusView(
     private val pendingHeat: List<HeatSource> = emptyList(),
 ) : View {
 
-    override fun render(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         val content = TextCursor(canvas)
 
         when (subject) {
@@ -88,7 +88,7 @@ internal class UnitStatusView(
         with(content) {
             writeHeader("HEAT")
             writeLine("Current")
-            val heatBar = GaugeBar(barWidth = 20, maxValue = 30)
+            val heatBar = Gauge(barWidth = 20, maxValue = 30)
             heatBar.draw(content, 0, unit.currentHeat)
 
             val projection = projectHeat(unit, pendingHeat)
@@ -104,7 +104,7 @@ internal class UnitStatusView(
             val sinkSuffix =
                 if (sink.type.sinkRatio == 1) "${sink.type.name} ${projection.dissipation}"
                 else "${sink.type.name} ${sink.units}(${projection.dissipation})"
-            GaugeBar(barWidth = 10, maxValue = projection.dissipation, suffix = sinkSuffix)
+            Gauge(barWidth = 10, maxValue = projection.dissipation, suffix = sinkSuffix)
                 .draw(content, 0, projection.dissipated)
 
             writeLine("Projected")
@@ -125,21 +125,21 @@ internal class UnitStatusView(
             val armor = unit.armor
             val is_ = unit.internalStructure
             writeHeader("ARMOR")
-            writeLocation(9, "HD", armor.head, is_.head, UiRole.INFO)
+            writeLocation(9, "HD", armor.head, is_.head, ChromeRole.INFO)
             newLine()
-            writeLocation(2, "LT", armor.leftTorso, is_.leftTorso, UiRole.SUCCESS)
-            writeLocation(9, "CT", armor.centerTorso, is_.centerTorso, UiRole.ACCENT)
-            writeLocation(16, "RT", armor.rightTorso, is_.rightTorso, UiRole.SUCCESS)
+            writeLocation(2, "LT", armor.leftTorso, is_.leftTorso, ChromeRole.SUCCESS)
+            writeLocation(9, "CT", armor.centerTorso, is_.centerTorso, ChromeRole.ACCENT)
+            writeLocation(16, "RT", armor.rightTorso, is_.rightTorso, ChromeRole.SUCCESS)
             newLine()
             write(3, "r:%2d".format(armor.leftTorsoRear), Cell.Style.DEFAULT)
             write(10, "r:%2d".format(armor.centerTorsoRear), Cell.Style.DEFAULT)
             write(17, "r:%2d".format(armor.rightTorsoRear), Cell.Style.DEFAULT)
             newLine()
-            writeLocation(0, "LA", armor.leftArm, is_.leftArm, UiRole.SUCCESS)
-            writeLocation(17, "RA", armor.rightArm, is_.rightArm, UiRole.SUCCESS)
+            writeLocation(0, "LA", armor.leftArm, is_.leftArm, ChromeRole.SUCCESS)
+            writeLocation(17, "RA", armor.rightArm, is_.rightArm, ChromeRole.SUCCESS)
             newLine()
-            writeLocation(3, "LL", armor.leftLeg, is_.leftLeg, UiRole.SUCCESS)
-            writeLocation(14, "RL", armor.rightLeg, is_.rightLeg, UiRole.SUCCESS)
+            writeLocation(3, "LL", armor.leftLeg, is_.leftLeg, ChromeRole.SUCCESS)
+            writeLocation(14, "RL", armor.rightLeg, is_.rightLeg, ChromeRole.SUCCESS)
             newLine()
             newLine()
 
@@ -150,17 +150,17 @@ internal class UnitStatusView(
             newLine()
 
             writeLine("Internal Structure", TEXT_PRIMARY_STYLE)
-            writeLocation(9, "HD", is_.head, is_.head, UiRole.INFO)
+            writeLocation(9, "HD", is_.head, is_.head, ChromeRole.INFO)
             newLine()
-            writeLocation(2, "LT", is_.leftTorso, is_.leftTorso, UiRole.SUCCESS)
-            writeLocation(9, "CT", is_.centerTorso, is_.centerTorso, UiRole.ACCENT)
-            writeLocation(16, "RT", is_.rightTorso, is_.rightTorso, UiRole.SUCCESS)
+            writeLocation(2, "LT", is_.leftTorso, is_.leftTorso, ChromeRole.SUCCESS)
+            writeLocation(9, "CT", is_.centerTorso, is_.centerTorso, ChromeRole.ACCENT)
+            writeLocation(16, "RT", is_.rightTorso, is_.rightTorso, ChromeRole.SUCCESS)
             newLine()
-            writeLocation(0, "LA", is_.leftArm, is_.leftArm, UiRole.SUCCESS)
-            writeLocation(17, "RA", is_.rightArm, is_.rightArm, UiRole.SUCCESS)
+            writeLocation(0, "LA", is_.leftArm, is_.leftArm, ChromeRole.SUCCESS)
+            writeLocation(17, "RA", is_.rightArm, is_.rightArm, ChromeRole.SUCCESS)
             newLine()
-            writeLocation(3, "LL", is_.leftLeg, is_.leftLeg, UiRole.SUCCESS)
-            writeLocation(14, "RL", is_.rightLeg, is_.rightLeg, UiRole.SUCCESS)
+            writeLocation(3, "LL", is_.leftLeg, is_.leftLeg, ChromeRole.SUCCESS)
+            writeLocation(14, "RL", is_.rightLeg, is_.rightLeg, ChromeRole.SUCCESS)
             repeat(2) { newLine() }
         }
 
@@ -186,29 +186,29 @@ internal class UnitStatusView(
      * zero-[structure] location renders red with a strikethrough (it's gone); an intact location
      * renders in its normal [intactColor].
      */
-    private fun TextCursor.writeLocation(padding: Int, label: String, value: Int, structure: Int, intactColor: UiRole) {
+    private fun TextCursor.writeLocation(padding: Int, label: String, value: Int, structure: Int, intactColor: ChromeRole) {
         val style = if (structure == 0) DESTROYED_STYLE else Cell.Style(intactColor)
         write(padding, "%s:%2d".format(label, value), style)
     }
 
     /**
      * Single-worst-value-per-category heat penalty lines for [current] (applied baseline) vs
-     * [projected] heat. A line is solid ([UiRole.DEFAULT]) when the worst value is already in
-     * force at [current]; otherwise it is projection-only ([UiRole.DRAFT]).
+     * [projected] heat. A line is solid ([ChromeRole.DEFAULT]) when the worst value is already in
+     * force at [current]; otherwise it is projection-only ([ChromeRole.DRAFT]).
      */
-    internal fun penaltyLines(current: Int, projected: Int): List<Pair<String, UiRole>> {
-        val lines = mutableListOf<Pair<String, UiRole>>()
+    internal fun penaltyLines(current: Int, projected: Int): List<Pair<String, ChromeRole>> {
+        val lines = mutableListOf<Pair<String, ChromeRole>>()
 
         val mp = maxOf(HeatScale.movementPenalty(current), HeatScale.movementPenalty(projected))
         if (mp > 0) {
             val applied = HeatScale.movementPenalty(current) == mp
-            lines += "-$mp MP" to (if (applied) UiRole.DEFAULT else UiRole.DRAFT)
+            lines += "-$mp MP" to (if (applied) ChromeRole.DEFAULT else ChromeRole.DRAFT)
         }
 
         val th = maxOf(HeatScale.toHitPenalty(current), HeatScale.toHitPenalty(projected))
         if (th > 0) {
             val applied = HeatScale.toHitPenalty(current) == th
-            lines += "+$th To-Hit" to (if (applied) UiRole.DEFAULT else UiRole.DRAFT)
+            lines += "+$th To-Hit" to (if (applied) ChromeRole.DEFAULT else ChromeRole.DRAFT)
         }
 
         val currentAutoShutdown = HeatScale.isAutoShutdown(current)
@@ -216,12 +216,12 @@ internal class UnitStatusView(
         val currentShutdownTarget = HeatScale.shutdownAvoidTarget(current)
         val projectedShutdownTarget = HeatScale.shutdownAvoidTarget(projected)
         if (currentAutoShutdown || projectedAutoShutdown) {
-            lines += "Shutdown AUTO" to (if (currentAutoShutdown) UiRole.DEFAULT else UiRole.DRAFT)
+            lines += "Shutdown AUTO" to (if (currentAutoShutdown) ChromeRole.DEFAULT else ChromeRole.DRAFT)
         } else {
             val target = maxOfNullable(currentShutdownTarget, projectedShutdownTarget)
             if (target != null) {
                 val applied = currentShutdownTarget == target
-                lines += "Shutdown $target+" to (if (applied) UiRole.DEFAULT else UiRole.DRAFT)
+                lines += "Shutdown $target+" to (if (applied) ChromeRole.DEFAULT else ChromeRole.DRAFT)
             }
         }
 
@@ -230,7 +230,7 @@ internal class UnitStatusView(
         val ammoTarget = maxOfNullable(currentAmmoTarget, projectedAmmoTarget)
         if (ammoTarget != null) {
             val applied = currentAmmoTarget == ammoTarget
-            lines += "Ammo $ammoTarget+" to (if (applied) UiRole.DEFAULT else UiRole.DRAFT)
+            lines += "Ammo $ammoTarget+" to (if (applied) ChromeRole.DEFAULT else ChromeRole.DRAFT)
         }
 
         return lines
@@ -283,10 +283,10 @@ internal class UnitStatusView(
     internal companion object {
         internal const val TITLE: String = "UNIT STATUS"
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
-        private val ACCENT_STYLE = Cell.Style(UiRole.ACCENT)
-        private val DANGER_STYLE = Cell.Style(UiRole.DANGER)
-        private val DRAFT_STYLE = Cell.Style(UiRole.DRAFT)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
+        private val ACCENT_STYLE = Cell.Style(ChromeRole.ACCENT)
+        private val DANGER_STYLE = Cell.Style(ChromeRole.DANGER)
+        private val DRAFT_STYLE = Cell.Style(ChromeRole.DRAFT)
         private val DESTROYED_STYLE = Cell.Style(BoardRole.DESTROYED, strikethrough = true)
     }
 }

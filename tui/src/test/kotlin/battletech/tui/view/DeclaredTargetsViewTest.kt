@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.ColorRole
 import tenter.screen.ScreenBuffer
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.line
 import tenter.view.render
 import tenter.view.renderInPanel
@@ -67,8 +67,8 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Wolverine")
         assertTrue(row >= 0) { "Expected to find Wolverine attacker row" }
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == UiRole.DRAFT }) {
-            "Expected attacker row to contain UiRole.DRAFT"
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == ChromeRole.DRAFT }) {
+            "Expected attacker row to contain ChromeRole.DRAFT"
         }
     }
 

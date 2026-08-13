@@ -4,7 +4,7 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ColorRole
 import tenter.screen.Insets
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 
 /**
  * Decorates [content] with a box border, an optional title/badge in the top border, and — when
@@ -20,14 +20,14 @@ public class Bordered(
     private val title: String = "",
     private val badge: String? = null,
     private val gutters: Insets = Insets.NONE,
-    private val borderColor: ColorRole = UiRole.PANEL_BORDER,
-    private val titleColor: ColorRole = UiRole.ACCENT,
+    private val borderColor: ColorRole = ChromeRole.PANEL_BORDER,
+    private val titleColor: ColorRole = ChromeRole.ACCENT,
     private val thumbsFrom: Viewport? = null,
 ) : View {
 
-    override fun render(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         drawBorder(canvas)
-        content.render(canvas.inset(BORDER + gutters))
+        content.draw(canvas.inset(BORDER + gutters))
         thumbsFrom?.let { drawThumbs(canvas, it) }
     }
 
@@ -95,7 +95,7 @@ public class Bordered(
     }
 
     public companion object {
-        private val PANEL_BORDER_STYLE = Cell.Style(UiRole.PANEL_BORDER)
+        private val PANEL_BORDER_STYLE = Cell.Style(ChromeRole.PANEL_BORDER)
 
         /** One cell on each side, consumed by every [Bordered] box. */
         public val BORDER: Insets = Insets.all(1)

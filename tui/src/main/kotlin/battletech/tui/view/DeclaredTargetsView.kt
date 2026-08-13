@@ -5,14 +5,14 @@ import battletech.tui.game.phase.DeclaredWeaponEntry
 import battletech.tui.hex.targetIcon
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.TextCursor
 import tenter.widget.ValueRow
 import tenter.view.View
 
 internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {
 
-    override fun render(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         val content = TextCursor(canvas)
 
         if (data.entries.isEmpty()) {
@@ -21,8 +21,8 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
         }
 
         for ((index, entry) in data.entries.withIndex()) {
-            val attackerColor = if (entry.isDraft) UiRole.DRAFT else playerColor(entry.ownerPlayer)
-            val contentColor = if (entry.isDraft) UiRole.DRAFT else UiRole.TEXT_PRIMARY
+            val attackerColor = if (entry.isDraft) ChromeRole.DRAFT else playerColor(entry.ownerPlayer)
+            val contentColor = if (entry.isDraft) ChromeRole.DRAFT else ChromeRole.TEXT_PRIMARY
 
             content.writeLine(entry.attackerId.value, Cell.Style(attackerColor))
 
@@ -60,6 +60,6 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
     internal companion object {
         const val TITLE: String = "DECLARED TARGETS"
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
     }
 }

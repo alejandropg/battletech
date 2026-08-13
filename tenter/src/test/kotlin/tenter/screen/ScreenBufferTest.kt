@@ -10,7 +10,7 @@ internal class ScreenBufferTest {
     fun `new buffer has all cells set to default`() {
         val buffer = ScreenBuffer(3, 2)
 
-        val defaultCell = Cell(" ", Cell.Style(UiRole.DEFAULT, UiRole.DEFAULT))
+        val defaultCell = Cell(" ", Cell.Style(ChromeRole.DEFAULT, ChromeRole.DEFAULT))
         for (x in 0 until 3) {
             for (y in 0 until 2) {
                 assertEquals(defaultCell, buffer.get(x, y))
@@ -21,7 +21,7 @@ internal class ScreenBufferTest {
     @Test
     fun `set and get cell`() {
         val buffer = ScreenBuffer(5, 5)
-        val cell = Cell("A", Cell.Style(UiRole.DANGER, UiRole.INFO))
+        val cell = Cell("A", Cell.Style(ChromeRole.DANGER, ChromeRole.INFO))
 
         buffer.set(2, 3, cell)
 

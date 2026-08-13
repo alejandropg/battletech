@@ -4,7 +4,7 @@ import battletech.tactical.model.TurnPhase
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.Insets
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.Bordered
 import tenter.view.View
 
@@ -14,12 +14,12 @@ internal class StatusBarView(
     private val activePlayerInfo: String? = null,
 ) : View {
 
-    override fun render(canvas: Canvas) {
-        Bordered(title = "COMMAND", gutters = STATUS_BAR_PADDING, content = Content()).render(canvas)
+    override fun draw(canvas: Canvas) {
+        Bordered(title = "COMMAND", gutters = STATUS_BAR_PADDING, content = Content()).draw(canvas)
     }
 
     private inner class Content : View {
-        override fun render(canvas: Canvas) {
+        override fun draw(canvas: Canvas) {
             val phaseLabel = if (activePlayerInfo != null) {
                 "[${phase.name}] $activePlayerInfo"
             } else {
@@ -31,8 +31,8 @@ internal class StatusBarView(
     }
 
     private companion object {
-        private val ACCENT_STYLE = Cell.Style(UiRole.ACCENT)
-        private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
+        private val ACCENT_STYLE = Cell.Style(ChromeRole.ACCENT)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
 
         /**
          * The status bar is only [Workspace.STATUS_BAR_HEIGHT] = 4 rows tall: border alone

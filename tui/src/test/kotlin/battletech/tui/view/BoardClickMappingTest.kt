@@ -53,7 +53,7 @@ internal class BoardClickMappingTest {
             extent = ContentExtent.Fixed(mapWidth, mapHeight),
             offset = ScrollOffset.ZERO,
         )
-        board.render(screen.region(0, Workspace.STATUS_BAR_HEIGHT, width, boardHeight))
+        board.draw(screen.region(0, Workspace.STATUS_BAR_HEIGHT, width, boardHeight))
         return buffer
     }
 

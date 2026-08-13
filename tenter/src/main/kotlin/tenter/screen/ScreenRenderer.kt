@@ -130,7 +130,7 @@ public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette
      *
      * Closing the previous run before opening the next is skippable whenever both runs have tags
      * at all: every opening tag now establishes BOTH foreground and background explicitly (even
-     * for [UiRole.DEFAULT], which resolves to the palette's default surface rather than leaving a
+     * for [ChromeRole.DEFAULT], which resolves to the palette's default surface rather than leaving a
      * channel unset), so the next run's open tag always fully overwrites whatever the previous
      * run set — nothing can bleed through. Only a strikethrough-state change still needs the
      * close, since strikethrough has no "close" bundled into every open tag the way color does.

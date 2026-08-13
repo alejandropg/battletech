@@ -2,7 +2,7 @@ package battletech.tui.view
 
 import battletech.tactical.unit.ForeignUnit
 import tenter.screen.Cell
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.TextCursor
 
 /**
@@ -14,10 +14,10 @@ import tenter.view.TextCursor
  */
 internal object ForeignUnitPanel {
 
-    private val ACCENT_STYLE = Cell.Style(UiRole.ACCENT)
-    private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
-    private val INFO_STYLE = Cell.Style(UiRole.INFO)
-    private val SUCCESS_STYLE = Cell.Style(UiRole.SUCCESS)
+    private val ACCENT_STYLE = Cell.Style(ChromeRole.ACCENT)
+    private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
+    private val INFO_STYLE = Cell.Style(ChromeRole.INFO)
+    private val SUCCESS_STYLE = Cell.Style(ChromeRole.SUCCESS)
 
     fun render(content: TextCursor, unit: ForeignUnit) {
         // UNIT

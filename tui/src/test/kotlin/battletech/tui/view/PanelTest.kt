@@ -30,7 +30,7 @@ internal class PanelTest {
     private val inputs = PanelInputs(AppState(gameState = aGameState(), phase = MovementPhase.SelectingUnit, cursor = HexCoordinates(0, 0)))
 
     private fun stubContent(lines: Int): View = object : View {
-        override fun render(canvas: Canvas) {
+        override fun draw(canvas: Canvas) {
             for (i in 0 until lines) canvas.writeString(0, i, "row$i")
         }
     }
@@ -114,7 +114,7 @@ internal class PanelTest {
     @Test
     fun `forgetReveal re-follows even though the marked reveal target has not moved`() {
         val revealing: View = object : View {
-            override fun render(canvas: Canvas) {
+            override fun draw(canvas: Canvas) {
                 for (i in 0 until 20) canvas.writeString(0, i, "row$i")
                 canvas.markReveal(0, 15, canvas.width, 1)
             }

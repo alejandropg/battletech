@@ -3,7 +3,7 @@ package tenter.view
 import tenter.input.KeySection
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.text.CellWidth
 import tenter.text.TextWrap
 
@@ -14,7 +14,7 @@ import tenter.text.TextWrap
  */
 public class HelpView(private val sections: List<KeySection>) : View {
 
-    override fun render(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         val content = TextCursor(canvas)
         content.writeHeader("KEYS")
 
@@ -40,8 +40,8 @@ public class HelpView(private val sections: List<KeySection>) : View {
     public companion object {
         public const val TITLE: String = "HELP"
 
-        private val SUBSECTION_STYLE = Cell.Style(UiRole.ACCENT)
-        private val KEY_STYLE = Cell.Style(UiRole.INFO)
-        private val DESC_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
+        private val SUBSECTION_STYLE = Cell.Style(ChromeRole.ACCENT)
+        private val KEY_STYLE = Cell.Style(ChromeRole.INFO)
+        private val DESC_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
     }
 }

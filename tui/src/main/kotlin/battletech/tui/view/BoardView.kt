@@ -13,7 +13,7 @@ import battletech.tui.hex.UnitRenderer
 import battletech.tui.screen.BoardRole
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.Bordered
 import tenter.view.Viewport
 import tenter.view.View
@@ -38,7 +38,7 @@ internal class BoardView(
     private val selectedTargetPosition: HexCoordinates? = null,
 ) : View {
 
-    override fun render(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         val (mapWidth, mapHeight) = mapSize(state.map)
         renderCoordinates(canvas, mapWidth, mapHeight)
 
@@ -149,7 +149,7 @@ internal class BoardView(
         internal const val MAP_ORIGIN_Y: Int = 1
         internal const val BOTTOM_LABEL_GAP: Int = 1
 
-        private val COORDINATE_STYLE: Cell.Style = Cell.Style(UiRole.TEXT_SUBTLE)
+        private val COORDINATE_STYLE: Cell.Style = Cell.Style(ChromeRole.TEXT_SUBTLE)
 
         /** The unscrolled content size needed to draw [map] and its coordinate labels. */
         internal fun contentSize(map: GameMap): Pair<Int, Int> {

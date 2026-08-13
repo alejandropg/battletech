@@ -67,7 +67,7 @@ public class Panel<K : PanelId, I>(
      */
     public fun render(canvas: Canvas, inputs: I, forgetReveal: Boolean = false) {
         if (collapsed) {
-            CollapsedPanelView(id.badge, title).render(canvas)
+            CollapsedPanelView(id.badge, title).draw(canvas)
             return
         }
         val content = build(inputs) ?: return
@@ -79,7 +79,7 @@ public class Panel<K : PanelId, I>(
             offset = scroll,
             previousReveal = if (forgetReveal) null else lastReveal,
         )
-        panel.render(canvas)
+        panel.draw(canvas)
         scroll = panel.scroll.offset
         lastReveal = panel.scroll.revealed
     }

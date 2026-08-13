@@ -147,7 +147,7 @@ public class Canvas private constructor(
         for (row in height - 1 downTo 0) {
             for (col in 0 until width) {
                 val cell = get(col, row)
-                if (cell.char != " " || cell.style.bg != UiRole.DEFAULT) return row + 1
+                if (cell.char != " " || cell.style.bg != ChromeRole.DEFAULT) return row + 1
             }
         }
         return 0

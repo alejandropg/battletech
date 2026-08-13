@@ -3,9 +3,9 @@ package battletech.tui.screen
 import tenter.screen.ColorRole
 import tenter.screen.PaletteColor
 import tenter.screen.RolePalette
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 
-private fun idx(index: Int): PaletteColor.Indexed = PaletteColor.Indexed(index)
+private fun idx(index: Int): PaletteColor.Xterm256 = PaletteColor.Xterm256(index)
 
 /**
  * [TuiTheme.DARK_256] — all six `TERRAIN_*_BG` roles resolve to [defaultBackground]. The
@@ -19,26 +19,26 @@ internal object Dark256Palette : RolePalette {
     override val defaultBackground: PaletteColor = idx(233)
 
     override fun foreground(role: ColorRole): PaletteColor = when (role) {
-        is UiRole -> ui(role)
+        is ChromeRole -> ui(role)
         is BoardRole -> board(role)
         else -> error("Unknown color role: $role")
     }
 
-    private fun ui(role: UiRole): PaletteColor = when (role) {
-        UiRole.DEFAULT -> idx(253)
-        UiRole.TEXT_PRIMARY -> idx(255)
-        UiRole.TEXT_MUTED -> idx(145)
+    private fun ui(role: ChromeRole): PaletteColor = when (role) {
+        ChromeRole.DEFAULT -> idx(253)
+        ChromeRole.TEXT_PRIMARY -> idx(255)
+        ChromeRole.TEXT_MUTED -> idx(145)
         // Darker/lower-contrast than a straight 4.5:1 read — coordinates recede rather than
         // compete for attention. See TuiPaletteTest's "subtle roles" tier.
-        UiRole.TEXT_SUBTLE -> idx(239)
-        UiRole.ACCENT -> idx(221)
-        UiRole.INFO -> idx(116)
-        UiRole.SUCCESS -> idx(114)
-        UiRole.WARNING -> idx(221)
-        UiRole.DANGER -> idx(210)
-        UiRole.DRAFT -> idx(145)
-        UiRole.DISABLED -> idx(244)
-        UiRole.PANEL_BORDER -> idx(71)
+        ChromeRole.TEXT_SUBTLE -> idx(239)
+        ChromeRole.ACCENT -> idx(221)
+        ChromeRole.INFO -> idx(116)
+        ChromeRole.SUCCESS -> idx(114)
+        ChromeRole.WARNING -> idx(221)
+        ChromeRole.DANGER -> idx(210)
+        ChromeRole.DRAFT -> idx(145)
+        ChromeRole.DISABLED -> idx(244)
+        ChromeRole.PANEL_BORDER -> idx(71)
     }
 
     private fun board(role: BoardRole): PaletteColor = when (role) {
@@ -80,24 +80,24 @@ internal object Light256Palette : RolePalette {
     override val defaultBackground: PaletteColor = idx(255)
 
     override fun foreground(role: ColorRole): PaletteColor = when (role) {
-        is UiRole -> ui(role)
+        is ChromeRole -> ui(role)
         is BoardRole -> board(role)
         else -> error("Unknown color role: $role")
     }
 
-    private fun ui(role: UiRole): PaletteColor = when (role) {
-        UiRole.DEFAULT -> idx(235)
-        UiRole.TEXT_PRIMARY -> idx(235)
-        UiRole.TEXT_MUTED -> idx(239)
-        UiRole.TEXT_SUBTLE -> idx(248)
-        UiRole.ACCENT -> idx(58)
-        UiRole.INFO -> idx(23)
-        UiRole.SUCCESS -> idx(22)
-        UiRole.WARNING -> idx(58)
-        UiRole.DANGER -> idx(88)
-        UiRole.DRAFT -> idx(241)
-        UiRole.DISABLED -> idx(243)
-        UiRole.PANEL_BORDER -> idx(22)
+    private fun ui(role: ChromeRole): PaletteColor = when (role) {
+        ChromeRole.DEFAULT -> idx(235)
+        ChromeRole.TEXT_PRIMARY -> idx(235)
+        ChromeRole.TEXT_MUTED -> idx(239)
+        ChromeRole.TEXT_SUBTLE -> idx(248)
+        ChromeRole.ACCENT -> idx(58)
+        ChromeRole.INFO -> idx(23)
+        ChromeRole.SUCCESS -> idx(22)
+        ChromeRole.WARNING -> idx(58)
+        ChromeRole.DANGER -> idx(88)
+        ChromeRole.DRAFT -> idx(241)
+        ChromeRole.DISABLED -> idx(243)
+        ChromeRole.PANEL_BORDER -> idx(22)
     }
 
     private fun board(role: BoardRole): PaletteColor = when (role) {

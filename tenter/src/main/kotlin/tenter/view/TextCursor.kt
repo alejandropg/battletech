@@ -2,7 +2,7 @@ package tenter.view
 
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.text.CellWidth
 
 public class TextCursor(private val canvas: Canvas) {
@@ -85,6 +85,6 @@ public class TextCursor(private val canvas: Canvas) {
     }
 
     private companion object {
-        private val INFO_STYLE = Cell.Style(fg = UiRole.INFO)
+        private val INFO_STYLE = Cell.Style(fg = ChromeRole.INFO)
     }
 }

@@ -3,13 +3,13 @@ package battletech.tui.view
 import battletech.tactical.unit.ForeignUnit
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.UiRole
+import tenter.screen.ChromeRole
 import tenter.view.TextCursor
 import tenter.view.View
 
 internal class TargetStatusView(private val unit: ForeignUnit?) : View {
 
-    override fun render(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         val content = TextCursor(canvas)
 
         if (unit == null) {
@@ -23,6 +23,6 @@ internal class TargetStatusView(private val unit: ForeignUnit?) : View {
     internal companion object {
         internal const val TITLE: String = "TARGET STATUS"
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
     }
 }

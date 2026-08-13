@@ -14,7 +14,7 @@ import tenter.screen.Canvas
 internal class ScrollingPanelTest {
 
     private fun stubContent(lines: Int): View = object : View {
-        override fun render(canvas: Canvas) {
+        override fun draw(canvas: Canvas) {
             for (i in 0 until lines) canvas.writeString(0, i, "line$i")
         }
     }

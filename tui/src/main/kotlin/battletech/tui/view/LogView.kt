@@ -20,7 +20,7 @@ internal class LogView(
     private val state: PlayerGameState,
 ) : View {
 
-    override fun render(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         val content = TextCursor(canvas)
         var lastTurn: Int? = null
 
