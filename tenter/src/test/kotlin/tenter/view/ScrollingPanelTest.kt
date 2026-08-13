@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 
 /**
- * [scrollingPanel] composes [Bordered], [Scrolled], and [Padded] — border/badge in [BorderedTest],
+ * [scrollingPanel] composes [Bordered], [Viewport], and [Padded] — border/badge in [BorderedTest],
  * scroll math in [ScrolledTest] — into what a scrolling panel actually renders. These cases
  * exercise the composition itself: specifically, that [Bordered.PADDING]'s top row is folded into
  * the *content stream* (via [Padded]) rather than the viewport, which is what makes it a spacer

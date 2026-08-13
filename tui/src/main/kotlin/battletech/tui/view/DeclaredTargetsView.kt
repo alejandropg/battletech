@@ -6,17 +6,17 @@ import battletech.tui.hex.targetIcon
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.UiRole
-import tenter.view.ContentWriter
+import tenter.view.TextCursor
 import tenter.view.ValueRow
 import tenter.view.View
 
 internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {
 
     override fun render(canvas: Canvas) {
-        val content = ContentWriter(canvas)
+        val content = TextCursor(canvas)
 
         if (data.entries.isEmpty()) {
-            content.writeln("No declarations", TEXT_PRIMARY_STYLE)
+            content.writeLine("No declarations", TEXT_PRIMARY_STYLE)
             return
         }
 
@@ -24,12 +24,12 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
             val attackerColor = if (entry.isDraft) UiRole.DRAFT else playerColor(entry.ownerPlayer)
             val contentColor = if (entry.isDraft) UiRole.DRAFT else UiRole.TEXT_PRIMARY
 
-            content.writeln(entry.attackerId.value, Cell.Style(attackerColor))
+            content.writeLine(entry.attackerId.value, Cell.Style(attackerColor))
 
             for (target in entry.targets) {
                 val tag = if (target.isPrimary) "[P]" else "[S]"
                 val targetLine = "${targetIcon()} ${target.targetId.value} $tag"
-                content.writeln(targetLine, Cell.Style(contentColor))
+                content.writeLine(targetLine, Cell.Style(contentColor))
 
                 for (weapon in target.weapons) {
                     when (weapon) {
@@ -45,7 +45,7 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Vi
                         // that math is computed from the attacker's gunnery/heat/sensor
                         // crits. The type carries no such fields; see DeclaredWeaponEntry.
                         is DeclaredWeaponEntry.Undisclosed ->
-                            content.writeln("    ${weapon.weaponName}", Cell.Style(contentColor))
+                            content.writeLine("    ${weapon.weaponName}", Cell.Style(contentColor))
                     }
                 }
             }

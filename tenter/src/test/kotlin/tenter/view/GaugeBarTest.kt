@@ -9,9 +9,9 @@ import tenter.screen.UiRole
 
 internal class GaugeBarTest {
 
-    private fun content(width: Int = 28, height: Int = 5): Pair<ContentWriter, ScreenBuffer> {
+    private fun content(width: Int = 28, height: Int = 5): Pair<TextCursor, ScreenBuffer> {
         val buffer = ScreenBuffer(width, height)
-        return ContentWriter(Canvas.of(buffer)) to buffer
+        return TextCursor(Canvas.of(buffer)) to buffer
     }
 
     @Test

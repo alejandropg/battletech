@@ -1,22 +1,22 @@
 package tenter.view
 
 import tenter.screen.Canvas
-import tenter.screen.FocusRect
+import tenter.screen.RevealRect
 
 /**
- * A bordered, scrolling panel — [Bordered] for the box and [Scrolled] for the scroll math, wired
+ * A bordered, scrolling panel — [Bordered] for the box and [Viewport] for the scroll math, wired
  * together by [scrollingPanel]. Exists as its own type (rather than callers just getting a
  * [Bordered] back) so the settled [scroll] state has somewhere to live that isn't the border
  * decorator: a border knows nothing about scrolling in general, only how to draw thumbs for
- * whichever [Scrolled] it was told about — see [Bordered.thumbsFrom].
+ * whichever [Viewport] it was told about — see [Bordered.thumbsFrom].
  */
 public class ScrollingPanel internal constructor(
     private val bordered: Bordered,
-    private val scrolled: Scrolled,
+    private val viewport: Viewport,
 ) : View {
 
     /** What this panel's content actually settled on this render — see [ScrollState]. */
-    public val scroll: ScrollState get() = scrolled.scroll
+    public val scroll: ScrollState get() = viewport.scroll
 
     override fun render(canvas: Canvas) {
         bordered.render(canvas)
@@ -24,7 +24,7 @@ public class ScrollingPanel internal constructor(
 }
 
 /**
- * Composes a [ScrollingPanel]: [Bordered] for the box, [Scrolled] for the scroll math, and
+ * Composes a [ScrollingPanel]: [Bordered] for the box, [Viewport] for the scroll math, and
  * [Padded] for the reclaimable top spacer row — the single construction site every scrolling
  * panel goes through, so the three decorators are wired together exactly once.
  *
@@ -39,7 +39,7 @@ public fun scrollingPanel(
     content: View,
     extent: ContentExtent,
     offset: ScrollOffset = ScrollOffset.ZERO,
-    previousFocus: FocusRect? = null,
+    previousReveal: RevealRect? = null,
     recenter: Boolean = false,
 ): ScrollingPanel {
     val verticalPadding = Bordered.PADDING.vertical()
@@ -48,13 +48,13 @@ public fun scrollingPanel(
         is ContentExtent.Measured -> extent
         is ContentExtent.Fixed -> ContentExtent.Fixed(extent.width, extent.height + verticalPadding.top + verticalPadding.bottom)
     }
-    val scrolled = Scrolled(paddedContent, paddedExtent, offset, previousFocus, recenter)
+    val viewport = Viewport(paddedContent, paddedExtent, offset, previousReveal, recenter)
     val bordered = Bordered(
-        content = scrolled,
+        content = viewport,
         title = title,
         badge = badge,
         gutters = Bordered.PADDING.horizontal(),
-        thumbsFrom = scrolled,
+        thumbsFrom = viewport,
     )
-    return ScrollingPanel(bordered, scrolled)
+    return ScrollingPanel(bordered, viewport)
 }

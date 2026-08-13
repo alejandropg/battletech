@@ -164,7 +164,7 @@ internal class BorderedTest {
         assertEquals("X", buffer.get(6, 4).char)
     }
 
-    // ── scrollbar thumbs, synchronized with a Scrolled ─────────────────────────────────────────
+    // ── scrollbar thumbs, synchronized with a Viewport ─────────────────────────────────────────
 
     private fun stubContent(lines: Int): View = object : View {
         override fun render(canvas: Canvas) {
@@ -213,7 +213,7 @@ internal class BorderedTest {
         val buffer = render(view, 30, 10)
 
         for (row in 1..8) {
-            assertEquals("│", buffer.get(29, row).char, "expected plain border, no thumb without a Scrolled")
+            assertEquals("│", buffer.get(29, row).char, "expected plain border, no thumb without a Viewport")
         }
     }
 }

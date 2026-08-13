@@ -3,7 +3,7 @@ package battletech.tui.game
 import battletech.tactical.model.TurnPhase
 
 /**
- * Decides which side panels EXIST this frame, as a set of [PanelId] values. Composes four kinds
+ * Decides which side panels EXIST this frame, as a set of [GamePanelId] values. Composes four kinds
  * of owner:
  *
  *  - **Always-on** structural panels (LOG, UNIT STATUS).
@@ -20,15 +20,15 @@ import battletech.tactical.model.TurnPhase
  * Recomputed every frame, so nothing can go stale.
  */
 internal object PanelVisibility {
-    fun visiblePanels(appState: AppState): Set<PanelId> = buildSet {
-        add(PanelId.LOG)
-        add(PanelId.UNIT_STATUS)
-        if (appState.helpOpen) add(PanelId.HELP)
+    fun visiblePanels(appState: AppState): Set<GamePanelId> = buildSet {
+        add(GamePanelId.LOG)
+        add(GamePanelId.UNIT_STATUS)
+        if (appState.helpOpen) add(GamePanelId.HELP)
 
         // Results stay visible from weapon resolution onward (through physical
         // attack + movement). Only the weapon-attack flow hides them.
         if (appState.lastAttackResults != null && appState.currentPhase != TurnPhase.WEAPON_ATTACK) {
-            add(PanelId.ATTACK_RESULTS)
+            add(GamePanelId.ATTACK_RESULTS)
         }
 
         addAll(appState.phase.visiblePanels(appState))

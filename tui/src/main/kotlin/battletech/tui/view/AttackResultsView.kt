@@ -11,26 +11,26 @@ import battletech.tui.hex.targetIcon
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.UiRole
-import tenter.view.ContentWriter
+import tenter.view.TextCursor
 import tenter.view.ValueRow
 import tenter.view.View
 
 internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
     override fun render(canvas: Canvas) {
-        val content = ContentWriter(canvas)
+        val content = TextCursor(canvas)
 
         val byAttacker = data.results.groupBy { it.attackerId }
 
         for ((attackerId, attackerResults) in byAttacker) {
             val attackerColor = playerColor(data.units.byId(attackerId).owner)
-            content.writeln(attackerId.value, Cell.Style(attackerColor))
+            content.writeLine(attackerId.value, Cell.Style(attackerColor))
 
             val byTarget = attackerResults.groupBy { it.targetId }
 
             for ((targetId, targetResults) in byTarget) {
                 val targetLine = "${targetIcon()} ${targetId.value}"
-                content.writeln(targetLine, TEXT_PRIMARY_STYLE)
+                content.writeLine(targetLine, TEXT_PRIMARY_STYLE)
 
                 for (result in targetResults) {
                     renderWeaponResult(content, result)
@@ -39,7 +39,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
         }
     }
 
-    private fun renderWeaponResult(content: ContentWriter, result: AttackResult) {
+    private fun renderWeaponResult(content: TextCursor, result: AttackResult) {
         // Block 1: unified hit widget (weapon name, TN, success %, modifiers)
         val successChance = twoD6AtLeastProbability(result.targetNumber)
         // The TN and modifier breakdown are both observable (announced at the table), so
@@ -72,7 +72,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
             }
         } else if (result is AttackResult.SingleHit) {
             val hitLoc = result.locationHits.first().location
-            content.writeln("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", TEXT_PRIMARY_STYLE)
+            content.writeLine("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", TEXT_PRIMARY_STYLE)
         }
     }
 

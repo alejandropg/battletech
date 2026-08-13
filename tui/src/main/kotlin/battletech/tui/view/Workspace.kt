@@ -3,14 +3,14 @@ package battletech.tui.view
 import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.PlayerId
 import battletech.tui.game.AppState
-import battletech.tui.game.PanelId
+import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
 import tenter.input.KeyGlyph
 import tenter.view.FlashMessage
 import tenter.panel.PanelLayout
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.FocusRect
+import tenter.screen.RevealRect
 import tenter.screen.ScreenBuffer
 import tenter.screen.UiRole
 import tenter.view.Bordered
@@ -33,8 +33,8 @@ private val TEXT_PRIMARY_STYLE = Cell.Style(UiRole.TEXT_PRIMARY)
  */
 internal class Workspace {
     private val panels: List<GamePanel> = Panels.build()
-    private val byId: Map<PanelId, GamePanel> = panels.associateBy { it.id }
-    private var boardFocus: FocusRect? = null
+    private val byId: Map<GamePanelId, GamePanel> = panels.associateBy { it.id }
+    private var boardReveal: RevealRect? = null
     private var layout: GamePanelLayout = PanelLayout.compute(width = 0, height = 0, reservedTop = STATUS_BAR_HEIGHT, visible = emptyList())
 
     /**
@@ -47,29 +47,29 @@ internal class Workspace {
         private set
 
     /** Toggles [id]'s collapsed-vs-expanded display preference. HELP has no collapsed state of its own — see [AppState.helpOpen] instead. */
-    fun toggleCollapsed(id: PanelId) {
+    fun toggleCollapsed(id: GamePanelId) {
         byId[id]?.toggleCollapsed()
     }
 
     /** Scrolls panel [id] by [delta], if it exists. */
-    fun scrollPanel(id: PanelId, delta: Int) {
+    fun scrollPanel(id: GamePanelId, delta: Int) {
         byId[id]?.scrollBy(delta)
     }
 
-    /** The [PanelId] of the expanded panel at screen ([x], [y]), or `null` — board, status bar, or a collapsed stub. */
-    fun panelAt(x: Int, y: Int): PanelId? = layout.slotAt(x, y)?.panel?.id
+    /** The [GamePanelId] of the expanded panel at screen ([x], [y]), or `null` — board, status bar, or a collapsed stub. */
+    fun panelAt(x: Int, y: Int): GamePanelId? = layout.slotAt(x, y)?.panel?.id
 
     /**
      * Composes and draws one frame into a fresh [width]x[height] buffer: the board, every visible
      * side panel, the status bar, and — once the match has ended — a game-over banner over the
-     * board. Every panel (and the board) absorbs its own settled scroll and focus for the next
+     * board. Every panel (and the board) absorbs its own settled scroll and reveal for the next
      * call — see [tenter.panel.Panel.render] — so nothing round-trips back through [AppState]
      * except [boardOffset].
      *
-     * [forgetFocus] is a one-shot override for the resize case: the viewport just changed size, so
-     * this render should treat every content focus as freshly arrived (auto-follow into view)
+     * [forgetReveal] is a one-shot override for the resize case: the viewport just changed size, so
+     * this render should treat every content reveal as freshly arrived (auto-follow into view)
      * rather than compare it against what was last settled — see [tenter.panel.Panel.render]'s
-     * KDoc. The settled focus this render still becomes the baseline for the next call.
+     * KDoc. The settled reveal this render still becomes the baseline for the next call.
      */
     fun render(
         appState: AppState,
@@ -77,7 +77,7 @@ internal class Workspace {
         height: Int,
         flash: FlashMessage?,
         recenterBoard: Boolean = false,
-        forgetFocus: Boolean = false,
+        forgetReveal: Boolean = false,
     ): ScreenBuffer {
         val visible = PanelVisibility.visiblePanels(appState)
         layout = PanelLayout.compute(width, height, reservedTop = STATUS_BAR_HEIGHT, visible = panels.filter { it.id in visible })
@@ -106,19 +106,19 @@ internal class Workspace {
             content = boardContent,
             extent = ContentExtent.Fixed(mapWidth, mapHeight),
             offset = appState.boardScroll,
-            previousFocus = if (forgetFocus) null else boardFocus,
+            previousReveal = if (forgetReveal) null else boardReveal,
             recenter = recenterBoard,
         )
         val board = screen.region(layout.contentX, layout.contentY, layout.contentWidth, layout.contentHeight)
         boardBordered.render(board)
         boardOffset = boardBordered.scroll.offset
-        boardFocus = boardBordered.scroll.focus
+        boardReveal = boardBordered.scroll.revealed
 
         for (slot in layout.slots) {
             slot.panel.render(
                 screen.region(slot.x, layout.contentY, slot.panel.width, layout.contentHeight),
                 inputs,
-                forgetFocus = forgetFocus,
+                forgetReveal = forgetReveal,
             )
         }
 

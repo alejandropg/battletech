@@ -3,16 +3,16 @@ package tenter.view
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
-import tenter.screen.FocusRect
+import tenter.screen.RevealRect
 import tenter.screen.ScreenBuffer
 
 /**
- * [Scrolled]'s own contract — extents, offset clamping, and auto-follow — exercised directly
+ * [Viewport]'s own contract — extents, offset clamping, and auto-follow — exercised directly
  * against a bare viewport with no border, padding, or scrollbar involved. See [BorderedTest] for
  * the box/badge/thumb decoration and `ScrollingPanelTest` for the two composed together, which is
  * how a scrolling panel actually renders.
  */
-internal class ScrolledTest {
+internal class ViewportTest {
 
     private val viewportWidth = 26
     private val viewportHeight = 8
@@ -23,29 +23,29 @@ internal class ScrolledTest {
         }
     }
 
-    /** [lines] rows of content; row [focusRow] marks itself as focus (for auto-follow tests). */
-    private fun focusedContent(lines: Int, focusRow: Int): View = object : View {
+    /** [lines] rows of content; row [revealRow] marks itself for reveal (for auto-follow tests). */
+    private fun revealingContent(lines: Int, revealRow: Int): View = object : View {
         override fun render(canvas: Canvas) {
             for (i in 0 until lines) {
                 canvas.writeString(0, i, "line$i")
-                if (i == focusRow) canvas.markFocus(0, i, canvas.width, 1)
+                if (i == revealRow) canvas.markReveal(0, i, canvas.width, 1)
             }
         }
     }
 
-    /** The focus rect [focusedContent] produces for [focusRow] in a [viewportWidth]-wide stream. */
-    private fun focusAt(focusRow: Int, width: Int = viewportWidth) = FocusRect(0, focusRow, width, 1)
+    /** The reveal rect [revealingContent] produces for [revealRow] in a [viewportWidth]-wide stream. */
+    private fun revealAt(revealRow: Int, width: Int = viewportWidth) = RevealRect(0, revealRow, width, 1)
 
     private fun renderScrolled(
         content: View,
         extent: ContentExtent = ContentExtent.Measured(),
         offset: ScrollOffset = ScrollOffset.ZERO,
-        previousFocus: FocusRect? = null,
+        previousReveal: RevealRect? = null,
         recenter: Boolean = false,
         width: Int = viewportWidth,
         height: Int = viewportHeight,
-    ): Pair<Scrolled, ScreenBuffer> {
-        val scrolled = Scrolled(content, extent, offset, previousFocus, recenter)
+    ): Pair<Viewport, ScreenBuffer> {
+        val scrolled = Viewport(content, extent, offset, previousReveal, recenter)
         val buffer = ScreenBuffer(width, height)
         scrolled.render(Canvas.of(buffer))
         return scrolled to buffer
@@ -112,7 +112,7 @@ internal class ScrolledTest {
         assertEquals(0, scrolled.scroll.offset.x)
     }
 
-    // ── auto-follow: fires on focus MOVEMENT, not on every render ──────────────────────────────
+    // ── auto-follow: fires on reveal-target MOVEMENT, not on every render ──────────────────────
 
     @Test
     fun `unmarked content never auto-scrolls — offset is just the given base, clamped`() {
@@ -122,73 +122,73 @@ internal class ScrolledTest {
     }
 
     @Test
-    fun `first render (no previous focus) follows focus below the window`() {
-        val (scrolled, _) = renderScrolled(focusedContent(lines = 20, focusRow = 15), previousFocus = null)
+    fun `first render (no previous reveal) follows reveal target below the window`() {
+        val (scrolled, _) = renderScrolled(revealingContent(lines = 20, revealRow = 15), previousReveal = null)
 
         val offset = scrolled.scroll.offset.y
-        assertEquals(true, 15 in offset until (offset + viewportHeight), "focus row not visible at offset $offset")
+        assertEquals(true, 15 in offset until (offset + viewportHeight), "reveal row not visible at offset $offset")
     }
 
     @Test
-    fun `focus already visible leaves offset unchanged`() {
-        val (scrolled, _) = renderScrolled(focusedContent(lines = 20, focusRow = 0))
+    fun `reveal target already visible leaves offset unchanged`() {
+        val (scrolled, _) = renderScrolled(revealingContent(lines = 20, revealRow = 0))
 
         assertEquals(0, scrolled.scroll.offset.y)
     }
 
     /**
-     * The regression this whole mechanism exists for: content marks its focus on *every* render,
-     * so following unconditionally would drag the viewport back to the focus immediately after a
+     * The regression this whole mechanism exists for: content marks its reveal target on *every*
+     * render, so following unconditionally would drag the viewport back to it immediately after a
      * manual pan/wheel-scroll — undoing it on the very next event.
      */
     @Test
-    fun `unmoved focus does NOT pull the viewport back — a manual scroll survives`() {
-        val focusRow = 15
+    fun `unmoved reveal target does NOT pull the viewport back — a manual scroll survives`() {
+        val revealRow = 15
         val (scrolled, _) = renderScrolled(
-            focusedContent(lines = 40, focusRow = focusRow),
-            offset = ScrollOffset(0, 3), // user scrolled here manually; focus is far below the window
-            previousFocus = focusAt(focusRow),
+            revealingContent(lines = 40, revealRow = revealRow),
+            offset = ScrollOffset(0, 3), // user scrolled here manually; reveal target is far below the window
+            previousReveal = revealAt(revealRow),
         )
 
         assertEquals(3, scrolled.scroll.offset.y)
     }
 
     @Test
-    fun `moved focus follows, starting from the manually scrolled offset`() {
+    fun `moved reveal target follows, starting from the manually scrolled offset`() {
         val (scrolled, _) = renderScrolled(
-            focusedContent(lines = 40, focusRow = 20),
+            revealingContent(lines = 40, revealRow = 20),
             offset = ScrollOffset(0, 3),
-            previousFocus = focusAt(19), // focus was one row up last render — it moved
+            previousReveal = revealAt(19), // reveal target was one row up last render — it moved
         )
 
         val offset = scrolled.scroll.offset.y
-        assertEquals(true, 20 in offset until (offset + viewportHeight), "focus row not visible at offset $offset")
+        assertEquals(true, 20 in offset until (offset + viewportHeight), "reveal row not visible at offset $offset")
     }
 
     @Test
-    fun `state reports the focus rect so callers can carry it to the next render`() {
-        val (scrolled, _) = renderScrolled(focusedContent(lines = 20, focusRow = 5))
+    fun `state reports the reveal rect so callers can carry it to the next render`() {
+        val (scrolled, _) = renderScrolled(revealingContent(lines = 20, revealRow = 5))
 
-        assertEquals(focusAt(5), scrolled.scroll.focus)
+        assertEquals(revealAt(5), scrolled.scroll.revealed)
     }
 
     @Test
-    fun `recenter centers focus even when it has not moved`() {
-        val focusRow = 20
+    fun `recenter centers the reveal target even when it has not moved`() {
+        val revealRow = 20
         val (scrolled, _) = renderScrolled(
-            focusedContent(lines = 40, focusRow = focusRow),
-            previousFocus = focusAt(focusRow),
+            revealingContent(lines = 40, revealRow = revealRow),
+            previousReveal = revealAt(revealRow),
             recenter = true,
         )
 
-        // Centering a 1-row-tall focus: offset = focusStart - (viewportSize - focusSize) / 2.
-        val expected = (focusRow - (viewportHeight - 1) / 2).coerceIn(0, scrolled.scroll.maxOffset.y)
+        // Centering a 1-row-tall reveal target: offset = revealStart - (viewportSize - revealSize) / 2.
+        val expected = (revealRow - (viewportHeight - 1) / 2).coerceIn(0, scrolled.scroll.maxOffset.y)
         assertEquals(expected, scrolled.scroll.offset.y)
     }
 
     @Test
     fun `degenerate viewport leaves state at ScrollState_NONE`() {
-        val scrolled = Scrolled(stubContent(0), ContentExtent.Measured())
+        val scrolled = Viewport(stubContent(0), ContentExtent.Measured())
 
         scrolled.render(Canvas.offscreen(30, 0)) // no rows to render into; bails early
 

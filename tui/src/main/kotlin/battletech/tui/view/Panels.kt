@@ -1,6 +1,6 @@
 package battletech.tui.view
 
-import battletech.tui.game.PanelId
+import battletech.tui.game.GamePanelId
 import tenter.panel.Panel
 import tenter.view.HelpView
 
@@ -8,14 +8,14 @@ import tenter.view.HelpView
  * Builds the side panels, in left-to-right render order (the tactical board fills the space to
  * their left) — a fresh [GamePanel] instance per call, since each one is stateful (see [Panel])
  * and must live for exactly one [Workspace]'s lifetime, never longer. This order *is* the layout
- * order; a panel's [PanelId.badge] is the independent collapse/identity key and need not match.
+ * order; a panel's [GamePanelId.badge] is the independent collapse/identity key and need not match.
  */
 internal object Panels {
     fun build(): List<GamePanel> = listOf(
-        Panel(PanelId.TARGET_STATUS, TargetStatusView.TITLE, expandedWidth = 28) { frame ->
+        Panel(GamePanelId.TARGET_STATUS, TargetStatusView.TITLE, expandedWidth = 28) { frame ->
             TargetStatusView(frame.targetStatusUnit)
         },
-        Panel(PanelId.TARGETS, TargetsView.TITLE, expandedWidth = 28) { frame ->
+        Panel(GamePanelId.TARGETS, TargetsView.TITLE, expandedWidth = 28) { frame ->
             frame.attackRender?.let {
                 TargetsView(
                     targets = it.targets,
@@ -26,19 +26,19 @@ internal object Panels {
                 )
             }
         },
-        Panel(PanelId.DECLARED_TARGETS, DeclaredTargetsView.TITLE, expandedWidth = 28) { frame ->
+        Panel(GamePanelId.DECLARED_TARGETS, DeclaredTargetsView.TITLE, expandedWidth = 28) { frame ->
             frame.declaredTargets?.let(::DeclaredTargetsView)
         },
-        Panel(PanelId.ATTACK_RESULTS, AttackResultsView.TITLE, expandedWidth = 28) { frame ->
+        Panel(GamePanelId.ATTACK_RESULTS, AttackResultsView.TITLE, expandedWidth = 28) { frame ->
             frame.attackResults?.let(::AttackResultsView)
         },
-        Panel(PanelId.UNIT_STATUS, UnitStatusView.TITLE, expandedWidth = 28) { frame ->
+        Panel(GamePanelId.UNIT_STATUS, UnitStatusView.TITLE, expandedWidth = 28) { frame ->
             UnitStatusView(frame.unitStatus, frame.pendingHeat)
         },
-        Panel(PanelId.LOG, LogView.TITLE, expandedWidth = 28) { frame ->
+        Panel(GamePanelId.LOG, LogView.TITLE, expandedWidth = 28) { frame ->
             LogView(entries = frame.logEntries, state = frame.visibleState)
         },
-        Panel(PanelId.HELP, HelpView.TITLE, expandedWidth = 28) { frame ->
+        Panel(GamePanelId.HELP, HelpView.TITLE, expandedWidth = 28) { frame ->
             HelpView(frame.helpSections)
         },
     )

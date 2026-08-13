@@ -27,7 +27,7 @@ public object Checkbox {
 
     /** Overlays the checkbox onto [row] at [column]; occupies exactly one cell. */
     public fun draw(
-        content: ContentWriter,
+        content: TextCursor,
         column: Int,
         row: Int,
         state: CheckState,

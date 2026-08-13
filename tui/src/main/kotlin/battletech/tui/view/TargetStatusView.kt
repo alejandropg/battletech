@@ -4,16 +4,16 @@ import battletech.tactical.unit.ForeignUnit
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.UiRole
-import tenter.view.ContentWriter
+import tenter.view.TextCursor
 import tenter.view.View
 
 internal class TargetStatusView(private val unit: ForeignUnit?) : View {
 
     override fun render(canvas: Canvas) {
-        val content = ContentWriter(canvas)
+        val content = TextCursor(canvas)
 
         if (unit == null) {
-            content.writeln("No target selected", TEXT_PRIMARY_STYLE)
+            content.writeLine("No target selected", TEXT_PRIMARY_STYLE)
             return
         }
 

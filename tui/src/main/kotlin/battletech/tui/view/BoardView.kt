@@ -15,15 +15,15 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.UiRole
 import tenter.view.Bordered
-import tenter.view.Scrolled
+import tenter.view.Viewport
 import tenter.view.View
 
 /**
  * The tactical map's content: coordinate labels, every hex, highlight, and unit glyph, drawn at
  * its unscrolled screen position. Purely content — chrome and scrolling belong to the
- * [Bordered]/[Scrolled] that wraps this view (see its construction in `RunLoop.renderFrame`); the
- * only thing this view contributes to scrolling is marking the cursor hex as focus via
- * [Canvas.markFocus], so auto-follow keeps it visible.
+ * [Bordered]/[Viewport] that wraps this view (see its construction in `RunLoop.renderFrame`); the
+ * only thing this view contributes to scrolling is marking the cursor hex for reveal via
+ * [Canvas.markReveal], so auto-follow keeps it visible.
  */
 internal class BoardView(
     private val state: PlayerGameState,
@@ -108,7 +108,7 @@ internal class BoardView(
             }
 
             if (coords == cursorPosition) {
-                canvas.markFocus(x, y, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT)
+                canvas.markReveal(x, y, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT)
             }
         }
     }

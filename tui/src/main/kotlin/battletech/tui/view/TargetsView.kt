@@ -7,7 +7,7 @@ import tenter.screen.Cell
 import tenter.screen.UiRole
 import tenter.view.CheckState
 import tenter.view.Checkbox
-import tenter.view.ContentWriter
+import tenter.view.TextCursor
 import tenter.view.ValueRow
 import tenter.view.View
 
@@ -20,10 +20,10 @@ internal class TargetsView(
 ) : View {
 
     override fun render(canvas: Canvas) {
-        val content = ContentWriter(canvas)
+        val content = TextCursor(canvas)
 
         if (targets.isEmpty()) {
-            content.writeln("No targets", TEXT_PRIMARY_STYLE)
+            content.writeLine("No targets", TEXT_PRIMARY_STYLE)
             return
         }
 
@@ -36,7 +36,7 @@ internal class TargetsView(
             }
             val nameColor = if (isCursorOnTarget) UiRole.ACCENT else UiRole.TEXT_PRIMARY
             val nameLine = "${UnitLabel.of(target.unitId, target.unitName)}$tag"
-            content.writeln(nameLine, Cell.Style(nameColor))
+            content.writeLine(nameLine, Cell.Style(nameColor))
 
             val assignedToThisTarget = weaponAssignments[target.unitId] ?: emptySet()
             val assignedToOtherTargets = weaponAssignments.entries
@@ -71,7 +71,7 @@ internal class TargetsView(
                     else -> Checkbox.intrinsicColor(state)
                 }
                 val row = content.row
-                if (isCursorHere) content.markFocus()
+                if (isCursorHere) content.markReveal()
                 ValueRow.draw(content, left, hitChanceLabel(weapon.targetDiceRoll, weapon.successChance), weapon.modifiers, color)
                 Checkbox.draw(content, 2, row, state, checkboxColor)
             }

@@ -4,7 +4,7 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.MatchEnded
 import battletech.tui.game.AppState
-import battletech.tui.game.PanelId
+import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.InputMapper
@@ -48,7 +48,7 @@ internal suspend fun runLoop(
     var size = currentSize(terminal)
 
     // One Workspace for this whole run: every panel remembers its own collapsed state, scroll
-    // offset, and auto-follow focus across frames (see Panel's KDoc) — nothing but the board's
+    // offset, and auto-follow reveal across frames (see Panel's KDoc) — nothing but the board's
     // scroll offset round-trips back through appState (see AppState.boardScroll's KDoc).
     val workspace = Workspace()
 
@@ -57,20 +57,20 @@ internal suspend fun runLoop(
      * [appState] before the next event is handled — otherwise a click or wheel tick right after a
      * pan/follow would hit-test or scroll from a stale offset.
      *
-     * [forgetFocus] tells every panel (and the board) to treat their content's focus as freshly
+     * [forgetReveal] tells every panel (and the board) to treat their content's reveal as freshly
      * arrived rather than compared against what was last settled: used on resize, where the
-     * viewport changes but content-space focus does not, and a shrink could otherwise strand the
+     * viewport changes but content-space reveal does not, and a shrink could otherwise strand the
      * cursor off-screen.
      */
-    fun render(recenterBoard: Boolean = false, forgetFocus: Boolean = false) {
-        val buffer = workspace.render(appState, size.width, size.height, activeFlash, recenterBoard, forgetFocus)
+    fun render(recenterBoard: Boolean = false, forgetReveal: Boolean = false) {
+        val buffer = workspace.render(appState, size.width, size.height, activeFlash, recenterBoard, forgetReveal)
         renderer.render(buffer)
         appState = appState.copy(boardScroll = workspace.boardOffset)
     }
 
-    // Render the initial frame before collecting any events. forgetFocus = true so every panel
-    // (and the board) follows its focus into view for the first time, exactly as a resize does.
-    render(forgetFocus = true)
+    // Render the initial frame before collecting any events. forgetReveal = true so every panel
+    // (and the board) follows its reveal target into view for the first time, exactly as a resize does.
+    render(forgetReveal = true)
 
     events.takeWhile { it != UiEvent.Quit }.collect { ui ->
         // A single bad event must not propagate out of collect: that would cancel this
@@ -97,7 +97,7 @@ internal suspend fun runLoop(
                         }
                     }
 
-                    val panel = (event as? KeyboardEvent)?.let(ChromeInput::panelKey)?.let(PanelId::byBadge)
+                    val panel = (event as? KeyboardEvent)?.let(ChromeInput::panelKey)?.let(GamePanelId::byBadge)
                     if (panel != null) {
                         // Alt+h is a different action from every other panel's Alt+<key>: it
                         // toggles whether HELP EXISTS this frame (an AppState fact PanelVisibility
@@ -106,7 +106,7 @@ internal suspend fun runLoop(
                         // collapsed-vs-expanded state directly, and only when it's actually shown
                         // this frame — collapsing a panel that isn't on screen would be a no-op
                         // anyway, so the guard just makes that explicit.
-                        if (panel == PanelId.HELP) {
+                        if (panel == GamePanelId.HELP) {
                             appState = appState.copy(helpOpen = !appState.helpOpen)
                         } else if (panel in PanelVisibility.visiblePanels(appState)) {
                             workspace.toggleCollapsed(panel)
@@ -160,9 +160,9 @@ internal suspend fun runLoop(
 
                 is UiEvent.Resized -> {
                     size = ui.size
-                    // Content-space focus doesn't change on resize, so without forgetting it a
+                    // Content-space reveal doesn't change on resize, so without forgetting it a
                     // shrink could leave the cursor stranded outside the new viewport.
-                    render(forgetFocus = true)
+                    render(forgetReveal = true)
                 }
 
                 is UiEvent.FlashExpired -> {

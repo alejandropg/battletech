@@ -12,7 +12,7 @@ import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import tenter.view.FlashMessage
-import battletech.tui.game.PanelId
+import battletech.tui.game.GamePanelId
 import battletech.tui.game.attackPlayerLabel
 import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
@@ -34,10 +34,10 @@ internal sealed interface PhysicalAttackPhase : Phase {
 
     val drafts: PhysicalDrafts
 
-    override fun visiblePanels(app: AppState): Set<PanelId> = buildSet {
+    override fun visiblePanels(app: AppState): Set<GamePanelId> = buildSet {
         // Physical attacks reuse the TARGETS panel (Declaring populates it) but
         // never the declared-targets column. The freed width goes to the map.
-        if (attackRender(app)?.targets?.isNotEmpty() == true) add(PanelId.TARGETS)
+        if (attackRender(app)?.targets?.isNotEmpty() == true) add(GamePanelId.TARGETS)
     }
 
     data class SelectingAttacker(

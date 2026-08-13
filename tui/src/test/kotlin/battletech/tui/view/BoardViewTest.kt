@@ -13,16 +13,16 @@ import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
-import tenter.screen.FocusRect
+import tenter.screen.RevealRect
 import tenter.screen.ScreenBuffer
 import tenter.screen.UiRole
-import tenter.view.Scrolled
+import tenter.view.Viewport
 import tenter.view.line
 import tenter.view.render
 
 /**
  * [BoardView] is now plain content — no chrome, no scroll, no clipping; that's all
- * [Scrolled]'s job (see `ScrolledTest` and `RunLoop`'s composition of the two). Every
+ * [Viewport]'s job (see `ViewportTest` and `RunLoop`'s composition of the two). Every
  * coordinate here is therefore the unscrolled position [HexLayout.hexToScreen] gives a hex,
  * shifted by [BoardView.MAP_ORIGIN_X]/[BoardView.MAP_ORIGIN_Y] for the coordinate-label margins.
  */
@@ -88,7 +88,7 @@ internal class BoardViewTest {
     }
 
     @Test
-    fun `marks the cursor hex as focus, for the enclosing Scrolled to auto-follow`() {
+    fun `marks the cursor hex for reveal, for the enclosing Viewport to auto-follow`() {
         val state = aGameState(map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val cursor = HexCoordinates(1, 1)
         val view = BoardView(state, cursorPosition = cursor)
@@ -98,25 +98,25 @@ internal class BoardViewTest {
 
         val (x, y) = HexLayout.hexToScreen(cursor.col, cursor.row)
         assertEquals(
-            FocusRect(
+            RevealRect(
                 BoardView.MAP_ORIGIN_X + x,
                 BoardView.MAP_ORIGIN_Y + y,
                 HexGeometry.HEX_WIDTH,
                 HexGeometry.HEX_HEIGHT,
             ),
-            canvas.focusRect(),
+            canvas.revealRect(),
         )
     }
 
     @Test
-    fun `no cursor means no focus is marked`() {
+    fun `no cursor means no reveal is marked`() {
         val state = aGameState(map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state, cursorPosition = null)
         val canvas = Canvas.of(ScreenBuffer(32, 18))
 
         view.render(canvas)
 
-        assertEquals(null, canvas.focusRect())
+        assertEquals(null, canvas.revealRect())
     }
 
     @Test

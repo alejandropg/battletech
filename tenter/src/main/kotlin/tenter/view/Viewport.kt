@@ -1,7 +1,7 @@
 package tenter.view
 
 import tenter.screen.Canvas
-import tenter.screen.FocusRect
+import tenter.screen.RevealRect
 
 /** A 2D scroll offset, in characters. */
 public data class ScrollOffset(val x: Int = 0, val y: Int = 0) {
@@ -13,15 +13,15 @@ public data class ScrollOffset(val x: Int = 0, val y: Int = 0) {
 }
 
 /**
- * What a [Scrolled] actually rendered at: the offset it settled on, each axis's max, and the
- * [focus] its content marked. [focus] must be carried back in as the next render's
- * `previousFocus` — that comparison is what distinguishes "the focus moved, chase it" from "the
- * user scrolled, leave it alone".
+ * What a [Viewport] actually rendered at: the offset it settled on, each axis's max, and the
+ * rect its content [revealed]. [revealed] must be carried back in as the next render's
+ * `previousReveal` — that comparison is what distinguishes "the reveal target moved, chase it"
+ * from "the user scrolled, leave it alone".
  */
 public data class ScrollState(
     val offset: ScrollOffset,
     val maxOffset: ScrollOffset,
-    val focus: FocusRect? = null,
+    val revealed: RevealRect? = null,
 ) {
     public companion object {
         public val NONE: ScrollState = ScrollState(ScrollOffset.ZERO, ScrollOffset.ZERO)
@@ -29,7 +29,7 @@ public data class ScrollState(
 }
 
 /**
- * How much content a [Scrolled] must accommodate, and how to find out.
+ * How much content a [Viewport] must accommodate, and how to find out.
  *
  * Which axes actually scroll is never chosen explicitly — it falls out of the extent: an axis's
  * max offset is `contentSize - viewportSize`, so [Measured] content (always exactly
@@ -49,29 +49,29 @@ public sealed interface ContentExtent {
  * padding of its own. Chrome (border, title, padding, scrollbars) is a separate decorator; see
  * [scrollingPanel] for how a caller composes the two.
  *
- * Content opts into auto-follow with nothing more than [Canvas.markFocus] — see its KDoc. Content
- * that never marks focus scrolls manually only, exactly as before this class existed.
+ * Content opts into auto-follow with nothing more than [Canvas.markReveal] — see its KDoc. Content
+ * that never marks a reveal scrolls manually only, exactly as before this class existed.
  *
  * ### Follow on change, not every render
- * Auto-follow fires when the focus rect **differs from [previousFocus]** — not on every render.
- * That distinction is the whole behaviour: content marks its focus every time it draws, so
- * following unconditionally would drag the viewport back to the focus immediately after any
- * manual pan or wheel-scroll, undoing it on the very next event. Focus rects are in content-stream
- * coordinates, independent of scroll, so "focus differs" means exactly "the thing worth watching
- * moved" and never "the user scrolled". Callers persist [ScrollState.focus] between renders.
+ * Auto-follow fires when the reveal rect **differs from [previousReveal]** — not on every render.
+ * That distinction is the whole behaviour: content marks its reveal every time it draws, so
+ * following unconditionally would drag the viewport back to it immediately after any manual pan
+ * or wheel-scroll, undoing it on the very next event. Reveal rects are in content-stream
+ * coordinates, independent of scroll, so "reveal differs" means exactly "the thing worth watching
+ * moved" and never "the user scrolled". Callers persist [ScrollState.revealed] between renders.
  */
-public class Scrolled(
+public class Viewport(
     private val content: View,
     private val extent: ContentExtent,
     private val offset: ScrollOffset = ScrollOffset.ZERO,
-    private val previousFocus: FocusRect? = null,
+    private val previousReveal: RevealRect? = null,
     private val recenter: Boolean = false,
 ) : View {
 
     /**
      * What was actually rendered — the effective offset and each axis's max. Set by [render].
      * Consumers outside this file should generally prefer [ScrollingPanel.scroll], which reaches
-     * this without callers needing to know a [Bordered] box wraps a [Scrolled] internally.
+     * this without callers needing to know a [Bordered] box wraps a [Viewport] internally.
      */
     public var scroll: ScrollState = ScrollState.NONE
         private set
@@ -103,32 +103,32 @@ public class Scrolled(
         val maxOffsetX = (streamWidth - viewport.width).coerceAtLeast(0)
         val maxOffsetY = (streamHeight - viewport.height).coerceAtLeast(0)
 
-        val focus = stream.focusRect()
+        val reveal = stream.revealRect()
         val baseX = offset.x
         val baseY = offset.y
 
-        // Follow only when the focus moved (or a recenter was explicitly asked for); otherwise the
-        // given offset stands, so a manual pan/scroll survives every subsequent render.
-        val shouldFollow = focus != null && focus != previousFocus
+        // Follow only when the reveal target moved (or a recenter was explicitly asked for);
+        // otherwise the given offset stands, so a manual pan/scroll survives every subsequent render.
+        val shouldFollow = reveal != null && reveal != previousReveal
 
-        val offsetX = resolveAxis(baseX, focus?.let { it.x to it.x + it.width }, viewport.width, maxOffsetX, shouldFollow)
-        val offsetY = resolveAxis(baseY, focus?.let { it.y to it.y + it.height }, viewport.height, maxOffsetY, shouldFollow)
+        val offsetX = resolveAxis(baseX, reveal?.let { it.x to it.x + it.width }, viewport.width, maxOffsetX, shouldFollow)
+        val offsetY = resolveAxis(baseY, reveal?.let { it.y to it.y + it.height }, viewport.height, maxOffsetY, shouldFollow)
 
         viewport.blit(stream, offsetX, offsetY, 0, 0, viewport.width, viewport.height)
 
-        scroll = ScrollState(ScrollOffset(offsetX, offsetY), ScrollOffset(maxOffsetX, maxOffsetY), focus)
+        scroll = ScrollState(ScrollOffset(offsetX, offsetY), ScrollOffset(maxOffsetX, maxOffsetY), reveal)
     }
 
     private fun resolveAxis(
         base: Int,
-        focusRange: Pair<Int, Int>?,
+        revealRange: Pair<Int, Int>?,
         viewportSize: Int,
         maxOffset: Int,
         shouldFollow: Boolean,
     ): Int = when {
-        focusRange == null -> base.coerceIn(0, maxOffset)
-        recenter -> ScrollGeometry.center(focusRange.first, focusRange.second, viewportSize, maxOffset)
-        shouldFollow -> ScrollGeometry.follow(base, focusRange.first, focusRange.second, viewportSize, maxOffset)
+        revealRange == null -> base.coerceIn(0, maxOffset)
+        recenter -> ScrollGeometry.center(revealRange.first, revealRange.second, viewportSize, maxOffset)
+        shouldFollow -> ScrollGeometry.follow(base, revealRange.first, revealRange.second, viewportSize, maxOffset)
         else -> base.coerceIn(0, maxOffset)
     }
 }

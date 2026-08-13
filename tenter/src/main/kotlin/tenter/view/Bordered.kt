@@ -8,7 +8,7 @@ import tenter.screen.UiRole
 
 /**
  * Decorates [content] with a box border, an optional title/badge in the top border, and — when
- * [thumbsFrom] is given — scrollbar thumbs synchronized to that [Scrolled]'s settled position.
+ * [thumbsFrom] is given — scrollbar thumbs synchronized to that [Viewport]'s settled position.
  * [gutters] is extra inset consumed between the border and [content], beyond the 1-cell border
  * itself (e.g. the horizontal breathing room a scrolling panel's viewport wants); pass
  * [Insets.NONE] for a border with nothing but the border between it and content.
@@ -22,7 +22,7 @@ public class Bordered(
     private val gutters: Insets = Insets.NONE,
     private val borderColor: ColorRole = UiRole.PANEL_BORDER,
     private val titleColor: ColorRole = UiRole.ACCENT,
-    private val thumbsFrom: Scrolled? = null,
+    private val thumbsFrom: Viewport? = null,
 ) : View {
 
     override fun render(canvas: Canvas) {
@@ -70,14 +70,14 @@ public class Bordered(
 
     /**
      * Draws a scrollbar thumb on the right border ([ScrollState.maxOffset]`.y > 0`) and/or bottom
-     * border (`.x > 0`), at the ranges [Scrollbar.thumb] computes from [scrolled]'s settled state
-     * and this box's own viewport size — the same region [content] was just rendered into.
+     * border (`.x > 0`), at the ranges [ScrollGeometry.thumb] computes from [viewport]'s settled
+     * state and this box's own viewport size — the same region [content] was just rendered into.
      */
-    private fun drawThumbs(canvas: Canvas, scrolled: Scrolled) {
+    private fun drawThumbs(canvas: Canvas, viewport: Viewport) {
         val inset = BORDER + gutters
         val viewportWidth = canvas.width - inset.left - inset.right
         val viewportHeight = canvas.height - inset.top - inset.bottom
-        val scroll = scrolled.scroll
+        val scroll = viewport.scroll
 
         ScrollGeometry.thumb(
             track = viewportHeight,
