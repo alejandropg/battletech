@@ -30,7 +30,7 @@ internal object DarkPalette : RolePalette {
         ChromeRole.INFO -> rgb(0x77D4E8)
         ChromeRole.SUCCESS -> rgb(0x8BD17C)
         ChromeRole.WARNING -> rgb(0xF3D36A)
-        ChromeRole.DANGER -> rgb(0xFF9999)
+        ChromeRole.DANGER -> rgb(0xEC3E4C)
         ChromeRole.DRAFT -> rgb(0xA6ADB4)
         ChromeRole.DISABLED -> rgb(0x899198)
         ChromeRole.PANEL_BORDER -> rgb(0x72BF72)
@@ -51,7 +51,7 @@ internal object DarkPalette : RolePalette {
         BoardRole.ATTACK_RANGE -> rgb(0xCDD3D8)
         BoardRole.LINE_OF_SIGHT -> rgb(0xFFE17A)
         BoardRole.TARGET_VALID -> rgb(0xFFE17A)
-        BoardRole.TARGET_SELECTED -> rgb(0xFFC4C4)
+        BoardRole.TARGET_SELECTED -> rgb(0xEC3E4C)
         BoardRole.TERRAIN_CLEAR_BG -> rgb(0x15191C)
         // Restored from the literal-color palette in e51fecd6. These fills are intentionally
         // brighter than the first semantic-theme pass; affected board foregrounds above and the

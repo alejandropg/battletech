@@ -108,6 +108,17 @@ internal class TuiPaletteTest {
         }
     }
 
+    @Test
+    fun `every theme uses danger color for selected targets`() {
+        for (theme in TuiTheme.entries) {
+            val palette = theme.toRolePalette()
+
+            assertThat(palette.foreground(BoardRole.TARGET_SELECTED))
+                .describedAs("$theme: TARGET_SELECTED vs DANGER")
+                .isEqualTo(palette.foreground(ChromeRole.DANGER))
+        }
+    }
+
     // ---- truecolor-only properties ---------------------------------------------------------------
 
     @Test
@@ -335,10 +346,15 @@ internal class TuiPaletteTest {
             BoardRole.ELEVATION_2_BADGE_BG,
             BoardRole.ELEVATION_HIGH_BADGE_BG,
         )
+        /**
+         * Board roles that must remain legible over every terrain fill. The selected-target marker
+         * is intentionally excluded because it shares the requested danger red; it remains covered
+         * by the default-background contrast check for general roles.
+         */
         private val CRITICAL_BOARD_FOREGROUNDS: List<ColorRole> = listOf(
             ChromeRole.TEXT_PRIMARY, BoardRole.MOVE_WALK, BoardRole.MOVE_RUN, BoardRole.MOVE_JUMP,
             BoardRole.PLAYER_1, BoardRole.PLAYER_2, BoardRole.ATTACK_RANGE, BoardRole.BOARD_ACTIVE,
-            BoardRole.LINE_OF_SIGHT, BoardRole.TARGET_VALID, BoardRole.TARGET_SELECTED,
+            BoardRole.LINE_OF_SIGHT, BoardRole.TARGET_VALID,
         )
         private val ICON_TO_FILLS = mapOf(
             BoardRole.TERRAIN_WOODS_LIGHT_ICON to listOf(BoardRole.TERRAIN_WOODS_LIGHT_BG),

@@ -9,7 +9,7 @@ import tenter.screen.ColorRole
  * [ColorRole]'s KDoc for the two-enum `when` shape every palette implements.
  *
  * Several roles deliberately resolve to the same value in some themes (e.g. `ACCENT`/
- * `BOARD_ACTIVE` from [tenter.screen.ChromeRole], or [LINE_OF_SIGHT]/[TARGET_VALID] here). That is
+ * `BOARD_ACTIVE` from [tenter.screen.ChromeRole], or `DANGER`/[TARGET_SELECTED] here). That is
  * intentional, not duplication: they are semantically distinct call sites that happen to share a
  * color today, and keeping them separate lets a theme diverge them later without touching a
  * single call site. Do not merge them into one entry.
