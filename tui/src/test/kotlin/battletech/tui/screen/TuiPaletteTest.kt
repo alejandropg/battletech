@@ -10,26 +10,31 @@ import tenter.screen.RolePalette
 import tenter.screen.ChromeRole
 
 /**
- * Verifies each theme's [RolePalette] (via [toRolePalette]) against the guarantees laid out in
- * the color-theme plan: WCAG contrast for truecolor and ANSI-256 themes (their sRGB values are
- * fixed and reproducible), distinctness only for ANSI-16 themes (codes `0..15` are
- * terminal-configurable, so their sRGB — and therefore contrast — is unknowable at build time; do
- * not add a contrast assertion for [TuiTheme.DARK_16] or [TuiTheme.LIGHT_16]), and the
- * reduced-theme design decision that every `TERRAIN_*_BG` role collapses to the default
- * background outside truecolor.
+ * Verifies each built-in [Theme] (loaded from the packaged `theme` resources via [ThemeLoader],
+ * not a checked-in fixture — see this class's own tests for why using the real packaged files
+ * here doubles as a regression test) against the guarantees laid out in the color-theme plan: WCAG
+ * contrast for
+ * truecolor and ANSI-256 themes (their sRGB values are fixed and reproducible), distinctness only
+ * for ANSI-16 themes (codes `0..15` are terminal-configurable, so their sRGB — and therefore
+ * contrast — is unknowable at build time; do not add a contrast assertion for the `dark-16`/
+ * `light-16` themes), and the reduced-theme design decision that every `TERRAIN_*_BG` role
+ * collapses to the default background outside truecolor.
  *
  * Deliberately does NOT assert every non-default role value one by one — that would duplicate
- * the palette source in the test and fail on every deliberate tweak while catching nothing these
- * properties don't already cover. The two default-surface values and the four intentionally
- * restored dark-theme terrain fills are pinned exactly: renderer output depends on the former,
- * while the latter are an explicit compatibility target from the previous palette.
+ * the theme file's own values in the test and fail on every deliberate tweak while catching
+ * nothing these properties don't already cover. The two default-surface values and the four
+ * intentionally restored dark-theme terrain fills are pinned exactly: renderer output depends on
+ * the former, while the latter are an explicit compatibility target from the previous palette.
  */
 internal class TuiPaletteTest {
 
-    private val truecolorThemes = TuiTheme.entries.filter { it.level == AnsiLevel.TRUECOLOR }
-    private val ansi256Themes = TuiTheme.entries.filter { it.level == AnsiLevel.ANSI256 }
-    private val ansi16Themes = TuiTheme.entries.filter { it.level == AnsiLevel.ANSI16 }
-    private val reducedThemes = TuiTheme.entries.filter { it.level != AnsiLevel.TRUECOLOR }
+    private val loader = ThemeLoader()
+    private val allThemes: List<Theme> = loader.builtInNames().map { loader.loadResource("theme/$it.json") }
+
+    private val truecolorThemes = allThemes.filter { it.level == AnsiLevel.TRUECOLOR }
+    private val ansi256Themes = allThemes.filter { it.level == AnsiLevel.ANSI256 }
+    private val ansi16Themes = allThemes.filter { it.level == AnsiLevel.ANSI16 }
+    private val reducedThemes = allThemes.filter { it.level != AnsiLevel.TRUECOLOR }
 
     /** Every role this module resolves: [ChromeRole] plus the board-specific [BoardRole]s. */
     private val allRoles: List<ColorRole> = ChromeRole.entries + BoardRole.entries
@@ -44,22 +49,27 @@ internal class TuiPaletteTest {
             it == BoardRole.ELEVATION_BADGE_FG || it in SUBTLE_ROLES
     }
 
+    @Test
+    fun `the built-in theme index lists exactly six themes and every one loads`() {
+        assertThat(allThemes).hasSize(6)
+    }
+
     // ---- default surface: exact, pinned values (renderer tests depend on these literally) -------
 
     @Test
     fun `truecolor default surfaces match the exact authored hex values`() {
-        val dark = TuiTheme.DARK.toRolePalette()
+        val dark = resolveTheme("dark")
         assertThat(dark.foreground(ChromeRole.DEFAULT)).isEqualTo(rgb(0xDD, 0xE2, 0xE5))
         assertThat(dark.background(ChromeRole.DEFAULT)).isEqualTo(rgb(0x10, 0x14, 0x18))
 
-        val light = TuiTheme.LIGHT.toRolePalette()
+        val light = resolveTheme("light")
         assertThat(light.foreground(ChromeRole.DEFAULT)).isEqualTo(rgb(0x20, 0x24, 0x28))
         assertThat(light.background(ChromeRole.DEFAULT)).isEqualTo(rgb(0xF8, 0xF5, 0xEE))
     }
 
     @Test
     fun `dark truecolor terrain fills restore the previous palette values`() {
-        val dark = TuiTheme.DARK.toRolePalette()
+        val dark = resolveTheme("dark")
 
         assertThat(dark.background(BoardRole.TERRAIN_WOODS_LIGHT_BG)).isEqualTo(rgb(0x3E, 0x5E, 0x33))
         assertThat(dark.background(BoardRole.TERRAIN_WOODS_HEAVY_BG)).isEqualTo(rgb(0x2C, 0x48, 0x26))
@@ -69,22 +79,22 @@ internal class TuiPaletteTest {
 
     @Test
     fun `ansi256 default surfaces match the exact authored indices`() {
-        val dark256 = TuiTheme.DARK_256.toRolePalette()
+        val dark256 = resolveTheme("dark-256")
         assertThat(dark256.foreground(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Xterm256(253))
         assertThat(dark256.background(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Xterm256(233))
 
-        val light256 = TuiTheme.LIGHT_256.toRolePalette()
+        val light256 = resolveTheme("light-256")
         assertThat(light256.foreground(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Xterm256(235))
         assertThat(light256.background(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Xterm256(255))
     }
 
     @Test
     fun `ansi16 default surfaces match the exact authored codes`() {
-        val dark16 = TuiTheme.DARK_16.toRolePalette()
+        val dark16 = resolveTheme("dark-16")
         assertThat(dark16.foreground(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Ansi16(37))
         assertThat(dark16.background(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Ansi16(30))
 
-        val light16 = TuiTheme.LIGHT_16.toRolePalette()
+        val light16 = resolveTheme("light-16")
         assertThat(light16.foreground(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Ansi16(30))
         assertThat(light16.background(ChromeRole.DEFAULT)).isEqualTo(PaletteColor.Ansi16(97))
     }
@@ -93,10 +103,9 @@ internal class TuiPaletteTest {
 
     @Test
     fun `every theme resolves every non-default role in its own PaletteColor space`() {
-        for (theme in TuiTheme.entries) {
-            val palette = theme.toRolePalette()
+        for (theme in allThemes) {
             for (role in allRoles) {
-                val fg = palette.foreground(role)
+                val fg = theme.foreground(role)
                 val expectedType = when (theme.level) {
                     AnsiLevel.TRUECOLOR -> PaletteColor.TrueColor::class
                     AnsiLevel.ANSI256 -> PaletteColor.Xterm256::class
@@ -110,12 +119,10 @@ internal class TuiPaletteTest {
 
     @Test
     fun `every theme uses danger color for selected targets`() {
-        for (theme in TuiTheme.entries) {
-            val palette = theme.toRolePalette()
-
-            assertThat(palette.foreground(BoardRole.TARGET_SELECTED))
+        for (theme in allThemes) {
+            assertThat(theme.foreground(BoardRole.TARGET_SELECTED))
                 .describedAs("$theme: TARGET_SELECTED vs DANGER")
-                .isEqualTo(palette.foreground(ChromeRole.DANGER))
+                .isEqualTo(theme.foreground(ChromeRole.DANGER))
         }
     }
 
@@ -124,10 +131,9 @@ internal class TuiPaletteTest {
     @Test
     fun `truecolor- critical board foregrounds clear 4point5 to 1 against every terrain fill`() {
         for (theme in truecolorThemes) {
-            val palette = theme.toRolePalette()
             for (fg in CRITICAL_BOARD_FOREGROUNDS) {
                 for (fill in TERRAIN_FILLS) {
-                    val ratio = contrast(luminance(palette.foreground(fg)), luminance(palette.background(fill)))
+                    val ratio = contrast(luminance(theme.foreground(fg)), luminance(theme.background(fill)))
                     assertThat(ratio).describedAs("$theme: $fg on $fill").isGreaterThanOrEqualTo(4.5)
                 }
             }
@@ -145,10 +151,9 @@ internal class TuiPaletteTest {
         // a unit readable over the worst fill while freeing the chroma that makes the two sides
         // distinct — which the separation test below then enforces as its own property.
         for (theme in truecolorThemes) {
-            val palette = theme.toRolePalette()
             for (fg in PLAYER_FOREGROUNDS) {
                 for (fill in TERRAIN_FILLS) {
-                    val ratio = contrast(luminance(palette.foreground(fg)), luminance(palette.background(fill)))
+                    val ratio = contrast(luminance(theme.foreground(fg)), luminance(theme.background(fill)))
                     assertThat(ratio).describedAs("$theme: $fg on $fill").isGreaterThanOrEqualTo(3.0)
                 }
             }
@@ -162,10 +167,9 @@ internal class TuiPaletteTest {
         // shipped. Measured in OkLab rather than by contrast ratio because both colors are light by
         // construction: their ratio against each other is ~1, no matter how different they look.
         for (theme in truecolorThemes + ansi256Themes) {
-            val palette = theme.toRolePalette()
             val distance = perceptualDistance(
-                palette.foreground(BoardRole.PLAYER_1),
-                palette.foreground(BoardRole.PLAYER_2),
+                theme.foreground(BoardRole.PLAYER_1),
+                theme.foreground(BoardRole.PLAYER_2),
             )
             assertThat(distance).describedAs("$theme: PLAYER_1 vs PLAYER_2 OkLab distance")
                 .isGreaterThanOrEqualTo(MIN_PLAYER_SEPARATION)
@@ -175,10 +179,9 @@ internal class TuiPaletteTest {
     @Test
     fun `truecolor- each terrain icon clears 4point5 to 1 against its own terrain fill`() {
         for (theme in truecolorThemes) {
-            val palette = theme.toRolePalette()
             for ((icon, fills) in ICON_TO_FILLS) {
                 for (fill in fills) {
-                    val ratio = contrast(luminance(palette.foreground(icon)), luminance(palette.background(fill)))
+                    val ratio = contrast(luminance(theme.foreground(icon)), luminance(theme.background(fill)))
                     assertThat(ratio).describedAs("$theme: $icon on $fill").isGreaterThanOrEqualTo(4.5)
                 }
             }
@@ -188,8 +191,7 @@ internal class TuiPaletteTest {
     @Test
     fun `truecolor- all six terrain fills are mutually distinct`() {
         for (theme in truecolorThemes) {
-            val palette = theme.toRolePalette()
-            val fills = TERRAIN_FILLS.map { palette.background(it) }
+            val fills = TERRAIN_FILLS.map { theme.background(it) }
             assertThat(fills.toSet()).describedAs("$theme terrain fills").hasSize(TERRAIN_FILLS.size)
         }
     }
@@ -197,13 +199,12 @@ internal class TuiPaletteTest {
     @Test
     fun `truecolor- light woods is brighter than heavy woods, shallow water is brighter than deep water`() {
         for (theme in truecolorThemes) {
-            val palette = theme.toRolePalette()
-            val light = luminance(palette.background(BoardRole.TERRAIN_WOODS_LIGHT_BG))
-            val heavy = luminance(palette.background(BoardRole.TERRAIN_WOODS_HEAVY_BG))
+            val light = luminance(theme.background(BoardRole.TERRAIN_WOODS_LIGHT_BG))
+            val heavy = luminance(theme.background(BoardRole.TERRAIN_WOODS_HEAVY_BG))
             assertThat(light).describedAs("$theme light vs heavy woods luminance").isGreaterThan(heavy)
 
-            val shallow = luminance(palette.background(BoardRole.TERRAIN_WATER_SHALLOW_BG))
-            val deep = luminance(palette.background(BoardRole.TERRAIN_WATER_DEEP_BG))
+            val shallow = luminance(theme.background(BoardRole.TERRAIN_WATER_SHALLOW_BG))
+            val deep = luminance(theme.background(BoardRole.TERRAIN_WATER_DEEP_BG))
             assertThat(shallow).describedAs("$theme shallow vs deep water luminance").isGreaterThan(deep)
         }
     }
@@ -213,10 +214,9 @@ internal class TuiPaletteTest {
     @Test
     fun `truecolor and ansi256- elevation badge foreground clears 4point5 to 1 against every badge tier`() {
         for (theme in truecolorThemes + ansi256Themes) {
-            val palette = theme.toRolePalette()
-            val fg = palette.foreground(BoardRole.ELEVATION_BADGE_FG)
+            val fg = theme.foreground(BoardRole.ELEVATION_BADGE_FG)
             for (badge in BADGE_BACKGROUNDS) {
-                val ratio = contrast(luminance(fg), luminance(palette.background(badge)))
+                val ratio = contrast(luminance(fg), luminance(theme.background(badge)))
                 assertThat(ratio).describedAs("$theme: ELEVATION_BADGE_FG on $badge").isGreaterThanOrEqualTo(4.5)
             }
         }
@@ -225,8 +225,7 @@ internal class TuiPaletteTest {
     @Test
     fun `truecolor and ansi256- the three elevation badge tiers are mutually distinct`() {
         for (theme in truecolorThemes + ansi256Themes) {
-            val palette = theme.toRolePalette()
-            val badges = BADGE_BACKGROUNDS.map { palette.background(it) }
+            val badges = BADGE_BACKGROUNDS.map { theme.background(it) }
             assertThat(badges.toSet()).describedAs("$theme badge tiers").hasSize(BADGE_BACKGROUNDS.size)
         }
     }
@@ -234,11 +233,10 @@ internal class TuiPaletteTest {
     @Test
     fun `truecolor and ansi256- every general role clears 4point5 to 1 against the default background, except DISABLED at 3 to 1`() {
         for (theme in truecolorThemes + ansi256Themes) {
-            val palette = theme.toRolePalette()
-            val defaultBg = luminance(palette.background(ChromeRole.DEFAULT))
+            val defaultBg = luminance(theme.background(ChromeRole.DEFAULT))
             for (role in generalRoles) {
                 val required = if (role == ChromeRole.DISABLED) 3.0 else 4.5
-                val ratio = contrast(luminance(palette.foreground(role)), defaultBg)
+                val ratio = contrast(luminance(theme.foreground(role)), defaultBg)
                 assertThat(ratio).describedAs("$theme: $role on default background").isGreaterThanOrEqualTo(required)
             }
         }
@@ -255,10 +253,9 @@ internal class TuiPaletteTest {
         // the redundant non-color cues in the palette plan's "Terrain and elevation rendering"
         // section.
         for (theme in truecolorThemes + ansi256Themes) {
-            val palette = theme.toRolePalette()
-            val defaultBg = luminance(palette.background(ChromeRole.DEFAULT))
+            val defaultBg = luminance(theme.background(ChromeRole.DEFAULT))
             for (role in SUBTLE_ROLES) {
-                val ratio = contrast(luminance(palette.foreground(role)), defaultBg)
+                val ratio = contrast(luminance(theme.foreground(role)), defaultBg)
                 assertThat(ratio).describedAs("$theme: $role on default background").isGreaterThanOrEqualTo(2.0)
             }
         }
@@ -267,8 +264,7 @@ internal class TuiPaletteTest {
     @Test
     fun `truecolor and ansi256- default foreground clears 4point5 to 1 against default background`() {
         for (theme in truecolorThemes + ansi256Themes) {
-            val palette = theme.toRolePalette()
-            val ratio = contrast(luminance(palette.foreground(ChromeRole.DEFAULT)), luminance(palette.background(ChromeRole.DEFAULT)))
+            val ratio = contrast(luminance(theme.foreground(ChromeRole.DEFAULT)), luminance(theme.background(ChromeRole.DEFAULT)))
             assertThat(ratio).describedAs("$theme default fg/bg").isGreaterThanOrEqualTo(4.5)
         }
     }
@@ -281,10 +277,9 @@ internal class TuiPaletteTest {
         // default background, where BOARD_BORDER's own default-background contrast is already
         // covered by the "subtle roles" test above.
         for (theme in truecolorThemes + ansi256Themes) {
-            val palette = theme.toRolePalette()
-            val fg = palette.foreground(BoardRole.BOARD_BORDER)
+            val fg = theme.foreground(BoardRole.BOARD_BORDER)
             for (fill in TERRAIN_FILLS) {
-                assertNotEquals(fg, palette.background(fill), "$theme: BOARD_BORDER vs $fill")
+                assertNotEquals(fg, theme.background(fill), "$theme: BOARD_BORDER vs $fill")
             }
         }
     }
@@ -292,9 +287,8 @@ internal class TuiPaletteTest {
     @Test
     fun `ansi256 themes use only xterm indices 16 through 255`() {
         for (theme in ansi256Themes) {
-            val palette = theme.toRolePalette()
             for (role in allRoles) {
-                val index = (palette.foreground(role) as PaletteColor.Xterm256).index
+                val index = (theme.foreground(role) as PaletteColor.Xterm256).index
                 assertThat(index).describedAs("$theme: $role index").isBetween(16, 255)
             }
         }
@@ -306,11 +300,10 @@ internal class TuiPaletteTest {
         // reads from the glyph (tree-outline vs pine-tree) instead. Water and rough must still be
         // their own distinct colors, and distinct from whichever woods color is in use.
         for (theme in ansi256Themes) {
-            val palette = theme.toRolePalette()
-            val light = palette.foreground(BoardRole.TERRAIN_WOODS_LIGHT_ICON)
-            val heavy = palette.foreground(BoardRole.TERRAIN_WOODS_HEAVY_ICON)
-            val water = palette.foreground(BoardRole.TERRAIN_WATER_ICON)
-            val rough = palette.foreground(BoardRole.TERRAIN_ROUGH_ICON)
+            val light = theme.foreground(BoardRole.TERRAIN_WOODS_LIGHT_ICON)
+            val heavy = theme.foreground(BoardRole.TERRAIN_WOODS_HEAVY_ICON)
+            val water = theme.foreground(BoardRole.TERRAIN_WATER_ICON)
+            val rough = theme.foreground(BoardRole.TERRAIN_ROUGH_ICON)
             assertNotEquals(water, rough, "$theme: water vs rough icon")
             assertNotEquals(light, water, "$theme: light woods vs water icon")
             assertNotEquals(light, rough, "$theme: light woods vs rough icon")
@@ -324,9 +317,8 @@ internal class TuiPaletteTest {
     @Test
     fun `ansi16- every role resolves to a valid SGR foreground code`() {
         for (theme in ansi16Themes) {
-            val palette = theme.toRolePalette()
             for (role in allRoles) {
-                val code = (palette.foreground(role) as PaletteColor.Ansi16).code
+                val code = (theme.foreground(role) as PaletteColor.Ansi16).code
                 assertThat(code).describedAs("$theme: $role code").matches { it in 30..37 || it in 90..97 }
             }
         }
@@ -335,16 +327,15 @@ internal class TuiPaletteTest {
     @Test
     fun `ansi16- roles the player must tell apart do not share a code`() {
         for (theme in ansi16Themes) {
-            val palette = theme.toRolePalette()
-            assertNotEquals(palette.foreground(BoardRole.PLAYER_1), palette.foreground(BoardRole.PLAYER_2), "$theme: PLAYER_1 vs PLAYER_2")
-            val moves = listOf(BoardRole.MOVE_WALK, BoardRole.MOVE_RUN, BoardRole.MOVE_JUMP).map { palette.foreground(it) }
+            assertNotEquals(theme.foreground(BoardRole.PLAYER_1), theme.foreground(BoardRole.PLAYER_2), "$theme: PLAYER_1 vs PLAYER_2")
+            val moves = listOf(BoardRole.MOVE_WALK, BoardRole.MOVE_RUN, BoardRole.MOVE_JUMP).map { theme.foreground(it) }
             assertThat(moves.toSet()).describedAs("$theme move colors").hasSize(3)
-            assertNotEquals(palette.foreground(BoardRole.TARGET_VALID), palette.foreground(BoardRole.TARGET_SELECTED), "$theme: TARGET_VALID vs TARGET_SELECTED")
-            assertNotEquals(palette.foreground(BoardRole.BOARD_ACTIVE), palette.foreground(BoardRole.BOARD_BORDER), "$theme: BOARD_ACTIVE vs BOARD_BORDER")
-            assertNotEquals(palette.foreground(BoardRole.TERRAIN_WATER_ICON), palette.foreground(BoardRole.TERRAIN_ROUGH_ICON), "$theme: water vs rough icon")
-            assertNotEquals(palette.foreground(BoardRole.TERRAIN_WOODS_LIGHT_ICON), palette.foreground(BoardRole.TERRAIN_WATER_ICON), "$theme: woods vs water icon")
-            assertNotEquals(palette.foreground(BoardRole.TERRAIN_WOODS_LIGHT_ICON), palette.foreground(BoardRole.TERRAIN_ROUGH_ICON), "$theme: woods vs rough icon")
-            val badges = BADGE_BACKGROUNDS.map { palette.background(it) }
+            assertNotEquals(theme.foreground(BoardRole.TARGET_VALID), theme.foreground(BoardRole.TARGET_SELECTED), "$theme: TARGET_VALID vs TARGET_SELECTED")
+            assertNotEquals(theme.foreground(BoardRole.BOARD_ACTIVE), theme.foreground(BoardRole.BOARD_BORDER), "$theme: BOARD_ACTIVE vs BOARD_BORDER")
+            assertNotEquals(theme.foreground(BoardRole.TERRAIN_WATER_ICON), theme.foreground(BoardRole.TERRAIN_ROUGH_ICON), "$theme: water vs rough icon")
+            assertNotEquals(theme.foreground(BoardRole.TERRAIN_WOODS_LIGHT_ICON), theme.foreground(BoardRole.TERRAIN_WATER_ICON), "$theme: woods vs water icon")
+            assertNotEquals(theme.foreground(BoardRole.TERRAIN_WOODS_LIGHT_ICON), theme.foreground(BoardRole.TERRAIN_ROUGH_ICON), "$theme: woods vs rough icon")
+            val badges = BADGE_BACKGROUNDS.map { theme.background(it) }
             assertThat(badges.toSet()).describedAs("$theme badge tiers").hasSize(BADGE_BACKGROUNDS.size)
         }
     }
@@ -354,10 +345,9 @@ internal class TuiPaletteTest {
     @Test
     fun `reduced themes- every terrain fill role resolves to the default background`() {
         for (theme in reducedThemes) {
-            val palette = theme.toRolePalette()
-            val defaultBg = palette.background(ChromeRole.DEFAULT)
+            val defaultBg = theme.background(ChromeRole.DEFAULT)
             for (fill in TERRAIN_FILLS) {
-                assertThat(palette.background(fill)).describedAs("$theme: $fill").isEqualTo(defaultBg)
+                assertThat(theme.background(fill)).describedAs("$theme: $fill").isEqualTo(defaultBg)
             }
         }
     }

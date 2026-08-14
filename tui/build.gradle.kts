@@ -1,10 +1,20 @@
+import org.gradle.language.jvm.tasks.ProcessResources
+
 plugins {
     id("battletech.kotlin-application")
+    id("battletech.kotlin-serialization")
     alias(libs.plugins.shadow)
 }
 
 application {
     mainClass.set("battletech.tui.MainKt")
+}
+
+tasks.named<ProcessResources>("processResources") {
+    from(rootProject.layout.projectDirectory.dir("theme")) {
+        into("theme")
+        exclude(".DS_Store")
+    }
 }
 
 // See docs/tui-testing.md for why this task cannot work and what to run instead.
@@ -26,6 +36,7 @@ dependencies {
     implementation(libs.clikt)
     implementation(libs.mordant)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(testFixtures(project(":tenter")))
 }

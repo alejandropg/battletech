@@ -1,6 +1,5 @@
 package battletech.tui
 
-import battletech.tui.screen.TuiTheme
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.terminal.Terminal
 import com.github.ajalt.mordant.terminal.TerminalRecorder
@@ -187,34 +186,25 @@ internal class CliArgsTest {
     inner class ThemeOption {
         @Test
         fun `no --theme resolves to auto (null) for hot-seat, host, and join`() {
-            assertEquals(null, (parse() as Mode.Local).theme)
-            assertEquals(null, (parse("host") as Mode.Host).theme)
-            assertEquals(null, (parse("join", "192.168.1.5", "--session", "ABC123") as Mode.Join).theme)
+            assertEquals(null, (parse() as Mode.Local).themeName)
+            assertEquals(null, (parse("host") as Mode.Host).themeName)
+            assertEquals(null, (parse("join", "192.168.1.5", "--session", "ABC123") as Mode.Join).themeName)
         }
 
         @Test
-        fun `each of the six theme names resolves to its TuiTheme`() {
-            val expected = mapOf(
-                "dark" to TuiTheme.DARK,
-                "light" to TuiTheme.LIGHT,
-                "dark-256" to TuiTheme.DARK_256,
-                "light-256" to TuiTheme.LIGHT_256,
-                "dark-16" to TuiTheme.DARK_16,
-                "light-16" to TuiTheme.LIGHT_16,
-            )
-            for ((flag, theme) in expected) {
-                assertEquals(Mode.Local(theme = theme), parse("--theme", flag))
-            }
+        fun `--theme name resolves to Local with themeName, unvalidated (like --map)`() {
+            assertEquals(Mode.Local(themeName = "dark"), parse("--theme", "dark"))
+            assertEquals(Mode.Local(themeName = "not-a-real-theme"), parse("--theme", "not-a-real-theme"))
         }
 
         @Test
         fun `--theme may appear after host`() {
-            assertEquals(Mode.Host(port = DEFAULT_PORT, theme = TuiTheme.DARK), parse("host", "--theme", "dark"))
+            assertEquals(Mode.Host(port = DEFAULT_PORT, themeName = "dark"), parse("host", "--theme", "dark"))
         }
 
         @Test
         fun `--theme may appear after join`() {
-            val expected = Mode.Join(host = "192.168.1.5", port = DEFAULT_PORT, sessionId = "ABC123", theme = TuiTheme.LIGHT)
+            val expected = Mode.Join(host = "192.168.1.5", port = DEFAULT_PORT, sessionId = "ABC123", themeName = "light")
             assertEquals(expected, parse("join", "192.168.1.5", "--session", "ABC123", "--theme", "light"))
         }
 
@@ -225,26 +215,13 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `--theme with an unrecognized value throws`() {
-            val ex = failing("--theme", "bogus")
-            assertTrue(ex.output.contains("bogus"))
-            assertTrue(ex.output.contains("dark-256"))
-        }
-
-        @Test
-        fun `--theme is case-sensitive`() {
-            val ex = failing("--theme", "Dark")
-            assertTrue(ex.output.contains("Dark"))
-        }
-
-        @Test
         fun `--theme=light is accepted (Clikt supports the = form)`() {
-            assertEquals(Mode.Local(theme = TuiTheme.LIGHT), parse("--theme=light"))
+            assertEquals(Mode.Local(themeName = "light"), parse("--theme=light"))
         }
 
         @Test
         fun `a repeated --theme takes the last value`() {
-            assertEquals(Mode.Local(theme = TuiTheme.LIGHT), parse("--theme", "dark", "--theme", "light"))
+            assertEquals(Mode.Local(themeName = "light"), parse("--theme", "dark", "--theme", "light"))
         }
     }
 

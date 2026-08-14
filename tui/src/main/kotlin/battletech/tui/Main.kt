@@ -12,20 +12,27 @@ import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.map.resolveMap
 import battletech.tactical.query.projectFor
 import battletech.tactical.session.GameEvent
+import battletech.tui.screen.Theme
+import battletech.tui.screen.ThemeLoadException
+import battletech.tui.screen.resolveTheme
 import battletech.tui.view.GameLogFormatter
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 
-/**
- * Resolves a `--map` built-in name or existing path (or [DEFAULT_MAP_NAME] when absent) to a
- * [battletech.tactical.model.GameMap]. On [MapLoadException], prints the message to stderr and
- * exits 2 with no stack trace.
- */
 private fun resolveMapOrExit(mapName: String?) = try {
     resolveMap(mapName ?: DEFAULT_MAP_NAME)
 } catch (e: MapLoadException) {
     System.err.println(e.message)
     kotlin.system.exitProcess(2)
+}
+
+private fun resolveThemeOrExit(themeName: String?): Theme? = themeName?.let {
+    try {
+        resolveTheme(it)
+    } catch (e: ThemeLoadException) {
+        System.err.println(e.message)
+        kotlin.system.exitProcess(2)
+    }
 }
 
 /** Bound on [awaitKickstart]'s poll loop — generous for an in-process, no-I/O handoff. */
@@ -79,7 +86,7 @@ public fun main(args: Array<String>) {
             // TuiApp reads currentPhase to build its initial AppState, so composition must
             // absorb the kickstart race here — see awaitKickstart's KDoc.
             awaitKickstart(server, seats)
-            server.use { TuiApp(seats, mode.theme).run() }
+            server.use { TuiApp(seats, resolveThemeOrExit(mode.themeName)).run() }
         }
 
         is Mode.Host -> {
@@ -93,7 +100,7 @@ public fun main(args: Array<String>) {
             println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
             acceptor.use {
                 server.use {
-                    TuiApp(seats = mapOf(localSession.playerId to localSession), theme = mode.theme).run()
+                    TuiApp(seats = mapOf(localSession.playerId to localSession), theme = resolveThemeOrExit(mode.themeName)).run()
                 }
             }
         }
@@ -109,7 +116,7 @@ public fun main(args: Array<String>) {
                 kotlin.system.exitProcess(1)
             }
             remote.use { remote ->
-                TuiApp(seats = mapOf(remote.playerId to remote), theme = mode.theme).run()
+                TuiApp(seats = mapOf(remote.playerId to remote), theme = resolveThemeOrExit(mode.themeName)).run()
             }
         }
 

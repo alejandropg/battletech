@@ -16,7 +16,7 @@ import tenter.screen.ScreenRenderer
  * authored, theme-specific values — no downsampling between tiers, no nearest-color
  * approximation. [tenter.screen.ScreenRendererTest] already covers the renderer's generic
  * mechanics (diffing, run coalescing, alt-screen switching) against a palette fixture; this class
- * only re-checks what's specific to `tui`'s six concrete [RolePalette]s and [TuiTheme.autoFor].
+ * only re-checks what's specific to `tui`'s six built-in [Theme]s and [defaultThemeName].
  */
 internal class ScreenRendererTest {
 
@@ -24,7 +24,7 @@ internal class ScreenRendererTest {
     fun `default cell emits the dark theme's explicit foreground and background truecolor sequences`() {
         val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR)
         val terminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
-        val renderer = ScreenRenderer(terminal, TuiTheme.DARK.toRolePalette())
+        val renderer = ScreenRenderer(terminal, resolveTheme("dark"))
 
         val buffer = ScreenBuffer(5, 1)
         Canvas.of(buffer).writeString(0, 0, "hello")
@@ -40,7 +40,7 @@ internal class ScreenRendererTest {
     fun `default cell emits the exact light theme sequences when configured with LIGHT`() {
         val lightRecorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR)
         val lightTerminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = lightRecorder)
-        val lightRenderer = ScreenRenderer(lightTerminal, TuiTheme.LIGHT.toRolePalette())
+        val lightRenderer = ScreenRenderer(lightTerminal, resolveTheme("light"))
 
         val buffer = ScreenBuffer(5, 1)
         Canvas.of(buffer).writeString(0, 0, "hello")
@@ -55,7 +55,7 @@ internal class ScreenRendererTest {
     fun `DARK_256 emits indexed sequences and no truecolor sequence`() {
         val idxRecorder = TerminalRecorder(ansiLevel = AnsiLevel.ANSI256)
         val idxTerminal = Terminal(ansiLevel = AnsiLevel.ANSI256, terminalInterface = idxRecorder)
-        val idxRenderer = ScreenRenderer(idxTerminal, TuiTheme.DARK_256.toRolePalette())
+        val idxRenderer = ScreenRenderer(idxTerminal, resolveTheme("dark-256"))
 
         val buffer = ScreenBuffer(1, 1)
         buffer.set(0, 0, Cell("X", Cell.Style(fg = BoardRole.BOARD_ACTIVE)))
@@ -70,7 +70,7 @@ internal class ScreenRendererTest {
     fun `DARK_16 emits basic SGR codes and no indexed or truecolor sequence`() {
         val basicRecorder = TerminalRecorder(ansiLevel = AnsiLevel.ANSI16)
         val basicTerminal = Terminal(ansiLevel = AnsiLevel.ANSI16, terminalInterface = basicRecorder)
-        val basicRenderer = ScreenRenderer(basicTerminal, TuiTheme.DARK_16.toRolePalette())
+        val basicRenderer = ScreenRenderer(basicTerminal, resolveTheme("dark-16"))
 
         val buffer = ScreenBuffer(1, 1)
         buffer.set(0, 0, Cell("X", Cell.Style(fg = BoardRole.BOARD_ACTIVE)))
@@ -92,7 +92,7 @@ internal class ScreenRendererTest {
         // nearest neighbor.
         val idxRecorder = TerminalRecorder(ansiLevel = AnsiLevel.ANSI256)
         val idxTerminal = Terminal(ansiLevel = AnsiLevel.ANSI256, terminalInterface = idxRecorder)
-        val idxRenderer = ScreenRenderer(idxTerminal, TuiTheme.DARK_256.toRolePalette())
+        val idxRenderer = ScreenRenderer(idxTerminal, resolveTheme("dark-256"))
 
         val buffer = ScreenBuffer(1, 1)
         Canvas.of(buffer).writeString(0, 0, "X")
@@ -104,38 +104,38 @@ internal class ScreenRendererTest {
     }
 
     @Test
-    fun `TuiTheme autoFor maps each detected AnsiLevel to the theme this module renders with`() {
+    fun `defaultThemeName maps each detected AnsiLevel to the theme this module renders with`() {
         val truecolorRecorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR)
         val truecolorTerminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = truecolorRecorder)
-        val truecolorRenderer = ScreenRenderer(truecolorTerminal, TuiTheme.autoFor(AnsiLevel.TRUECOLOR).toRolePalette())
+        val truecolorRenderer = ScreenRenderer(truecolorTerminal, resolveTheme(defaultThemeName(AnsiLevel.TRUECOLOR)))
         val truecolorBuffer = ScreenBuffer(1, 1)
         Canvas.of(truecolorBuffer).writeString(0, 0, "X")
         truecolorRenderer.render(truecolorBuffer)
         assertTrue(
             truecolorRecorder.output().contains("48;2;16;20;24"),
-            "Expected TRUECOLOR to auto-select DARK: ${truecolorRecorder.output().repr()}",
+            "Expected TRUECOLOR to auto-select dark: ${truecolorRecorder.output().repr()}",
         )
 
         val idxRecorder = TerminalRecorder(ansiLevel = AnsiLevel.ANSI256)
         val idxTerminal = Terminal(ansiLevel = AnsiLevel.ANSI256, terminalInterface = idxRecorder)
-        val idxRenderer = ScreenRenderer(idxTerminal, TuiTheme.autoFor(AnsiLevel.ANSI256).toRolePalette())
+        val idxRenderer = ScreenRenderer(idxTerminal, resolveTheme(defaultThemeName(AnsiLevel.ANSI256)))
         val idxBuffer = ScreenBuffer(1, 1)
         Canvas.of(idxBuffer).writeString(0, 0, "X")
         idxRenderer.render(idxBuffer)
         assertTrue(
             idxRecorder.output().contains("48;5;233"),
-            "Expected ANSI256 to auto-select DARK_256: ${idxRecorder.output().repr()}",
+            "Expected ANSI256 to auto-select dark-256: ${idxRecorder.output().repr()}",
         )
 
         val basicRecorder = TerminalRecorder(ansiLevel = AnsiLevel.ANSI16)
         val basicTerminal = Terminal(ansiLevel = AnsiLevel.ANSI16, terminalInterface = basicRecorder)
-        val basicRenderer = ScreenRenderer(basicTerminal, TuiTheme.autoFor(AnsiLevel.ANSI16).toRolePalette())
+        val basicRenderer = ScreenRenderer(basicTerminal, resolveTheme(defaultThemeName(AnsiLevel.ANSI16)))
         val basicBuffer = ScreenBuffer(1, 1)
         Canvas.of(basicBuffer).writeString(0, 0, "X")
         basicRenderer.render(basicBuffer)
         assertTrue(
             basicRecorder.output().contains("37;40"),
-            "Expected ANSI16 to auto-select DARK_16: ${basicRecorder.output().repr()}",
+            "Expected ANSI16 to auto-select dark-16: ${basicRecorder.output().repr()}",
         )
     }
 

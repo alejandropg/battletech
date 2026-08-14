@@ -116,11 +116,24 @@ internal class MapSourceTest {
     }
 
     @Test
-    fun `missing packaged name identifies the generated resource path`() {
+    fun `missing packaged name names the built-in maps`() {
         val spec = "not-a-packaged-map-for-test"
 
         val exception = assertThrows<MapLoadException> { resolveMap(spec) }
 
-        assertThat(exception.message).isEqualTo("Map resource not found: map/$spec.json")
+        assertThat(exception.message)
+            .isEqualTo("Map resource not found: map/$spec.json\nBuilt-in maps: default, battletech-classic")
+    }
+
+    @Test
+    fun `the built-in index lists exactly the two shipped maps`() {
+        assertThat(GameMapLoader().builtInNames()).containsExactlyInAnyOrder("default", "battletech-classic")
+    }
+
+    @Test
+    fun `every indexed built-in name loads`() {
+        for (name in GameMapLoader().builtInNames()) {
+            assertThat(resolveMap(name).hexes).describedAs(name).isNotEmpty()
+        }
     }
 }

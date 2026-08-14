@@ -7,8 +7,9 @@ import battletech.tui.game.AppState
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.loop.UiEvent
 import battletech.tui.loop.runLoop
-import battletech.tui.screen.TuiTheme
-import battletech.tui.screen.toRolePalette
+import battletech.tui.screen.Theme
+import battletech.tui.screen.defaultThemeName
+import battletech.tui.screen.resolveTheme
 import com.github.ajalt.mordant.input.MouseTracking
 import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
@@ -32,10 +33,12 @@ import tenter.terminal.resizeEvents
  * [battletech.network.client.ClientGameSession] never kickstarts at all. This class never builds
  * a session or calls `advance()` itself.
  *
- * [theme] selects the color theme; `null` auto-selects from the terminal's detected color
- * support (see [ScreenRenderer]'s KDoc and [TuiTheme.autoFor]).
+ * [theme] selects the color theme; `null` auto-selects from the terminal's detected color support
+ * (see [ScreenRenderer]'s KDoc and [defaultThemeName]) by loading the matching packaged theme —
+ * that load can therefore throw [battletech.tui.screen.ThemeLoadException] if the jar's own
+ * `theme/` resources are missing or malformed, before raw mode is ever entered.
  */
-public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val theme: TuiTheme? = null) {
+public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val theme: Theme? = null) {
 
     /**
      * Entry point. Wires a subscription for every seat's session into [internalEvents], merges
@@ -61,8 +64,8 @@ public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val t
      */
     public fun run() {
         val terminal = Terminal()
-        val resolvedTheme = theme ?: TuiTheme.autoFor(terminal.terminalInfo.ansiLevel)
-        val renderer = ScreenRenderer(terminal, resolvedTheme.toRolePalette())
+        val resolvedTheme = theme ?: resolveTheme(defaultThemeName(terminal.terminalInfo.ansiLevel))
+        val renderer = ScreenRenderer(terminal, resolvedTheme)
 
         val appState = AppState(
             seats = seats,

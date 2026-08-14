@@ -1,6 +1,5 @@
 package battletech.tui
 
-import battletech.tui.screen.TuiTheme
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.ParameterHolder
@@ -14,7 +13,6 @@ import com.github.ajalt.clikt.parameters.arguments.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
-import com.github.ajalt.clikt.parameters.types.choice
 import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.terminal.Terminal
@@ -34,22 +32,18 @@ internal const val DEFAULT_MAP_NAME: String = "default"
  * [Server] starts a headless dedicated server — no TUI — and both players connect via [Join].
  */
 internal sealed interface Mode {
-    data class Local(val mapName: String? = null, val theme: TuiTheme? = null) : Mode
-    data class Host(val port: Int = DEFAULT_PORT, val mapName: String? = null, val theme: TuiTheme? = null) : Mode
-    data class Join(val host: String, val port: Int = DEFAULT_PORT, val sessionId: String, val theme: TuiTheme? = null) : Mode
+    data class Local(val mapName: String? = null, val themeName: String? = null) : Mode
+    data class Host(val port: Int = DEFAULT_PORT, val mapName: String? = null, val themeName: String? = null) : Mode
+    data class Join(val host: String, val port: Int = DEFAULT_PORT, val sessionId: String, val themeName: String? = null) : Mode
     data class Server(val port: Int = DEFAULT_PORT, val mapName: String? = null) : Mode
 }
 
-private val THEME_CHOICES: Map<String, TuiTheme> = TuiTheme.entries.associateBy { it.flag }
-
-/**
- * `choice()` derives both the metavar and the "invalid choice" message from [THEME_CHOICES], so
- * the six theme names are never hand-typed anywhere in the CLI layer (unlike the old parser's
- * hardcoded "expected dark, light, ..." string).
- */
 private fun ParameterHolder.themeOption() =
-    option("--theme", help = "Color theme; default is chosen from the terminal's detected color support")
-        .choice(THEME_CHOICES)
+    option(
+        "--theme",
+        metavar = "<name|path>",
+        help = "Built-in theme name or theme-file path; default is chosen from the terminal's detected color support",
+    )
 
 private fun ParameterHolder.mapOption() =
     option(
@@ -95,15 +89,15 @@ private class BattletechTui(
     override val invokeWithoutSubcommand: Boolean = true
 
     private val mapName by mapOption()
-    private val theme by themeOption()
+    private val themeName by themeOption()
 
     override fun run() {
         val sub = currentContext.invokedSubcommand
         if (sub == null) {
-            emit(Mode.Local(mapName = mapName, theme = theme))
+            emit(Mode.Local(mapName = mapName, themeName = themeName))
             return
         }
-        val misplaced = listOfNotNull("--map".takeIf { mapName != null }, "--theme".takeIf { theme != null })
+        val misplaced = listOfNotNull("--map".takeIf { mapName != null }, "--theme".takeIf { themeName != null })
         if (misplaced.isNotEmpty()) {
             throw UsageError("${misplaced.joinToString(" and ")} must come after '${sub.commandName}'")
         }
@@ -115,10 +109,10 @@ private class HostCommand(private val emit: (Mode) -> Unit) : CliktCommand(name 
 
     private val port by portOption()
     private val mapName by mapOption()
-    private val theme by themeOption()
+    private val themeName by themeOption()
 
     override fun run() {
-        emit(Mode.Host(port = port, mapName = mapName, theme = theme))
+        emit(Mode.Host(port = port, mapName = mapName, themeName = themeName))
     }
 }
 
@@ -152,10 +146,10 @@ private class JoinCommand(private val emit: (Mode) -> Unit) : CliktCommand(name 
         metavar = "ID",
         help = "Session ID printed by the host on startup",
     ).required()
-    private val theme by themeOption()
+    private val themeName by themeOption()
 
     override fun run() {
-        emit(Mode.Join(host = endpoint.host, port = endpoint.port, sessionId = sessionId, theme = theme))
+        emit(Mode.Join(host = endpoint.host, port = endpoint.port, sessionId = sessionId, themeName = themeName))
     }
 }
 
@@ -189,9 +183,9 @@ private class ServeCommand(private val emit: (Mode) -> Unit) : CliktCommand(name
  * re-entrant for tests.
  *
  * Syntax:
- * - (no args), or `[--map <name|path>] [--theme <name>]`: [Mode.Local]
- * - `host [--port N] [--map <name|path>] [--theme <name>]`: [Mode.Host]
- * - `join <ip[:port]> --session <id> [--theme <name>]`: [Mode.Join]
+ * - (no args), or `[--map <name|path>] [--theme <name|path>]`: [Mode.Local]
+ * - `host [--port N] [--map <name|path>] [--theme <name|path>]`: [Mode.Host]
+ * - `join <ip[:port]> --session <id> [--theme <name|path>]`: [Mode.Join]
  * - `serve [--port N] [--map <name|path>]`: [Mode.Server]
  *
  * `--map`/`--theme` are declared on both the root and the relevant subcommands (rather than only

@@ -16,5 +16,6 @@ dependencies {
 tasks.named<ProcessResources>("processResources") {
     from(rootProject.layout.projectDirectory.dir("map")) {
         into("map")
+        exclude(".DS_Store")
     }
 }

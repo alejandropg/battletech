@@ -1,12 +1,9 @@
 package battletech.tactical.model.map
 
+import battletech.tactical.io.ResourceOrFileLoader
 import battletech.tactical.model.GameMap
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import java.io.IOException
-import java.nio.file.NoSuchFileException
 import java.nio.file.Path
-import kotlin.io.path.readText
 
 /** Default [Json] configuration for reading JSON map sources: strict about unknown keys. */
 private val mapJson: Json = Json {
@@ -15,43 +12,27 @@ private val mapJson: Json = Json {
 }
 
 /** Loads a [GameMap] from a compact JSON [MapFile] source. */
-public class GameMapLoader(private val json: Json = mapJson) {
+public class GameMapLoader(json: Json = mapJson) {
+
+    private val loader = ResourceOrFileLoader(
+        resourceDir = "map",
+        label = "Map",
+        json = json,
+        build = { text, _ -> json.decodeFromString<MapFile>(text).toGameMap() },
+        exception = ::MapLoadException,
+    )
+
+    /** Resolves [spec] as in [resolveMap] — see that function's KDoc. */
+    internal fun resolve(spec: String): GameMap = loader.resolve(spec)
 
     /** Reads and parses the map file at [path], throwing [MapLoadException] on any failure. */
-    public fun load(path: Path): GameMap {
-        val text = try {
-            path.readText()
-        } catch (e: NoSuchFileException) {
-            throw MapLoadException("Map file not found: $path", e)
-        } catch (e: IOException) {
-            throw MapLoadException("Failed to read map file: $path", e)
-        }
-
-        return decode(text, "Malformed map file: $path")
-    }
+    public fun load(path: Path): GameMap = loader.load(path)
 
     /** Reads and parses the classpath resource at [resourcePath]. */
-    internal fun loadResource(resourcePath: String): GameMap {
-        val text = try {
-            val stream = GameMapLoader::class.java.getResourceAsStream("/$resourcePath")
-                ?: throw MapLoadException("Map resource not found: $resourcePath")
-            stream.bufferedReader(Charsets.UTF_8).use { reader -> reader.readText() }
-        } catch (e: IOException) {
-            throw MapLoadException("Failed to read map resource: $resourcePath", e)
-        }
+    internal fun loadResource(resourcePath: String): GameMap = loader.loadResource(resourcePath)
 
-        return decode(text, "Malformed map resource: $resourcePath")
-    }
-
-    private fun decode(text: String, malformedMessage: String): GameMap {
-        val mapFile = try {
-            json.decodeFromString<MapFile>(text)
-        } catch (e: SerializationException) {
-            throw MapLoadException(malformedMessage, e)
-        }
-
-        return mapFile.toGameMap()
-    }
+    /** Packaged map names from `map/index.json` — see [ResourceOrFileLoader.builtInNames]'s KDoc. */
+    internal fun builtInNames(): List<String> = loader.builtInNames()
 }
 
 /** Raised when a JSON map source cannot be read or parsed into a valid [GameMap]. */
