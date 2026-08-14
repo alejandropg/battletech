@@ -135,6 +135,44 @@ internal class TuiPaletteTest {
     }
 
     @Test
+    fun `truecolor- player foregrounds clear 3 to 1 against every terrain fill, one tier below the rest`() {
+        // Unit ownership is the only board fact with no redundant non-color cue, so the instinct is
+        // to hold these to the strictest floor. That instinct is wrong here, because the two
+        // requirements pull against each other: 4.5:1 over these mid-luminance fills admits only
+        // colors near L*0.87, and sRGB offers almost no chroma that light. Every pair satisfying it
+        // is a pastel pair, and a player who cannot tell their mech from the enemy's has lost the
+        // information the floor was protecting. 3:1 (WCAG 1.4.11, non-text/graphical objects) keeps
+        // a unit readable over the worst fill while freeing the chroma that makes the two sides
+        // distinct — which the separation test below then enforces as its own property.
+        for (theme in truecolorThemes) {
+            val palette = theme.toRolePalette()
+            for (fg in PLAYER_FOREGROUNDS) {
+                for (fill in TERRAIN_FILLS) {
+                    val ratio = contrast(luminance(palette.foreground(fg)), luminance(palette.background(fill)))
+                    assertThat(ratio).describedAs("$theme: $fg on $fill").isGreaterThanOrEqualTo(3.0)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `truecolor and ansi256- the two player colors are perceptually far apart`() {
+        // Contrast-against-background and distinctness-from-each-other are independent properties,
+        // and only the first was ever asserted for truecolor — which is how a pair at OkLab dE 0.12
+        // shipped. Measured in OkLab rather than by contrast ratio because both colors are light by
+        // construction: their ratio against each other is ~1, no matter how different they look.
+        for (theme in truecolorThemes + ansi256Themes) {
+            val palette = theme.toRolePalette()
+            val distance = perceptualDistance(
+                palette.foreground(BoardRole.PLAYER_1),
+                palette.foreground(BoardRole.PLAYER_2),
+            )
+            assertThat(distance).describedAs("$theme: PLAYER_1 vs PLAYER_2 OkLab distance")
+                .isGreaterThanOrEqualTo(MIN_PLAYER_SEPARATION)
+        }
+    }
+
+    @Test
     fun `truecolor- each terrain icon clears 4point5 to 1 against its own terrain fill`() {
         for (theme in truecolorThemes) {
             val palette = theme.toRolePalette()
@@ -349,13 +387,23 @@ internal class TuiPaletteTest {
         /**
          * Board roles that must remain legible over every terrain fill. The selected-target marker
          * is intentionally excluded because it shares the requested danger red; it remains covered
-         * by the default-background contrast check for general roles.
+         * by the default-background contrast check for general roles. [PLAYER_FOREGROUNDS] are
+         * excluded too — they sit one tier lower, for the reason given on that list.
          */
         private val CRITICAL_BOARD_FOREGROUNDS: List<ColorRole> = listOf(
             ChromeRole.TEXT_PRIMARY, BoardRole.MOVE_WALK, BoardRole.MOVE_RUN, BoardRole.MOVE_JUMP,
-            BoardRole.PLAYER_1, BoardRole.PLAYER_2, BoardRole.ATTACK_RANGE, BoardRole.BOARD_ACTIVE,
+            BoardRole.ATTACK_RANGE, BoardRole.BOARD_ACTIVE,
             BoardRole.LINE_OF_SIGHT, BoardRole.TARGET_VALID,
         )
+
+        /** The two unit-ownership colors — see the "player foregrounds" test's KDoc. */
+        private val PLAYER_FOREGROUNDS: List<ColorRole> = listOf(BoardRole.PLAYER_1, BoardRole.PLAYER_2)
+
+        /**
+         * OkLab distance below which the two player colors are too alike to tell apart on a glyph
+         * two cells wide. The pastel pair this floor was introduced to retire measured 0.12.
+         */
+        private const val MIN_PLAYER_SEPARATION = 0.15
         private val ICON_TO_FILLS = mapOf(
             BoardRole.TERRAIN_WOODS_LIGHT_ICON to listOf(BoardRole.TERRAIN_WOODS_LIGHT_BG),
             BoardRole.TERRAIN_WOODS_HEAVY_ICON to listOf(BoardRole.TERRAIN_WOODS_HEAVY_BG),
@@ -383,6 +431,40 @@ internal class TuiPaletteTest {
             val lighter = maxOf(a, b)
             val darker = minOf(a, b)
             return (lighter + 0.05) / (darker + 0.05)
+        }
+
+        /**
+         * Euclidean distance in OkLab — a perceptually uniform space, so one threshold means the
+         * same thing at every lightness and hue. [PaletteColor.Ansi16] has no defined sRGB value,
+         * so this shares [luminance]'s restriction: never call it on one.
+         */
+        private fun perceptualDistance(a: PaletteColor, b: PaletteColor): Double {
+            val (l1, a1, b1) = oklab(a)
+            val (l2, a2, b2) = oklab(b)
+            return Math.sqrt((l1 - l2) * (l1 - l2) + (a1 - a2) * (a1 - a2) + (b1 - b2) * (b1 - b2))
+        }
+
+        private fun oklab(color: PaletteColor): Triple<Double, Double, Double> {
+            val (red, green, blue) = when (color) {
+                is PaletteColor.TrueColor -> Triple(color.red, color.green, color.blue)
+                is PaletteColor.Xterm256 -> ansi256Rgb(color.index)
+                is PaletteColor.Ansi16 -> error("ANSI-16 codes have no defined sRGB value — see this file's class KDoc")
+            }
+            fun linear(c: Int): Double {
+                val cs = c / 255.0
+                return if (cs <= 0.04045) cs / 12.92 else Math.pow((cs + 0.055) / 1.055, 2.4)
+            }
+            val r = linear(red)
+            val g = linear(green)
+            val b = linear(blue)
+            val l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
+            val m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
+            val s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+            return Triple(
+                0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+                1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+                0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
+            )
         }
 
         private val CUBE_STEPS = intArrayOf(0, 95, 135, 175, 215, 255)

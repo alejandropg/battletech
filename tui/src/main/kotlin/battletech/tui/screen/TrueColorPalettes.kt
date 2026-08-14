@@ -37,8 +37,16 @@ internal object DarkPalette : RolePalette {
     }
 
     private fun board(role: BoardRole): PaletteColor = when (role) {
-        BoardRole.PLAYER_1 -> rgb(0xA8D8FF)
-        BoardRole.PLAYER_2 -> rgb(0xFFC0E7)
+        // Ownership is the one thing on the board with no non-color cue — UnitRenderer draws
+        // friendly and enemy mechs with identical glyphs — so these two must be told apart at a
+        // glance. The previous pastel pair (A8D8FF/FFC0E7) sat at OkLab dE 0.12, and 0.05 under
+        // deuteranopia: effectively the same color. Separating them needs chroma, and chroma at
+        // the 4.5:1 board floor does not exist — that floor forces any foreground to L*~0.87,
+        // where sRGB has almost none left. PLAYER_2 therefore takes the 3:1 tier (see
+        // TuiPaletteTest's "player foregrounds" test); PLAYER_1 stays light and clears 4.5:1 on
+        // its own, which also buys the lightness gap that survives color-blind vision.
+        BoardRole.PLAYER_1 -> rgb(0xA0F4FF)
+        BoardRole.PLAYER_2 -> rgb(0xFF75FF)
         BoardRole.DESTROYED -> rgb(0xC0C6CB)
         // Ordinary hex borders are decorative grid lines, not information — terrain icons and the
         // elevation badge already carry the real content, so the grid intentionally recedes.
