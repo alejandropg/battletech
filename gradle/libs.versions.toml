@@ -1,6 +1,6 @@
 [versions]
 jvm = "25"
-kotlin = "2.4.0"
+kotlin = "2.4.10"
 junit = "6.1.0"
 mockk = "1.14.11"
 assertj = "3.27.7"
