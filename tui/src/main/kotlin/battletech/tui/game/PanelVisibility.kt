@@ -16,7 +16,7 @@ import battletech.tactical.model.TurnPhase
  *  - **Cross-phase** state-driven panels (ATTACK RESULTS) whose visibility spans
  *    several phases and depends on [AppState] rather than any single phase.
  *  - **Phase-local** panels, delegated to the active phase via
- *    [battletech.tui.game.phase.Phase.visiblePanels].
+ *    [battletech.tui.game.phase.Phase.panels]'s [battletech.tui.game.phase.PhasePanels.ids].
  *
  * Recomputed every frame, so nothing can go stale.
  */
@@ -32,6 +32,6 @@ internal object PanelVisibility {
             add(GamePanelId.ATTACK_RESULTS)
         }
 
-        addAll(appState.phase.visiblePanels(appState))
+        addAll(appState.phase.panels(appState).ids)
     }
 }

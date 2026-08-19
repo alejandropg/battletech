@@ -347,7 +347,7 @@ internal class DeclaredTargetsRenderTest {
             drafts = emptyMap(),
         )
 
-        val result = declaring.declaredTargetsRender(anApp(gameState, turnState))
+        val result = declaring.declaredTargets(anApp(gameState, turnState), declaring.allDrafts())
 
         assertEquals(1, result.entries.size)
         assertTrue(result.entries[0].isDraft)

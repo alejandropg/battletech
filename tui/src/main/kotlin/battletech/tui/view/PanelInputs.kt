@@ -1,6 +1,8 @@
 package battletech.tui.view
 
+import battletech.tactical.unit.ForeignUnit
 import battletech.tui.game.AppState
+import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.AttackRender
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.game.phase.DeclaredTargetsRender
@@ -22,7 +24,7 @@ internal class PanelInputs(private val appState: AppState) {
 
     val visibleState get() = appState.visibleState
 
-    private val renderData by lazy { appState.phase.render(appState) }
+    private val renderData by lazy { appState.phase.board(appState) }
 
     /** The tactical board's view — see [Panels.build]'s board [tenter.panel.Panel]. */
     val boardView: View by lazy {
@@ -32,8 +34,8 @@ internal class PanelInputs(private val appState: AppState) {
             hexHighlights = renderData.hexHighlights,
             reachableFacings = renderData.reachableFacings,
             facingSelectionFacings = renderData.facingSelection?.facings,
-            pathDestination = appState.phase.pathDestination(),
-            movementMode = appState.phase.movementMode(),
+            pathDestination = renderData.pathDestination,
+            movementMode = renderData.movementMode,
             draftTorsoFacings = renderData.draftTorsoFacings,
             validTargetPositions = renderData.validTargetPositions,
             selectedTargetPosition = renderData.selectedTargetPosition,
@@ -47,28 +49,26 @@ internal class PanelInputs(private val appState: AppState) {
     }
 
     /**
-     * This frame's attack render, for the TARGETS panel. Non-null by construction: TARGETS is
-     * visible only when the phase reported a non-empty target list from this very call — see
-     * [battletech.tui.game.phase.Phase.visiblePanels]. Throwing here rather than returning null
-     * keeps the "is there anything to show" decision in one place (visibility) instead of two.
+     * The active phase's side-panel contributions, computed once per frame. [PhasePanels.ids]
+     * (via [battletech.tui.game.PanelVisibility]) already decided which of TARGETS/TARGET_STATUS/
+     * DECLARED_TARGETS exist this frame from these same fields, so [attackRender], [targetStatusUnit],
+     * and [declaredTargets] can assume their content is present — see [orMissing].
      */
-    val attackRender: AttackRender by lazy {
-        appState.phase.attackRender(appState)
-            ?: error("TARGETS panel built with no attack render — Phase.visiblePanels should have hidden it")
-    }
+    private val phasePanels by lazy { appState.phase.panels(appState) }
 
-    val targetStatusUnit by lazy { appState.phase.targetStatusUnit(appState) }
+    /** This frame's attack render, for the TARGETS panel. Non-null by construction — see [phasePanels]. */
+    val attackRender: AttackRender by lazy { phasePanels.targets.orMissing(GamePanelId.TARGETS) }
+
+    /** This frame's target-status subject, for the TARGET STATUS panel. Non-null by construction — see [phasePanels]. */
+    val targetStatusUnit: ForeignUnit by lazy { phasePanels.targetStatus.orMissing(GamePanelId.TARGET_STATUS) }
 
     val unitStatus by lazy { appState.phase.unitStatus(appState) }
 
-    val pendingHeat by lazy { appState.phase.pendingHeat(appState) }
-
     val logEntries by lazy { appState.logFor(appState.viewer) }
 
-    /** This frame's declared targets. Non-null by construction — see [attackRender]; both WEAPON_ATTACK sub-phases build one. */
+    /** This frame's declared targets. Non-null by construction — see [phasePanels]. */
     val declaredTargets: DeclaredTargetsRender by lazy {
-        appState.phase.declaredTargetsRender(appState)
-            ?: error("DECLARED TARGETS panel built with no render — Phase.visiblePanels should have hidden it")
+        phasePanels.declaredTargets.orMissing(GamePanelId.DECLARED_TARGETS).value
     }
 
     /** This frame's attack results. Non-null by construction — [battletech.tui.game.PanelVisibility] shows the panel only when [AppState.lastAttackResults] is set. */
@@ -83,9 +83,10 @@ internal class PanelInputs(private val appState: AppState) {
     }
 
     val helpSections: List<KeySection> by lazy {
-        listOf(
-            KeySection(appState.phase.keyContext(), appState.phase.keyHints()),
-            Keymap.GLOBAL,
-        )
+        listOf(appState.phase.keySection(), Keymap.GLOBAL)
     }
 }
+
+/** The one place "the host showed a panel the phase did not contribute" becomes a failure. */
+private fun <T : Any> T?.orMissing(id: GamePanelId): T = this
+    ?: error("$id built with no content — PhasePanels.ids should have hidden it")

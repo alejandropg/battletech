@@ -9,17 +9,15 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.query.PhysicalAttackOption
 import battletech.tactical.session.CommitPhysicalAttackImpulse
 import battletech.tactical.unit.UnitId
-import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import tenter.view.FlashMessage
-import battletech.tui.game.GamePanelId
 import battletech.tui.game.attackPlayerLabel
 import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.AttackAction
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
-import tenter.input.KeyHint
+import tenter.input.KeySection
 import battletech.tui.input.Keymap
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -33,12 +31,6 @@ internal sealed interface PhysicalAttackPhase : Phase {
     override val turnPhase: TurnPhase get() = TurnPhase.PHYSICAL_ATTACK
 
     val drafts: PhysicalDrafts
-
-    override fun visiblePanels(app: AppState): Set<GamePanelId> = buildSet {
-        // Physical attacks reuse the TARGETS panel (Declaring populates it) but
-        // never the declared-targets column. The freed width goes to the map.
-        if (attackRender(app)?.targets?.isNotEmpty() == true) add(GamePanelId.TARGETS)
-    }
 
     data class SelectingAttacker(
         override val drafts: PhysicalDrafts = emptyMap(),
@@ -63,22 +55,16 @@ internal sealed interface PhysicalAttackPhase : Phase {
             )
         }
 
-        override fun prompt(app: AppState): String {
+        override fun status(app: AppState): PhaseStatus {
             val turnState = app.turnState
-            if (turnState.attack.isComplete) return "All physical attacks declared"
+            if (turnState.attack.isComplete) return PhaseStatus("All physical attacks declared")
             val name = turnState.attack.activePlayer.displayName
-            return "$name: select a unit to punch/kick"
+            return PhaseStatus("$name: select a unit to punch/kick", name)
         }
 
-        override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.units.at(app.cursor)
+        override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(cursorUnitStatus(app))
 
-        override fun unitStatus(app: AppState): VisibleUnit? = cursorUnitStatus(app)
-
-        override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState)
-
-        override fun keyContext(): String = "PHYSICAL ATTACK"
-
-        override fun keyHints(): List<KeyHint> = Keymap.ATTACK_IDLE
+        override fun keySection(): KeySection = KeySection("PHYSICAL ATTACK", Keymap.ATTACK_IDLE)
     }
 
     public data class Declaring(
@@ -101,19 +87,25 @@ internal sealed interface PhysicalAttackPhase : Phase {
             }
         }
 
-        override fun prompt(app: AppState): String = PHYSICAL_DECLARING_PROMPT
+        override fun status(app: AppState): PhaseStatus =
+            PhaseStatus(PHYSICAL_DECLARING_PROMPT, attackPlayerLabel(app.turnState, requireSeeded = false))
 
-        override fun selectedUnit(app: AppState): VisibleUnit = app.visibleState.units.byId(unitId)
+        override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(app.visibleState.units.byId(unitId))
 
         override fun onCancel(app: AppState): Transition = Transition(app.copy(phase = SelectingAttacker(allDrafts())))
 
-        override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState, requireSeeded = false)
+        override fun keySection(): KeySection = KeySection("DECLARE PHYSICAL", Keymap.PHYSICAL_DECLARING)
 
-        override fun keyContext(): String = "DECLARE PHYSICAL"
+        // Physical attacks reuse the TARGETS panel but never the declared-targets column (that
+        // belongs to the weapon-attack flow — see AttackPhase.declaredTargetsPanel) or TARGET
+        // STATUS (physical attacks have no separate target-cursor concept to show there).
+        override fun panels(app: AppState): PhasePanels {
+            val render = attackRender(app)
+            return PhasePanels(targets = render.takeIf { it.targets.isNotEmpty() })
+        }
 
-        override fun keyHints(): List<KeyHint> = Keymap.PHYSICAL_DECLARING
-
-        override fun attackRender(app: AppState): AttackRender {
+        /** This attacker's TARGETS-panel content — also the source of [panels]' visibility decision. */
+        internal fun attackRender(app: AppState): AttackRender {
             val options = optionsFor(app)
             val byTarget = options.groupBy { it.targetId }
             val targets = byTarget.map { (targetId, opts) ->

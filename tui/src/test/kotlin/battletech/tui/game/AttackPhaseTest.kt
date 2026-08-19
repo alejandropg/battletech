@@ -286,7 +286,7 @@ internal class AttackPhaseTest {
             val cancelled = twistedPhase.handle(KeyboardEvent("Escape"), twisted.app)!!
             val selecting = cancelled.app.phase as AttackPhase.SelectingAttacker
 
-            assertEquals(HexDirection.NE, selecting.render(cancelled.app).draftTorsoFacings[unit.position])
+            assertEquals(HexDirection.NE, selecting.board(cancelled.app).draftTorsoFacings[unit.position])
         }
 
         @Test
@@ -310,7 +310,7 @@ internal class AttackPhaseTest {
             assertEquals(TurnPhase.WEAPON_ATTACK, committed.app.currentPhase)
             val selecting = committed.app.phase as AttackPhase.SelectingAttacker
             assertTrue(selecting.drafts.isEmpty())
-            assertEquals(RenderData.EMPTY, selecting.render(committed.app))
+            assertEquals(RenderData.EMPTY, selecting.board(committed.app))
         }
 
         @Test
@@ -353,7 +353,7 @@ internal class AttackPhaseTest {
             val phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
             val gameState = GameState(UnitRoster(emptyList()), aGameMap())
 
-            assertNull(phase.targetStatusUnit(anAppState(phase, gameState, baseTurnState())))
+            assertNull(phase.panels(anAppState(phase, gameState, baseTurnState())).targetStatus)
         }
 
         @Test
@@ -367,7 +367,7 @@ internal class AttackPhaseTest {
             val gameState = GameState(UnitRoster(listOf(unit, enemy)), map5x5)
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
 
-            assertNull(phase.targetStatusUnit(anAppState(phase, gameState, baseTurnState())))
+            assertNull(phase.panels(anAppState(phase, gameState, baseTurnState())).targetStatus)
         }
 
         @Test
@@ -381,7 +381,7 @@ internal class AttackPhaseTest {
             val gameState = GameState(UnitRoster(listOf(unit, enemy)), map5x5)
             val phase = enterDeclaring(unit, TurnPhase.WEAPON_ATTACK, viewFor(unit, gameState))
 
-            val result = phase.targetStatusUnit(anAppState(phase, gameState, baseTurnState()))
+            val result = phase.panels(anAppState(phase, gameState, baseTurnState())).targetStatus
 
             assertNotNull(result)
             assertEquals("Centurion", result!!.name)

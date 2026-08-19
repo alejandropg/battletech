@@ -47,7 +47,7 @@ internal object Panels {
                 AttackResultsView(frame.attackResults)
             },
             sidePanel(GamePanelId.UNIT_STATUS, UnitStatusView.TITLE) { frame ->
-                UnitStatusView(frame.unitStatus, frame.pendingHeat)
+                UnitStatusView(frame.unitStatus.subject, frame.unitStatus.pendingHeat)
             },
             sidePanel(GamePanelId.LOG, LogView.TITLE) { frame ->
                 LogView(entries = frame.logEntries, state = frame.visibleState)

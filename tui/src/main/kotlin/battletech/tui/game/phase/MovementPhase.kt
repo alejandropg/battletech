@@ -15,7 +15,6 @@ import battletech.tactical.session.StandUp
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.UnitId
-import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
 import tenter.view.FlashMessage
@@ -33,7 +32,7 @@ import battletech.tui.input.Keymap
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
-import tenter.input.KeyHint
+import tenter.input.KeySection
 
 internal val FACING_ORDER: List<HexDirection> = listOf(
     HexDirection.N, HexDirection.NE, HexDirection.SE,
@@ -69,30 +68,20 @@ internal sealed interface MovementPhase : Phase {
             )
         }
 
-        override fun prompt(app: AppState): String {
+        override fun status(app: AppState): PhaseStatus {
             val turnState = app.turnState
             // Host mode renders before the session's advance() kickstart fires (it waits for
             // the opponent to join), so the movement impulse sequence can still be empty here —
             // isComplete is true in that case (0 >= 0), same as a normally-finished sequence.
-            if (turnState.movement.isComplete) return "Waiting for game to start…"
+            if (turnState.movement.isComplete) return PhaseStatus("Waiting for game to start…")
             val playerName = turnState.movement.activePlayer.displayName
             val remaining = turnState.movement.remainingInImpulse
-            return "$playerName: select a unit to move ($remaining remaining)"
+            return PhaseStatus("$playerName: select a unit to move ($remaining remaining)", playerName)
         }
 
-        override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.units.at(app.cursor)
+        override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(cursorUnitStatus(app))
 
-        override fun unitStatus(app: AppState): VisibleUnit? = cursorUnitStatus(app)
-
-        override fun activePlayerLabel(app: AppState): String? {
-            val turnState = app.turnState
-            if (turnState.movement.isComplete) return null
-            return turnState.movement.activePlayer.displayName
-        }
-
-        override fun keyContext(): String = "MOVEMENT"
-
-        override fun keyHints(): List<KeyHint> = Keymap.MOVEMENT_IDLE
+        override fun keySection(): KeySection = KeySection("MOVEMENT", Keymap.MOVEMENT_IDLE)
     }
 
     public data class Browsing(
@@ -170,36 +159,29 @@ internal sealed interface MovementPhase : Phase {
             }
         }
 
-        override fun prompt(app: AppState): String = modePrompt(reachability)
+        override fun status(app: AppState): PhaseStatus =
+            PhaseStatus(modePrompt(reachability), app.turnState.movement.activePlayer.displayName)
 
-        override fun render(app: AppState): RenderData = RenderData(
+        override fun board(app: AppState): RenderData = RenderData(
             hexHighlights = reachabilityHighlights(reachability) + pathHighlights(hoveredPath),
             reachableFacings = reachability.facingsByPosition(),
+            pathDestination = hoveredPath?.lastOrNull(),
+            movementMode = reachability.mode,
         )
 
-        override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.units.byId(unitId)
+        override fun unitStatus(app: AppState): UnitStatusRender =
+            UnitStatusRender(app.visibleState.units.byId(unitId), pendingHeat(app))
 
         override fun onCancel(app: AppState): Transition = Transition(app.copy(phase = SelectingUnit))
 
-        override fun pendingHeat(app: AppState): List<HeatSource> {
+        private fun pendingHeat(app: AppState): List<HeatSource> {
             val destination = hoveredDestination ?: return emptyList()
             val position = app.visibleState.units.byId(unitId).position
             val hexes = hexesMoved(position, destination)
             return movementHeatSources(reachability.mode, hexes)
         }
 
-        override fun pathDestination(): HexCoordinates? = hoveredPath?.lastOrNull()
-
-        override fun movementMode(): MovementMode = reachability.mode
-
-        override fun activePlayerLabel(app: AppState): String? {
-            val turnState = app.turnState
-            return turnState.movement.activePlayer.displayName
-        }
-
-        override fun keyContext(): String = "BROWSE DESTINATION"
-
-        override fun keyHints(): List<KeyHint> = Keymap.BROWSING
+        override fun keySection(): KeySection = KeySection("BROWSE DESTINATION", Keymap.BROWSING)
 
         private fun confirm(app: AppState): Transition {
             val destination = hoveredDestination ?: return Transition(app.copy(phase = this))
@@ -270,38 +252,31 @@ internal sealed interface MovementPhase : Phase {
             }
         }
 
-        override fun prompt(app: AppState): String = SELECT_FACING_PROMPT
+        override fun status(app: AppState): PhaseStatus =
+            PhaseStatus(SELECT_FACING_PROMPT, app.turnState.movement.activePlayer.displayName)
 
-        override fun render(app: AppState): RenderData = RenderData(
+        override fun board(app: AppState): RenderData = RenderData(
             hexHighlights = reachabilityHighlights(reachability) + pathHighlights(path),
             facingSelection = FacingSelection(hex, options.map { it.facing }.toSet()),
             reachableFacings = reachability.facingsByPosition(),
+            pathDestination = path.lastOrNull(),
+            movementMode = reachability.mode,
         )
 
-        override fun selectedUnit(app: AppState): VisibleUnit = app.visibleState.units.byId(unitId)
+        override fun unitStatus(app: AppState): UnitStatusRender =
+            UnitStatusRender(app.visibleState.units.byId(unitId), pendingHeat(app))
 
         override fun onCancel(app: AppState): Transition =
             Transition(app.copy(phase = toBrowsing().withCursorAt(app.cursor, app)))
 
-        override fun pendingHeat(app: AppState): List<HeatSource> {
+        private fun pendingHeat(app: AppState): List<HeatSource> {
             val position = app.visibleState.units.byId(unitId).position
             val destination = options.minByOrNull { it.mpSpent } ?: return emptyList()
             val hexes = hexesMoved(position, destination)
             return movementHeatSources(reachability.mode, hexes)
         }
 
-        override fun pathDestination(): HexCoordinates? = path.lastOrNull()
-
-        override fun movementMode(): MovementMode = reachability.mode
-
-        override fun activePlayerLabel(app: AppState): String? {
-            val turnState = app.turnState
-            return turnState.movement.activePlayer.displayName
-        }
-
-        override fun keyContext(): String = "SELECT FACING"
-
-        override fun keyHints(): List<KeyHint> = Keymap.FACING
+        override fun keySection(): KeySection = KeySection("SELECT FACING", Keymap.FACING)
 
         private fun commitByFacing(app: AppState, index: Int): Transition {
             val direction = FACING_ORDER.getOrNull(index - 1) ?: return Transition(app.copy(phase = this))

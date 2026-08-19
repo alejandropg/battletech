@@ -189,7 +189,7 @@ internal class MovementSelectingUnitPhaseTest {
             val gameState = aGameState(units = listOf(p1Unit, p2Unit))
             val state = anAppState(cursor = HexCoordinates(0, 0), gameState = gameState, turnState = aTurnState())
 
-            val subject = MovementPhase.SelectingUnit.unitStatus(state)
+            val subject = MovementPhase.SelectingUnit.unitStatus(state).subject
 
             assertInstanceOf(CombatUnit::class.java, subject)
             assertEquals(p1Unit.id, (subject as CombatUnit).id)
@@ -202,7 +202,7 @@ internal class MovementSelectingUnitPhaseTest {
             val gameState = aGameState(units = listOf(p1Unit, p2Unit))
             val state = anAppState(cursor = HexCoordinates(1, 1), gameState = gameState, turnState = aTurnState())
 
-            val subject = MovementPhase.SelectingUnit.unitStatus(state)
+            val subject = MovementPhase.SelectingUnit.unitStatus(state).subject
 
             assertInstanceOf(ForeignUnit::class.java, subject)
             assertEquals(p2Unit.id, (subject as ForeignUnit).id)
@@ -226,7 +226,7 @@ internal class MovementSelectingUnitPhaseTest {
             )
             val state = anAppState(cursor = HexCoordinates(1, 1), gameState = gameState, turnState = completedTurnState)
 
-            val subject = MovementPhase.SelectingUnit.unitStatus(state)
+            val subject = MovementPhase.SelectingUnit.unitStatus(state).subject
 
             assertInstanceOf(ForeignUnit::class.java, subject)
             assertEquals(p2Unit.id, (subject as ForeignUnit).id)
@@ -246,7 +246,7 @@ internal class MovementSelectingUnitPhaseTest {
             )
             val state = anAppState(cursor = HexCoordinates(0, 0), gameState = gameState, turnState = completedTurnState)
 
-            val subject = MovementPhase.SelectingUnit.unitStatus(state)
+            val subject = MovementPhase.SelectingUnit.unitStatus(state).subject
 
             assertInstanceOf(CombatUnit::class.java, subject)
             assertEquals(p1Unit.id, (subject as CombatUnit).id)

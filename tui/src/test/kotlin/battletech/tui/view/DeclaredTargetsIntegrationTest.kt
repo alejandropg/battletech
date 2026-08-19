@@ -56,7 +56,7 @@ internal class DeclaredTargetsIntegrationTest {
             drafts = emptyMap(),
         )
 
-        val renderData = phase.declaredTargetsRender(anAppState(phase, gameState = gameState, turnState = turnState))
+        val renderData = phase.declaredTargets(anAppState(phase, gameState = gameState, turnState = turnState), phase.allDrafts())
         val buffer = render(DeclaredTargetsView(renderData), 28, 30)
 
         val wolfRow = (0 until 30).first { buffer.line(it).contains("wolf") }
@@ -71,7 +71,7 @@ internal class DeclaredTargetsIntegrationTest {
         val gameState = GameState(UnitRoster(emptyList()), map)
         val phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
 
-        val renderData = phase.declaredTargetsRender(anAppState(phase, gameState = gameState, turnState = turnState))
+        val renderData = phase.declaredTargets(anAppState(phase, gameState = gameState, turnState = turnState), phase.drafts)
         val buffer = render(DeclaredTargetsView(renderData), 28, 20)
 
         assertTrue(buffer.text().contains("No declarations"))

@@ -95,19 +95,16 @@ internal class Workspace {
         val layout = panels.render(screen, inputs, visible, reservedTop = STATUS_BAR_HEIGHT, forgetReveal = forgetReveal)
 
         val matchEnded = appState.matchEnded
-        val prompt = when {
-            matchEnded != null -> {
-                val outcomeText = when (val outcome = matchEnded.outcome) {
-                    is MatchOutcome.Draw -> "Draw"
-                    is MatchOutcome.Victory -> "${playerName(outcome.winner)} wins!"
-                }
-                "Match over — $outcomeText  |  ${KeyGlyph.CTRL}c: quit"
+        val statusBarView = if (matchEnded != null) {
+            val outcomeText = when (val outcome = matchEnded.outcome) {
+                is MatchOutcome.Draw -> "Draw"
+                is MatchOutcome.Victory -> "${playerName(outcome.winner)} wins!"
             }
-            flash != null -> flash.text
-            else -> appState.phase.prompt(appState)
+            StatusBarView(appState.currentPhase, "Match over — $outcomeText  |  ${KeyGlyph.CTRL}c: quit", null)
+        } else {
+            val status = appState.phase.status(appState)
+            StatusBarView(appState.currentPhase, flash?.text ?: status.prompt, status.activePlayerLabel)
         }
-        val activePlayerInfo = if (matchEnded != null) null else appState.phase.activePlayerLabel(appState)
-        val statusBarView = StatusBarView(appState.currentPhase, prompt, activePlayerInfo)
         statusBarView.draw(screen.region(0, 0, width, STATUS_BAR_HEIGHT))
 
         if (matchEnded != null) {

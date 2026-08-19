@@ -21,6 +21,10 @@ public data class RenderData(
     val draftTorsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
     val validTargetPositions: Set<HexCoordinates> = emptySet(),
     val selectedTargetPosition: HexCoordinates? = null,
+    /** The hex a hovered/confirmed movement destination sits on — highlighted `BoardRole.BOARD_ACTIVE`. */
+    val pathDestination: HexCoordinates? = null,
+    /** The movement mode ([pathDestination]'s mode) drawn as a walk/run/jump glyph on the board. */
+    val movementMode: MovementMode? = null,
 ) {
     internal companion object {
         internal val EMPTY: RenderData = RenderData()

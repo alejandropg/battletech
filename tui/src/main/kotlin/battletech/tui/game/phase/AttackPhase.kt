@@ -18,9 +18,7 @@ import battletech.tactical.session.toAttackDeclarations
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.UnitId
-import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
-import battletech.tui.game.GamePanelId
 import battletech.tui.game.RenderData
 import battletech.tui.game.attackPlayerLabel
 import battletech.tui.game.displayName
@@ -35,7 +33,7 @@ import battletech.tui.input.Keymap
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
-import tenter.input.KeyHint
+import tenter.input.KeySection
 
 internal const val DECLARING_PROMPT = "Declare weapon fire"
 
@@ -50,16 +48,9 @@ internal sealed interface AttackPhase : Phase {
     public val drafts: Map<UnitId, UnitDeclaration>
     override val turnPhase: TurnPhase get() = attackTurnPhase
 
-    override fun visiblePanels(app: AppState): Set<GamePanelId> = buildSet {
-        // The declared-targets panel belongs to the weapon-attack declaration
-        // flow only; the physical-attack flow leaves it empty (see
-        // PhysicalAttackPhase), so reserving its column there would render as a
-        // blank gap. Targets/TargetStatus follow whatever the active sub-phase
-        // populates — SelectingAttacker has neither, Declaring has both.
-        if (attackTurnPhase == TurnPhase.WEAPON_ATTACK) add(GamePanelId.DECLARED_TARGETS)
-        if (attackRender(app)?.targets?.isNotEmpty() == true) add(GamePanelId.TARGETS)
-        if (targetStatusUnit(app) != null) add(GamePanelId.TARGET_STATUS)
-    }
+    /** Committed + [drafts] declarations, as the DECLARED TARGETS panel would render them. */
+    fun declaredTargets(app: AppState, drafts: Map<UnitId, UnitDeclaration>): DeclaredTargetsRender =
+        buildDeclaredTargetsRender(app, declaredTargetsViewingPlayer(app.turnState), drafts)
 
     public data class SelectingAttacker(
         override val attackTurnPhase: TurnPhase,
@@ -89,28 +80,21 @@ internal sealed interface AttackPhase : Phase {
             )
         }
 
-        override fun prompt(app: AppState): String {
+        override fun status(app: AppState): PhaseStatus {
             val turnState = app.turnState
-            if (turnState.attack.isComplete) return "All attacks declared"
+            if (turnState.attack.isComplete) return PhaseStatus("All attacks declared")
             val playerName = turnState.attack.activePlayer.displayName
-            return "$playerName: select a unit to attack"
+            return PhaseStatus("$playerName: select a unit to attack", playerName)
         }
 
-        override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.units.at(app.cursor)
+        override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(cursorUnitStatus(app))
 
-        override fun unitStatus(app: AppState): VisibleUnit? = cursorUnitStatus(app)
+        override fun panels(app: AppState): PhasePanels = PhasePanels(declaredTargets = declaredTargetsPanel(app, drafts))
 
-        override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState)
-
-        override fun declaredTargetsRender(app: AppState): DeclaredTargetsRender =
-            buildDeclaredTargetsRender(app, declaredTargetsViewingPlayer(app.turnState), drafts)
-
-        override fun render(app: AppState): RenderData =
+        override fun board(app: AppState): RenderData =
             if (drafts.isEmpty()) RenderData.EMPTY else RenderData(draftTorsoFacings = draftTorsoFacings(app, drafts))
 
-        override fun keyContext(): String = "WEAPON ATTACK"
-
-        override fun keyHints(): List<KeyHint> = Keymap.ATTACK_IDLE
+        override fun keySection(): KeySection = KeySection("WEAPON ATTACK", Keymap.ATTACK_IDLE)
     }
 
     public data class Declaring(
@@ -184,9 +168,10 @@ internal sealed interface AttackPhase : Phase {
             }
         }
 
-        override fun prompt(app: AppState): String = DECLARING_PROMPT
+        override fun status(app: AppState): PhaseStatus =
+            PhaseStatus(DECLARING_PROMPT, attackPlayerLabel(app.turnState, requireSeeded = false))
 
-        override fun render(app: AppState): RenderData {
+        override fun board(app: AppState): RenderData {
             val visibleState = app.visibleState
             val attacker = app.ownUnit(unitId)
             val view: PlayerView = app.viewFor(attacker.owner)
@@ -209,12 +194,13 @@ internal sealed interface AttackPhase : Phase {
             )
         }
 
-        override fun selectedUnit(app: AppState): VisibleUnit? = app.visibleState.units.byId(unitId)
+        override fun unitStatus(app: AppState): UnitStatusRender =
+            UnitStatusRender(app.visibleState.units.byId(unitId), pendingHeat(app))
 
         override fun onCancel(app: AppState): Transition =
             Transition(app.copy(phase = SelectingAttacker(attackTurnPhase, allDrafts())))
 
-        override fun pendingHeat(app: AppState): List<battletech.tactical.unit.HeatSource> {
+        private fun pendingHeat(app: AppState): List<battletech.tactical.unit.HeatSource> {
             val attacker = app.ownUnit(unitId)
             val firedWeaponIndices = weaponAssignments.values.flatten().toSet()
             return firedWeaponIndices.sorted().mapNotNull { index ->
@@ -222,7 +208,8 @@ internal sealed interface AttackPhase : Phase {
             }
         }
 
-        override fun attackRender(app: AppState): AttackRender {
+        /** This attacker's TARGETS-panel content — also the source of [panels]' visibility decisions. */
+        internal fun attackRender(app: AppState): AttackRender {
             val owner = app.visibleState.units.byId(unitId).owner
             val view = app.viewFor(owner)
             return AttackRender(
@@ -234,22 +221,18 @@ internal sealed interface AttackPhase : Phase {
             )
         }
 
-        override fun targetStatusUnit(app: AppState): ForeignUnit? {
-            val owner = app.visibleState.units.byId(unitId).owner
-            val view = app.viewFor(owner)
-            val targets = targetTable(view)
-            val target = targets.getOrNull(cursorTargetIndex) ?: return null
-            return app.visibleState.units.byId(target.unitId) as? ForeignUnit
+        override fun panels(app: AppState): PhasePanels {
+            val render = attackRender(app) // one targetInfos query, shared by TARGETS and TARGET_STATUS
+            val cursorTarget = render.targets.getOrNull(render.cursorTargetIndex)
+                ?.let { app.visibleState.units.byId(it.unitId) as? ForeignUnit }
+            return PhasePanels(
+                targets = render.takeIf { it.targets.isNotEmpty() },
+                targetStatus = cursorTarget,
+                declaredTargets = declaredTargetsPanel(app, allDrafts()),
+            )
         }
 
-        override fun activePlayerLabel(app: AppState): String? = attackPlayerLabel(app.turnState, requireSeeded = false)
-
-        override fun declaredTargetsRender(app: AppState): DeclaredTargetsRender =
-            buildDeclaredTargetsRender(app, declaredTargetsViewingPlayer(app.turnState), allDrafts())
-
-        override fun keyContext(): String = "DECLARE FIRE"
-
-        override fun keyHints(): List<KeyHint> = Keymap.WEAPON_DECLARING
+        override fun keySection(): KeySection = KeySection("DECLARE FIRE", Keymap.WEAPON_DECLARING)
 
         /** Query target infos for this attacker's current torso facing — one call per render entry point. */
         private fun targetTable(view: PlayerView): List<battletech.tactical.attack.weapon.TargetInfo> =
@@ -363,6 +346,17 @@ internal fun commitAttackImpulse(
  * running, else a stable default (PLAYER_1) so the panel renders sensibly before the sequence
  * seeds or after all attacks are declared.
  */
+/**
+ * DECLARED TARGETS content for [PhasePanels], deferred — see [PhasePanels.declaredTargets]'s KDoc.
+ * The declared-targets panel belongs to the weapon-attack declaration flow only; the physical-
+ * attack flow (see [PhysicalAttackPhase]) never reserves its column.
+ */
+internal fun AttackPhase.declaredTargetsPanel(
+    app: AppState,
+    drafts: Map<UnitId, UnitDeclaration>,
+): Lazy<DeclaredTargetsRender>? =
+    if (attackTurnPhase == TurnPhase.WEAPON_ATTACK) lazy { declaredTargets(app, drafts) } else null
+
 internal fun declaredTargetsViewingPlayer(turnState: TurnState): PlayerId =
     if (turnState.attack.sequence.order.isEmpty() || turnState.attack.isComplete) {
         PlayerId.PLAYER_1

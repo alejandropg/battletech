@@ -52,7 +52,7 @@ internal class TargetStatusViewTest {
 
     @Test
     fun `renders box border with title TARGET STATUS`() {
-        val view = TargetStatusView(null)
+        val view = TargetStatusView(aForeignUnit())
         val buffer = renderDecorated(view)
 
         assertEquals("╭", buffer.get(0, 0).char)
@@ -74,15 +74,6 @@ internal class TargetStatusViewTest {
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).char }
         assertEquals("u1: Hunchback", line)
         assertEquals(ChromeRole.ACCENT, buffer.get(2, 2).style.fg)
-    }
-
-    @Test
-    fun `renders No target selected when unit is null`() {
-        val view = TargetStatusView(null)
-        val buffer = renderDecorated(view)
-
-        val line = (2 until 20).joinToString("") { buffer.get(it, 2).char }
-        assertEquals("No target selected", line.trim())
     }
 
     @Test

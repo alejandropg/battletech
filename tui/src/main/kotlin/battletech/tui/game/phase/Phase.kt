@@ -1,16 +1,10 @@
 package battletech.tui.game.phase
 
-import battletech.tactical.model.HexCoordinates
-import battletech.tactical.model.MovementMode
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.unit.ForeignUnit
-import battletech.tactical.unit.HeatSource
-import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
-import battletech.tui.game.GamePanelId
 import battletech.tui.game.RenderData
 import com.github.ajalt.mordant.input.InputEvent
-import tenter.input.KeyHint
+import tenter.input.KeySection
 
 /**
  * UI sub-state machine for the active player phase. Phases are pure
@@ -22,48 +16,29 @@ import tenter.input.KeyHint
 internal sealed interface Phase {
     val turnPhase: TurnPhase
 
-    fun handle(event: InputEvent, app: AppState): Transition? = null
+    /** Null means this phase does not consume [event] — a real three-valued protocol [battletech.tui.loop.runLoop] relies on. */
+    fun handle(event: InputEvent, app: AppState): Transition?
 
-    fun render(app: AppState): RenderData = RenderData.EMPTY
+    fun board(app: AppState): RenderData = RenderData.EMPTY
 
-    fun prompt(app: AppState): String
-
-    fun selectedUnit(app: AppState): VisibleUnit? = null
-
-    fun unitStatus(app: AppState): VisibleUnit? = selectedUnit(app)
+    /** This phase's contribution to the status bar: the prompt, and the active player if any. */
+    fun status(app: AppState): PhaseStatus
 
     /**
-     * Heat the [selectedUnit] *would* generate if the in-progress declaration
-     * (hovered move / selected weapons) were committed. Rendered gray in the
-     * UNIT STATUS HEAT panel; empty when there is nothing pending.
+     * This phase's contribution to the UNIT STATUS panel: the focused unit (if any) plus the heat
+     * an in-progress declaration would generate if committed. See [UnitStatusRender]'s KDoc for
+     * why the two are bundled.
      */
-    fun pendingHeat(app: AppState): List<HeatSource> = emptyList()
-
-    fun pathDestination(): HexCoordinates? = null
-
-    fun attackRender(app: AppState): AttackRender? = null
-
-    fun targetStatusUnit(app: AppState): ForeignUnit? = null
+    fun unitStatus(app: AppState): UnitStatusRender
 
     /**
-     * Phase-local side panels the active phase wants visible. The always-on
-     * and cross-phase panels (LOG, UNIT STATUS, ATTACK RESULTS) are decided by
-     * [battletech.tui.game.PanelVisibility], not here — a phase only declares
-     * the panels that belong to its own workflow.
+     * Phase-local side panels the active phase wants visible, as content — see [PhasePanels]'s
+     * KDoc for why presence and visibility are the same fact here.
      */
-    fun visiblePanels(app: AppState): Set<GamePanelId> = emptySet()
+    fun panels(app: AppState): PhasePanels = PhasePanels.NONE
 
-    fun declaredTargetsRender(app: AppState): DeclaredTargetsRender? = null
-
-    fun movementMode(): MovementMode? = null
-
-    fun activePlayerLabel(app: AppState): String? = null
-
-    /** Section title for this phase's local keys in the HELP panel. */
-    fun keyContext(): String = turnPhase.name
-
-    /** The keys local to this phase, shown under [keyContext] in the HELP panel. */
-    fun keyHints(): List<KeyHint> = emptyList()
+    /** This phase's local keys, shown as their own section in the HELP panel. */
+    fun keySection(): KeySection
 }
 
 /**
