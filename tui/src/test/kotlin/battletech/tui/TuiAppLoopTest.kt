@@ -582,9 +582,10 @@ internal class TuiAppLoopTest {
     }
 
     // -------------------------------------------------------------------------
-    // Test 12: alt+h opens/closes the HELP panel; alt+0 still collapses LOG to
-    // its stub (the char-keyed panel scheme is invisible to existing muscle
-    // memory); alt+h keeps working once the match has ended.
+    // Test 12: alt+h opens/closes the HELP panel (and focuses it while open);
+    // alt+9 focuses LOG so `-` can minimize it to its stub; arrows belong to
+    // the focused panel, not the phase; alt+h keeps working once the match has
+    // ended.
     // -------------------------------------------------------------------------
 
     @Test
@@ -616,7 +617,7 @@ internal class TuiAppLoopTest {
     }
 
     @Test
-    fun `alt+0 still collapses LOG to its stub`() = runTest(UnconfinedTestDispatcher()) {
+    fun `alt+9 focuses LOG, then minus minimizes it to its stub`() = runTest(UnconfinedTestDispatcher()) {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -629,14 +630,16 @@ internal class TuiAppLoopTest {
             )
         }
 
-        assertTrue(recorder.output().contains(LogView.TITLE), "LOG should render expanded initially")
+        assertTrue(recorder.output().contains(LogView.TITLE), "LOG should render at NORMAL initially")
+
+        internalEvents.send(UiEvent.Input(KeyboardEvent("9", alt = true))) // focus LOG (badge '9')
 
         recorder.clearOutput()
-        internalEvents.send(UiEvent.Input(KeyboardEvent("0", alt = true)))
+        internalEvents.send(UiEvent.Input(KeyboardEvent("-"))) // NORMAL -> MINIMIZED
 
-        // A collapsed panel draws its title one character per row, so the horizontal
+        // A minimized panel draws its title one character per row, so the horizontal
         // "LOG" string no longer appears anywhere in the frame — it becomes a stub.
-        assertFalse(recorder.output().contains(LogView.TITLE), "alt+0 should collapse LOG to a stub")
+        assertFalse(recorder.output().contains(LogView.TITLE), "'-' should minimize the focused LOG panel to a stub")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -738,12 +741,65 @@ internal class TuiAppLoopTest {
                 "an unrelated re-render must not snap the board back to the cursor",
             )
 
+            // Alt+h opened AND focused HELP — while it's focused, arrow keys scroll HELP rather
+            // than reaching the phase (see RunLoop's dispatch order). Close it again so focus
+            // returns to the board and ArrowDown reaches the phase's cursor movement below.
+            internalEvents.send(UiEvent.Input(KeyboardEvent("h", alt = true)))
+
             // Moving the cursor is a reveal-target change, so follow re-engages and brings it back.
             recorder.clearOutput()
             internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
             assertTrue(
                 recorder.output().contains("QQ"),
                 "cursor movement should follow the board back to the cursor",
+            )
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+
+    // -------------------------------------------------------------------------
+    // Test 14: arrows belong to the FOCUSED panel. While a side panel holds
+    // focus they scroll it and never reach the phase; once the board is focused
+    // again the same key moves the cursor as it always did.
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `arrows scroll the focused side panel instead of moving the cursor, and reach the phase again once the board is focused`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    terminal = terminal,
+                    renderer = renderer,
+                    initialState = buildWideMapAppState(),
+                )
+            }
+
+            // Same idiom as the pan test above: push the marker unit off the left edge, so any
+            // cursor movement (which re-engages auto-follow) would visibly drag it back.
+            repeat(20) { internalEvents.send(UiEvent.Input(KeyboardEvent("l"))) }
+
+            // Focus LOG. ArrowDown now scrolls LOG; if it still reached the phase the cursor would
+            // move, follow would re-engage, and the marker would be redrawn.
+            internalEvents.send(UiEvent.Input(KeyboardEvent("9", alt = true)))
+            recorder.clearOutput()
+            internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
+            assertFalse(
+                recorder.output().contains("QQ"),
+                "ArrowDown must not reach the phase while a side panel is focused",
+            )
+
+            // Alt+0 focuses the board again, and the very same key moves the cursor once more.
+            internalEvents.send(UiEvent.Input(KeyboardEvent("0", alt = true)))
+            recorder.clearOutput()
+            internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
+            assertTrue(
+                recorder.output().contains("QQ"),
+                "ArrowDown must reach the phase once the board is focused again",
             )
 
             internalEvents.send(UiEvent.Quit)

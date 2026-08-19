@@ -5,6 +5,7 @@ import battletech.tui.aGameState
 import battletech.tui.anAppState
 import battletech.tui.game.GamePanelId
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 
 internal class PhaseVisiblePanelsTest {
@@ -35,5 +36,21 @@ internal class PhaseVisiblePanelsTest {
     fun `physical attacker selection declares no panels until targeting`() {
         val phase = PhysicalAttackPhase.SelectingAttacker()
         assertEquals(emptySet<GamePanelId>(), phase.visiblePanels(anAppState(phase, gameState = gameState)))
+    }
+
+    @Test
+    fun `no phase ever declares BOARD — it is the PanelSet's main panel, not a side panel`() {
+        val phases = listOf(
+            MovementPhase.SelectingUnit,
+            AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK),
+            AttackPhase.SelectingAttacker(TurnPhase.PHYSICAL_ATTACK),
+            PhysicalAttackPhase.SelectingAttacker(),
+        )
+        for (phase in phases) {
+            assertFalse(
+                phase.visiblePanels(anAppState(phase, gameState = gameState)).contains(GamePanelId.BOARD),
+                "$phase must never declare BOARD",
+            )
+        }
     }
 }

@@ -43,16 +43,19 @@ internal data class AppState(
     val cursor: HexCoordinates,
     // Whether the HELP panel exists this frame — a user action recorded here (like any other
     // AppState field a phase or event can drive), NOT a display preference. It feeds
-    // battletech.tui.game.PanelVisibility, which battletech.tui.view.Panel cannot see; a panel's
-    // own collapsed-vs-expanded choice, in contrast, has no reader outside its own rendering and
-    // so lives on the Panel instead. See PanelVisibility's KDoc for the `Alt+h` vs `Alt+<key>`
-    // distinction this split exists to express.
+    // battletech.tui.game.PanelVisibility, which tenter.panel.Panel cannot see; a panel's own
+    // state (minimized/normal/maximized) and scroll, in contrast, have no reader outside their
+    // own rendering and so live on the Panel instead. See PanelVisibility's KDoc for the `Alt+h`
+    // vs `Alt+<key>` distinction this split exists to express.
     val helpOpen: Boolean = false,
     val lastAttackResults: List<AttackResult>? = null,
     val matchEnded: MatchEnded? = null,
-    // Read by both rendering (Workspace) and input mapping (SelectingCommon's click-to-hex),
-    // unlike a side panel's scroll — which only rendering ever reads, and so lives on the Panel
-    // itself (see Panel's KDoc) — so this one stays here, the one place both readers can see it.
+    // A read-only mirror of the board panel's settled offset, written after every render solely
+    // so the phases' click-to-hex mapping (SelectingCommon) can stay a pure `(event, state) ->
+    // Transition` function without reaching into Workspace. Nothing writes it except RunLoop's
+    // post-render sync — unlike a side panel's scroll, which only rendering ever reads and so
+    // lives on the Panel itself (see tenter.panel.Panel's KDoc), this is the one piece of panel
+    // state both readers (rendering and input mapping) need to see.
     val boardScroll: ScrollOffset = ScrollOffset.ZERO,
 ) {
     /**

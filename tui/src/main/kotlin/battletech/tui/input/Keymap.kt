@@ -66,8 +66,9 @@ internal object Keymap {
     val GLOBAL: KeySection = KeySection(
         title = "GLOBAL",
         hints = listOf(
-            KeyHint("${KeyGlyph.ALT}h", "toggle HELP"),
-            KeyHint("${KeyGlyph.ALT}0-5", "collapse/expand a panel"),
+            KeyHint("${KeyGlyph.ALT}0-9/${KeyGlyph.ALT}h", "focus a panel"),
+            KeyHint("+/-", "resize focused panel"),
+            KeyHint("↑↓/PgUp/PgDn", "scroll focused panel"),
             KeyHint("wheel", "scroll a panel"),
             KeyHint("hjkl/${KeyGlyph.CTRL}←→↑↓", "pan board"),
             KeyHint("Home", "recenter board on cursor"),

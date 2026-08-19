@@ -142,6 +142,19 @@ internal class PanelVisibilityTest {
     }
 
     @Test
+    fun `BOARD is never in the visible set — it is the PanelSet's main panel, always present`() {
+        val appState = AppState(
+            gameState = emptyState,
+            phase = MovementPhase.SelectingUnit,
+            cursor = cursor,
+        )
+
+        val visible = PanelVisibility.visiblePanels(appState)
+
+        assertFalse(visible.contains(GamePanelId.BOARD))
+    }
+
+    @Test
     fun `results panel hidden during weapon attack phase`() {
         val appState = AppState(
             gameState = emptyState,

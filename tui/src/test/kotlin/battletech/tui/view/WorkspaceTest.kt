@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.screen.ChromeRole
 import tenter.view.HelpView
 import tenter.view.ScrollOffset
 import tenter.view.text
@@ -23,8 +24,8 @@ import tenter.view.text
  * `FrameLayout` + `PlacedPanel` + `composeFrame`/`Frame` — see its KDoc for why panel state no
  * longer round-trips through `AppState` the way it used to.
  *
- * Panel-level persistence (collapse, scroll surviving across renders on their own) is [PanelTest]'s
- * job; these tests cover the composition: layout, visibility, hit-testing, and the board.
+ * Panel-level persistence (state, scroll surviving across renders on their own) is [PanelTest]'s
+ * job; these tests cover the composition: layout, visibility, focus, hit-testing, and the board.
  */
 internal class WorkspaceTest {
 
@@ -55,15 +56,19 @@ internal class WorkspaceTest {
     }
 
     @Test
-    fun `toggleCollapsed shrinks a panel to its stub — no more horizontal title, board absorbs the freed width`() {
+    fun `minimizing the focused panel shrinks it to its stub — no more horizontal title, board absorbs the freed width`() {
         val workspace = Workspace()
         workspace.render(appState, width = 120, height = 40, flash = null)
 
-        workspace.toggleCollapsed(GamePanelId.LOG)
+        workspace.focus(GamePanelId.LOG)
+        workspace.cycleFocusedState(-1) // NORMAL -> MINIMIZED
         val buffer = workspace.render(appState, width = 120, height = 40, flash = null)
 
-        assertFalse(buffer.text().contains(LogView.TITLE), "collapsed panel draws its title one letter per row")
-        assertNull(workspace.panelAt(118, 10), "a collapsed panel is not a scroll target")
+        assertFalse(buffer.text().contains(LogView.TITLE), "minimized panel draws its title one letter per row")
+        // LOG's stub is 7 wide, so it now spans columns 113..119 — and unlike the collapsed panels
+        // this replaced, a stub IS a hit-test target: it has nothing to scroll, but swallowing the
+        // click keeps it from falling through to the board's click-to-hex mapping.
+        assertEquals(GamePanelId.LOG, workspace.panelAt(118, 10), "a minimized stub is still a scroll target")
     }
 
     @Test
@@ -98,16 +103,43 @@ internal class WorkspaceTest {
     }
 
     @Test
-    fun `boardOffset reflects the given AppState_boardScroll once the cursor isn't driving auto-follow`() {
+    fun `boardOffset reflects a manual pan once the cursor isn't driving auto-follow`() {
         val wideMap = anAppState(MovementPhase.SelectingUnit, gameState = aGameState(map = aGameMap(cols = 60, rows = 20)))
         val workspace = Workspace()
 
-        // First render follows the cursor into view — same as any first render. The cursor doesn't
-        // move on the second render, so its reveal target doesn't either, and the given offset sticks.
+        // First render follows the cursor into view. The cursor doesn't move afterward, so a
+        // manual pan on top of that settled offset must survive the next render untouched.
         workspace.render(wideMap, width = 80, height = 30, flash = null)
-        workspace.render(wideMap.copy(boardScroll = ScrollOffset(5, 0)), width = 80, height = 30, flash = null)
+        workspace.panBoard(5, 0)
+        workspace.render(wideMap, width = 80, height = 30, flash = null)
 
         assertEquals(5, workspace.boardOffset.x)
+    }
+
+    @Test
+    fun `the focused panel renders a green border while unfocused panels render neutral`() {
+        val workspace = Workspace()
+        workspace.focus(GamePanelId.LOG)
+
+        val buffer = workspace.render(appState, width = 120, height = 40, flash = null)
+
+        // MOVEMENT's visible panels are UNIT_STATUS then LOG (Panels.build order), each 28 wide,
+        // right-aligned against a 120-wide screen: UNIT_STATUS spans 64..91, LOG spans 92..119.
+        assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, buffer.get(92, 4).style.fg, "LOG (focused) border corner")
+        assertEquals(ChromeRole.PANEL_BORDER, buffer.get(64, 4).style.fg, "UNIT_STATUS (unfocused) border corner")
+    }
+
+    @Test
+    fun `a maximized panel hides the board and the other panels`() {
+        val workspace = Workspace()
+        workspace.focus(GamePanelId.LOG)
+        workspace.cycleFocusedState(1) // NORMAL -> MAXIMIZED
+
+        val buffer = workspace.render(appState, width = 120, height = 40, flash = null)
+
+        assertTrue(buffer.text().contains(LogView.TITLE))
+        assertFalse(buffer.text().contains(UnitStatusView.TITLE), "UNIT_STATUS must not be laid out while LOG is maximized")
+        assertFalse(buffer.text().contains("TACTICAL MAP"), "the board must not be laid out while a side panel is maximized")
     }
 
     @Test

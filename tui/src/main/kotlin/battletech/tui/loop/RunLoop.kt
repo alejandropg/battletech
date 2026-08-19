@@ -23,9 +23,9 @@ import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import tenter.input.ChromeInput
 import tenter.input.PanAction
+import tenter.input.ScrollAction
 import tenter.view.FlashMessage
 import tenter.screen.ScreenRenderer
-import tenter.view.ScrollOffset
 
 /**
  * Headless-testable event loop. Collects [events] until [UiEvent.Quit] is seen.
@@ -47,9 +47,10 @@ internal suspend fun runLoop(
     var flashJob: Job? = null
     var size = currentSize(terminal)
 
-    // One Workspace for this whole run: every panel remembers its own collapsed state, scroll
-    // offset, and auto-follow reveal across frames (see Panel's KDoc) — nothing but the board's
-    // scroll offset round-trips back through appState (see AppState.boardScroll's KDoc).
+    // One Workspace for this whole run: every panel remembers its own state (minimized/normal/
+    // maximized), scroll offset, and auto-follow reveal across frames (see Panel's KDoc) —
+    // nothing but the board's scroll offset round-trips back through appState (see
+    // AppState.boardScroll's KDoc).
     val workspace = Workspace()
 
     /**
@@ -62,8 +63,8 @@ internal suspend fun runLoop(
      * viewport changes but content-space reveal does not, and a shrink could otherwise strand the
      * cursor off-screen.
      */
-    fun render(recenterBoard: Boolean = false, forgetReveal: Boolean = false) {
-        val buffer = workspace.render(appState, size.width, size.height, activeFlash, recenterBoard, forgetReveal)
+    fun render(forgetReveal: Boolean = false) {
+        val buffer = workspace.render(appState, size.width, size.height, activeFlash, forgetReveal)
         renderer.render(buffer)
         appState = appState.copy(boardScroll = workspace.boardOffset)
     }
@@ -99,38 +100,73 @@ internal suspend fun runLoop(
 
                     val panel = (event as? KeyboardEvent)?.let(ChromeInput::panelKey)?.let(GamePanelId::byBadge)
                     if (panel != null) {
-                        // Alt+h is a different action from every other panel's Alt+<key>: it
+                        // Alt+h is a different action from every other panel's Alt+<key>: it also
                         // toggles whether HELP EXISTS this frame (an AppState fact PanelVisibility
-                        // reads), not a display preference the panel remembers about itself — see
-                        // AppState.helpOpen's KDoc. Every other panel's key toggles its own
-                        // collapsed-vs-expanded state directly, and only when it's actually shown
-                        // this frame — collapsing a panel that isn't on screen would be a no-op
+                        // reads), not just a focus request — see AppState.helpOpen's KDoc. Every
+                        // other panel's chord only focuses it, and only when it's actually shown
+                        // this frame — focusing a panel that isn't on screen would be a no-op
                         // anyway, so the guard just makes that explicit.
                         if (panel == GamePanelId.HELP) {
-                            appState = appState.copy(helpOpen = !appState.helpOpen)
-                        } else if (panel in PanelVisibility.visiblePanels(appState)) {
-                            workspace.toggleCollapsed(panel)
+                            if (appState.helpOpen && workspace.focused == GamePanelId.HELP) {
+                                appState = appState.copy(helpOpen = false)
+                                workspace.focus(GamePanelId.BOARD)
+                            } else {
+                                appState = appState.copy(helpOpen = true)
+                                workspace.focus(GamePanelId.HELP)
+                            }
+                        } else if (panel == GamePanelId.BOARD || panel in PanelVisibility.visiblePanels(appState)) {
+                            workspace.focus(panel)
                         }
                         render()
                         return@collect
                     }
 
-                    // Manual board panning: independent of game phase and, like scroll and
-                    // panel-collapse above, still active once the match has ended.
+                    // `+`/`-`: cycle the focused panel's state. Always consumed — a no-op on the board.
+                    val cycle = (event as? KeyboardEvent)?.let(ChromeInput::stateCycle)
+                    if (cycle != null) {
+                        workspace.cycleFocusedState(cycle)
+                        render()
+                        return@collect
+                    }
+
+                    // Keyboard scroll of the focused panel — never the board, so wasd/arrows still
+                    // reach the phase there. hjkl/ctrl+arrows (board pan) are excluded by
+                    // ChromeInput.scrollAction itself.
+                    if (workspace.focused != GamePanelId.BOARD) {
+                        when (val scroll = (event as? KeyboardEvent)?.let(ChromeInput::scrollAction)) {
+                            is ScrollAction.Lines -> {
+                                workspace.scrollFocused(0, scroll.delta)
+                                render()
+                                return@collect
+                            }
+                            is ScrollAction.Pages -> {
+                                workspace.pageFocused(scroll.delta)
+                                render()
+                                return@collect
+                            }
+                            null -> Unit
+                        }
+                    }
+
+                    // Manual board panning: independent of game phase and focus, and, like scroll
+                    // and panel-focus above, still active once the match has ended.
                     val pan = (event as? KeyboardEvent)?.let(InputMapper::mapPanEvent)
                     if (pan != null) {
                         when (pan) {
                             is PanAction.Pan -> {
-                                appState = appState.copy(boardScroll = appState.boardScroll + ScrollOffset(pan.dx, pan.dy))
+                                workspace.panBoard(pan.dx, pan.dy)
                                 render()
                             }
-                            PanAction.Recenter -> render(recenterBoard = true)
+                            PanAction.Recenter -> {
+                                workspace.recenterBoard()
+                                render()
+                            }
                         }
                         return@collect
                     }
 
                     // Block game input (movement/attacks) once the match is over.
-                    // Scroll, panel-collapse, and board panning are handled above and remain active.
+                    // Scroll, panel-focus, and board panning are handled above and remain active.
                     // Only quit (handled by takeWhile) exits the loop.
                     if (appState.matchEnded != null) {
                         render()

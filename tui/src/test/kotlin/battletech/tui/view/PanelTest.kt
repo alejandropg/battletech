@@ -6,22 +6,24 @@ import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.MovementPhase
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.panel.Panel
+import tenter.panel.PanelState
+import tenter.panel.VerticalTitleView
 import tenter.screen.Canvas
+import tenter.screen.ChromeRole
 import tenter.screen.ScreenBuffer
 import tenter.view.View
 import tenter.view.render
 import tenter.view.text
 
 /**
- * [Panel] owns its own collapsed state, scroll offset, and auto-follow reveal across renders — see
- * its KDoc; this is what deleted the scroll round trip through `AppState` that `RunLoop.syncScroll`
- * used to do. These tests exercise that persistence directly against a bare [Panel], with no
- * [Workspace], `AppState` mutation, or real game content in the way.
+ * [Panel] owns its own state (minimized/normal/maximized), scroll offset, and auto-follow reveal
+ * across renders — see its KDoc; this is what deleted the scroll round trip through `AppState`
+ * that `RunLoop.syncScroll` used to do. These tests exercise that persistence directly against a
+ * bare [Panel], with no [Workspace], `AppState` mutation, or real game content in the way.
  */
 internal class PanelTest {
 
@@ -35,61 +37,29 @@ internal class PanelTest {
         }
     }
 
-    private fun renderPanel(panel: GamePanel, width: Int = 30, height: Int = 10, forgetReveal: Boolean = false): ScreenBuffer {
+    private fun renderPanel(
+        panel: GamePanel,
+        width: Int = 30,
+        height: Int = 10,
+        focused: Boolean = false,
+        forgetReveal: Boolean = false,
+    ): ScreenBuffer {
         val buffer = ScreenBuffer(width, height)
-        panel.render(Canvas.of(buffer), inputs, forgetReveal)
+        panel.render(Canvas.of(buffer), inputs, focused = focused, forgetReveal = forgetReveal)
         return buffer
     }
 
     @Test
-    fun `starts expanded at its expandedWidth`() {
-        val panel: GamePanel = Panel(GamePanelId.LOG, "T", expandedWidth = 28) { stubContent(3) }
+    fun `starts at NORMAL, at its normalWidth`() {
+        val panel: GamePanel = Panel(GamePanelId.LOG, "T", normalWidth = 28, normal = { stubContent(3) })
 
         assertEquals(28, panel.width)
-        assertFalse(panel.collapsed)
+        assertEquals(PanelState.NORMAL, panel.state)
     }
 
     @Test
-    fun `toggleCollapsed shrinks to the stub width and back`() {
-        val panel: GamePanel = Panel(GamePanelId.LOG, "T", expandedWidth = 28) { stubContent(3) }
-
-        panel.toggleCollapsed()
-        assertEquals(Panel.COLLAPSED_WIDTH, panel.width)
-        assertTrue(panel.collapsed)
-
-        panel.toggleCollapsed()
-        assertEquals(28, panel.width)
-        assertFalse(panel.collapsed)
-    }
-
-    @Test
-    fun `collapsed state persists across renders with no external round trip`() {
-        val panel: GamePanel = Panel(GamePanelId.LOG, "T", expandedWidth = 28) { stubContent(3) }
-        panel.toggleCollapsed()
-
-        renderPanel(panel)
-        renderPanel(panel)
-
-        assertTrue(panel.collapsed, "collapse must survive repeated renders on its own")
-    }
-
-    @Test
-    fun `a collapsed panel never calls build`() {
-        var built = false
-        val panel: GamePanel = Panel(GamePanelId.LOG, "T", expandedWidth = 28) {
-            built = true
-            stubContent(3)
-        }
-        panel.toggleCollapsed()
-
-        renderPanel(panel)
-
-        assertFalse(built, "Panel.build must not run when the panel is collapsed")
-    }
-
-    @Test
-    fun `an expanded panel whose build returns null renders nothing`() {
-        val panel: GamePanel = Panel(GamePanelId.LOG, "T", expandedWidth = 28) { null }
+    fun `a panel whose build returns null renders nothing`() {
+        val panel: GamePanel = Panel(GamePanelId.LOG, "T", normalWidth = 28, normal = { null })
 
         val buffer = renderPanel(panel)
 
@@ -98,12 +68,12 @@ internal class PanelTest {
 
     @Test
     fun `scroll offset persists across renders with no explicit re-scroll`() {
-        fun freshPanel(): GamePanel = Panel(GamePanelId.LOG, "T", expandedWidth = 30) { stubContent(20) }
+        fun freshPanel(): GamePanel = Panel(GamePanelId.LOG, "T", normalWidth = 30, normal = { stubContent(20) })
 
         val unscrolled = renderPanel(freshPanel())
 
         val panel = freshPanel()
-        panel.scrollBy(3)
+        panel.scrollBy(0, 3)
         val firstAfterScroll = renderPanel(panel)
         val secondAfterScroll = renderPanel(panel) // no scrollBy call between renders
 
@@ -119,10 +89,10 @@ internal class PanelTest {
                 canvas.markReveal(0, 15, canvas.width, 1)
             }
         }
-        val panel: GamePanel = Panel(GamePanelId.LOG, "T", expandedWidth = 30) { revealing }
+        val panel: GamePanel = Panel(GamePanelId.LOG, "T", normalWidth = 30, normal = { revealing })
 
         renderPanel(panel) // first render follows the reveal target into view
-        panel.scrollBy(-100) // manual scroll away; clamped to 0 on the next render
+        panel.scrollBy(0, -100) // manual scroll away; clamped to 0 on the next render
 
         // Without forgetReveal, the reveal target hasn't moved since last render, so the manual scroll sticks.
         val stayedAway = renderPanel(panel)
@@ -130,5 +100,65 @@ internal class PanelTest {
         val forced = renderPanel(panel, forgetReveal = true)
 
         assertNotEquals(stayedAway.text(), forced.text(), "forgetReveal should re-follow even though the reveal target itself didn't move")
+    }
+
+    @Test
+    fun `focused renders the border and title in the focus color, unfocused renders neutral`() {
+        val panel: GamePanel = Panel(GamePanelId.LOG, "T", normalWidth = 30, normal = { stubContent(3) })
+
+        val focused = renderPanel(panel, focused = true)
+        assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, focused.get(0, 0).style.fg, "border corner")
+        assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, focused.get(2, 0).style.fg, "badge/title run")
+
+        val unfocused = renderPanel(panel, focused = false)
+        assertEquals(ChromeRole.PANEL_BORDER, unfocused.get(0, 0).style.fg, "border corner")
+        assertEquals(ChromeRole.PANEL_BORDER, unfocused.get(2, 0).style.fg, "badge/title run")
+    }
+
+    @Test
+    fun `a minimized panel keeps its badge in the border and never builds its NORMAL view`() {
+        var normalBuilds = 0
+        val panel: GamePanel = Panel(
+            GamePanelId.LOG,
+            LOG_TITLE,
+            normalWidth = 28,
+            normal = {
+                normalBuilds++
+                stubContent(3)
+            },
+            minimized = { VerticalTitleView(LOG_TITLE) },
+        )
+        panel.cycleState(-1) // NORMAL -> MINIMIZED
+
+        val buffer = renderPanel(panel, width = Panel.MINIMIZED_WIDTH, height = 10)
+
+        // The full "[badge] title" run can't fit in a 7-column stub, so Bordered falls back to the
+        // badge alone — the one thing that still identifies which panel this stub is (Alt+9 here).
+        assertEquals("[", buffer.get(2, 0).char)
+        assertEquals(GamePanelId.LOG.badge.toString(), buffer.get(3, 0).char)
+        assertEquals("]", buffer.get(4, 0).char)
+
+        // Title runs vertically down the stub's 3-column content area: border(1) + gutter(1) puts
+        // its center at column 3, and the reclaimable top padding row puts its first letter at row 2.
+        assertEquals("L", buffer.get(3, 2).char)
+        assertEquals("O", buffer.get(3, 3).char)
+        assertEquals("G", buffer.get(3, 4).char)
+
+        assertEquals(0, normalBuilds, "the NORMAL builder must not run while the panel is minimized")
+    }
+
+    @Test
+    fun `a focused panel's scrollbar thumb also renders in the focus color`() {
+        val panel: GamePanel = Panel(GamePanelId.LOG, "T", normalWidth = 30, normal = { stubContent(20) })
+
+        val buffer = renderPanel(panel, width = 30, height = 10, focused = true)
+
+        val thumbRow = (1..8).first { buffer.get(29, it).char == "▐" }
+        assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, buffer.get(29, thumbRow).style.fg)
+    }
+
+    private companion object {
+        /** A three-letter title, so the vertical stub's letters land on known rows. */
+        private const val LOG_TITLE = "LOG"
     }
 }
