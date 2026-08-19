@@ -10,8 +10,10 @@ import tenter.view.ScrollOffset
  * declared (the board) — it is always visible, always focusable, and never maximized.
  */
 public class PanelSet<K : PanelId, I>(
-    private val main: Panel<K, I>,
-    private val sides: List<Panel<K, I>>,
+    /** The main panel — read it for identity and declarations; every state change goes through this set. */
+    public val main: Panel<K, I>,
+    /** The side panels in layout order — as with [main], read-only from outside; mutate via this set. */
+    public val sides: List<Panel<K, I>>,
 ) {
     private var pendingRecenter: K? = null
     private var lastLayout: PanelLayout<K, I>? = null

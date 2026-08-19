@@ -7,7 +7,6 @@ import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.MovementPhase
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.panel.Panel
 import tenter.panel.PanelState
@@ -58,12 +57,15 @@ internal class PanelTest {
     }
 
     @Test
-    fun `a panel whose build returns null renders nothing`() {
-        val panel: GamePanel = Panel(GamePanelId.LOG, "T", normalWidth = 28, normal = { null })
+    fun `renders its chrome even when the content view draws nothing`() {
+        // A builder always returns a view (see Panel's KDoc — "nothing to show" is a visibility
+        // decision, not a builder's), so an empty view still gets a bordered, badged panel.
+        val panel: GamePanel = Panel(GamePanelId.LOG, "T", normalWidth = 28, normal = { EMPTY_VIEW })
 
         val buffer = renderPanel(panel)
 
-        assertTrue(buffer.text().isBlank(), "no box, no content — build declined")
+        assertEquals("╭", buffer.get(0, 0).char, "the border is drawn regardless of what the content view paints")
+        assertEquals(GamePanelId.LOG.badge.toString(), buffer.get(3, 0).char, "the badge identifies the panel")
     }
 
     @Test
@@ -160,5 +162,10 @@ internal class PanelTest {
     private companion object {
         /** A three-letter title, so the vertical stub's letters land on known rows. */
         private const val LOG_TITLE = "LOG"
+
+        /** A valid view that paints nothing — the closest thing to the old "build declined" case. */
+        private val EMPTY_VIEW = object : View {
+            override fun draw(canvas: Canvas) = Unit
+        }
     }
 }

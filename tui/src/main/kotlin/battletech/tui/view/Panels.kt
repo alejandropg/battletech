@@ -31,21 +31,20 @@ internal object Panels {
                 TargetStatusView(frame.targetStatusUnit)
             },
             sidePanel(GamePanelId.TARGETS, TargetsView.TITLE) { frame ->
-                frame.attackRender?.let {
-                    TargetsView(
-                        targets = it.targets,
-                        weaponAssignments = it.weaponAssignments,
-                        primaryTargetId = it.primaryTargetId,
-                        cursorTargetIndex = it.cursorTargetIndex,
-                        cursorWeaponIndex = it.cursorWeaponIndex,
-                    )
-                }
+                val render = frame.attackRender
+                TargetsView(
+                    targets = render.targets,
+                    weaponAssignments = render.weaponAssignments,
+                    primaryTargetId = render.primaryTargetId,
+                    cursorTargetIndex = render.cursorTargetIndex,
+                    cursorWeaponIndex = render.cursorWeaponIndex,
+                )
             },
             sidePanel(GamePanelId.DECLARED_TARGETS, DeclaredTargetsView.TITLE) { frame ->
-                frame.declaredTargets?.let(::DeclaredTargetsView)
+                DeclaredTargetsView(frame.declaredTargets)
             },
             sidePanel(GamePanelId.ATTACK_RESULTS, AttackResultsView.TITLE) { frame ->
-                frame.attackResults?.let(::AttackResultsView)
+                AttackResultsView(frame.attackResults)
             },
             sidePanel(GamePanelId.UNIT_STATUS, UnitStatusView.TITLE) { frame ->
                 UnitStatusView(frame.unitStatus, frame.pendingHeat)
@@ -71,7 +70,7 @@ internal object Panels {
         id: GamePanelId,
         title: String,
         width: Int = 28,
-        build: (PanelInputs) -> View?,
+        build: (PanelInputs) -> View,
     ): GamePanel = Panel(
         id = id,
         title = title,

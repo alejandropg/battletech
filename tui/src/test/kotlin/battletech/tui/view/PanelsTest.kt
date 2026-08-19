@@ -1,64 +1,52 @@
 package battletech.tui.view
 
-import battletech.tui.aGameState
-import battletech.tui.anAppState
 import battletech.tui.game.GamePanelId
-import battletech.tui.game.phase.MovementPhase
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.panel.PanelState
-import tenter.screen.Canvas
-import tenter.screen.ScreenBuffer
 
+/**
+ * What [Panels.build] DECLARES — which panel is main, and which [PanelState]s each one offers.
+ * Read straight off the built [GamePanelSet] rather than off a rendered frame: a panel's builder
+ * now always returns a view (see [tenter.panel.Panel]'s KDoc), so rendering one would demand a
+ * frame carrying every panel's data, which has nothing to do with what this test is about.
+ */
 internal class PanelsTest {
-
-    private val inputs = PanelInputs(anAppState(MovementPhase.SelectingUnit, gameState = aGameState()))
-    private val allSideIds = GamePanelId.entries.toSet() - GamePanelId.BOARD
-
-    private fun renderAll(set: GamePanelSet): GamePanelLayout =
-        set.render(Canvas.of(ScreenBuffer(300, 60)), inputs, allSideIds, reservedTop = 0)
 
     @Test
     fun `the board is the main panel`() {
-        val layout = renderAll(Panels.build())
-
-        assertEquals(GamePanelId.BOARD, layout.main?.panel?.id)
+        assertEquals(GamePanelId.BOARD, Panels.build().main.id)
     }
 
     @Test
     fun `the board declares only NORMAL`() {
-        val layout = renderAll(Panels.build())
-
-        assertEquals(listOf(PanelState.NORMAL), layout.main!!.panel.states)
+        assertEquals(listOf(PanelState.NORMAL), Panels.build().main.states)
     }
 
     @Test
     fun `every side panel except HELP declares MINIMIZED, NORMAL, and MAXIMIZED`() {
-        val layout = renderAll(Panels.build())
-
-        for (slot in layout.sides.filter { it.panel.id != GamePanelId.HELP }) {
+        for (panel in Panels.build().sides.filter { it.id != GamePanelId.HELP }) {
             assertEquals(
                 listOf(PanelState.MINIMIZED, PanelState.NORMAL, PanelState.MAXIMIZED),
-                slot.panel.states,
-                "${slot.panel.id} should declare all three states",
+                panel.states,
+                "${panel.id} should declare all three states",
             )
         }
     }
 
     @Test
     fun `HELP declares NORMAL and MAXIMIZED but not MINIMIZED`() {
-        val layout = renderAll(Panels.build())
+        val help = Panels.build().sides.first { it.id == GamePanelId.HELP }
 
-        val help = layout.sides.first { it.panel.id == GamePanelId.HELP }
-        assertEquals(listOf(PanelState.NORMAL, PanelState.MAXIMIZED), help.panel.states)
+        assertEquals(listOf(PanelState.NORMAL, PanelState.MAXIMIZED), help.states)
     }
 
     @Test
     fun `every GamePanelId appears exactly once across main and sides`() {
-        val layout = renderAll(Panels.build())
+        val set = Panels.build()
 
-        val allIds = (listOfNotNull(layout.main?.panel?.id) + layout.sides.map { it.panel.id }).toSet()
-        assertEquals(GamePanelId.entries.toSet(), allIds)
+        val allIds = (listOf(set.main.id) + set.sides.map { it.id })
+        assertEquals(GamePanelId.entries, allIds.distinct().sorted(), "every id, no duplicates")
     }
 
     @Test
@@ -66,12 +54,11 @@ internal class PanelsTest {
         val first = Panels.build()
         first.focus(GamePanelId.LOG)
         first.cycleFocusedState(1) // NORMAL -> MAXIMIZED
-        renderAll(first)
 
         val second = Panels.build()
-        val layout = renderAll(second)
 
-        val log = layout.sides.first { it.panel.id == GamePanelId.LOG }
-        assertEquals(PanelState.NORMAL, log.panel.state, "a later Panels.build() must not see an earlier call's state")
+        val log = second.sides.first { it.id == GamePanelId.LOG }
+        assertEquals(PanelState.NORMAL, log.state, "a later Panels.build() must not see an earlier call's state")
+        assertEquals(GamePanelId.BOARD, second.focused, "nor an earlier call's focus")
     }
 }

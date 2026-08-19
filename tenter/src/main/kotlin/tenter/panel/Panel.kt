@@ -21,9 +21,12 @@ public interface PanelId {
  *
  * A [Panel] declares up to three views, one per [PanelState] — [normal] is mandatory, [minimized]
  * and [maximized] are optional. [states] lists exactly the declared ones, and [cycleState] walks
- * only those. A panel carries no VISIBILITY logic — deciding what's shown this frame is the host
- * application's job — and this class never sees that state directly; it builds from the prepared
- * [I] the caller hands to [render]. That split is deliberate: visibility is decided by things a
+ * only those. Every declared builder must return a view: "there is nothing to show this frame" is
+ * a VISIBILITY decision, and a panel carries no visibility logic — deciding what's shown is the
+ * host application's job, and this class never sees that state directly; it builds from the
+ * prepared [I] the caller hands to [render]. A builder that cannot build from the [I] it is given
+ * means the host showed a panel it should have hidden, which is a bug in the host's visibility
+ * rule rather than a case for this class to absorb. That split is deliberate: visibility is decided by things a
  * panel cannot observe, so it is derived fresh every frame and never stored; state and scroll are
  * decided by nothing but this panel's own events, so they persist here across frames with no
  * round trip through the host's state.
@@ -37,9 +40,9 @@ public class Panel<K : PanelId, I>(
     public val title: String,
     private val normalWidth: Int,
     private val extent: (I) -> ContentExtent = { ContentExtent.Measured() },
-    private val normal: (I) -> View?,
-    private val minimized: ((I) -> View?)? = null,
-    private val maximized: ((I) -> View?)? = null,
+    private val normal: (I) -> View,
+    private val minimized: ((I) -> View)? = null,
+    private val maximized: ((I) -> View)? = null,
 ) {
     private var scroll = ScrollOffset.ZERO
     private var lastReveal: RevealRect? = null
@@ -81,12 +84,9 @@ public class Panel<K : PanelId, I>(
 
     /**
      * Renders this panel's chrome and content into [canvas], absorbing whatever scroll offset and
-     * reveal rect it settles on — the next call picks up right where this one left off. No-op if
-     * the current state's builder declines to build content (e.g. its per-frame data is
-     * momentarily absent). Note what that no-op means at [PanelState.MAXIMIZED]: a maximized panel
-     * is the ONLY thing in the content region, so declining there leaves that whole region blank
-     * rather than the panel-width gap a [PanelState.NORMAL] panel would leave. Declare [maximized]
-     * only for a panel whose visibility the host gates on the same data its builder needs.
+     * reveal rect it settles on — the next call picks up right where this one left off. Always
+     * draws: the current state's builder returns a view, and whether this panel should be on
+     * screen at all was already decided by the host — see this class's KDoc.
      *
      * [focused] colors the border/title/scrollbar-thumb green (via
      * [tenter.screen.ChromeRole.PANEL_BORDER_FOCUSED]) instead of the neutral
@@ -112,7 +112,7 @@ public class Panel<K : PanelId, I>(
             PanelState.NORMAL -> normal
             PanelState.MAXIMIZED -> maximized ?: error("Panel $id is in MAXIMIZED state but declares no maximized view")
         }
-        val content = builder(inputs) ?: return
+        val content = builder(inputs)
         val role = if (focused) ChromeRole.PANEL_BORDER_FOCUSED else ChromeRole.PANEL_BORDER
         val panel = scrollingPanel(
             title = title,
