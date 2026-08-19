@@ -19,12 +19,36 @@ public object ChromeInput {
 
     /**
      * The panel key an alt-chord names, if any: `alt+0` -> `'0'`, `alt+H` -> `'h'`. Resolving
-     * the key to a panel identity and deciding what the chord does (collapse vs open) is the
-     * caller's job, not this mapper's.
+     * the key to a panel identity and deciding what the chord does (focus, or HELP's open/close)
+     * is the caller's job, not this mapper's.
      */
     public fun panelKey(event: KeyboardEvent): Char? {
         if (!event.alt) return null
         return event.key.singleOrNull()?.lowercaseChar()
+    }
+
+    /** `+` -> +1, `-` -> -1: one step through the focused panel's declared states. */
+    public fun stateCycle(event: KeyboardEvent): Int? = when {
+        event.ctrl || event.alt -> null
+        event.key == "+" -> 1
+        event.key == "-" -> -1
+        else -> null
+    }
+
+    /**
+     * Keyboard scrolling for the focused panel. Null unless the event is a bare arrow/page key —
+     * `ctrl+arrows` are the board pan and must not be stolen (see [panAction]), so they and any
+     * `alt`-chord are excluded here too.
+     */
+    public fun scrollAction(event: KeyboardEvent): ScrollAction? {
+        if (event.ctrl || event.alt) return null
+        return when (event.key) {
+            "ArrowUp" -> ScrollAction.Lines(-1)
+            "ArrowDown" -> ScrollAction.Lines(1)
+            "PageUp" -> ScrollAction.Pages(-1)
+            "PageDown" -> ScrollAction.Pages(1)
+            else -> null
+        }
     }
 
     /**

@@ -115,7 +115,7 @@ internal class BorderedTest {
     }
 
     @Test
-    fun `renders a badge alone, with no title to anchor it to — e g a collapsed panel's stub`() {
+    fun `renders a badge alone, with no title to anchor it to — e g a minimized panel's stub`() {
         val view = Bordered(blank, badge = "0")
 
         val buffer = render(view, 7, 3)
@@ -132,6 +132,20 @@ internal class BorderedTest {
         val buffer = render(view, 5, 3)
 
         assertEquals("─", buffer.get(3, 0).char, "5-wide box has no room for [0] at column 2")
+    }
+
+    @Test
+    fun `falls back to the badge alone when a title is present but the full run does not fit`() {
+        // A title too long to fit as "[badge] title" must not draw nothing — the badge alone is
+        // still worth showing (e.g. a minimized panel's stub, too narrow for its full title).
+        val view = Bordered(blank, title = "TOOLONGTOFIT", badge = "1")
+
+        val buffer = render(view, 7, 3)
+
+        assertEquals("[", buffer.get(2, 0).char)
+        assertEquals("1", buffer.get(3, 0).char)
+        assertEquals("]", buffer.get(4, 0).char)
+        assertEquals(ChromeRole.ACCENT, buffer.get(3, 0).style.fg)
     }
 
     @Test
@@ -204,6 +218,23 @@ internal class BorderedTest {
         for (row in 1..8) {
             assertEquals("│", buffer.get(29, row).char, "expected plain border at row $row")
         }
+    }
+
+    @Test
+    fun `scrollbar thumb uses the box's own borderColor, not a hardcoded one`() {
+        val view = scrollingPanel(
+            title = "T",
+            badge = "0",
+            content = stubContent(20),
+            extent = ContentExtent.Measured(),
+            borderColor = ChromeRole.PANEL_BORDER_FOCUSED,
+        )
+
+        val buffer = render(view, 30, 10)
+
+        val thumbRange = ScrollGeometry.thumb(track = 8, contentLength = 21, viewportLength = 8, offset = 0)!!
+        val row = 1 + thumbRange.first
+        assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, buffer.get(29, row).style.fg)
     }
 
     @Test

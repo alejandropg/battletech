@@ -1,6 +1,8 @@
 package tenter.view
 
 import tenter.screen.Canvas
+import tenter.screen.ChromeRole
+import tenter.screen.ColorRole
 import tenter.screen.RevealRect
 
 /**
@@ -41,6 +43,8 @@ public fun scrollingPanel(
     offset: ScrollOffset = ScrollOffset.ZERO,
     previousReveal: RevealRect? = null,
     recenter: Boolean = false,
+    borderColor: ColorRole = ChromeRole.PANEL_BORDER,
+    titleColor: ColorRole = ChromeRole.ACCENT,
 ): ScrollingPanel {
     val verticalPadding = Bordered.PADDING.vertical()
     val paddedContent = Padded(verticalPadding, content)
@@ -54,6 +58,8 @@ public fun scrollingPanel(
         title = title,
         badge = badge,
         gutters = Bordered.PADDING.horizontal(),
+        borderColor = borderColor,
+        titleColor = titleColor,
         thumbsFrom = viewport,
     )
     return ScrollingPanel(bordered, viewport)

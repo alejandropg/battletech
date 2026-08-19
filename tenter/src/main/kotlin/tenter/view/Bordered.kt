@@ -60,10 +60,13 @@ public class Bordered(
                 canvas.set(3, 0, Cell(" ", Cell.Style(borderColor)))
                 canvas.writeString(4, 0, title, Cell.Style(titleColor))
                 canvas.set(4 + title.length, 0, Cell(" ", Cell.Style(borderColor)))
+            } else if (badge != null && width >= 6) {
+                // The full "[badge] title" run doesn't fit — e.g. a minimized stub too narrow for
+                // its full title. The badge alone is still worth showing.
+                canvas.writeString(2, 0, "[$badge]", Cell.Style(titleColor))
             }
         } else if (badge != null && width >= 6) {
-            // No title to anchor a "[badge] title" run to — e.g. a collapsed stub too narrow for
-            // its full title. The badge alone is still worth showing.
+            // No title to anchor a "[badge] title" run to. The badge alone is still worth showing.
             canvas.writeString(2, 0, "[$badge]", Cell.Style(titleColor))
         }
     }
@@ -79,24 +82,24 @@ public class Bordered(
         val viewportHeight = canvas.height - inset.top - inset.bottom
         val scroll = viewport.scroll
 
+        val thumbStyle = Cell.Style(borderColor)
+
         ScrollGeometry.thumb(
             track = viewportHeight,
             contentLength = scroll.maxOffset.y + viewportHeight,
             viewportLength = viewportHeight,
             offset = scroll.offset.y,
-        )?.forEach { i -> canvas.set(canvas.width - 1, inset.top + i, Cell("▐", PANEL_BORDER_STYLE)) }
+        )?.forEach { i -> canvas.set(canvas.width - 1, inset.top + i, Cell("▐", thumbStyle)) }
 
         ScrollGeometry.thumb(
             track = viewportWidth,
             contentLength = scroll.maxOffset.x + viewportWidth,
             viewportLength = viewportWidth,
             offset = scroll.offset.x,
-        )?.forEach { i -> canvas.set(inset.left + i, canvas.height - 1, Cell("▬", PANEL_BORDER_STYLE)) }
+        )?.forEach { i -> canvas.set(inset.left + i, canvas.height - 1, Cell("▬", thumbStyle)) }
     }
 
     public companion object {
-        private val PANEL_BORDER_STYLE = Cell.Style(ChromeRole.PANEL_BORDER)
-
         /** One cell on each side, consumed by every [Bordered] box. */
         public val BORDER: Insets = Insets.all(1)
 

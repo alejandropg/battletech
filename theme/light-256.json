@@ -13,7 +13,8 @@
     "DANGER": "88",
     "DRAFT": "241",
     "DISABLED": "243",
-    "PANEL_BORDER": "22"
+    "PANEL_BORDER": "241",
+    "PANEL_BORDER_FOCUSED": "22"
   },
   "board": {
     "PLAYER_1": "18",

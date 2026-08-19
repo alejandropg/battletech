@@ -13,7 +13,8 @@
     "DANGER": "#EC3E4C",
     "DRAFT": "#A6ADB4",
     "DISABLED": "#899198",
-    "PANEL_BORDER": "#72BF72"
+    "PANEL_BORDER": "#DDE2E5",
+    "PANEL_BORDER_FOCUSED": "#72BF72"
   },
   "board": {
     "PLAYER_1": "#A0F4FF",

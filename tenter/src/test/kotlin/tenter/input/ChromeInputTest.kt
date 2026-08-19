@@ -174,4 +174,60 @@ internal class ChromeInputTest {
             assertNull(ChromeInput.panAction(key("x"), stepX = 5, stepY = 3))
         }
     }
+
+    @Nested
+    inner class StateCycleTest {
+        @Test
+        fun `plus is +1`() {
+            assertEquals(1, ChromeInput.stateCycle(key("+")))
+        }
+
+        @Test
+        fun `minus is -1`() {
+            assertEquals(-1, ChromeInput.stateCycle(key("-")))
+        }
+
+        @Test
+        fun `unrelated keys return null`() {
+            assertNull(ChromeInput.stateCycle(key("=")))
+            assertNull(ChromeInput.stateCycle(key("Enter")))
+        }
+
+        @Test
+        fun `modified plus minus return null`() {
+            assertNull(ChromeInput.stateCycle(key("+", ctrl = true)))
+            assertNull(ChromeInput.stateCycle(key("-", alt = true)))
+        }
+    }
+
+    @Nested
+    inner class ScrollActionTest {
+        @Test
+        fun `arrow up down are one-line scrolls`() {
+            assertEquals(ScrollAction.Lines(-1), ChromeInput.scrollAction(key("ArrowUp")))
+            assertEquals(ScrollAction.Lines(1), ChromeInput.scrollAction(key("ArrowDown")))
+        }
+
+        @Test
+        fun `page up down are one-viewport scrolls`() {
+            assertEquals(ScrollAction.Pages(-1), ChromeInput.scrollAction(key("PageUp")))
+            assertEquals(ScrollAction.Pages(1), ChromeInput.scrollAction(key("PageDown")))
+        }
+
+        @Test
+        fun `ctrl+ArrowUp is null — it is the board pan, not a panel scroll`() {
+            assertNull(ChromeInput.scrollAction(key("ArrowUp", ctrl = true)))
+        }
+
+        @Test
+        fun `alt+ArrowUp is null`() {
+            assertNull(ChromeInput.scrollAction(key("ArrowUp", alt = true)))
+        }
+
+        @Test
+        fun `unrelated keys return null`() {
+            assertNull(ChromeInput.scrollAction(key("Enter")))
+            assertNull(ChromeInput.scrollAction(key("j")))
+        }
+    }
 }

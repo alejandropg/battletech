@@ -30,7 +30,7 @@ One file per theme, one color space per file — there is no conversion between 
 }
 ```
 
-`chrome` must hold exactly the 12 `tenter.screen.ChromeRole` names; `board` must hold exactly the
+`chrome` must hold exactly the 13 `tenter.screen.ChromeRole` names; `board` must hold exactly the
 26 `battletech.tui.screen.BoardRole` names. A missing or unrecognized role name fails to load with
 a `ThemeLoadException` naming the offending role and table — this is the load-time replacement for
 the compile-time exhaustiveness check a hand-written `RolePalette` object used to get for free (see
@@ -70,6 +70,15 @@ muted both the same way. `BOARD_BORDER`'s "against every terrain fill" requireme
 downgraded from a ratio to mere distinctness: the border carries no information by itself (material
 reads from the fill/icon, elevation from the badge), so it only needs to be a different color from
 what it outlines, not legible at a set ratio.
+
+**`PANEL_BORDER`/`PANEL_BORDER_FOCUSED` are a pair: the unfocused neutral and today's original green,
+respectively.** A panel's border, title, badge, and scrollbar thumb all key off which of the two is
+focused — `Bordered`'s default (`PANEL_BORDER`) is what every non-focusable box still uses, so
+giving it a neutral meaning rather than deleting it kept every other bordered view (help text, the
+match-over banner) unchanged. The light tiers use a mid-grey (`#5A6169` truecolor, `241` ansi256)
+rather than white for the unfocused neutral: a literal white/light-grey border fails the 4.5:1
+contrast floor every general role must clear against the light background (`#868B91` truecolor
+measures 3.15:1; `245` ansi256 measures 3.17:1) — `TuiPaletteTest` catches this before it ships.
 
 **Woods/water fills and elevation badges were retuned once elevated `CLEAR` hexes became whole-hex
 fills** rather than a small badge cell. The fills were brightened back toward the original

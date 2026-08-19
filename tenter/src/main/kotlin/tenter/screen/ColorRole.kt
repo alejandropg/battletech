@@ -46,4 +46,5 @@ public enum class ChromeRole : ColorRole {
     DRAFT,
     DISABLED,
     PANEL_BORDER,
+    PANEL_BORDER_FOCUSED,
 }

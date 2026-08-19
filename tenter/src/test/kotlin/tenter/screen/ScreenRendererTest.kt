@@ -32,6 +32,7 @@ private object FixturePalette : RolePalette {
             ChromeRole.DRAFT -> rgb(166, 173, 180)
             ChromeRole.DISABLED -> rgb(137, 145, 152)
             ChromeRole.PANEL_BORDER -> rgb(114, 191, 114)
+            ChromeRole.PANEL_BORDER_FOCUSED -> rgb(114, 191, 114)
         }
         else -> error("FixturePalette only resolves ChromeRole, got: $role")
     }
