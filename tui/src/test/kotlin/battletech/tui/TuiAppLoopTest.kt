@@ -1,7 +1,7 @@
 package battletech.tui
 
 import battletech.tactical.attack.AttackResult
-import battletech.tactical.attack.RangeBand
+import battletech.tactical.attack.ToHitAttempt
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MatchOutcome
@@ -812,12 +812,13 @@ internal class TuiAppLoopTest {
     // now looks the attacker up in the rendered gameState's unitOwners via getValue (fails loud
     // on an unknown id, rather than silently rendering white as the old nullable playerColor did).
     private fun aResult(attackerId: UnitId = UnitId("ally")) = AttackResult.Miss(
-        attackerId = attackerId,
-        targetId = UnitId("b"),
-        weaponName = "Med Laser",
-        targetNumber = 7,
-        toHitRoll = DiceRoll(2, 3),
-        gunnery = 4,
-        rangeBand = RangeBand.SHORT,
+        attempt = ToHitAttempt(
+            attackerId = attackerId,
+            targetId = UnitId("b"),
+            weaponName = "Med Laser",
+            targetNumber = 7,
+            toHitRoll = DiceRoll(2, 3),
+            gunnery = 4,
+        ),
     )
 }

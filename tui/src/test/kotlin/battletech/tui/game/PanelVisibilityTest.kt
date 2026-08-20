@@ -1,7 +1,7 @@
 package battletech.tui.game
 
 import battletech.tactical.attack.AttackResult
-import battletech.tactical.attack.RangeBand
+import battletech.tactical.attack.ToHitAttempt
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.TurnPhase
@@ -106,13 +106,14 @@ internal class PanelVisibilityTest {
     }
 
     private fun aResult() = AttackResult.Miss(
-        attackerId = UnitId("a"),
-        targetId = UnitId("b"),
-        weaponName = "Med Laser",
-        targetNumber = 7,
-        toHitRoll = DiceRoll(2, 3),
-        gunnery = 4,
-        rangeBand = RangeBand.SHORT,
+        attempt = ToHitAttempt(
+            attackerId = UnitId("a"),
+            targetId = UnitId("b"),
+            weaponName = "Med Laser",
+            targetNumber = 7,
+            toHitRoll = DiceRoll(2, 3),
+            gunnery = 4,
+        ),
     )
 
     @Test

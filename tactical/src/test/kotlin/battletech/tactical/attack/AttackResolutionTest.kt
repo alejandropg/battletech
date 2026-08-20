@@ -291,7 +291,6 @@ internal class AttackResolutionTest {
         val result = results.single()
         assertEquals(4, result.gunnery)
         assertEquals(0, result.modifiers.amountOf(ToHitFactor.RANGE))
-        assertEquals(RangeBand.SHORT, result.rangeBand)
         assertEquals(0, result.modifiers.amountOf(ToHitFactor.HEAT))
         assertEquals(0, result.modifiers.amountOf(ToHitFactor.SECONDARY_TARGET))
     }
@@ -308,7 +307,6 @@ internal class AttackResolutionTest {
         val result = results.single()
         assertEquals(4, result.gunnery)
         assertEquals(2, result.modifiers.amountOf(ToHitFactor.RANGE))
-        assertEquals(RangeBand.MEDIUM, result.rangeBand)
         assertEquals(2, result.modifiers.amountOf(ToHitFactor.HEAT))
         assertEquals(1, result.modifiers.amountOf(ToHitFactor.SECONDARY_TARGET))
     }

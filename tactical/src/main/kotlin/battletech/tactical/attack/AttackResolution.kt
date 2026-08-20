@@ -2,7 +2,6 @@ package battletech.tactical.attack
 
 import battletech.tactical.attack.physical.AttackDirection
 import battletech.tactical.attack.physical.attackDirection
-import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState
@@ -197,7 +196,6 @@ private fun resolveOneAttack(
     // resolver's target is a CombatUnit or (over the wire) a ForeignUnit.
     val modifiers = weaponToHitModifiers(attacker, target, weapon, distance, declaration.isPrimary, gameState.map)
     val los = lineOfSight(attacker.position, target.position, gameState.map)
-    val rangeBand = rangeBandFor(distance, weapon)
     val targetNumber = weaponTargetNumber(attacker, modifiers)
 
     // Canonical dice order:
@@ -206,64 +204,41 @@ private fun resolveOneAttack(
     //   2. (if hit, cluster) cluster-count 2d6, then one location 2d6 per group (in group order)
     val toHitRoll = roller.roll2d6()
 
-    return if (toHitRoll.total >= targetNumber) {
-        when (val kind = weapon.kind) {
-            is WeaponKind.Missile ->
-                clusterHit(declaration, attacker, weapon, kind, direction, useRearArmor, targetNumber, toHitRoll, rangeBand, modifiers, los.partialCover, roller)
-            else ->
-                singleHit(declaration, attacker, weapon, direction, useRearArmor, targetNumber, toHitRoll, rangeBand, modifiers, los.partialCover, roller)
-        }
-    } else {
-        missResult(declaration, attacker, weapon, targetNumber, toHitRoll, rangeBand, modifiers, los.partialCover)
-    }
-}
-
-private fun missResult(
-    declaration: AttackDeclaration,
-    attacker: CombatUnit,
-    weapon: Weapon,
-    targetNumber: Int,
-    toHitRoll: DiceRoll,
-    rangeBand: RangeBand,
-    modifiers: List<ToHitModifier>,
-    partialCover: Boolean,
-): AttackResult.Miss = AttackResult.Miss(
-    attackerId = declaration.attackerId,
-    targetId = declaration.targetId,
-    weaponName = weapon.name,
-    targetNumber = targetNumber,
-    toHitRoll = toHitRoll,
-    gunnery = attacker.gunnerySkill,
-    rangeBand = rangeBand,
-    modifiers = modifiers,
-    partialCover = partialCover,
-)
-
-/** Single-location weapon: one location roll. */
-private fun singleHit(
-    declaration: AttackDeclaration,
-    attacker: CombatUnit,
-    weapon: Weapon,
-    direction: AttackDirection,
-    useRearArmor: Boolean,
-    targetNumber: Int,
-    toHitRoll: DiceRoll,
-    rangeBand: RangeBand,
-    modifiers: List<ToHitModifier>,
-    partialCover: Boolean,
-    roller: DiceRoller,
-): AttackResult.SingleHit {
-    val locationRoll = roller.roll2d6()
-    val hitLocation = HitLocationTable.roll(locationRoll.total, direction)
-    return AttackResult.SingleHit(
+    val attempt = ToHitAttempt(
         attackerId = declaration.attackerId,
         targetId = declaration.targetId,
         weaponName = weapon.name,
         targetNumber = targetNumber,
         toHitRoll = toHitRoll,
         gunnery = attacker.gunnerySkill,
-        rangeBand = rangeBand,
         modifiers = modifiers,
+    )
+
+    return if (toHitRoll.total >= targetNumber) {
+        when (val kind = weapon.kind) {
+            is WeaponKind.Missile ->
+                clusterHit(attempt, kind, direction, useRearArmor, los.partialCover, roller)
+            else ->
+                singleHit(attempt, weapon, direction, useRearArmor, los.partialCover, roller)
+        }
+    } else {
+        AttackResult.Miss(attempt)
+    }
+}
+
+/** Single-location weapon: one location roll. */
+private fun singleHit(
+    attempt: ToHitAttempt,
+    weapon: Weapon,
+    direction: AttackDirection,
+    useRearArmor: Boolean,
+    partialCover: Boolean,
+    roller: DiceRoller,
+): AttackResult.SingleHit {
+    val locationRoll = roller.roll2d6()
+    val hitLocation = HitLocationTable.roll(locationRoll.total, direction)
+    return AttackResult.SingleHit(
+        attempt = attempt,
         partialCover = partialCover,
         useRearArmor = useRearArmor,
         locationHits = listOf(LocationHit(hitLocation, weapon.damage, locationRoll)),
@@ -272,16 +247,10 @@ private fun singleHit(
 
 /** Cluster weapon (SRM/LRM): roll cluster table → missiles hit → groups → per-group location roll. */
 private fun clusterHit(
-    declaration: AttackDeclaration,
-    attacker: CombatUnit,
-    weapon: Weapon,
+    attempt: ToHitAttempt,
     kind: WeaponKind.Missile,
     direction: AttackDirection,
     useRearArmor: Boolean,
-    targetNumber: Int,
-    toHitRoll: DiceRoll,
-    rangeBand: RangeBand,
-    modifiers: List<ToHitModifier>,
     partialCover: Boolean,
     roller: DiceRoller,
 ): AttackResult.ClusterHit {
@@ -293,14 +262,7 @@ private fun clusterHit(
         LocationHit(HitLocationTable.roll(locRoll.total, direction), groupDmg, locRoll)
     }
     return AttackResult.ClusterHit(
-        attackerId = declaration.attackerId,
-        targetId = declaration.targetId,
-        weaponName = weapon.name,
-        targetNumber = targetNumber,
-        toHitRoll = toHitRoll,
-        gunnery = attacker.gunnerySkill,
-        rangeBand = rangeBand,
-        modifiers = modifiers,
+        attempt = attempt,
         partialCover = partialCover,
         useRearArmor = useRearArmor,
         locationHits = locationHits,

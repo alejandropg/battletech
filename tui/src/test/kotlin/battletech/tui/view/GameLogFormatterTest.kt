@@ -5,7 +5,7 @@ import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.LocationDamage
 import battletech.tactical.attack.LocationHit
-import battletech.tactical.attack.RangeBand
+import battletech.tactical.attack.ToHitAttempt
 import battletech.tactical.attack.physical.AttackDirection
 import battletech.tactical.attack.physical.PhysicalAttackResult
 import battletech.tactical.dice.DiceRoll
@@ -784,13 +784,14 @@ internal class GameLogFormatterTest {
         targetId: UnitId = UnitId("t"),
     ): AttackResult =
         AttackResult.ClusterHit(
-            attackerId = UnitId("a"),
-            targetId = targetId,
-            weaponName = weaponName,
-            targetNumber = 5,
-            toHitRoll = DiceRoll(4, 4),
-            gunnery = 2,
-            rangeBand = RangeBand.SHORT,
+            attempt = ToHitAttempt(
+                attackerId = UnitId("a"),
+                targetId = targetId,
+                weaponName = weaponName,
+                targetNumber = 5,
+                toHitRoll = DiceRoll(4, 4),
+                gunnery = 2,
+            ),
             locationHits = locationHits,
             missilesHit = missilesHit,
         )
@@ -803,25 +804,27 @@ internal class GameLogFormatterTest {
     ): AttackResult =
         if (hit) {
             AttackResult.SingleHit(
-                attackerId = UnitId("a"),
-                targetId = targetId,
-                weaponName = "ML",
-                targetNumber = 8,
-                toHitRoll = DiceRoll(5, 5),
-                gunnery = 4,
-                rangeBand = RangeBand.SHORT,
+                attempt = ToHitAttempt(
+                    attackerId = UnitId("a"),
+                    targetId = targetId,
+                    weaponName = "ML",
+                    targetNumber = 8,
+                    toHitRoll = DiceRoll(5, 5),
+                    gunnery = 4,
+                ),
                 damage = locationDamage,
                 locationHits = locationHits,
             )
         } else {
             AttackResult.Miss(
-                attackerId = UnitId("a"),
-                targetId = targetId,
-                weaponName = "ML",
-                targetNumber = 8,
-                toHitRoll = DiceRoll(2, 3),
-                gunnery = 4,
-                rangeBand = RangeBand.SHORT,
+                attempt = ToHitAttempt(
+                    attackerId = UnitId("a"),
+                    targetId = targetId,
+                    weaponName = "ML",
+                    targetNumber = 8,
+                    toHitRoll = DiceRoll(2, 3),
+                    gunnery = 4,
+                ),
             )
         }
 

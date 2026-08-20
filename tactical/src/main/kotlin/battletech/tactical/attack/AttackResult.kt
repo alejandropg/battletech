@@ -1,7 +1,5 @@
 package battletech.tactical.attack
 
-import battletech.tactical.dice.DiceRoll
-import battletech.tactical.unit.UnitId
 import kotlinx.serialization.Serializable
 
 /**
@@ -13,32 +11,14 @@ import kotlinx.serialization.Serializable
  * table first and can spread damage across several [locationHits] groups.
  */
 @Serializable
-public sealed interface AttackResult {
-    public val attackerId: UnitId
-    public val targetId: UnitId
-    public val weaponName: String
-    public val gunnery: Int
-    public val modifiers: List<ToHitModifier>
-    public val targetNumber: Int
-    public val toHitRoll: DiceRoll
-    public val rangeBand: RangeBand
-
-    /** True when the target has partial cover (lower body masked by an obstacle).
-     *  Leg-location hits under partial cover deal no damage and roll no crit. */
-    public val partialCover: Boolean
+public sealed interface AttackResult : ToHitAttempted {
+    /** Who shot what, with what weapon, and the to-hit check that decided this outcome. */
+    public val attempt: ToHitAttempt
 
     @Serializable
     public data class Miss(
-        override val attackerId: UnitId,
-        override val targetId: UnitId,
-        override val weaponName: String,
-        override val gunnery: Int,
-        override val targetNumber: Int,
-        override val toHitRoll: DiceRoll,
-        override val rangeBand: RangeBand,
-        override val modifiers: List<ToHitModifier> = emptyList(),
-        override val partialCover: Boolean = false,
-    ) : AttackResult
+        override val attempt: ToHitAttempt,
+    ) : AttackResult, ToHitAttempted by attempt
 
     /**
      * A successful to-hit roll. [locationHits] is non-empty by construction — one entry for
@@ -46,6 +26,10 @@ public sealed interface AttackResult {
      */
     @Serializable
     public sealed interface Hit : AttackResult, ResolvedAttack {
+        /** True when the target has partial cover (lower body masked by an obstacle).
+         *  Leg-location hits under partial cover deal no damage and roll no crit. */
+        public val partialCover: Boolean
+
         /** True when the attack struck the target's rear arc; rear torso hits use the rear armor track. */
         public val useRearArmor: Boolean
 
@@ -67,19 +51,12 @@ public sealed interface AttackResult {
 
     @Serializable
     public data class SingleHit(
-        override val attackerId: UnitId,
-        override val targetId: UnitId,
-        override val weaponName: String,
-        override val gunnery: Int,
-        override val targetNumber: Int,
-        override val toHitRoll: DiceRoll,
-        override val rangeBand: RangeBand,
+        override val attempt: ToHitAttempt,
         override val locationHits: List<LocationHit>,
-        override val modifiers: List<ToHitModifier> = emptyList(),
         override val partialCover: Boolean = false,
         override val useRearArmor: Boolean = false,
         override val damage: List<LocationDamage> = emptyList(),
-    ) : Hit {
+    ) : Hit, ToHitAttempted by attempt {
         init {
             require(locationHits.isNotEmpty()) { "SingleHit requires a non-empty locationHits" }
         }
@@ -93,20 +70,13 @@ public sealed interface AttackResult {
      */
     @Serializable
     public data class ClusterHit(
-        override val attackerId: UnitId,
-        override val targetId: UnitId,
-        override val weaponName: String,
-        override val gunnery: Int,
-        override val targetNumber: Int,
-        override val toHitRoll: DiceRoll,
-        override val rangeBand: RangeBand,
+        override val attempt: ToHitAttempt,
         override val locationHits: List<LocationHit>,
         val missilesHit: Int,
-        override val modifiers: List<ToHitModifier> = emptyList(),
         override val partialCover: Boolean = false,
         override val useRearArmor: Boolean = false,
         override val damage: List<LocationDamage> = emptyList(),
-    ) : Hit {
+    ) : Hit, ToHitAttempted by attempt {
         init {
             require(locationHits.isNotEmpty()) { "ClusterHit requires a non-empty locationHits" }
         }

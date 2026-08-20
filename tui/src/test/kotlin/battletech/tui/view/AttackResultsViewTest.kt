@@ -3,7 +3,7 @@ package battletech.tui.view
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.LocationHit
-import battletech.tactical.attack.RangeBand
+import battletech.tactical.attack.ToHitAttempt
 import battletech.tactical.attack.ToHitFactor
 import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.dice.DiceRoll
@@ -31,7 +31,6 @@ internal class AttackResultsViewTest {
         weaponName: String = "Med Laser",
         gunnery: Int = 4,
         rangeModifier: Int = 0,
-        rangeBand: RangeBand = RangeBand.SHORT,
         heatPenalty: Int = 0,
         secondaryPenalty: Int = 0,
         toHitRoll: DiceRoll = DiceRoll(4, 5),
@@ -40,14 +39,15 @@ internal class AttackResultsViewTest {
         damage: Int = 5,
         modifiers: List<ToHitModifier> = emptyList(),
     ): AttackResult = AttackResult.SingleHit(
-        attackerId = attackerId,
-        targetId = targetId,
-        weaponName = weaponName,
-        targetNumber = gunnery + rangeModifier + heatPenalty + secondaryPenalty,
-        toHitRoll = toHitRoll,
-        gunnery = gunnery,
-        rangeBand = rangeBand,
-        modifiers = modifiers,
+        attempt = ToHitAttempt(
+            attackerId = attackerId,
+            targetId = targetId,
+            weaponName = weaponName,
+            targetNumber = gunnery + rangeModifier + heatPenalty + secondaryPenalty,
+            toHitRoll = toHitRoll,
+            gunnery = gunnery,
+            modifiers = modifiers,
+        ),
         locationHits = listOf(LocationHit(hitLocation, damage, locationRoll)),
     )
 
@@ -55,27 +55,26 @@ internal class AttackResultsViewTest {
         weaponName: String = "PPC",
         gunnery: Int = 4,
         rangeModifier: Int = 0,
-        rangeBand: RangeBand = RangeBand.SHORT,
         heatPenalty: Int = 0,
         secondaryPenalty: Int = 0,
         toHitRoll: DiceRoll = DiceRoll(1, 1),
         modifiers: List<ToHitModifier> = emptyList(),
     ): AttackResult = AttackResult.Miss(
-        attackerId = attackerId,
-        targetId = targetId,
-        weaponName = weaponName,
-        targetNumber = gunnery + rangeModifier + heatPenalty + secondaryPenalty,
-        toHitRoll = toHitRoll,
-        gunnery = gunnery,
-        rangeBand = rangeBand,
-        modifiers = modifiers,
+        attempt = ToHitAttempt(
+            attackerId = attackerId,
+            targetId = targetId,
+            weaponName = weaponName,
+            targetNumber = gunnery + rangeModifier + heatPenalty + secondaryPenalty,
+            toHitRoll = toHitRoll,
+            gunnery = gunnery,
+            modifiers = modifiers,
+        ),
     )
 
     private fun aClusterHitResult(
         weaponName: String = "LRM 20",
         gunnery: Int = 4,
         rangeModifier: Int = 0,
-        rangeBand: RangeBand = RangeBand.SHORT,
         heatPenalty: Int = 0,
         secondaryPenalty: Int = 0,
         toHitRoll: DiceRoll = DiceRoll(4, 5),
@@ -88,14 +87,15 @@ internal class AttackResultsViewTest {
         ),
         modifiers: List<ToHitModifier> = emptyList(),
     ): AttackResult = AttackResult.ClusterHit(
-        attackerId = attackerId,
-        targetId = targetId,
-        weaponName = weaponName,
-        targetNumber = gunnery + rangeModifier + heatPenalty + secondaryPenalty,
-        toHitRoll = toHitRoll,
-        gunnery = gunnery,
-        rangeBand = rangeBand,
-        modifiers = modifiers,
+        attempt = ToHitAttempt(
+            attackerId = attackerId,
+            targetId = targetId,
+            weaponName = weaponName,
+            targetNumber = gunnery + rangeModifier + heatPenalty + secondaryPenalty,
+            toHitRoll = toHitRoll,
+            gunnery = gunnery,
+            modifiers = modifiers,
+        ),
         locationHits = locationHits,
         missilesHit = missilesHit,
     )
