@@ -94,7 +94,7 @@ public abstract class ImpulseAttackPhaseHandler : PhaseHandler {
      *
      * Returns the updated state and the combined [UnitFell] + pilot-hit events.
      */
-    protected fun applyGyroCritEffects(
+    private fun applyGyroCritEffects(
         before: GameState,
         after: GameState,
         roller: DiceRoller,

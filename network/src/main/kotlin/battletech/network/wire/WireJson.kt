@@ -1,6 +1,5 @@
 package battletech.network.wire
 
-import battletech.network.wire.WireJson.encodeToLine
 import kotlinx.serialization.json.Json
 
 /**

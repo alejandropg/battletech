@@ -2,6 +2,7 @@ package tenter.panel
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.view.View
@@ -33,7 +34,7 @@ internal class PanelLayoutTest {
     @Test
     fun `main slot width is the leftover after side panels`() {
         val main = mainPanel()
-        val a = sidePanel(LayoutPanelId.A, width = 20)
+        val a = sidePanel(LayoutPanelId.A)
         val b = sidePanel(LayoutPanelId.B, width = 15)
 
         val layout = PanelLayout.compute(width = 100, height = 30, reservedTop = 4, main = main, sides = listOf(a, b))
@@ -59,7 +60,7 @@ internal class PanelLayoutTest {
 
         assertNull(layout.main)
         assertEquals(1, layout.sides.size)
-        assertEquals(a, layout.sides.single().panel)
+        assertSame(a, layout.sides.single().panel)
         assertEquals(0, layout.sides.single().x)
         assertEquals(4, layout.sides.single().y)
         assertEquals(100, layout.sides.single().width)
@@ -69,12 +70,12 @@ internal class PanelLayoutTest {
     @Test
     fun `sideAt hit-tests side slots only`() {
         val main = mainPanel()
-        val a = sidePanel(LayoutPanelId.A, width = 20)
+        val a = sidePanel(LayoutPanelId.A)
 
         val layout = PanelLayout.compute(width = 100, height = 30, reservedTop = 4, main = main, sides = listOf(a))
 
         assertNull(layout.sideAt(0, 10), "main region")
-        assertEquals(a, layout.sideAt(85, 10)?.panel)
+        assertSame(a, layout.sideAt(85, 10)?.panel)
         assertNull(layout.sideAt(85, 2), "above reservedTop")
     }
 }

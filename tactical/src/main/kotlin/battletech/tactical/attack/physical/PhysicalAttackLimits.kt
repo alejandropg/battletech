@@ -55,7 +55,7 @@ public fun physicalImpulseViolation(
 }
 
 private fun limbInternalStructure(
-    attacker: battletech.tactical.unit.CombatUnit,
+    attacker: CombatUnit,
     isPunch: Boolean,
     side: Side,
 ): Int {

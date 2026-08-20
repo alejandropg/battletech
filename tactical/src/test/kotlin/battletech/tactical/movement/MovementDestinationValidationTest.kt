@@ -13,8 +13,8 @@ import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.Impulse
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
-import battletech.tactical.session.MovementProgress
 import battletech.tactical.session.MoveUnit
+import battletech.tactical.session.MovementProgress
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.UnitRoster
 import org.assertj.core.api.Assertions.assertThat
@@ -30,7 +30,7 @@ internal class MovementDestinationValidationTest {
     private val roller = DiceRoller.deterministic(1, 1)
 
     // Unit at (0,0) facing N, walkingMP=4.
-    private val mover = aUnit(id = "mover", position = HexCoordinates(0, 0), walkingMP = 4)
+    private val mover = aUnit(id = "mover", position = HexCoordinates(0, 0))
 
     // Grid: columns -1..1, rows -4..1 — enough for a 4-MP walk in any direction.
     private val mapHexes: Map<HexCoordinates, Hex> =

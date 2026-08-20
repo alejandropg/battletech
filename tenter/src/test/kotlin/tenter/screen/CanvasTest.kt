@@ -26,7 +26,7 @@ internal class CanvasTest {
         canvas.set(3, 0, Cell("X"))
         canvas.set(0, 3, Cell("X"))
 
-        assertEquals(Cell(" "), canvas.get(0, 0))
+        assertEquals(Cell(), canvas.get(0, 0))
     }
 
     @Test
@@ -47,7 +47,7 @@ internal class CanvasTest {
 
         assertEquals(Cell("H", Cell.Style(ChromeRole.SUCCESS, ChromeRole.TEXT_MUTED)), canvas.get(2, 0))
         assertEquals(Cell("i", Cell.Style(ChromeRole.SUCCESS, ChromeRole.TEXT_MUTED)), canvas.get(3, 0))
-        assertEquals(Cell(" "), canvas.get(4, 0))
+        assertEquals(Cell(), canvas.get(4, 0))
     }
 
     @Test
@@ -59,7 +59,7 @@ internal class CanvasTest {
 
         assertEquals("Hello", (0 until 5).joinToString("") { canvas.get(it, 0).char })
         // the sixth character must not have leaked past the canvas into buffer column 8
-        assertEquals(Cell(" "), buffer.get(8, 0))
+        assertEquals(Cell(), buffer.get(8, 0))
     }
 
     @Test
@@ -172,14 +172,14 @@ internal class CanvasTest {
 
         left.writeString(0, 0, "AAAAAAAAAA") // ten chars into a five-wide canvas
 
-        assertEquals(Cell(" "), right.get(0, 0))
-        assertEquals(Cell(" "), buffer.get(5, 0))
+        assertEquals(Cell(), right.get(0, 0))
+        assertEquals(Cell(), buffer.get(5, 0))
     }
 
     @Test
     fun `setFg preserves the existing background`() {
         val canvas = Canvas.offscreen(5, 1)
-        canvas.set(0, 0, Cell(" ", Cell.Style(ChromeRole.DEFAULT, ChromeRole.INFO)))
+        canvas.set(0, 0, Cell(style = Cell.Style(ChromeRole.DEFAULT, ChromeRole.INFO)))
 
         canvas.setFg(0, 0, "X", ChromeRole.DANGER)
 
@@ -193,7 +193,7 @@ internal class CanvasTest {
         canvas.setFg(-1, 0, "X", ChromeRole.DANGER)
         canvas.setFg(3, 0, "X", ChromeRole.DANGER)
 
-        assertEquals(Cell(" "), canvas.get(0, 0))
+        assertEquals(Cell(), canvas.get(0, 0))
     }
 
     @Test
@@ -218,7 +218,7 @@ internal class CanvasTest {
         dest.blit(src, 0, 0, 3, 0, 3, 1)
 
         assertEquals(Cell("A", Cell.Style(ChromeRole.SUCCESS)), dest.get(3, 0))
-        assertEquals(Cell(" "), dest.get(2, 0))
+        assertEquals(Cell(), dest.get(2, 0))
     }
 
     @Test
@@ -230,8 +230,8 @@ internal class CanvasTest {
         dest.blit(src, 0, 0, 0, 0, 5, 5)
 
         assertEquals(Cell("Z", Cell.Style(ChromeRole.ACCENT)), dest.get(0, 0))
-        assertEquals(Cell(" "), dest.get(2, 0))
-        assertEquals(Cell(" "), dest.get(0, 2))
+        assertEquals(Cell(), dest.get(2, 0))
+        assertEquals(Cell(), dest.get(0, 2))
     }
 
     @Test
@@ -245,7 +245,7 @@ internal class CanvasTest {
 
         dest.blit(src, 0, 0, 0, 0, 3, 1)
 
-        assertEquals(Cell(" "), buffer.get(2, 0), "must not leak past the 2-wide dest canvas")
+        assertEquals(Cell(), buffer.get(2, 0), "must not leak past the 2-wide dest canvas")
     }
 
     @Test

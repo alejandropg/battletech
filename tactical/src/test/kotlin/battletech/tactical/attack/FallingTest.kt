@@ -10,7 +10,7 @@ internal class FallingTest {
 
     @Test
     fun `a fall deals tonnage-based damage, changes facing, and leaves the unit prone`() {
-        val unit = aUnit(tonnage = 50, facing = HexDirection.N)
+        val unit = aUnit(facing = HexDirection.N)
         // location 2d6 = 3+4 = 7 -> Center Torso; facing d6 = 2 -> rotate 1 clockwise -> NE.
         val roller = DiceRoller.deterministic(3, 4, 2)
 

@@ -14,7 +14,6 @@ import battletech.tactical.session.AmmoExploded
 import battletech.tactical.session.PilotHit
 import battletech.tactical.session.UnitFell
 import battletech.tactical.unit.AmmoType
-import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.mechLayout
@@ -32,7 +31,7 @@ internal class ExpandedPsrTest {
 
     @Test
     fun `applyTwentyDamagePsrs - below 20 damage does nothing and consumes no dice`() {
-        val unit = aUnit(id = "unit-1", pilotingSkill = 5)
+        val unit = aUnit()
         val state = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
 
         val (newState, events) = applyTwentyDamagePsrs(
@@ -47,7 +46,7 @@ internal class ExpandedPsrTest {
 
     @Test
     fun `applyTwentyDamagePsrs - exactly 20 damage triggers PSR at +1 and on pass leaves unit standing`() {
-        val unit = aUnit(id = "unit-1", pilotingSkill = 5)
+        val unit = aUnit()
         val state = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         // PSR TN = 5 + 1 = 6; roll (3,3)=6 ≥ 6 → pass.
         val roller = DiceRoller.deterministic(3, 3)
@@ -60,7 +59,7 @@ internal class ExpandedPsrTest {
 
     @Test
     fun `applyTwentyDamagePsrs - failing the PSR causes a fall and pilot hit`() {
-        val unit = aUnit(id = "unit-1", pilotingSkill = 5)
+        val unit = aUnit()
         val state = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         // PSR TN = 5 + 1 = 6; roll (1,1)=2 < 6 → fail.
         // Fall: location (3,4)=7 → CENTER_TORSO; facing 1; consciousness (3,3)=6 ≥ 3 → conscious.
@@ -77,7 +76,7 @@ internal class ExpandedPsrTest {
 
     @Test
     fun `applyTwentyDamagePsrs - 40 damage yields modifier +2 and higher TN`() {
-        val unit = aUnit(id = "unit-1", pilotingSkill = 5)
+        val unit = aUnit()
         val state = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         // PSR TN = 5 + 2 = 7; roll (3,3)=6 < 7 → fail.
         // Fall: location (3,4)=7 → CENTER_TORSO; facing 1; consciousness (3,3).
@@ -91,7 +90,7 @@ internal class ExpandedPsrTest {
 
     @Test
     fun `applyTwentyDamagePsrs - already prone unit is skipped even if damage is at or above 20`() {
-        val unit = aUnit(id = "unit-1", pilotingSkill = 5).copy(isProne = true)
+        val unit = aUnit().copy(isProne = true)
         val state = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
 
         val (newState, events) = applyTwentyDamagePsrs(
@@ -110,7 +109,6 @@ internal class ExpandedPsrTest {
     fun `resolveAttacks - head IS penetration inflicts one pilot hit`() {
         val attacker = aUnit(
             id = "attacker",
-            gunnerySkill = 4,
             weapons = listOf(mediumLaser()),
             position = HexCoordinates(0, 0),
         )
@@ -118,7 +116,7 @@ internal class ExpandedPsrTest {
         val target = aUnit(
             id = "target",
             armor = anArmorLayout(head = 0),
-            internalStructure = anInternalStructureLayout(head = 3),
+            internalStructure = anInternalStructureLayout(),
             position = HexCoordinates(1, 0),
         )
         val state = aGameState(units = listOf(attacker, target))
@@ -138,14 +136,13 @@ internal class ExpandedPsrTest {
     fun `resolveAttacks - head hit with armor intact does NOT inflict pilot hit`() {
         val attacker = aUnit(
             id = "attacker",
-            gunnerySkill = 4,
             weapons = listOf(mediumLaser()),
             position = HexCoordinates(0, 0),
         )
         // Head armor = 9 (default): laser hits armor only, no IS damage, no pilot hit.
         val target = aUnit(
             id = "target",
-            armor = anArmorLayout(head = 9),
+            armor = anArmorLayout(),
             position = HexCoordinates(1, 0),
         )
         val state = aGameState(units = listOf(attacker, target))
@@ -164,13 +161,11 @@ internal class ExpandedPsrTest {
     fun `resolveCriticalHits - ammo bin detonation inflicts exactly 2 pilot hits`() {
         val build = mechLayout {
             place(MechLocation.RIGHT_TORSO, WeaponModels.mediumLaser)
-            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)
+            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20)
         }
         val unit = aUnit(
-            id = "unit-1",
-            pilotHits = 0,
             armor = anArmorLayout(rightTorso = 0),
-            internalStructure = anInternalStructureLayout(rightTorso = 21),
+            internalStructure = anInternalStructureLayout(),
             weapons = build.weapons,
             criticalLayout = build.layout,
         )
@@ -191,13 +186,11 @@ internal class ExpandedPsrTest {
     fun `resolveCriticalHits - ammo explosion knocks pilot unconscious if consciousness check fails`() {
         val build = mechLayout {
             place(MechLocation.RIGHT_TORSO, WeaponModels.mediumLaser)
-            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)
+            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20)
         }
         val unit = aUnit(
-            id = "unit-1",
-            pilotHits = 0,
             armor = anArmorLayout(rightTorso = 0),
-            internalStructure = anInternalStructureLayout(rightTorso = 21),
+            internalStructure = anInternalStructureLayout(),
             weapons = build.weapons,
             criticalLayout = build.layout,
         )

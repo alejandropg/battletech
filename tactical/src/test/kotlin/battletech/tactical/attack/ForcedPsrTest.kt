@@ -17,7 +17,7 @@ internal class ForcedPsrTest {
 
     @Test
     fun `forcedFall makes the unit prone, applies fall damage, and emits UnitFell`() {
-        val unit = aUnit(tonnage = 50, facing = HexDirection.N)
+        val unit = aUnit(facing = HexDirection.N)
         // Fall: location 3+4=7 → CENTER_TORSO; facing d6=1 (no rotation).
         // Consciousness 2d6 (3,3 → 6 ≥ target 3 → conscious).
         val roller = DiceRoller.deterministic(3, 4, 1, 3, 3)
@@ -33,7 +33,7 @@ internal class ForcedPsrTest {
 
     @Test
     fun `forcedFall inflicts exactly one pilot hit and emits PilotHit`() {
-        val unit = aUnit(pilotHits = 0)
+        val unit = aUnit()
         // Fall: location 3+4=7 → CENTER_TORSO; facing 1.
         // Hit 1: target 3; roll (3,3)=6 → conscious.
         val roller = DiceRoller.deterministic(3, 4, 1, 3, 3)
@@ -47,7 +47,7 @@ internal class ForcedPsrTest {
 
     @Test
     fun `forcedFall knocks pilot unconscious when consciousness check fails`() {
-        val unit = aUnit(pilotHits = 0)
+        val unit = aUnit()
         // Fall: location 3+4=7 → CENTER_TORSO; facing 1.
         // Hit 1: target 3; roll (1,1)=2 < 3 → unconscious.
         val roller = DiceRoller.deterministic(3, 4, 1, 1, 1)
@@ -61,7 +61,7 @@ internal class ForcedPsrTest {
 
     @Test
     fun `forcePsrOrFall - passing PSR leaves unit standing and emits no events`() {
-        val unit = aUnit(pilotingSkill = 5)
+        val unit = aUnit()
         // PSR TN = pilotingSkill + modifier = 5 + 0 = 5; roll (6,6)=12 ≥ 5 → pass.
         val roller = DiceRoller.deterministic(6, 6)
 
@@ -73,7 +73,7 @@ internal class ForcedPsrTest {
 
     @Test
     fun `forcePsrOrFall - failing PSR causes fall and pilot hit`() {
-        val unit = aUnit(pilotingSkill = 5)
+        val unit = aUnit()
         // PSR TN = 5 + 0 = 5; roll (1,1)=2 < 5 → fail.
         // Fall: location 3+4=7 → CENTER_TORSO; facing 1.
         // Consciousness 2d6 (3,3 → 6 ≥ target 3 → conscious).
@@ -88,7 +88,7 @@ internal class ForcedPsrTest {
 
     @Test
     fun `forcePsrOrFall - modifier shifts the TN and can cause failure at a higher roll`() {
-        val unit = aUnit(pilotingSkill = 5)
+        val unit = aUnit()
         // Modifier +3 → TN = 8. Roll (2,4)=6 < 8 → fail.
         // Fall: location 3+4=7 → CT; facing 1; consciousness (3,3).
         val roller = DiceRoller.deterministic(2, 4, 3, 4, 1, 3, 3)
@@ -101,7 +101,7 @@ internal class ForcedPsrTest {
 
     @Test
     fun `forcePsrOrFall - already prone unit skips PSR and emits no events`() {
-        val unit = aUnit(pilotingSkill = 5).copy(isProne = true)
+        val unit = aUnit().copy(isProne = true)
         val roller = DiceRoller.deterministic() // must not consume any dice
 
         val (updated, events) = forcePsrOrFall(unit, modifier = 0, roller = roller)

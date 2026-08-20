@@ -53,7 +53,7 @@ internal class CliArgsTest {
     inner class HostCommand {
         @Test
         fun `host with no port uses the default port`() {
-            assertEquals(Mode.Host(port = DEFAULT_PORT), parse("host"))
+            assertEquals(Mode.Host(), parse("host"))
         }
 
         @Test
@@ -78,7 +78,7 @@ internal class CliArgsTest {
 
         @Test
         fun `host --map name resolves to Host with mapName`() {
-            assertEquals(Mode.Host(port = DEFAULT_PORT, mapName = "name"), parse("host", "--map", "name"))
+            assertEquals(Mode.Host(mapName = "name"), parse("host", "--map", "name"))
         }
     }
 
@@ -87,7 +87,7 @@ internal class CliArgsTest {
         @Test
         fun `join ip --session id resolves with the default port`() {
             val mode = parse("join", "192.168.1.5", "--session", "ABC123")
-            assertEquals(Mode.Join(host = "192.168.1.5", port = DEFAULT_PORT, sessionId = "ABC123"), mode)
+            assertEquals(Mode.Join(host = "192.168.1.5", sessionId = "ABC123"), mode)
         }
 
         @Test
@@ -138,7 +138,7 @@ internal class CliArgsTest {
     inner class ServeCommand {
         @Test
         fun `serve with no port uses the default port`() {
-            assertEquals(Mode.Server(port = DEFAULT_PORT), parse("serve"))
+            assertEquals(Mode.Server(), parse("serve"))
         }
 
         @Test
@@ -163,7 +163,7 @@ internal class CliArgsTest {
 
         @Test
         fun `serve --map name resolves to Server with mapName`() {
-            assertEquals(Mode.Server(port = DEFAULT_PORT, mapName = "name"), parse("serve", "--map", "name"))
+            assertEquals(Mode.Server(mapName = "name"), parse("serve", "--map", "name"))
         }
 
         @Test
@@ -199,12 +199,12 @@ internal class CliArgsTest {
 
         @Test
         fun `--theme may appear after host`() {
-            assertEquals(Mode.Host(port = DEFAULT_PORT, themeName = "dark"), parse("host", "--theme", "dark"))
+            assertEquals(Mode.Host(themeName = "dark"), parse("host", "--theme", "dark"))
         }
 
         @Test
         fun `--theme may appear after join`() {
-            val expected = Mode.Join(host = "192.168.1.5", port = DEFAULT_PORT, sessionId = "ABC123", themeName = "light")
+            val expected = Mode.Join(host = "192.168.1.5", sessionId = "ABC123", themeName = "light")
             assertEquals(expected, parse("join", "192.168.1.5", "--session", "ABC123", "--theme", "light"))
         }
 
@@ -270,7 +270,7 @@ internal class CliArgsTest {
 
         @Test
         fun `--map after the host subcommand is accepted`() {
-            assertEquals(Mode.Host(port = DEFAULT_PORT, mapName = "x"), parse("host", "--map", "x"))
+            assertEquals(Mode.Host(mapName = "x"), parse("host", "--map", "x"))
         }
     }
 

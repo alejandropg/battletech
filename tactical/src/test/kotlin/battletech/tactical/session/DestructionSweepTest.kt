@@ -41,7 +41,6 @@ internal class DestructionSweepTest {
         owner = PlayerId.PLAYER_1,
         position = HexCoordinates(0, 0),
         weapons = listOf(mediumLaser()),
-        gunnerySkill = 4,
     )
 
     // Thin CT: 0 armor, 1 IS point — a single medium laser hit (5 dmg) drops it to 0.
@@ -125,17 +124,15 @@ internal class DestructionSweepTest {
 
         // Attacker (P1) declares against target (P2); the other player commits empty.
         val attackLoserDeclares = loser == PlayerId.PLAYER_1
-        val firstPlayer = loser
-        val secondPlayer = winner
 
         val firstDeclarations =
             if (attackLoserDeclares) listOf(AttackDeclaration(attacker.id, target.id, 0, true)) else emptyList()
-        val r1 = session.submitCommand(CommitAttackImpulse(firstPlayer, firstDeclarations, emptyMap()))
+        val r1 = session.submitCommand(CommitAttackImpulse(loser, firstDeclarations, emptyMap()))
         check(r1 is CommandResult.Accepted) { "impulse 1 failed: $r1" }
 
         val secondDeclarations =
             if (!attackLoserDeclares) listOf(AttackDeclaration(attacker.id, target.id, 0, true)) else emptyList()
-        val r2 = session.submitCommand(CommitAttackImpulse(secondPlayer, secondDeclarations, emptyMap()))
+        val r2 = session.submitCommand(CommitAttackImpulse(winner, secondDeclarations, emptyMap()))
 
         return session to r2
     }

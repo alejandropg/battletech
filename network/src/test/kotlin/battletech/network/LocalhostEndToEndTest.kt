@@ -73,7 +73,7 @@ internal class LocalhostEndToEndTest {
     @Test
     fun `joining over a real socket delivers the kickstart snapshot and stays converged`() {
         val host = startServer()
-        val remote = connectClient(host)
+        val remote = connectClient()
 
         // The join-time advance() kickstart runs on the server's accept thread and its
         // StatePush reaches the client asynchronously — poll rather than assert immediately.
@@ -87,7 +87,7 @@ internal class LocalhostEndToEndTest {
     @Test
     fun `a full turn played alternately by host and remote converges after every accepted command`() {
         val host = startServer()
-        val remote = connectClient(host)
+        val remote = connectClient()
 
         awaitTrue { host.currentPhase == TurnPhase.MOVEMENT }
         awaitConvergence(host, remote)
@@ -294,7 +294,7 @@ internal class LocalhostEndToEndTest {
         return gameServer
     }
 
-    private fun connectClient(host: GameServer): ClientGameSession {
+    private fun connectClient(): ClientGameSession {
         val remote = ClientGameSession.connect("127.0.0.1", acceptor!!.boundPort, sessionId)
         client = remote
         return remote

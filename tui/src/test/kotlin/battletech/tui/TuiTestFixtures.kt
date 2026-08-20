@@ -78,17 +78,6 @@ internal fun anAppState(
 internal fun viewFor(player: PlayerId, gameState: GameState): PlayerView =
     anAppState(MovementPhase.SelectingUnit, gameState = gameState).viewFor(player)
 
-internal fun aHex(
-    col: Int = 0,
-    row: Int = 0,
-    terrain: Terrain = Terrain.CLEAR,
-    elevation: Int = 0,
-): Hex = Hex(
-    coordinates = HexCoordinates(col, row),
-    terrain = terrain,
-    elevation = elevation,
-)
-
 internal fun aGameMap(
     cols: Int = 3,
     rows: Int = 3,

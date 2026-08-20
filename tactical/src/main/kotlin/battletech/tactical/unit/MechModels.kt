@@ -53,7 +53,7 @@ public object MechModels {
             place(CENTER_TORSO, WeaponModels.mediumLaser)
             place(LEFT_TORSO, WeaponModels.machineGun)
             place(RIGHT_TORSO, WeaponModels.machineGun)
-            ammo(CENTER_TORSO, AmmoType.MG, 1)
+            ammo(CENTER_TORSO, AmmoType.MG)
         },
         mech(
             variant = "STG-3R",
@@ -74,7 +74,7 @@ public object MechModels {
             place(LEFT_ARM, WeaponModels.mediumLaser)
             place(RIGHT_ARM, WeaponModels.machineGun)
             place(RIGHT_ARM, WeaponModels.machineGun)
-            ammo(CENTER_TORSO, AmmoType.MG, 1)
+            ammo(CENTER_TORSO, AmmoType.MG)
             jumpJets(6)
         },
         mech(
@@ -95,7 +95,7 @@ public object MechModels {
         ) {
             place(RIGHT_ARM, WeaponModels.mediumLaser)
             place(LEFT_ARM, WeaponModels.srm2)
-            ammo(LEFT_ARM, AmmoType.SRM2, 1)
+            ammo(LEFT_ARM, AmmoType.SRM2)
             jumpJets(6)
         },
         mech(
@@ -120,7 +120,7 @@ public object MechModels {
             place(LEFT_ARM, WeaponModels.mediumLaser)
             place(RIGHT_TORSO, WeaponModels.machineGun)
             place(LEFT_TORSO, WeaponModels.machineGun)
-            ammo(CENTER_TORSO, AmmoType.MG, 1)
+            ammo(CENTER_TORSO, AmmoType.MG)
             heatSinks(3)
             jumpJets(6)
         },
@@ -143,7 +143,7 @@ public object MechModels {
         ) {
             place(RIGHT_ARM, WeaponModels.ppc)
             place(RIGHT_TORSO, WeaponModels.lrm10)
-            ammo(RIGHT_TORSO, AmmoType.LRM10, 1)
+            ammo(RIGHT_TORSO, AmmoType.LRM10)
             heatSinks(2)
             jumpJets(5)
         },
@@ -165,11 +165,11 @@ public object MechModels {
             ),
         ) {
             place(RIGHT_TORSO, WeaponModels.ac5)
-            ammo(RIGHT_TORSO, AmmoType.AC5, 1)
+            ammo(RIGHT_TORSO, AmmoType.AC5)
             place(LEFT_TORSO, WeaponModels.lrm5)
-            ammo(LEFT_TORSO, AmmoType.LRM5, 1)
+            ammo(LEFT_TORSO, AmmoType.LRM5)
             place(LEFT_TORSO, WeaponModels.srm2)
-            ammo(LEFT_TORSO, AmmoType.SRM2, 1)
+            ammo(LEFT_TORSO, AmmoType.SRM2)
             place(CENTER_TORSO, WeaponModels.mediumLaser)
             heatSinks(2)
             jumpJets(5)
@@ -198,9 +198,9 @@ public object MechModels {
             place(LEFT_ARM, WeaponModels.smallLaser)
             place(LEFT_TORSO, WeaponModels.machineGun)
             place(LEFT_TORSO, WeaponModels.machineGun)
-            ammo(LEFT_TORSO, AmmoType.MG, 1)
+            ammo(LEFT_TORSO, AmmoType.MG)
             place(RIGHT_TORSO, WeaponModels.srm6)
-            ammo(RIGHT_TORSO, AmmoType.SRM6, 1)
+            ammo(RIGHT_TORSO, AmmoType.SRM6)
             heatSinks(8)
         },
         mech(
@@ -224,7 +224,7 @@ public object MechModels {
             place(RIGHT_ARM, WeaponModels.mediumLaser)
             place(LEFT_ARM, WeaponModels.mediumLaser)
             place(RIGHT_TORSO, WeaponModels.ac5)
-            ammo(RIGHT_TORSO, AmmoType.AC5, 1)
+            ammo(RIGHT_TORSO, AmmoType.AC5)
             heatSinks(8)
         },
         mech(
@@ -274,7 +274,7 @@ public object MechModels {
             place(LEFT_TORSO, WeaponModels.lrm20)
             ammo(LEFT_TORSO, AmmoType.LRM20, 2)
             place(CENTER_TORSO, WeaponModels.srm6)
-            ammo(LEFT_TORSO, AmmoType.SRM6, 1)
+            ammo(LEFT_TORSO, AmmoType.SRM6)
             place(LEFT_ARM, WeaponModels.mediumLaser)
             place(RIGHT_ARM, WeaponModels.mediumLaser)
             place(LEFT_ARM, WeaponModels.mediumLaser)
@@ -316,7 +316,7 @@ public object MechModels {
             ),
         ) {
             place(RIGHT_TORSO, WeaponModels.srm6)
-            ammo(RIGHT_TORSO, AmmoType.SRM6, 1)
+            ammo(RIGHT_TORSO, AmmoType.SRM6)
             place(RIGHT_ARM, WeaponModels.mediumLaser)
             jumpJets(5)
         },

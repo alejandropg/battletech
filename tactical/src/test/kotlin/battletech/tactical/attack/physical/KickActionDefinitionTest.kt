@@ -30,7 +30,7 @@ internal class KickActionDefinitionTest {
     @Test
     fun `kick damage is ceil of tonnage over five`() {
         // Total Warfare: kick damage = ceil(tonnage / 5).
-        assertEquals(10, kickDamage(aUnit(tonnage = 50)))
+        assertEquals(10, kickDamage(aUnit()))
         assertEquals(15, kickDamage(aUnit(tonnage = 75)))
         assertEquals(5, kickDamage(aUnit(tonnage = 25)))
         assertEquals(20, kickDamage(aUnit(tonnage = 100)))
@@ -40,7 +40,7 @@ internal class KickActionDefinitionTest {
     fun `success chance reflects the minus two kick modifier`() {
         // Kick is easier than a punch: piloting skill - 2 target number.
         // Piloting 5 -> target number 3 -> 97% on 2d6.
-        val actor = aUnit(pilotingSkill = 5, position = HexCoordinates(0, 0))
+        val actor = aUnit(position = HexCoordinates(0, 0))
         val target = aUnit(id = "enemy", position = HexCoordinates(1, 0))
         val gameState = aGameState(units = listOf(actor, target))
 

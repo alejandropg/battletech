@@ -39,7 +39,7 @@ internal class DeclaredTargetsIntegrationTest {
             weapons = listOf(mediumLaser()),
         )
         val target = aUnit(
-            id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
+            id = "atlas", owner = PlayerId.PLAYER_2,
             position = HexCoordinates(2, 1),
         )
         val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
@@ -50,8 +50,6 @@ internal class DeclaredTargetsIntegrationTest {
                 torsoFacing = HexDirection.N,
                 weaponAssignments = mapOf(target.id to setOf(0)),
                 primaryTargetId = target.id,
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
             ),
             drafts = emptyMap(),
         )

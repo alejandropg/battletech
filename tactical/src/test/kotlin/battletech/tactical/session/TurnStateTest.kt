@@ -41,7 +41,7 @@ internal class TurnStateTest {
 
     @Test
     fun `allImpulsesComplete is false when impulses remain`() {
-        val state = aMovementTurn(currentImpulseIndex = 0)
+        val state = aMovementTurn()
         assertFalse(state.movement.isComplete)
     }
 

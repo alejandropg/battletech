@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
-import tenter.screen.ScreenBuffer
 import tenter.screen.ChromeRole
+import tenter.screen.ScreenBuffer
 
 internal class HexRendererTest {
 
@@ -188,7 +188,7 @@ internal class HexRendererTest {
     @Test
     fun `a CLEAR hex with no elevation still fills with TERRAIN_CLEAR_BG`() {
         val buffer = ScreenBuffer(10, 6)
-        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.CLEAR, elevation = 0)
+        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.CLEAR)
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 

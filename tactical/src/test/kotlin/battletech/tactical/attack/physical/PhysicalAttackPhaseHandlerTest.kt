@@ -32,7 +32,7 @@ internal class PhysicalAttackPhaseHandlerTest {
     private val targetPos = HexCoordinates(1, 0)
     private val bearing = FiringArc.bearingDirection(targetPos, attackerPos)
 
-    private val attacker = aUnit(id = "attacker", tonnage = 50, pilotingSkill = 5, position = attackerPos)
+    private val attacker = aUnit(id = "attacker", position = attackerPos)
     private val target = aUnit(id = "target", owner = PlayerId.PLAYER_2, position = targetPos, facing = bearing)
     private val gameState = aGameState(units = listOf(attacker, target))
 

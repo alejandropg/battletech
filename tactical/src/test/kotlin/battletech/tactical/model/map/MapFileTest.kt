@@ -26,7 +26,7 @@ internal class MapFileTest {
             width = 3,
             height = 3,
             hexes = listOf(
-                HexSpec(col = 1, row = 1, terrain = Terrain.WATER, elevation = 0, depth = 2),
+                HexSpec(col = 1, row = 1, terrain = Terrain.WATER, depth = 2),
                 HexSpec(col = 3, row = 1, terrain = Terrain.HEAVY_WOODS, elevation = 1),
             ),
         )

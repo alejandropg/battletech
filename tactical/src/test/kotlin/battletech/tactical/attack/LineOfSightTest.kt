@@ -164,7 +164,7 @@ internal class LineOfSightTest {
     fun `no partial cover when attacker and target are at the same elevation as obstacle`() {
         // All elevations equal → no obstacle above target.
         val interveningPos = HexCoordinates(0, 1)
-        val hexes = mapOf(interveningPos to Hex(interveningPos, Terrain.CLEAR, elevation = 0))
+        val hexes = mapOf(interveningPos to Hex(interveningPos, Terrain.CLEAR))
 
         val result = los(targetPos = HexCoordinates(0, 2), hexes = hexes)
 

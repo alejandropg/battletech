@@ -49,36 +49,35 @@ public class PanelLayout<K : PanelId, I> private constructor(
             sides: List<Panel<K, I>>,
         ): PanelLayout<K, I> {
             val contentX = 0
-            val contentY = reservedTop
             val contentHeight = height - reservedTop
 
             val maximizedSide = sides.firstOrNull { it.state == PanelState.MAXIMIZED }
             if (maximizedSide != null) {
                 return PanelLayout(
                     contentX = contentX,
-                    contentY = contentY,
+                    contentY = reservedTop,
                     contentWidth = width,
                     contentHeight = contentHeight,
                     main = null,
-                    sides = listOf(Slot(maximizedSide, contentX, contentY, width, contentHeight)),
+                    sides = listOf(Slot(maximizedSide, contentX, reservedTop, width, contentHeight)),
                 )
             }
 
             val totalSideWidth = sides.sumOf { it.width }
             val mainWidth = width - totalSideWidth
-            val mainSlot = Slot(main, 0, contentY, mainWidth, contentHeight)
+            val mainSlot = Slot(main, 0, reservedTop, mainWidth, contentHeight)
 
             val slots = buildList {
                 var nextX = mainWidth
                 for (panel in sides) {
-                    add(Slot(panel, nextX, contentY, panel.width, contentHeight))
+                    add(Slot(panel, nextX, reservedTop, panel.width, contentHeight))
                     nextX += panel.width
                 }
             }
 
             return PanelLayout(
                 contentX = contentX,
-                contentY = contentY,
+                contentY = reservedTop,
                 contentWidth = width,
                 contentHeight = contentHeight,
                 main = mainSlot,

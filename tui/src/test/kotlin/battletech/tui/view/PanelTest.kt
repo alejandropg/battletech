@@ -15,7 +15,6 @@ import tenter.screen.Canvas
 import tenter.screen.ChromeRole
 import tenter.screen.ScreenBuffer
 import tenter.view.View
-import tenter.view.render
 import tenter.view.text
 
 /**
@@ -112,7 +111,7 @@ internal class PanelTest {
         assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, focused.get(0, 0).style.fg, "border corner")
         assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, focused.get(2, 0).style.fg, "badge/title run")
 
-        val unfocused = renderPanel(panel, focused = false)
+        val unfocused = renderPanel(panel)
         assertEquals(ChromeRole.PANEL_BORDER, unfocused.get(0, 0).style.fg, "border corner")
         assertEquals(ChromeRole.PANEL_BORDER, unfocused.get(2, 0).style.fg, "badge/title run")
     }
@@ -132,7 +131,7 @@ internal class PanelTest {
         )
         panel.cycleState(-1) // NORMAL -> MINIMIZED
 
-        val buffer = renderPanel(panel, width = Panel.MINIMIZED_WIDTH, height = 10)
+        val buffer = renderPanel(panel, width = Panel.MINIMIZED_WIDTH)
 
         // The full "[badge] title" run can't fit in a 7-column stub, so Bordered falls back to the
         // badge alone — the one thing that still identifies which panel this stub is (Alt+9 here).
@@ -153,7 +152,7 @@ internal class PanelTest {
     fun `a focused panel's scrollbar thumb also renders in the focus color`() {
         val panel: GamePanel = Panel(GamePanelId.LOG, "T", normalWidth = 30, normal = { stubContent(20) })
 
-        val buffer = renderPanel(panel, width = 30, height = 10, focused = true)
+        val buffer = renderPanel(panel, focused = true)
 
         val thumbRow = (1..8).first { buffer.get(29, it).char == "▐" }
         assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, buffer.get(29, thumbRow).style.fg)

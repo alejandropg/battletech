@@ -30,22 +30,22 @@ public object CellWidth {
             else -> false
         }
 
-    private fun isWide(cp: Int): Boolean = when {
-        cp in 0x1100..0x115F -> true
-        cp in 0x2E80..0x303E -> true
-        cp in 0x3041..0x33FF -> true
-        cp in 0x3400..0x4DBF -> true
-        cp in 0x4E00..0x9FFF -> true
-        cp in 0xA000..0xA4CF -> true
-        cp in 0xAC00..0xD7A3 -> true
-        cp in 0xF900..0xFAFF -> true
-        cp in 0xFE30..0xFE4F -> true
-        cp in 0xFF00..0xFF60 -> true
-        cp in 0xFFE0..0xFFE6 -> true
-        cp in 0x1F300..0x1F64F -> true
-        cp in 0x1F900..0x1F9FF -> true
-        cp in 0x20000..0x2FFFD -> true
-        cp in 0x30000..0x3FFFD -> true
+    private fun isWide(cp: Int): Boolean = when (cp) {
+        in 0x1100..0x115F -> true
+        in 0x2E80..0x303E -> true
+        in 0x3041..0x33FF -> true
+        in 0x3400..0x4DBF -> true
+        in 0x4E00..0x9FFF -> true
+        in 0xA000..0xA4CF -> true
+        in 0xAC00..0xD7A3 -> true
+        in 0xF900..0xFAFF -> true
+        in 0xFE30..0xFE4F -> true
+        in 0xFF00..0xFF60 -> true
+        in 0xFFE0..0xFFE6 -> true
+        in 0x1F300..0x1F64F -> true
+        in 0x1F900..0x1F9FF -> true
+        in 0x20000..0x2FFFD -> true
+        in 0x30000..0x3FFFD -> true
         // Nerd-Font PUA (BMP U+E000..U+F8FF, supplementary U+F0000..U+FFFFD)
         // is intentionally treated as width 1: most terminals render these glyphs
         // in a single cell.

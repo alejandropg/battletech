@@ -17,7 +17,6 @@ import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
-import tenter.view.FlashMessage
 import battletech.tui.game.RenderData
 import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
@@ -33,6 +32,7 @@ import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import tenter.input.KeySection
+import tenter.view.FlashMessage
 
 internal val FACING_ORDER: List<HexDirection> = listOf(
     HexDirection.N, HexDirection.NE, HexDirection.SE,
@@ -93,7 +93,7 @@ internal sealed interface MovementPhase : Phase {
 
         val reachability: ReachabilityMap get() = modes[currentModeIndex]
 
-        val hoveredPath: List<HexCoordinates>?
+        private val hoveredPath: List<HexCoordinates>?
             get() = hoveredDestination?.path?.map { it.position }
 
         internal fun withCursorAt(cursor: HexCoordinates, app: AppState): Browsing {
@@ -224,7 +224,7 @@ internal sealed interface MovementPhase : Phase {
         val options: List<ReachableHex>,
     ) : MovementPhase, CancelableSubPhase {
 
-        val reachability: ReachabilityMap get() = modes[currentModeIndex]
+        private val reachability: ReachabilityMap get() = modes[currentModeIndex]
 
         val path: List<HexCoordinates>
             get() = options.minByOrNull { it.mpSpent }
@@ -232,7 +232,7 @@ internal sealed interface MovementPhase : Phase {
                 ?.map { it.position }
                 ?: emptyList()
 
-        public fun toBrowsing(): Browsing = Browsing(
+        private fun toBrowsing(): Browsing = Browsing(
             unitId = unitId,
             modes = modes,
             currentModeIndex = currentModeIndex,

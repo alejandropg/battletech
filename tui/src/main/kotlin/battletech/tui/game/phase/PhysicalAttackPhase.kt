@@ -10,17 +10,17 @@ import battletech.tactical.query.PhysicalAttackOption
 import battletech.tactical.session.CommitPhysicalAttackImpulse
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
-import tenter.view.FlashMessage
 import battletech.tui.game.attackPlayerLabel
 import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.AttackAction
 import battletech.tui.input.IdleAction
 import battletech.tui.input.InputMapper
-import tenter.input.KeySection
 import battletech.tui.input.Keymap
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
+import tenter.input.KeySection
+import tenter.view.FlashMessage
 
 internal const val PHYSICAL_DECLARING_PROMPT = "Declare punch/kick"
 
@@ -51,7 +51,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
                 activePlayer = { app.turnState.attack.activePlayer },
                 selectableUnits = { app.turnState.selectableAttackUnits(app.visibleState.units) },
                 onCommit = { a -> commitPhysicalImpulse(a, drafts) },
-                enterFor = { unit, a -> Transition(a.copy(phase = enterPhysicalDeclaring(unit.id, a, drafts))) },
+                enterFor = { unit, a -> Transition(a.copy(phase = enterPhysicalDeclaring(unit.id, drafts))) },
             )
         }
 
@@ -105,7 +105,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
         }
 
         /** This attacker's TARGETS-panel content — also the source of [panels]' visibility decision. */
-        internal fun attackRender(app: AppState): AttackRender {
+        private fun attackRender(app: AppState): AttackRender {
             val options = optionsFor(app)
             val byTarget = options.groupBy { it.targetId }
             val targets = byTarget.map { (targetId, opts) ->
@@ -139,7 +139,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
             )
         }
 
-        internal fun allDrafts(): PhysicalDrafts =
+        private fun allDrafts(): PhysicalDrafts =
             if (assignments.values.any { it.isNotEmpty() }) drafts + (unitId to assignments) else drafts - unitId
 
         private fun optionsFor(app: AppState): List<PhysicalAttackOption> {
@@ -190,12 +190,12 @@ internal sealed interface PhysicalAttackPhase : Phase {
             if (attackers.isEmpty()) return Transition(app.copy(phase = SelectingAttacker(saved)))
             val idx = attackers.indexOfFirst { it.id == unitId }.coerceAtLeast(0)
             val next = attackers[(idx + 1) % attackers.size]
-            return Transition(app.copy(phase = enterPhysicalDeclaring(next.id, app, saved), cursor = next.position))
+            return Transition(app.copy(phase = enterPhysicalDeclaring(next.id, saved), cursor = next.position))
         }
     }
 }
 
-internal fun enterPhysicalDeclaring(unitId: UnitId, app: AppState, drafts: PhysicalDrafts): PhysicalAttackPhase.Declaring =
+internal fun enterPhysicalDeclaring(unitId: UnitId, drafts: PhysicalDrafts): PhysicalAttackPhase.Declaring =
     PhysicalAttackPhase.Declaring(
         unitId = unitId,
         cursorIndex = 0,

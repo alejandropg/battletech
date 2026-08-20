@@ -24,7 +24,7 @@ public fun renderInPanel(
         badge = badge.toString(),
         content = content,
         extent = ContentExtent.Measured(),
-        offset = scrollOffset?.let { ScrollOffset(0, it) } ?: ScrollOffset.ZERO,
+        offset = scrollOffset?.let { ScrollOffset(y = it) } ?: ScrollOffset.ZERO,
     ),
     width,
     height,

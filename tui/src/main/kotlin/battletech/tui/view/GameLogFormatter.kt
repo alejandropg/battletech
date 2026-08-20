@@ -66,7 +66,7 @@ internal object GameLogFormatter {
     fun lines(event: GameEvent, state: PlayerGameState): List<LogLine> = when (event) {
         is PhaseChanged -> emptyList()
         is TurnEnded -> emptyList()
-        is TorsoFacingsApplied -> torsoFacingLines(event, state)
+        is TorsoFacingsApplied -> torsoFacingLines(event)
         is AttackDeclarationsRecorded -> attackDeclarationLines(event, state)
         is InitiativeRolled -> {
             val p1 = event.initiative.rolls[PlayerId.PLAYER_1]!!
@@ -83,7 +83,7 @@ internal object GameLogFormatter {
             val hits = event.results.filterIsInstance<AttackResult.Hit>()
             val damage = hits.sumOf { it.damageApplied }
             val summary = "Attacks: $fired fired, ${hits.size} hit, $damage damage"
-            val destroyed = destroyedClause(hits.map { it.targetId to it.damage }, state)
+            val destroyed = destroyedClause(hits.map { it.targetId to it.damage })
             val text = if (destroyed == null) summary else "$summary — $destroyed"
             val icon = if (hits.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else attacksResolvedIcon()
             val lines = mutableListOf(LogLine(icon, text))
@@ -108,7 +108,7 @@ internal object GameLogFormatter {
             val hits = event.results.filterIsInstance<PhysicalAttackResult.Hit>()
             val damage = hits.sumOf { it.damageApplied }
             val summary = "Physical attacks: $made made, ${hits.size} hit, $damage damage"
-            val destroyed = destroyedClause(hits.map { it.targetId to it.damage }, state)
+            val destroyed = destroyedClause(hits.map { it.targetId to it.damage })
             val text = if (destroyed == null) summary else "$summary — $destroyed"
             val icon = if (hits.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else physicalAttacksResolvedIcon()
             val lines = mutableListOf(LogLine(icon, text))
@@ -208,7 +208,7 @@ internal object GameLogFormatter {
     private fun physicalDetailLine(result: PhysicalAttackResult.Hit): LogLine =
         LogLine(attackOutcomeIcon(hit = true), "${result.attackName} → ${locationLabel(result.hitLocation)} (${result.damageApplied} dmg)")
 
-    private fun torsoFacingLines(event: TorsoFacingsApplied, state: PlayerGameState): List<LogLine> =
+    private fun torsoFacingLines(event: TorsoFacingsApplied): List<LogLine> =
         event.facings.entries.map { (unitId, dir) ->
             val name = unitId.value
             LogLine(torsoArrowIcon(dir).first, "$name torso → $dir")
@@ -272,10 +272,7 @@ internal object GameLogFormatter {
     private fun hexLabel(coord: HexCoordinates): String =
         "%02d%02d".format(coord.col + 1, coord.row + 1)
 
-    private fun destroyedClause(
-        targetsAndDamage: List<Pair<UnitId, List<LocationDamage>>>,
-        state: PlayerGameState,
-    ): String? {
+    private fun destroyedClause(targetsAndDamage: List<Pair<UnitId, List<LocationDamage>>>): String? {
         val parts = targetsAndDamage.flatMap { (targetId, steps) ->
             val name = targetId.value
             steps.filter { it.destroyed }.map { "$name ${locationLabel(it.location)}" }

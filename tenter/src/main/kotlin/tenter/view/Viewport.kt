@@ -8,7 +8,7 @@ public data class ScrollOffset(val x: Int = 0, val y: Int = 0) {
     public operator fun plus(other: ScrollOffset): ScrollOffset = ScrollOffset(x + other.x, y + other.y)
 
     public companion object {
-        public val ZERO: ScrollOffset = ScrollOffset(0, 0)
+        public val ZERO: ScrollOffset = ScrollOffset()
     }
 }
 
@@ -77,14 +77,13 @@ public class Viewport(
         private set
 
     override fun draw(canvas: Canvas) {
-        val viewport = canvas
-        if (viewport.width <= 0 || viewport.height <= 0) {
+        if (canvas.width <= 0 || canvas.height <= 0) {
             scroll = ScrollState.NONE
             return
         }
 
         val streamWidth = when (extent) {
-            is ContentExtent.Measured -> viewport.width
+            is ContentExtent.Measured -> canvas.width
             is ContentExtent.Fixed -> extent.width
         }
         val allocatedHeight = when (extent) {
@@ -100,8 +99,8 @@ public class Viewport(
             is ContentExtent.Fixed -> allocatedHeight
         }
 
-        val maxOffsetX = (streamWidth - viewport.width).coerceAtLeast(0)
-        val maxOffsetY = (streamHeight - viewport.height).coerceAtLeast(0)
+        val maxOffsetX = (streamWidth - canvas.width).coerceAtLeast(0)
+        val maxOffsetY = (streamHeight - canvas.height).coerceAtLeast(0)
 
         val reveal = stream.revealRect()
         val baseX = offset.x
@@ -111,10 +110,10 @@ public class Viewport(
         // otherwise the given offset stands, so a manual pan/scroll survives every subsequent render.
         val shouldFollow = reveal != null && reveal != previousReveal
 
-        val offsetX = resolveAxis(baseX, reveal?.let { it.x to it.x + it.width }, viewport.width, maxOffsetX, shouldFollow)
-        val offsetY = resolveAxis(baseY, reveal?.let { it.y to it.y + it.height }, viewport.height, maxOffsetY, shouldFollow)
+        val offsetX = resolveAxis(baseX, reveal?.let { it.x to it.x + it.width }, canvas.width, maxOffsetX, shouldFollow)
+        val offsetY = resolveAxis(baseY, reveal?.let { it.y to it.y + it.height }, canvas.height, maxOffsetY, shouldFollow)
 
-        viewport.blit(stream, offsetX, offsetY, 0, 0, viewport.width, viewport.height)
+        canvas.blit(stream, offsetX, offsetY, 0, 0, canvas.width, canvas.height)
 
         scroll = ScrollState(ScrollOffset(offsetX, offsetY), ScrollOffset(maxOffsetX, maxOffsetY), reveal)
     }

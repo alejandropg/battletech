@@ -3,8 +3,8 @@ package battletech.tui.view
 import battletech.tactical.model.TurnPhase
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.Insets
 import tenter.screen.ChromeRole
+import tenter.screen.Insets
 import tenter.view.Bordered
 import tenter.view.View
 
@@ -39,6 +39,6 @@ internal class StatusBarView(
          * takes 2, and it needs 2 content rows (phase label + prompt), so it cannot afford
          * [Bordered.PADDING]'s spacer row — `top = 0`.
          */
-        private val STATUS_BAR_PADDING = Insets(left = 1, top = 0, right = 1, bottom = 0)
+        private val STATUS_BAR_PADDING = Insets(left = 1, right = 1)
     }
 }

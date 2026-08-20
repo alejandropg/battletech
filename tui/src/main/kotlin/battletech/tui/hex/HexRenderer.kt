@@ -4,6 +4,8 @@ import battletech.tactical.model.Hex
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.Terrain
+import battletech.tui.hex.HexRenderer.renderOverlayChar
+import battletech.tui.hex.HexRenderer.terrainFill
 import battletech.tui.screen.BoardRole
 import tenter.screen.Canvas
 import tenter.screen.Cell
@@ -145,7 +147,7 @@ public object HexRenderer {
 
     private fun renderContent(canvas: Canvas, x: Int, y: Int, bg: BoardRole) {
         val style = Cell.Style(ChromeRole.DEFAULT, bg)
-        val cell = Cell(" ", style)
+        val cell = Cell(style = style)
         // Row 1 content (narrow): x+2..x+6
         for (i in 2..6) {
             canvas.set(x + i, y + 1, cell)

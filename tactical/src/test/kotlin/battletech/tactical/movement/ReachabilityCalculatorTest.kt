@@ -1,11 +1,10 @@
 package battletech.tactical.movement
 
-import battletech.tactical.model.MovementMode
-
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.Terrain
 import battletech.tactical.query.aUnit
 import battletech.tactical.unit.CombatUnit
@@ -36,7 +35,7 @@ internal class ReachabilityCalculatorTest {
     @Test
     fun `heat reduces walking MP`() {
         val map = flatClearMap(6)
-        val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 4, currentHeat = 10)
+        val actor = aUnit(position = HexCoordinates(0, 0), currentHeat = 10)
         val calc = calculator(map, listOf(actor))
 
         // heat 10 -> -2 MP
@@ -46,7 +45,7 @@ internal class ReachabilityCalculatorTest {
     @Test
     fun `heat re-derives running MP from reduced walk`() {
         val map = flatClearMap(6)
-        val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 4, runningMP = 6, currentHeat = 5)
+        val actor = aUnit(position = HexCoordinates(0, 0), currentHeat = 5)
         val calc = calculator(map, listOf(actor))
 
         // heat 5 -> -1 walk (3) -> run = ceil(3 * 1.5) = 5
@@ -56,7 +55,7 @@ internal class ReachabilityCalculatorTest {
     @Test
     fun `no heat penalty leaves stored running MP untouched`() {
         val map = flatClearMap(6)
-        val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 4, runningMP = 6, currentHeat = 0)
+        val actor = aUnit(position = HexCoordinates(0, 0))
         val calc = calculator(map, listOf(actor))
 
         assertEquals(6, calc.calculate(actor, MovementMode.RUN).maxMP)
@@ -137,7 +136,7 @@ internal class ReachabilityCalculatorTest {
         val origin = HexCoordinates(0, 0)
         val northHex = HexCoordinates(0, -1)
         val hexes = mapOf(
-            origin to Hex(origin, Terrain.CLEAR, elevation = 0),
+            origin to Hex(origin, Terrain.CLEAR),
             northHex to Hex(northHex, Terrain.CLEAR, elevation = 2),
         )
         val map = GameMap(hexes)
@@ -157,7 +156,7 @@ internal class ReachabilityCalculatorTest {
         val northHex = HexCoordinates(0, -1)
         val hexes = mapOf(
             origin to Hex(origin, Terrain.CLEAR, elevation = 3),
-            northHex to Hex(northHex, Terrain.CLEAR, elevation = 0),
+            northHex to Hex(northHex, Terrain.CLEAR),
         )
         val map = GameMap(hexes)
         val actor = aUnit(position = origin, walkingMP = 1)
@@ -174,7 +173,7 @@ internal class ReachabilityCalculatorTest {
         val map = flatClearMap(3)
         val origin = HexCoordinates(0, 0)
         val enemyPos = HexCoordinates(0, -1)
-        val actor = aUnit(id = "actor", position = origin, walkingMP = 4)
+        val actor = aUnit(id = "actor", position = origin)
         val enemy = aUnit(id = "enemy", position = enemyPos)
         val calc = calculator(map, listOf(actor, enemy))
 
@@ -220,7 +219,7 @@ internal class ReachabilityCalculatorTest {
     @Test
     fun `start position is reachable with different facing`() {
         val map = flatClearMap(3)
-        val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 4)
+        val actor = aUnit(position = HexCoordinates(0, 0))
         val calc = calculator(map, listOf(actor))
 
         val result = calc.calculate(actor, MovementMode.WALK)
@@ -233,7 +232,7 @@ internal class ReachabilityCalculatorTest {
     @Test
     fun `start position with same facing is not a destination`() {
         val map = flatClearMap(3)
-        val actor = aUnit(position = HexCoordinates(0, 0), walkingMP = 4)
+        val actor = aUnit(position = HexCoordinates(0, 0))
         val calc = calculator(map, listOf(actor))
 
         val result = calc.calculate(actor, MovementMode.WALK)
@@ -307,7 +306,7 @@ internal class ReachabilityCalculatorTest {
             aUnit(id = "enemy-$index", position = pos)
         }
         val map = GameMap(hexes)
-        val actor = aUnit(id = "actor", position = origin, walkingMP = 4)
+        val actor = aUnit(id = "actor", position = origin)
         val calc = calculator(map, listOf(actor) + enemies)
 
         val result = calc.calculate(actor, MovementMode.WALK)
@@ -389,7 +388,7 @@ internal class ReachabilityCalculatorTest {
     @Test
     fun `0 JP produces no destinations`() {
         val map = flatClearMap(3)
-        val actor = aUnit(position = HexCoordinates(0, 0), jumpMP = 0)
+        val actor = aUnit(position = HexCoordinates(0, 0))
         val calc = calculator(map, listOf(actor))
 
         val result = calc.calculate(actor, MovementMode.JUMP)
@@ -427,7 +426,7 @@ internal class ReachabilityCalculatorTest {
     @Test
     fun `result contains correct maxMP`() {
         val map = flatClearMap(3)
-        val actor = aUnit(position = HexCoordinates(0, 0), runningMP = 6)
+        val actor = aUnit(position = HexCoordinates(0, 0))
         val calc = calculator(map, listOf(actor))
 
         val result = calc.calculate(actor, MovementMode.RUN)

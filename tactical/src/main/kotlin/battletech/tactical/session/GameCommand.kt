@@ -55,7 +55,6 @@ public data class StandUp(
  */
 @Serializable
 public sealed interface AttackImpulseCommand : GameCommand {
-    override val playerId: PlayerId
     public val torsoFacings: Map<UnitId, HexDirection>
 }
 

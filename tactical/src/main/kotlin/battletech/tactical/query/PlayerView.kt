@@ -1,7 +1,6 @@
 package battletech.tactical.query
 
 import battletech.tactical.attack.weapon.TargetInfo
-import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId

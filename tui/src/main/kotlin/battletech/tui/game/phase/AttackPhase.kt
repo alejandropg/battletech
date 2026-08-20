@@ -73,7 +73,7 @@ internal sealed interface AttackPhase : Phase {
                 app = app,
                 activePlayer = { app.turnState.attack.activePlayer },
                 selectableUnits = { app.turnState.selectableAttackUnits(app.visibleState.units) },
-                onCommit = { a -> commitAttackImpulse(a, attackTurnPhase, drafts) },
+                onCommit = { a -> commitAttackImpulse(a, drafts) },
                 enterFor = { unit, a ->
                     Transition(a.copy(phase = enterDeclaring(unit, attackTurnPhase, a.viewFor(unit.owner), drafts)))
                 },
@@ -112,7 +112,7 @@ internal sealed interface AttackPhase : Phase {
         val cursorWeaponIndex: Int get() = allocation.cursorWeaponIndex
 
         /** Snapshot of this unit's current draft as a [UnitDeclaration]. */
-        public fun currentDeclaration(): UnitDeclaration = UnitDeclaration(
+        private fun currentDeclaration(): UnitDeclaration = UnitDeclaration(
             unitId = unitId,
             torsoFacing = torsoFacing,
             primaryTargetId = primaryTargetId,
@@ -139,7 +139,7 @@ internal sealed interface AttackPhase : Phase {
 
             return when (action) {
                 is AttackAction.NextAttacker -> nextAttacker(app)
-                is AttackAction.Commit -> commitAttackImpulse(app, attackTurnPhase, allDrafts())
+                is AttackAction.Commit -> commitAttackImpulse(app, allDrafts())
                 is AttackAction.Cancel -> onCancel(app)
                 is AttackAction.ToggleWeapon -> {
                     val newAllocation = allocation.toggle(targets)
@@ -209,7 +209,7 @@ internal sealed interface AttackPhase : Phase {
         }
 
         /** This attacker's TARGETS-panel content — also the source of [panels]' visibility decisions. */
-        internal fun attackRender(app: AppState): AttackRender {
+        private fun attackRender(app: AppState): AttackRender {
             val owner = app.visibleState.units.byId(unitId).owner
             val view = app.viewFor(owner)
             return AttackRender(
@@ -235,7 +235,7 @@ internal sealed interface AttackPhase : Phase {
         override fun keySection(): KeySection = KeySection("DECLARE FIRE", Keymap.WEAPON_DECLARING)
 
         /** Query target infos for this attacker's current torso facing — one call per render entry point. */
-        private fun targetTable(view: PlayerView): List<battletech.tactical.attack.weapon.TargetInfo> =
+        private fun targetTable(view: PlayerView): List<TargetInfo> =
             view.targetInfos(unitId, torsoFacing)
 
         private fun nextAttacker(app: AppState): Transition {
@@ -307,7 +307,6 @@ private fun firstCursorPosition(targets: List<TargetInfo>): Pair<Int, Int> {
  */
 internal fun commitAttackImpulse(
     app: AppState,
-    attackTurnPhase: TurnPhase,
     drafts: Map<UnitId, UnitDeclaration>,
 ): Transition {
     val turnState = app.turnState

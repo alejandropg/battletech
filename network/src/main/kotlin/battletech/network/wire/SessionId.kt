@@ -1,7 +1,6 @@
 package battletech.network.wire
 
 import battletech.network.wire.SessionId.ALPHABET
-import battletech.network.wire.SessionId.normalize
 import java.security.SecureRandom
 
 /**
@@ -11,8 +10,7 @@ import java.security.SecureRandom
  */
 public object SessionId {
 
-    public const val ALPHABET: String = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
-
+    private const val ALPHABET: String = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
     private const val LENGTH: Int = 6
 
     /** Generates a new random 6-character session id from [ALPHABET]. */

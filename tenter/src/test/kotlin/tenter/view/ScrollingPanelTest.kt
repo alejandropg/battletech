@@ -24,7 +24,7 @@ internal class ScrollingPanelTest {
         badge = "0",
         content = content,
         extent = ContentExtent.Measured(),
-        offset = scrollOffset?.let { ScrollOffset(0, it) } ?: ScrollOffset.ZERO,
+        offset = scrollOffset?.let { ScrollOffset(y = it) } ?: ScrollOffset.ZERO,
     )
 
     @Test
@@ -47,7 +47,7 @@ internal class ScrollingPanelTest {
 
     @Test
     fun `top padding shows at rest and is reclaimed once content scrolls`() {
-        val atRest = render(panel(stubContent(20), scrollOffset = 0), 30, 10)
+        val atRest = render(panel(stubContent(20)), 30, 10)
         assertEquals("", atRest.line(1, 2, 10))
         assertEquals("line0", atRest.line(2, 2, 10))
         assertEquals("line6", atRest.line(8, 2, 10))

@@ -55,8 +55,6 @@ internal class WeaponAllocationTest {
             val targets = listOf(targetInfo("t1", weaponInfo(0, available = false)))
             val alloc = WeaponAllocation(
                 torsoFacing = HexDirection.N,
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
             )
             val result = alloc.toggle(targets)
             assertEquals(alloc, result)
@@ -100,7 +98,7 @@ internal class WeaponAllocationTest {
                 weaponAssignments = mapOf(t1 to setOf(0)),
                 primaryTargetId = t1,
                 cursorTargetIndex = 1,   // cursor on t2
-                cursorWeaponIndex = 0,   // weapon index 2 on t2
+                // weapon index 2 on t2
             )
             val result = alloc.toggle(targets)
             assertEquals(t1, result.primaryTargetId)  // primary unchanged
@@ -131,8 +129,6 @@ internal class WeaponAllocationTest {
                 torsoFacing = HexDirection.N,
                 weaponAssignments = mapOf(t1 to setOf(0), t2 to setOf(2)),
                 primaryTargetId = t1,
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
             )
             val result = alloc.toggle(targets)
             assertEquals(t2, result.primaryTargetId)
@@ -150,7 +146,6 @@ internal class WeaponAllocationTest {
                 weaponAssignments = mapOf(t1 to setOf(0)),
                 primaryTargetId = t1,
                 cursorTargetIndex = 1,
-                cursorWeaponIndex = 0,
             )
             val result = alloc.toggle(targets)
             assertEquals(alloc, result)
@@ -212,14 +207,9 @@ internal class WeaponAllocationTest {
 
         @Test
         fun `twist clamps cursorTargetIndex when target list shrinks`() {
-            val targets = listOf(
-                targetInfo("t1", weaponInfo(0)),
-                targetInfo("t2", weaponInfo(1)),
-            )
             val alloc = WeaponAllocation(
                 torsoFacing = HexDirection.N,
                 cursorTargetIndex = 1,
-                cursorWeaponIndex = 0,
             )
             // After twist only one target remains
             val oneTarget = listOf(targetInfo("t1", weaponInfo(0)))
@@ -229,10 +219,8 @@ internal class WeaponAllocationTest {
 
         @Test
         fun `twist clamps cursorWeaponIndex to max for new target`() {
-            val targets = listOf(targetInfo("t1", weaponInfo(0), weaponInfo(1), weaponInfo(2)))
             val alloc = WeaponAllocation(
                 torsoFacing = HexDirection.N,
-                cursorTargetIndex = 0,
                 cursorWeaponIndex = 2,
             )
             // After twist target has only 1 weapon
@@ -269,8 +257,6 @@ internal class WeaponAllocationTest {
         fun `navigate +1 moves to next weapon`() {
             val alloc = WeaponAllocation(
                 torsoFacing = HexDirection.N,
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
             )
             val result = alloc.navigate(+1, threeWeaponTargets())
             assertEquals(0, result.cursorTargetIndex)
@@ -281,7 +267,6 @@ internal class WeaponAllocationTest {
         fun `navigate +1 wraps across target boundary`() {
             val alloc = WeaponAllocation(
                 torsoFacing = HexDirection.N,
-                cursorTargetIndex = 0,
                 cursorWeaponIndex = 1,
             )
             val result = alloc.navigate(+1, threeWeaponTargets())
@@ -294,7 +279,6 @@ internal class WeaponAllocationTest {
             val alloc = WeaponAllocation(
                 torsoFacing = HexDirection.N,
                 cursorTargetIndex = 1,
-                cursorWeaponIndex = 0,
             )
             val result = alloc.navigate(+1, threeWeaponTargets())
             assertEquals(0, result.cursorTargetIndex)
@@ -305,8 +289,6 @@ internal class WeaponAllocationTest {
         fun `navigate -1 wraps from first to last`() {
             val alloc = WeaponAllocation(
                 torsoFacing = HexDirection.N,
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
             )
             val result = alloc.navigate(-1, threeWeaponTargets())
             assertEquals(1, result.cursorTargetIndex)
@@ -340,8 +322,6 @@ internal class WeaponAllocationTest {
             )
             val alloc = WeaponAllocation(
                 torsoFacing = HexDirection.N,
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
             )
             val result = alloc.clickTarget(t2, targets)
             assertEquals(1, result.cursorTargetIndex)
@@ -353,8 +333,6 @@ internal class WeaponAllocationTest {
             val targets = listOf(targetInfo("t1", weaponInfo(0)))
             val alloc = WeaponAllocation(
                 torsoFacing = HexDirection.N,
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
             )
             val result = alloc.clickTarget(t3, targets)
             assertEquals(alloc, result)
@@ -368,7 +346,6 @@ internal class WeaponAllocationTest {
             )
             val alloc = WeaponAllocation(
                 torsoFacing = HexDirection.N,
-                cursorTargetIndex = 0,
                 cursorWeaponIndex = 1,
             )
             val result = alloc.clickTarget(t2, targets)

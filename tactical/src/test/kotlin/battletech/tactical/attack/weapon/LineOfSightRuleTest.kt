@@ -16,8 +16,6 @@ internal class LineOfSightRuleTest {
 
     private val rule = LineOfSightRule()
 
-    // Attacker at (0,0), target at (0,2): straight column, intervening hex (0,1).
-    private val attackerPos = HexCoordinates(0, 0)
     private val targetPos = HexCoordinates(0, 2)
     private val interveningPos = HexCoordinates(0, 1)
 

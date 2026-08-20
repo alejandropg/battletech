@@ -2,9 +2,9 @@ package battletech.tactical.movement
 
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.MovementMode
-import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
@@ -12,8 +12,8 @@ import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.Impulse
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
-import battletech.tactical.session.MovementProgress
 import battletech.tactical.session.MoveUnit
+import battletech.tactical.session.MovementProgress
 import battletech.tactical.session.StandUp
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitStoodUp
@@ -24,7 +24,7 @@ internal class MovementStandUpTest {
 
     private val handler = MovementPhaseHandler()
 
-    private val prone = aUnit(id = "mech", pilotingSkill = 5, position = HexCoordinates(0, 0)).copy(isProne = true)
+    private val prone = aUnit(id = "mech", position = HexCoordinates(0, 0)).copy(isProne = true)
 
     private fun turn() = TurnState(
         initiative = Initiative(emptyMap(), PlayerId.PLAYER_1, PlayerId.PLAYER_2),

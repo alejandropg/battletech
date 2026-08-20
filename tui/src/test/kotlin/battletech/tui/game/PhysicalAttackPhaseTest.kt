@@ -59,7 +59,7 @@ internal class PhysicalAttackPhaseTest {
 
     @Test
     fun `toggling adds a physical attack to the draft`() {
-        val declaring = enterPhysicalDeclaring(attacker.id, appWith(PhysicalAttackPhase.SelectingAttacker()), emptyMap())
+        val declaring = enterPhysicalDeclaring(attacker.id, emptyMap())
         val app = appWith(declaring)
         val transition = declaring.handle(KeyboardEvent(" "), app)!!
 
@@ -69,7 +69,7 @@ internal class PhysicalAttackPhaseTest {
 
     @Test
     fun `escape cancels back to SelectingAttacker`() {
-        val declaring = enterPhysicalDeclaring(attacker.id, appWith(PhysicalAttackPhase.SelectingAttacker()), emptyMap())
+        val declaring = enterPhysicalDeclaring(attacker.id, emptyMap())
         val app = appWith(declaring)
         val transition = declaring.handle(KeyboardEvent("Escape"), app)!!
 

@@ -21,8 +21,8 @@ import battletech.tui.hex.initiativeIcon
 import battletech.tui.hex.unitStoodUpIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import tenter.screen.ScreenBuffer
 import tenter.screen.ChromeRole
+import tenter.screen.ScreenBuffer
 import tenter.view.ContentExtent
 import tenter.view.ScrollOffset
 import tenter.view.line
@@ -180,7 +180,7 @@ internal class LogViewTest {
         // of the viewport moved down — so this test's row numbers don't shift.
         val entries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val view = LogView(entries, state = emptyState)
-        val buffer = renderDecorated(view, height = 6, scrollOffset = null)
+        val buffer = renderDecorated(view, height = 6)
 
         // The bottom inner row (y = 4, since box bottom is y=5) should be the most recent entry.
         val bottomInnerRow = buffer.line(4, 2, 24)
@@ -215,7 +215,7 @@ internal class LogViewTest {
             badge = GamePanelId.LOG.badge.toString(),
             content = view,
             extent = ContentExtent.Measured(),
-            offset = ScrollOffset(0, 0),
+            offset = ScrollOffset(),
             previousReveal = revealed,
         )
         val buffer = render(second, 28, 6)
@@ -246,7 +246,7 @@ internal class LogViewTest {
             badge = GamePanelId.LOG.badge.toString(),
             content = LogView(tenEntries, state = emptyState),
             extent = ContentExtent.Measured(),
-            offset = ScrollOffset(0, 0),
+            offset = ScrollOffset(),
             previousReveal = revealedAtTen,
         )
         render(manuallyScrolledUp, 28, 6)

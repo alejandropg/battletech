@@ -33,7 +33,7 @@ internal class ConnectionPortSymmetryTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("pairs")
     fun `a message sent from the server side is received on the client side, and vice versa`(
-        @Suppress("UNUSED_PARAMETER") label: String,
+        label: String,
         factory: () -> Pair<ServerConnection, ClientConnection>,
     ) {
         val (server, client) = factory()
@@ -48,7 +48,7 @@ internal class ConnectionPortSymmetryTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("pairs")
     fun `ordering is preserved under multiple sends`(
-        @Suppress("UNUSED_PARAMETER") label: String,
+        label: String,
         factory: () -> Pair<ServerConnection, ClientConnection>,
     ) {
         val (server, client) = factory()
@@ -62,7 +62,7 @@ internal class ConnectionPortSymmetryTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("pairs")
     fun `closing the server side unblocks a client receive() blocked waiting, returning null`(
-        @Suppress("UNUSED_PARAMETER") label: String,
+        label: String,
         factory: () -> Pair<ServerConnection, ClientConnection>,
     ) {
         val (server, client) = factory()
@@ -81,7 +81,7 @@ internal class ConnectionPortSymmetryTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("pairs")
     fun `closing the client side unblocks a server receive() blocked waiting, returning null`(
-        @Suppress("UNUSED_PARAMETER") label: String,
+        label: String,
         factory: () -> Pair<ServerConnection, ClientConnection>,
     ) {
         val (server, client) = factory()
@@ -102,7 +102,7 @@ internal class ConnectionPortSymmetryTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("pairsForOwnClose")
     fun `closing the server side ALSO unblocks the server's own receive() blocked waiting, returning null`(
-        @Suppress("UNUSED_PARAMETER") label: String,
+        label: String,
         factory: () -> ConnectionsUnderTest,
     ) {
         val (server, _, cleanup) = factory()
@@ -125,7 +125,7 @@ internal class ConnectionPortSymmetryTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("pairsForOwnClose")
     fun `closing the client side ALSO unblocks the client's own receive() blocked waiting, returning null`(
-        @Suppress("UNUSED_PARAMETER") label: String,
+        label: String,
         factory: () -> ConnectionsUnderTest,
     ) {
         val (_, client, cleanup) = factory()

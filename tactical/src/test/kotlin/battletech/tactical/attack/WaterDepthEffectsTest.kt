@@ -19,10 +19,10 @@ import battletech.tactical.session.TurnState
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.UnitRoster
+import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.WeaponModel
 import battletech.tactical.unit.WeaponMountId
-import battletech.tactical.unit.Weapon
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -39,8 +39,8 @@ internal class WaterDepthEffectsTest {
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    private fun depth1Hex(pos: HexCoordinates) = Hex(pos, Terrain.CLEAR, elevation = 0, depth = 1)
-    private fun depth2Hex(pos: HexCoordinates) = Hex(pos, Terrain.CLEAR, elevation = 0, depth = 2)
+    private fun depth1Hex(pos: HexCoordinates) = Hex(pos, Terrain.CLEAR, depth = 1)
+    private fun depth2Hex(pos: HexCoordinates) = Hex(pos, Terrain.CLEAR, depth = 2)
 
     // ── unitWaterDepth shared query ───────────────────────────────────────────
 
@@ -65,7 +65,7 @@ internal class WaterDepthEffectsTest {
     fun `target in depth-1 water gives +3 terrain modifier from partial cover`() {
         val attackerPos = HexCoordinates(0, 0)
         val targetPos = HexCoordinates(1, 0)
-        val attacker = aUnit(id = "attacker", gunnerySkill = 4, position = attackerPos)
+        val attacker = aUnit(id = "attacker", position = attackerPos)
         val target = aUnit(id = "target", position = targetPos)
         val weapon = aWeapon()
         val gameState = aGameState(
@@ -361,7 +361,7 @@ internal class WaterDepthEffectsTest {
 
     private val heatHandler = HeatPhaseHandler()
 
-    private fun runHeatPhase(unit: battletech.tactical.unit.CombatUnit, gameState: battletech.tactical.model.GameState, roller: DiceRoller) =
+    private fun runHeatPhase(gameState: battletech.tactical.model.GameState, roller: DiceRoller) =
         heatHandler.onEntry(gameState, TurnState.NULL, roller)
 
     @Test
@@ -372,7 +372,6 @@ internal class WaterDepthEffectsTest {
         val pos = HexCoordinates(0, 0)
         val unit = aUnit(
             position = pos,
-            currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),
         ).copy(isProne = true)
         val gameState = aGameState(
@@ -381,7 +380,7 @@ internal class WaterDepthEffectsTest {
         )
 
         // Dice: consciousness check d6(1)+d6(1) = 2 < 3 → fails
-        val outcome = runHeatPhase(unit, gameState, DiceRoller.deterministic(1, 1))
+        val outcome = runHeatPhase(gameState, DiceRoller.deterministic(1, 1))
 
         assertEquals(1, outcome.state.units.all[0].pilotHits)
         assertFalse(outcome.state.units.all[0].isPilotConscious)
@@ -394,7 +393,6 @@ internal class WaterDepthEffectsTest {
         val pos = HexCoordinates(0, 0)
         val unit = aUnit(
             position = pos,
-            currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),
         ) // isProne = false by default
         val gameState = aGameState(
@@ -403,7 +401,7 @@ internal class WaterDepthEffectsTest {
         )
 
         // No dice consumed (no heat effects, no drowning).
-        val outcome = runHeatPhase(unit, gameState, DiceRoller.deterministic())
+        val outcome = runHeatPhase(gameState, DiceRoller.deterministic())
 
         assertEquals(0, outcome.state.units.all[0].pilotHits)
         assertTrue(outcome.state.units.all[0].isPilotConscious)
@@ -415,7 +413,6 @@ internal class WaterDepthEffectsTest {
         val pos = HexCoordinates(0, 0)
         val unit = aUnit(
             position = pos,
-            currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),
         ).copy(isProne = true)
         val gameState = aGameState(
@@ -423,7 +420,7 @@ internal class WaterDepthEffectsTest {
             hexes = mapOf(pos to depth1Hex(pos)),
         )
 
-        val outcome = runHeatPhase(unit, gameState, DiceRoller.deterministic())
+        val outcome = runHeatPhase(gameState, DiceRoller.deterministic())
 
         assertEquals(0, outcome.state.units.all[0].pilotHits)
         assertThat(outcome.events).noneMatch { it is PilotHit }
@@ -434,12 +431,11 @@ internal class WaterDepthEffectsTest {
         val pos = HexCoordinates(0, 0)
         val unit = aUnit(
             position = pos,
-            currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),
         ).copy(isProne = true)
         val gameState = aGameState(units = listOf(unit), hexes = emptyMap())
 
-        val outcome = runHeatPhase(unit, gameState, DiceRoller.deterministic())
+        val outcome = runHeatPhase(gameState, DiceRoller.deterministic())
 
         assertEquals(0, outcome.state.units.all[0].pilotHits)
         assertThat(outcome.events).noneMatch { it is PilotHit }
@@ -453,7 +449,6 @@ internal class WaterDepthEffectsTest {
         val pos = HexCoordinates(0, 0)
         var unit = aUnit(
             position = pos,
-            currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),
         ).copy(isProne = true)
         var gameState = aGameState(

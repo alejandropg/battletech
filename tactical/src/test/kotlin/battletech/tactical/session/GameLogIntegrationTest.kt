@@ -74,7 +74,6 @@ internal class GameLogIntegrationTest {
             initialTurnState = turn,
             roller = DiceRoller.seeded(42),
             initialPhase = TurnPhase.HEAT,
-            initialNeedsOnEntry = true,
         )
 
         session.advance()

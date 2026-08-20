@@ -7,9 +7,9 @@ import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
-import battletech.tactical.unit.MovementThisTurn
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
+import battletech.tactical.unit.MovementThisTurn
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -22,7 +22,7 @@ internal class PhysicalAttackResolutionTest {
     @Test
     fun `a landing punch applies tonnage-based damage to the rolled location`() {
         // Target faces the attacker -> front attack. Punch front column, die 1 -> Left Arm.
-        val attacker = aUnit(id = "attacker", tonnage = 50, pilotingSkill = 5, position = attackerPos)
+        val attacker = aUnit(id = "attacker", position = attackerPos)
         val target = aUnit(id = "target", position = targetPos, facing = bearing)
         val state = aGameState(units = listOf(attacker, target))
         val declaration = PhysicalAttackDeclaration(attacker.id, target.id, Punch(Side.LEFT))
@@ -43,7 +43,7 @@ internal class PhysicalAttackResolutionTest {
 
     @Test
     fun `resolution to-hit reflects attacker movement`() {
-        val attacker = aUnit(id = "attacker", tonnage = 50, pilotingSkill = 5, position = attackerPos)
+        val attacker = aUnit(id = "attacker", position = attackerPos)
             .copy(movementThisTurn = MovementThisTurn.Moved(MovementMode.WALK, 2))
         val target = aUnit(id = "target", position = targetPos, facing = bearing)
         val state = aGameState(units = listOf(attacker, target))
@@ -58,7 +58,7 @@ internal class PhysicalAttackResolutionTest {
 
     @Test
     fun `a missed punch applies no damage`() {
-        val attacker = aUnit(id = "attacker", tonnage = 50, pilotingSkill = 5, position = attackerPos)
+        val attacker = aUnit(id = "attacker", position = attackerPos)
         val target = aUnit(id = "target", position = targetPos, facing = bearing)
         val state = aGameState(units = listOf(attacker, target))
         val declaration = PhysicalAttackDeclaration(attacker.id, target.id, Punch(Side.LEFT))
@@ -76,7 +76,7 @@ internal class PhysicalAttackResolutionTest {
     fun `a rear-arc torso hit depletes rear armor`() {
         // Make the target face away from the attacker -> rear attack.
         val rearFacing = HexDirection.entries[(bearing.ordinal + 3) % 6]
-        val attacker = aUnit(id = "attacker", tonnage = 50, pilotingSkill = 5, position = attackerPos)
+        val attacker = aUnit(id = "attacker", position = attackerPos)
         val target = aUnit(id = "target", position = targetPos, facing = rearFacing)
         val state = aGameState(units = listOf(attacker, target))
         val declaration = PhysicalAttackDeclaration(attacker.id, target.id, Punch(Side.LEFT))

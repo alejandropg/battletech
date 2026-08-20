@@ -35,8 +35,6 @@ internal fun aMech(
     torsoFacing = HexDirection.N,
     walkingMP = 4,
     runningMP = 6,
-    jumpMP = 0,
-    currentHeat = 0,
     heatSink = HeatSink(HeatSinkType.STS, 10),
     pilotHits = pilotHits,
     isPilotConscious = isPilotConscious,

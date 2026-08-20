@@ -7,11 +7,10 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.session.RuleRejection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import battletech.tactical.query.projectFor
 
 internal class PhysicalAttackOptionsTest {
 
-    private val attacker = aUnit(id = "attacker", tonnage = 50, position = HexCoordinates(0, 0))
+    private val attacker = aUnit(id = "attacker", position = HexCoordinates(0, 0))
     private fun enemyAt(col: Int) = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, position = HexCoordinates(col, 0))
 
     private fun viewWith(vararg units: battletech.tactical.unit.CombatUnit) =
@@ -50,7 +49,6 @@ internal class PhysicalAttackOptionsTest {
     fun `a destroyed arm makes that punch unavailable`() {
         val maimed = aUnit(
             id = "attacker",
-            tonnage = 50,
             position = HexCoordinates(0, 0),
             internalStructure = anInternalStructureLayout(leftArm = 0),
         )

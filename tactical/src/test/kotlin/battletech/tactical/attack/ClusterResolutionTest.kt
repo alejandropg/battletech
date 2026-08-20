@@ -5,8 +5,8 @@ import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
-import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Hex
+import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.Terrain
 import battletech.tactical.query.aUnit
@@ -45,7 +45,6 @@ internal class ClusterResolutionTest {
         position = HexCoordinates(1, 0), // distance 1 → inside SRM short range, no penalty
         facing = FiringArc.bearingDirection(HexCoordinates(1, 0), HexCoordinates(0, 0)),
         armor = anArmorLayout(
-            head = 9,
             centerTorso = 100, centerTorsoRear = 30,
             leftTorso = 100, leftTorsoRear = 30,
             rightTorso = 100, rightTorsoRear = 30,
@@ -53,7 +52,7 @@ internal class ClusterResolutionTest {
             leftLeg = 100, rightLeg = 100,
         ),
         internalStructure = anInternalStructureLayout(
-            head = 3, centerTorso = 50, leftTorso = 50, rightTorso = 50,
+            centerTorso = 50, leftTorso = 50, rightTorso = 50,
             leftArm = 50, rightArm = 50, leftLeg = 50, rightLeg = 50,
         ),
     )
@@ -420,7 +419,7 @@ internal class ClusterResolutionTest {
         val pcTarget = aUnit(
             id = "target",
             position = targetPos,
-            armor = anArmorLayout(leftLeg = 10, rightLeg = 10, centerTorso = 20, leftTorso = 32),
+            armor = anArmorLayout(leftLeg = 10, rightLeg = 10, centerTorso = 20),
             internalStructure = anInternalStructureLayout(
                 leftLeg = 10, rightLeg = 10, centerTorso = 20, leftTorso = 20),
         )

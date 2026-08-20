@@ -18,12 +18,11 @@ public fun calculateMovementOrder(
     if (loserUnitCount == 0) return listOf(Impulse(winner, winnerUnitCount))
     if (winnerUnitCount == 0) return listOf(Impulse(loser, loserUnitCount))
 
-    val rounds = loserUnitCount
-    val winnerBase = winnerUnitCount / rounds
-    val winnerExtra = winnerUnitCount % rounds
+    val winnerBase = winnerUnitCount / loserUnitCount
+    val winnerExtra = winnerUnitCount % loserUnitCount
 
     return buildList {
-        for (round in 0 until rounds) {
+        for (round in 0 until loserUnitCount) {
             add(Impulse(loser, 1))
             val winnerThisRound = winnerBase + if (round < winnerExtra) 1 else 0
             add(Impulse(winner, winnerThisRound))

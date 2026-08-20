@@ -56,10 +56,6 @@ internal class AmmoConsumptionTest {
         ),
     )
 
-    /** Roller that always misses: 2d6 = (1,1) = 2, which is below any positive TN. */
-    private fun missingRoller(rounds: Int = 1): DiceRoller =
-        DiceRoller.deterministic(*IntArray(rounds * 2) { if (it % 2 == 0) 1 else 1 })
-
     // ─────────────────────────────────────────────────────────────────────────
     // AC/20 — fire until empty, then HasAmmoRule blocks
     // ─────────────────────────────────────────────────────────────────────────
@@ -67,10 +63,9 @@ internal class AmmoConsumptionTest {
     @Test
     fun `AC20 bin decrements by 1 on each declaration until empty`() {
         // AC20 shotsPerTon = 5; place 1 ton = 1 bin, 5 shots.
-        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
+        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20) }.layout
         val attacker = aUnit(
             id = "attacker",
-            gunnerySkill = 4,
             weapons = listOf(Weapon(WeaponModels.ac20, WeaponMountId(0), MechLocation.RIGHT_TORSO)),
             criticalLayout = layout,
         )
@@ -124,7 +119,7 @@ internal class AmmoConsumptionTest {
 
     @Test
     fun `miss still consumes one round from the ammo bin`() {
-        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
+        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20) }.layout
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 12,  // TN ≥ 12 → guaranteed miss
@@ -155,7 +150,7 @@ internal class AmmoConsumptionTest {
 
     @Test
     fun `hit on AC20 consumes exactly one round`() {
-        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
+        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20) }.layout
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,  // TN = 0 → guaranteed hit on any roll
@@ -184,7 +179,7 @@ internal class AmmoConsumptionTest {
     @Test
     fun `LRM-10 declaration consumes exactly 1 round regardless of missiles hitting`() {
         // LRM-10: clusterSize=10, shotsPerTon=12 (AmmoType.LRM10)
-        val layout = mechLayout { ammo(MechLocation.LEFT_TORSO, AmmoType.LRM10, 1) }.layout
+        val layout = mechLayout { ammo(MechLocation.LEFT_TORSO, AmmoType.LRM10) }.layout
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,  // guaranteed hit
@@ -216,7 +211,7 @@ internal class AmmoConsumptionTest {
 
     @Test
     fun `LRM-10 miss still consumes exactly 1 round`() {
-        val layout = mechLayout { ammo(MechLocation.LEFT_TORSO, AmmoType.LRM10, 1) }.layout
+        val layout = mechLayout { ammo(MechLocation.LEFT_TORSO, AmmoType.LRM10) }.layout
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 12,
@@ -245,7 +240,7 @@ internal class AmmoConsumptionTest {
 
     @Test
     fun `SRM-6 declaration consumes exactly 1 round regardless of missile count`() {
-        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.SRM6, 1) }.layout
+        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.SRM6) }.layout
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 2,
@@ -307,7 +302,7 @@ internal class AmmoConsumptionTest {
     fun `bin shot count after partial drain matches expected explosion damage`() {
         // 1 ton AC20 = 5 shots; fire 3 times → 2 shots remain.
         // Remaining damage if exploded: 2 shots × 20 dmg/shot = 40.
-        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
+        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20) }.layout
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,
@@ -347,8 +342,8 @@ internal class AmmoConsumptionTest {
         // Unit fires AC/20 (weapon 0) and SRM-6 (weapon 1) in the same volley.
         // Two separate ammo bins: AC20 (5 shots) and SRM6 (15 shots).
         val layout = mechLayout {
-            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)  // 5 shots
-            ammo(MechLocation.LEFT_TORSO, AmmoType.SRM6, 1)   // 15 shots
+            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20)  // 5 shots
+            ammo(MechLocation.LEFT_TORSO, AmmoType.SRM6)   // 15 shots
         }.layout
         val attacker = aUnit(
             id = "attacker",
@@ -420,10 +415,10 @@ internal class AmmoConsumptionTest {
     @Test
     fun `two weapons sharing same ammo type each decrement from the same pool`() {
         // Two SRM-2 weapons sharing a single SRM2 ammo bin pool (1 bin = 50 shots).
-        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.SRM2, 1) }.layout
+        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.SRM2) }.layout
         val attacker = aUnit(
             id = "attacker",
-            gunnerySkill = 4,  // TN=4 primary, TN=5 secondary; roll (1,1)=2 misses both
+            // TN=4 primary, TN=5 secondary; roll (1,1)=2 misses both
             weapons = listOf(
                 Weapon(WeaponModels.srm2, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO),
                 Weapon(WeaponModels.srm2, mountId = WeaponMountId(1), location = MechLocation.RIGHT_TORSO),
@@ -458,7 +453,7 @@ internal class AmmoConsumptionTest {
     fun `ammo decrement does not consume any additional dice from the roller`() {
         // Pin the dice stream for an AC/20 hit: to-hit(4,5)=9, location(3,4)=7→CT.
         // If ammo decrement consumed a die the location roll would be wrong.
-        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
+        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20) }.layout
         val attacker = aUnit(
             id = "attacker",
             gunnerySkill = 0,
@@ -492,10 +487,3 @@ internal class AmmoConsumptionTest {
     }
 }
 
-private fun assertTrue(condition: Boolean, message: String? = null) {
-    if (message != null) {
-        org.junit.jupiter.api.Assertions.assertTrue(condition, message)
-    } else {
-        org.junit.jupiter.api.Assertions.assertTrue(condition)
-    }
-}

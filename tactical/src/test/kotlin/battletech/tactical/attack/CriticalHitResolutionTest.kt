@@ -153,14 +153,13 @@ internal class CriticalHitResolutionTest {
             id = "attacker",
             weapons = listOf(mediumLaser()),
             position = HexCoordinates(0, 0),
-            gunnerySkill = 4,
         )
         val target = aUnit(
             id = "target",
             position = HexCoordinates(1, 0),
             facing = FiringArc.bearingDirection(HexCoordinates(1, 0), HexCoordinates(0, 0)),
-            armor = anArmorLayout(centerTorso = 47),
-            internalStructure = anInternalStructureLayout(centerTorso = 31),
+            armor = anArmorLayout(),
+            internalStructure = anInternalStructureLayout(),
         )
         val state = GameState(UnitRoster(listOf(attacker, target)), GameMap(emptyMap()))
         val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
@@ -189,14 +188,13 @@ internal class CriticalHitResolutionTest {
             id = "attacker",
             weapons = listOf(mediumLaser()),
             position = HexCoordinates(0, 0),
-            gunnerySkill = 4,
         )
         val target = aUnit(
             id = "target",
             position = HexCoordinates(1, 0),
             facing = FiringArc.bearingDirection(HexCoordinates(1, 0), HexCoordinates(0, 0)),
             armor = anArmorLayout(centerTorso = 2),
-            internalStructure = anInternalStructureLayout(centerTorso = 31),
+            internalStructure = anInternalStructureLayout(),
         )
         val state = GameState(UnitRoster(listOf(attacker, target)), GameMap(emptyMap()))
         val declaration = AttackDeclaration(attacker.id, target.id, 0, true)
@@ -220,20 +218,18 @@ internal class CriticalHitResolutionTest {
             id = "attacker1",
             weapons = listOf(mediumLaser()),
             position = HexCoordinates(0, 0),
-            gunnerySkill = 4,
         )
         val attacker2 = aUnit(
             id = "attacker2",
             weapons = listOf(mediumLaser()),
             position = HexCoordinates(0, -1),
-            gunnerySkill = 4,
         )
         val target = aUnit(
             id = "target",
             position = HexCoordinates(1, 0),
             facing = FiringArc.bearingDirection(HexCoordinates(1, 0), HexCoordinates(0, 0)),
             armor = anArmorLayout(centerTorso = 2),
-            internalStructure = anInternalStructureLayout(centerTorso = 31),
+            internalStructure = anInternalStructureLayout(),
         )
         val state = GameState(UnitRoster(listOf(attacker1, attacker2, target)), GameMap(emptyMap()))
         val declarations = listOf(
@@ -309,12 +305,12 @@ internal class CriticalHitResolutionTest {
     fun `crit on an ammo bin detonates it into its own location, empties it, and emits AmmoExploded`() {
         val build = mechLayout {
             place(MechLocation.RIGHT_TORSO, WeaponModels.mediumLaser)
-            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)
+            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20)
         }
         val unit = aUnit(
             id = "crit-target",
             armor = anArmorLayout(rightTorso = 0),
-            internalStructure = anInternalStructureLayout(rightTorso = 21),
+            internalStructure = anInternalStructureLayout(),
             weapons = build.weapons,
             criticalLayout = build.layout,
         )
@@ -341,7 +337,7 @@ internal class CriticalHitResolutionTest {
     fun `crit on an already-empty ammo bin does nothing extra`() {
         val build = mechLayout {
             place(MechLocation.RIGHT_TORSO, WeaponModels.mediumLaser)
-            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)
+            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20)
         }
         val emptiedLayout = build.layout.let { layout ->
             val (location, index, bin) = layout.ammoBins().single()

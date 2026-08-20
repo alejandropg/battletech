@@ -72,7 +72,7 @@ internal class HeatPhaseHandlerTest {
         // 25 - 10 = 15 -> shutdown target 4 (avoided), ammo target 4 (failed)
         val build = mechLayout {
             place(MechLocation.RIGHT_TORSO, WeaponModels.ac20)
-            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)
+            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20)
         }
         val unit = aUnit(
             currentHeat = 25,
@@ -97,7 +97,6 @@ internal class HeatPhaseHandlerTest {
         // CENTER_TORSO Engine slots (`docs/rules/critical-hits.md` §3).
         // No dissipation (0 heat sinks) so the +5 engine heat is visible undamped.
         val unit = aUnit(
-            currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),
             weapons = listOf(mediumLaser()),
         ).copy(criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(0)))
@@ -110,7 +109,6 @@ internal class HeatPhaseHandlerTest {
     @Test
     fun `2 engine crits add 10 heat during the heat fold`() {
         val unit = aUnit(
-            currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),
             weapons = listOf(mediumLaser()),
         ).copy(criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(0, 1)))
@@ -179,7 +177,6 @@ internal class HeatPhaseHandlerTest {
     fun `2nd life support crit gives the pilot 1 hit regardless of heat`() {
         // HEAD LifeSupport slots (`docs/rules/critical-hits.md` §3).
         val unit = aUnit(
-            currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),
             weapons = listOf(mediumLaser()),
         ).copy(criticalHits = mapOf(MechLocation.HEAD to setOf(0, 5)))
@@ -200,7 +197,6 @@ internal class HeatPhaseHandlerTest {
         // pilotHits = 1 -> recovery target 3; roll (3,3)=6 passes. No LS crits,
         // 0 heat, no engine crits -> no other dice consumed.
         val unit = aUnit(
-            currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),
             weapons = listOf(mediumLaser()),
             pilotHits = 1,
@@ -217,7 +213,6 @@ internal class HeatPhaseHandlerTest {
     fun `an unconscious alive pilot with a scripted failed roll stays unconscious`() {
         // pilotHits = 1 -> recovery target 3; roll (1,1)=2 fails.
         val unit = aUnit(
-            currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),
             weapons = listOf(mediumLaser()),
             pilotHits = 1,
@@ -235,7 +230,6 @@ internal class HeatPhaseHandlerTest {
         // Regression guard: untouched fixtures must not consume extra dice for
         // the life-support and recovery steps.
         val unit = aUnit(
-            currentHeat = 0,
             heatSink = HeatSink(HeatSinkType.STS, 0),
             weapons = listOf(mediumLaser()),
         )

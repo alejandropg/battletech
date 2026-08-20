@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.screen.ScreenBuffer
 import tenter.screen.ChromeRole
+import tenter.screen.ScreenBuffer
 import tenter.view.renderInPanel
 
 internal class UnitStatusViewTest {
@@ -70,7 +70,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders unit name`() {
-        val unit = aUnit(id = "A1", name = "Atlas")
+        val unit = aUnit(id = "A1")
         val view = UnitStatusView(unit)
         val buffer = renderDecorated(view, height = 14)
 
@@ -254,7 +254,7 @@ internal class UnitStatusViewTest {
     fun `renders armor section header when armor is present`() {
         val unit = aUnit(armor = anArmorLayout())
         val view = UnitStatusView(unit)
-        val buffer = renderDecorated(view, height = 30)
+        val buffer = renderDecorated(view)
 
         // Shifted down by: pilot hits line, "Current" label, current bar (2 rows),
         // diss bar (2 rows), "Projected" label, projected bar (2 rows), blank.
@@ -264,9 +264,9 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders head armor value in info`() {
-        val unit = aUnit(armor = anArmorLayout(head = 9))
+        val unit = aUnit(armor = anArmorLayout())
         val view = UnitStatusView(unit)
-        val buffer = renderDecorated(view, height = 30)
+        val buffer = renderDecorated(view)
 
         // HD value row: cy=23, "HD: 9" starts at cx+9=11
         val line = (2 until 26).joinToString("") { buffer.get(it, 23).char }
@@ -279,9 +279,9 @@ internal class UnitStatusViewTest {
     fun `renders destroyed armor location with strikethrough`() {
         // Same HD layout as "renders head armor value in cyan", but with head internal
         // structure zeroed out — that's what drives the destroyed rendering, not the armor value.
-        val unit = aUnit(armor = anArmorLayout(head = 9), internalStructure = anInternalStructureLayout(head = 0))
+        val unit = aUnit(armor = anArmorLayout(), internalStructure = anInternalStructureLayout(head = 0))
         val view = UnitStatusView(unit)
-        val buffer = renderDecorated(view, height = 30)
+        val buffer = renderDecorated(view)
 
         // HD value row: cy=23, "HD: 9" starts at cx+9=11
         assertEquals(BoardRole.DESTROYED, buffer.get(11, 23).style.fg)
@@ -291,18 +291,18 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders intact armor location without strikethrough`() {
         // Default internalStructure (head = 3) is intact.
-        val unit = aUnit(armor = anArmorLayout(head = 9))
+        val unit = aUnit(armor = anArmorLayout())
         val view = UnitStatusView(unit)
-        val buffer = renderDecorated(view, height = 30)
+        val buffer = renderDecorated(view)
 
         assertFalse(buffer.get(11, 23).style.strikethrough)
     }
 
     @Test
     fun `renders center torso armor in accent`() {
-        val unit = aUnit(armor = anArmorLayout(centerTorso = 47))
+        val unit = aUnit(armor = anArmorLayout())
         val view = UnitStatusView(unit)
-        val buffer = renderDecorated(view, height = 30)
+        val buffer = renderDecorated(view)
 
         // CT row: cy=24, "CT:47" starts at cx+9=11
         val line = (2 until 26).joinToString("") { buffer.get(it, 24).char }
@@ -315,7 +315,7 @@ internal class UnitStatusViewTest {
     fun `renders torso rear values in default color`() {
         val unit = aUnit(armor = anArmorLayout(centerTorsoRear = 8))
         val view = UnitStatusView(unit)
-        val buffer = renderDecorated(view, height = 30)
+        val buffer = renderDecorated(view)
 
         // Rear row: cy=25, CT rear "r: 8" starts at cx+10=12
         val line = (2 until 26).joinToString("") { buffer.get(it, 25).char }
@@ -325,9 +325,9 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders arm and leg armor values`() {
-        val unit = aUnit(armor = anArmorLayout(leftArm = 34, rightArm = 34, leftLeg = 41, rightLeg = 41))
+        val unit = aUnit(armor = anArmorLayout())
         val view = UnitStatusView(unit)
-        val buffer = renderDecorated(view, height = 30)
+        val buffer = renderDecorated(view)
 
         // Arms row: cy=26
         val armsRow = (2 until 26).joinToString("") { buffer.get(it, 26).char }
@@ -451,7 +451,7 @@ internal class UnitStatusViewTest {
             mountId = WeaponMountId(0),
             location = MechLocation.RIGHT_TORSO,
         )
-        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
+        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20) }.layout
         val unit = aUnit(weapons = listOf(weapon), criticalLayout = layout)
         val view = UnitStatusView(unit)
         val buffer = renderDecorated(view, height = 60)
@@ -571,7 +571,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders public subject unit name`() {
-        val view = UnitStatusView(aForeignUnit(name = "Hunchback"))
+        val view = UnitStatusView(aForeignUnit())
         val buffer = renderDecorated(view)
 
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).char }
@@ -581,7 +581,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders public subject MOVEMENT section with walk and run values`() {
-        val view = UnitStatusView(aForeignUnit(walkingMP = 4, runningMP = 6))
+        val view = UnitStatusView(aForeignUnit())
         val buffer = renderDecorated(view)
 
         val headerRow = (2 until 26).joinToString("") { buffer.get(it, 4).char }
@@ -595,7 +595,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders public subject jump movement points only when nonzero`() {
-        val viewWithoutJump = UnitStatusView(aForeignUnit(jumpMP = 0))
+        val viewWithoutJump = UnitStatusView(aForeignUnit())
         val bufferWithoutJump = renderDecorated(viewWithoutJump)
         val jumpRow = (2 until 26).joinToString("") { bufferWithoutJump.get(it, 6).char }
         assertFalse(jumpRow.contains("Jump"))
@@ -643,7 +643,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `does not render private-only sections for public subject`() {
         val view = UnitStatusView(aForeignUnit())
-        val buffer = renderDecorated(view, height = 30)
+        val buffer = renderDecorated(view)
 
         val allText = (0 until 30).flatMap { row ->
             (0 until 28).map { col -> buffer.get(col, row).char }

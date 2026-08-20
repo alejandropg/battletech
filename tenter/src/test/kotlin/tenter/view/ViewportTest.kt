@@ -55,24 +55,24 @@ internal class ViewportTest {
     fun `content renders flush at the viewport's own 0,0`() {
         val (_, buffer) = renderScrolled(stubContent(5))
 
-        assertEquals("line0", buffer.line(0, 0, 10))
-        assertEquals("line1", buffer.line(1, 0, 10))
+        assertEquals("line0", buffer.line(0, width = 10))
+        assertEquals("line1", buffer.line(1, width = 10))
     }
 
     @Test
     fun `explicit offset shifts the visible window`() {
-        val (_, buffer) = renderScrolled(stubContent(20), offset = ScrollOffset(0, 3))
+        val (_, buffer) = renderScrolled(stubContent(20), offset = ScrollOffset(y = 3))
 
-        assertEquals("line3", buffer.line(0, 0, 10))
-        assertEquals("line4", buffer.line(1, 0, 10))
+        assertEquals("line3", buffer.line(0, width = 10))
+        assertEquals("line4", buffer.line(1, width = 10))
     }
 
     @Test
     fun `offset beyond maxOffset is clamped to maxOffset`() {
-        val (scrolled, buffer) = renderScrolled(stubContent(20), offset = ScrollOffset(0, 999))
+        val (scrolled, buffer) = renderScrolled(stubContent(20), offset = ScrollOffset(y = 999))
 
         assertEquals(12, scrolled.scroll.maxOffset.y) // 20 lines - 8 viewport rows
-        assertEquals("line12", buffer.line(0, 0, 10))
+        assertEquals("line12", buffer.line(0, width = 10))
     }
 
     @Test
@@ -116,14 +116,14 @@ internal class ViewportTest {
 
     @Test
     fun `unmarked content never auto-scrolls — offset is just the given base, clamped`() {
-        val (scrolled, _) = renderScrolled(stubContent(20), offset = ScrollOffset(0, 3))
+        val (scrolled, _) = renderScrolled(stubContent(20), offset = ScrollOffset(y = 3))
 
         assertEquals(3, scrolled.scroll.offset.y)
     }
 
     @Test
     fun `first render (no previous reveal) follows reveal target below the window`() {
-        val (scrolled, _) = renderScrolled(revealingContent(lines = 20, revealRow = 15), previousReveal = null)
+        val (scrolled, _) = renderScrolled(revealingContent(lines = 20, revealRow = 15))
 
         val offset = scrolled.scroll.offset.y
         assertEquals(true, 15 in offset until (offset + viewportHeight), "reveal row not visible at offset $offset")
@@ -146,7 +146,7 @@ internal class ViewportTest {
         val revealRow = 15
         val (scrolled, _) = renderScrolled(
             revealingContent(lines = 40, revealRow = revealRow),
-            offset = ScrollOffset(0, 3), // user scrolled here manually; reveal target is far below the window
+            offset = ScrollOffset(y = 3), // user scrolled here manually; reveal target is far below the window
             previousReveal = revealAt(revealRow),
         )
 
@@ -157,7 +157,7 @@ internal class ViewportTest {
     fun `moved reveal target follows, starting from the manually scrolled offset`() {
         val (scrolled, _) = renderScrolled(
             revealingContent(lines = 40, revealRow = 20),
-            offset = ScrollOffset(0, 3),
+            offset = ScrollOffset(y = 3),
             previousReveal = revealAt(19), // reveal target was one row up last render — it moved
         )
 

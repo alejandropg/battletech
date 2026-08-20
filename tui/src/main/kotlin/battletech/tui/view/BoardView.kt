@@ -15,8 +15,8 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.view.Bordered
-import tenter.view.Viewport
 import tenter.view.View
+import tenter.view.Viewport
 
 /**
  * The tactical map's content: coordinate labels, every hex, highlight, and unit glyph, drawn at
@@ -47,9 +47,9 @@ internal class BoardView(
             val x = MAP_ORIGIN_X + rawX
             val y = MAP_ORIGIN_Y + rawY
 
-            val baseHighlight = when {
-                coords == cursorPosition -> HexHighlight.CURSOR
-                coords in hexHighlights -> hexHighlights.getValue(coords)
+            val baseHighlight = when (coords) {
+                cursorPosition -> HexHighlight.CURSOR
+                in hexHighlights -> hexHighlights.getValue(coords)
                 else -> HexHighlight.NONE
             }
 
@@ -64,11 +64,11 @@ internal class BoardView(
             HexRenderer.render(canvas, x, y, hex, highlight, movementMode)
 
             // Facing overlays (drawn after base render, over the reachability dot)
-            when {
-                coords == cursorPosition && facingSelectionFacings != null ->
+            when (coords) {
+                cursorPosition if facingSelectionFacings != null ->
                     HexRenderer.renderFacingNumbers(canvas, x, y, facingSelectionFacings)
 
-                coords in reachableFacings && highlight != HexHighlight.PATH -> {
+                in reachableFacings if highlight != HexHighlight.PATH -> {
                     val facings = reachableFacings.getValue(coords)
                     val color = when {
                         coords == pathDestination -> BoardRole.BOARD_ACTIVE

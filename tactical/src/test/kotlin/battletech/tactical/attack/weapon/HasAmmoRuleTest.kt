@@ -1,10 +1,10 @@
 package battletech.tactical.attack.weapon
 
+import battletech.tactical.attack.aWeaponAttackContext
 import battletech.tactical.model.MechLocation
 import battletech.tactical.query.RuleResult
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.aWeapon
-import battletech.tactical.attack.aWeaponAttackContext
 import battletech.tactical.session.RuleRejection
 import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.WeaponKind
@@ -19,7 +19,7 @@ internal class HasAmmoRuleTest {
 
     @Test
     fun `satisfied when weapon has ammo remaining`() {
-        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1) }.layout
+        val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20) }.layout
         val actor = aUnit(criticalLayout = layout)
         val result = rule.evaluate(aWeaponAttackContext(actor = actor, weapon = aWeapon(kind = WeaponKind.Ballistic(AmmoType.AC20))))
 

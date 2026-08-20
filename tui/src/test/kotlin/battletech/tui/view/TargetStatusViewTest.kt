@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.screen.ScreenBuffer
 import tenter.screen.ChromeRole
+import tenter.screen.ScreenBuffer
 import tenter.view.renderInPanel
 
 internal class TargetStatusViewTest {
@@ -67,7 +67,7 @@ internal class TargetStatusViewTest {
 
     @Test
     fun `renders unit name in ACCENT`() {
-        val unit = aForeignUnit(name = "Hunchback")
+        val unit = aForeignUnit()
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
@@ -78,7 +78,7 @@ internal class TargetStatusViewTest {
 
     @Test
     fun `renders MOVEMENT section with walk and run values`() {
-        val unit = aForeignUnit(walkingMP = 4, runningMP = 6)
+        val unit = aForeignUnit()
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 

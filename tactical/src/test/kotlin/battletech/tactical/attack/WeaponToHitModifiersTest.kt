@@ -1,5 +1,6 @@
 package battletech.tactical.attack
 
+import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
@@ -10,10 +11,9 @@ import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.aWeapon
 import battletech.tactical.unit.MovementThisTurn
+import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.WeaponMountId
-import battletech.tactical.unit.Weapon
-import battletech.tactical.dice.DiceRoller
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -27,7 +27,7 @@ internal class WeaponToHitModifiersTest {
     private val targetPos = HexCoordinates(1, 0) // distance 1
 
     private fun baseAttacker(movement: MovementThisTurn = MovementThisTurn.Stationary) =
-        aUnit(id = "attacker", gunnerySkill = 4, position = attackerPos)
+        aUnit(id = "attacker", position = attackerPos)
             .copy(movementThisTurn = movement)
 
     private fun baseTarget(

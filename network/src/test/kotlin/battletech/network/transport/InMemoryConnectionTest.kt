@@ -77,7 +77,7 @@ internal class InMemoryConnectionTest {
         // PEER's queue on close(), leaving a connection's own blocked receive() parked
         // forever after it closed itself. Daemon thread + bounded join: if this
         // regresses, the test fails fast (isAlive stays true) rather than hanging.
-        val (server, client) = InMemoryConnection.pair()
+        val (server, _) = InMemoryConnection.pair()
         val result = AtomicReference<ClientMessage?>(null)
 
         val reader = thread(isDaemon = true) { result.set(server.receive()) }
@@ -92,7 +92,7 @@ internal class InMemoryConnectionTest {
 
     @Test
     fun `closing the client side ALSO unblocks the client's own receive() blocked waiting, returning null`() {
-        val (server, client) = InMemoryConnection.pair()
+        val (_, client) = InMemoryConnection.pair()
         val result = AtomicReference<ServerMessage?>(null)
 
         val reader = thread(isDaemon = true) { result.set(client.receive()) }

@@ -19,7 +19,7 @@ internal class PilotingSkillRollTest {
 
     @Test
     fun `fails when the roll is below the piloting skill`() {
-        val pilot = aUnit(pilotingSkill = 5)
+        val pilot = aUnit()
         val result = pilotingSkillRoll(pilot, DiceRoller.deterministic(1, 1)) // 2 < 5
 
         assertThat(result.passed).isFalse()

@@ -27,7 +27,6 @@ internal class AttackResolutionTest {
         name = "Attacker",
         weapons = listOf(mediumLaser()),
         position = HexCoordinates(0, 0),
-        gunnerySkill = 4,
     )
 
     private val target = aUnit(
@@ -472,7 +471,7 @@ internal class AttackResolutionTest {
             internalStructure = anInternalStructureLayout(leftTorso = 6, centerTorso = 20),
         )
         // 12 damage front to left torso: 2 armor + 6 IS = 8, destroyed, excess 4 to CT front armor
-        val resolution = resolveDamage(unit, HitLocation.LEFT_TORSO, 12, useRearArmor = false)
+        val resolution = resolveDamage(unit, HitLocation.LEFT_TORSO, 12)
 
         assertTrue(resolution.steps[0].destroyed)
         assertEquals(HitLocation.CENTER_TORSO, resolution.steps[1].location)
@@ -501,7 +500,7 @@ internal class AttackResolutionTest {
     fun `head overflow destroys location with no transfer and drops excess`() {
         val unit = aUnit(
             armor = anArmorLayout(head = 2),
-            internalStructure = anInternalStructureLayout(head = 3),
+            internalStructure = anInternalStructureLayout(),
         )
         // 10 damage to head: 2 armor + 3 IS = 5 absorbed, destroyed, excess 5 dropped
         val resolution = resolveDamage(unit, HitLocation.HEAD, 10)
@@ -533,7 +532,7 @@ internal class AttackResolutionTest {
     fun `resolveAttacks integration - hit result carries damage steps`() {
         val unit = aUnit(
             id = "blowthrough-target",
-            armor = anArmorLayout(centerTorso = 47, leftArm = 2, leftTorso = 8),
+            armor = anArmorLayout(leftArm = 2, leftTorso = 8),
             internalStructure = anInternalStructureLayout(leftArm = 6, leftTorso = 20),
         )
         val state = gameState.copy(units = UnitRoster(listOf(attacker, unit)))
@@ -578,7 +577,6 @@ internal class AttackResolutionTest {
         val attackerUnit = aUnit(
             id = "attacker",
             position = attackerPos,
-            gunnerySkill = 4,
         )
         val targetUnit = aUnit(
             id = "target",

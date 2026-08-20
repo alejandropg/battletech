@@ -20,9 +20,7 @@ import battletech.tui.hex.sessionNoticeIcon
 import battletech.tui.loop.UiEvent
 import battletech.tui.loop.runLoop
 import battletech.tui.screen.resolveTheme
-import tenter.screen.ScreenRenderer
 import battletech.tui.view.AttackResultsView
-import tenter.view.HelpView
 import battletech.tui.view.LogView
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.rendering.AnsiLevel
@@ -41,6 +39,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.screen.ScreenRenderer
+import tenter.view.HelpView
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -98,7 +98,7 @@ internal class TuiAppLoopTest {
         // ArrowDown, not ArrowUp: the cursor starts at (0,0) on a 5x5 map, and moveCursor()
         // clamps to the current hex when the neighbor is off the map — north from row 0 is off
         // the map, so ArrowUp would leave the cursor (and the render) unchanged.
-        val events = flowOf<UiEvent>(
+        val events = flowOf(
             UiEvent.Input(KeyboardEvent("ArrowDown")),
             UiEvent.Quit,
         )

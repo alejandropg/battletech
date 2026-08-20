@@ -14,9 +14,9 @@ import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
+import tenter.screen.ChromeRole
 import tenter.screen.RevealRect
 import tenter.screen.ScreenBuffer
-import tenter.screen.ChromeRole
 import tenter.view.Viewport
 import tenter.view.line
 import tenter.view.render
@@ -31,7 +31,7 @@ internal class BoardViewTest {
 
     @Test
     fun `renders hex borders for a 3x3 map`() {
-        val state = aGameState(map = aGameMap(cols = 3, rows = 3)).projectFor(viewer = null, revealAll = true)
+        val state = aGameState(map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state)
         val buffer = render(view, 32, 18)
 
@@ -45,7 +45,7 @@ internal class BoardViewTest {
 
     @Test
     fun `renders one-based coordinates on every map edge`() {
-        val state = aGameState(map = aGameMap(cols = 3, rows = 3)).projectFor(viewer = null, revealAll = true)
+        val state = aGameState(map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state)
         val buffer = render(view, 32, 18)
 
@@ -62,7 +62,7 @@ internal class BoardViewTest {
         val rowCenters = listOf(3, 7, 11)
         val rightLabelX = BoardView.MAP_ORIGIN_X + mapWidth + 2
         for ((index, y) in rowCenters.withIndex()) {
-            assertEquals(coordinateLabels[index], buffer.line(y, 0, 2))
+            assertEquals(coordinateLabels[index], buffer.line(y, width = 2))
             assertEquals(coordinateLabels[index], buffer.line(y, rightLabelX, 2))
         }
 
@@ -78,7 +78,7 @@ internal class BoardViewTest {
 
     @Test
     fun `renders unit id on hex`() {
-        val unit = aUnit(id = "A1", name = "Atlas", position = HexCoordinates(0, 0))
+        val unit = aUnit(id = "A1", position = HexCoordinates(0, 0))
         val state = aGameState(units = listOf(unit), map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state)
         val buffer = render(view, 32, 18)
@@ -112,7 +112,7 @@ internal class BoardViewTest {
     @Test
     fun `no cursor means no reveal is marked`() {
         val state = aGameState(map = aGameMap()).projectFor(viewer = null, revealAll = true)
-        val view = BoardView(state, cursorPosition = null)
+        val view = BoardView(state)
         val canvas = Canvas.of(ScreenBuffer(32, 18))
 
         view.draw(canvas)
@@ -122,7 +122,7 @@ internal class BoardViewTest {
 
     @Test
     fun `contentSize spans every hex in the map, including the odd-column row offset`() {
-        val map = aGameMap(cols = 3, rows = 3)
+        val map = aGameMap()
 
         val (width, height) = BoardView.contentSize(map)
 
@@ -151,7 +151,7 @@ internal class BoardViewTest {
 
     @Test
     fun `renders destroyed unit with its id and a skull marker`() {
-        val unit = aUnit(id = "A1", name = "Atlas", position = HexCoordinates(0, 0)).copy(isDestroyed = true)
+        val unit = aUnit(id = "A1", position = HexCoordinates(0, 0)).copy(isDestroyed = true)
         val state = aGameState(units = listOf(unit), map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state)
         val buffer = render(view, 32, 18)
@@ -167,7 +167,7 @@ internal class BoardViewTest {
 
     @Test
     fun `prone unit still renders its lowercase id, distinct from destroyed`() {
-        val unit = aUnit(id = "A1", name = "Atlas", position = HexCoordinates(0, 0)).copy(isProne = true)
+        val unit = aUnit(id = "A1", position = HexCoordinates(0, 0)).copy(isProne = true)
         val state = aGameState(units = listOf(unit), map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val view = BoardView(state)
         val buffer = render(view, 32, 18)

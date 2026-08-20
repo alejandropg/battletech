@@ -13,10 +13,10 @@ import battletech.tactical.unit.UnitRoster
 import battletech.tui.aGameMap
 import battletech.tui.aTurnState
 import battletech.tui.aUnit
-import battletech.tui.mediumLaser
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.commitAttackImpulse
 import battletech.tui.game.phase.enterDeclaring
+import battletech.tui.mediumLaser
 import battletech.tui.viewFor
 import com.github.ajalt.mordant.input.KeyboardEvent
 import org.assertj.core.api.Assertions.assertThat
@@ -229,7 +229,7 @@ internal class AttackPhaseTest {
             assertEquals(HexDirection.NE, twistedPhase.torsoFacing)
 
             // Commit the impulse via the helper
-            val committed = commitAttackImpulse(twisted.app, TurnPhase.WEAPON_ATTACK, twistedPhase.allDrafts())
+            val committed = commitAttackImpulse(twisted.app, twistedPhase.allDrafts())
 
             val updatedUnit = committed.app.visibleState.units.first { it.id == unit.id }
             assertThat(updatedUnit.torsoFacing).isEqualTo(HexDirection.NE)
@@ -305,7 +305,7 @@ internal class AttackPhaseTest {
             val twisted = phase.handle(KeyboardEvent("ArrowRight"), state)!!
             val twistedPhase = twisted.app.phase as AttackPhase.Declaring
 
-            val committed = commitAttackImpulse(twisted.app, TurnPhase.WEAPON_ATTACK, twistedPhase.allDrafts())
+            val committed = commitAttackImpulse(twisted.app, twistedPhase.allDrafts())
 
             assertEquals(TurnPhase.WEAPON_ATTACK, committed.app.currentPhase)
             val selecting = committed.app.phase as AttackPhase.SelectingAttacker

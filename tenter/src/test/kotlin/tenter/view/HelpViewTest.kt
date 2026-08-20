@@ -16,8 +16,8 @@ internal class HelpViewTest {
     fun `renders the KEYS header`() {
         val buffer = renderHelp(listOf(KeySection("MOVEMENT", listOf(KeyHint("Enter", "select unit")))))
 
-        assert(buffer.line(0, 0, 28).startsWith("── KEYS ")) {
-            "Expected KEYS header on row 0, got: '${buffer.line(0, 0, 28)}'"
+        assert(buffer.line(0, width = 28).startsWith("── KEYS ")) {
+            "Expected KEYS header on row 0, got: '${buffer.line(0, width = 28)}'"
         }
     }
 
@@ -30,13 +30,13 @@ internal class HelpViewTest {
             ),
         )
 
-        assertEquals("MOVEMENT", buffer.line(1, 0, 28))
-        val hintRow = buffer.line(2, 0, 28)
+        assertEquals("MOVEMENT", buffer.line(1, width = 28))
+        val hintRow = buffer.line(2, width = 28)
         assertTrue(hintRow.contains("Enter")) { "Expected key label, got: '$hintRow'" }
         assertTrue(hintRow.contains("select unit")) { "Expected description, got: '$hintRow'" }
 
-        assertEquals("GLOBAL", buffer.line(4, 0, 28))
-        val globalRow = buffer.line(5, 0, 28)
+        assertEquals("GLOBAL", buffer.line(4, width = 28))
+        val globalRow = buffer.line(5, width = 28)
         assertTrue(globalRow.contains("ctrl+c")) { "Expected key label, got: '$globalRow'" }
         assertTrue(globalRow.contains("quit")) { "Expected description, got: '$globalRow'" }
     }
@@ -50,15 +50,15 @@ internal class HelpViewTest {
             ),
         )
 
-        assertEquals("", buffer.line(3, 0, 28))
+        assertEquals("", buffer.line(3, width = 28))
     }
 
     @Test
     fun `a single section renders with no trailing blank section gap`() {
         val buffer = renderHelp(listOf(KeySection("GLOBAL", listOf(KeyHint("ctrl+c", "quit")))))
 
-        assertEquals("GLOBAL", buffer.line(1, 0, 28))
-        assertEquals("", buffer.line(3, 0, 28))
+        assertEquals("GLOBAL", buffer.line(1, width = 28))
+        assertEquals("", buffer.line(3, width = 28))
     }
 
     @Test
@@ -69,8 +69,8 @@ internal class HelpViewTest {
             width = 24,
         )
 
-        val firstLine = buffer.line(2, 0, 24)
-        val secondLine = buffer.line(3, 0, 24)
+        val firstLine = buffer.line(2, width = 24)
+        val secondLine = buffer.line(3, width = 24)
         assertTrue(firstLine.contains("alt+0-5")) { "Expected key label on first line, got: '$firstLine'" }
         assertTrue(secondLine.isNotEmpty()) { "Expected a wrapped continuation line" }
         // Continuation text starts under the key column (after the "key + 2 spaces" prefix),

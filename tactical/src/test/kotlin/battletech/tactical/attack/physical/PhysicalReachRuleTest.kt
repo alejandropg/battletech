@@ -2,7 +2,6 @@ package battletech.tactical.attack.physical
 
 import battletech.tactical.attack.PhysicalAttackContext
 import battletech.tactical.model.GameMap
-import battletech.tactical.model.GameState
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.query.RuleResult
@@ -37,9 +36,9 @@ internal class PhysicalReachRuleTest {
 
     @Test
     fun `punch is legal at the same level and within one level`() {
-        assertThat(PunchReachRule().evaluate(context(targetElevation = 0))).isEqualTo(RuleResult.Satisfied)
+        assertThat(PunchReachRule().evaluate(context())).isEqualTo(RuleResult.Satisfied)
         assertThat(PunchReachRule().evaluate(context(targetElevation = 1))).isEqualTo(RuleResult.Satisfied)
-        assertThat(PunchReachRule().evaluate(context(attackerElevation = 1, targetElevation = 0)))
+        assertThat(PunchReachRule().evaluate(context(attackerElevation = 1)))
             .isEqualTo(RuleResult.Satisfied)
     }
 
@@ -53,8 +52,8 @@ internal class PhysicalReachRuleTest {
 
     @Test
     fun `kick is legal at the same level or one lower`() {
-        assertThat(KickReachRule().evaluate(context(targetElevation = 0))).isEqualTo(RuleResult.Satisfied)
-        assertThat(KickReachRule().evaluate(context(attackerElevation = 1, targetElevation = 0)))
+        assertThat(KickReachRule().evaluate(context())).isEqualTo(RuleResult.Satisfied)
+        assertThat(KickReachRule().evaluate(context(attackerElevation = 1)))
             .isEqualTo(RuleResult.Satisfied)
     }
 

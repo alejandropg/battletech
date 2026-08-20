@@ -105,11 +105,11 @@ If you score a critical hit on the **Right Torso** of two different Mechs, your 
 
 ### Quick Reference Summary Table
 
-| Component        | Hit #1 Penalty                        | Hit #2 Penalty                    | Hit #3 Penalty     |
-|:-----------------|:--------------------------------------|:----------------------------------|:-------------------|
-| **Engine**       | +5 Heat per turn                      | +10 Heat per turn                 | **Mech Destroyed** |
-| **Gyro**         | +3 to all Piloting Skill Rolls        | **Immobilized** (Cannot stand)    | *N/A*              |
-| **Sensors**      | +2 to-hit on all attacks              | **Cannot fire weapons**           | *N/A*              |
-| **Life Support** | Pilot takes damage if Mech Heat >= 15 | Pilot takes damage **every turn** | *N/A*              |
-| **Cockpit**      | **Pilot killed → Mech Destroyed**     | *N/A*                             | *N/A*              |
-| **Actuator**     | Degrades physical attacks; piloting/firing modifier (Hip: halves leg MP) | — | *N/A* |
+| Component        | Hit #1 Penalty                                                           | Hit #2 Penalty                    | Hit #3 Penalty     |
+|:-----------------|:-------------------------------------------------------------------------|:----------------------------------|:-------------------|
+| **Engine**       | +5 Heat per turn                                                         | +10 Heat per turn                 | **Mech Destroyed** |
+| **Gyro**         | +3 to all Piloting Skill Rolls                                           | **Immobilized** (Cannot stand)    | *N/A*              |
+| **Sensors**      | +2 to-hit on all attacks                                                 | **Cannot fire weapons**           | *N/A*              |
+| **Life Support** | Pilot takes damage if Mech Heat >= 15                                    | Pilot takes damage **every turn** | *N/A*              |
+| **Cockpit**      | **Pilot killed → Mech Destroyed**                                        | *N/A*                             | *N/A*              |
+| **Actuator**     | Degrades physical attacks; piloting/firing modifier (Hip: halves leg MP) | —                                 | *N/A*              |

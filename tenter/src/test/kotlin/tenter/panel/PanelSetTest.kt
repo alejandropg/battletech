@@ -125,7 +125,7 @@ internal class PanelSetTest {
 
         render(set, visible = setOf(SetPanelId.A))
 
-        assertEquals(ScrollOffset(0, 2), set.offsetOf(SetPanelId.A))
+        assertEquals(ScrollOffset(y = 2), set.offsetOf(SetPanelId.A))
     }
 
     @Test
@@ -137,7 +137,7 @@ internal class PanelSetTest {
 
         set.scrollFocused(0, 3)
 
-        assertEquals(ScrollOffset(0, 3), a.offset)
+        assertEquals(ScrollOffset(y = 3), a.offset)
         assertEquals(ScrollOffset.ZERO, b.offset)
     }
 }

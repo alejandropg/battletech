@@ -12,9 +12,8 @@ import battletech.tui.hex.targetIcon
 import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.screen.ColorRole
-import tenter.screen.ScreenBuffer
 import tenter.screen.ChromeRole
+import tenter.screen.ScreenBuffer
 import tenter.view.line
 import tenter.view.render
 import tenter.view.renderInPanel
@@ -28,8 +27,6 @@ internal class DeclaredTargetsViewTest {
         DeclaredTargetEntry(UnitId(name), primary, weapons.toList())
     private fun attacker(name: String, player: PlayerId, draft: Boolean, vararg targets: DeclaredTargetEntry) =
         DeclaredAttackerEntry(UnitId(name), player, draft, targets.toList())
-
-    private fun colorAt(buffer: ScreenBuffer, row: Int, col: Int = 2): ColorRole = buffer.get(col, row).style.fg
 
     private fun rowContaining(buffer: ScreenBuffer, text: String): Int =
         (0 until buffer.height).firstOrNull { row -> text in buffer.line(row) } ?: -1
@@ -45,7 +42,7 @@ internal class DeclaredTargetsViewTest {
     fun `single committed entry renders attacker target and weapon`() {
         val view = DeclaredTargetsView(DeclaredTargetsRender(listOf(
             attacker("Wolverine WVR-6R", PlayerId.PLAYER_2, false,
-                target("Atlas", true, weapon("SRM 6", 72)),
+                target("Atlas", true, weapon("SRM 6")),
             )
         )))
         val output = render(view, 28, 30).text()
@@ -59,7 +56,7 @@ internal class DeclaredTargetsViewTest {
     fun `draft entry attacker line uses Color GRAY`() {
         val view = DeclaredTargetsView(DeclaredTargetsRender(listOf(
             attacker("Wolverine", PlayerId.PLAYER_1, draft = true,
-                target("Atlas", true, weapon("Med Laser", 72)),
+                target("Atlas", true, weapon("Med Laser")),
             )
         )))
 
@@ -138,7 +135,7 @@ internal class DeclaredTargetsViewTest {
     fun `weapon line shows success percent`() {
         val view = DeclaredTargetsView(DeclaredTargetsRender(listOf(
             attacker("Wolverine", PlayerId.PLAYER_2, false,
-                target("Atlas", true, weapon("SRM 6", 72)),
+                target("Atlas", true, weapon("SRM 6")),
             )
         )))
         val output = render(view, 28, 30).text()
@@ -149,7 +146,7 @@ internal class DeclaredTargetsViewTest {
     fun `weapon line shows target dice roll`() {
         val view = DeclaredTargetsView(DeclaredTargetsRender(listOf(
             attacker("Wolverine", PlayerId.PLAYER_2, false,
-                target("Atlas", true, weapon("SRM 6", chance = 72, targetRoll = 6)),
+                target("Atlas", true, weapon("SRM 6")),
             )
         )))
         val output = render(view, 28, 30).text()
@@ -189,7 +186,6 @@ internal class DeclaredTargetsViewTest {
             view,
             badge = GamePanelId.DECLARED_TARGETS.badge,
             title = DeclaredTargetsView.TITLE,
-            width = 28,
             height = 10,
         )
 

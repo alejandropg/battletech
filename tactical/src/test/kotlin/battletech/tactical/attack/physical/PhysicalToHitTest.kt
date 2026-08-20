@@ -3,12 +3,12 @@ package battletech.tactical.attack.physical
 import battletech.tactical.attack.physical.PhysicalAttackKind.Punch
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
-import battletech.tactical.model.Terrain
 import battletech.tactical.model.MovementMode
-import battletech.tactical.unit.MovementThisTurn
+import battletech.tactical.model.Terrain
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.MovementThisTurn
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -29,7 +29,7 @@ internal class PhysicalToHitTest {
 
     @Test
     fun `a stationary attacker against a stationary target is just the piloting skill`() {
-        assertEquals(4, punchTn(attacker(piloting = 4), target()))
+        assertEquals(4, punchTn(attacker(), target()))
     }
 
     @Test

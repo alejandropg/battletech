@@ -14,11 +14,11 @@ import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
 import battletech.tactical.unit.UnitRoster
 import battletech.tui.aGameMap
-import battletech.tui.anAppState
 import battletech.tui.aUnit
+import battletech.tui.anAppState
+import battletech.tui.game.AppState
 import battletech.tui.mediumLaser
 import battletech.tui.srm6
-import battletech.tui.game.AppState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -60,7 +60,7 @@ internal class DeclaredTargetsRenderTest {
     fun `committed P1 declaration produces one non-draft entry`() {
         val attacker = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
-        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
+        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2,
             position = HexCoordinates(2, 1))
         val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
 
@@ -90,7 +90,7 @@ internal class DeclaredTargetsRenderTest {
     fun `committed P1 declaration is visible to P2 viewer too`() {
         val attacker = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
-        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
+        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2,
             position = HexCoordinates(2, 1))
         val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
 
@@ -113,7 +113,7 @@ internal class DeclaredTargetsRenderTest {
     fun `draft with weapons produces isDraft=true entry`() {
         val attacker = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
-        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
+        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2,
             position = HexCoordinates(2, 1))
         val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
         val turnState = turnState()
@@ -144,7 +144,6 @@ internal class DeclaredTargetsRenderTest {
         val emptyDraft = UnitDeclaration(
             unitId = attacker.id,
             torsoFacing = HexDirection.N,
-            primaryTargetId = null,
             weaponAssignments = emptyMap(),
         )
 
@@ -159,7 +158,7 @@ internal class DeclaredTargetsRenderTest {
     fun `draft with empty weapon set is omitted`() {
         val attacker = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
-        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
+        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2,
             position = HexCoordinates(2, 1))
         val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
         val turnState = turnState()
@@ -167,7 +166,6 @@ internal class DeclaredTargetsRenderTest {
         val emptyDraft = UnitDeclaration(
             unitId = attacker.id,
             torsoFacing = HexDirection.N,
-            primaryTargetId = null,
             weaponAssignments = mapOf(target.id to emptySet()),
         )
 
@@ -182,7 +180,7 @@ internal class DeclaredTargetsRenderTest {
     fun `attackers ordered by attackSequence player order`() {
         val p1Unit = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
-        val p2Unit = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
+        val p2Unit = aUnit(id = "atlas", owner = PlayerId.PLAYER_2,
             position = HexCoordinates(4, 3), facing = HexDirection.S, weapons = listOf(mediumLaser()))
         val p1Target = aUnit(id = "p1target", owner = PlayerId.PLAYER_2, name = "P1Target",
             position = HexCoordinates(2, 1))
@@ -248,7 +246,7 @@ internal class DeclaredTargetsRenderTest {
     fun `empty attack sequence falls back to P1 then P2 without crash`() {
         val attacker = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
-        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
+        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2,
             position = HexCoordinates(2, 1))
         val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
 
@@ -273,7 +271,7 @@ internal class DeclaredTargetsRenderTest {
     fun `committed and draft for same player appear as separate entries`() {
         val attacker = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser(), srm6()))
-        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
+        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2,
             position = HexCoordinates(2, 1))
         val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
 
@@ -303,7 +301,7 @@ internal class DeclaredTargetsRenderTest {
 
     @Test
     fun `draft for non-viewing player is excluded`() {
-        val p2Attacker = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
+        val p2Attacker = aUnit(id = "atlas", owner = PlayerId.PLAYER_2,
             position = HexCoordinates(4, 3), facing = HexDirection.S, weapons = listOf(mediumLaser()))
         val p2Target = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(4, 5))
@@ -329,7 +327,7 @@ internal class DeclaredTargetsRenderTest {
     fun `declaredTargetsRender on Declaring includes live editing state`() {
         val attacker = aUnit(id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
             position = HexCoordinates(2, 3), facing = HexDirection.N, weapons = listOf(mediumLaser()))
-        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2, name = "Atlas",
+        val target = aUnit(id = "atlas", owner = PlayerId.PLAYER_2,
             position = HexCoordinates(2, 1))
         val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
         val turnState = turnState()
@@ -341,8 +339,6 @@ internal class DeclaredTargetsRenderTest {
                 torsoFacing = HexDirection.N,
                 weaponAssignments = mapOf(target.id to setOf(0)),
                 primaryTargetId = target.id,
-                cursorTargetIndex = 0,
-                cursorWeaponIndex = 0,
             ),
             drafts = emptyMap(),
         )

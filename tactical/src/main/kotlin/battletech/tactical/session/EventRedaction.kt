@@ -131,7 +131,7 @@ private fun redactPhysicalResult(result: PhysicalAttackResult, viewer: PlayerId?
                 Knockdown.Fell.Undisclosed(
                     unitId = knockdown.unitId,
                     fall = knockdown.fall,
-                    pilotEvents = knockdown.pilotEvents.mapNotNull { it.redactFor(viewer, state, revealAll = false) },
+                    pilotEvents = knockdown.pilotEvents.mapNotNull { it.redactFor(viewer, state) },
                 )
             }
         is Knockdown.Fell.Undisclosed -> knockdown

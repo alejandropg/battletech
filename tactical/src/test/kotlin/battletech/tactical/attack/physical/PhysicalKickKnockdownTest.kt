@@ -17,8 +17,8 @@ internal class PhysicalKickKnockdownTest {
     private val targetPos = HexCoordinates(1, 0)
     private val bearing = FiringArc.bearingDirection(targetPos, attackerPos)
 
-    private val attacker = aUnit(id = "attacker", tonnage = 50, pilotingSkill = 5, position = attackerPos)
-    private val target = aUnit(id = "target", pilotingSkill = 5, position = targetPos, facing = bearing)
+    private val attacker = aUnit(id = "attacker", position = attackerPos)
+    private val target = aUnit(id = "target", position = targetPos, facing = bearing)
     private val state = aGameState(units = listOf(attacker, target))
 
     private fun kick() = PhysicalAttackDeclaration(attacker.id, target.id, Kick(Side.RIGHT))

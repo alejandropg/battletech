@@ -1,8 +1,8 @@
 package battletech.tui.game
 
-import battletech.tactical.model.TurnPhase
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.TurnState
 import battletech.tui.aGameMap
 import battletech.tui.game.phase.MovementPhase
@@ -37,7 +37,7 @@ internal class AppStateTest {
 
         @Test
         fun `stays in place when out of bounds`() {
-            val map = aGameMap(cols = 3, rows = 3)
+            val map = aGameMap()
             val result = moveCursor(HexCoordinates(0, 0), HexDirection.N, map)
             assertEquals(HexCoordinates(0, 0), result)
         }

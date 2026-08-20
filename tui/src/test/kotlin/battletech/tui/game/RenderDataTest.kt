@@ -4,10 +4,10 @@ import battletech.tactical.model.GameMap
 import battletech.tactical.model.Hex
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.Terrain
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.MovementMode
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.movement.ReachableHex
@@ -15,12 +15,12 @@ import battletech.tactical.session.UnitDeclaration
 import battletech.tactical.unit.UnitId
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
-import battletech.tui.anAppState
 import battletech.tui.aUnit
-import battletech.tui.mediumLaser
+import battletech.tui.anAppState
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.hex.HexHighlight
+import battletech.tui.mediumLaser
 import battletech.tui.viewFor
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -233,9 +233,7 @@ internal class RenderDataTest {
             allocation = battletech.tui.game.phase.WeaponAllocation(
                 torsoFacing = torsoFacing,
                 cursorTargetIndex = cursorTargetIndex,
-                cursorWeaponIndex = 0,
                 weaponAssignments = emptyMap(),
-                primaryTargetId = null,
             ),
         )
 
@@ -246,7 +244,7 @@ internal class RenderDataTest {
                 position = HexCoordinates(0, 0), facing = HexDirection.N,
                 weapons = listOf(mediumLaser()),
             )
-            val gameState = aGameState(units = listOf(attacker), map = aGameMap(cols = 3, rows = 3))
+            val gameState = aGameState(units = listOf(attacker), map = aGameMap())
             val arc = viewFor(attacker.owner, gameState).fireArc(attacker.id, HexDirection.N)
             assertTrue(arc.isNotEmpty())
 
@@ -349,7 +347,7 @@ internal class RenderDataTest {
                 HexCoordinates(0, row) to Hex(HexCoordinates(0, row), Terrain.CLEAR)
             }
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val phase = declaring(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = 0)
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.S)
 
             val result = phase.board(anAppState(phase, gameState = gameState))
 
@@ -396,7 +394,7 @@ internal class RenderDataTest {
                 HexCoordinates(0, row) to Hex(HexCoordinates(0, row), if (row == 3) Terrain.HEAVY_WOODS else Terrain.CLEAR)
             }
             val gameState = aGameState(units = listOf(attacker, target), map = GameMap(hexes))
-            val phase = declaring(attacker.id, torsoFacing = HexDirection.S, cursorTargetIndex = 0)
+            val phase = declaring(attacker.id, torsoFacing = HexDirection.S)
 
             val result = phase.board(anAppState(phase, gameState = gameState))
 
@@ -429,7 +427,7 @@ internal class RenderDataTest {
                 id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
                 facing = HexDirection.N, weapons = listOf(mediumLaser()),
             )
-            val gameState = aGameState(units = listOf(attacker), map = aGameMap(cols = 3, rows = 3))
+            val gameState = aGameState(units = listOf(attacker), map = aGameMap())
             val phase = declaring(attacker.id, torsoFacing = HexDirection.NE)
 
             val result = phase.board(anAppState(phase, gameState = gameState))
@@ -443,7 +441,7 @@ internal class RenderDataTest {
                 id = "attacker", position = HexCoordinates(0, 0), owner = PlayerId.PLAYER_1,
                 facing = HexDirection.N, weapons = listOf(mediumLaser()),
             )
-            val gameState = aGameState(units = listOf(attacker), map = aGameMap(cols = 3, rows = 3))
+            val gameState = aGameState(units = listOf(attacker), map = aGameMap())
             val phase = declaring(attacker.id, torsoFacing = HexDirection.N)
 
             val result = phase.board(anAppState(phase, gameState = gameState))
@@ -461,11 +459,10 @@ internal class RenderDataTest {
                 id = "other", position = HexCoordinates(1, 0), owner = PlayerId.PLAYER_1,
                 facing = HexDirection.N, weapons = listOf(mediumLaser()),
             )
-            val gameState = aGameState(units = listOf(attacker, other), map = aGameMap(cols = 3, rows = 3))
+            val gameState = aGameState(units = listOf(attacker, other), map = aGameMap())
             val otherDraft = UnitDeclaration(
                 unitId = other.id,
                 torsoFacing = HexDirection.NW,
-                primaryTargetId = null,
                 weaponAssignments = emptyMap(),
             )
             val phase = declaring(attacker.id, torsoFacing = HexDirection.NE).copy(drafts = mapOf(other.id to otherDraft))

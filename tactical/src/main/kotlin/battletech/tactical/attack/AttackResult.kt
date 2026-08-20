@@ -58,9 +58,6 @@ public sealed interface AttackResult {
          */
         public val locationHits: List<LocationHit>
 
-        /** Damage steps actually applied (armor/IS/destroyed) — populated by pass-2 resolution via [withDamage]. */
-        override val damage: List<LocationDamage>
-
         /** Total damage this attack dealt, summed from [locationHits]. */
         public val damageApplied: Int get() = locationHits.sumOf { it.damage }
 

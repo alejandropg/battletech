@@ -13,7 +13,7 @@ internal class VerticalTitleViewTest {
 
         val buffer = render(view, 7, 10)
 
-        val topRow = buffer.line(0, 0, 7)
+        val topRow = buffer.line(0, width = 7)
         assert(!topRow.contains("╭") && !topRow.contains("╮")) { "Should draw no border, got: $topRow" }
     }
 

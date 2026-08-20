@@ -82,7 +82,7 @@ internal class UnitRosterTest {
 
     @Test
     fun `withUnit replaces the unit sharing the given id and leaves others untouched`() {
-        val original = aUnit(id = "target", currentHeat = 0)
+        val original = aUnit(id = "target")
         val other = aUnit(id = "other")
         val roster = UnitRoster(listOf(original, other))
 
@@ -93,9 +93,9 @@ internal class UnitRosterTest {
 
     @Test
     fun `withUnits bulk-replaces every unit sharing an id, leaving the rest untouched`() {
-        val a = aUnit(id = "a", currentHeat = 0)
-        val b = aUnit(id = "b", currentHeat = 0)
-        val c = aUnit(id = "c", currentHeat = 0)
+        val a = aUnit(id = "a")
+        val b = aUnit(id = "b")
+        val c = aUnit(id = "c")
         val roster = UnitRoster(listOf(a, b, c))
 
         val updatedA = a.copy(currentHeat = 3)
@@ -106,8 +106,8 @@ internal class UnitRosterTest {
 
     @Test
     fun `mapUnits transforms every unit in place`() {
-        val a = aUnit(id = "a", currentHeat = 0)
-        val b = aUnit(id = "b", currentHeat = 0)
+        val a = aUnit(id = "a")
+        val b = aUnit(id = "b")
         val roster = UnitRoster(listOf(a, b))
 
         val mapped = roster.mapUnits { it.copy(currentHeat = it.currentHeat + 1) }

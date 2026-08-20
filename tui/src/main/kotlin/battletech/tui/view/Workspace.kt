@@ -6,12 +6,12 @@ import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
 import tenter.input.KeyGlyph
-import tenter.view.FlashMessage
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.ScreenBuffer
 import tenter.screen.ChromeRole
+import tenter.screen.ScreenBuffer
 import tenter.view.Bordered
+import tenter.view.FlashMessage
 import tenter.view.ScrollOffset
 import tenter.view.View
 
@@ -100,7 +100,7 @@ internal class Workspace {
                 is MatchOutcome.Draw -> "Draw"
                 is MatchOutcome.Victory -> "${playerName(outcome.winner)} wins!"
             }
-            StatusBarView(appState.currentPhase, "Match over — $outcomeText  |  ${KeyGlyph.CTRL}c: quit", null)
+            StatusBarView(appState.currentPhase, "Match over — $outcomeText  |  ${KeyGlyph.CTRL}c: quit")
         } else {
             val status = appState.phase.status(appState)
             StatusBarView(appState.currentPhase, flash?.text ?: status.prompt, status.activePlayerLabel)

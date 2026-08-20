@@ -1,8 +1,8 @@
 package battletech.tactical.attack.weapon
 
+import battletech.tactical.attack.aWeaponAttackContext
 import battletech.tactical.query.RuleResult
 import battletech.tactical.query.aWeapon
-import battletech.tactical.attack.aWeaponAttackContext
 import battletech.tactical.session.RuleRejection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -14,7 +14,7 @@ internal class WeaponNotDestroyedRuleTest {
 
     @Test
     fun `satisfied when weapon is functional`() {
-        val result = rule.evaluate(aWeaponAttackContext(weapon = aWeapon(destroyed = false)))
+        val result = rule.evaluate(aWeaponAttackContext(weapon = aWeapon()))
 
         assertEquals(RuleResult.Satisfied, result)
     }

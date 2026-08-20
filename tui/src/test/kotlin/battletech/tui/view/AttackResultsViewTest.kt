@@ -141,7 +141,7 @@ internal class AttackResultsViewTest {
     @Test
     fun `weapon line shows target number and success percent`() {
         // gunnery 4, no modifiers -> TN 4 -> 92% on 2d6
-        val output = renderToString(listOf(aHitResult(gunnery = 4, rangeModifier = 0)))
+        val output = renderToString(listOf(aHitResult()))
         assertTrue(output.contains("92%")) { "Expected success percent for TN 4: $output" }
     }
 
@@ -163,7 +163,7 @@ internal class AttackResultsViewTest {
 
     @Test
     fun `breakdown includes the gunnery base line for the viewer's own attacker`() {
-        val output = renderToString(listOf(aHitResult(gunnery = 4)), viewer = PlayerId.PLAYER_1)
+        val output = renderToString(listOf(aHitResult()), viewer = PlayerId.PLAYER_1)
         assertTrue(output.contains("+4 gunnery")) { "Expected gunnery base line in output: $output" }
     }
 
@@ -171,7 +171,7 @@ internal class AttackResultsViewTest {
     fun `breakdown omits the gunnery base line for a foreign attacker, though it stays derivable from TN and modifiers`() {
         // attackerId is owned by PLAYER_1 (see makeView); viewing as PLAYER_2 makes it foreign.
         val output = renderToString(
-            listOf(aHitResult(gunnery = 4, modifiers = listOf(ToHitModifier(ToHitFactor.RANGE, "med", 2)))),
+            listOf(aHitResult(modifiers = listOf(ToHitModifier(ToHitFactor.RANGE, "med", 2)))),
             viewer = PlayerId.PLAYER_2,
         )
         assertFalse(output.contains("gunnery")) { "Expected no gunnery label for a foreign attacker: $output" }

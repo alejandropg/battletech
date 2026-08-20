@@ -9,7 +9,7 @@ internal class CriticalLayoutTest {
 
     private fun buildSampleMech(): MechCriticalBuild = mechLayout {
         place(MechLocation.RIGHT_TORSO, WeaponModels.ac20)
-        ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, tons = 1)
+        ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20)
         place(MechLocation.LEFT_ARM, WeaponModels.mediumLaser)
         place(MechLocation.RIGHT_ARM, WeaponModels.mediumLaser)
         heatSinks(2)

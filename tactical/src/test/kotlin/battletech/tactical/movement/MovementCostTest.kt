@@ -32,7 +32,7 @@ internal class MovementCostTest {
 
     @Test
     fun `climbing one level adds 1 to terrain cost`() {
-        val from = Hex(HexCoordinates(0, 0), Terrain.CLEAR, elevation = 0)
+        val from = Hex(HexCoordinates(0, 0), Terrain.CLEAR)
         val to = Hex(HexCoordinates(1, 0), Terrain.CLEAR, elevation = 1)
 
         assertEquals(2, MovementCost.enterHexCost(from, to))
@@ -40,7 +40,7 @@ internal class MovementCostTest {
 
     @Test
     fun `climbing two levels adds 2 to terrain cost`() {
-        val from = Hex(HexCoordinates(0, 0), Terrain.CLEAR, elevation = 0)
+        val from = Hex(HexCoordinates(0, 0), Terrain.CLEAR)
         val to = Hex(HexCoordinates(1, 0), Terrain.LIGHT_WOODS, elevation = 2)
 
         assertEquals(4, MovementCost.enterHexCost(from, to))
@@ -49,7 +49,7 @@ internal class MovementCostTest {
     @Test
     fun `descending is free - only terrain cost applies`() {
         val from = Hex(HexCoordinates(0, 0), Terrain.CLEAR, elevation = 3)
-        val to = Hex(HexCoordinates(1, 0), Terrain.CLEAR, elevation = 0)
+        val to = Hex(HexCoordinates(1, 0), Terrain.CLEAR)
 
         assertEquals(1, MovementCost.enterHexCost(from, to))
     }

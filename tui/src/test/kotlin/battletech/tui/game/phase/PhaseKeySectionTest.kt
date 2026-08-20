@@ -36,9 +36,6 @@ internal class PhaseKeySectionTest {
         allocation = WeaponAllocation(
             torsoFacing = HexDirection.N,
             weaponAssignments = emptyMap(),
-            primaryTargetId = null,
-            cursorTargetIndex = 0,
-            cursorWeaponIndex = 0,
         ),
     )
 

@@ -28,9 +28,6 @@ public class GameMapLoader(json: Json = mapJson) {
     /** Reads and parses the map file at [path], throwing [MapLoadException] on any failure. */
     public fun load(path: Path): GameMap = loader.load(path)
 
-    /** Reads and parses the classpath resource at [resourcePath]. */
-    internal fun loadResource(resourcePath: String): GameMap = loader.loadResource(resourcePath)
-
     /** Packaged map names from `map/index.json` — see [ResourceOrFileLoader.builtInNames]'s KDoc. */
     internal fun builtInNames(): List<String> = loader.builtInNames()
 }

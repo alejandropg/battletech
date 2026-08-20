@@ -7,11 +7,11 @@ import battletech.tui.hex.diceRoll
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.ChromeRole
-import tenter.widget.CheckState
-import tenter.widget.checkboxIcon
 import tenter.view.line
 import tenter.view.render
 import tenter.view.text
+import tenter.widget.CheckState
+import tenter.widget.checkboxIcon
 
 internal class TargetsViewTest {
 
@@ -85,7 +85,6 @@ internal class TargetsViewTest {
             weaponAssignments = emptyMap(),
             primaryTargetId = UnitId("atlas"),
             cursorTargetIndex = 0,
-            cursorWeaponIndex = 0,
         )
 
         val output = renderToString(view)
@@ -160,7 +159,6 @@ internal class TargetsViewTest {
             weaponAssignments = emptyMap(),
             primaryTargetId = UnitId("atlas"),
             cursorTargetIndex = 1,
-            cursorWeaponIndex = 0,
         )
 
         val output = renderToString(view)
@@ -184,7 +182,6 @@ internal class TargetsViewTest {
             weaponAssignments = emptyMap(),
             primaryTargetId = null,
             cursorTargetIndex = 0,
-            cursorWeaponIndex = 0,
         )
 
         val output = renderToString(view)
@@ -236,7 +233,6 @@ internal class TargetsViewTest {
             weaponAssignments = emptyMap(),
             primaryTargetId = null,
             cursorTargetIndex = 1,
-            cursorWeaponIndex = 0,
         )
 
         val output = renderToString(view)

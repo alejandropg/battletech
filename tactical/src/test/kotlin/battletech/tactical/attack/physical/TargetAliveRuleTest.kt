@@ -13,7 +13,7 @@ internal class TargetAliveRuleTest {
 
     @Test
     fun `satisfied when target is alive`() {
-        val target = aUnit(id = "target", isDestroyed = false)
+        val target = aUnit(id = "target")
         val result = rule.evaluate(aPhysicalAttackContext(target = target))
         assertThat(result).isEqualTo(RuleResult.Satisfied)
     }

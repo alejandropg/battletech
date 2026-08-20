@@ -33,7 +33,7 @@ internal class PunchActionDefinitionTest {
     @Test
     fun `punch damage is ceil of tonnage over ten`() {
         // Total Warfare: punch damage = ceil(tonnage / 10).
-        assertEquals(5, punchDamage(aUnit(tonnage = 50)))
+        assertEquals(5, punchDamage(aUnit()))
         assertEquals(8, punchDamage(aUnit(tonnage = 75)))
         assertEquals(3, punchDamage(aUnit(tonnage = 25)))
         assertEquals(10, punchDamage(aUnit(tonnage = 100)))
@@ -41,7 +41,7 @@ internal class PunchActionDefinitionTest {
 
     @Test
     fun `success chance is based on piloting skill`() {
-        val actor = aUnit(pilotingSkill = 5, position = HexCoordinates(0, 0))
+        val actor = aUnit(position = HexCoordinates(0, 0))
         val target = aUnit(id = "enemy", position = HexCoordinates(1, 0))
         val gameState = aGameState(units = listOf(actor, target))
 

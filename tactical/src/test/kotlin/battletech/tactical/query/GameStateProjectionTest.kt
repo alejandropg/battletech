@@ -22,10 +22,7 @@ internal class GameStateProjectionTest {
         name = "Hunchback",
         position = HexCoordinates(1, 2),
         facing = HexDirection.NE,
-        armor = anArmorLayout(head = 9, centerTorso = 47),
-        walkingMP = 4,
-        runningMP = 6,
-        jumpMP = 0,
+        armor = anArmorLayout(),
         weapons = listOf(aWeapon(name = "AC/20"), aWeapon(name = "Medium Laser")),
     )
     private val enemyUnit = aUnit(id = "enemy", owner = PlayerId.PLAYER_2, name = "Atlas")

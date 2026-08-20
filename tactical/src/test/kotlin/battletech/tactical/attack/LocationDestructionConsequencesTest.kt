@@ -55,10 +55,9 @@ internal class LocationDestructionConsequencesTest {
             place(MechLocation.LEFT_ARM, WeaponModels.mediumLaser)
         }
         val unit = aUnit(
-            id = "unit-1",
             weapons = build.weapons,
             criticalLayout = build.layout,
-            internalStructure = anInternalStructureLayout(leftArm = 17),
+            internalStructure = anInternalStructureLayout(),
         )
         val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftArm = 0))
@@ -74,7 +73,7 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `arm weapon destroyed - WeaponNotDestroyedRule rejects it`() {
         val weapon = Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.LEFT_ARM, destroyed = true)
-        val unit = aUnit(id = "unit-1", weapons = listOf(weapon))
+        val unit = aUnit(weapons = listOf(weapon))
         val rule = WeaponNotDestroyedRule()
         val ctx = aWeaponAttackContext(actor = unit, weapon = weapon)
 
@@ -83,8 +82,8 @@ internal class LocationDestructionConsequencesTest {
 
     @Test
     fun `intact arm weapon - WeaponNotDestroyedRule passes`() {
-        val weapon = Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.LEFT_ARM, destroyed = false)
-        val unit = aUnit(id = "unit-1", weapons = listOf(weapon))
+        val weapon = Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.LEFT_ARM)
+        val unit = aUnit(weapons = listOf(weapon))
         val rule = WeaponNotDestroyedRule()
         val ctx = aWeaponAttackContext(actor = unit, weapon = weapon)
 
@@ -102,13 +101,12 @@ internal class LocationDestructionConsequencesTest {
             place(MechLocation.LEFT_ARM, WeaponModels.mediumLaser)
         }
         val unit = aUnit(
-            id = "unit-1",
             weapons = build.weapons,
             criticalLayout = build.layout,
-            internalStructure = anInternalStructureLayout(leftTorso = 21, leftArm = 17),
+            internalStructure = anInternalStructureLayout(),
         )
         val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
-        val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftTorso = 0, leftArm = 17))
+        val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftTorso = 0))
         val after = GameState(UnitRoster(listOf(afterUnit)), GameMap(emptyMap()))
 
         val (finalState, events) = applyLocationDestructionConsequences(before, after, DiceRoller.deterministic())
@@ -127,13 +125,12 @@ internal class LocationDestructionConsequencesTest {
             place(MechLocation.LEFT_ARM, WeaponModels.mediumLaser)
         }
         val unit = aUnit(
-            id = "unit-1",
             weapons = build.weapons,
             criticalLayout = build.layout,
-            internalStructure = anInternalStructureLayout(rightTorso = 21, rightArm = 17, leftArm = 17),
+            internalStructure = anInternalStructureLayout(),
         )
         val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
-        val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(rightTorso = 0, rightArm = 17, leftArm = 17))
+        val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(rightTorso = 0))
         val after = GameState(UnitRoster(listOf(afterUnit)), GameMap(emptyMap()))
 
         val (finalState, events) = applyLocationDestructionConsequences(before, after, DiceRoller.deterministic())
@@ -159,10 +156,9 @@ internal class LocationDestructionConsequencesTest {
             place(MechLocation.LEFT_TORSO, WeaponModels.mediumLaser)
         }
         val unit = aUnit(
-            id = "unit-1",
             weapons = build.weapons,
             criticalLayout = build.layout,
-            internalStructure = anInternalStructureLayout(leftTorso = 21, leftArm = 0),
+            internalStructure = anInternalStructureLayout(leftArm = 0),
         )
         val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftTorso = 0, leftArm = 0))
@@ -182,9 +178,7 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `one leg destroyed - UnitFell emitted and unit goes prone`() {
         val unit = aUnit(
-            id = "unit-1",
-            tonnage = 50,
-            internalStructure = anInternalStructureLayout(leftLeg = 21),
+            internalStructure = anInternalStructureLayout(),
         )
         val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftLeg = 0))
@@ -206,9 +200,7 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `unit already prone when leg destroyed - no additional UnitFell`() {
         val unit = aUnit(
-            id = "unit-1",
-            tonnage = 50,
-            internalStructure = anInternalStructureLayout(leftLeg = 21),
+            internalStructure = anInternalStructureLayout(),
         ).copy(isProne = true)
         val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftLeg = 0))
@@ -222,9 +214,7 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `both legs destroyed in same volley - no fall emitted`() {
         val unit = aUnit(
-            id = "unit-1",
-            tonnage = 50,
-            internalStructure = anInternalStructureLayout(leftLeg = 21, rightLeg = 21),
+            internalStructure = anInternalStructureLayout(),
         )
         val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftLeg = 0, rightLeg = 0))
@@ -241,9 +231,7 @@ internal class LocationDestructionConsequencesTest {
         // Right leg already destroyed before this volley; left leg destroyed this volley.
         // After update destroyedLegCount() == 2 → both-legs path → no fall.
         val unit = aUnit(
-            id = "unit-1",
-            tonnage = 50,
-            internalStructure = anInternalStructureLayout(leftLeg = 21, rightLeg = 0),
+            internalStructure = anInternalStructureLayout(rightLeg = 0),
         )
         val before = GameState(UnitRoster(listOf(unit)), GameMap(emptyMap()))
         val afterUnit = unit.copy(internalStructure = anInternalStructureLayout(leftLeg = 0, rightLeg = 0))
@@ -263,8 +251,6 @@ internal class LocationDestructionConsequencesTest {
         val map = flatClearMap(6)
         val unit = aUnit(
             position = HexCoordinates(0, 0),
-            walkingMP = 4,
-            runningMP = 6,
             jumpMP = 3,
             internalStructure = anInternalStructureLayout(leftLeg = 0),
         )
@@ -280,10 +266,8 @@ internal class LocationDestructionConsequencesTest {
         val map = flatClearMap(6)
         val unit = aUnit(
             position = HexCoordinates(0, 0),
-            walkingMP = 4,
-            runningMP = 6,
             jumpMP = 3,
-            internalStructure = anInternalStructureLayout(leftLeg = 21, rightLeg = 21),
+            internalStructure = anInternalStructureLayout(),
         )
         val calc = ReachabilityCalculator(map, UnitRoster(listOf(unit)))
 
@@ -295,7 +279,6 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `MovementPhaseHandler rejects JUMP command when leg destroyed`() {
         val unit = aUnit(
-            id = "unit-1",
             owner = PlayerId.PLAYER_1,
             jumpMP = 3,
             internalStructure = anInternalStructureLayout(leftLeg = 0),
@@ -319,9 +302,7 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `MovementPhaseHandler rejects RUN command when leg destroyed`() {
         val unit = aUnit(
-            id = "unit-1",
             owner = PlayerId.PLAYER_1,
-            runningMP = 6,
             internalStructure = anInternalStructureLayout(leftLeg = 0),
         )
         val state = aGameState(units = listOf(unit))
@@ -342,9 +323,7 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `MovementPhaseHandler allows WALK when leg is destroyed`() {
         val unit = aUnit(
-            id = "unit-1",
             owner = PlayerId.PLAYER_1,
-            walkingMP = 4,
             internalStructure = anInternalStructureLayout(leftLeg = 0),
         )
         // A destroyed leg halves walking MP (4/2 = 2). (0,-1) is one hop north — within budget.
@@ -375,10 +354,9 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `availableAmmoBins excludes bin in destroyed location`() {
         val build = mechLayout {
-            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)
+            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20)
         }
         val unit = aUnit(
-            id = "unit-1",
             criticalLayout = build.layout,
             internalStructure = anInternalStructureLayout(rightTorso = 0),
         )
@@ -389,12 +367,11 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `availableAmmoBins includes bin in intact location`() {
         val build = mechLayout {
-            ammo(MechLocation.LEFT_TORSO, AmmoType.AC20, 1)
+            ammo(MechLocation.LEFT_TORSO, AmmoType.AC20)
         }
         val unit = aUnit(
-            id = "unit-1",
             criticalLayout = build.layout,
-            internalStructure = anInternalStructureLayout(leftTorso = 21),
+            internalStructure = anInternalStructureLayout(),
         )
 
         val available = unit.availableAmmoBins()
@@ -405,13 +382,12 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `availableAmmoBins with two bins returns only the intact-location bin`() {
         val build = mechLayout {
-            ammo(MechLocation.LEFT_TORSO, AmmoType.AC20, 1)
-            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)
+            ammo(MechLocation.LEFT_TORSO, AmmoType.AC20)
+            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20)
         }
         val unit = aUnit(
-            id = "unit-1",
             criticalLayout = build.layout,
-            internalStructure = anInternalStructureLayout(leftTorso = 21, rightTorso = 0),
+            internalStructure = anInternalStructureLayout(rightTorso = 0),
         )
 
         val available = unit.availableAmmoBins()
@@ -422,10 +398,9 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `HasAmmoRule unsatisfied when all ammo bins are in destroyed locations`() {
         val build = mechLayout {
-            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)
+            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20)
         }
         val unit = aUnit(
-            id = "unit-1",
             weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = build.layout,
             internalStructure = anInternalStructureLayout(rightTorso = 0),
@@ -438,13 +413,12 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `HasAmmoRule satisfied when ammo bin is in intact location`() {
         val build = mechLayout {
-            ammo(MechLocation.LEFT_TORSO, AmmoType.AC20, 1)
+            ammo(MechLocation.LEFT_TORSO, AmmoType.AC20)
         }
         val unit = aUnit(
-            id = "unit-1",
             weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = build.layout,
-            internalStructure = anInternalStructureLayout(leftTorso = 21),
+            internalStructure = anInternalStructureLayout(),
         )
         val ctx = aWeaponAttackContext(actor = unit, weapon = unit.weapons[0])
 
@@ -454,8 +428,8 @@ internal class LocationDestructionConsequencesTest {
     @Test
     fun `HasAmmoRule unsatisfied when intact-location bin is exhausted and other bin is in destroyed location`() {
         val build = mechLayout {
-            ammo(MechLocation.LEFT_TORSO, AmmoType.AC20, 1)
-            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20, 1)
+            ammo(MechLocation.LEFT_TORSO, AmmoType.AC20)
+            ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20)
         }
         // Exhaust the LT bin; RT location is destroyed
         val ltBinEntry = build.layout.ammoBins().first { (loc, _, _) -> loc == MechLocation.LEFT_TORSO }
@@ -465,10 +439,9 @@ internal class LocationDestructionConsequencesTest {
             CriticalSlotContent.AmmoBin(AmmoType.AC20, shots = 0),
         )
         val unit = aUnit(
-            id = "unit-1",
             weapons = listOf(Weapon(WeaponModels.ac20, mountId = WeaponMountId(0), location = MechLocation.RIGHT_TORSO)),
             criticalLayout = exhaustedLayout,
-            internalStructure = anInternalStructureLayout(leftTorso = 21, rightTorso = 0),
+            internalStructure = anInternalStructureLayout(rightTorso = 0),
         )
         val ctx = aWeaponAttackContext(actor = unit, weapon = unit.weapons[0])
 
@@ -488,14 +461,14 @@ internal class LocationDestructionConsequencesTest {
             id = "affected",
             weapons = build.weapons,
             criticalLayout = build.layout,
-            internalStructure = anInternalStructureLayout(leftArm = 17),
+            internalStructure = anInternalStructureLayout(),
         )
         // Bystander's weapon has a mountId, but that mount doesn't appear in its (empty)
         // criticalLayout at leftArm → disableWeaponsIn is a no-op regardless.
         val bystander = aUnit(
             id = "bystander",
             weapons = listOf(Weapon(WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.LEFT_ARM)),
-            internalStructure = anInternalStructureLayout(leftArm = 17),
+            internalStructure = anInternalStructureLayout(),
         )
         val before = GameState(UnitRoster(listOf(affected, bystander)), GameMap(emptyMap()))
         val afterAffected = affected.copy(internalStructure = anInternalStructureLayout(leftArm = 0))
@@ -513,7 +486,7 @@ internal class LocationDestructionConsequencesTest {
 // ─────────────────────────────────────────────────────────────────────────────
 
 private fun flatClearMap(radius: Int): GameMap {
-    val hexes = buildMap<HexCoordinates, Hex> {
+    val hexes = buildMap {
         for (col in -radius..radius) {
             for (row in -radius..radius) {
                 val coords = HexCoordinates(col, row)

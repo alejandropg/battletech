@@ -512,8 +512,6 @@ internal class WireFormatRoundTripTest {
                 ToHitModifier(ToHitFactor.RANGE, "range", 2),
                 ToHitModifier(ToHitFactor.HEAT, "heat", 0),
             ),
-            partialCover = false,
-            useRearArmor = false,
             locationHits = listOf(LocationHit(MechLocation.CENTER_TORSO, damage = 5, locationRoll = DiceRoll(3, 4))),
         )
 

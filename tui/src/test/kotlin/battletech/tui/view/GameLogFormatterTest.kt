@@ -140,9 +140,9 @@ internal class GameLogFormatterTest {
     @Test
     fun `AttacksResolved summarizes fired, hit, and damage`() {
         val results = listOf(
-            anAttackResult(hit = true, damage = 5, locationHits = listOf(LocationHit(HitLocation.CENTER_TORSO, 5, DiceRoll(3, 4)))),
-            anAttackResult(hit = true, damage = 7, locationHits = listOf(LocationHit(HitLocation.LEFT_TORSO, 7, DiceRoll(4, 4)))),
-            anAttackResult(hit = false, damage = 0),
+            anAttackResult(hit = true, locationHits = listOf(LocationHit(HitLocation.CENTER_TORSO, 5, DiceRoll(3, 4)))),
+            anAttackResult(hit = true, locationHits = listOf(LocationHit(HitLocation.LEFT_TORSO, 7, DiceRoll(4, 4)))),
+            anAttackResult(hit = false),
         )
 
         assertThat(GameLogFormatter.lines(AttacksResolved(results), emptyState).first().text)
@@ -161,7 +161,6 @@ internal class GameLogFormatterTest {
         val results = listOf(
             anAttackResult(
                 hit = true,
-                damage = 24,
                 targetId = locust.id,
                 locationDamage = listOf(
                     LocationDamage(MechLocation.LEFT_ARM, armorDamage = 20, structureDamage = 6, destroyed = true),
@@ -182,7 +181,6 @@ internal class GameLogFormatterTest {
         val results = listOf(
             anAttackResult(
                 hit = true,
-                damage = 5,
                 targetId = locust.id,
                 locationDamage = listOf(
                     LocationDamage(MechLocation.LEFT_ARM, armorDamage = 5, structureDamage = 0, destroyed = false),
@@ -657,7 +655,6 @@ internal class GameLogFormatterTest {
             listOf(
                 anAttackResult(
                     hit = true,
-                    damage = 24,
                     locationDamage = listOf(
                         LocationDamage(MechLocation.LEFT_ARM, armorDamage = 20, structureDamage = 6, destroyed = true),
                     ),
@@ -669,7 +666,6 @@ internal class GameLogFormatterTest {
             listOf(
                 anAttackResult(
                     hit = true,
-                    damage = 5,
                     locationHits = listOf(LocationHit(HitLocation.CENTER_TORSO, 5, DiceRoll(3, 4))),
                 ),
             ),
@@ -707,7 +703,6 @@ internal class GameLogFormatterTest {
                 LocationHit(HitLocation.LEFT_ARM,     5, DiceRoll(5, 5)),
                 LocationHit(HitLocation.RIGHT_ARM,    1, DiceRoll(1, 2)),
             ),
-            totalDamage = 16,
         )
         val lines = GameLogFormatter.lines(AttacksResolved(listOf(result)), emptyState)
 
@@ -729,7 +724,6 @@ internal class GameLogFormatterTest {
                 LocationHit(HitLocation.CENTER_TORSO, 2, DiceRoll(3, 4)),
                 LocationHit(HitLocation.RIGHT_TORSO,  2, DiceRoll(4, 4)),
             ),
-            totalDamage = 8,
         )
         val lines = GameLogFormatter.lines(AttacksResolved(listOf(result)), emptyState)
 
@@ -742,7 +736,6 @@ internal class GameLogFormatterTest {
     fun `AttacksResolved with a single-shot hit adds a detail line`() {
         val result = anAttackResult(
             hit = true,
-            damage = 5,
             locationHits = listOf(LocationHit(HitLocation.CENTER_TORSO, 5, DiceRoll(3, 4))),
         )
         val lines = GameLogFormatter.lines(AttacksResolved(listOf(result)), emptyState)
@@ -762,11 +755,9 @@ internal class GameLogFormatterTest {
                 LocationHit(HitLocation.CENTER_TORSO, 2, DiceRoll(3, 4)),
                 LocationHit(HitLocation.LEFT_TORSO,   2, DiceRoll(4, 4)),
             ),
-            totalDamage = 4,
         )
         val plainResult = anAttackResult(
             hit = true,
-            damage = 5,
             locationHits = listOf(LocationHit(HitLocation.RIGHT_ARM, 5, DiceRoll(3, 4))),
         )
         val lines = GameLogFormatter.lines(AttacksResolved(listOf(clusterResult, plainResult)), emptyState)
@@ -781,7 +772,7 @@ internal class GameLogFormatterTest {
     @Test
     fun `AttacksResolved cluster miss produces no detail line`() {
         // A cluster weapon that missed: missilesHit=null (not set), hit=false
-        val missResult = anAttackResult(hit = false, damage = 0)
+        val missResult = anAttackResult(hit = false)
         val lines = GameLogFormatter.lines(AttacksResolved(listOf(missResult)), emptyState)
         assertThat(lines).hasSize(1) // only the summary line
     }
@@ -790,7 +781,6 @@ internal class GameLogFormatterTest {
         weaponName: String,
         missilesHit: Int,
         locationHits: List<LocationHit>,
-        totalDamage: Int,
         targetId: UnitId = UnitId("t"),
     ): AttackResult =
         AttackResult.ClusterHit(
@@ -807,7 +797,6 @@ internal class GameLogFormatterTest {
 
     private fun anAttackResult(
         hit: Boolean,
-        damage: Int,
         targetId: UnitId = UnitId("t"),
         locationDamage: List<LocationDamage> = emptyList(),
         locationHits: List<LocationHit> = emptyList(),

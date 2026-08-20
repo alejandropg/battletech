@@ -12,7 +12,7 @@ internal class PilotHitsTest {
 
     @Test
     fun `applyPilotHit increments pilotHits`() {
-        val unit = aUnit(pilotHits = 0)
+        val unit = aUnit()
 
         // 1st hit -> target 3; roll (3,3)=6 passes
         val (updated, _) = applyPilotHit(unit, DiceRoller.deterministic(3, 3))
@@ -23,7 +23,7 @@ internal class PilotHitsTest {
     @Test
     fun `a failed consciousness roll sets isPilotConscious false and emits the events`() {
         // 1st hit -> target 3; roll (1,1)=2 fails
-        val unit = aUnit(pilotHits = 0)
+        val unit = aUnit()
 
         val (updated, events) = applyPilotHit(unit, DiceRoller.deterministic(1, 1))
 
@@ -37,7 +37,7 @@ internal class PilotHitsTest {
     @Test
     fun `a passed consciousness roll keeps the pilot conscious`() {
         // 1st hit -> target 3; roll (3,3)=6 passes
-        val unit = aUnit(pilotHits = 0)
+        val unit = aUnit()
 
         val (updated, events) = applyPilotHit(unit, DiceRoller.deterministic(3, 3))
 

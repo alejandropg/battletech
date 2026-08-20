@@ -8,7 +8,6 @@ public object WeaponModels {
         shortRange = 3,
         mediumRange = 6,
         longRange = 9,
-        criticalSlots = 1,
         kind = WeaponKind.Energy,
     )
 
@@ -53,7 +52,6 @@ public object WeaponModels {
         shortRange = 1,
         mediumRange = 2,
         longRange = 3,
-        criticalSlots = 1,
         kind = WeaponKind.Energy,
     )
 
@@ -64,7 +62,6 @@ public object WeaponModels {
         shortRange = 1,
         mediumRange = 2,
         longRange = 3,
-        criticalSlots = 1,
         kind = WeaponKind.Ballistic(AmmoType.MG),
     )
 
@@ -75,7 +72,6 @@ public object WeaponModels {
         shortRange = 3,
         mediumRange = 6,
         longRange = 9,
-        criticalSlots = 1,
         kind = WeaponKind.Missile(AmmoType.SRM2, clusterSize = 2, damagePerMissile = 2, missilesPerGroup = 1),
     )
 
@@ -99,7 +95,6 @@ public object WeaponModels {
         shortRange = 7,
         mediumRange = 14,
         longRange = 21,
-        criticalSlots = 1,
         kind = WeaponKind.Missile(AmmoType.LRM5, clusterSize = 5, damagePerMissile = 1, missilesPerGroup = 5),
     )
 

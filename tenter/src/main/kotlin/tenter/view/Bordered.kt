@@ -2,9 +2,9 @@ package tenter.view
 
 import tenter.screen.Canvas
 import tenter.screen.Cell
+import tenter.screen.ChromeRole
 import tenter.screen.ColorRole
 import tenter.screen.Insets
-import tenter.screen.ChromeRole
 
 /**
  * Decorates [content] with a box border, an optional title/badge in the top border, and — when
@@ -55,11 +55,11 @@ public class Bordered(
         if (title.isNotEmpty()) {
             if (badge != null && width > title.length + badge.length + 7) {
                 canvas.writeString(2, 0, "[$badge] $title", Cell.Style(titleColor))
-                canvas.set(5 + badge.length + title.length, 0, Cell(" ", Cell.Style(borderColor)))
+                canvas.set(5 + badge.length + title.length, 0, Cell(style = Cell.Style(borderColor)))
             } else if (badge == null && width > title.length + 6) {
-                canvas.set(3, 0, Cell(" ", Cell.Style(borderColor)))
+                canvas.set(3, 0, Cell(style = Cell.Style(borderColor)))
                 canvas.writeString(4, 0, title, Cell.Style(titleColor))
-                canvas.set(4 + title.length, 0, Cell(" ", Cell.Style(borderColor)))
+                canvas.set(4 + title.length, 0, Cell(style = Cell.Style(borderColor)))
             } else if (badge != null && width >= 6) {
                 // The full "[badge] title" run doesn't fit — e.g. a minimized stub too narrow for
                 // its full title. The badge alone is still worth showing.
@@ -113,7 +113,7 @@ public class Bordered(
          * into the viewport, so it is visible at rest and the content reclaims its row the moment
          * the user scrolls.
          */
-        public val PADDING: Insets = Insets(left = 1, top = 1, right = 1, bottom = 0)
+        public val PADDING: Insets = Insets(left = 1, top = 1, right = 1)
 
         /**
          * A scrolling panel's viewport: border plus the horizontal gutters, at full inner height.

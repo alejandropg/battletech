@@ -35,9 +35,6 @@ internal class GameStateTransformsTest {
         position = HexCoordinates(0, 0),
         facing = facing,
         torsoFacing = torsoFacing,
-        walkingMP = 0,
-        runningMP = 0,
-        jumpMP = 0,
         armor = ArmorLayout(9, 47, 14, 32, 10, 32, 10, 34, 34, 41, 41),
         heatSink = heatSink,
         internalStructure = InternalStructureLayout(3, 31, 21, 21, 17, 17, 21, 21),
@@ -72,7 +69,7 @@ internal class GameStateTransformsTest {
 
         @Test
         fun `applies to all units`() {
-            val u1 = aUnit(id = "u1", currentHeat = 8, heatSink = HeatSink(HeatSinkType.STS, 3))
+            val u1 = aUnit(currentHeat = 8, heatSink = HeatSink(HeatSinkType.STS, 3))
             val u2 = aUnit(id = "u2", currentHeat = 4, heatSink = HeatSink(HeatSinkType.STS, 4))
             val gameState = GameState(UnitRoster(listOf(u1, u2)), map)
 

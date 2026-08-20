@@ -29,7 +29,7 @@ import tenter.view.text
  */
 internal class WorkspaceTest {
 
-    private val appState = anAppState(MovementPhase.SelectingUnit, gameState = aGameState(map = aGameMap(cols = 3, rows = 3)))
+    private val appState = anAppState(MovementPhase.SelectingUnit, gameState = aGameState(map = aGameMap()))
 
     @Test
     fun `visible panels render, in Panels_build order, right-aligned against the board`() {
