@@ -278,7 +278,7 @@ internal class CriticalHitResolutionTest {
         val (updated, events) = resolveCriticalHits(unit, MechLocation.RIGHT_TORSO, roller)
 
         val criticalHit = events.filterIsInstance<CriticalHit.Detailed>().single()
-        assertThat(criticalHit.content).isEqualTo(CriticalSlotContent.WeaponMount(build.weapons.single().mountId!!))
+        assertThat(criticalHit.content).isEqualTo(CriticalSlotContent.WeaponMount(build.weapons.single().mountId))
         assertThat(updated.weapons.single().destroyed).isTrue()
     }
 

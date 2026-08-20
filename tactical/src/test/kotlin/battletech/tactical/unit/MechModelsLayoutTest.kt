@@ -70,7 +70,7 @@ internal class MechModelsLayoutTest {
         val ac20 = model.weapons.single { it.name == "AC/20" }
 
         assertThat(ac20.location).isEqualTo(MechLocation.RIGHT_TORSO)
-        val mountId = ac20.mountId!!
+        val mountId = ac20.mountId
         assertThat(model.criticalLayout.weaponIdsAt(MechLocation.RIGHT_TORSO)).contains(mountId)
 
         val positions = model.criticalLayout.slotsForWeapon(mountId)

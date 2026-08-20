@@ -30,7 +30,7 @@ internal class CriticalLayoutTest {
         assertThat(ac20.location).isEqualTo(MechLocation.RIGHT_TORSO)
         assertThat(ac20.mountId).isNotNull()
 
-        val positions = layout.slotsForWeapon(ac20.mountId!!)
+        val positions = layout.slotsForWeapon(ac20.mountId)
         assertThat(positions).hasSize(10)
         assertThat(positions.map { it.first }.toSet()).containsExactly(MechLocation.RIGHT_TORSO)
 
