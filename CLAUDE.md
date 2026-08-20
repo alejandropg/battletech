@@ -22,7 +22,7 @@ or a test expectation is a rules value. Not needed for everyday context.
 
 - Kotlin 2.4
 - JVM 25
-- Gradle 9.7.0 (Kotlin DSL, convention plugins in `buildSrc/`)
+- Gradle 9.7.1 (Kotlin DSL, convention plugins in `buildSrc/`)
 - JUnit Jupiter + MockK + AssertJ for tests
 - `explicitApi()` is on repo-wide — declare `public`/`internal` explicitly.
 
