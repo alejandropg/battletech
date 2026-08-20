@@ -71,7 +71,7 @@ downgraded from a ratio to mere distinctness: the border carries no information 
 reads from the fill/icon, elevation from the badge), so it only needs to be a different color from
 what it outlines, not legible at a set ratio.
 
-**`PANEL_BORDER`/`PANEL_BORDER_FOCUSED` are a pair: the unfocused neutral and today's original green,
+**`PANEL_BORDER`/`PANEL_BORDER_FOCUSED` are a pair: the unfocused neutral and a saturated green,
 respectively.** A panel's border, title, badge, and scrollbar thumb all key off which of the two is
 focused — `Bordered`'s default (`PANEL_BORDER`) is what every non-focusable box still uses, so
 giving it a neutral meaning rather than deleting it kept every other bordered view (help text, the
@@ -79,6 +79,32 @@ match-over banner) unchanged. The light tiers use a mid-grey (`#5A6169` truecolo
 rather than white for the unfocused neutral: a literal white/light-grey border fails the 4.5:1
 contrast floor every general role must clear against the light background (`#868B91` truecolor
 measures 3.15:1; `245` ansi256 measures 3.17:1) — `TuiPaletteTest` catches this before it ships.
+
+**The focused green is as saturated as each tier can afford, and three tiers can't afford any.**
+Focus is signalled by color alone — `Panel.render` swaps the role and nothing else, so there is no
+redundant glyph or weight cue of the kind terrain gets — which makes the focused/unfocused
+separation worth spending chroma on. The target is lazygit's focused panel border, which is not a
+hex at all: lazygit's default `activeBorderColor` is the *named* ANSI color `green`, so what it
+actually paints is whatever the terminal's palette holds. `#19CB00` is that green under kitty's
+default theme, and it is what `dark` now uses — 8.44:1 on the default background, OkLab chroma
+0.246 at hue 142°. The muted `#72BF72` it replaced sat 0.037 from `TERRAIN_WOODS_HEAVY_ICON` and
+0.059 from `SUCCESS` in OkLab, and only 0.172 from the unfocused neutral once
+deuteranopia-simulated; the new value roughly doubles all three. Note the consequence of pinning a
+hex: a truecolor theme freezes this green, while the ansi16 tiers below track the terminal palette
+the way lazygit itself does.
+
+`light` cannot reuse that hex — `#19CB00` measures 2.01:1 on `#F8F5EE`, failing the general-role
+floor — so it takes the same hue held dark: `#007B00`, 5.03:1, chroma 0.099 → 0.172 at hue 142°.
+`dark-256` moves `71` → `40` (`0,215,0`), the closest cube color to `#19CB00` in OkLab (dE 0.033)
+at 9.56:1, which also retires a duplicate: `71` was simultaneously `TERRAIN_WOODS_HEAVY_ICON` in
+that file.
+
+The remaining three tiers keep their original value because no better one exists. `light-256` stays
+at `22`: it is the most chromatic green *of any cube index* that clears 4.5:1 against background
+`255` — the next step up (`0,135,0`) measures 4.05:1. The ansi16 tiers stay at `32`, which is not a
+compromise here but the exact mechanism lazygit uses — the named green, resolved by the terminal.
+The 16-color space holds only one other green, and `92` is already `SUCCESS` (plus
+`TERRAIN_WOODS_LIGHT_ICON` in `dark-16`).
 
 **Woods/water fills and elevation badges were retuned once elevated `CLEAR` hexes became whole-hex
 fills** rather than a small badge cell. The fills were brightened back toward the original

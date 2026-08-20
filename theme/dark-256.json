@@ -14,7 +14,7 @@
     "DRAFT": "145",
     "DISABLED": "244",
     "PANEL_BORDER": "253",
-    "PANEL_BORDER_FOCUSED": "71"
+    "PANEL_BORDER_FOCUSED": "40"
   },
   "board": {
     "PLAYER_1": "117",
