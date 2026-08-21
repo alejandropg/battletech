@@ -77,7 +77,10 @@ internal sealed interface MovementPhase : Phase {
             val activePlayer = turnState.movement.activePlayer
             val playerName = activePlayer.displayName
             val remaining = turnState.movement.remainingInImpulse
-            return PhaseStatus("$playerName: select a unit to move ($remaining remaining)", activePlayer)
+            return PhaseStatus(
+                "$playerName: select a unit to move ($remaining remaining in this impulse)",
+                activePlayer,
+            )
         }
 
         override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(cursorUnitStatus(app))
