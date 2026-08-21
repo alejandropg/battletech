@@ -74,9 +74,10 @@ internal sealed interface MovementPhase : Phase {
             // the opponent to join), so the movement impulse sequence can still be empty here —
             // isComplete is true in that case (0 >= 0), same as a normally-finished sequence.
             if (turnState.movement.isComplete) return PhaseStatus("Waiting for game to start…")
-            val playerName = turnState.movement.activePlayer.displayName
+            val activePlayer = turnState.movement.activePlayer
+            val playerName = activePlayer.displayName
             val remaining = turnState.movement.remainingInImpulse
-            return PhaseStatus("$playerName: select a unit to move ($remaining remaining)", playerName)
+            return PhaseStatus("$playerName: select a unit to move ($remaining remaining)", activePlayer)
         }
 
         override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(cursorUnitStatus(app))
@@ -160,7 +161,7 @@ internal sealed interface MovementPhase : Phase {
         }
 
         override fun status(app: AppState): PhaseStatus =
-            PhaseStatus(modePrompt(reachability), app.turnState.movement.activePlayer.displayName)
+            PhaseStatus(modePrompt(reachability), app.turnState.movement.activePlayer, unitId)
 
         override fun board(app: AppState): RenderData = RenderData(
             hexHighlights = reachabilityHighlights(reachability) + pathHighlights(hoveredPath),
@@ -253,7 +254,7 @@ internal sealed interface MovementPhase : Phase {
         }
 
         override fun status(app: AppState): PhaseStatus =
-            PhaseStatus(SELECT_FACING_PROMPT, app.turnState.movement.activePlayer.displayName)
+            PhaseStatus(SELECT_FACING_PROMPT, app.turnState.movement.activePlayer, unitId)
 
         override fun board(app: AppState): RenderData = RenderData(
             hexHighlights = reachabilityHighlights(reachability) + pathHighlights(path),

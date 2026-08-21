@@ -153,7 +153,7 @@ internal class TuiAppLoopTest {
 
         val outWithFlash = recorder.output()
         assertTrue(
-            outWithFlash.contains("Not your unit"),
+            outWithFlash.contains("Not your"),
             "Expected 'Not your unit' flash in output after pressing Enter on enemy unit",
         )
 
@@ -178,7 +178,7 @@ internal class TuiAppLoopTest {
 
         // Trigger the flash.
         internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
-        assertTrue(recorder.output().contains("Not your unit"), "Flash should appear after trigger")
+        assertTrue(recorder.output().contains("Not your"), "Flash should appear after trigger")
 
         // Advance virtual time past the 3s flash duration — the flash job's delay() fires,
         // sending FlashExpired back through internalEvents. The loop processes it and re-renders
@@ -248,7 +248,9 @@ internal class TuiAppLoopTest {
 
         // Flash A: generation 1.
         internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
-        assertTrue(recorder.output().contains("Not your unit"), "Flash A should appear")
+        // The diff renderer only emits changed cells. The previous prompt and flash share the
+        // trailing " unit", so the observable changed run is "Not your".
+        assertTrue(recorder.output().contains("Not your"), "Flash A should appear")
 
         // Flash B: generation 2 replaces flash A (same trigger, same message text — only the
         // internal generation counter differs, which isn't independently visible on screen).

@@ -10,7 +10,7 @@ import battletech.tactical.query.PhysicalAttackOption
 import battletech.tactical.session.CommitPhysicalAttackImpulse
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
-import battletech.tui.game.attackPlayerLabel
+import battletech.tui.game.attackPlayer
 import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.AttackAction
@@ -58,8 +58,9 @@ internal sealed interface PhysicalAttackPhase : Phase {
         override fun status(app: AppState): PhaseStatus {
             val turnState = app.turnState
             if (turnState.attack.isComplete) return PhaseStatus("All physical attacks declared")
-            val name = turnState.attack.activePlayer.displayName
-            return PhaseStatus("$name: select a unit to punch/kick", name)
+            val activePlayer = turnState.attack.activePlayer
+            val name = activePlayer.displayName
+            return PhaseStatus("$name: select a unit to punch/kick", activePlayer)
         }
 
         override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(cursorUnitStatus(app))
@@ -88,7 +89,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
         }
 
         override fun status(app: AppState): PhaseStatus =
-            PhaseStatus(PHYSICAL_DECLARING_PROMPT, attackPlayerLabel(app.turnState, requireSeeded = false))
+            PhaseStatus(PHYSICAL_DECLARING_PROMPT, attackPlayer(app.turnState, requireSeeded = false), unitId)
 
         override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(app.visibleState.units.byId(unitId))
 

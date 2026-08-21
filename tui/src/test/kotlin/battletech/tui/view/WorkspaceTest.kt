@@ -1,10 +1,13 @@
 package battletech.tui.view
 
 import battletech.tactical.model.MatchOutcome
+import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
+import battletech.tactical.movement.ReachabilityMap
 import battletech.tactical.session.MatchEnded
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
+import battletech.tui.aUnit
 import battletech.tui.anAppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.MovementPhase
@@ -14,6 +17,8 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.ChromeRole
+import tenter.screen.ScreenBuffer
+import tenter.view.FlashMessage
 import tenter.view.HelpView
 import tenter.view.ScrollOffset
 import tenter.view.text
@@ -53,6 +58,26 @@ internal class WorkspaceTest {
 
         val opened = workspace.render(appState.copy(helpOpen = true), width = 120, height = 40, flash = null)
         assertTrue(opened.text().contains(HelpView.TITLE))
+    }
+
+    @Test
+    fun `selected unit prefixes action prompt but not temporary flash`() {
+        val unit = aUnit(id = "W1", name = "Wolverine WVR-6R")
+        val phase = MovementPhase.Browsing(
+            unitId = unit.id,
+            modes = listOf(ReachabilityMap(MovementMode.WALK, maxMP = 5, destinations = emptyList())),
+            currentModeIndex = 0,
+            hoveredDestination = null,
+        )
+        val selected = anAppState(phase, gameState = aGameState(units = listOf(unit), map = aGameMap()))
+        val workspace = Workspace()
+
+        val promptBuffer = workspace.render(selected, width = 120, height = 40, flash = null)
+        val flashBuffer = workspace.render(selected, width = 120, height = 40, flash = FlashMessage("Not available"))
+
+        assertTrue(statusRow(promptBuffer).contains("W1: Wolverine WVR-6R ┆ Walk (5 MP)"))
+        assertFalse(statusRow(flashBuffer).contains("W1: Wolverine WVR-6R"))
+        assertTrue(statusRow(flashBuffer).contains("Not available"))
     }
 
     @Test
@@ -152,4 +177,7 @@ internal class WorkspaceTest {
         assertTrue(buffer.text().contains("MATCH OVER"))
         assertTrue(buffer.text().contains("P1 wins!"))
     }
+
+    private fun statusRow(buffer: ScreenBuffer): String =
+        (0 until buffer.width).joinToString("") { buffer.get(it, 1).char }
 }

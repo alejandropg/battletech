@@ -103,7 +103,15 @@ internal class Workspace {
             StatusBarView(appState.currentPhase, "Match over — $outcomeText  |  ${KeyGlyph.CTRL}c: quit")
         } else {
             val status = appState.phase.status(appState)
-            StatusBarView(appState.currentPhase, flash?.text ?: status.prompt, status.activePlayerLabel)
+            val actionUnit = status.actionUnitId
+                ?.takeIf { flash == null }
+                ?.let { appState.visibleState.units.byId(it) }
+            StatusBarView(
+                phase = appState.currentPhase,
+                prompt = flash?.text ?: status.prompt,
+                activePlayer = status.activePlayer,
+                actionUnit = actionUnit,
+            )
         }
         statusBarView.draw(screen.region(0, 0, width, STATUS_BAR_HEIGHT))
 
@@ -118,7 +126,7 @@ internal class Workspace {
 
     internal companion object {
         /** Rows consumed by the status bar above the board and panels. */
-        const val STATUS_BAR_HEIGHT: Int = 4
+        const val STATUS_BAR_HEIGHT: Int = 3
     }
 }
 

@@ -26,9 +26,8 @@ import com.github.ajalt.mordant.input.MouseEvent
  * places the board:
  * - [Workspace.STATUS_BAR_HEIGHT] — the board region starts below the status bar
  *   (`screen.region(0, layout.boardY, …)` in `Workspace.render`, which fixes `boardY` to exactly
- *   this). Omitting it was a long-standing off-by-one-hex-row bug: the status bar is 4 rows and
- *   [battletech.tui.hex.HexGeometry.ROW_STRIDE] is also 4, so every click resolved to the hex
- *   directly below the one under the pointer.
+ *   this). Omitting it shifts click coordinates upward by the full status-bar height and can
+ *   resolve a different hex than the one under the pointer.
  * - [Bordered.VIEWPORT_INSET] — the border and horizontal gutters around the viewport.
  * - [Bordered.PADDING]`.vertical().top` — the spacer row that lives at the top of the
  *   scrollable content stream (reclaimed once the board scrolls, same as any scrollable panel).
