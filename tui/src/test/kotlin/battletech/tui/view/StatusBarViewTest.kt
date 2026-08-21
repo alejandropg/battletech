@@ -136,7 +136,28 @@ internal class StatusBarViewTest {
     }
 
     @Test
-    fun `clips long unit-prefixed message before help hint and preserves border`() {
+    fun `removes hunk padding when padded content does not fit`() {
+        val view = StatusBarView(TurnPhase.MOVEMENT, "Select destination", PlayerId.PLAYER_1)
+
+        val buffer = render(view, 70, Workspace.STATUS_BAR_HEIGHT)
+
+        assertEquals("MOVEMENT | Player 1 | Select destination", row(buffer).substring(2, 42))
+        assertEquals("⌥h : help", row(buffer).substring(59, 68))
+        assertEquals("│", buffer.get(69, 1).char)
+    }
+
+    @Test
+    fun `does not reserve absent player padding in compact layout`() {
+        val view = StatusBarView(TurnPhase.END, "All phases complete and the match is over")
+
+        val buffer = render(view, 50, Workspace.STATUS_BAR_HEIGHT)
+
+        assertEquals("END |  | All phases complete and th…", row(buffer).substring(2, 38))
+        assertEquals("⌥h : help", row(buffer).substring(39, 48))
+    }
+
+    @Test
+    fun `ellipsizes long unit-prefixed message before help hint and preserves border`() {
         val unit = aUnit(id = "W1", name = "Wolverine WVR-6R")
         val view = StatusBarView(
             phase = TurnPhase.MOVEMENT,
@@ -147,7 +168,8 @@ internal class StatusBarViewTest {
 
         val buffer = render(view, 80, Workspace.STATUS_BAR_HEIGHT)
 
-        assertEquals("W1: Wolverine WVR-6R ┆ xxxx", row(buffer).substring(41, 68))
+        val expected = "W1: Wolverine WVR-6R ┆ ${"x".repeat(20)}…"
+        assertEquals(expected, row(buffer).substring(24, 68))
         assertEquals(" ", buffer.get(68, 1).char)
         assertEquals("⌥h : help", row(buffer).substring(69, 78))
         assertEquals("│", buffer.get(79, 1).char)

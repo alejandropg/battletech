@@ -4,6 +4,7 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.text.CellWidth
+import tenter.text.TextTruncation
 
 public class TextCursor(private val canvas: Canvas) {
     public val width: Int get() = canvas.width
@@ -24,24 +25,10 @@ public class TextCursor(private val canvas: Canvas) {
 
     /** Writes [text] on the current row and advances. Returns the row it was written to. */
     public fun writeLine(text: String, style: Cell.Style = Cell.Style.DEFAULT): Int {
-        val truncated = if (CellWidth.of(text) > width) truncateToWidth(text, width - 1) + "…" else text
         val written = row
-        canvas.writeString(0, written, truncated, style)
+        canvas.writeString(0, written, TextTruncation.ellipsize(text, width), style)
         row += 1
         return written
-    }
-
-    private fun truncateToWidth(text: String, maxWidth: Int): String {
-        var displayWidth = 0
-        var i = 0
-        while (i < text.length) {
-            val codePoint = text.codePointAt(i)
-            val codePointWidth = CellWidth.of(codePoint)
-            if (displayWidth + codePointWidth > maxWidth) break
-            displayWidth += codePointWidth
-            i += Character.charCount(codePoint)
-        }
-        return text.substring(0, i)
     }
 
     /** Writes [text] at [column] on the current row, without advancing. */
@@ -57,9 +44,8 @@ public class TextCursor(private val canvas: Canvas) {
     public fun writeRow(left: String, right: String, leftStyle: Cell.Style = Cell.Style.DEFAULT, rightStyle: Cell.Style = leftStyle): Int {
         val rightWidth = CellWidth.of(right)
         val maxLeft = (width - rightWidth - 1).coerceAtLeast(0)
-        val leftText = if (CellWidth.of(left) > maxLeft) truncateToWidth(left, maxLeft - 1) + "…" else left
         val written = row
-        canvas.writeString(0, written, leftText, leftStyle)
+        canvas.writeString(0, written, TextTruncation.ellipsize(left, maxLeft), leftStyle)
         canvas.writeString(width - rightWidth, written, right, rightStyle)
         row += 1
         return written
