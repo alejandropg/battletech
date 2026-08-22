@@ -23,6 +23,14 @@ private val CONSCIOUSNESS_TARGET: Map<Int, Int> = mapOf(
 )
 
 /**
+ * The public face of [CONSCIOUSNESS_TARGET]: the 2d6 consciousness-check target for a pilot at
+ * [hits] hits taken, or null when [hits] never triggers a check (0, or [PILOT_DEATH_THRESHOLD]
+ * or more — death, not a check). Record-sheet display (the printed Consciousness# row) reads
+ * this rather than restating the thresholds.
+ */
+public fun consciousnessTarget(hits: Int): Int? = CONSCIOUSNESS_TARGET[hits]
+
+/**
  * The single entry point for applying one pilot hit to [unit], whatever inflicted it
  * (`docs/rules/pilot.md` §1–2).
  *

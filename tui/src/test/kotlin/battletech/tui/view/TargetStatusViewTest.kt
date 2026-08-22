@@ -35,6 +35,7 @@ internal class TargetStatusViewTest {
         facing = HexDirection.N,
         torsoFacing = HexDirection.N,
         armor = anArmorLayout(),
+        maxArmor = anArmorLayout(),
         walkingMP = walkingMP,
         runningMP = runningMP,
         jumpMP = jumpMP,

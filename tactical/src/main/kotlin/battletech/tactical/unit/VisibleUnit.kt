@@ -26,6 +26,11 @@ import kotlinx.serialization.Serializable
  *   Readouts. Hiding a field that's derivable from a field you already show is theater,
  *   not redaction. (The pre-projection minimal public unit type omitted tonnage; that was an inconsistency
  *   this projection does not repeat.)
+ * - [maxArmor] — same reasoning as [tonnage]: the exact chassis+variant named by [name]
+ *   has one published armor allocation per location, so the maximum is derivable from a
+ *   field already shown. Only the *current* internal structure stays private — max
+ *   internal structure would still leak nothing on its own, but nothing on the record
+ *   sheet needs it disclosed without the current value beside it.
  *
  * The test for "is this public?" is **observability**, not sensitivity: could an
  * opponent learn it by watching the table or hearing the roll announced? If yes,
@@ -42,6 +47,7 @@ public sealed interface VisibleUnit {
     public val facing: HexDirection
     public val torsoFacing: HexDirection
     public val armor: ArmorLayout
+    public val maxArmor: ArmorLayout
     public val walkingMP: Int
     public val runningMP: Int
     public val jumpMP: Int

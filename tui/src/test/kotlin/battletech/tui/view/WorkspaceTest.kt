@@ -1,5 +1,6 @@
 package battletech.tui.view
 
+import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
@@ -165,6 +166,24 @@ internal class WorkspaceTest {
         assertTrue(buffer.text().contains(LogView.TITLE))
         assertFalse(buffer.text().contains(UnitStatusView.TITLE), "UNIT_STATUS must not be laid out while LOG is maximized")
         assertFalse(buffer.text().contains("TACTICAL MAP"), "the board must not be laid out while a side panel is maximized")
+    }
+
+    @Test
+    fun `maximizing UNIT_STATUS shows the record sheet, not the compact list`() {
+        val unit = aUnit(id = "A1", position = HexCoordinates(0, 0))
+        val state = anAppState(MovementPhase.SelectingUnit, gameState = aGameState(units = listOf(unit), map = aGameMap()))
+        val workspace = Workspace()
+
+        val normal = workspace.render(state, width = 120, height = 40, flash = null)
+        assertTrue(normal.text().contains(UnitStatusView.TITLE))
+        assertFalse(normal.text().contains("'MECH DATA"), "NORMAL still renders the compact UnitStatusView")
+
+        workspace.focus(GamePanelId.UNIT_STATUS)
+        workspace.cycleFocusedState(1) // NORMAL -> MAXIMIZED
+        val maximized = workspace.render(state, width = 200, height = 200, flash = null)
+
+        assertTrue(maximized.text().contains(UnitStatusView.TITLE), "same panel, same title")
+        assertTrue(maximized.text().contains("'MECH DATA"), "MAXIMIZED renders the record sheet")
     }
 
     @Test

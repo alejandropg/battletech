@@ -57,6 +57,7 @@ internal class UnitStatusViewTest {
         facing = HexDirection.N,
         torsoFacing = HexDirection.N,
         armor = anArmorLayout(),
+        maxArmor = anArmorLayout(),
         walkingMP = walkingMP,
         runningMP = runningMP,
         jumpMP = jumpMP,

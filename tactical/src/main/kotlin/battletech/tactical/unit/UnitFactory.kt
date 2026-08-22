@@ -26,6 +26,8 @@ public fun MechModel.createUnit(
     jumpMP = jumpMP,
     heatSink = heatSink,
     armor = armor,
+    maxArmor = armor,
     internalStructure = internalStructure,
+    maxInternalStructure = internalStructure,
     criticalLayout = criticalLayout,
 )

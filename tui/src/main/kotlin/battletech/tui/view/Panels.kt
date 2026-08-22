@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import battletech.tui.game.GamePanelId
+import battletech.tui.view.record.MechRecordSheetView
 import tenter.panel.Panel
 import tenter.panel.PanelSet
 import tenter.panel.VerticalTitleView
@@ -46,7 +47,11 @@ internal object Panels {
             sidePanel(GamePanelId.ATTACK_RESULTS, AttackResultsView.TITLE) { frame ->
                 AttackResultsView(frame.attackResults)
             },
-            sidePanel(GamePanelId.UNIT_STATUS, UnitStatusView.TITLE) { frame ->
+            sidePanel(
+                GamePanelId.UNIT_STATUS,
+                UnitStatusView.TITLE,
+                maximized = { frame -> MechRecordSheetView(frame.unitStatus.subject, frame.unitStatus.pendingHeat) },
+            ) { frame ->
                 UnitStatusView(frame.unitStatus.subject, frame.unitStatus.pendingHeat)
             },
             sidePanel(GamePanelId.LOG, LogView.TITLE) { frame ->
@@ -70,6 +75,7 @@ internal object Panels {
         id: GamePanelId,
         title: String,
         width: Int = 28,
+        maximized: ((PanelInputs) -> View)? = null,
         build: (PanelInputs) -> View,
     ): GamePanel = Panel(
         id = id,
@@ -77,6 +83,6 @@ internal object Panels {
         normalWidth = width,
         normal = build,
         minimized = { VerticalTitleView(title) },
-        maximized = build,
+        maximized = maximized ?: build,
     )
 }

@@ -30,8 +30,6 @@ import battletech.tactical.session.UnitMoved
 import battletech.tactical.session.UnitRestarted
 import battletech.tactical.session.UnitShutdown
 import battletech.tactical.session.UnitStoodUp
-import battletech.tactical.unit.ActuatorType
-import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.DestructionReason
 import battletech.tactical.unit.UnitId
 import battletech.tui.hex.ammoExplosionIcon
@@ -159,8 +157,8 @@ internal object GameLogFormatter {
             val name = event.unitId.value
             when (event) {
                 is CriticalHit.Detailed -> {
-                    val component = criticalSlotContentLabel(event.content, event.unitId, state)
-                    listOf(LogLine(criticalHitIcon(event.content), "$name critical hit: $component in ${locationLabel(event.location)}"))
+                    val component = MechLabels.criticalSlotContent(event.content) { state.units.byId(event.unitId).weapons }
+                    listOf(LogLine(criticalHitIcon(event.content), "$name critical hit: $component in ${MechLabels.location(event.location)}"))
                 }
                 is CriticalHit.Undisclosed -> listOf(LogLine(undisclosedCriticalHitIcon(), "$name takes a critical hit"))
             }
@@ -236,34 +234,6 @@ internal object GameLogFormatter {
         DestructionReason.PILOT_DEAD -> "pilot dead"
     }
 
-    private fun criticalSlotContentLabel(content: CriticalSlotContent, unitId: UnitId, state: PlayerGameState): String =
-        when (content) {
-            is CriticalSlotContent.Empty -> "empty slot"
-            is CriticalSlotContent.Engine -> "Engine"
-            is CriticalSlotContent.Gyro -> "Gyro"
-            is CriticalSlotContent.Sensors -> "Sensors"
-            is CriticalSlotContent.LifeSupport -> "Life Support"
-            is CriticalSlotContent.Cockpit -> "Cockpit"
-            is CriticalSlotContent.HeatSink -> "Heat Sink"
-            is CriticalSlotContent.JumpJet -> "Jump Jet"
-            is CriticalSlotContent.Actuator -> actuatorLabel(content.type)
-            is CriticalSlotContent.WeaponMount -> {
-                state.units.byId(unitId).weapons.find { it.mountId == content.weaponId }?.name ?: "weapon"
-            }
-            is CriticalSlotContent.AmmoBin -> "${content.type} ammo"
-        }
-
-    private fun actuatorLabel(type: ActuatorType): String = when (type) {
-        ActuatorType.SHOULDER -> "Shoulder actuator"
-        ActuatorType.UPPER_ARM -> "Upper arm actuator"
-        ActuatorType.LOWER_ARM -> "Lower arm actuator"
-        ActuatorType.HAND -> "Hand actuator"
-        ActuatorType.HIP -> "Hip actuator"
-        ActuatorType.UPPER_LEG -> "Upper leg actuator"
-        ActuatorType.LOWER_LEG -> "Lower leg actuator"
-        ActuatorType.FOOT -> "Foot actuator"
-    }
-
     private fun playerLabel(player: PlayerId): String = when (player) {
         PlayerId.PLAYER_1 -> "P1"
         PlayerId.PLAYER_2 -> "P2"
@@ -281,14 +251,5 @@ internal object GameLogFormatter {
         return "${parts.joinToString(", ")} destroyed"
     }
 
-    private fun locationLabel(location: MechLocation): String = when (location) {
-        MechLocation.HEAD -> "Head"
-        MechLocation.CENTER_TORSO -> "Center Torso"
-        MechLocation.LEFT_TORSO -> "Left Torso"
-        MechLocation.RIGHT_TORSO -> "Right Torso"
-        MechLocation.LEFT_ARM -> "Left Arm"
-        MechLocation.RIGHT_ARM -> "Right Arm"
-        MechLocation.LEFT_LEG -> "Left Leg"
-        MechLocation.RIGHT_LEG -> "Right Leg"
-    }
+    private fun locationLabel(location: MechLocation): String = MechLabels.location(location)
 }
