@@ -8,8 +8,12 @@ import battletech.tui.hex.emptyCircleIcon
 import battletech.tui.hex.filledCircleIcon
 import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.ValueSource
 import tenter.screen.ScreenBuffer
 import tenter.view.line
 import tenter.view.render
@@ -17,131 +21,332 @@ import tenter.view.text
 
 /**
  * [LocationDiagram] via [RecordSheetDiagrams.armor]/[RecordSheetDiagrams.internalStructure] — the
- * ARMOR/STRUCTURE cards, laid out as a 5-column body grid (LA | LT | CT | RT | RA).
+ * outlined armor and skeletal paper dolls used by the maximized record sheet.
  */
 internal class LocationDiagramTest {
 
-    private val diagramWidth = 60
+    private val diagramWidth = 80
+    private val diagramHeight = 80
+    private val exampleArmor = anArmorLayout(
+        head = 9,
+        centerTorso = 22,
+        centerTorsoRear = 8,
+        leftTorso = 16,
+        leftTorsoRear = 5,
+        rightTorso = 16,
+        rightTorsoRear = 5,
+        leftArm = 14,
+        rightArm = 14,
+        leftLeg = 18,
+        rightLeg = 18,
+    )
 
-    /** (row, column) of the first `"$label "` occurrence anywhere in the buffer — a block's own label/caption. */
+    /** (row, column) of the first caption beginning with [label]. */
     private fun ScreenBuffer.locate(label: String): Pair<Int, Int> {
         for (row in 0 until height) {
-            val col = line(row).indexOf("$label ")
+            val col = line(row).indexOf(label)
             if (col >= 0) return row to col
         }
         error("label '$label' not found in buffer")
     }
 
-    private fun countGlyph(text: String, glyph: String): Int = if (glyph.isEmpty()) 0 else text.split(glyph).size - 1
+    private fun countGlyph(text: String, glyph: String): Int =
+        if (glyph.isEmpty()) 0 else text.split(glyph).size - 1
+
+    private fun armorPipTotal(): Int = with(anArmorLayout()) {
+        head + centerTorso + centerTorsoRear +
+            leftTorso + leftTorsoRear + rightTorso + rightTorsoRear +
+            leftArm + rightArm + leftLeg + rightLeg
+    }
 
     @Test
-    fun `undamaged location prints remaining over max and no damage pips`() {
+    fun `undamaged armor renders every point as an empty pip`() {
         val unit = aUnit(armor = anArmorLayout())
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = 40)
 
-        val (row, col) = buffer.locate("CT")
-        assertTrue(buffer.line(row).contains("CT 47/47"))
+        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val text = buffer.text()
 
-        // The first 10 damage pips land directly below the label, at the label's own column —
-        // CT's grid slot, not spilling into LT's or RT's neighboring slot.
-        val pipRow = buffer.line(row + 1, x = col, width = 10)
-        assertEquals(0, countGlyph(pipRow, filledCircleIcon()))
-        assertEquals(10, countGlyph(pipRow, emptyCircleIcon()))
+        assertTrue(text.contains("Head 9/9"))
+        assertTrue(text.contains("47/47"))
+        assertTrue(text.contains("╌╌REAR╌╌╌"))
+        assertEquals(0, countGlyph(text, filledCircleIcon()))
+        assertEquals(armorPipTotal(), countGlyph(text, emptyCircleIcon()))
     }
 
     @Test
-    fun `damage taken fills one pip per point, remainder stays empty`() {
-        // Damage always flows through .copy(armor = ...) in production, leaving maxArmor at
-        // whatever it was set to at createUnit time — reproduce that here rather than passing
-        // an already-damaged layout straight to aUnit(), which would make maxArmor damaged too.
-        val unit = aUnit(armor = anArmorLayout()).copy(armor = anArmorLayout().with(MechLocation.CENTER_TORSO, 20))
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = 40)
+    fun `damage fills one pip per lost armor point`() {
+        val unit = aUnit(armor = anArmorLayout()).copy(
+            armor = anArmorLayout().with(MechLocation.CENTER_TORSO, 20),
+        )
 
-        val (row, col) = buffer.locate("CT")
-        assertTrue(buffer.line(row).contains("CT 20/47"))
+        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val text = buffer.text()
 
-        // damage = 47 - 20 = 27: first two pip rows (20 pips) fully filled, third row 7 filled + 3 empty.
-        val row1 = buffer.line(row + 1, x = col, width = 10)
-        val row2 = buffer.line(row + 2, x = col, width = 10)
-        val row3 = buffer.line(row + 3, x = col, width = 10)
-        assertEquals(10, countGlyph(row1, filledCircleIcon()))
-        assertEquals(10, countGlyph(row2, filledCircleIcon()))
-        assertEquals(7, countGlyph(row3, filledCircleIcon()))
-        assertEquals(3, countGlyph(row3, emptyCircleIcon()))
+        assertTrue(text.contains("20/47"))
+        assertEquals(27, countGlyph(text, filledCircleIcon()))
+        assertEquals(armorPipTotal() - 27, countGlyph(text, emptyCircleIcon()))
     }
 
     @Test
-    fun `a destroyed location renders strikethrough`() {
+    fun `destroyed location caption and contour use destroyed styling`() {
         val unit = aUnit(
             armor = anArmorLayout(),
-            internalStructure = anInternalStructureLayout(centerTorso = 0),
+            internalStructure = anInternalStructureLayout(),
+        ).copy(internalStructure = anInternalStructureLayout(centerTorso = 0))
+
+        val buffer = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
+        val (captionRow, captionCol) = buffer.locate("Center Torso")
+        val contour = buffer.get(38, 7)
+
+        assertEquals(BoardRole.DESTROYED, buffer.get(captionCol, captionRow).style.fg)
+        assertTrue(buffer.get(captionCol, captionRow).style.strikethrough)
+        assertEquals(BoardRole.DESTROYED, contour.style.fg)
+        assertTrue(contour.style.strikethrough)
+    }
+
+    @Test
+    fun `intact location is not struck through`() {
+        val unit = aUnit(
+            armor = anArmorLayout(),
+            internalStructure = anInternalStructureLayout(),
         )
-        val diagram = RecordSheetDiagrams.internalStructure(unit)
-        val buffer = render(diagram, width = diagramWidth, height = 40)
 
-        val (row, col) = buffer.locate("CT")
-        assertEquals(BoardRole.DESTROYED, buffer.get(col, row).style.fg)
-        assertTrue(buffer.get(col, row).style.strikethrough)
+        val buffer = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
+        val (row, col) = buffer.locate("Center Torso")
+
+        assertFalse(buffer.get(col, row).style.strikethrough)
     }
 
     @Test
-    fun `an intact location is not struck through`() {
-        val unit = aUnit(armor = anArmorLayout(), internalStructure = anInternalStructureLayout())
-        val diagram = RecordSheetDiagrams.internalStructure(unit)
-        val buffer = render(diagram, width = diagramWidth, height = 40)
+    fun `armor uses fixed-width boxes with rear armor embedded in the torso`() {
+        val unit = aUnit(armor = exampleArmor)
 
-        val (row, col) = buffer.locate("CT")
-        assertTrue(!buffer.get(col, row).style.strikethrough)
+        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val text = buffer.text()
+        val (headRow, _) = buffer.locate("Head 9/9")
+        val (torsoRow, _) = buffer.locate("╭──────╮╭─────────╮╭──────╮")
+        val (rearRow, _) = buffer.locate("│╌╌╌╌││╌╌REAR╌╌╌││╌╌╌╌│")
+        val (legRow, _) = buffer.locate("Leg")
+
+        assertTrue(headRow < torsoRow)
+        assertTrue(torsoRow < rearRow)
+        assertTrue(rearRow < legRow)
+        assertFalse(text.contains("REAR ARMOR"))
+        assertFalse(text.contains("Torso Rear"))
+        assertEquals(145, countGlyph(text, emptyCircleIcon()))
     }
 
     @Test
-    fun `rear torso facets are captioned and pipped independently of the front value`() {
-        val unit = aUnit(armor = anArmorLayout())
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = 40)
+    fun `armor side labels flank the final head row before the torso heading`() {
+        val unit = aUnit(armor = exampleArmor)
 
-        assertTrue(buffer.text().contains("LT-R 10/10"))
-        assertTrue(buffer.text().contains("CT-R 14/14"))
-        assertTrue(buffer.text().contains("RT-R 10/10"))
+        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val (headBottomRow, _) = buffer.locate("╰─────╯")
+        val (leftRow, leftCol) = buffer.locate("Left")
+        val (rightRow, _) = buffer.locate("Right")
+        val (torsoHeadingRow, _) = buffer.locate("Torso")
+
+        assertEquals(headBottomRow - 1, leftRow)
+        assertEquals(headBottomRow - 1, rightRow)
+        assertEquals(23, leftCol)
+        assertEquals("Left          │", buffer.line(leftRow, x = leftCol, width = 15))
+        assertEquals("│          Right", buffer.line(rightRow, x = 43, width = 16))
+        assertEquals(headBottomRow + 1, torsoHeadingRow)
     }
 
     @Test
-    fun `arms flank the torso row instead of stacking above it`() {
-        val unit = aUnit(armor = anArmorLayout())
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = 40)
+    fun `right torso values align one column inside their outer box borders`() {
+        val unit = aUnit(armor = exampleArmor)
 
-        val (laRow, laCol) = buffer.locate("LA")
-        val (ctRow, ctCol) = buffer.locate("CT")
-        val (raRow, raCol) = buffer.locate("RA")
+        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val (frontValueRow, _) = buffer.locate("16/16")
+        val (rearValueRow, _) = buffer.locate("5/5")
 
-        assertEquals(ctRow, laRow, "LA should be on the same row as CT")
-        assertEquals(ctRow, raRow, "RA should be on the same row as CT")
-        assertTrue(laCol < ctCol, "LA should sit left of CT")
-        assertTrue(raCol > ctCol, "RA should sit right of CT")
+        assertEquals("16/16", buffer.line(frontValueRow, x = 48, width = 5))
+        assertEquals("╮", buffer.get(53, frontValueRow + 1).char)
+        assertEquals("5/5", buffer.line(rearValueRow, x = 48, width = 3))
+        assertEquals("╯", buffer.get(51, rearValueRow - 1).char)
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [4, 10])
+    fun `left rear torso value keeps one column inside its box border`(rearMax: Int) {
+        val armor = anArmorLayout(
+            centerTorsoRear = 8,
+            leftTorsoRear = rearMax,
+            rightTorsoRear = 5,
+        )
+        val unit = aUnit(armor = armor)
+        val rearValue = "$rearMax/$rearMax"
+
+        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val (rearValueRow, _) = buffer.locate(rearValue)
+
+        assertEquals(" $rearValue", buffer.line(rearValueRow, x = 29, width = rearValue.length + 1))
+        assertEquals("╰", buffer.get(29, rearValueRow - 1).char)
     }
 
     @Test
-    fun `the head sits above the torso row, centered over CT`() {
-        val unit = aUnit(armor = anArmorLayout())
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = 40)
+    fun `armor legs begin immediately after rear values even when the arms extend lower`() {
+        val armor = anArmorLayout(
+            centerTorso = 18,
+            centerTorsoRear = 8,
+            leftTorso = 12,
+            leftTorsoRear = 4,
+            rightTorso = 12,
+            rightTorsoRear = 4,
+            leftArm = 14,
+            rightArm = 14,
+            leftLeg = 4,
+            rightLeg = 4,
+        )
+        val unit = aUnit(armor = armor)
 
-        val (hdRow, hdCol) = buffer.locate("HD")
-        val (ctRow, ctCol) = buffer.locate("CT")
+        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val (rearValueRow, _) = buffer.locate("8/8")
 
-        assertTrue(hdRow < ctRow, "HD should render above the torso row")
-        assertEquals(ctCol, hdCol, "HD should share CT's column")
+        assertEquals("╭───╮", buffer.line(rearValueRow + 1, x = 33, width = 5))
+        assertEquals("╭───╮", buffer.line(rearValueRow + 1, x = 43, width = 5))
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "16, 3",
+        "17, 4",
+        "23, 4",
+        "24, 5",
+    )
+    fun `armor leg width follows maximum armor`(legMax: Int, expectedWidth: Int) {
+        val armor = anArmorLayout(
+            centerTorso = 18,
+            centerTorsoRear = 8,
+            leftTorso = 12,
+            leftTorsoRear = 4,
+            rightTorso = 12,
+            rightTorsoRear = 4,
+            leftArm = 4,
+            rightArm = 4,
+            leftLeg = legMax,
+            rightLeg = legMax,
+        )
+        val unit = aUnit(armor = armor)
+
+        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val (rearValueRow, _) = buffer.locate("8/8")
+        val legTop = rearValueRow + 1
+        val leftLegX = 37 - expectedWidth - 1
+        val legRows = (legMax + expectedWidth - 1) / expectedWidth
+        val finalRowPips = legMax - (legRows - 1) * expectedWidth
+        val expectedTop = "╭" + "─".repeat(expectedWidth) + "╮"
+        val expectedFinalRow = "│" + emptyCircleIcon().repeat(finalRowPips) +
+            " ".repeat(expectedWidth - finalRowPips) + "│"
+        val footWidth = expectedWidth + 2
+        val expectedFoot = "╰" + "─".repeat(footWidth) + "╯"
+        val footRow = legTop + legRows + 2
+
+        assertEquals(expectedTop, buffer.line(legTop, x = leftLegX, width = expectedWidth + 2))
+        assertEquals(expectedTop, buffer.line(legTop, x = 43, width = expectedWidth + 2))
+        assertEquals(expectedFinalRow, buffer.line(legTop + legRows, x = leftLegX, width = expectedWidth + 2))
+        assertEquals(expectedFinalRow, buffer.line(legTop + legRows, x = 43, width = expectedWidth + 2))
+        assertEquals(expectedFoot, buffer.line(footRow, x = leftLegX - 2, width = footWidth + 2))
+        assertEquals(expectedFoot, buffer.line(footRow, x = 43, width = footWidth + 2))
     }
 
     @Test
-    fun `legs sit below the torso row, flanking center`() {
-        val unit = aUnit(armor = anArmorLayout())
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = 40)
+    fun `unequal armor legs retain their inner gap and caption spacing`() {
+        val armor = anArmorLayout(
+            centerTorso = 18,
+            centerTorsoRear = 8,
+            leftTorso = 12,
+            leftTorsoRear = 4,
+            rightTorso = 12,
+            rightTorsoRear = 4,
+            leftArm = 4,
+            rightArm = 4,
+            leftLeg = 16,
+            rightLeg = 24,
+        )
+        val unit = aUnit(armor = armor)
 
-        val (ctRow, _) = buffer.locate("CT")
-        val (llRow, llCol) = buffer.locate("LL")
-        val (rlRow, rlCol) = buffer.locate("RL")
+        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val (rearValueRow, _) = buffer.locate("8/8")
+        val legTop = rearValueRow + 1
 
-        assertTrue(llRow > ctRow, "LL should render below the torso row")
-        assertEquals(llRow, rlRow, "LL and RL should share a row")
-        assertTrue(llCol < rlCol, "LL should sit left of RL")
+        assertEquals("╮     ╭", buffer.line(legTop, x = 37, width = 7))
+        assertEquals("Leg", buffer.line(legTop + 3, x = 29, width = 3))
+        assertEquals("Leg", buffer.line(legTop + 2, x = 51, width = 3))
+    }
+
+    @Test
+    fun `side tapers and feet start on the row after their final circles`() {
+        val unit = aUnit(armor = exampleArmor)
+
+        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+
+        assertEquals("╲", buffer.get(28, 12).char)
+        assertEquals("╱", buffer.get(52, 12).char)
+        assertEquals("╱", buffer.get(24, 15).char)
+        assertEquals("╲", buffer.get(56, 15).char)
+        assertEquals("╱", buffer.get(31, 24).char)
+        assertEquals("╲", buffer.get(49, 24).char)
+    }
+
+    @Test
+    fun `center torso is never shorter than either side torso`() {
+        val unevenArmor = anArmorLayout(
+            centerTorso = 9,
+            centerTorsoRear = 1,
+            leftTorso = 18,
+            leftTorsoRear = 8,
+            rightTorso = 6,
+            rightTorsoRear = 4,
+            leftArm = 4,
+            rightArm = 4,
+            leftLeg = 4,
+            rightLeg = 4,
+        )
+        val unit = aUnit(armor = unevenArmor)
+
+        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val (torsoTop, _) = buffer.locate("╭──────╮╭─────────╮╭──────╮")
+
+        assertEquals("╰────╯", buffer.line(torsoTop + 8, x = 29, width = 6))
+        assertEquals("╰─────────╯", buffer.line(torsoTop + 8, x = 35, width = 11))
+        assertEquals("╰────╯", buffer.line(torsoTop + 5, x = 46, width = 6))
+    }
+
+    @Test
+    fun `internal structure is a narrower skeleton without rear armor`() {
+        val unit = aUnit(
+            armor = anArmorLayout(),
+            internalStructure = anInternalStructureLayout(),
+        )
+
+        val armor = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val internal = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
+        val armorBounds = armor.pipColumnBounds()
+        val internalBounds = internal.pipColumnBounds()
+
+        assertTrue(internal.text().contains("Center Torso 31/31"))
+        assertFalse(internal.text().contains("REAR ARMOR"))
+        assertTrue(internalBounds.second - internalBounds.first < armorBounds.second - armorBounds.first)
+        assertEquals(152, countGlyph(internal.text(), emptyCircleIcon()))
+    }
+
+    private fun ScreenBuffer.pipColumnBounds(): Pair<Int, Int> {
+        var left = width
+        var right = -1
+        for (row in 0 until height) {
+            val rowText = line(row)
+            for (column in rowText.indices) {
+                if (rowText.substring(column).startsWith(emptyCircleIcon()) ||
+                    rowText.substring(column).startsWith(filledCircleIcon())
+                ) {
+                    left = minOf(left, column)
+                    right = maxOf(right, column)
+                }
+            }
+        }
+        return left to right
     }
 }

@@ -13,22 +13,38 @@ import battletech.tactical.unit.VisibleUnit
 internal object RecordSheetDiagrams {
 
     /** The ARMOR DIAGRAM card. Works for any [VisibleUnit] — armor and its maximum are public. */
-    fun armor(unit: VisibleUnit, destroyed: (MechLocation) -> Boolean = { false }): LocationDiagram {
+    internal fun armor(unit: VisibleUnit, destroyed: (MechLocation) -> Boolean = { false }): LocationDiagram {
         val armor = unit.armor
         val max = unit.maxArmor
         return LocationDiagram(
             title = "ARMOR DIAGRAM",
-            head = location("HD", armor.head, max.head, destroyed(MechLocation.HEAD)),
-            leftArm = location("LA", armor.leftArm, max.leftArm, destroyed(MechLocation.LEFT_ARM)),
-            rightArm = location("RA", armor.rightArm, max.rightArm, destroyed(MechLocation.RIGHT_ARM)),
-            leftTorso = location("LT", armor.leftTorso, max.leftTorso, destroyed(MechLocation.LEFT_TORSO)),
-            rightTorso = location("RT", armor.rightTorso, max.rightTorso, destroyed(MechLocation.RIGHT_TORSO)),
-            centerTorso = location("CT", armor.centerTorso, max.centerTorso, destroyed(MechLocation.CENTER_TORSO)),
-            leftLeg = location("LL", armor.leftLeg, max.leftLeg, destroyed(MechLocation.LEFT_LEG)),
-            rightLeg = location("RL", armor.rightLeg, max.rightLeg, destroyed(MechLocation.RIGHT_LEG)),
-            leftTorsoRear = location("LT-R", armor.leftTorsoRear, max.leftTorsoRear, destroyed(MechLocation.LEFT_TORSO)),
-            centerTorsoRear = location("CT-R", armor.centerTorsoRear, max.centerTorsoRear, destroyed(MechLocation.CENTER_TORSO)),
-            rightTorsoRear = location("RT-R", armor.rightTorsoRear, max.rightTorsoRear, destroyed(MechLocation.RIGHT_TORSO)),
+            silhouette = LocationDiagram.Silhouette.ARMOR,
+            head = location("Head", armor.head, max.head, destroyed(MechLocation.HEAD)),
+            leftArm = location("Left Arm", armor.leftArm, max.leftArm, destroyed(MechLocation.LEFT_ARM)),
+            rightArm = location("Right Arm", armor.rightArm, max.rightArm, destroyed(MechLocation.RIGHT_ARM)),
+            leftTorso = location("Left Torso", armor.leftTorso, max.leftTorso, destroyed(MechLocation.LEFT_TORSO)),
+            rightTorso = location("Right Torso", armor.rightTorso, max.rightTorso, destroyed(MechLocation.RIGHT_TORSO)),
+            centerTorso = location("Center Torso", armor.centerTorso, max.centerTorso, destroyed(MechLocation.CENTER_TORSO)),
+            leftLeg = location("Left Leg", armor.leftLeg, max.leftLeg, destroyed(MechLocation.LEFT_LEG)),
+            rightLeg = location("Right Leg", armor.rightLeg, max.rightLeg, destroyed(MechLocation.RIGHT_LEG)),
+            leftTorsoRear = location(
+                "Left Torso Rear",
+                armor.leftTorsoRear,
+                max.leftTorsoRear,
+                destroyed(MechLocation.LEFT_TORSO),
+            ),
+            centerTorsoRear = location(
+                "Center Torso Rear",
+                armor.centerTorsoRear,
+                max.centerTorsoRear,
+                destroyed(MechLocation.CENTER_TORSO),
+            ),
+            rightTorsoRear = location(
+                "Right Torso Rear",
+                armor.rightTorsoRear,
+                max.rightTorsoRear,
+                destroyed(MechLocation.RIGHT_TORSO),
+            ),
         )
     }
 
@@ -36,20 +52,21 @@ internal object RecordSheetDiagrams {
      * The INTERNAL STRUCTURE DIAGRAM card. Owner-only: [CombatUnit.internalStructure] and its
      * maximum are private record-sheet data, never exposed on the public [VisibleUnit] surface.
      */
-    fun internalStructure(unit: CombatUnit): LocationDiagram {
+    internal fun internalStructure(unit: CombatUnit): LocationDiagram {
         val current = unit.internalStructure
         val max = unit.maxInternalStructure
-        fun destroyed(loc: MechLocation) = !current.isIntact(loc)
+        val destroyed: (MechLocation) -> Boolean = { !current.isIntact(it) }
         return LocationDiagram(
             title = "INTERNAL STRUCTURE DIAGRAM",
-            head = location("HD", current.head, max.head, destroyed(MechLocation.HEAD)),
-            leftArm = location("LA", current.leftArm, max.leftArm, destroyed(MechLocation.LEFT_ARM)),
-            rightArm = location("RA", current.rightArm, max.rightArm, destroyed(MechLocation.RIGHT_ARM)),
-            leftTorso = location("LT", current.leftTorso, max.leftTorso, destroyed(MechLocation.LEFT_TORSO)),
-            rightTorso = location("RT", current.rightTorso, max.rightTorso, destroyed(MechLocation.RIGHT_TORSO)),
-            centerTorso = location("CT", current.centerTorso, max.centerTorso, destroyed(MechLocation.CENTER_TORSO)),
-            leftLeg = location("LL", current.leftLeg, max.leftLeg, destroyed(MechLocation.LEFT_LEG)),
-            rightLeg = location("RL", current.rightLeg, max.rightLeg, destroyed(MechLocation.RIGHT_LEG)),
+            silhouette = LocationDiagram.Silhouette.INTERNAL_STRUCTURE,
+            head = location("Head", current.head, max.head, destroyed(MechLocation.HEAD)),
+            leftArm = location("Left Arm", current.leftArm, max.leftArm, destroyed(MechLocation.LEFT_ARM)),
+            rightArm = location("Right Arm", current.rightArm, max.rightArm, destroyed(MechLocation.RIGHT_ARM)),
+            leftTorso = location("Left Torso", current.leftTorso, max.leftTorso, destroyed(MechLocation.LEFT_TORSO)),
+            rightTorso = location("Right Torso", current.rightTorso, max.rightTorso, destroyed(MechLocation.RIGHT_TORSO)),
+            centerTorso = location("Center Torso", current.centerTorso, max.centerTorso, destroyed(MechLocation.CENTER_TORSO)),
+            leftLeg = location("Left Leg", current.leftLeg, max.leftLeg, destroyed(MechLocation.LEFT_LEG)),
+            rightLeg = location("Right Leg", current.rightLeg, max.rightLeg, destroyed(MechLocation.RIGHT_LEG)),
         )
     }
 

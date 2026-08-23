@@ -26,7 +26,4 @@ internal object SheetLayout {
     const val HEAT_WIDTH: Int = 30
 
     const val CRIT_COLUMN_WIDTH: Int = 42
-
-    /** Pips per row inside a [tenter.widget.PipTrack] location block on this sheet. */
-    const val PIPS_PER_ROW: Int = 10
 }
