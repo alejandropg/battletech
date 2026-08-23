@@ -21,7 +21,7 @@ import tenter.view.text
 
 /**
  * [LocationDiagram] via [RecordSheetDiagrams.armor]/[RecordSheetDiagrams.internalStructure] — the
- * outlined armor and skeletal paper dolls used by the maximized record sheet.
+ * shared configurable paper doll used by the maximized record sheet.
  */
 internal class LocationDiagramTest {
 
@@ -88,18 +88,18 @@ internal class LocationDiagramTest {
     }
 
     @Test
-    fun `destroyed location caption and contour use destroyed styling`() {
+    fun `destroyed location value and contour use destroyed styling`() {
         val unit = aUnit(
             armor = anArmorLayout(),
             internalStructure = anInternalStructureLayout(),
         ).copy(internalStructure = anInternalStructureLayout(centerTorso = 0))
 
         val buffer = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
-        val (captionRow, captionCol) = buffer.locate("Center Torso")
+        val (valueRow, valueCol) = buffer.locate("0/31")
         val contour = buffer.get(38, 7)
 
-        assertEquals(BoardRole.DESTROYED, buffer.get(captionCol, captionRow).style.fg)
-        assertTrue(buffer.get(captionCol, captionRow).style.strikethrough)
+        assertEquals(BoardRole.DESTROYED, buffer.get(valueCol, valueRow).style.fg)
+        assertTrue(buffer.get(valueCol, valueRow).style.strikethrough)
         assertEquals(BoardRole.DESTROYED, contour.style.fg)
         assertTrue(contour.style.strikethrough)
     }
@@ -112,7 +112,7 @@ internal class LocationDiagramTest {
         )
 
         val buffer = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
-        val (row, col) = buffer.locate("Center Torso")
+        val (row, col) = buffer.locate("31/31")
 
         assertFalse(buffer.get(col, row).style.strikethrough)
     }
@@ -316,37 +316,48 @@ internal class LocationDiagramTest {
     }
 
     @Test
-    fun `internal structure is a narrower skeleton without rear armor`() {
+    fun `internal structure uses configured widths without rear tracks`() {
         val unit = aUnit(
             armor = anArmorLayout(),
             internalStructure = anInternalStructureLayout(),
         )
 
-        val armor = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
         val internal = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
-        val armorBounds = armor.pipColumnBounds()
-        val internalBounds = internal.pipColumnBounds()
+        val text = internal.text()
+        val pip = emptyCircleIcon()
 
-        assertTrue(internal.text().contains("Center Torso 31/31"))
-        assertFalse(internal.text().contains("REAR ARMOR"))
-        assertTrue(internalBounds.second - internalBounds.first < armorBounds.second - armorBounds.first)
-        assertEquals(152, countGlyph(internal.text(), emptyCircleIcon()))
+        assertTrue(text.contains("Head 3/3"))
+        assertTrue(text.contains("31/31"))
+        assertFalse(text.contains("REAR"))
+        assertEquals("╭───╮", internal.line(2, x = 38, width = 5))
+        assertEquals("│${pip.repeat(3)}│", internal.line(3, x = 38, width = 5))
+        assertEquals("╭────╮╭─────╮╭────╮", internal.line(7, x = 31, width = 19))
+        assertEquals(
+            "│${pip.repeat(4)}││${pip.repeat(5)}││${pip.repeat(4)}│",
+            internal.line(8, x = 31, width = 19),
+        )
+        assertEquals("│$pip   │", internal.line(13, x = 31, width = 6))
+        assertEquals("│$pip    │", internal.line(14, x = 37, width = 7))
+        assertEquals("╭───╮", internal.line(9, x = 25, width = 5))
+        assertEquals("│${pip.repeat(3)}│", internal.line(10, x = 25, width = 5))
+        assertEquals("│${pip.repeat(2)} │", internal.line(15, x = 25, width = 5))
+        assertEquals("╭────╮", internal.line(17, x = 32, width = 6))
+        assertEquals("│${pip.repeat(4)}│", internal.line(18, x = 32, width = 6))
+        assertEquals("│$pip   │", internal.line(23, x = 32, width = 6))
+        assertEquals(152, countGlyph(text, pip))
     }
 
-    private fun ScreenBuffer.pipColumnBounds(): Pair<Int, Int> {
-        var left = width
-        var right = -1
-        for (row in 0 until height) {
-            val rowText = line(row)
-            for (column in rowText.indices) {
-                if (rowText.substring(column).startsWith(emptyCircleIcon()) ||
-                    rowText.substring(column).startsWith(filledCircleIcon())
-                ) {
-                    left = minOf(left, column)
-                    right = maxOf(right, column)
-                }
-            }
-        }
-        return left to right
+    @Test
+    fun `internal structure damage fills shared diagram pips`() {
+        val unit = aUnit(
+            armor = anArmorLayout(),
+            internalStructure = anInternalStructureLayout(),
+        ).copy(internalStructure = anInternalStructureLayout(centerTorso = 29))
+
+        val internal = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
+        val text = internal.text()
+
+        assertEquals(2, countGlyph(text, filledCircleIcon()))
+        assertEquals(150, countGlyph(text, emptyCircleIcon()))
     }
 }

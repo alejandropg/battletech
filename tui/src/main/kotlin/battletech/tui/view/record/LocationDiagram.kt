@@ -8,9 +8,8 @@ import tenter.view.TextCursor
 import tenter.view.View
 
 /**
- * The record sheet's front-facing paper doll. [Silhouette.ARMOR] draws fixed-width, variable-height
- * armor boxes with each rear-torso track embedded below its front track.
- * [Silhouette.INTERNAL_STRUCTURE] draws the same locations as a narrower skeleton.
+ * The record sheet's front-facing paper doll. Armor and internal structure share one configurable
+ * robot renderer; armor embeds rear-torso tracks while internal structure omits them.
  *
  * A filled pip is damage taken (`max - remaining`), matching the pilot-hit and critical-slot
  * convention elsewhere on the sheet. Empty pips are points still available.
@@ -46,128 +45,146 @@ internal class LocationDiagram(
 
     override fun draw(canvas: Canvas) {
         TextCursor(canvas).writeHeader(title)
-        when (silhouette) {
-            Silhouette.ARMOR -> drawArmor(canvas)
-            Silhouette.INTERNAL_STRUCTURE -> drawInternalStructure(canvas)
-        }
+        drawRobot(canvas, sizesFor(silhouette))
     }
 
-    private fun drawArmor(canvas: Canvas) {
-        val leftRear = requireNotNull(leftTorsoRear) { "armor diagram requires left rear torso armor" }
-        val centerRear = requireNotNull(centerTorsoRear) { "armor diagram requires center rear torso armor" }
-        val rightRear = requireNotNull(rightTorsoRear) { "armor diagram requires right rear torso armor" }
+    private fun drawRobot(canvas: Canvas, sizes: DiagramSizes) {
+        val geometry = geometryFor(sizes)
+        val rearLocations = rearLocationsFor(sizes)
 
         drawCentered(
             canvas,
-            HEAD_X,
-            HEAD_WIDTH + 2,
+            geometry.headX,
+            sizes.head + 2,
             y = 1,
             text = caption(head),
             style = locationStyle(head),
         )
-        val headBottom = drawSimpleArmorBox(canvas, head, HEAD_X, topY = 2, width = HEAD_WIDTH)
-        drawSideLabels(canvas, headBottom - 1)
+        val headBottom = drawSimpleBox(canvas, head, geometry.headX, topY = 2, width = sizes.head)
+        drawSideLabels(canvas, geometry, sizes, headBottom - 1)
         val torsoTop = headBottom + 3
-        drawTorsoLabels(canvas, torsoTop)
+        drawTorsoLabels(canvas, geometry, sizes, torsoTop)
 
-        val leftFrontRows = rowsFor(leftTorso.max, SIDE_TORSO_WIDTH)
-        val rightFrontRows = rowsFor(rightTorso.max, SIDE_TORSO_WIDTH)
-        val leftRearRows = rowsFor(leftRear.max, REAR_SIDE_TORSO_WIDTH)
-        val centerRearRows = rowsFor(centerRear.max, CENTER_TORSO_WIDTH)
-        val rightRearRows = rowsFor(rightRear.max, REAR_SIDE_TORSO_WIDTH)
+        val leftFrontRows = rowsFor(leftTorso.max, sizes.sideTorso)
+        val rightFrontRows = rowsFor(rightTorso.max, sizes.sideTorso)
         val centerFrontRows = maxOf(
-            rowsFor(centerTorso.max, CENTER_TORSO_WIDTH),
+            rowsFor(centerTorso.max, sizes.centerTorso),
             leftFrontRows,
             rightFrontRows,
         )
-        val centerDisplayRearRows = maxOf(centerRearRows, leftRearRows, rightRearRows)
-        val leftTorsoBottom = drawArmorTorso(
+        val leftRear = rearLocations?.let {
+            val width = requireNotNull(sizes.rearSideTorso)
+            RearTrack(it.left, width, rowsFor(it.left.max, width))
+        }
+        val rightRear = rearLocations?.let {
+            val width = requireNotNull(sizes.rearSideTorso)
+            RearTrack(it.right, width, rowsFor(it.right.max, width))
+        }
+        val centerRear = rearLocations?.let {
+            val centerRows = rowsFor(it.center.max, sizes.centerTorso)
+            RearTrack(
+                it.center,
+                sizes.centerTorso,
+                maxOf(centerRows, requireNotNull(leftRear).rows, requireNotNull(rightRear).rows),
+            )
+        }
+        val leftTorsoBottom = drawTorso(
             canvas,
             front = leftTorso,
             rear = leftRear,
             side = BodySide.LEFT,
-            x = LEFT_TORSO_X,
+            x = geometry.leftTorsoX,
             topY = torsoTop,
+            frontWidth = sizes.sideTorso,
             frontRows = leftFrontRows,
-            rearRows = leftRearRows,
         )
-        val centerTorsoBottom = drawArmorTorso(
+        val centerTorsoBottom = drawTorso(
             canvas,
             front = centerTorso,
             rear = centerRear,
             side = BodySide.CENTER,
-            x = CENTER_TORSO_X,
+            x = geometry.centerTorsoX,
             topY = torsoTop,
+            frontWidth = sizes.centerTorso,
             frontRows = centerFrontRows,
-            rearRows = centerDisplayRearRows,
         )
-        val rightTorsoBottom = drawArmorTorso(
+        val rightTorsoBottom = drawTorso(
             canvas,
             front = rightTorso,
             rear = rightRear,
             side = BodySide.RIGHT,
-            x = RIGHT_TORSO_X,
+            x = geometry.rightTorsoX,
             topY = torsoTop,
+            frontWidth = sizes.sideTorso,
             frontRows = rightFrontRows,
-            rearRows = rightRearRows,
         )
 
         val armTop = torsoTop + 2
-        drawArmorArm(canvas, leftArm, BodySide.LEFT, LEFT_ARM_X, armTop)
-        drawArmorArm(canvas, rightArm, BodySide.RIGHT, RIGHT_ARM_X, armTop)
+        drawArm(canvas, leftArm, BodySide.LEFT, geometry.leftArmX, armTop, sizes.arm)
+        drawArm(canvas, rightArm, BodySide.RIGHT, geometry.rightArmX, armTop, sizes.arm)
         val torsoBottom = maxOf(leftTorsoBottom, centerTorsoBottom, rightTorsoBottom)
         val legTop = torsoBottom + 2
-        val leftLegWidth = legWidth(leftLeg.max)
-        val rightLegWidth = legWidth(rightLeg.max)
-        val leftLegX = LEFT_LEG_INNER_EDGE_X - leftLegWidth - 1
-        drawArmorLeg(canvas, leftLeg, BodySide.LEFT, leftLegX, legTop, leftLegWidth)
-        drawArmorLeg(canvas, rightLeg, BodySide.RIGHT, RIGHT_LEG_INNER_EDGE_X, legTop, rightLegWidth)
+        val leftLegWidth = legWidth(leftLeg.max, sizes)
+        val rightLegWidth = legWidth(rightLeg.max, sizes)
+        val leftLegX = geometry.leftLegInnerEdgeX - leftLegWidth - 1
+        drawLeg(canvas, leftLeg, BodySide.LEFT, leftLegX, legTop, leftLegWidth)
+        drawLeg(canvas, rightLeg, BodySide.RIGHT, geometry.rightLegInnerEdgeX, legTop, rightLegWidth)
     }
 
-    private fun drawSideLabels(canvas: Canvas, y: Int) {
+    private fun drawSideLabels(
+        canvas: Canvas,
+        geometry: DiagramGeometry,
+        sizes: DiagramSizes,
+        y: Int,
+    ) {
         canvas.writeString(
-            HEAD_X - HEAD_SIDE_LABEL_GAP - LEFT_SIDE_LABEL.length,
+            geometry.headX - HEAD_SIDE_LABEL_GAP - LEFT_SIDE_LABEL.length,
             y,
             LEFT_SIDE_LABEL,
             locationStyle(leftTorso),
         )
         canvas.writeString(
-            HEAD_X + HEAD_WIDTH + HEAD_SIDE_LABEL_GAP + 2,
+            geometry.headX + sizes.head + HEAD_SIDE_LABEL_GAP + 2,
             y,
             RIGHT_SIDE_LABEL,
             locationStyle(rightTorso),
         )
     }
 
-    private fun drawTorsoLabels(canvas: Canvas, torsoTop: Int) {
+    private fun drawTorsoLabels(
+        canvas: Canvas,
+        geometry: DiagramGeometry,
+        sizes: DiagramSizes,
+        torsoTop: Int,
+    ) {
         drawCentered(
             canvas,
-            CENTER_TORSO_X,
-            CENTER_TORSO_WIDTH + 2,
+            geometry.centerTorsoX,
+            sizes.centerTorso + 2,
             torsoTop - 2,
             "Torso",
             locationStyle(centerTorso),
         )
         drawCentered(
             canvas,
-            LEFT_TORSO_X,
-            SIDE_TORSO_WIDTH + 2,
+            geometry.leftTorsoX,
+            sizes.sideTorso + 2,
             torsoTop - 1,
             value(leftTorso),
             locationStyle(leftTorso),
         )
         drawCentered(
             canvas,
-            CENTER_TORSO_X,
-            CENTER_TORSO_WIDTH + 2,
+            geometry.centerTorsoX,
+            sizes.centerTorso + 2,
             torsoTop - 1,
             value(centerTorso),
             locationStyle(centerTorso),
         )
         drawRightAligned(
             canvas,
-            RIGHT_TORSO_X,
-            SIDE_TORSO_WIDTH + 2,
+            geometry.rightTorsoX,
+            sizes.sideTorso + 2,
             torsoTop - 1,
             value(rightTorso),
             locationStyle(rightTorso),
@@ -175,43 +192,50 @@ internal class LocationDiagram(
         )
     }
 
-    private fun drawArmorTorso(
+    private fun drawTorso(
         canvas: Canvas,
         front: Location,
-        rear: Location,
+        rear: RearTrack?,
         side: BodySide,
         x: Int,
         topY: Int,
+        frontWidth: Int,
         frontRows: Int,
-        rearRows: Int,
     ): Int {
-        val frontWidth = if (side == BodySide.CENTER) CENTER_TORSO_WIDTH else SIDE_TORSO_WIDTH
-        val rearWidth = if (side == BodySide.CENTER) CENTER_TORSO_WIDTH else REAR_SIDE_TORSO_WIDTH
-        val rearX = when (side) {
-            BodySide.LEFT -> x + 2
-            BodySide.CENTER, BodySide.RIGHT -> x
-        }
         val frontStyle = locationStyle(front)
-        val rearStyle = locationStyle(rear)
-
         drawTop(canvas, x, topY, frontWidth, frontStyle)
         drawPipRows(canvas, front, x, topY + 1, frontWidth, frontRows)
+
+        if (rear == null) {
+            val bottomY = topY + frontRows + 1
+            drawBottom(canvas, x, bottomY, frontWidth, frontStyle)
+            return bottomY
+        }
+
+        val rearWidth = rear.width
+        val rearX = when (side) {
+            BodySide.LEFT -> x + frontWidth - rearWidth
+            BodySide.CENTER, BodySide.RIGHT -> x
+        }
+        val rearStyle = locationStyle(rear.location)
+
         val transitionY = topY + frontRows + 1
         drawTorsoTransition(canvas, side, x, transitionY, frontWidth, frontStyle)
         val separatorY = transitionY + 1
         drawRearSeparator(canvas, side, rearX, separatorY, rearWidth, rearStyle)
-        drawPipRows(canvas, rear, rearX, separatorY + 1, rearWidth, rearRows)
-        val bottomY = separatorY + rearRows + 1
+        drawPipRows(canvas, rear.location, rearX, separatorY + 1, rearWidth, rear.rows)
+        val bottomY = separatorY + rear.rows + 1
         drawBottom(canvas, rearX, bottomY, rearWidth, rearStyle)
         when (side) {
-            BodySide.LEFT -> canvas.writeString(rearX + 1, bottomY + 1, value(rear), rearStyle)
-            BodySide.CENTER -> drawCentered(canvas, rearX, rearWidth + 2, bottomY + 1, value(rear), rearStyle)
+            BodySide.LEFT -> canvas.writeString(rearX + 1, bottomY + 1, value(rear.location), rearStyle)
+            BodySide.CENTER ->
+                drawCentered(canvas, rearX, rearWidth + 2, bottomY + 1, value(rear.location), rearStyle)
             BodySide.RIGHT -> drawRightAligned(
                 canvas,
                 rearX,
                 rearWidth + 2,
                 bottomY + 1,
-                value(rear),
+                value(rear.location),
                 rearStyle,
                 rightPadding = 1,
             )
@@ -248,37 +272,51 @@ internal class LocationDiagram(
         width: Int,
         style: Cell.Style,
     ) {
-        val separator = if (side == BodySide.CENTER) "╌╌REAR╌╌╌" else "╌".repeat(width)
+        val separator = if (side == BodySide.CENTER) centeredRearSeparator(width) else "╌".repeat(width)
         canvas.writeString(x, y, "│" + separator + "│", style)
     }
 
-    private fun drawArmorArm(canvas: Canvas, location: Location, side: BodySide, x: Int, topY: Int): Int {
+    private fun centeredRearSeparator(width: Int): String {
+        val fill = width - REAR_LABEL.length
+        require(fill >= 0) { "center rear torso width must fit $REAR_LABEL" }
+        val leftFill = fill / 2
+        return "╌".repeat(leftFill) + REAR_LABEL + "╌".repeat(fill - leftFill)
+    }
+
+    private fun drawArm(
+        canvas: Canvas,
+        location: Location,
+        side: BodySide,
+        x: Int,
+        topY: Int,
+        width: Int,
+    ): Int {
         val style = locationStyle(location)
-        val rows = rowsFor(location.max, ARM_WIDTH)
-        drawTop(canvas, x, topY, ARM_WIDTH, style)
-        drawPipRows(canvas, location, x, topY + 1, ARM_WIDTH, rows)
+        val rows = rowsFor(location.max, width)
+        drawTop(canvas, x, topY, width, style)
+        drawPipRows(canvas, location, x, topY + 1, width, rows)
         val transitionY = topY + rows + 1
         val narrowX = when (side) {
             BodySide.LEFT -> {
                 canvas.writeString(x, transitionY, "│", style)
-                canvas.writeString(x + ARM_WIDTH, transitionY, "╱", style)
+                canvas.writeString(x + width, transitionY, "╱", style)
                 x
             }
             BodySide.RIGHT -> {
                 canvas.writeString(x + 1, transitionY, "╲", style)
-                canvas.writeString(x + ARM_WIDTH + 1, transitionY, "│", style)
+                canvas.writeString(x + width + 1, transitionY, "│", style)
                 x + 1
             }
             BodySide.CENTER -> error("an arm must be left or right")
         }
-        drawEmptyRow(canvas, narrowX, transitionY + 1, ARM_WIDTH - 1, style)
+        drawEmptyRow(canvas, narrowX, transitionY + 1, width - 1, style)
         val bottomY = transitionY + 2
-        drawBottom(canvas, narrowX, bottomY, ARM_WIDTH - 1, style)
-        drawLimbCaption(canvas, location, side, x, ARM_WIDTH, topY + maxOf(2, rows / 2), "Arm")
+        drawBottom(canvas, narrowX, bottomY, width - 1, style)
+        drawLimbCaption(canvas, location, side, x, width, topY + maxOf(2, rows / 2), "Arm")
         return bottomY
     }
 
-    private fun drawArmorLeg(
+    private fun drawLeg(
         canvas: Canvas,
         location: Location,
         side: BodySide,
@@ -333,7 +371,7 @@ internal class LocationDiagram(
         }
     }
 
-    private fun drawSimpleArmorBox(
+    private fun drawSimpleBox(
         canvas: Canvas,
         location: Location,
         x: Int,
@@ -414,11 +452,12 @@ internal class LocationDiagram(
     private fun rowsFor(capacity: Int, width: Int): Int =
         (capacity.coerceAtLeast(0) + width - 1) / width
 
-    private fun legWidth(max: Int): Int = when {
-        max <= 16 -> 3
-        max >= 24 -> 5
-        else -> 4
-    }
+    private fun legWidth(max: Int, sizes: DiagramSizes): Int =
+        sizes.fixedLeg ?: when {
+            max <= 16 -> 3
+            max >= 24 -> 5
+            else -> 4
+        }
 
     private fun caption(location: Location): String = location.label + " " + value(location)
 
@@ -433,156 +472,103 @@ internal class LocationDiagram(
         RIGHT,
     }
 
-    private fun drawInternalStructure(canvas: Canvas) {
-        drawInternalConnectors(canvas)
-
-        drawPart(canvas, head, INTERNAL_HEAD, x = 38, y = 2)
-        drawPart(canvas, leftTorso, INTERNAL_SIDE_TORSO, x = 29, y = 7)
-        drawPart(canvas, centerTorso, INTERNAL_CENTER_TORSO, x = 37, y = 7)
-        drawPart(canvas, rightTorso, INTERNAL_SIDE_TORSO.mirrored(), x = 45, y = 7)
-        drawPart(canvas, leftArm, INTERNAL_ARM, x = 20, y = 9)
-        drawPart(canvas, rightArm, INTERNAL_ARM.mirrored(), x = 55, y = 9)
-        drawPart(canvas, leftLeg, INTERNAL_LEG, x = 31, y = 16)
-        drawPart(canvas, rightLeg, INTERNAL_LEG.mirrored(), x = 44, y = 16)
-
-        drawCaption(canvas, head, x = 34, y = 1)
-        drawCaption(canvas, leftTorso, x = 10, y = 6)
-        drawCaption(canvas, centerTorso, x = 31, y = 6)
-        drawCaption(canvas, rightTorso, x = 53, y = 6)
-        drawCaption(canvas, leftArm, x = 0, y = 12)
-        drawCaption(canvas, rightArm, x = 64, y = 12)
-        drawCaption(canvas, leftLeg, x = 22, y = 24)
-        drawCaption(canvas, rightLeg, x = 47, y = 24)
-    }
-
-    private fun drawInternalConnectors(canvas: Canvas) {
-        drawMuted(canvas, 39, 5, "│ │")
-        drawMuted(canvas, 25, 9, "────")
-        drawMuted(canvas, 51, 9, "────")
-        drawMuted(canvas, 34, 15, "╲ ╱")
-        drawMuted(canvas, 42, 15, "╲ ╱")
-    }
-
-    private fun drawMuted(canvas: Canvas, x: Int, y: Int, text: String) {
-        canvas.writeString(x, y, text, SheetStyles.TEXT_MUTED)
-    }
-
-    private fun drawCaption(canvas: Canvas, location: Location, x: Int, y: Int) {
-        val style = if (location.destroyed) SheetStyles.DESTROYED else SheetStyles.TEXT_PRIMARY
-        val caption = location.label + " " + location.remaining + "/" + location.max
-        canvas.writeString(x, y, caption, style)
-    }
-
-    private fun drawPart(canvas: Canvas, location: Location, shape: Shape, x: Int, y: Int) {
-        require(location.max <= shape.capacity) {
-            location.label + " capacity " + location.max +
-                " exceeds paper-doll mask capacity " + shape.capacity
-        }
-
-        val outlineStyle = if (location.destroyed) SheetStyles.DESTROYED else SheetStyles.TEXT_MUTED
-        drawTopContour(canvas, shape, x, y, outlineStyle)
-
-        val damage = (location.max - location.remaining).coerceIn(0, location.max)
-        var pip = 0
-        for ((index, row) in shape.rows.withIndex()) {
-            val rowY = y + index + 1
-            val rowX = x + row.offset
-            canvas.writeString(rowX, rowY, leftContour(shape, index), outlineStyle)
-            canvas.writeString(rowX + row.count + 1, rowY, rightContour(shape, index), outlineStyle)
-            for (column in 0 until row.count) {
-                if (pip < location.max) {
-                    val glyph = if (pip < damage) filledCircleIcon() else emptyCircleIcon()
-                    val style = when {
-                        pip < damage -> SheetStyles.DANGER
-                        location.destroyed -> SheetStyles.DESTROYED
-                        else -> SheetStyles.TEXT_PRIMARY
-                    }
-                    canvas.writeString(rowX + column + 1, rowY, glyph, style)
-                    pip += 1
-                }
-            }
-        }
-
-        drawBottomContour(canvas, shape, x, y + shape.rows.size + 1, outlineStyle)
-    }
-
-    private fun drawTopContour(canvas: Canvas, shape: Shape, x: Int, y: Int, style: Cell.Style) {
-        val first = shape.rows.first()
-        canvas.writeString(x + first.offset, y, "╭" + "─".repeat(first.count) + "╮", style)
-    }
-
-    private fun drawBottomContour(canvas: Canvas, shape: Shape, x: Int, y: Int, style: Cell.Style) {
-        val last = shape.rows.last()
-        canvas.writeString(x + last.offset, y, "╰" + "─".repeat(last.count) + "╯", style)
-    }
-
-    private fun leftContour(shape: Shape, index: Int): String {
-        if (index == 0) return "│"
-        return when {
-            shape.rows[index].offset > shape.rows[index - 1].offset -> "╲"
-            shape.rows[index].offset < shape.rows[index - 1].offset -> "╱"
-            else -> "│"
-        }
-    }
-
-    private fun rightContour(shape: Shape, index: Int): String {
-        if (index == 0) return "│"
-        val current = shape.rows[index]
-        val previous = shape.rows[index - 1]
-        val currentEdge = current.offset + current.count
-        val previousEdge = previous.offset + previous.count
-        return when {
-            currentEdge > previousEdge -> "╲"
-            currentEdge < previousEdge -> "╱"
-            else -> "│"
-        }
-    }
-
-    private data class ShapeRow(
-        public val offset: Int,
-        public val count: Int,
+    private data class DiagramSizes(
+        public val head: Int,
+        public val sideTorso: Int,
+        public val centerTorso: Int,
+        public val rearSideTorso: Int?,
+        public val arm: Int,
+        public val fixedLeg: Int?,
     )
 
-    private data class Shape(
-        public val rows: List<ShapeRow>,
-    ) {
-        public val capacity: Int = rows.sumOf(ShapeRow::count)
+    private data class DiagramGeometry(
+        public val headX: Int,
+        public val leftTorsoX: Int,
+        public val centerTorsoX: Int,
+        public val rightTorsoX: Int,
+        public val leftArmX: Int,
+        public val rightArmX: Int,
+        public val leftLegInnerEdgeX: Int,
+        public val rightLegInnerEdgeX: Int,
+    )
 
-        public fun mirrored(): Shape {
-            val width = rows.maxOf { it.offset + it.count }
-            return Shape(rows.map { ShapeRow(width - it.offset - it.count, it.count) })
+    private data class RearLocations(
+        public val left: Location,
+        public val center: Location,
+        public val right: Location,
+    )
+
+    private data class RearTrack(
+        public val location: Location,
+        public val width: Int,
+        public val rows: Int,
+    )
+
+    private fun sizesFor(silhouette: Silhouette): DiagramSizes = when (silhouette) {
+        Silhouette.ARMOR -> ARMOR_SIZES
+        Silhouette.INTERNAL_STRUCTURE -> INTERNAL_STRUCTURE_SIZES
+    }
+
+    private fun geometryFor(sizes: DiagramSizes): DiagramGeometry {
+        val centerTorsoX = CENTER_X - (sizes.centerTorso + 2) / 2
+        val leftTorsoX = centerTorsoX - sizes.sideTorso - 2
+        val rightTorsoX = centerTorsoX + sizes.centerTorso + 2
+        val headX = CENTER_X - (sizes.head + 2) / 2
+        val leftArmX = leftTorsoX - ARM_TORSO_GAP - sizes.arm - 2
+        val rightArmX = rightTorsoX + sizes.sideTorso + 2 + ARM_TORSO_GAP
+        val leftLegInnerEdgeX = CENTER_X - LEG_INNER_GAP / 2 - 1
+        val rightLegInnerEdgeX = CENTER_X + LEG_INNER_GAP / 2 + 1
+        return DiagramGeometry(
+            headX = headX,
+            leftTorsoX = leftTorsoX,
+            centerTorsoX = centerTorsoX,
+            rightTorsoX = rightTorsoX,
+            leftArmX = leftArmX,
+            rightArmX = rightArmX,
+            leftLegInnerEdgeX = leftLegInnerEdgeX,
+            rightLegInnerEdgeX = rightLegInnerEdgeX,
+        )
+    }
+
+    private fun rearLocationsFor(sizes: DiagramSizes): RearLocations? {
+        if (sizes.rearSideTorso == null) {
+            require(leftTorsoRear == null && centerTorsoRear == null && rightTorsoRear == null) {
+                "internal structure diagram cannot contain rear torso locations"
+            }
+            return null
         }
+
+        return RearLocations(
+            left = requireNotNull(leftTorsoRear) { "armor diagram requires left rear torso armor" },
+            center = requireNotNull(centerTorsoRear) { "armor diagram requires center rear torso armor" },
+            right = requireNotNull(rightTorsoRear) { "armor diagram requires right rear torso armor" },
+        )
     }
 
     private companion object {
-        private const val HEAD_X = 37
-        private const val HEAD_WIDTH = 5
+        private const val CENTER_X = 40
         private const val HEAD_SIDE_LABEL_GAP = 10
         private const val LEFT_SIDE_LABEL = "Left"
         private const val RIGHT_SIDE_LABEL = "Right"
-        private const val LEFT_TORSO_X = 27
-        private const val CENTER_TORSO_X = 35
-        private const val RIGHT_TORSO_X = 46
-        private const val SIDE_TORSO_WIDTH = 6
-        private const val CENTER_TORSO_WIDTH = 9
-        private const val REAR_SIDE_TORSO_WIDTH = 4
-        private const val LEFT_ARM_X = 20
-        private const val RIGHT_ARM_X = 55
-        private const val ARM_WIDTH = 4
-        private const val LEFT_LEG_INNER_EDGE_X = 37
-        private const val RIGHT_LEG_INNER_EDGE_X = 43
+        private const val ARM_TORSO_GAP = 1
+        private const val LEG_INNER_GAP = 5
+        private const val REAR_LABEL = "REAR"
 
-        private val INTERNAL_HEAD = shape(3)
-        private val INTERNAL_ARM = shiftedShape(0 to 3, 0 to 3, 0 to 3, 0 to 3, 0 to 3, 1 to 2)
-        private val INTERNAL_SIDE_TORSO = shiftedShape(0 to 4, 0 to 4, 0 to 4, 1 to 3, 1 to 3, 1 to 3)
-        private val INTERNAL_CENTER_TORSO =
-            shiftedShape(1 to 4, 0 to 5, 0 to 5, 0 to 5, 1 to 4, 1 to 4, 1 to 4)
-        private val INTERNAL_LEG = shiftedShape(0 to 4, 0 to 4, 0 to 4, 1 to 3, 1 to 3, 1 to 3)
-
-        private fun shape(vararg counts: Int): Shape =
-            Shape(counts.map { ShapeRow(offset = 0, count = it) })
-
-        private fun shiftedShape(vararg rows: Pair<Int, Int>): Shape =
-            Shape(rows.map { ShapeRow(offset = it.first, count = it.second) })
+        private val ARMOR_SIZES = DiagramSizes(
+            head = 5,
+            sideTorso = 6,
+            centerTorso = 9,
+            rearSideTorso = 4,
+            arm = 4,
+            fixedLeg = null,
+        )
+        private val INTERNAL_STRUCTURE_SIZES = DiagramSizes(
+            head = 3,
+            sideTorso = 4,
+            centerTorso = 5,
+            rearSideTorso = null,
+            arm = 3,
+            fixedLeg = 4,
+        )
     }
 }
