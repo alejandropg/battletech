@@ -18,6 +18,7 @@ import tenter.screen.ScreenBuffer
 import tenter.view.line
 import tenter.view.render
 import tenter.view.text
+import kotlin.math.abs
 
 /**
  * [LocationDiagram] via [RecordSheetDiagrams.armor]/[RecordSheetDiagrams.internalStructure] — the
@@ -52,6 +53,14 @@ internal class LocationDiagramTest {
 
     private fun countGlyph(text: String, glyph: String): Int =
         if (glyph.isEmpty()) 0 else text.split(glyph).size - 1
+
+    private fun assertCentered(buffer: ScreenBuffer, outline: String) {
+        val (_, column) = buffer.locate(outline)
+        val leftMargin = column
+        val rightMargin = buffer.width - column - outline.length
+
+        assertTrue(abs(leftMargin - rightMargin) <= 1)
+    }
 
     private fun armorPipTotal(): Int = with(anArmorLayout()) {
         head + centerTorso + centerTorsoRear +
@@ -134,6 +143,32 @@ internal class LocationDiagramTest {
         assertFalse(text.contains("REAR ARMOR"))
         assertFalse(text.contains("Torso Rear"))
         assertEquals(145, countGlyph(text, emptyCircleIcon()))
+    }
+
+    @Test
+    fun `armor silhouette is centered in its record sheet section`() {
+        val unit = aUnit(armor = exampleArmor)
+
+        val buffer = render(
+            RecordSheetDiagrams.armor(unit),
+            width = SheetLayout.ARMOR_DIAGRAM_WIDTH,
+            height = diagramHeight,
+        )
+
+        assertCentered(buffer, "╭──────╮╭─────────╮╭──────╮")
+    }
+
+    @Test
+    fun `internal structure silhouette is centered in its record sheet section`() {
+        val unit = aUnit(internalStructure = anInternalStructureLayout())
+
+        val buffer = render(
+            RecordSheetDiagrams.internalStructure(unit),
+            width = SheetLayout.INTERNAL_STRUCTURE_DIAGRAM_WIDTH,
+            height = diagramHeight,
+        )
+
+        assertCentered(buffer, "╭────╮╭─────╮╭────╮")
     }
 
     @Test

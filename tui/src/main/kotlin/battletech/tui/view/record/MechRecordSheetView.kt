@@ -44,25 +44,41 @@ internal class MechRecordSheetView(
         content.writeLine(UnitLabel.of(unit), SheetStyles.ACCENT)
         content.newLine()
 
+        val upperSections = Columns(
+            listOf(
+                Columns.Child(SheetLayout.MECH_DATA_WIDTH, MechDataCard(unit)),
+                Columns.Child(SheetLayout.WARRIOR_DATA_WIDTH, WarriorDataCard(unit)),
+                Columns.Child(SheetLayout.WEAPON_INVENTORY_WIDTH, WeaponInventoryTable(unit)),
+            ),
+        )
+        val diagrams = Columns(
+            listOf(
+                Columns.Child(SheetLayout.ARMOR_DIAGRAM_WIDTH, RecordSheetDiagrams.armor(unit)),
+                Columns.Child(
+                    SheetLayout.INTERNAL_STRUCTURE_DIAGRAM_WIDTH,
+                    RecordSheetDiagrams.internalStructure(unit),
+                ),
+            ),
+        )
+        val mainContent = Stack(
+            listOf(
+                upperSections,
+                diagrams,
+                CriticalHitTable(unit),
+                SystemDamageTable(unit),
+            ),
+            gutter = 2,
+        )
+
         drawBand(
             canvas,
             content,
             Columns(
                 listOf(
-                    Columns.Child(SheetLayout.MECH_DATA_WIDTH, Stack(listOf(MechDataCard(unit), WarriorDataCard(unit)))),
-                    Columns.Child(
-                        SheetLayout.DIAGRAM_WIDTH,
-                        Stack(listOf(RecordSheetDiagrams.armor(unit), RecordSheetDiagrams.internalStructure(unit))),
-                    ),
+                    Columns.Child(SheetLayout.MAIN_CONTENT_WIDTH, mainContent),
                     Columns.Child(SheetLayout.HEAT_WIDTH, HeatLadder(unit, pendingHeat)),
                 ),
             ),
         )
-        content.newLine()
-
-        drawBand(canvas, content, WeaponInventoryTable(unit))
-        content.newLine()
-
-        drawBand(canvas, content, CriticalHitTable(unit))
     }
 }

@@ -49,7 +49,7 @@ internal class LocationDiagram(
     }
 
     private fun drawRobot(canvas: Canvas, sizes: DiagramSizes) {
-        val geometry = geometryFor(sizes)
+        val geometry = geometryFor(sizes, centerX = canvas.width / 2)
         val rearLocations = rearLocationsFor(sizes)
 
         drawCentered(
@@ -509,15 +509,15 @@ internal class LocationDiagram(
         Silhouette.INTERNAL_STRUCTURE -> INTERNAL_STRUCTURE_SIZES
     }
 
-    private fun geometryFor(sizes: DiagramSizes): DiagramGeometry {
-        val centerTorsoX = CENTER_X - (sizes.centerTorso + 2) / 2
+    private fun geometryFor(sizes: DiagramSizes, centerX: Int): DiagramGeometry {
+        val centerTorsoX = centerX - (sizes.centerTorso + 2) / 2
         val leftTorsoX = centerTorsoX - sizes.sideTorso - 2
         val rightTorsoX = centerTorsoX + sizes.centerTorso + 2
-        val headX = CENTER_X - (sizes.head + 2) / 2
+        val headX = centerX - (sizes.head + 2) / 2
         val leftArmX = leftTorsoX - ARM_TORSO_GAP - sizes.arm - 2
         val rightArmX = rightTorsoX + sizes.sideTorso + 2 + ARM_TORSO_GAP
-        val leftLegInnerEdgeX = CENTER_X - LEG_INNER_GAP / 2 - 1
-        val rightLegInnerEdgeX = CENTER_X + LEG_INNER_GAP / 2 + 1
+        val leftLegInnerEdgeX = centerX - LEG_INNER_GAP / 2 - 1
+        val rightLegInnerEdgeX = centerX + LEG_INNER_GAP / 2 + 1
         return DiagramGeometry(
             headX = headX,
             leftTorsoX = leftTorsoX,
@@ -546,7 +546,6 @@ internal class LocationDiagram(
     }
 
     private companion object {
-        private const val CENTER_X = 40
         private const val HEAD_SIDE_LABEL_GAP = 10
         private const val LEFT_SIDE_LABEL = "Left"
         private const val RIGHT_SIDE_LABEL = "Right"

@@ -27,13 +27,12 @@ internal class CriticalHitTableTest {
     )
 
     @Test
-    fun `lists real slot contents by weapon and component name`() {
+    fun `lists real slot contents by weapon name`() {
         val buffer = render(CriticalHitTable(atlas()), width = 400, height = 60)
         val text = buffer.text()
 
+        assertTrue(text.contains("CRITICAL HIT TABLE"))
         assertTrue(text.contains("AC/20"))
-        assertTrue(text.contains("Engine"))
-        assertTrue(text.contains("Gyro"))
     }
 
     @Test
@@ -54,7 +53,7 @@ internal class CriticalHitTableTest {
 
     @Test
     fun `system damage lists engine gyro sensor and life support`() {
-        val buffer = render(CriticalHitTable(atlas()), width = 400, height = 60)
+        val buffer = render(SystemDamageTable(atlas()), width = 400, height = 60)
         val text = buffer.text()
 
         assertTrue(text.contains("SYSTEM DAMAGE"))

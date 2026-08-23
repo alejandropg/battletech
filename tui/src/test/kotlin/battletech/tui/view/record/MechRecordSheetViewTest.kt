@@ -12,9 +12,12 @@ import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.createUnit
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.screen.ScreenBuffer
+import tenter.view.line
 import tenter.view.render
 import tenter.view.text
 
@@ -49,6 +52,12 @@ internal class MechRecordSheetViewTest {
         movementThisTurn = MovementThisTurn.Stationary,
     )
 
+    private fun assertTwoBlankMainRowsBefore(buffer: ScreenBuffer, row: Int) {
+        assertTrue(buffer.line(row - 1, width = SheetLayout.MAIN_CONTENT_WIDTH).isBlank())
+        assertTrue(buffer.line(row - 2, width = SheetLayout.MAIN_CONTENT_WIDTH).isBlank())
+        assertFalse(buffer.line(row - 3, width = SheetLayout.MAIN_CONTENT_WIDTH).isBlank())
+    }
+
     @Test
     fun `no subject shows a placeholder`() {
         val buffer = render(MechRecordSheetView(null), width = 200, height = 20)
@@ -68,6 +77,35 @@ internal class MechRecordSheetViewTest {
     }
 
     @Test
+    fun `an own unit lays out cards in the requested grid`() {
+        val buffer = render(MechRecordSheetView(atlas()), width = 200, height = 300)
+
+        val topRow = (0 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
+        assertEquals(0, buffer.line(topRow).indexOf("── 'MECH DATA"))
+        assertEquals(30, buffer.line(topRow).indexOf("── WARRIOR DATA"))
+        assertEquals(60, buffer.line(topRow).indexOf("── WEAPONS & EQUIPMENT INVENTORY"))
+        assertEquals(120, buffer.line(topRow).indexOf("── HEAT "))
+
+        val diagramRow = (0 until buffer.height).first { buffer.line(it).contains("ARMOR DIAGRAM") }
+        assertEquals(0, buffer.line(diagramRow).indexOf("── ARMOR DIAGRAM"))
+        assertEquals(60, buffer.line(diagramRow).indexOf("── INTERNAL STRUCTURE DIAGRAM"))
+        assertTwoBlankMainRowsBefore(buffer, diagramRow)
+        assertFalse(buffer.line(diagramRow, x = 120, width = SheetLayout.HEAT_WIDTH).isBlank())
+
+        val criticalRow = (0 until buffer.height).first { buffer.line(it).contains("CRITICAL HIT TABLE") }
+        assertEquals(0, buffer.line(criticalRow).indexOf("── CRITICAL HIT TABLE"))
+        assertEquals("─", buffer.get(SheetLayout.CRITICAL_HIT_TABLE_WIDTH - 1, criticalRow).char)
+        assertEquals(" ", buffer.get(SheetLayout.CRITICAL_HIT_TABLE_WIDTH, criticalRow).char)
+        assertTwoBlankMainRowsBefore(buffer, criticalRow)
+
+        val systemRow = (0 until buffer.height).first { buffer.line(it).contains("SYSTEM DAMAGE") }
+        assertEquals(0, buffer.line(systemRow).indexOf("── SYSTEM DAMAGE"))
+        assertEquals("─", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH - 1, systemRow).char)
+        assertEquals(" ", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH, systemRow).char)
+        assertTwoBlankMainRowsBefore(buffer, systemRow)
+    }
+
+    @Test
     fun `a foreign unit renders only public sections`() {
         val buffer = render(MechRecordSheetView(aForeignUnit()), width = 200, height = 60)
         val text = buffer.text()
@@ -79,6 +117,13 @@ internal class MechRecordSheetViewTest {
         assertFalse(text.contains("SYSTEM DAMAGE"))
         assertFalse(text.contains("INTERNAL STRUCTURE DIAGRAM"))
         assertFalse(text.contains("Gunnery"))
+
+        val topRow = (0 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
+        assertEquals(0, buffer.line(topRow).indexOf("── 'MECH DATA"))
+        assertEquals(60, buffer.line(topRow).indexOf("── WEAPONS & EQUIPMENT INVENTORY"))
+
+        val diagramRow = (0 until buffer.height).first { buffer.line(it).contains("ARMOR DIAGRAM") }
+        assertTwoBlankMainRowsBefore(buffer, diagramRow)
     }
 
     @Test
