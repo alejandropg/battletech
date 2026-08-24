@@ -17,8 +17,8 @@ import battletech.tactical.unit.PilotingSkillRoll
 import battletech.tactical.unit.UnitRoster
 import battletech.tui.aUnit
 import battletech.tui.game.GamePanelId
-import battletech.tui.hex.initiativeIcon
-import battletech.tui.hex.unitStoodUpIcon
+import battletech.tui.icon.initiativeIcon
+import battletech.tui.icon.unitStoodUpIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.ChromeRole

@@ -6,8 +6,8 @@ import battletech.tactical.attack.displayLabels
 import battletech.tactical.attack.toHitBreakdownLabels
 import battletech.tactical.dice.twoD6AtLeastProbability
 import battletech.tui.game.phase.AttackResultsRender
-import battletech.tui.hex.attackOutcomeIcon
-import battletech.tui.hex.targetIcon
+import battletech.tui.icon.attackOutcomeIcon
+import battletech.tui.icon.targetIcon
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole

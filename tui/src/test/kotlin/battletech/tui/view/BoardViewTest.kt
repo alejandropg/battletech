@@ -9,7 +9,7 @@ import battletech.tui.aUnit
 import battletech.tui.hex.HexGeometry
 import battletech.tui.hex.HexHighlight
 import battletech.tui.hex.HexLayout
-import battletech.tui.hex.destroyedIcon
+import battletech.tui.icon.destroyedIcon
 import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

@@ -2,10 +2,10 @@ package battletech.tui.view.record
 
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ComponentCritStatus
-import battletech.tactical.unit.CriticalComponent
 import battletech.tactical.unit.criticalDamageStatus
-import battletech.tui.hex.emptyCircleIcon
-import battletech.tui.hex.filledCircleIcon
+import battletech.tui.icon.emptyCircleIcon
+import battletech.tui.icon.filledCircleIcon
+import battletech.tui.view.MechLabels
 import tenter.screen.Canvas
 import tenter.view.TextCursor
 import tenter.view.View
@@ -24,10 +24,10 @@ internal class SystemDamageTable(private val unit: CombatUnit) : View {
     }
 
     private fun writeComponentStatus(content: TextCursor, track: PipTrack, status: ComponentCritStatus) {
-        val label = componentLabel(status.component).padEnd(14)
+        val label = MechLabels.component(status.component).padEnd(14)
         content.write(0, label, SheetStyles.TEXT_PRIMARY)
-        content.writePips(
-            track,
+        track.drawAdvancing(
+            content,
             column = 14,
             used = status.hits,
             capacity = status.capacity,
@@ -35,12 +35,5 @@ internal class SystemDamageTable(private val unit: CombatUnit) : View {
             emptyStyle = SheetStyles.TEXT_PRIMARY,
         )
         for (penalty in status.penalties) content.writeLine("  $penalty", SheetStyles.DANGER)
-    }
-
-    private fun componentLabel(component: CriticalComponent): String = when (component) {
-        CriticalComponent.ENGINE -> "Engine"
-        CriticalComponent.GYRO -> "Gyro"
-        CriticalComponent.SENSOR -> "Sensor"
-        CriticalComponent.LIFE_SUPPORT -> "Life Support"
     }
 }

@@ -13,8 +13,6 @@ internal object SheetStyles {
     val TEXT_PRIMARY: Cell.Style = Cell.Style(ChromeRole.TEXT_PRIMARY)
     val TEXT_MUTED: Cell.Style = Cell.Style(ChromeRole.TEXT_MUTED)
     val ACCENT: Cell.Style = Cell.Style(ChromeRole.ACCENT)
-    val INFO: Cell.Style = Cell.Style(ChromeRole.INFO)
-    val SUCCESS: Cell.Style = Cell.Style(ChromeRole.SUCCESS)
     val DANGER: Cell.Style = Cell.Style(ChromeRole.DANGER)
     val DRAFT: Cell.Style = Cell.Style(ChromeRole.DRAFT)
     val DESTROYED: Cell.Style = Cell.Style(BoardRole.DESTROYED, strikethrough = true)

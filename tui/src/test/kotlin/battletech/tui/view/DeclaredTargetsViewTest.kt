@@ -7,8 +7,8 @@ import battletech.tui.game.phase.DeclaredAttackerEntry
 import battletech.tui.game.phase.DeclaredTargetEntry
 import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.game.phase.DeclaredWeaponEntry
-import battletech.tui.hex.diceRoll
-import battletech.tui.hex.targetIcon
+import battletech.tui.icon.diceRoll
+import battletech.tui.icon.targetIcon
 import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

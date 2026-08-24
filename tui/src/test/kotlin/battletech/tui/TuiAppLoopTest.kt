@@ -16,7 +16,7 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
-import battletech.tui.hex.sessionNoticeIcon
+import battletech.tui.icon.sessionNoticeIcon
 import battletech.tui.loop.UiEvent
 import battletech.tui.loop.runLoop
 import battletech.tui.screen.resolveTheme

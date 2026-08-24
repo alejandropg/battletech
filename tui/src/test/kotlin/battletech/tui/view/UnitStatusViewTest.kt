@@ -22,11 +22,11 @@ import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.anInternalStructureLayout
 import battletech.tui.game.GamePanelId
-import battletech.tui.hex.ammoIcon
-import battletech.tui.hex.emptyCircleIcon
-import battletech.tui.hex.filledCircleIcon
-import battletech.tui.hex.infinityIcon
-import battletech.tui.hex.pilotDeadIcon
+import battletech.tui.icon.ammoIcon
+import battletech.tui.icon.emptyCircleIcon
+import battletech.tui.icon.filledCircleIcon
+import battletech.tui.icon.infinityIcon
+import battletech.tui.icon.pilotDeadIcon
 import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse

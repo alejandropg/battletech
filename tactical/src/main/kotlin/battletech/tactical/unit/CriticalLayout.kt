@@ -145,6 +145,10 @@ public fun CombatUnit.availableAmmoBins(): List<Triple<MechLocation, Int, Critic
         internalStructure.isIntact(location)
     }
 
+/** Total shots of [ammoType] left across every [availableAmmoBins] entry — what a weapon can still fire. */
+public fun CombatUnit.remainingShots(ammoType: AmmoType): Int =
+    availableAmmoBins().filter { (_, _, bin) -> bin.type == ammoType }.sumOf { (_, _, bin) -> bin.shots }
+
 /**
  * Returns a copy of this unit with one shot consumed from the first non-empty,
  * non-destroyed-location bin of [ammoType]. Bin selection mirrors

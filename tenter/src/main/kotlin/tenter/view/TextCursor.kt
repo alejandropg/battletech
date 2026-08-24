@@ -17,6 +17,25 @@ public class TextCursor(private val canvas: Canvas) {
         writeLine(sectionHeader(label), INFO_STYLE)
     }
 
+    /**
+     * Draws [view] as a self-contained band at the cursor's current row, using all of the
+     * canvas's width — measuring the view's own height into an offscreen stream, then blitting
+     * it in and advancing past it. This is the composition primitive a multi-card layout needs
+     * so cards can be stacked by height without knowing each other's row count up front;
+     * [Columns] uses the same measure-then-place trick one level down, for the cards *within* a
+     * band. Returns the number of rows [view] used.
+     */
+    public fun draw(view: View): Int {
+        val remaining = canvas.region(0, row, canvas.width, canvas.height - row)
+        if (remaining.width <= 0 || remaining.height <= 0) return 0
+        val stream = Canvas.offscreen(remaining.width, remaining.height)
+        view.draw(stream)
+        val used = stream.contentHeight()
+        canvas.blit(stream, 0, 0, 0, row, remaining.width, used)
+        repeat(used) { newLine() }
+        return used
+    }
+
     private fun sectionHeader(label: String): String {
         val prefix = "── $label "
         val fill = (width - prefix.length).coerceAtLeast(0)
@@ -34,6 +53,24 @@ public class TextCursor(private val canvas: Canvas) {
     /** Writes [text] at [column] on the current row, without advancing. */
     public fun write(column: Int, text: String, style: Cell.Style = Cell.Style.DEFAULT) {
         canvas.writeString(column, row, text, style)
+    }
+
+    /** Which edge of a [width]-wide field [write] anchors [text] against. */
+    public enum class Align {
+        LEFT,
+        RIGHT,
+    }
+
+    /**
+     * Writes [text] on the current row within a [width]-wide field starting at [column], without
+     * advancing — [Align.LEFT] flush to [column], [Align.RIGHT] flush to `column + width`. The
+     * shared primitive behind any fixed-width table column (record sheet tables, and similar
+     * layouts elsewhere) so each caller states "this field is N wide, right-aligned" once instead
+     * of hand-computing the right-aligned starting column itself.
+     */
+    public fun write(column: Int, width: Int, text: String, style: Cell.Style = Cell.Style.DEFAULT, align: Align = Align.LEFT) {
+        val startColumn = if (align == Align.LEFT) column else column + width - CellWidth.of(text)
+        canvas.writeString(startColumn, row, text, style)
     }
 
     /**

@@ -9,8 +9,8 @@ import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.SessionNotice
 import battletech.tactical.unit.UnitRoster
-import battletech.tui.hex.heatChangeIcon
-import battletech.tui.hex.sessionNoticeIcon
+import battletech.tui.icon.heatChangeIcon
+import battletech.tui.icon.sessionNoticeIcon
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

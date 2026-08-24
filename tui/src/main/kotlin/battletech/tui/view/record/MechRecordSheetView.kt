@@ -4,10 +4,7 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.VisibleUnit
-import battletech.tui.view.UnitLabel
 import tenter.screen.Canvas
-import tenter.view.Columns
-import tenter.view.Stack
 import tenter.view.TextCursor
 import tenter.view.View
 import kotlin.math.min
@@ -20,9 +17,9 @@ import kotlin.math.min
  * the way the printed record sheet lays it out.
  *
  * Clamped to [SheetLayout.SHEET_WIDTH] columns regardless of how wide the maximized panel actually
- * is — a very wide terminal doesn't need an even wider sheet, just unused margin. Every card below
- * is composed through [Columns], so a narrower terminal reflows to fewer cards per row rather than
- * clipping; height is unlimited and left to the panel's own vertical scroll.
+ * is — a very wide terminal doesn't need an even wider sheet, just unused margin. A thin dispatcher
+ * over [OwnRecordSheetView]/[ForeignRecordSheetView]: which one draws is the type-enforced
+ * redaction seam, same as [subject]'s own [VisibleUnit]/[ForeignUnit]/[CombatUnit] hierarchy.
  */
 internal class MechRecordSheetView(
     private val subject: VisibleUnit?,
@@ -31,53 +28,11 @@ internal class MechRecordSheetView(
 
     override fun draw(canvas: Canvas) {
         val sheet = canvas.region(0, 0, min(canvas.width, SheetLayout.SHEET_WIDTH), canvas.height)
-        val content = TextCursor(sheet)
 
         when (val unit = subject) {
-            null -> content.writeLine("No unit selected", SheetStyles.TEXT_PRIMARY)
-            is ForeignUnit -> ForeignRecordSheetView.render(sheet, content, unit)
-            is CombatUnit -> drawOwnSheet(sheet, content, unit)
+            null -> TextCursor(sheet).writeLine("No unit selected", SheetStyles.TEXT_PRIMARY)
+            is ForeignUnit -> ForeignRecordSheetView(unit).draw(sheet)
+            is CombatUnit -> OwnRecordSheetView(unit, pendingHeat).draw(sheet)
         }
-    }
-
-    private fun drawOwnSheet(canvas: Canvas, content: TextCursor, unit: CombatUnit) {
-        content.writeLine(UnitLabel.of(unit), SheetStyles.ACCENT)
-        content.newLine()
-
-        val upperSections = Columns(
-            listOf(
-                Columns.Child(SheetLayout.MECH_DATA_WIDTH, MechDataCard(unit)),
-                Columns.Child(SheetLayout.WARRIOR_DATA_WIDTH, WarriorDataCard(unit)),
-                Columns.Child(SheetLayout.WEAPON_INVENTORY_WIDTH, WeaponInventoryTable(unit)),
-            ),
-        )
-        val diagrams = Columns(
-            listOf(
-                Columns.Child(SheetLayout.ARMOR_DIAGRAM_WIDTH, RecordSheetDiagrams.armor(unit)),
-                Columns.Child(
-                    SheetLayout.INTERNAL_STRUCTURE_DIAGRAM_WIDTH,
-                    RecordSheetDiagrams.internalStructure(unit),
-                ),
-            ),
-        )
-        val mainContent = Stack(
-            listOf(
-                upperSections,
-                diagrams,
-            ),
-            gutter = 2,
-        )
-        val upperBand = Columns(
-            listOf(
-                Columns.Child(SheetLayout.MAIN_CONTENT_WIDTH, mainContent),
-                Columns.Child(SheetLayout.HEAT_WIDTH, HeatLadder(unit, pendingHeat)),
-            ),
-        )
-
-        drawBand(
-            canvas,
-            content,
-            Stack(listOf(upperBand, CriticalHitTable(unit)), gutter = 2),
-        )
     }
 }

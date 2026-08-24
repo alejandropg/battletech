@@ -129,4 +129,17 @@ internal class PipTrackTest {
             PipTrack(filled = "F", empty = "E", perRow = 0)
         }
     }
+
+    @Test
+    fun `drawAdvancing draws at the cursor's row and moves it past the rows used`() {
+        val track = PipTrack(filled = "F", empty = "E", perRow = 3)
+        val (content, buffer) = content()
+        content.newLine()
+
+        track.drawAdvancing(content, column = 0, used = 5, capacity = 7, usedStyle = used, emptyStyle = empty)
+
+        assertEquals("F F F", (0 until 5).joinToString("") { buffer.get(it, 1).char })
+        assertEquals("F F E", (0 until 5).joinToString("") { buffer.get(it, 2).char })
+        assertEquals(4, content.row)
+    }
 }

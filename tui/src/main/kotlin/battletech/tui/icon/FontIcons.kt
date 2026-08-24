@@ -1,4 +1,4 @@
-package battletech.tui.hex
+package battletech.tui.icon
 
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode

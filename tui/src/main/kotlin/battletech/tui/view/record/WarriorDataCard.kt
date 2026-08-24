@@ -3,9 +3,7 @@ package battletech.tui.view.record
 import battletech.tactical.attack.consciousnessTarget
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
-import battletech.tui.hex.emptyCircleIcon
-import battletech.tui.hex.filledCircleIcon
-import battletech.tui.hex.pilotDeadIcon
+import battletech.tui.view.PilotHitsTrack
 import tenter.screen.Canvas
 import tenter.view.TextCursor
 import tenter.view.View
@@ -25,23 +23,18 @@ internal class WarriorDataCard(private val unit: CombatUnit) : View {
         content.newLine()
 
         content.writeLine("Hits Taken", SheetStyles.TEXT_PRIMARY)
-        val hits = unit.pilotHits.coerceIn(0, PILOT_DEATH_THRESHOLD)
-        var col = 0
-        for (i in 0 until PILOT_DEATH_THRESHOLD) {
-            val filled = i < hits
-            val icon = when {
-                !filled -> emptyCircleIcon()
-                i == PILOT_DEATH_THRESHOLD - 1 -> pilotDeadIcon()
-                else -> filledCircleIcon()
-            }
-            val style = if (filled) SheetStyles.DANGER else SheetStyles.TEXT_PRIMARY
-            content.write(col, icon, style)
-            col += 2
-        }
+        PilotHitsTrack.draw(
+            content,
+            column = 0,
+            stride = 2,
+            hits = unit.pilotHits,
+            filledStyle = SheetStyles.DANGER,
+            emptyStyle = SheetStyles.TEXT_PRIMARY,
+        )
         content.newLine()
 
         content.writeLine("Consciousness#", SheetStyles.TEXT_MUTED)
-        col = 0
+        var col = 0
         for (i in 1..PILOT_DEATH_THRESHOLD) {
             val label = consciousnessTarget(i)?.toString() ?: "Dead"
             content.write(col, label, SheetStyles.TEXT_MUTED)

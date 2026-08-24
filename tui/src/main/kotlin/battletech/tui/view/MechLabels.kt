@@ -2,17 +2,25 @@ package battletech.tui.view
 
 import battletech.tactical.model.MechLocation
 import battletech.tactical.unit.ActuatorType
+import battletech.tactical.unit.CriticalComponent
 import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.WeaponView
 
 /**
  * Human-readable labels for the record-sheet vocabulary — [MechLocation]s, [ActuatorType]s,
- * and [CriticalSlotContent] entries — shared by [GameLogFormatter] (event lines) and the
- * UNIT STATUS maximized record sheet (crit table). One place for this wording keeps a
- * player from seeing "Shoulder actuator" in the log and a differently-worded synonym on the
- * sheet for the same slot.
+ * [CriticalComponent]s, and [CriticalSlotContent] entries — shared by [GameLogFormatter] (event
+ * lines) and the UNIT STATUS panel in both its NORMAL and maximized states. One place for this
+ * wording keeps a player from seeing "Shoulder actuator" in the log and a differently-worded
+ * synonym on the sheet for the same slot.
  */
 internal object MechLabels {
+
+    fun component(component: CriticalComponent): String = when (component) {
+        CriticalComponent.ENGINE -> "Engine"
+        CriticalComponent.GYRO -> "Gyro"
+        CriticalComponent.SENSOR -> "Sensor"
+        CriticalComponent.LIFE_SUPPORT -> "Life Support"
+    }
 
     fun location(location: MechLocation): String = when (location) {
         MechLocation.HEAD -> "Head"

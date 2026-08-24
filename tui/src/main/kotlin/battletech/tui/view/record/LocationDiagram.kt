@@ -1,96 +1,131 @@
 package battletech.tui.view.record
 
-import battletech.tui.hex.emptyCircleIcon
-import battletech.tui.hex.filledCircleIcon
+import battletech.tactical.model.MechLocation
+import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.VisibleUnit
+import battletech.tui.icon.emptyCircleIcon
+import battletech.tui.icon.filledCircleIcon
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.view.TextCursor
 import tenter.view.View
+import tenter.widget.PipTrack
 
 /**
- * The record sheet's front-facing paper doll. Armor and internal structure share one configurable
- * robot renderer; armor embeds rear-torso tracks while internal structure omits them.
+ * The record sheet's front-facing paper doll. [armor] and [internalStructure] share one
+ * configurable robot renderer; armor embeds rear-torso tracks, internal structure never does.
+ * That split is [Body]'s two variants, not a runtime check — an internal-structure diagram simply
+ * has nowhere to put rear locations, so passing them is a compile error rather than a caught
+ * `require()`.
  *
  * A filled pip is damage taken (`max - remaining`), matching the pilot-hit and critical-slot
  * convention elsewhere on the sheet. Empty pips are points still available.
  */
-internal class LocationDiagram(
+internal class LocationDiagram private constructor(
     private val title: String,
-    private val silhouette: Silhouette,
-    private val head: Location,
-    private val leftArm: Location,
-    private val rightArm: Location,
-    private val leftTorso: Location,
-    private val rightTorso: Location,
-    private val centerTorso: Location,
-    private val leftLeg: Location,
-    private val rightLeg: Location,
-    private val leftTorsoRear: Location? = null,
-    private val centerTorsoRear: Location? = null,
-    private val rightTorsoRear: Location? = null,
+    private val body: Body,
 ) : View {
 
-    internal enum class Silhouette {
-        ARMOR,
-        INTERNAL_STRUCTURE,
-    }
-
-    /** One body section: [label], armor/structure [remaining] out of [max], and destruction state. */
+    /** One body section: armor/structure [remaining] out of [max], and destruction state. */
     internal data class Location(
-        internal val label: String,
         internal val remaining: Int,
         internal val max: Int,
         internal val destroyed: Boolean = false,
     )
 
+    /**
+     * The eight always-present locations, plus — only for [FrontAndRear] — the three rear torso
+     * tracks the armor diagram embeds. [sizes] is fixed per variant: there is exactly one set of
+     * proportions for "structure with rear tracks" (the armor sheet) and one for "structure alone"
+     * (the internal structure sheet), so it travels with the variant rather than being threaded in
+     * separately by a caller who could get the two out of sync.
+     */
+    private sealed class Body {
+        abstract val sizes: DiagramSizes
+        abstract val head: Location
+        abstract val leftArm: Location
+        abstract val rightArm: Location
+        abstract val leftTorso: Location
+        abstract val rightTorso: Location
+        abstract val centerTorso: Location
+        abstract val leftLeg: Location
+        abstract val rightLeg: Location
+
+        data class Front(
+            override val head: Location,
+            override val leftArm: Location,
+            override val rightArm: Location,
+            override val leftTorso: Location,
+            override val rightTorso: Location,
+            override val centerTorso: Location,
+            override val leftLeg: Location,
+            override val rightLeg: Location,
+        ) : Body() {
+            override val sizes: DiagramSizes get() = INTERNAL_STRUCTURE_SIZES
+        }
+
+        data class FrontAndRear(
+            override val head: Location,
+            override val leftArm: Location,
+            override val rightArm: Location,
+            override val leftTorso: Location,
+            override val rightTorso: Location,
+            override val centerTorso: Location,
+            override val leftLeg: Location,
+            override val rightLeg: Location,
+            val leftTorsoRear: Location,
+            val centerTorsoRear: Location,
+            val rightTorsoRear: Location,
+        ) : Body() {
+            override val sizes: DiagramSizes get() = ARMOR_SIZES
+
+            /** Fixed width of the rear side-torso boxes — same for every armor diagram. */
+            val rearSideTorsoWidth: Int get() = 4
+        }
+    }
+
     override fun draw(canvas: Canvas) {
         TextCursor(canvas).writeHeader(title)
-        drawRobot(canvas, sizesFor(silhouette))
+        drawRobot(canvas, body.sizes)
     }
 
     private fun drawRobot(canvas: Canvas, sizes: DiagramSizes) {
         val geometry = geometryFor(sizes, centerX = canvas.width / 2)
-        val rearLocations = rearLocationsFor(sizes)
+        val rear = body as? Body.FrontAndRear
 
         drawCentered(
             canvas,
             geometry.headX,
             sizes.head + 2,
             y = 1,
-            text = caption(head),
-            style = locationStyle(head),
+            text = "Head " + value(body.head),
+            style = locationStyle(body.head),
         )
-        val headBottom = drawSimpleBox(canvas, head, geometry.headX, topY = 2, width = sizes.head)
+        val headBottom = drawSimpleBox(canvas, body.head, geometry.headX, topY = 2, width = sizes.head)
         drawSideLabels(canvas, geometry, sizes, headBottom - 1)
         val torsoTop = headBottom + 3
         drawTorsoLabels(canvas, geometry, sizes, torsoTop)
 
-        val leftFrontRows = rowsFor(leftTorso.max, sizes.sideTorso)
-        val rightFrontRows = rowsFor(rightTorso.max, sizes.sideTorso)
+        val leftFrontRows = rowsFor(body.leftTorso.max, sizes.sideTorso)
+        val rightFrontRows = rowsFor(body.rightTorso.max, sizes.sideTorso)
         val centerFrontRows = maxOf(
-            rowsFor(centerTorso.max, sizes.centerTorso),
+            rowsFor(body.centerTorso.max, sizes.centerTorso),
             leftFrontRows,
             rightFrontRows,
         )
-        val leftRear = rearLocations?.let {
-            val width = requireNotNull(sizes.rearSideTorso)
-            RearTrack(it.left, width, rowsFor(it.left.max, width))
-        }
-        val rightRear = rearLocations?.let {
-            val width = requireNotNull(sizes.rearSideTorso)
-            RearTrack(it.right, width, rowsFor(it.right.max, width))
-        }
-        val centerRear = rearLocations?.let {
-            val centerRows = rowsFor(it.center.max, sizes.centerTorso)
+        val leftRear = rear?.let { RearTrack(it.leftTorsoRear, it.rearSideTorsoWidth, rowsFor(it.leftTorsoRear.max, it.rearSideTorsoWidth)) }
+        val rightRear = rear?.let { RearTrack(it.rightTorsoRear, it.rearSideTorsoWidth, rowsFor(it.rightTorsoRear.max, it.rearSideTorsoWidth)) }
+        val centerRear = rear?.let {
+            val centerRows = rowsFor(it.centerTorsoRear.max, sizes.centerTorso)
             RearTrack(
-                it.center,
+                it.centerTorsoRear,
                 sizes.centerTorso,
                 maxOf(centerRows, requireNotNull(leftRear).rows, requireNotNull(rightRear).rows),
             )
         }
         val leftTorsoBottom = drawTorso(
             canvas,
-            front = leftTorso,
+            front = body.leftTorso,
             rear = leftRear,
             side = BodySide.LEFT,
             x = geometry.leftTorsoX,
@@ -100,7 +135,7 @@ internal class LocationDiagram(
         )
         val centerTorsoBottom = drawTorso(
             canvas,
-            front = centerTorso,
+            front = body.centerTorso,
             rear = centerRear,
             side = BodySide.CENTER,
             x = geometry.centerTorsoX,
@@ -110,7 +145,7 @@ internal class LocationDiagram(
         )
         val rightTorsoBottom = drawTorso(
             canvas,
-            front = rightTorso,
+            front = body.rightTorso,
             rear = rightRear,
             side = BodySide.RIGHT,
             x = geometry.rightTorsoX,
@@ -120,15 +155,15 @@ internal class LocationDiagram(
         )
 
         val armTop = torsoTop + 2
-        drawArm(canvas, leftArm, BodySide.LEFT, geometry.leftArmX, armTop, sizes.arm)
-        drawArm(canvas, rightArm, BodySide.RIGHT, geometry.rightArmX, armTop, sizes.arm)
+        drawArm(canvas, body.leftArm, BodySide.LEFT, geometry.leftArmX, armTop, sizes.arm)
+        drawArm(canvas, body.rightArm, BodySide.RIGHT, geometry.rightArmX, armTop, sizes.arm)
         val torsoBottom = maxOf(leftTorsoBottom, centerTorsoBottom, rightTorsoBottom)
         val legTop = torsoBottom + 2
-        val leftLegWidth = legWidth(leftLeg.max, sizes)
-        val rightLegWidth = legWidth(rightLeg.max, sizes)
+        val leftLegWidth = legWidth(body.leftLeg.max, sizes)
+        val rightLegWidth = legWidth(body.rightLeg.max, sizes)
         val leftLegX = geometry.leftLegInnerEdgeX - leftLegWidth - 1
-        drawLeg(canvas, leftLeg, BodySide.LEFT, leftLegX, legTop, leftLegWidth)
-        drawLeg(canvas, rightLeg, BodySide.RIGHT, geometry.rightLegInnerEdgeX, legTop, rightLegWidth)
+        drawLeg(canvas, body.leftLeg, BodySide.LEFT, leftLegX, legTop, leftLegWidth)
+        drawLeg(canvas, body.rightLeg, BodySide.RIGHT, geometry.rightLegInnerEdgeX, legTop, rightLegWidth)
     }
 
     private fun drawSideLabels(
@@ -141,13 +176,13 @@ internal class LocationDiagram(
             geometry.headX - HEAD_SIDE_LABEL_GAP - LEFT_SIDE_LABEL.length,
             y,
             LEFT_SIDE_LABEL,
-            locationStyle(leftTorso),
+            locationStyle(body.leftTorso),
         )
         canvas.writeString(
             geometry.headX + sizes.head + HEAD_SIDE_LABEL_GAP + 2,
             y,
             RIGHT_SIDE_LABEL,
-            locationStyle(rightTorso),
+            locationStyle(body.rightTorso),
         )
     }
 
@@ -163,29 +198,29 @@ internal class LocationDiagram(
             sizes.centerTorso + 2,
             torsoTop - 2,
             "Torso",
-            locationStyle(centerTorso),
+            locationStyle(body.centerTorso),
         )
         canvas.writeString(
             geometry.leftTorsoX + 1,
             torsoTop - 1,
-            value(leftTorso),
-            locationStyle(leftTorso),
+            value(body.leftTorso),
+            locationStyle(body.leftTorso),
         )
         drawCentered(
             canvas,
             geometry.centerTorsoX,
             sizes.centerTorso + 2,
             torsoTop - 1,
-            value(centerTorso),
-            locationStyle(centerTorso),
+            value(body.centerTorso),
+            locationStyle(body.centerTorso),
         )
         drawRightAligned(
             canvas,
             geometry.rightTorsoX,
             sizes.sideTorso + 2,
             torsoTop - 1,
-            value(rightTorso),
-            locationStyle(rightTorso),
+            value(body.rightTorso),
+            locationStyle(body.rightTorso),
             rightPadding = 1,
         )
     }
@@ -394,21 +429,18 @@ internal class LocationDiagram(
         rows: Int,
     ) {
         val outlineStyle = locationStyle(location)
+        for (row in 0 until rows) drawEmptyRow(canvas, x, y + row, width, outlineStyle)
+
         val damage = (location.max - location.remaining).coerceIn(0, location.max)
-        for (row in 0 until rows) {
-            drawEmptyRow(canvas, x, y + row, width, outlineStyle)
-            for (column in 0 until width) {
-                val pip = row * width + column
-                if (pip >= location.max) break
-                val glyph = if (pip < damage) filledCircleIcon() else emptyCircleIcon()
-                val style = when {
-                    pip < damage -> SheetStyles.DANGER
-                    location.destroyed -> SheetStyles.DESTROYED
-                    else -> SheetStyles.TEXT_PRIMARY
-                }
-                canvas.writeString(x + column + 1, y + row, glyph, style)
-            }
-        }
+        PipTrack(filledCircleIcon(), emptyCircleIcon(), perRow = width, spacing = 0).draw(
+            TextCursor(canvas),
+            column = x + 1,
+            row = y,
+            used = damage,
+            capacity = location.max,
+            usedStyle = SheetStyles.DANGER,
+            emptyStyle = outlineStyle,
+        )
     }
 
     private fun drawTop(canvas: Canvas, x: Int, y: Int, width: Int, style: Cell.Style) {
@@ -457,8 +489,6 @@ internal class LocationDiagram(
             else -> 4
         }
 
-    private fun caption(location: Location): String = location.label + " " + value(location)
-
     private fun value(location: Location): String = location.remaining.toString() + "/" + location.max
 
     private fun locationStyle(location: Location): Cell.Style =
@@ -471,41 +501,29 @@ internal class LocationDiagram(
     }
 
     private data class DiagramSizes(
-        public val head: Int,
-        public val sideTorso: Int,
-        public val centerTorso: Int,
-        public val rearSideTorso: Int?,
-        public val arm: Int,
-        public val fixedLeg: Int?,
+        val head: Int,
+        val sideTorso: Int,
+        val centerTorso: Int,
+        val arm: Int,
+        val fixedLeg: Int?,
     )
 
     private data class DiagramGeometry(
-        public val headX: Int,
-        public val leftTorsoX: Int,
-        public val centerTorsoX: Int,
-        public val rightTorsoX: Int,
-        public val leftArmX: Int,
-        public val rightArmX: Int,
-        public val leftLegInnerEdgeX: Int,
-        public val rightLegInnerEdgeX: Int,
-    )
-
-    private data class RearLocations(
-        public val left: Location,
-        public val center: Location,
-        public val right: Location,
+        val headX: Int,
+        val leftTorsoX: Int,
+        val centerTorsoX: Int,
+        val rightTorsoX: Int,
+        val leftArmX: Int,
+        val rightArmX: Int,
+        val leftLegInnerEdgeX: Int,
+        val rightLegInnerEdgeX: Int,
     )
 
     private data class RearTrack(
-        public val location: Location,
-        public val width: Int,
-        public val rows: Int,
+        val location: Location,
+        val width: Int,
+        val rows: Int,
     )
-
-    private fun sizesFor(silhouette: Silhouette): DiagramSizes = when (silhouette) {
-        Silhouette.ARMOR -> ARMOR_SIZES
-        Silhouette.INTERNAL_STRUCTURE -> INTERNAL_STRUCTURE_SIZES
-    }
 
     private fun geometryFor(sizes: DiagramSizes, centerX: Int): DiagramGeometry {
         val centerTorsoX = centerX - (sizes.centerTorso + 2) / 2
@@ -528,22 +546,7 @@ internal class LocationDiagram(
         )
     }
 
-    private fun rearLocationsFor(sizes: DiagramSizes): RearLocations? {
-        if (sizes.rearSideTorso == null) {
-            require(leftTorsoRear == null && centerTorsoRear == null && rightTorsoRear == null) {
-                "internal structure diagram cannot contain rear torso locations"
-            }
-            return null
-        }
-
-        return RearLocations(
-            left = requireNotNull(leftTorsoRear) { "armor diagram requires left rear torso armor" },
-            center = requireNotNull(centerTorsoRear) { "armor diagram requires center rear torso armor" },
-            right = requireNotNull(rightTorsoRear) { "armor diagram requires right rear torso armor" },
-        )
-    }
-
-    private companion object {
+    internal companion object {
         private const val HEAD_SIDE_LABEL_GAP = 10
         private const val LEFT_SIDE_LABEL = "Left"
         private const val RIGHT_SIDE_LABEL = "Right"
@@ -555,7 +558,6 @@ internal class LocationDiagram(
             head = 5,
             sideTorso = 6,
             centerTorso = 9,
-            rearSideTorso = 4,
             arm = 4,
             fixedLeg = null,
         )
@@ -563,9 +565,54 @@ internal class LocationDiagram(
             head = 3,
             sideTorso = 4,
             centerTorso = 5,
-            rearSideTorso = null,
             arm = 3,
             fixedLeg = 4,
         )
+
+        /** The ARMOR DIAGRAM card. Works for any [VisibleUnit] — armor and its maximum are public. */
+        internal fun armor(unit: VisibleUnit, destroyed: (MechLocation) -> Boolean): LocationDiagram {
+            val armor = unit.armor
+            val max = unit.maxArmor
+            fun at(remaining: Int, atMax: Int, location: MechLocation) = Location(remaining, atMax, destroyed(location))
+            return LocationDiagram(
+                title = "ARMOR DIAGRAM",
+                body = Body.FrontAndRear(
+                    head = at(armor.head, max.head, MechLocation.HEAD),
+                    leftArm = at(armor.leftArm, max.leftArm, MechLocation.LEFT_ARM),
+                    rightArm = at(armor.rightArm, max.rightArm, MechLocation.RIGHT_ARM),
+                    leftTorso = at(armor.leftTorso, max.leftTorso, MechLocation.LEFT_TORSO),
+                    rightTorso = at(armor.rightTorso, max.rightTorso, MechLocation.RIGHT_TORSO),
+                    centerTorso = at(armor.centerTorso, max.centerTorso, MechLocation.CENTER_TORSO),
+                    leftLeg = at(armor.leftLeg, max.leftLeg, MechLocation.LEFT_LEG),
+                    rightLeg = at(armor.rightLeg, max.rightLeg, MechLocation.RIGHT_LEG),
+                    leftTorsoRear = at(armor.leftTorsoRear, max.leftTorsoRear, MechLocation.LEFT_TORSO),
+                    centerTorsoRear = at(armor.centerTorsoRear, max.centerTorsoRear, MechLocation.CENTER_TORSO),
+                    rightTorsoRear = at(armor.rightTorsoRear, max.rightTorsoRear, MechLocation.RIGHT_TORSO),
+                ),
+            )
+        }
+
+        /**
+         * The INTERNAL STRUCTURE DIAGRAM card. Owner-only: [CombatUnit.internalStructure] and its
+         * maximum are private record-sheet data, never exposed on the public [VisibleUnit] surface.
+         */
+        internal fun internalStructure(unit: CombatUnit): LocationDiagram {
+            val current = unit.internalStructure
+            val max = unit.maxInternalStructure
+            fun at(remaining: Int, atMax: Int, location: MechLocation) = Location(remaining, atMax, !current.isIntact(location))
+            return LocationDiagram(
+                title = "INTERNAL STRUCTURE DIAGRAM",
+                body = Body.Front(
+                    head = at(current.head, max.head, MechLocation.HEAD),
+                    leftArm = at(current.leftArm, max.leftArm, MechLocation.LEFT_ARM),
+                    rightArm = at(current.rightArm, max.rightArm, MechLocation.RIGHT_ARM),
+                    leftTorso = at(current.leftTorso, max.leftTorso, MechLocation.LEFT_TORSO),
+                    rightTorso = at(current.rightTorso, max.rightTorso, MechLocation.RIGHT_TORSO),
+                    centerTorso = at(current.centerTorso, max.centerTorso, MechLocation.CENTER_TORSO),
+                    leftLeg = at(current.leftLeg, max.leftLeg, MechLocation.LEFT_LEG),
+                    rightLeg = at(current.rightLeg, max.rightLeg, MechLocation.RIGHT_LEG),
+                ),
+            )
+        }
     }
 }

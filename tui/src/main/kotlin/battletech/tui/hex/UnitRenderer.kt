@@ -1,6 +1,9 @@
 package battletech.tui.hex
 
 import battletech.tactical.model.HexDirection
+import battletech.tui.icon.destroyedIcon
+import battletech.tui.icon.facingArrowIcon
+import battletech.tui.icon.torsoArrowIcon
 import battletech.tui.screen.BoardRole
 import tenter.screen.Canvas
 import tenter.screen.ColorRole

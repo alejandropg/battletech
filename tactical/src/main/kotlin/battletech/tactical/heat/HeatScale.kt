@@ -6,6 +6,9 @@ package battletech.tactical.heat
  */
 public object HeatScale {
 
+    /** Top of the universal heat scale (`docs/rules/heat.md` §2 — "0 to 30"). */
+    public const val MAX_HEAT: Int = 30
+
     /** Movement-point penalty (`docs/rules/heat.md` §2). */
     public fun movementPenalty(heat: Int): Int = (heat / 5).coerceIn(0, 5)
 
@@ -28,7 +31,7 @@ public object HeatScale {
     }
 
     /** Whether the unit shuts down automatically, with no roll (`docs/rules/heat.md` §2). */
-    public fun isAutoShutdown(heat: Int): Boolean = heat >= 30
+    public fun isAutoShutdown(heat: Int): Boolean = heat >= MAX_HEAT
 
     /** 2d6 target to *avoid* an ammo explosion, or null when no roll is required (`docs/rules/heat.md` §2). */
     public fun ammoExplosionAvoidTarget(heat: Int): Int? = when {

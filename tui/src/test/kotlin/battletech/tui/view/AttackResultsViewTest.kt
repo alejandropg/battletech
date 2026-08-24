@@ -13,9 +13,9 @@ import battletech.tactical.unit.UnitRoster
 import battletech.tui.aUnit
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.AttackResultsRender
-import battletech.tui.hex.attackOutcomeIcon
-import battletech.tui.hex.diceIcon
-import battletech.tui.hex.targetIcon
+import battletech.tui.icon.attackOutcomeIcon
+import battletech.tui.icon.diceIcon
+import battletech.tui.icon.targetIcon
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

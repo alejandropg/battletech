@@ -2,7 +2,7 @@ package battletech.tui.view
 
 import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.game.phase.DeclaredWeaponEntry
-import battletech.tui.hex.targetIcon
+import battletech.tui.icon.targetIcon
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole

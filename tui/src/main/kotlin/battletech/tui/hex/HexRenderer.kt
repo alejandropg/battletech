@@ -6,6 +6,13 @@ import battletech.tactical.model.MovementMode
 import battletech.tactical.model.Terrain
 import battletech.tui.hex.HexRenderer.renderOverlayChar
 import battletech.tui.hex.HexRenderer.terrainFill
+import battletech.tui.icon.depthIcon
+import battletech.tui.icon.elevationIcon
+import battletech.tui.icon.facingIcon
+import battletech.tui.icon.facingNumber
+import battletech.tui.icon.movementModeIcon
+import battletech.tui.icon.targetIcon
+import battletech.tui.icon.terrainIcon
 import battletech.tui.screen.BoardRole
 import tenter.screen.Canvas
 import tenter.screen.Cell

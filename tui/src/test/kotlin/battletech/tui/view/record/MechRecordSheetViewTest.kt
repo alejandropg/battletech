@@ -12,6 +12,8 @@ import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.createUnit
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
+import battletech.tui.anInternalStructureLayout
+import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -95,8 +97,8 @@ internal class MechRecordSheetViewTest {
         val heatScaleRow = (0 until buffer.height).first { buffer.line(it).contains("HEAT SCALE") }
         val criticalRow = (0 until buffer.height).first { buffer.line(it).contains("CRITICAL HIT TABLE") }
         assertEquals(0, buffer.line(criticalRow).indexOf("── CRITICAL HIT TABLE"))
-        assertEquals("─", buffer.get(SheetLayout.CRITICAL_HIT_TABLE_WIDTH - 1, criticalRow).char)
-        assertEquals(" ", buffer.get(SheetLayout.CRITICAL_HIT_TABLE_WIDTH, criticalRow).char)
+        assertEquals("─", buffer.get(SheetLayout.SHEET_WIDTH - 1, criticalRow).char)
+        assertEquals(" ", buffer.get(SheetLayout.SHEET_WIDTH, criticalRow).char)
         assertTrue(criticalRow > heatScaleRow + 31)
         assertTwoBlankRowsBefore(buffer, criticalRow, SheetLayout.SHEET_WIDTH)
 
@@ -105,6 +107,30 @@ internal class MechRecordSheetViewTest {
         assertEquals(criticalRow + 17, systemRow)
         assertEquals("─", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH - 1, systemRow).char)
         assertEquals(" ", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH, systemRow).char)
+    }
+
+    @Test
+    fun `an own unit does not repeat the unit label above the grid — MechDataCard already shows it`() {
+        val buffer = render(MechRecordSheetView(atlas()), width = 200, height = 300)
+        val topRow = (0 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
+
+        assertEquals(0, topRow)
+        assertEquals(1, buffer.text().split("A1:").size - 1)
+    }
+
+    @Test
+    fun `an own unit's armor diagram strikes through a location whose internal structure is destroyed`() {
+        val unit = aUnit(internalStructure = anInternalStructureLayout(centerTorso = 0))
+        val buffer = render(MechRecordSheetView(unit), width = 200, height = 300)
+
+        // Center torso ARMOR value (unaffected by the internal-structure override): 47/47.
+        val (row, col) = (0 until buffer.height).firstNotNullOf { r ->
+            val c = buffer.line(r).indexOf("47/47")
+            if (c >= 0) r to c else null
+        }
+
+        assertEquals(BoardRole.DESTROYED, buffer.get(col, row).style.fg)
+        assertTrue(buffer.get(col, row).style.strikethrough)
     }
 
     @Test
@@ -126,6 +152,15 @@ internal class MechRecordSheetViewTest {
 
         val diagramRow = (0 until buffer.height).first { buffer.line(it).contains("ARMOR DIAGRAM") }
         assertTwoBlankRowsBefore(buffer, diagramRow, SheetLayout.MAIN_CONTENT_WIDTH)
+    }
+
+    @Test
+    fun `a foreign unit does not repeat the unit label above the grid — MechDataCard already shows it`() {
+        val buffer = render(MechRecordSheetView(aForeignUnit()), width = 200, height = 60)
+        val topRow = (0 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
+
+        assertEquals(0, topRow)
+        assertEquals(1, buffer.text().split("H1:").size - 1)
     }
 
     @Test

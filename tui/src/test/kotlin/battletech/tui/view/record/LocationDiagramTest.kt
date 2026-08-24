@@ -4,8 +4,8 @@ import battletech.tactical.model.MechLocation
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.anInternalStructureLayout
-import battletech.tui.hex.emptyCircleIcon
-import battletech.tui.hex.filledCircleIcon
+import battletech.tui.icon.emptyCircleIcon
+import battletech.tui.icon.filledCircleIcon
 import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -21,8 +21,8 @@ import tenter.view.text
 import kotlin.math.abs
 
 /**
- * [LocationDiagram] via [RecordSheetDiagrams.armor]/[RecordSheetDiagrams.internalStructure] — the
- * shared configurable paper doll used by the maximized record sheet.
+ * [LocationDiagram] via its [LocationDiagram.armor]/[LocationDiagram.internalStructure] factories
+ * — the shared configurable paper doll used by the maximized record sheet.
  */
 internal class LocationDiagramTest {
 
@@ -72,7 +72,7 @@ internal class LocationDiagramTest {
     fun `undamaged armor renders every point as an empty pip`() {
         val unit = aUnit(armor = anArmorLayout())
 
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val text = buffer.text()
 
         assertTrue(text.contains("Head 9/9"))
@@ -88,7 +88,7 @@ internal class LocationDiagramTest {
             armor = anArmorLayout().with(MechLocation.CENTER_TORSO, 20),
         )
 
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val text = buffer.text()
 
         assertTrue(text.contains("20/47"))
@@ -103,7 +103,7 @@ internal class LocationDiagramTest {
             internalStructure = anInternalStructureLayout(),
         ).copy(internalStructure = anInternalStructureLayout(centerTorso = 0))
 
-        val buffer = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.internalStructure(unit), width = diagramWidth, height = diagramHeight)
         val (valueRow, valueCol) = buffer.locate("0/31")
         val contour = buffer.get(38, 7)
 
@@ -120,17 +120,32 @@ internal class LocationDiagramTest {
             internalStructure = anInternalStructureLayout(),
         )
 
-        val buffer = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.internalStructure(unit), width = diagramWidth, height = diagramHeight)
         val (row, col) = buffer.locate("31/31")
 
         assertFalse(buffer.get(col, row).style.strikethrough)
     }
 
     @Test
+    fun `armor diagram honors the caller-supplied destroyed predicate`() {
+        val unit = aUnit(armor = anArmorLayout())
+
+        val buffer = render(
+            LocationDiagram.armor(unit) { it == MechLocation.CENTER_TORSO },
+            width = diagramWidth,
+            height = diagramHeight,
+        )
+        val (valueRow, valueCol) = buffer.locate("47/47")
+
+        assertEquals(BoardRole.DESTROYED, buffer.get(valueCol, valueRow).style.fg)
+        assertTrue(buffer.get(valueCol, valueRow).style.strikethrough)
+    }
+
+    @Test
     fun `armor uses fixed-width boxes with rear armor embedded in the torso`() {
         val unit = aUnit(armor = exampleArmor)
 
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val text = buffer.text()
         val (headRow, _) = buffer.locate("Head 9/9")
         val (torsoRow, _) = buffer.locate("╭──────╮╭─────────╮╭──────╮")
@@ -150,7 +165,7 @@ internal class LocationDiagramTest {
         val unit = aUnit(armor = exampleArmor)
 
         val buffer = render(
-            RecordSheetDiagrams.armor(unit),
+            LocationDiagram.armor(unit) { false },
             width = SheetLayout.ARMOR_DIAGRAM_WIDTH,
             height = diagramHeight,
         )
@@ -163,7 +178,7 @@ internal class LocationDiagramTest {
         val unit = aUnit(internalStructure = anInternalStructureLayout())
 
         val buffer = render(
-            RecordSheetDiagrams.internalStructure(unit),
+            LocationDiagram.internalStructure(unit),
             width = SheetLayout.INTERNAL_STRUCTURE_DIAGRAM_WIDTH,
             height = diagramHeight,
         )
@@ -175,7 +190,7 @@ internal class LocationDiagramTest {
     fun `armor side labels flank the final head row before the torso heading`() {
         val unit = aUnit(armor = exampleArmor)
 
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val (headBottomRow, _) = buffer.locate("╰─────╯")
         val (leftRow, leftCol) = buffer.locate("Left")
         val (rightRow, _) = buffer.locate("Right")
@@ -193,8 +208,8 @@ internal class LocationDiagramTest {
     fun `left torso values align one column inside their outer box borders`() {
         val unit = aUnit()
 
-        val armor = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
-        val internal = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
+        val armor = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
+        val internal = render(LocationDiagram.internalStructure(unit), width = diagramWidth, height = diagramHeight)
         val (_, armorBorderColumn) = armor.locate("╭──────╮╭─────────╮╭──────╮")
         val (_, internalBorderColumn) = internal.locate("╭────╮╭─────╮╭────╮")
         val (_, armorValueColumn) = armor.locate("32/32")
@@ -208,7 +223,7 @@ internal class LocationDiagramTest {
     fun `right torso values align one column inside their outer box borders`() {
         val unit = aUnit(armor = exampleArmor)
 
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val (frontValueRow, _) = buffer.locate("16/16")
         val (rearValueRow, _) = buffer.locate("5/5")
 
@@ -229,7 +244,7 @@ internal class LocationDiagramTest {
         val unit = aUnit(armor = armor)
         val rearValue = "$rearMax/$rearMax"
 
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val (rearValueRow, _) = buffer.locate(rearValue)
 
         assertEquals(" $rearValue", buffer.line(rearValueRow, x = 29, width = rearValue.length + 1))
@@ -252,7 +267,7 @@ internal class LocationDiagramTest {
         )
         val unit = aUnit(armor = armor)
 
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val (rearValueRow, _) = buffer.locate("8/8")
 
         assertEquals("╭───╮", buffer.line(rearValueRow + 1, x = 33, width = 5))
@@ -281,7 +296,7 @@ internal class LocationDiagramTest {
         )
         val unit = aUnit(armor = armor)
 
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val (rearValueRow, _) = buffer.locate("8/8")
         val legTop = rearValueRow + 1
         val leftLegX = 37 - expectedWidth - 1
@@ -318,7 +333,7 @@ internal class LocationDiagramTest {
         )
         val unit = aUnit(armor = armor)
 
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val (rearValueRow, _) = buffer.locate("8/8")
         val legTop = rearValueRow + 1
 
@@ -331,7 +346,7 @@ internal class LocationDiagramTest {
     fun `side tapers and feet start on the row after their final circles`() {
         val unit = aUnit(armor = exampleArmor)
 
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
 
         assertEquals("╲", buffer.get(28, 12).char)
         assertEquals("╱", buffer.get(52, 12).char)
@@ -357,7 +372,7 @@ internal class LocationDiagramTest {
         )
         val unit = aUnit(armor = unevenArmor)
 
-        val buffer = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val (torsoTop, _) = buffer.locate("╭──────╮╭─────────╮╭──────╮")
 
         assertEquals("╰────╯", buffer.line(torsoTop + 8, x = 29, width = 6))
@@ -372,7 +387,7 @@ internal class LocationDiagramTest {
             internalStructure = anInternalStructureLayout(),
         )
 
-        val internal = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
+        val internal = render(LocationDiagram.internalStructure(unit), width = diagramWidth, height = diagramHeight)
         val text = internal.text()
         val pip = emptyCircleIcon()
 
@@ -404,7 +419,7 @@ internal class LocationDiagramTest {
             internalStructure = anInternalStructureLayout(),
         ).copy(internalStructure = anInternalStructureLayout(centerTorso = 29))
 
-        val internal = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
+        val internal = render(LocationDiagram.internalStructure(unit), width = diagramWidth, height = diagramHeight)
         val text = internal.text()
 
         assertEquals(2, countGlyph(text, filledCircleIcon()))

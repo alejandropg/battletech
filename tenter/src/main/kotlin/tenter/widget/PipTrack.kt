@@ -58,4 +58,21 @@ public class PipTrack(
         }
         return rows(capacity)
     }
+
+    /**
+     * Draws at [column] on [content]'s current row, exactly like [draw], but advances the cursor
+     * past the rows used instead of leaving placement to the caller — for the common case where
+     * pips are the only thing on their own band of rows.
+     */
+    public fun drawAdvancing(
+        content: TextCursor,
+        column: Int,
+        used: Int,
+        capacity: Int,
+        usedStyle: Cell.Style,
+        emptyStyle: Cell.Style,
+    ) {
+        val rows = draw(content, column, content.row, used, capacity, usedStyle, emptyStyle)
+        repeat(rows) { content.newLine() }
+    }
 }

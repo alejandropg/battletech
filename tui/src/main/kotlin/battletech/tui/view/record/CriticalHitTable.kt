@@ -7,7 +7,9 @@ import battletech.tactical.unit.SLOT_COUNTS
 import battletech.tactical.unit.isSlotDestroyed
 import battletech.tui.view.MechLabels
 import tenter.screen.Canvas
+import tenter.screen.Insets
 import tenter.view.Columns
+import tenter.view.Padded
 import tenter.view.TextCursor
 import tenter.view.View
 
@@ -33,7 +35,7 @@ internal class CriticalHitTable(private val unit: CombatUnit) : View {
             ),
             gutter = 0,
         )
-        drawBand(canvas, content, columns)
+        content.draw(columns)
     }
 
     private fun criticalColumn(
@@ -60,14 +62,8 @@ internal class CriticalHitTable(private val unit: CombatUnit) : View {
 
             if (includesSystemDamage) {
                 repeat(SYSTEM_DAMAGE_GAP) { content.newLine() }
-                SystemDamageTable(unit).draw(
-                    canvas.region(
-                        x = 0,
-                        y = content.row,
-                        width = SheetLayout.SYSTEM_DAMAGE_WIDTH,
-                        height = canvas.height - content.row,
-                    ),
-                )
+                val margin = SheetLayout.CRIT_COLUMN_WIDTH - SheetLayout.SYSTEM_DAMAGE_WIDTH
+                content.draw(Padded(Insets(right = margin), SystemDamageTable(unit)))
             }
         }
 

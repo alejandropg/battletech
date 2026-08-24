@@ -4,8 +4,24 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.ChromeRole
 
-/** Focused tests for [HeatPenalties.lines] — the pure current/projected heat penalty mapping. */
+/** Focused tests for [HeatPenalties.lines] and [HeatPenalties.categories]. */
 internal class HeatPenaltiesTest {
+
+    @Test
+    fun `categories are null below their threshold`() {
+        assertEquals(listOf(null, null, null, null), HeatPenalties.categories(0))
+    }
+
+    @Test
+    fun `categories fill in as heat rises, in the fixed movement, to-hit, shutdown, ammo order`() {
+        assertEquals(listOf("-1 MP", "+1 To-Hit", null, null), HeatPenalties.categories(9))
+        assertEquals(listOf("-2 MP", "+2 To-Hit", "Shutdown 4+", null), HeatPenalties.categories(14))
+    }
+
+    @Test
+    fun `shutdown category is AUTO at the top of the scale, not a numeric target`() {
+        assertEquals("Shutdown AUTO", HeatPenalties.categories(30)[2])
+    }
 
     @Test
     fun `cool unit has no penalties`() {

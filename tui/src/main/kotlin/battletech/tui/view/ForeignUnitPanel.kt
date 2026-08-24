@@ -57,11 +57,7 @@ internal object ForeignUnitPanel {
         }
 
         // WEAPONS
-        with(content) {
-            writeHeader("WEAPONS")
-            for (weapon in unit.weapons) {
-                writeLine("  ${weapon.name}", TEXT_PRIMARY_STYLE)
-            }
-        }
+        content.writeHeader("WEAPONS")
+        content.draw(ForeignWeaponList(unit))
     }
 }

@@ -2,9 +2,9 @@ package battletech.tui.view.record
 
 import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 import battletech.tui.aUnit
-import battletech.tui.hex.emptyCircleIcon
-import battletech.tui.hex.filledCircleIcon
-import battletech.tui.hex.pilotDeadIcon
+import battletech.tui.icon.emptyCircleIcon
+import battletech.tui.icon.filledCircleIcon
+import battletech.tui.icon.pilotDeadIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

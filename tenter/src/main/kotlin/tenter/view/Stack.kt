@@ -15,15 +15,11 @@ public class Stack(
 ) : View {
 
     override fun draw(canvas: Canvas) {
-        var y = 0
+        val content = TextCursor(canvas)
         for (child in children) {
-            if (y >= canvas.height) break
-            val remaining = canvas.region(0, y, canvas.width, canvas.height - y)
-            val stream = Canvas.offscreen(remaining.width, remaining.height)
-            child.draw(stream)
-            val height = stream.contentHeight()
-            canvas.blit(stream, 0, 0, 0, y, remaining.width, height)
-            y += height + gutter
+            if (content.row >= canvas.height) break
+            content.draw(child)
+            repeat(gutter) { content.newLine() }
         }
     }
 }

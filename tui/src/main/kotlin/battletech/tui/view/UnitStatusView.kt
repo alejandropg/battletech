@@ -3,24 +3,20 @@ package battletech.tui.view
 import battletech.tactical.heat.projectHeat
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ComponentCritStatus
-import battletech.tactical.unit.CriticalComponent
 import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.HeatSource
-import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 import battletech.tactical.unit.VisibleUnit
-import battletech.tactical.unit.availableAmmoBins
 import battletech.tactical.unit.criticalDamageStatus
-import battletech.tui.hex.ammoIcon
-import battletech.tui.hex.emptyCircleIcon
-import battletech.tui.hex.filledCircleIcon
-import battletech.tui.hex.infinityIcon
-import battletech.tui.hex.pilotDeadIcon
+import battletech.tactical.unit.remainingShots
+import battletech.tui.icon.ammoIcon
+import battletech.tui.icon.emptyCircleIcon
+import battletech.tui.icon.filledCircleIcon
+import battletech.tui.icon.infinityIcon
 import battletech.tui.screen.BoardRole
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.view.TextCursor
-import tenter.widget.Gauge
 import tenter.view.View
 
 internal class UnitStatusView(
@@ -58,17 +54,15 @@ internal class UnitStatusView(
             // empty = remaining boxes. No "health" concept in the rules — hits accumulate
             // upward, each one forcing a Consciousness roll (PilotHits.kt).
             val hitsLabel = "Hits".padEnd(9) + ": "
-            val hits = unit.pilotHits.coerceIn(0, PILOT_DEATH_THRESHOLD)
             content.write(0, hitsLabel, TEXT_PRIMARY_STYLE)
-            var hitCol = hitsLabel.length
-            for (i in 0 until hits) {
-                // The 6th hit kills the pilot outright (PILOT_DEATH_THRESHOLD) — mark that
-                // final box with a skull instead of a plain filled dot.
-                val icon = if (i == PILOT_DEATH_THRESHOLD - 1) pilotDeadIcon() else filledCircleIcon()
-                content.write(hitCol, icon, DANGER_STYLE)
-                hitCol += 1
-            }
-            repeat(PILOT_DEATH_THRESHOLD - hits) { content.write(hitCol, emptyCircleIcon(), TEXT_PRIMARY_STYLE); hitCol += 1 }
+            PilotHitsTrack.draw(
+                content,
+                column = hitsLabel.length,
+                stride = 1,
+                hits = unit.pilotHits,
+                filledStyle = DANGER_STYLE,
+                emptyStyle = TEXT_PRIMARY_STYLE,
+            )
             content.newLine()
             writeLine("Gunnery  : ${unit.gunnerySkill}", TEXT_PRIMARY_STYLE)
             writeLine("Piloting : ${unit.pilotingSkill}", TEXT_PRIMARY_STYLE)
@@ -86,29 +80,9 @@ internal class UnitStatusView(
         // HEAT
         with(content) {
             writeHeader("HEAT")
-            writeLine("Current")
-            val heatBar = Gauge(barWidth = 20, maxValue = 30)
-            heatBar.draw(content, 0, unit.currentHeat)
+            draw(HeatGauges(unit, pendingHeat))
 
             val projection = projectHeat(unit, pendingHeat)
-
-            for (source in projection.committed) {
-                writeLine("  ${source.label} +${source.amount}")
-            }
-            for (source in projection.pending) {
-                writeLine("  ${source.label} +${source.amount}", DRAFT_STYLE)
-            }
-
-            val sink = unit.heatSink
-            val sinkSuffix =
-                if (sink.type.sinkRatio == 1) "${sink.type.name} ${projection.dissipation}"
-                else "${sink.type.name} ${sink.units}(${projection.dissipation})"
-            Gauge(barWidth = 10, maxValue = projection.dissipation, suffix = sinkSuffix)
-                .draw(content, 0, projection.dissipated)
-
-            writeLine("Projected")
-            heatBar.draw(content, 0, projection.projected)
-
             val penalties = HeatPenalties.lines(unit.currentHeat, projection.projected)
             if (penalties.isNotEmpty()) {
                 writeLine("Penalties")
@@ -168,13 +142,8 @@ internal class UnitStatusView(
             writeHeader("WEAPONS")
             for (weapon in unit.weapons) {
                 val style = if (weapon.destroyed) DESTROYED_STYLE else TEXT_PRIMARY_STYLE
-                val right = weapon.ammoType?.let { type ->
-                    // Only count available ammo (bins in locations with IS > 0).
-                    val remaining = unit.availableAmmoBins()
-                        .filter { it.third.type == type }
-                        .sumOf { it.third.shots }
-                    "$remaining ${ammoIcon()}"
-                } ?: infinityIcon()
+                val right = weapon.ammoType?.let { type -> "${unit.remainingShots(type)} ${ammoIcon()}" }
+                    ?: infinityIcon()
                 writeRow("  ${weapon.name}", right, style)
             }
         }
@@ -199,7 +168,7 @@ internal class UnitStatusView(
      * column label for [status].component.
      */
     private fun writeCritDots(content: TextCursor, status: ComponentCritStatus) {
-        val label = componentLabel(status.component)
+        val label = MechLabels.component(status.component)
         val capacity = status.capacity
         val destroyedCount = status.hits.coerceIn(0, capacity)
         val label6 = label.padEnd(7)
@@ -221,20 +190,12 @@ internal class UnitStatusView(
         }
     }
 
-    private fun componentLabel(component: CriticalComponent): String = when (component) {
-        CriticalComponent.ENGINE -> "Engine"
-        CriticalComponent.GYRO -> "Gyro"
-        CriticalComponent.SENSOR -> "Sensor"
-        CriticalComponent.LIFE_SUPPORT -> "Support"
-    }
-
     internal companion object {
         internal const val TITLE: String = "UNIT STATUS"
 
         private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
         private val ACCENT_STYLE = Cell.Style(ChromeRole.ACCENT)
         private val DANGER_STYLE = Cell.Style(ChromeRole.DANGER)
-        private val DRAFT_STYLE = Cell.Style(ChromeRole.DRAFT)
         private val DESTROYED_STYLE = Cell.Style(BoardRole.DESTROYED, strikethrough = true)
     }
 }

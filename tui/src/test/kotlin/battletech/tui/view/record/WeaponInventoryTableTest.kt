@@ -6,8 +6,8 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.MechModels
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.createUnit
-import battletech.tui.hex.ammoIcon
-import battletech.tui.hex.infinityIcon
+import battletech.tui.icon.ammoIcon
+import battletech.tui.icon.infinityIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

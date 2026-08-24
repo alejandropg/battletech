@@ -3,7 +3,7 @@ package battletech.tui.view
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.unit.UnitId
-import battletech.tui.hex.diceRoll
+import battletech.tui.icon.diceRoll
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.ChromeRole
