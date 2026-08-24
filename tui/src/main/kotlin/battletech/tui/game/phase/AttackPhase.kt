@@ -23,6 +23,8 @@ import battletech.tui.game.RenderData
 import battletech.tui.game.attackPlayer
 import battletech.tui.game.displayName
 import battletech.tui.game.losHighlights
+import battletech.tui.view.displayLabels
+import battletech.tui.view.toHitBreakdownLabels
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.selectedLosHighlights
 import battletech.tui.hex.HexHighlight
@@ -449,7 +451,8 @@ private fun committedAttackerEntry(
                     weaponName = line.weaponName,
                     successChance = line.successChance,
                     targetDiceRoll = line.targetNumber,
-                    modifiers = line.modifierLabels,
+                    modifiers = line.gunnery?.let { toHitBreakdownLabels(it, line.modifiers) }
+                        ?: line.modifiers.displayLabels(),
                 )
                 // An enemy attacker's to-hit math is not ours to render — and the type no
                 // longer carries it. See DeclaredWeaponLine's KDoc.
@@ -499,10 +502,12 @@ private fun resolveWeaponEntry(
         ?.firstOrNull { it.weaponIndex == weaponIndex }
     // Detailed unconditionally: drafts only ever exist for the viewer's own attacker (the
     // caller filters to unit.owner == viewingPlayer before building one).
+    val modifierLabels = weaponInfo?.gunnery?.let { toHitBreakdownLabels(it, weaponInfo.modifiers) }
+        ?: weaponInfo?.modifiers.orEmpty().displayLabels()
     return DeclaredWeaponEntry.Detailed(
         weaponName = weaponName,
         successChance = weaponInfo?.successChance ?: 0,
         targetDiceRoll = weaponInfo?.targetDiceRoll ?: 13,
-        modifiers = weaponInfo?.modifiers ?: emptyList(),
+        modifiers = modifierLabels,
     )
 }

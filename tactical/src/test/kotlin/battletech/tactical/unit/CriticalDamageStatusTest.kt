@@ -38,11 +38,11 @@ internal class CriticalDamageStatusTest {
         val oneStatus = engineOf(oneHit)
         assertThat(oneStatus.capacity).isEqualTo(3)
         assertThat(oneStatus.hits).isEqualTo(1)
-        assertThat(oneStatus.penalties).containsExactly("+5 Heat/turn")
+        assertThat(oneStatus.penalties).containsExactly(CritEffect.HeatPerTurn(5))
 
         val twoStatus = engineOf(twoHits)
         assertThat(twoStatus.hits).isEqualTo(2)
-        assertThat(twoStatus.penalties).containsExactly("+10 Heat/turn")
+        assertThat(twoStatus.penalties).containsExactly(CritEffect.HeatPerTurn(10))
 
         val threeStatus = engineOf(threeHits)
         assertThat(threeStatus.hits).isEqualTo(3)
@@ -62,11 +62,11 @@ internal class CriticalDamageStatusTest {
         val oneStatus = gyroOf(oneHit)
         assertThat(oneStatus.capacity).isEqualTo(2)
         assertThat(oneStatus.hits).isEqualTo(1)
-        assertThat(oneStatus.penalties).containsExactly("+3 PSR")
+        assertThat(oneStatus.penalties).containsExactly(CritEffect.PsrPenalty(GYRO_PSR_PENALTY))
 
         val twoStatus = gyroOf(twoHits)
         assertThat(twoStatus.hits).isEqualTo(2)
-        assertThat(twoStatus.penalties).contains("Cannot stand")
+        assertThat(twoStatus.penalties).contains(CritEffect.CannotStand)
     }
 
     @Test
@@ -80,11 +80,11 @@ internal class CriticalDamageStatusTest {
         val oneStatus = sensorOf(oneHit)
         assertThat(oneStatus.capacity).isEqualTo(2)
         assertThat(oneStatus.hits).isEqualTo(1)
-        assertThat(oneStatus.penalties).containsExactly("+2 To-Hit")
+        assertThat(oneStatus.penalties).containsExactly(CritEffect.ToHitPenalty(SENSOR_TO_HIT_PENALTY))
 
         val twoStatus = sensorOf(twoHits)
         assertThat(twoStatus.hits).isEqualTo(2)
-        assertThat(twoStatus.penalties).containsExactly("Cannot fire")
+        assertThat(twoStatus.penalties).containsExactly(CritEffect.CannotFire)
     }
 
     @Test
@@ -99,10 +99,10 @@ internal class CriticalDamageStatusTest {
         val oneStatus = lifeSupportOf(oneHit)
         assertThat(oneStatus.capacity).isEqualTo(2)
         assertThat(oneStatus.hits).isEqualTo(1)
-        assertThat(oneStatus.penalties).containsExactly("Pilot hit @ 15+ heat")
+        assertThat(oneStatus.penalties).containsExactly(CritEffect.PilotDamageWhenHeatAtLeast(LIFE_SUPPORT_HEAT_THRESHOLD))
 
         val twoStatus = lifeSupportOf(twoHits)
         assertThat(twoStatus.hits).isEqualTo(2)
-        assertThat(twoStatus.penalties).containsExactly("Pilot hit / turn")
+        assertThat(twoStatus.penalties).containsExactly(CritEffect.PilotDamageEachTurn)
     }
 }

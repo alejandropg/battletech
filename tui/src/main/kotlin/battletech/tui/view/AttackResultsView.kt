@@ -2,8 +2,6 @@ package battletech.tui.view
 
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.HitLocation
-import battletech.tactical.attack.displayLabels
-import battletech.tactical.attack.toHitBreakdownLabels
 import battletech.tactical.dice.twoD6AtLeastProbability
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.icon.attackOutcomeIcon

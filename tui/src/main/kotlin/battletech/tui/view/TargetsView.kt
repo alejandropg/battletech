@@ -72,7 +72,9 @@ internal class TargetsView(
                 }
                 val row = content.row
                 if (isCursorHere) content.markReveal()
-                ValueRow.draw(content, left, hitChanceLabel(weapon.targetDiceRoll, weapon.successChance), weapon.modifiers, color)
+                val modifierLabels = weapon.gunnery?.let { toHitBreakdownLabels(it, weapon.modifiers) }
+                    ?: weapon.modifiers.displayLabels()
+                ValueRow.draw(content, left, hitChanceLabel(weapon.targetDiceRoll, weapon.successChance), modifierLabels, color)
                 Checkbox.draw(content, 2, row, state, checkboxColor)
             }
 

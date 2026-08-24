@@ -187,7 +187,7 @@ internal class UnitStatusView(
         }
         content.newLine()
         for (penalty in status.penalties) {
-            content.write(4, penalty, DANGER_STYLE)
+            content.write(4, formatCritEffect(penalty), DANGER_STYLE)
             content.newLine()
         }
     }

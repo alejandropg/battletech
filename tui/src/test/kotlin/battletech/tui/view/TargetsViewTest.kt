@@ -1,5 +1,7 @@
 package battletech.tui.view
 
+import battletech.tactical.attack.ToHitFactor
+import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.unit.UnitId
@@ -28,7 +30,7 @@ internal class TargetsViewTest {
         unitId = UnitId("hunch"),
         unitName = "Hunchback",
         weapons = listOf(
-            WeaponTargetInfo(0, "LRM15", 8, 15, listOf("+1 second")),
+            WeaponTargetInfo(0, "LRM15", 8, 15, listOf(ToHitModifier(ToHitFactor.SECONDARY_TARGET, "second", 1))),
         ),
     )
 
@@ -208,8 +210,8 @@ internal class TargetsViewTest {
             unitId = UnitId("atlas"),
             unitName = "Atlas",
             weapons = listOf(
-                WeaponTargetInfo(0, "AC/20", 7, 20, listOf("+2 med")),
-                WeaponTargetInfo(1, "Medium Laser", 6, 5, listOf("+4 long")),
+                WeaponTargetInfo(0, "AC/20", 7, 20, listOf(ToHitModifier(ToHitFactor.RANGE, "med", 2))),
+                WeaponTargetInfo(1, "Medium Laser", 6, 5, listOf(ToHitModifier(ToHitFactor.RANGE, "long", 4))),
             ),
         )
         val view = TargetsView(

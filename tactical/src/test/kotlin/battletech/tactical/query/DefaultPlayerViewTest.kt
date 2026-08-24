@@ -1,6 +1,7 @@
 package battletech.tactical.query
 
 import battletech.tactical.attack.AttackDeclaration
+import battletech.tactical.attack.ToHitFactor
 import battletech.tactical.attack.total
 import battletech.tactical.attack.weaponToHitModifiers
 import battletech.tactical.model.GameMap
@@ -165,7 +166,7 @@ internal class DefaultPlayerViewTest {
 
         assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).containsExactly(UnitId("enemy"))
         val info = view.targetInfos(UnitId("attacker"), HexDirection.N).single()
-        assertThat(info.weapons.single().modifiers).contains("+2 sensors")
+        assertThat(info.weapons.single().modifiers).anyMatch { it.factor == ToHitFactor.SENSORS && it.amount == 2 }
     }
 
     @Test
@@ -226,13 +227,13 @@ internal class DefaultPlayerViewTest {
         val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
 
         val weaponInfo = view.targetInfos(UnitId("attacker"), HexDirection.N).single().weapons.single()
-        val modifiers = weaponInfo.modifiers
 
-        // First line must be the gunnery base.
-        assertThat(modifiers.first()).isEqualTo("+${attacker.gunnerySkill} gunnery")
+        // The attacker's base skill is carried alongside the modifiers, not baked into them.
+        assertThat(weaponInfo.gunnery).isEqualTo(attacker.gunnerySkill)
 
-        // The column must sum exactly to the target number (no clamping in this scenario).
-        val columnSum = modifiers.sumOf { it.substringBefore(' ').toInt() }
+        // Gunnery plus the modifier column must sum exactly to the target number (no clamping
+        // in this scenario).
+        val columnSum = weaponInfo.gunnery!! + weaponInfo.modifiers.total()
         assertThat(columnSum).isEqualTo(weaponInfo.targetDiceRoll)
     }
 
@@ -268,7 +269,7 @@ internal class DefaultPlayerViewTest {
             ).coerceAtLeast(2)
 
         assertThat(weaponInfo.targetDiceRoll).isEqualTo(expectedTargetNumber)
-        assertThat(weaponInfo.modifiers).anyMatch { it.endsWith("prone") }
+        assertThat(weaponInfo.modifiers).anyMatch { it.factor == ToHitFactor.PRONE_TARGET }
     }
 
     @Test
@@ -384,7 +385,7 @@ internal class DefaultPlayerViewTest {
         // PLAYER_1 (own): full to-hit prediction.
         val own = attacks.single { it.attackerId == p1Unit.id }.weapons.single()
         assertThat(own).isInstanceOf(DeclaredWeaponLine.Detailed::class.java)
-        assertThat((own as DeclaredWeaponLine.Detailed).modifierLabels).anyMatch { it.contains("gunnery") }
+        assertThat((own as DeclaredWeaponLine.Detailed).gunnery).isEqualTo(p1Unit.gunnerySkill)
 
         // PLAYER_2 (enemy): the declaration is still visible — you watch the torso swing and
         // see which weapon is aimed at you — but the to-hit math, which is computed from that

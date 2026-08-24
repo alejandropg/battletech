@@ -1,5 +1,6 @@
 package battletech.tactical.query
 
+import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
 
@@ -23,15 +24,18 @@ public sealed interface DeclaredWeaponLine {
     public val weaponName: String
 
     /**
-     * A weapon on an attacker the viewer owns: carries [targetNumber], [successChance], and
-     * the [modifierLabels] that sum to it (rendered verbatim, e.g. "+2 range").
+     * A weapon on an attacker the viewer owns: carries [targetNumber], [successChance], and the
+     * [modifiers] that sum to it, plus the attacker's base [gunnery] skill — deliveries compose
+     * the two into a display breakdown themselves. [gunnery] is null only when no matching
+     * [battletech.tactical.attack.weapon.WeaponTargetInfo] was found for this declaration.
      */
     public data class Detailed(
         override val weaponIndex: Int,
         override val weaponName: String,
         public val targetNumber: Int,
         public val successChance: Int,
-        public val modifierLabels: List<String>,
+        public val modifiers: List<ToHitModifier>,
+        public val gunnery: Int? = null,
     ) : DeclaredWeaponLine
 
     /**

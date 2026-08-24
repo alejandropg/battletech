@@ -6,6 +6,7 @@ import battletech.tactical.unit.criticalDamageStatus
 import battletech.tui.icon.emptyCircleIcon
 import battletech.tui.icon.filledCircleIcon
 import battletech.tui.view.MechLabels
+import battletech.tui.view.formatCritEffect
 import tenter.screen.Canvas
 import tenter.view.TextCursor
 import tenter.view.View
@@ -34,6 +35,6 @@ internal class SystemDamageTable(private val unit: CombatUnit) : View {
             usedStyle = SheetStyles.DANGER,
             emptyStyle = SheetStyles.TEXT_PRIMARY,
         )
-        for (penalty in status.penalties) content.writeLine("  $penalty", SheetStyles.DANGER)
+        for (penalty in status.penalties) content.writeLine("  ${formatCritEffect(penalty)}", SheetStyles.DANGER)
     }
 }

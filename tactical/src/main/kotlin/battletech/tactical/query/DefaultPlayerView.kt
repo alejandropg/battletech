@@ -139,7 +139,8 @@ public class DefaultPlayerView(
             weaponName = weaponName,
             targetNumber = weaponInfo?.targetDiceRoll ?: 13,
             successChance = weaponInfo?.successChance ?: 0,
-            modifierLabels = weaponInfo?.modifiers ?: emptyList(),
+            modifiers = weaponInfo?.modifiers ?: emptyList(),
+            gunnery = weaponInfo?.gunnery,
         )
     }
 

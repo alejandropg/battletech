@@ -1,7 +1,6 @@
 package battletech.tactical.query
 
 import battletech.tactical.attack.WeaponAttackContext
-import battletech.tactical.attack.toHitBreakdownLabels
 import battletech.tactical.attack.weapon.FireWeaponActionDefinition
 import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.attack.weapon.TargetInfo
@@ -92,7 +91,8 @@ internal class WeaponTargeting(private val state: PlayerGameState) {
                         weaponName = weapon.name,
                         targetDiceRoll = targetNumber,
                         damage = weapon.damage,
-                        modifiers = toHitBreakdownLabels(attacker.gunnerySkill, modifiers),
+                        modifiers = modifiers,
+                        gunnery = attacker.gunnerySkill,
                     )
                 }
             }
