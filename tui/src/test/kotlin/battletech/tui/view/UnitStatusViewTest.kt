@@ -18,6 +18,7 @@ import battletech.tactical.unit.WeaponKind
 import battletech.tactical.unit.WeaponModel
 import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.mechLayout
+import battletech.tui.aGameMap
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.anInternalStructureLayout
@@ -72,7 +73,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders unit name`() {
         val unit = aUnit(id = "A1")
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 14)
 
         val text = (2 until 11).joinToString("") { buffer.get(it, 2).char }
@@ -82,7 +83,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders gunnery and piloting skills`() {
         val unit = aUnit()
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 14)
 
         val gunnery = (2 until 26).joinToString("") { buffer.get(it, 6).char }.trim()
@@ -94,7 +95,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders undamaged pilot hits track`() {
         val unit = aUnit() // pilotHits = 0
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 14)
 
         val line = (2 until 26).joinToString("") { buffer.get(it, 5).char }
@@ -106,7 +107,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders damaged pilot hits track`() {
         val unit = aUnit().copy(pilotHits = 2)
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 14)
 
         val line = (2 until 26).joinToString("") { buffer.get(it, 5).char }
@@ -120,7 +121,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders skull in place of final hit dot when pilot dies`() {
         val unit = aUnit().copy(pilotHits = PILOT_DEATH_THRESHOLD)
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 14)
 
         val line = (2 until 26).joinToString("") { buffer.get(it, 5).char }
@@ -134,7 +135,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders heat bar`() {
         val unit = aUnit()
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
         val line = (2 until 26).joinToString("") { buffer.get(it, 14).char }
@@ -144,7 +145,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders current heat label above bar`() {
         val unit = aUnit()
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
         val label = (2 until 26).joinToString("") { buffer.get(it, 13).char }
@@ -156,7 +157,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders STS dissipation bar with suffix`() {
         val unit = aUnit(heatSink = HeatSink(HeatSinkType.STS, 10))
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
         val line = (2 until 26).joinToString("") { buffer.get(it, 16).char }
@@ -168,7 +169,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders DTS dissipation bar with units and dissipation suffix`() {
         val unit = aUnit(heatSink = HeatSink(HeatSinkType.DTS, 10))
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
         val line = (2 until 26).joinToString("") { buffer.get(it, 16).char }
@@ -179,7 +180,7 @@ internal class UnitStatusViewTest {
     fun `renders heat value paired to bar fill without max`() {
         // 15 of 30 -> barWidth=20 -> 10 filled cells. cx=2, anchorCol=12, "15" starts at col 11.
         val unit = aUnit().copy(currentHeat = 15)
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
         // last digit sits under the last filled cell (col 12); value row is 15
@@ -190,7 +191,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders zero heat value under first bar cell`() {
         val unit = aUnit() // currentHeat = 0
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
         // cx=2, "[" prefix -> first cell at col 3
@@ -199,7 +200,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders with no unit selected shows empty`() {
-        val view = UnitStatusView(subject = null)
+        val view = UnitStatusView(subject = null, map = aGameMap())
         val buffer = renderDecorated(view, height = 14)
 
         val text = (2 until 18).joinToString("") { buffer.get(it, 2).char }
@@ -208,7 +209,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders box border`() {
-        val view = UnitStatusView(subject = null)
+        val view = UnitStatusView(subject = null, map = aGameMap())
         val buffer = renderDecorated(view, height = 14)
 
         assertEquals("╭", buffer.get(0, 0).char)
@@ -220,7 +221,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders walk and run movement points`() {
         val unit = aUnit(walkingMP = 3, runningMP = 5)
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 14)
 
         val line = (2 until 26).joinToString("") { buffer.get(it, 10).char }
@@ -233,7 +234,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders jump only when nonzero`() {
         val unit = aUnit()
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 14)
 
         val jumpRow = (2 until 26).joinToString("") { buffer.get(it, 11).char }
@@ -245,7 +246,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders heat bar in red when overheated`() {
         val unit = aUnit().copy(currentHeat = 22)
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
         assertEquals(ChromeRole.DANGER, buffer.get(2, 14).style.fg)
@@ -254,7 +255,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders armor section header when armor is present`() {
         val unit = aUnit(armor = anArmorLayout())
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view)
 
         // Shifted down by: pilot hits line, "Current" label, current bar (2 rows),
@@ -266,7 +267,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders head armor value in info`() {
         val unit = aUnit(armor = anArmorLayout())
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view)
 
         // HD value row: cy=23, "HD: 9" starts at cx+9=11
@@ -281,7 +282,7 @@ internal class UnitStatusViewTest {
         // Same HD layout as "renders head armor value in cyan", but with head internal
         // structure zeroed out — that's what drives the destroyed rendering, not the armor value.
         val unit = aUnit(armor = anArmorLayout(), internalStructure = anInternalStructureLayout(head = 0))
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view)
 
         // HD value row: cy=23, "HD: 9" starts at cx+9=11
@@ -293,7 +294,7 @@ internal class UnitStatusViewTest {
     fun `renders intact armor location without strikethrough`() {
         // Default internalStructure (head = 3) is intact.
         val unit = aUnit(armor = anArmorLayout())
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view)
 
         assertFalse(buffer.get(11, 23).style.strikethrough)
@@ -302,7 +303,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders center torso armor in accent`() {
         val unit = aUnit(armor = anArmorLayout())
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view)
 
         // CT row: cy=24, "CT:47" starts at cx+9=11
@@ -315,7 +316,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders torso rear values in default color`() {
         val unit = aUnit(armor = anArmorLayout(centerTorsoRear = 8))
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view)
 
         // Rear row: cy=25, CT rear "r: 8" starts at cx+10=12
@@ -327,7 +328,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders arm and leg armor values`() {
         val unit = aUnit(armor = anArmorLayout())
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view)
 
         // Arms row: cy=26
@@ -344,7 +345,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders committed heat sources in default color`() {
         val unit = aUnit().copy(heatGeneratedThisTurn = listOf(HeatSource("Running", 2)))
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
         // Source line under the bar and the heat value line (row 16).
@@ -356,7 +357,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders pending heat preview in gray`() {
         val unit = aUnit()
-        val view = UnitStatusView(unit, pendingHeat = listOf(HeatSource("Walking", 1)))
+        val view = UnitStatusView(unit, aGameMap(), pendingHeat = listOf(HeatSource("Walking", 1)))
         val buffer = renderDecorated(view, height = 20)
 
         val line = (2 until 26).joinToString("") { buffer.get(it, 16).char }
@@ -371,7 +372,7 @@ internal class UnitStatusViewTest {
             currentHeat = 12,
             heatGeneratedThisTurn = listOf(HeatSource("Running", 2)),
         )
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
         // one source at row 16, diss bar at row 17
@@ -386,6 +387,7 @@ internal class UnitStatusViewTest {
         // pending 5, DTS 10 -> dissipation 20, dissipated = min(5, 20) = 5, width 10 -> 2 filled
         val view = UnitStatusView(
             aUnit(heatSink = HeatSink(HeatSinkType.DTS, 10)),
+            aGameMap(),
             pendingHeat = listOf(HeatSource("Walking", 5)),
         )
         val buffer = renderDecorated(view, height = 20)
@@ -403,7 +405,7 @@ internal class UnitStatusViewTest {
             currentHeat = 12,
             heatGeneratedThisTurn = listOf(HeatSource("Running", 2)),
         )
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
         assertEquals(ChromeRole.DANGER, buffer.get(2, 17).style.fg)
@@ -412,7 +414,7 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders zero dissipation heat sink without error`() {
         val unit = aUnit(heatSink = HeatSink(HeatSinkType.STS, 0))
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
         val dissBar = (2 until 26).joinToString("") { buffer.get(it, 16).char }
@@ -423,7 +425,7 @@ internal class UnitStatusViewTest {
     fun `renders projected end-of-turn heat`() {
         // current 12, +2 running, dissipates 10 -> projected 4
         val unit = aUnit().copy(currentHeat = 12, heatGeneratedThisTurn = listOf(HeatSource("Running", 2)))
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 23)
 
         // "Current"(13), current bar(14), current value(15), one source(16), diss bar(17),
@@ -454,7 +456,7 @@ internal class UnitStatusViewTest {
         )
         val layout = mechLayout { ammo(MechLocation.RIGHT_TORSO, AmmoType.AC20) }.layout
         val unit = aUnit(weapons = listOf(weapon), criticalLayout = layout)
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 60)
 
         val row = rowContaining(buffer, 60, "AC/20")
@@ -475,7 +477,7 @@ internal class UnitStatusViewTest {
             destroyed = true,
         )
         val unit = aUnit(weapons = listOf(weapon))
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 60)
 
         val row = rowContaining(buffer, 60, "Medium Laser")
@@ -494,7 +496,7 @@ internal class UnitStatusViewTest {
             location = MechLocation.CENTER_TORSO,
         )
         val unit = aUnit(weapons = listOf(weapon))
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 60)
 
         val row = rowContaining(buffer, 60, "Medium Laser")
@@ -505,10 +507,10 @@ internal class UnitStatusViewTest {
     @Test
     fun `renders all-intact critical hit dots as empty circles`() {
         val unit = aUnit(armor = anArmorLayout())
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 40)
 
-        val row = rowContaining(buffer, 40, "Engine")
+        val row = rowContaining(buffer, 40, "Engine :")
         val line = (2 until 26).joinToString("") { buffer.get(it, row).char }
         assertEquals(3, line.split(emptyCircleIcon()).size - 1)
         assertEquals(0, line.split(filledCircleIcon()).size - 1)
@@ -519,10 +521,10 @@ internal class UnitStatusViewTest {
         val unit = aUnit(armor = anArmorLayout()).copy(
             criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(0, 1)),
         )
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 40)
 
-        val row = rowContaining(buffer, 40, "Engine")
+        val row = rowContaining(buffer, 40, "Engine :")
         val line = (2 until 26).joinToString("") { buffer.get(it, row).char }
         val filledCount = line.split(filledCircleIcon()).size - 1
         assertEquals(2, filledCount)
@@ -538,10 +540,10 @@ internal class UnitStatusViewTest {
             // CENTER_TORSO indices 3,4,5,6 are Gyro slots per the standard framework.
             criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(3)),
         )
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 40)
 
-        val engineRow = rowContaining(buffer, 40, "Engine")
+        val engineRow = rowContaining(buffer, 40, "Engine :")
         val engineLine = (2 until 26).joinToString("") { buffer.get(it, engineRow).char }
         assertEquals(0, engineLine.split(filledCircleIcon()).size - 1)
 
@@ -561,7 +563,7 @@ internal class UnitStatusViewTest {
             location = MechLocation.CENTER_TORSO,
         )
         val unit = aUnit(weapons = listOf(weapon))
-        val view = UnitStatusView(unit)
+        val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 60)
 
         val row = rowContaining(buffer, 60, "Medium Laser")
@@ -572,7 +574,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders public subject unit name`() {
-        val view = UnitStatusView(aForeignUnit())
+        val view = UnitStatusView(aForeignUnit(), aGameMap())
         val buffer = renderDecorated(view)
 
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).char }
@@ -582,7 +584,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders public subject MOVEMENT section with walk and run values`() {
-        val view = UnitStatusView(aForeignUnit())
+        val view = UnitStatusView(aForeignUnit(), aGameMap())
         val buffer = renderDecorated(view)
 
         val headerRow = (2 until 26).joinToString("") { buffer.get(it, 4).char }
@@ -596,12 +598,12 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders public subject jump movement points only when nonzero`() {
-        val viewWithoutJump = UnitStatusView(aForeignUnit())
+        val viewWithoutJump = UnitStatusView(aForeignUnit(), aGameMap())
         val bufferWithoutJump = renderDecorated(viewWithoutJump)
         val jumpRow = (2 until 26).joinToString("") { bufferWithoutJump.get(it, 6).char }
         assertFalse(jumpRow.contains("Jump"))
 
-        val viewWithJump = UnitStatusView(aForeignUnit(jumpMP = 5))
+        val viewWithJump = UnitStatusView(aForeignUnit(jumpMP = 5), aGameMap())
         val bufferWithJump = renderDecorated(viewWithJump)
         val jumpRowPresent = (2 until 26).joinToString("") { bufferWithJump.get(it, 6).char }
         assertTrue(jumpRowPresent.contains("Jump"))
@@ -610,7 +612,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `renders public subject ARMOR section with HD CT and LL values`() {
-        val view = UnitStatusView(aForeignUnit())
+        val view = UnitStatusView(aForeignUnit(), aGameMap())
         val buffer = renderDecorated(view)
 
         val armorHeader = (2 until 26).joinToString("") { buffer.get(it, 7).char }
@@ -630,6 +632,7 @@ internal class UnitStatusViewTest {
     fun `renders public subject WEAPONS section with weapon names`() {
         val view = UnitStatusView(
             aForeignUnit(weapons = listOf(PublicWeapon("AC/20", WeaponMountId(0)), PublicWeapon("Medium Laser", WeaponMountId(1)))),
+            aGameMap(),
         )
         val buffer = renderDecorated(view)
 
@@ -643,7 +646,7 @@ internal class UnitStatusViewTest {
 
     @Test
     fun `does not render private-only sections for public subject`() {
-        val view = UnitStatusView(aForeignUnit())
+        val view = UnitStatusView(aForeignUnit(), aGameMap())
         val buffer = renderDecorated(view)
 
         val allText = (0 until 30).flatMap { row ->

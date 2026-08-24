@@ -2,6 +2,7 @@ package battletech.tui.view.record
 
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.heat.projectHeat
+import battletech.tactical.model.GameMap
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tui.screen.HeatScaleRole
@@ -26,16 +27,17 @@ import tenter.view.View
  */
 internal class HeatLadder(
     private val unit: CombatUnit,
+    private val map: GameMap,
     private val pendingHeat: List<HeatSource>,
 ) : View {
 
     override fun draw(canvas: Canvas) {
         val content = TextCursor(canvas)
         content.writeHeader("HEAT")
-        content.draw(HeatGauges(unit, pendingHeat))
+        content.draw(HeatGauges(unit, map, pendingHeat))
         content.newLine()
 
-        val projection = projectHeat(unit, pendingHeat)
+        val projection = projectHeat(unit, map, pendingHeat)
         content.writeHeader("HEAT SCALE")
         for (heat in HeatScale.MAX_HEAT downTo 0) {
             val slots = HeatPenalties.categories(heat)

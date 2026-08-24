@@ -10,6 +10,7 @@ import battletech.tactical.unit.PublicWeapon
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.WeaponMountId
 import battletech.tactical.unit.createUnit
+import battletech.tui.aGameMap
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.anInternalStructureLayout
@@ -62,14 +63,14 @@ internal class MechRecordSheetViewTest {
 
     @Test
     fun `no subject shows a placeholder`() {
-        val buffer = render(MechRecordSheetView(null), width = 200, height = 20)
+        val buffer = render(MechRecordSheetView(null, aGameMap()), width = 200, height = 20)
 
         assertTrue(buffer.text().contains("No unit selected"))
     }
 
     @Test
     fun `an own unit renders the full sheet, including private sections`() {
-        val buffer = render(MechRecordSheetView(atlas()), width = 200, height = 300)
+        val buffer = render(MechRecordSheetView(atlas(), aGameMap()), width = 200, height = 300)
         val text = buffer.text()
 
         assertTrue(text.contains("WARRIOR DATA"))
@@ -80,7 +81,7 @@ internal class MechRecordSheetViewTest {
 
     @Test
     fun `an own unit lays out cards in the requested grid`() {
-        val buffer = render(MechRecordSheetView(atlas()), width = 200, height = 300)
+        val buffer = render(MechRecordSheetView(atlas(), aGameMap()), width = 200, height = 300)
 
         val topRow = (0 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
         assertEquals(0, buffer.line(topRow).indexOf("── 'MECH DATA"))
@@ -111,7 +112,7 @@ internal class MechRecordSheetViewTest {
 
     @Test
     fun `an own unit does not repeat the unit label above the grid — MechDataCard already shows it`() {
-        val buffer = render(MechRecordSheetView(atlas()), width = 200, height = 300)
+        val buffer = render(MechRecordSheetView(atlas(), aGameMap()), width = 200, height = 300)
         val topRow = (0 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
 
         assertEquals(0, topRow)
@@ -121,7 +122,7 @@ internal class MechRecordSheetViewTest {
     @Test
     fun `an own unit's armor diagram strikes through a location whose internal structure is destroyed`() {
         val unit = aUnit(internalStructure = anInternalStructureLayout(centerTorso = 0))
-        val buffer = render(MechRecordSheetView(unit), width = 200, height = 300)
+        val buffer = render(MechRecordSheetView(unit, aGameMap()), width = 200, height = 300)
 
         // Center torso ARMOR value (unaffected by the internal-structure override): 47/47.
         val (row, col) = (0 until buffer.height).firstNotNullOf { r ->
@@ -135,7 +136,7 @@ internal class MechRecordSheetViewTest {
 
     @Test
     fun `a foreign unit renders only public sections`() {
-        val buffer = render(MechRecordSheetView(aForeignUnit()), width = 200, height = 60)
+        val buffer = render(MechRecordSheetView(aForeignUnit(), aGameMap()), width = 200, height = 60)
         val text = buffer.text()
 
         assertTrue(text.contains("ARMOR DIAGRAM"))
@@ -156,7 +157,7 @@ internal class MechRecordSheetViewTest {
 
     @Test
     fun `a foreign unit does not repeat the unit label above the grid — MechDataCard already shows it`() {
-        val buffer = render(MechRecordSheetView(aForeignUnit()), width = 200, height = 60)
+        val buffer = render(MechRecordSheetView(aForeignUnit(), aGameMap()), width = 200, height = 60)
         val topRow = (0 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
 
         assertEquals(0, topRow)
@@ -165,7 +166,7 @@ internal class MechRecordSheetViewTest {
 
     @Test
     fun `content never writes past the sheet's column budget regardless of panel width`() {
-        val buffer = render(MechRecordSheetView(atlas()), width = 400, height = 300)
+        val buffer = render(MechRecordSheetView(atlas(), aGameMap()), width = 400, height = 300)
 
         for (row in 0 until buffer.height) {
             for (col in SheetLayout.SHEET_WIDTH until buffer.width) {

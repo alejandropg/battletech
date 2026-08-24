@@ -2,16 +2,12 @@ package battletech.tactical.heat
 
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.model.GameState
-import battletech.tactical.model.submersionDissipationBonus
-import battletech.tactical.unit.engineHeatPerTurn
 
 /**
- * Fold each unit's heat generated this turn into its standing heat and apply
- * dissipation: `newHeat = max(0, current + generated + engineHeat - capacity - waterBonus)`.
- * The per-turn generation list is consumed and cleared (this is also its reset). Heat
- * from engine critical hits ([engineHeatPerTurn]) counts as generated heat for the turn,
- * so it is folded in alongside weapon/movement heat, before dissipation. Units standing
- * in water dissipate extra via [submersionDissipationBonus].
+ * Fold each unit's heat generated this turn into its standing heat and apply dissipation, via
+ * [projectHeat].[HeatProjection.projected] — the same formula the TUI's end-of-turn preview
+ * uses, so the two can never drift apart. The per-turn generation list is consumed and cleared
+ * (this is also its reset).
  *
  * Shutdown and ammo-explosion consequences are rolled separately in
  * [battletech.tactical.heat.HeatPhaseHandler] since they require the dice roller.
@@ -20,10 +16,7 @@ public fun GameState.applyHeatPhase(): GameState {
     val snapshot = this
     return copy(
         units = units.mapUnits { unit ->
-            val generated = unit.heatGeneratedThisTurn.sumOf { it.amount }
-            val engineHeat = unit.engineHeatPerTurn()
-            val waterBonus = submersionDissipationBonus(unit, snapshot)
-            val newHeat = maxOf(0, unit.currentHeat + generated + engineHeat - unit.heatSink.dissipation() - waterBonus)
+            val newHeat = projectHeat(unit, snapshot.map).projected
             unit.copy(currentHeat = newHeat, heatGeneratedThisTurn = emptyList())
         },
     )

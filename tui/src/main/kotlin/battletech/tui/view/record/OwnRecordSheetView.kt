@@ -1,5 +1,6 @@
 package battletech.tui.view.record
 
+import battletech.tactical.model.GameMap
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
 import tenter.screen.Canvas
@@ -16,6 +17,7 @@ import tenter.view.View
  */
 internal class OwnRecordSheetView(
     private val unit: CombatUnit,
+    private val map: GameMap,
     private val pendingHeat: List<HeatSource>,
 ) : View {
 
@@ -49,7 +51,7 @@ internal class OwnRecordSheetView(
         val upperBand = Columns(
             listOf(
                 Columns.Child(SheetLayout.MAIN_CONTENT_WIDTH, mainContent),
-                Columns.Child(SheetLayout.HEAT_WIDTH, HeatLadder(unit, pendingHeat)),
+                Columns.Child(SheetLayout.HEAT_WIDTH, HeatLadder(unit, map, pendingHeat)),
             ),
         )
 

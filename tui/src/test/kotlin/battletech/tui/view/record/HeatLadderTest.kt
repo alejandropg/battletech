@@ -3,6 +3,7 @@ package battletech.tui.view.record
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.HeatSource
+import battletech.tui.aGameMap
 import battletech.tui.aUnit
 import battletech.tui.screen.HeatScaleRole
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -30,7 +31,7 @@ internal class HeatLadderTest {
         // heat sink STS 10 -> dissipation 10, so heat 9 (no pending/committed sources) projects
         // straight down to 0: two distinct rungs to mark, one current, one projected.
         val unit = aUnit(currentHeat = 9)
-        val buffer = render(HeatLadder(unit, emptyList()), width = 40, height = 60)
+        val buffer = render(HeatLadder(unit, aGameMap(), emptyList()), width = 40, height = 60)
 
         val headerRow = (0 until buffer.height).first { buffer.line(it).contains("HEAT SCALE") }
 
@@ -55,7 +56,7 @@ internal class HeatLadderTest {
             heatSink = HeatSink(HeatSinkType.STS, 0),
         )
         val buffer = render(
-            HeatLadder(unit, listOf(HeatSource("Weapons", 5))),
+            HeatLadder(unit, aGameMap(), listOf(HeatSource("Weapons", 5))),
             width = 40,
             height = 60,
         )
@@ -78,7 +79,7 @@ internal class HeatLadderTest {
             currentHeat = 7,
             heatSink = HeatSink(HeatSinkType.STS, 0),
         )
-        val buffer = render(HeatLadder(unit, emptyList()), width = 40, height = 60)
+        val buffer = render(HeatLadder(unit, aGameMap(), emptyList()), width = 40, height = 60)
 
         val headerRow = (0 until buffer.height).first { buffer.line(it).contains("HEAT SCALE") }
         val currentRow = rowForHeat(headerRow, 7)
@@ -96,7 +97,7 @@ internal class HeatLadderTest {
             heatSink = HeatSink(HeatSinkType.STS, 0),
         )
         val buffer = render(
-            HeatLadder(unit, listOf(HeatSource("Weapons", 5))),
+            HeatLadder(unit, aGameMap(), listOf(HeatSource("Weapons", 5))),
             width = 40,
             height = 60,
         )
@@ -112,7 +113,7 @@ internal class HeatLadderTest {
     @Test
     fun `a rule's text prints only on the rung where it first applies`() {
         val unit = aUnit(currentHeat = 0)
-        val buffer = render(HeatLadder(unit, emptyList()), width = 40, height = 60)
+        val buffer = render(HeatLadder(unit, aGameMap(), emptyList()), width = 40, height = 60)
 
         val headerRow = (0 until buffer.height).first { buffer.line(it).contains("HEAT SCALE") }
         // Movement penalty first kicks in at heat 5 (-1 MP); heat 6, 7 repeat the same rule

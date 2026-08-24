@@ -1,20 +1,20 @@
 package battletech.tactical.heat
 
+import battletech.tactical.model.GameMap
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
+import battletech.tactical.unit.engineHeatSource
 
 /**
  * The end-of-turn heat preview the TUI's UNIT STATUS panel renders: [current] heat plus what's
- * already [committed] this turn (from [CombatUnit.heatGeneratedThisTurn]) plus what's still
- * [pending] (a hovered move / in-progress weapon declaration not yet committed), weighed against
- * [dissipation] capacity.
+ * already [committed] this turn (from [CombatUnit.heatGeneratedThisTurn] plus any active engine
+ * crit, via [CombatUnit.engineHeatSource]) plus what's still [pending] (a hovered move /
+ * in-progress weapon declaration not yet committed), weighed against [dissipation] capacity
+ * (sink capacity plus the water-hex bonus, via [submersionDissipationBonus]).
  *
- * TODO(known discrepancy — do not fix without a product decision): this reproduces the TUI's
- * legacy preview formula exactly, which deliberately diverges from the heat-phase resolution
- * that actually applies at end of turn ([HeatPhaseResolution]/`applyHeatPhase`): it ignores
- * engine-crit heat generation and the water-hex dissipation bonus. Correcting either would change
- * rendered numbers — that's a product call, not a refactor, so it's flagged here rather than
- * silently fixed.
+ * This is the same formula [applyHeatPhase] applies at the real end of turn — [projectHeat]
+ * is the authority, and [applyHeatPhase] calls it directly, so the preview and the resolved
+ * value can never drift again.
  */
 public data class HeatProjection(
     public val current: Int,
@@ -32,10 +32,14 @@ public data class HeatProjection(
     public val projected: Int get() = (current + generated - dissipation).coerceAtLeast(0)
 }
 
-/** Builds [unit]'s [HeatProjection] against its already-committed heat plus [pending] preview sources. */
-public fun projectHeat(unit: CombatUnit, pending: List<HeatSource>): HeatProjection = HeatProjection(
-    current = unit.currentHeat,
-    committed = unit.heatGeneratedThisTurn,
-    pending = pending,
-    dissipation = unit.heatSink.dissipation(),
-)
+/**
+ * Builds [unit]'s [HeatProjection] against its already-committed heat plus [pending] preview
+ * sources, using [map] for the water-dissipation bonus at the unit's current position.
+ */
+public fun projectHeat(unit: CombatUnit, map: GameMap, pending: List<HeatSource> = emptyList()): HeatProjection =
+    HeatProjection(
+        current = unit.currentHeat,
+        committed = unit.heatGeneratedThisTurn + listOfNotNull(unit.engineHeatSource()),
+        pending = pending,
+        dissipation = unit.heatSink.dissipation() + submersionDissipationBonus(unit.position, map),
+    )

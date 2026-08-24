@@ -1,5 +1,6 @@
 package battletech.tui.view.record
 
+import battletech.tactical.model.GameMap
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.HeatSource
@@ -23,6 +24,7 @@ import kotlin.math.min
  */
 internal class MechRecordSheetView(
     private val subject: VisibleUnit?,
+    private val map: GameMap,
     private val pendingHeat: List<HeatSource> = emptyList(),
 ) : View {
 
@@ -32,7 +34,7 @@ internal class MechRecordSheetView(
         when (val unit = subject) {
             null -> TextCursor(sheet).writeLine("No unit selected", SheetStyles.TEXT_PRIMARY)
             is ForeignUnit -> ForeignRecordSheetView(unit).draw(sheet)
-            is CombatUnit -> OwnRecordSheetView(unit, pendingHeat).draw(sheet)
+            is CombatUnit -> OwnRecordSheetView(unit, map, pendingHeat).draw(sheet)
         }
     }
 }

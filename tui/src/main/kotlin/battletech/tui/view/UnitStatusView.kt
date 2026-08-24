@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import battletech.tactical.heat.projectHeat
+import battletech.tactical.model.GameMap
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ComponentCritStatus
 import battletech.tactical.unit.ForeignUnit
@@ -21,6 +22,7 @@ import tenter.view.View
 
 internal class UnitStatusView(
     private val subject: VisibleUnit?,
+    private val map: GameMap,
     private val pendingHeat: List<HeatSource> = emptyList(),
 ) : View {
 
@@ -80,9 +82,9 @@ internal class UnitStatusView(
         // HEAT
         with(content) {
             writeHeader("HEAT")
-            draw(HeatGauges(unit, pendingHeat))
+            draw(HeatGauges(unit, map, pendingHeat))
 
-            val projection = projectHeat(unit, pendingHeat)
+            val projection = projectHeat(unit, map, pendingHeat)
             val penalties = HeatPenalties.lines(unit.currentHeat, projection.projected)
             if (penalties.isNotEmpty()) {
                 writeLine("Penalties")

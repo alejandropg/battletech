@@ -66,6 +66,16 @@ public fun CombatUnit.critEffects(component: CriticalComponent): List<CritEffect
 public fun CombatUnit.engineHeatPerTurn(): Int =
     critEffects(CriticalComponent.ENGINE).filterIsInstance<CritEffect.HeatPerTurn>().sumOf { it.amount }
 
+/**
+ * [engineHeatPerTurn] as a labelled [HeatSource], or null when there is none. Unlike the sources
+ * in [CombatUnit.heatGeneratedThisTurn] (accumulated as movement/weapon fire is committed, then
+ * cleared each Heat Phase), this is *derived* fresh from the unit's current crits every time it is
+ * read — never appended to [CombatUnit.heatGeneratedThisTurn] itself, which would double-count it
+ * on the next fold. See [battletech.tactical.heat.projectHeat], the sole caller.
+ */
+public fun CombatUnit.engineHeatSource(): HeatSource? =
+    engineHeatPerTurn().takeIf { it > 0 }?.let { HeatSource("Engine damage", it) }
+
 /** True when sensor damage has blinded this unit ([CritEffect.CannotFire] tier reached). */
 public fun CombatUnit.cannotFireFromSensorDamage(): Boolean =
     critEffects(CriticalComponent.SENSOR).any { it is CritEffect.CannotFire }
