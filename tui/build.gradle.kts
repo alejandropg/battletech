@@ -39,6 +39,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(testFixtures(project(":tenter")))
+    testImplementation(libs.konsist)
 }
 
 tasks.shadowJar {
