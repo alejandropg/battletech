@@ -190,6 +190,21 @@ internal class LocationDiagramTest {
     }
 
     @Test
+    fun `left torso values align one column inside their outer box borders`() {
+        val unit = aUnit()
+
+        val armor = render(RecordSheetDiagrams.armor(unit), width = diagramWidth, height = diagramHeight)
+        val internal = render(RecordSheetDiagrams.internalStructure(unit), width = diagramWidth, height = diagramHeight)
+        val (_, armorBorderColumn) = armor.locate("╭──────╮╭─────────╮╭──────╮")
+        val (_, internalBorderColumn) = internal.locate("╭────╮╭─────╮╭────╮")
+        val (_, armorValueColumn) = armor.locate("32/32")
+        val (_, internalValueColumn) = internal.locate("21/21")
+
+        assertEquals(armorBorderColumn + 1, armorValueColumn)
+        assertEquals(internalBorderColumn + 1, internalValueColumn)
+    }
+
+    @Test
     fun `right torso values align one column inside their outer box borders`() {
         val unit = aUnit(armor = exampleArmor)
 

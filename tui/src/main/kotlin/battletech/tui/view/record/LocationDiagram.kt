@@ -165,10 +165,8 @@ internal class LocationDiagram(
             "Torso",
             locationStyle(centerTorso),
         )
-        drawCentered(
-            canvas,
-            geometry.leftTorsoX,
-            sizes.sideTorso + 2,
+        canvas.writeString(
+            geometry.leftTorsoX + 1,
             torsoTop - 1,
             value(leftTorso),
             locationStyle(leftTorso),
