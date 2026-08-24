@@ -5,11 +5,11 @@ import tenter.text.CellWidth
 import tenter.view.TextCursor
 
 /**
- * A record-sheet style "used-of-capacity" pip track: [used] pips drawn with [filled], the
- * remaining `capacity - used` drawn with [empty], wrapping to a new row every [perRow] pips.
- * This is the shared primitive behind every discrete-dot render (pilot hits, crit slots,
- * armor/structure diagrams) — those differ only in glyphs, capacity, and how many pips fit
- * per row, not in the wrapping/coloring logic itself.
+ * A "used-of-capacity" pip track: [used] pips drawn with [filled], the remaining
+ * `capacity - used` drawn with [empty], wrapping to a new row every [perRow] pips. This is the
+ * shared primitive behind any discrete-dot render of a bounded resource (health tracks, ammo
+ * counters, capacity gauges) — those differ only in glyphs, capacity, and how many pips fit per
+ * row, not in the wrapping/coloring logic itself.
  *
  * [draw] paints at an explicit `(column, row)` and never moves [TextCursor]'s own cursor — the
  * same convention as [TextCursor.write]/[TextCursor.writeAt] — so callers can place several

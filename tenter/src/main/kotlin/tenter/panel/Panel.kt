@@ -62,7 +62,7 @@ public class Panel<K : PanelId, I>(
     /** Column width for MINIMIZED/NORMAL. Never consulted for MAXIMIZED — the layout supplies that. */
     public val width: Int get() = if (state == PanelState.MINIMIZED) MINIMIZED_WIDTH else normalWidth
 
-    /** The offset this panel settled on in its last render — the board's click-to-hex mirror reads this. */
+    /** The offset this panel settled on in its last render — a host mapping a screen click back onto this panel's content reads this. */
     public val offset: ScrollOffset get() = scroll
 
     /** Steps [delta] through [states] (+1 forward, -1 backward), wrapping. A no-op for a single-state panel. */

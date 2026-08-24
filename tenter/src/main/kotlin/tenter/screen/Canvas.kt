@@ -91,7 +91,7 @@ public class Canvas private constructor(
     }
 
     /**
-     * Marks the rect content most wants visible — e.g. a cursor hex, a highlighted row.
+     * Marks the rect content most wants visible — e.g. a selection cursor, a highlighted row.
      * Stored on the backing [ScreenBuffer] in absolute coords (translated through this canvas's
      * origin, like [set]), so it survives [region]/[inset] nesting and is readable from any
      * canvas over the same buffer via [revealRect]. A scrolling container (see `Viewport`) reads

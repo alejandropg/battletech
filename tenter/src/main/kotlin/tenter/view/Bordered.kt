@@ -118,7 +118,7 @@ public class Bordered(
         /**
          * A scrolling panel's viewport: border plus the horizontal gutters, at full inner height.
          * Public because callers that need to translate a click into content-stream coordinates
-         * (e.g. mapping a screen click onto a scrolled board) need to know this inset too — not
+         * (e.g. mapping a screen click onto scrolled content) need to know this inset too — not
          * just an implementation detail of [scrollingPanel].
          */
         public val VIEWPORT_INSET: Insets = BORDER + PADDING.horizontal()

@@ -34,7 +34,7 @@ import battletech.tactical.unit.UnitId
  * unconditional (both players' rolls are emitted win or lose, and the target is the
  * opponent's roll, not a record-sheet number), so they stay verbatim.
  *
- * Ownership resolves via [GameState.unitById]. A null [viewer] fails closed for the reason
+ * Ownership resolves via [battletech.tactical.unit.UnitRoster.byId]. A null [viewer] fails closed for the reason
  * given on [battletech.tactical.query.PlayerGameState].
  *
  * **Known limitation, accepted by design**: [AttacksResolved] is NOT redacted here.

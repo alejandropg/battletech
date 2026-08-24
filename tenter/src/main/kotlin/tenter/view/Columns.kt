@@ -6,7 +6,7 @@ import tenter.screen.Canvas
  * Packs [children] left-to-right across the canvas, [gutter]-separated, wrapping to a new band
  * beneath the tallest child in the current band whenever the next child would not fit. tenter
  * has no other sibling-composition decorator — most content just stacks vertically through a
- * single [TextCursor] — but a wide graphical layout (cards side by side in a record sheet) needs
+ * single [TextCursor] — but a wide graphical layout (cards side by side in a dashboard) needs
  * to degrade to a narrower terminal instead of clipping, which is what this buys.
  *
  * Each child is measured by drawing it once into its own [Canvas.offscreen] and reading

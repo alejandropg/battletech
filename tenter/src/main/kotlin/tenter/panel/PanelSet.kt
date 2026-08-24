@@ -7,7 +7,8 @@ import tenter.view.ScrollOffset
 /**
  * Every panel on one screen, plus the two invariants no single panel can hold: exactly one is
  * focused, and at most one is MAXIMIZED. [main] is the panel whose width is derived rather than
- * declared (the board) — it is always visible, always focusable, and never maximized.
+ * declared (e.g. a central content view the side panels leave room around) — it is always
+ * visible, always focusable, and never maximized.
  */
 public class PanelSet<K : PanelId, I>(
     /** The main panel — read it for identity and declarations; every state change goes through this set. */

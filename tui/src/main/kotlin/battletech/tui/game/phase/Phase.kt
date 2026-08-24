@@ -9,7 +9,7 @@ import tenter.input.KeySection
 /**
  * UI sub-state machine for the active player phase. Phases are pure
  * UI-workflow objects: they hold cursor / hover / draft state, map input
- * events to [battletech.tactical.command.GameCommand]s, and produce render
+ * events to [battletech.tactical.session.GameCommand]s, and produce render
  * data. They never mutate game state directly — all writes flow through
  * [AppState.submitCommand].
  */

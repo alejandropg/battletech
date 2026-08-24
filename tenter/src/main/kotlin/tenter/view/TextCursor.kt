@@ -64,9 +64,9 @@ public class TextCursor(private val canvas: Canvas) {
     /**
      * Writes [text] on the current row within a [width]-wide field starting at [column], without
      * advancing — [Align.LEFT] flush to [column], [Align.RIGHT] flush to `column + width`. The
-     * shared primitive behind any fixed-width table column (record sheet tables, and similar
-     * layouts elsewhere) so each caller states "this field is N wide, right-aligned" once instead
-     * of hand-computing the right-aligned starting column itself.
+     * shared primitive behind any fixed-width table column so each caller states "this field is
+     * N wide, right-aligned" once instead of hand-computing the right-aligned starting column
+     * itself.
      */
     public fun write(column: Int, width: Int, text: String, style: Cell.Style = Cell.Style.DEFAULT, align: Align = Align.LEFT) {
         val startColumn = if (align == Align.LEFT) column else column + width - CellWidth.of(text)
