@@ -19,8 +19,8 @@ import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.GameLog
 import battletech.tactical.session.GameSession
+import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.LogEntry
-import battletech.tactical.session.SessionNotice
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
 import java.io.BufferedReader
@@ -218,9 +218,8 @@ public class ClientGameSession internal constructor(
 
         connectionLost = true
         pendingReply.offer(ServerMessage.CommandReply(UNSOLICITED_REQUEST_ID, CommandResult.Rejected(CommandRejection.OpponentUnavailable)))
-        val notice = SessionNotice("Disconnected from host — restart with 'battletech-tui join <host> --session <id>' to rejoin")
-        log.append(LogEntry(snapshot.turnState.turnNumber, notice))
-        dispatch(notice)
+        log.append(LogEntry(snapshot.turnState.turnNumber, HostConnectionLost))
+        dispatch(HostConnectionLost)
     }
 
     private fun dispatch(event: GameEvent) {

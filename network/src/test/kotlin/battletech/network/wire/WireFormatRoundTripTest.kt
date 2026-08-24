@@ -42,6 +42,7 @@ import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.HeatDissipated
+import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.LogEntry
@@ -52,7 +53,10 @@ import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.PilotHit
 import battletech.tactical.session.PilotKnockedUnconscious
 import battletech.tactical.session.PilotRecoveredConsciousness
+import battletech.tactical.session.PlayerConnected
+import battletech.tactical.session.PlayerDisconnected
 import battletech.tactical.session.SessionNotice
+import battletech.tactical.session.SessionOpened
 import battletech.tactical.session.StandUp
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnEnded
@@ -616,6 +620,10 @@ internal class WireFormatRoundTripTest {
             PilotKnockedUnconscious::class to PilotKnockedUnconscious(unitId = unitA),
             PilotRecoveredConsciousness::class to PilotRecoveredConsciousness.Detailed(unitId = unitA, roll = DiceRoll(5, 6)),
             SessionNotice::class to SessionNotice(text = "Opponent connected"),
+            PlayerConnected::class to PlayerConnected(player = PlayerId.PLAYER_1),
+            PlayerDisconnected::class to PlayerDisconnected(player = PlayerId.PLAYER_1),
+            SessionOpened::class to SessionOpened(sessionId = "ABCDEF"),
+            HostConnectionLost::class to HostConnectionLost,
         )
 
         private val ruleRejectionFixtures: Map<KClass<out RuleRejection>, RuleRejection> = mapOf(

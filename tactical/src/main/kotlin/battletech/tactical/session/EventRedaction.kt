@@ -104,6 +104,10 @@ public fun GameEvent.redactFor(viewer: PlayerId?, state: GameState, revealAll: B
         is MatchEnded -> this
         is PilotKnockedUnconscious -> this
         is SessionNotice -> this
+        is PlayerConnected -> this
+        is PlayerDisconnected -> this
+        is SessionOpened -> this
+        is HostConnectionLost -> this
     }
 }
 

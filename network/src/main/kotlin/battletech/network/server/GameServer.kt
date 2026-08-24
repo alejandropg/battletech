@@ -23,7 +23,10 @@ import battletech.tactical.session.GameEvent
 import battletech.tactical.session.GameLog
 import battletech.tactical.session.GameSession
 import battletech.tactical.session.LogEntry
+import battletech.tactical.session.PlayerConnected
+import battletech.tactical.session.PlayerDisconnected
 import battletech.tactical.session.SessionNotice
+import battletech.tactical.session.SessionOpened
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.redactFor
@@ -281,7 +284,7 @@ public class GameServer(
             // Everything from here up to (and including) the connect notice is new to
             // alreadyConnected clients, but the joiner gets it all for free via JoinAccepted.log below.
             val markBeforeConnectNotice = session.gameLog.snapshot().size
-            session.annotate(SessionNotice("${seatLabel(seat)} connected"))
+            session.annotate(PlayerConnected(seat))
             clients[seat] = client
             startWriterThread(client)
             val markBeforeKickstart = session.gameLog.snapshot().size
@@ -378,11 +381,9 @@ public class GameServer(
             } catch (e: IOException) {
                 // already gone
             }
-            session.annotate(SessionNotice("${seatLabel(connected.seat)} disconnected — waiting for rejoin…"))
+            session.annotate(PlayerDisconnected(connected.seat))
         }
     }
-
-    private fun seatLabel(seat: PlayerId): String = "Player ${seat.ordinal + 1}"
 
     private class ConnectedClient(
         internal val seat: PlayerId,
@@ -419,7 +420,7 @@ public class GameServer(
             val session = BattleSession(initialGameState = initialGameState, initialTurnState = TurnState.NULL)
             val sessionId = SessionId.generate()
             val server = GameServer(session, sessionId)
-            session.annotate(SessionNotice("Session ID: $sessionId"))
+            session.annotate(SessionOpened(sessionId))
             session.annotate(SessionNotice("Waiting for players to join…"))
             return server
         }

@@ -14,6 +14,7 @@ import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.HeatDissipated
+import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.MatchEnded
 import battletech.tactical.session.PhaseChanged
@@ -21,7 +22,10 @@ import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.PilotHit
 import battletech.tactical.session.PilotKnockedUnconscious
 import battletech.tactical.session.PilotRecoveredConsciousness
+import battletech.tactical.session.PlayerConnected
+import battletech.tactical.session.PlayerDisconnected
 import battletech.tactical.session.SessionNotice
+import battletech.tactical.session.SessionOpened
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitDestroyed
@@ -185,6 +189,11 @@ internal object GameLogFormatter {
             listOf(LogLine(pilotConsciousIcon(), "$name pilot regained consciousness"))
         }
         is SessionNotice -> listOf(LogLine(sessionNoticeIcon(), event.text))
+        is PlayerConnected -> listOf(LogLine(sessionNoticeIcon(), "${playerLabel(event.player)} connected"))
+        is PlayerDisconnected -> listOf(LogLine(sessionNoticeIcon(), "${playerLabel(event.player)} disconnected — waiting for rejoin…"))
+        is SessionOpened -> listOf(LogLine(sessionNoticeIcon(), "Session ID: ${event.sessionId}"))
+        is HostConnectionLost ->
+            listOf(LogLine(sessionNoticeIcon(), "Disconnected from host — restart with 'battletech-tui join <host> --session <id>' to rejoin"))
     }
 
     /**

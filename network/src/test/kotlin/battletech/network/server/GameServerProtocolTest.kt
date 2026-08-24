@@ -22,7 +22,8 @@ import battletech.tactical.session.CommandResult
 import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.LogEntry
 import battletech.tactical.session.MoveUnit
-import battletech.tactical.session.SessionNotice
+import battletech.tactical.session.PlayerConnected
+import battletech.tactical.session.PlayerDisconnected
 import battletech.tactical.unit.CriticalSlotContent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -54,8 +55,8 @@ internal class GameServerProtocolTest {
 
         assertThat(joinAccepted.playerId).isEqualTo(PlayerId.PLAYER_2)
         assertThat(joinAccepted.log).containsExactly(
-            LogEntry(turn = 1, event = SessionNotice("Player 1 connected")),
-            LogEntry(turn = 1, event = SessionNotice("Player 2 connected")),
+            LogEntry(turn = 1, event = PlayerConnected(PlayerId.PLAYER_1)),
+            LogEntry(turn = 1, event = PlayerConnected(PlayerId.PLAYER_2)),
         )
         assertThat(joinAccepted.snapshot.currentPhase).isEqualTo(TurnPhase.INITIATIVE)
         assertThat(joinAccepted.snapshot.gameState).isEqualTo(server.stateFor(PlayerId.PLAYER_2))
@@ -263,12 +264,12 @@ internal class GameServerProtocolTest {
         server.attachInBackground(firstConnection)
         firstConnection.joinAndConsumeKickstart(sessionId)
         val logSizeBeforeRejoin = server.gameLog.snapshot().size
-        assertThat(server.gameLog.snapshot().map { it.event }).contains(SessionNotice("Player 2 connected"))
+        assertThat(server.gameLog.snapshot().map { it.event }).contains(PlayerConnected(PlayerId.PLAYER_2))
 
         firstConnection.closeClientSide()
         awaitTrue {
             server.gameLog.snapshot().map { it.event }
-                .contains(SessionNotice("Player 2 disconnected — waiting for rejoin…"))
+                .contains(PlayerDisconnected(PlayerId.PLAYER_2))
         }
 
         val unit = server.gameState.units.of(PlayerId.PLAYER_1).first()
@@ -283,12 +284,12 @@ internal class GameServerProtocolTest {
 
         assertThat(rejoinAccepted.playerId).isEqualTo(PlayerId.PLAYER_2)
         assertThat(rejoinAccepted.log).hasSize(logSizeBeforeRejoin + 2)
-        val noticeTexts = rejoinAccepted.log.map { it.event }.filterIsInstance<SessionNotice>().map { it.text }
-        assertThat(noticeTexts).containsExactly(
-            "Player 1 connected",
-            "Player 2 connected",
-            "Player 2 disconnected — waiting for rejoin…",
-            "Player 2 connected",
+        val connectivityEvents = rejoinAccepted.log.map { it.event }.filter { it is PlayerConnected || it is PlayerDisconnected }
+        assertThat(connectivityEvents).containsExactly(
+            PlayerConnected(PlayerId.PLAYER_1),
+            PlayerConnected(PlayerId.PLAYER_2),
+            PlayerDisconnected(PlayerId.PLAYER_2),
+            PlayerConnected(PlayerId.PLAYER_2),
         )
 
         // No second kickstart: give any wrongful push a generous window to arrive, then confirm none did.
@@ -434,7 +435,7 @@ internal class GameServerProtocolTest {
         first.closeClientSide()
         awaitTrue {
             server.gameLog.snapshot().map { it.event }
-                .contains(SessionNotice("Player 1 disconnected — waiting for rejoin…"))
+                .contains(PlayerDisconnected(PlayerId.PLAYER_1))
         }
 
         val unit = server.gameState.units.of(PlayerId.PLAYER_2).first()
@@ -451,12 +452,12 @@ internal class GameServerProtocolTest {
         val rejoinAccepted = rejoin.join(sessionId) as ServerMessage.JoinAccepted
 
         assertThat(rejoinAccepted.playerId).isEqualTo(PlayerId.PLAYER_1)
-        // +1 for the disconnect notice, +1 for the rejoin's own "Player 1 connected" notice.
+        // +1 for the disconnect notice, +1 for the rejoin's own PlayerConnected event.
         assertThat(rejoinAccepted.log).hasSize(logSizeBeforeDisconnect + 2)
-        val noticeTexts = rejoinAccepted.log.map { it.event }.filterIsInstance<SessionNotice>().map { it.text }
-        assertThat(noticeTexts).containsSequence(
-            "Player 1 disconnected — waiting for rejoin…",
-            "Player 1 connected",
+        val connectivityEvents = rejoinAccepted.log.map { it.event }.filter { it is PlayerConnected || it is PlayerDisconnected }
+        assertThat(connectivityEvents).containsSequence(
+            PlayerDisconnected(PlayerId.PLAYER_1),
+            PlayerConnected(PlayerId.PLAYER_1),
         )
 
         // No second kickstart: give any wrongful push a generous window to arrive, then confirm none did.

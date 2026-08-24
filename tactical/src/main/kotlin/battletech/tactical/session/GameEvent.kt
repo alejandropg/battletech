@@ -17,6 +17,7 @@ import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.DestructionReason
 import battletech.tactical.unit.PilotingSkillRoll
 import battletech.tactical.unit.UnitId
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -310,11 +311,41 @@ public sealed interface PilotRecoveredConsciousness : GameEvent {
 
 /**
  * A free-text annotation recorded in the game log for an out-of-band
- * happening (e.g. a network connect/disconnect) — used by deliveries/servers
- * that wrap a session; tactical itself stays network-agnostic and never
- * emits this on its own.
+ * happening — used by deliveries/servers that wrap a session; tactical itself stays
+ * network-agnostic and never emits this on its own. Prefer [PlayerConnected],
+ * [PlayerDisconnected], [SessionOpened], or [HostConnectionLost] for the specific
+ * connectivity facts they name — this is for genuinely free-form host annotations only
+ * (e.g. "Waiting for players to join…").
  */
 @Serializable
+@SerialName("sessionNotice")
 public data class SessionNotice(
     public val text: String,
 ) : GameEvent
+
+/** [player]'s seat has connected — an initial join or a rejoin after [PlayerDisconnected]. */
+@Serializable
+@SerialName("playerConnected")
+public data class PlayerConnected(public val player: PlayerId) : GameEvent
+
+/**
+ * [player]'s seat has dropped. Per [battletech.network.server.GameServer]'s freeze
+ * invariant, no command from any seat is accepted again until this player rejoins.
+ */
+@Serializable
+@SerialName("playerDisconnected")
+public data class PlayerDisconnected(public val player: PlayerId) : GameEvent
+
+/** A new session was opened, identified by [sessionId] — the code a remote seat joins with. */
+@Serializable
+@SerialName("sessionOpened")
+public data class SessionOpened(public val sessionId: String) : GameEvent
+
+/**
+ * This client's connection to the host was lost — the local, client-side counterpart of
+ * [PlayerDisconnected] (which the *host* emits about a remote seat). Carries no data: how to
+ * rejoin is a `tui` CLI concern, not something [battletech.network] should author.
+ */
+@Serializable
+@SerialName("hostConnectionLost")
+public data object HostConnectionLost : GameEvent

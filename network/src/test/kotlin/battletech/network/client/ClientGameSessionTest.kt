@@ -17,8 +17,8 @@ import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.GameEvent
+import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.MoveUnit
-import battletech.tactical.session.SessionNotice
 import battletech.tactical.session.UnitMoved
 import battletech.tactical.unit.UnitId
 import org.assertj.core.api.Assertions.assertThat
@@ -252,7 +252,7 @@ internal class ClientGameSessionTest {
     }
 
     @Test
-    fun `connection lost appends a SessionNotice to the replica log and delivers it to subscribers, then submitCommand rejects with OpponentUnavailable`() {
+    fun `connection lost appends a HostConnectionLost event to the replica log and delivers it to subscribers, then submitCommand rejects with OpponentUnavailable`() {
         val server = GameServer(aSampleSession(), sessionId)
         server.connectLocal()
         val connection = PipedConnection()
@@ -263,9 +263,8 @@ internal class ClientGameSessionTest {
         remote.subscribe { events += it }
 
         connection.closeServerSide()
-        val expectedNotice = SessionNotice("Disconnected from host — restart with 'battletech-tui join <host> --session <id>' to rejoin")
-        awaitTrue { events.contains(expectedNotice) }
-        assertThat(remote.gameLog.snapshot().map { it.event }).contains(expectedNotice)
+        awaitTrue { events.contains(HostConnectionLost) }
+        assertThat(remote.gameLog.snapshot().map { it.event }).contains(HostConnectionLost)
 
         val unit = remote.stateFor(remote.playerId).units.of(PlayerId.PLAYER_2).first()
         val reachability = remote.viewFor(remote.playerId).legalMovementsFor(unit.id).first()

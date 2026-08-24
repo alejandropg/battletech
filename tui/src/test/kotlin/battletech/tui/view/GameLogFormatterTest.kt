@@ -27,6 +27,7 @@ import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.CriticalHit
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.HeatDissipated
+import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.MatchEnded
@@ -35,7 +36,10 @@ import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.PilotHit
 import battletech.tactical.session.PilotKnockedUnconscious
 import battletech.tactical.session.PilotRecoveredConsciousness
+import battletech.tactical.session.PlayerConnected
+import battletech.tactical.session.PlayerDisconnected
 import battletech.tactical.session.SessionNotice
+import battletech.tactical.session.SessionOpened
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnEnded
 import battletech.tactical.session.UnitDestroyed
@@ -621,6 +625,39 @@ internal class GameLogFormatterTest {
         val lines = GameLogFormatter.lines(SessionNotice("Opponent connected"), emptyState)
 
         assertThat(lines).containsExactly(GameLogFormatter.LogLine(sessionNoticeIcon(), "Opponent connected"))
+    }
+
+    @Test
+    fun `PlayerConnected renders the seat label with the lan-connect icon`() {
+        val lines = GameLogFormatter.lines(PlayerConnected(PlayerId.PLAYER_1), emptyState)
+
+        assertThat(lines).containsExactly(GameLogFormatter.LogLine(sessionNoticeIcon(), "P1 connected"))
+    }
+
+    @Test
+    fun `PlayerDisconnected renders the seat label with the lan-connect icon`() {
+        val lines = GameLogFormatter.lines(PlayerDisconnected(PlayerId.PLAYER_2), emptyState)
+
+        assertThat(lines).containsExactly(GameLogFormatter.LogLine(sessionNoticeIcon(), "P2 disconnected — waiting for rejoin…"))
+    }
+
+    @Test
+    fun `SessionOpened renders the session id with the lan-connect icon`() {
+        val lines = GameLogFormatter.lines(SessionOpened("ABC123"), emptyState)
+
+        assertThat(lines).containsExactly(GameLogFormatter.LogLine(sessionNoticeIcon(), "Session ID: ABC123"))
+    }
+
+    @Test
+    fun `HostConnectionLost renders the rejoin instructions with the lan-connect icon`() {
+        val lines = GameLogFormatter.lines(HostConnectionLost, emptyState)
+
+        assertThat(lines).containsExactly(
+            GameLogFormatter.LogLine(
+                sessionNoticeIcon(),
+                "Disconnected from host — restart with 'battletech-tui join <host> --session <id>' to rejoin",
+            ),
+        )
     }
 
     @Test
