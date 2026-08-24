@@ -11,10 +11,11 @@ import tenter.screen.RolePalette
  * [AnsiLevel] tier [colors] were authored for; every value in [colors] is a [PaletteColor] of the
  * matching subtype (never converted between tiers — see [PaletteColor]'s KDoc).
  *
- * [colors] must already contain every [tenter.screen.ChromeRole] and [BoardRole] — that
- * completeness is [ThemeFile.toTheme]'s job, not this constructor's; a role missing here fails at
- * first [foreground] call rather than at load time. Construct through [resolveTheme]/[ThemeLoader]
- * in production; a hand-built [Theme] is only for tests exercising [RolePalette] in isolation.
+ * [colors] must already contain every [tenter.screen.ChromeRole], [BoardRole], and [HeatScaleRole]
+ * — that completeness is [ThemeFile.toTheme]'s job, not this constructor's; a role missing here
+ * fails at first [foreground] call rather than at load time. Construct through
+ * [resolveTheme]/[ThemeLoader] in production; a hand-built [Theme] is only for tests exercising
+ * [RolePalette] in isolation.
  */
 public class Theme(
     private val name: String,

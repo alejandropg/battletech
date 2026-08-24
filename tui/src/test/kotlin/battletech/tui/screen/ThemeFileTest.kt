@@ -10,10 +10,17 @@ internal class ThemeFileTest {
 
     private val allChrome = ChromeRole.entries.associate { it.name to "#000000" }
     private val allBoard = BoardRole.entries.associate { it.name to "#000000" }
+    private val allHeatScale = HeatScaleRole.entries.associate { it.name to "#000000" }
 
     @Test
     fun `a complete truecolor file parses into a named Theme`() {
-        val file = ThemeFile(colorSpace = ColorSpace.TRUECOLOR, background = "#010203", chrome = allChrome, board = allBoard)
+        val file = ThemeFile(
+            colorSpace = ColorSpace.TRUECOLOR,
+            background = "#010203",
+            chrome = allChrome,
+            board = allBoard,
+            heatScale = allHeatScale,
+        )
 
         val theme = file.toTheme("test")
 
@@ -28,6 +35,7 @@ internal class ThemeFileTest {
             background = "#000000",
             chrome = allChrome - ChromeRole.DANGER.name,
             board = allBoard,
+            heatScale = allHeatScale,
         )
 
         val exception = assertThrows<ThemeLoadException> { file.toTheme("test") }
@@ -41,10 +49,25 @@ internal class ThemeFileTest {
             background = "#000000",
             chrome = allChrome,
             board = allBoard - BoardRole.PLAYER_1.name,
+            heatScale = allHeatScale,
         )
 
         val exception = assertThrows<ThemeLoadException> { file.toTheme("test") }
         assertThat(exception.message).contains("missing board roles").contains("PLAYER_1")
+    }
+
+    @Test
+    fun `a missing heat scale role names it`() {
+        val file = ThemeFile(
+            colorSpace = ColorSpace.TRUECOLOR,
+            background = "#000000",
+            chrome = allChrome,
+            board = allBoard,
+            heatScale = allHeatScale - HeatScaleRole.CURRENT_BG.name,
+        )
+
+        val exception = assertThrows<ThemeLoadException> { file.toTheme("test") }
+        assertThat(exception.message).contains("missing heatScale roles").contains("CURRENT_BG")
     }
 
     @Test
@@ -54,6 +77,7 @@ internal class ThemeFileTest {
             background = "#000000",
             chrome = allChrome + ("NOT_A_ROLE" to "#000000"),
             board = allBoard,
+            heatScale = allHeatScale,
         )
 
         val exception = assertThrows<ThemeLoadException> { file.toTheme("test") }
@@ -67,6 +91,7 @@ internal class ThemeFileTest {
             background = "#000000",
             chrome = allChrome,
             board = allBoard + ("NOT_A_ROLE" to "#000000"),
+            heatScale = allHeatScale,
         )
 
         val exception = assertThrows<ThemeLoadException> { file.toTheme("test") }
@@ -74,8 +99,28 @@ internal class ThemeFileTest {
     }
 
     @Test
+    fun `an unknown heat scale role name is rejected`() {
+        val file = ThemeFile(
+            colorSpace = ColorSpace.TRUECOLOR,
+            background = "#000000",
+            chrome = allChrome,
+            board = allBoard,
+            heatScale = allHeatScale + ("NOT_A_ROLE" to "#000000"),
+        )
+
+        val exception = assertThrows<ThemeLoadException> { file.toTheme("test") }
+        assertThat(exception.message).contains("unknown heatScale role").contains("NOT_A_ROLE")
+    }
+
+    @Test
     fun `a malformed hex value is rejected`() {
-        val file = ThemeFile(colorSpace = ColorSpace.TRUECOLOR, background = "not-a-color", chrome = allChrome, board = allBoard)
+        val file = ThemeFile(
+            colorSpace = ColorSpace.TRUECOLOR,
+            background = "not-a-color",
+            chrome = allChrome,
+            board = allBoard,
+            heatScale = allHeatScale,
+        )
 
         assertThrows<ThemeLoadException> { file.toTheme("test") }
     }
@@ -87,6 +132,7 @@ internal class ThemeFileTest {
             background = "999",
             chrome = ChromeRole.entries.associate { it.name to "233" },
             board = BoardRole.entries.associate { it.name to "233" },
+            heatScale = HeatScaleRole.entries.associate { it.name to "233" },
         )
 
         assertThrows<ThemeLoadException> { file.toTheme("test") }
@@ -99,6 +145,7 @@ internal class ThemeFileTest {
             background = "50",
             chrome = ChromeRole.entries.associate { it.name to "30" },
             board = BoardRole.entries.associate { it.name to "30" },
+            heatScale = HeatScaleRole.entries.associate { it.name to "30" },
         )
 
         assertThrows<ThemeLoadException> { file.toTheme("test") }
@@ -111,6 +158,7 @@ internal class ThemeFileTest {
             background = "bright-red",
             chrome = ChromeRole.entries.associate { it.name to "233" },
             board = BoardRole.entries.associate { it.name to "233" },
+            heatScale = HeatScaleRole.entries.associate { it.name to "233" },
         )
 
         assertThrows<ThemeLoadException> { file.toTheme("test") }

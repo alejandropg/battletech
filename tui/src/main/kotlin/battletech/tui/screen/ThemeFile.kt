@@ -9,9 +9,9 @@ import tenter.screen.PaletteColor
 
 /**
  * On-disk shape of a theme file: one color space plus a value for every [ChromeRole] and
- * [BoardRole], split into [chrome]/[board] so a missing or unknown role names which table it
- * belongs to. Every value in [background]/[chrome]/[board] is a string parsed according to
- * [colorSpace] — see [ColorSpace]'s KDoc for the three syntaxes.
+ * [BoardRole], and [HeatScaleRole], split into semantic tables so a missing or unknown role names
+ * where it belongs. Every color value is a string parsed according to [colorSpace] — see
+ * [ColorSpace]'s KDoc for the three syntaxes.
  */
 @Serializable
 internal data class ThemeFile(
@@ -19,6 +19,7 @@ internal data class ThemeFile(
     val background: String,
     val chrome: Map<String, String> = emptyMap(),
     val board: Map<String, String> = emptyMap(),
+    val heatScale: Map<String, String> = emptyMap(),
 ) {
 
     /** Parses and validates this file into a [Theme] named [name], throwing [ThemeLoadException] on any failure. */
@@ -27,6 +28,7 @@ internal data class ThemeFile(
         val colors = mutableMapOf<ColorRole, PaletteColor>()
         resolveRoles(chrome, ChromeRole.entries.associateBy { it.name }, "chrome", name, colors)
         resolveRoles(board, BoardRole.entries.associateBy { it.name }, "board", name, colors)
+        resolveRoles(heatScale, HeatScaleRole.entries.associateBy { it.name }, "heatScale", name, colors)
         return Theme(name, colorSpace.level, defaultBackground, colors)
     }
 

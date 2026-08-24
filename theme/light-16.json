@@ -16,6 +16,11 @@
     "PANEL_BORDER": "90",
     "PANEL_BORDER_FOCUSED": "32"
   },
+  "heatScale": {
+    "CURRENT_BG": "93",
+    "HEATING_BG": "91",
+    "COOLING_BG": "96"
+  },
   "board": {
     "PLAYER_1": "34",
     "PLAYER_2": "35",

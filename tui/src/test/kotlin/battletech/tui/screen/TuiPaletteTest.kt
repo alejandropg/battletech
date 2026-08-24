@@ -38,8 +38,8 @@ internal class TuiPaletteTest {
     private val ansi16Themes = allThemes.filter { it.level == AnsiLevel.ANSI16 }
     private val reducedThemes = allThemes.filter { it.level != AnsiLevel.TRUECOLOR }
 
-    /** Every role this module resolves: [ChromeRole] plus the board-specific [BoardRole]s. */
-    private val allRoles: List<ColorRole> = ChromeRole.entries + BoardRole.entries
+    /** Every role this module resolves: generic chrome plus BattleTech-specific roles. */
+    private val allRoles: List<ColorRole> = ChromeRole.entries + BoardRole.entries + HeatScaleRole.entries
 
     /**
      * Every semantic role except the six terrain fills, four terrain icons, three badge
@@ -48,7 +48,7 @@ internal class TuiPaletteTest {
      */
     private val generalRoles = allRoles.filterNot {
         it == ChromeRole.DEFAULT || it in TERRAIN_FILLS || it in TERRAIN_ICONS || it in BADGE_BACKGROUNDS ||
-            it == BoardRole.ELEVATION_BADGE_FG || it in SUBTLE_ROLES
+            it == BoardRole.ELEVATION_BADGE_FG || it in HEAT_SCALE_BACKGROUNDS || it in SUBTLE_ROLES
     }
 
     @Test
@@ -272,6 +272,38 @@ internal class TuiPaletteTest {
     }
 
     @Test
+    fun `truecolor and ansi256- heat scale text clears 4point5 to 1 against its highlight backgrounds`() {
+        for (theme in truecolorThemes + ansi256Themes) {
+            val currentRatio = contrast(
+                luminance(theme.foreground(ChromeRole.TEXT_PRIMARY)),
+                luminance(theme.background(HeatScaleRole.CURRENT_BG)),
+            )
+            assertThat(currentRatio).describedAs("$theme: TEXT_PRIMARY on CURRENT_BG")
+                .isGreaterThanOrEqualTo(4.5)
+
+            for (background in listOf(HeatScaleRole.HEATING_BG, HeatScaleRole.COOLING_BG)) {
+                for (foreground in listOf(ChromeRole.TEXT_MUTED, ChromeRole.DRAFT)) {
+                    val ratio = contrast(
+                        luminance(theme.foreground(foreground)),
+                        luminance(theme.background(background)),
+                    )
+                    assertThat(ratio).describedAs("$theme: $foreground on $background")
+                        .isGreaterThanOrEqualTo(4.5)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `truecolor and ansi256- heat scale backgrounds are mutually distinct`() {
+        for (theme in truecolorThemes + ansi256Themes) {
+            val backgrounds = HEAT_SCALE_BACKGROUNDS.map(theme::background)
+
+            assertThat(backgrounds.toSet()).describedAs("$theme heat scale backgrounds").hasSize(3)
+        }
+    }
+
+    @Test
     fun `truecolor and ansi256- decorative BOARD_BORDER is merely distinct from every terrain fill, not required to pop`() {
         // BOARD_BORDER carries no information by itself — terrain material reads from the fill/icon,
         // elevation from the badge — so the grid line only needs to be a different color from its
@@ -339,6 +371,8 @@ internal class TuiPaletteTest {
             assertNotEquals(theme.foreground(BoardRole.TERRAIN_WOODS_LIGHT_ICON), theme.foreground(BoardRole.TERRAIN_ROUGH_ICON), "$theme: woods vs rough icon")
             val badges = BADGE_BACKGROUNDS.map { theme.background(it) }
             assertThat(badges.toSet()).describedAs("$theme badge tiers").hasSize(BADGE_BACKGROUNDS.size)
+            val heatScaleBackgrounds = HEAT_SCALE_BACKGROUNDS.map { theme.background(it) }
+            assertThat(heatScaleBackgrounds.toSet()).describedAs("$theme heat scale backgrounds").hasSize(3)
         }
     }
 
@@ -376,6 +410,8 @@ internal class TuiPaletteTest {
             BoardRole.ELEVATION_2_BADGE_BG,
             BoardRole.ELEVATION_HIGH_BADGE_BG,
         )
+        private val HEAT_SCALE_BACKGROUNDS: List<ColorRole> = HeatScaleRole.entries
+
         /**
          * Board roles that must remain legible over every terrain fill. The selected-target marker
          * is intentionally excluded because it shares the requested danger red; it remains covered

@@ -26,15 +26,18 @@ One file per theme, one color space per file — there is no conversion between 
   "colorSpace": "truecolor",
   "background": "#101418",
   "chrome": { "DEFAULT": "#DDE2E5", "...": "..." },
+  "heatScale": { "CURRENT_BG": "#3A3218", "...": "..." },
   "board":  { "PLAYER_1": "#A0F4FF", "...": "..." }
 }
 ```
 
 `chrome` must hold exactly the 13 `tenter.screen.ChromeRole` names; `board` must hold exactly the
-26 `battletech.tui.screen.BoardRole` names. A missing or unrecognized role name fails to load with
+26 `battletech.tui.screen.BoardRole` names; and `heatScale` must hold exactly the three
+`battletech.tui.screen.HeatScaleRole` names. A missing or unrecognized role name fails to load with
 a `ThemeLoadException` naming the offending role and table — this is the load-time replacement for
 the compile-time exhaustiveness check a hand-written `RolePalette` object used to get for free (see
-`tenter.screen.RolePalette`'s KDoc).
+`tenter.screen.RolePalette`'s KDoc). Custom themes written before the `heatScale` table was added
+must add all three roles; there is deliberately no unverified fallback color.
 
 Resolution is not theme-specific: `battletech.tui.screen.ThemeLoader` is a thin adapter over
 `battletech.tactical.io.ResourceOrFileLoader` (see `docs/architecture.md`), the same generic loader
@@ -48,6 +51,24 @@ filesystem path is authoritative and never falls back to a packaged theme.
 ## Why the values are what they are
 
 ### Truecolor (`dark`, `light`)
+
+**Heat-scale backgrounds retain the ladder's foreground hierarchy at 4.5:1 contrast.** The current
+rung is amber, the current-exclusive/projected-inclusive heating interval is red, and the matching
+cooling interval is blue. The arrows remain a redundant non-color cue. `CURRENT_BG` clears 4.5:1
+against `TEXT_PRIMARY`; `HEATING_BG` and `COOLING_BG` each clear 4.5:1 against both `TEXT_MUTED` and
+`DRAFT`, so the projected endpoint and rule text remain legible. `TuiPaletteTest` enforces those
+pairs for truecolor and ANSI-256 themes and requires all three backgrounds to be distinct. ANSI-16
+themes follow their existing distinctness-only policy because terminal remapping makes measurable
+contrast unknowable.
+
+| Theme | `CURRENT_BG` | `HEATING_BG` | `COOLING_BG` |
+|---|---:|---:|---:|
+| `dark` | `#3A3218` | `#3C1E24` | `#173044` |
+| `light` | `#F1E0AE` | `#F3DADB` | `#D4E5F2` |
+| `dark-256` | `58` | `52` | `17` |
+| `light-256` | `229` | `224` | `195` |
+| `dark-16` | `33` | `31` | `34` |
+| `light-16` | `93` | `91` | `96` |
 
 **`PLAYER_2` sits at a 3:1 contrast floor while every other critical board foreground clears
 4.5:1.** Unit ownership is the one board fact with no redundant non-color cue — `UnitRenderer` draws

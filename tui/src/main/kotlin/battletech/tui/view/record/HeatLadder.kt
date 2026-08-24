@@ -4,6 +4,7 @@ import battletech.tactical.heat.HeatScale
 import battletech.tactical.heat.projectHeat
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
+import battletech.tui.screen.HeatScaleRole
 import tenter.screen.Canvas
 import tenter.view.TextCursor
 import tenter.view.View
@@ -18,7 +19,8 @@ import tenter.widget.Gauge
  * convention the printed sheet uses (e.g. "+1 To-Hit" appears once, at 8, never restated at 9
  * through 30) — rather than restating every currently-active category on every rung a *different*
  * category happens to change on, which would make most rows far wider than the category text
- * itself needs.
+ * itself needs. The current rung has its own background; the current-exclusive, projected-inclusive
+ * interval is tinted separately for heating and cooling while preserving the foreground hierarchy.
  */
 internal class HeatLadder(
     private val unit: CombatUnit,
@@ -60,13 +62,23 @@ internal class HeatLadder(
                 heat == projection.projected -> " ▶"
                 else -> "  "
             }
-            val style = when {
+            val foregroundStyle = when {
                 heat == unit.currentHeat -> SheetStyles.TEXT_PRIMARY
                 heat == projection.projected -> SheetStyles.DRAFT
                 else -> SheetStyles.TEXT_MUTED
             }
+            val background = heatBackground(heat, unit.currentHeat, projection.projected)
+            val style = background?.let { foregroundStyle.copy(bg = it) } ?: foregroundStyle
+            if (background != null) canvas.writeString(0, content.row, " ".repeat(canvas.width), style)
             content.writeRow("$marker %2d".format(heat), changed.joinToString(", "), style)
         }
+    }
+
+    private fun heatBackground(heat: Int, current: Int, projected: Int): HeatScaleRole? = when {
+        heat == current -> HeatScaleRole.CURRENT_BG
+        projected > current && heat > current && heat <= projected -> HeatScaleRole.HEATING_BG
+        projected < current && heat < current && heat >= projected -> HeatScaleRole.COOLING_BG
+        else -> null
     }
 
     /**
