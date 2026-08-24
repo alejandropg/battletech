@@ -8,6 +8,7 @@ import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.createUnit
 import battletech.tui.hex.ammoIcon
 import battletech.tui.hex.infinityIcon
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.view.line
@@ -35,14 +36,16 @@ internal class WeaponInventoryTableTest {
     }
 
     @Test
-    fun `prints heat damage and range columns for a known weapon`() {
+    fun `right aligns weapon values within inventory columns`() {
         val buffer = render(WeaponInventoryTable(atlas()), width = 120, height = 20)
-        val row = (0 until buffer.height).map { buffer.line(it) }.first { it.contains("AC/20") }
-
-        // AC/20: heat 7, damage 20, min 3, short 3, medium 6, long 9.
-        for (value in listOf("7", "20", "3", "3", "6", "9")) {
-            assertTrue(row.contains(value), "expected AC/20 row to contain '$value': $row")
+        val rows = (0 until buffer.height).map {
+            buffer.line(it, width = SheetLayout.WEAPON_INVENTORY_WIDTH)
         }
+        val ac20Row = rows.first { it.contains("AC/20") }
+        val mediumLaserRow = rows.first { it.contains("Medium Laser") }
+
+        assertEquals("1   AC/20            RT   7   20    3    3    6    9  10 ${ammoIcon()}", ac20Row)
+        assertEquals("2   Medium Laser     LA   3    5    0    3    6    9     ${infinityIcon()}", mediumLaserRow)
     }
 
     @Test

@@ -7,6 +7,8 @@ import battletech.tui.hex.ammoIcon
 import battletech.tui.hex.infinityIcon
 import battletech.tui.view.MechLabels
 import tenter.screen.Canvas
+import tenter.screen.Cell
+import tenter.text.CellWidth
 import tenter.view.TextCursor
 import tenter.view.View
 
@@ -40,15 +42,19 @@ internal class WeaponInventoryTable(private val unit: CombatUnit) : View {
             content.write(COL_QTY, row.qty.toString(), style)
             content.write(COL_TYPE, row.weapon.name, style)
             content.write(COL_LOC, MechLabels.abbreviation(row.weapon.location), style)
-            content.write(COL_HEAT, row.weapon.heat.toString(), style)
-            content.write(COL_DAMAGE, row.weapon.damage.toString(), style)
-            content.write(COL_MIN, row.weapon.minimumRange.toString(), style)
-            content.write(COL_SHORT, row.weapon.shortRange.toString(), style)
-            content.write(COL_MEDIUM, row.weapon.mediumRange.toString(), style)
-            content.write(COL_LONG, row.weapon.longRange.toString(), style)
-            content.write(COL_AMMO, ammoLabel(row.weapon), style)
+            content.writeRightAligned(COL_HEAT, WIDTH_HEAT, row.weapon.heat.toString(), style)
+            content.writeRightAligned(COL_DAMAGE, WIDTH_DAMAGE, row.weapon.damage.toString(), style)
+            content.writeRightAligned(COL_MIN, WIDTH_MIN, row.weapon.minimumRange.toString(), style)
+            content.writeRightAligned(COL_SHORT, WIDTH_SHORT, row.weapon.shortRange.toString(), style)
+            content.writeRightAligned(COL_MEDIUM, WIDTH_MEDIUM, row.weapon.mediumRange.toString(), style)
+            content.writeRightAligned(COL_LONG, WIDTH_LONG, row.weapon.longRange.toString(), style)
+            content.writeRightAligned(COL_AMMO, WIDTH_AMMO, ammoLabel(row.weapon), style)
             content.newLine()
         }
+    }
+
+    private fun TextCursor.writeRightAligned(column: Int, width: Int, text: String, style: Cell.Style) {
+        write(column + width - CellWidth.of(text), text, style)
     }
 
     /** Groups weapons of identical name/location/destroyed status into one Qty-tallied row. */
@@ -74,5 +80,13 @@ internal class WeaponInventoryTable(private val unit: CombatUnit) : View {
         const val COL_MEDIUM = 44
         const val COL_LONG = 49
         const val COL_AMMO = 54
+
+        const val WIDTH_HEAT: Int = 2
+        const val WIDTH_DAMAGE: Int = 3
+        const val WIDTH_MIN: Int = 3
+        const val WIDTH_SHORT: Int = 3
+        const val WIDTH_MEDIUM: Int = 3
+        const val WIDTH_LONG: Int = 3
+        const val WIDTH_AMMO: Int = 4
     }
 }
