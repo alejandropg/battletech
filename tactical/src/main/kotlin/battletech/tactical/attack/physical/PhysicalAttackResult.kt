@@ -1,5 +1,6 @@
 package battletech.tactical.attack.physical
 
+import battletech.tactical.attack.AttackDirection
 import battletech.tactical.attack.FallResult
 import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.LocationDamage

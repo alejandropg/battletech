@@ -1,8 +1,8 @@
 package battletech.tactical.session
 
+import battletech.tactical.attack.AttackDirection
 import battletech.tactical.attack.FallResult
 import battletech.tactical.attack.HitLocation
-import battletech.tactical.attack.physical.AttackDirection
 import battletech.tactical.attack.physical.Knockdown
 import battletech.tactical.attack.physical.PhysicalAttackResult
 import battletech.tactical.dice.DiceRoll

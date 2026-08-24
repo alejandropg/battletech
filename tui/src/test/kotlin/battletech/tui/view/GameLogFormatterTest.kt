@@ -1,12 +1,12 @@
 package battletech.tui.view
 
 import battletech.tactical.attack.AttackDeclaration
+import battletech.tactical.attack.AttackDirection
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.LocationDamage
 import battletech.tactical.attack.LocationHit
 import battletech.tactical.attack.ToHitAttempt
-import battletech.tactical.attack.physical.AttackDirection
 import battletech.tactical.attack.physical.PhysicalAttackResult
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.GameMap

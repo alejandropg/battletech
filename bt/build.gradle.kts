@@ -8,5 +8,4 @@ application {
 
 dependencies {
     implementation(project(":strategic"))
-    implementation(project(":tactical"))
 }

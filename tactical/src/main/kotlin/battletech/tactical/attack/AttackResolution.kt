@@ -1,7 +1,5 @@
 package battletech.tactical.attack
 
-import battletech.tactical.attack.physical.AttackDirection
-import battletech.tactical.attack.physical.attackDirection
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.heat.HeatScale
 import battletech.tactical.model.GameState

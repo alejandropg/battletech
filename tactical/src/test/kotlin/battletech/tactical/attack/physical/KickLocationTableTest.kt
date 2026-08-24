@@ -2,10 +2,10 @@ package battletech.tactical.attack.physical
 
 import battletech.tactical.model.MechLocation.LEFT_LEG
 import battletech.tactical.model.MechLocation.RIGHT_LEG
-import battletech.tactical.attack.physical.AttackDirection.FRONT
-import battletech.tactical.attack.physical.AttackDirection.LEFT
-import battletech.tactical.attack.physical.AttackDirection.REAR
-import battletech.tactical.attack.physical.AttackDirection.RIGHT
+import battletech.tactical.attack.AttackDirection.FRONT
+import battletech.tactical.attack.AttackDirection.LEFT
+import battletech.tactical.attack.AttackDirection.REAR
+import battletech.tactical.attack.AttackDirection.RIGHT
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

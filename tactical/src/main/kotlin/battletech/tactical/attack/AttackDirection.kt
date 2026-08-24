@@ -1,4 +1,4 @@
-package battletech.tactical.attack.physical
+package battletech.tactical.attack
 
 import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.model.HexDirection

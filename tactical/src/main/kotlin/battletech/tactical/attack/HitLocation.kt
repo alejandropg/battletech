@@ -1,6 +1,5 @@
 package battletech.tactical.attack
 
-import battletech.tactical.attack.physical.AttackDirection
 import battletech.tactical.model.MechLocation
 
 public typealias HitLocation = MechLocation

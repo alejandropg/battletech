@@ -1,5 +1,6 @@
 package battletech.tactical.attack.physical
 
+import battletech.tactical.attack.AttackDirection
 import battletech.tactical.attack.HitLocation
 
 /** Kick Location Table (`docs/rules/physical-attacks.md` §7). */

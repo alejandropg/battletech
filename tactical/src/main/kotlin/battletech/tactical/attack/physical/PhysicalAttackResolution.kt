@@ -1,7 +1,9 @@
 package battletech.tactical.attack.physical
 
+import battletech.tactical.attack.AttackDirection
 import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.applyPilotHit
+import battletech.tactical.attack.attackDirection
 import battletech.tactical.attack.fall
 import battletech.tactical.attack.resolveDamage
 import battletech.tactical.dice.DiceRoller

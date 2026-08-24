@@ -1,6 +1,7 @@
 package battletech.network.wire
 
 import battletech.tactical.attack.AttackDeclaration
+import battletech.tactical.attack.AttackDirection
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.FallResult
 import battletech.tactical.attack.LocationDamage
@@ -8,7 +9,6 @@ import battletech.tactical.attack.LocationHit
 import battletech.tactical.attack.ToHitAttempt
 import battletech.tactical.attack.ToHitFactor
 import battletech.tactical.attack.ToHitModifier
-import battletech.tactical.attack.physical.AttackDirection
 import battletech.tactical.attack.physical.Knockdown
 import battletech.tactical.attack.physical.PhysicalAttackDeclaration
 import battletech.tactical.attack.physical.PhysicalAttackKind

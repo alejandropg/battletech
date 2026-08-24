@@ -1,4 +1,4 @@
-package battletech.tactical.attack.physical
+package battletech.tactical.attack
 
 import battletech.tactical.model.HexDirection
 import org.junit.jupiter.api.Assertions.assertEquals
