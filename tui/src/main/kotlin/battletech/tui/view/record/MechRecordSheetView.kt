@@ -64,21 +64,20 @@ internal class MechRecordSheetView(
             listOf(
                 upperSections,
                 diagrams,
-                CriticalHitTable(unit),
-                SystemDamageTable(unit),
             ),
             gutter = 2,
+        )
+        val upperBand = Columns(
+            listOf(
+                Columns.Child(SheetLayout.MAIN_CONTENT_WIDTH, mainContent),
+                Columns.Child(SheetLayout.HEAT_WIDTH, HeatLadder(unit, pendingHeat)),
+            ),
         )
 
         drawBand(
             canvas,
             content,
-            Columns(
-                listOf(
-                    Columns.Child(SheetLayout.MAIN_CONTENT_WIDTH, mainContent),
-                    Columns.Child(SheetLayout.HEAT_WIDTH, HeatLadder(unit, pendingHeat)),
-                ),
-            ),
+            Stack(listOf(upperBand, CriticalHitTable(unit)), gutter = 2),
         )
     }
 }

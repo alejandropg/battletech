@@ -52,10 +52,10 @@ internal class MechRecordSheetViewTest {
         movementThisTurn = MovementThisTurn.Stationary,
     )
 
-    private fun assertTwoBlankMainRowsBefore(buffer: ScreenBuffer, row: Int) {
-        assertTrue(buffer.line(row - 1, width = SheetLayout.MAIN_CONTENT_WIDTH).isBlank())
-        assertTrue(buffer.line(row - 2, width = SheetLayout.MAIN_CONTENT_WIDTH).isBlank())
-        assertFalse(buffer.line(row - 3, width = SheetLayout.MAIN_CONTENT_WIDTH).isBlank())
+    private fun assertTwoBlankRowsBefore(buffer: ScreenBuffer, row: Int, width: Int) {
+        assertTrue(buffer.line(row - 1, width = width).isBlank())
+        assertTrue(buffer.line(row - 2, width = width).isBlank())
+        assertFalse(buffer.line(row - 3, width = width).isBlank())
     }
 
     @Test
@@ -89,20 +89,22 @@ internal class MechRecordSheetViewTest {
         val diagramRow = (0 until buffer.height).first { buffer.line(it).contains("ARMOR DIAGRAM") }
         assertEquals(0, buffer.line(diagramRow).indexOf("── ARMOR DIAGRAM"))
         assertEquals(60, buffer.line(diagramRow).indexOf("── INTERNAL STRUCTURE DIAGRAM"))
-        assertTwoBlankMainRowsBefore(buffer, diagramRow)
+        assertTwoBlankRowsBefore(buffer, diagramRow, SheetLayout.MAIN_CONTENT_WIDTH)
         assertFalse(buffer.line(diagramRow, x = 120, width = SheetLayout.HEAT_WIDTH).isBlank())
 
+        val heatScaleRow = (0 until buffer.height).first { buffer.line(it).contains("HEAT SCALE") }
         val criticalRow = (0 until buffer.height).first { buffer.line(it).contains("CRITICAL HIT TABLE") }
         assertEquals(0, buffer.line(criticalRow).indexOf("── CRITICAL HIT TABLE"))
         assertEquals("─", buffer.get(SheetLayout.CRITICAL_HIT_TABLE_WIDTH - 1, criticalRow).char)
         assertEquals(" ", buffer.get(SheetLayout.CRITICAL_HIT_TABLE_WIDTH, criticalRow).char)
-        assertTwoBlankMainRowsBefore(buffer, criticalRow)
+        assertTrue(criticalRow > heatScaleRow + 31)
+        assertTwoBlankRowsBefore(buffer, criticalRow, SheetLayout.SHEET_WIDTH)
 
         val systemRow = (0 until buffer.height).first { buffer.line(it).contains("SYSTEM DAMAGE") }
         assertEquals(0, buffer.line(systemRow).indexOf("── SYSTEM DAMAGE"))
+        assertEquals(criticalRow + 17, systemRow)
         assertEquals("─", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH - 1, systemRow).char)
         assertEquals(" ", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH, systemRow).char)
-        assertTwoBlankMainRowsBefore(buffer, systemRow)
     }
 
     @Test
@@ -123,7 +125,7 @@ internal class MechRecordSheetViewTest {
         assertEquals(60, buffer.line(topRow).indexOf("── WEAPONS & EQUIPMENT INVENTORY"))
 
         val diagramRow = (0 until buffer.height).first { buffer.line(it).contains("ARMOR DIAGRAM") }
-        assertTwoBlankMainRowsBefore(buffer, diagramRow)
+        assertTwoBlankRowsBefore(buffer, diagramRow, SheetLayout.MAIN_CONTENT_WIDTH)
     }
 
     @Test

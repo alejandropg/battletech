@@ -19,9 +19,9 @@ internal object SheetLayout {
     // plus the marker+heat-number column beside it.
     const val HEAT_WIDTH: Int = 30
 
-    const val CRITICAL_HIT_TABLE_WIDTH: Int = 118
-    const val SYSTEM_DAMAGE_WIDTH: Int = 118
-    const val CRIT_COLUMN_WIDTH: Int = 28
+    const val CRITICAL_HIT_TABLE_WIDTH: Int = 150
+    const val SYSTEM_DAMAGE_WIDTH: Int = 20
+    const val CRIT_COLUMN_WIDTH: Int = 30
 
     const val MAIN_CONTENT_WIDTH: Int = 118
 }
