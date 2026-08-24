@@ -6,7 +6,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.anInternalStructureLayout
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleRejection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

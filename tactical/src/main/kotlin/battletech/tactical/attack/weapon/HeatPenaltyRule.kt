@@ -1,7 +1,7 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.query.RuleResult
-import battletech.tactical.query.Warning
+import battletech.tactical.rules.RuleResult
+import battletech.tactical.rules.Warning
 import battletech.tactical.attack.AttackContext
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.heat.HeatScale

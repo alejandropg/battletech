@@ -28,6 +28,7 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.query.projectFor
+import battletech.tactical.rules.RuleRejection
 import battletech.tactical.session.AmmoExploded
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttackImpulseCommand
@@ -51,7 +52,6 @@ import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.PilotHit
 import battletech.tactical.session.PilotKnockedUnconscious
 import battletech.tactical.session.PilotRecoveredConsciousness
-import battletech.tactical.session.RuleRejection
 import battletech.tactical.session.SessionNotice
 import battletech.tactical.session.StandUp
 import battletech.tactical.session.TorsoFacingsApplied
@@ -303,6 +303,30 @@ internal class WireFormatRoundTripTest {
     fun `every RuleRejection subtype has a fixture`() {
         assertThat(ruleRejectionFixtures.keys)
             .containsExactlyInAnyOrderElementsOf(RuleRejection::class.sealedSubclasses)
+    }
+
+    /**
+     * Round-tripping alone (above) does not catch a discriminator rename — encoding and decoding
+     * with the same (renamed) code still agree with each other. This pins the literal wire bytes
+     * for one [RuleRejection] and one [GameEvent] so a future package move or a dropped
+     * `@SerialName` fails a test instead of silently changing [PROTOCOL_VERSION]'s payload.
+     */
+    @Test
+    fun `RuleRejection NoAmmo encodes to the exact expected discriminator and fields`() {
+        val rejection: RuleRejection = RuleRejection.NoAmmo(weaponName = "LRM-10")
+
+        val line = WireJson.json.encodeToString(rejection)
+
+        assertThat(line).isEqualTo("""{"type":"noAmmo","weaponName":"LRM-10"}""")
+    }
+
+    @Test
+    fun `GameEvent TurnEnded encodes to the exact expected discriminator and fields`() {
+        val event: GameEvent = TurnEnded(turnNumber = 2)
+
+        val line = WireJson.json.encodeToString(event)
+
+        assertThat(line).isEqualTo("""{"type":"battletech.tactical.session.TurnEnded","turnNumber":2}""")
     }
 
     // ---------- CommandResult ----------

@@ -14,7 +14,7 @@ import battletech.tactical.unit.engineHeatPerTurn
  * in water dissipate extra via [submersionDissipationBonus].
  *
  * Shutdown and ammo-explosion consequences are rolled separately in
- * [battletech.tactical.session.HeatPhaseHandler] since they require the dice roller.
+ * [battletech.tactical.heat.HeatPhaseHandler] since they require the dice roller.
  */
 public fun GameState.applyHeatPhase(): GameState {
     val snapshot = this

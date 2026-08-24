@@ -1,7 +1,7 @@
 package battletech.tactical.attack.physical
 
 import battletech.tactical.model.GameState
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleRejection
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 

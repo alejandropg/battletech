@@ -20,7 +20,7 @@ import battletech.tactical.unit.critEffects
 
 /**
  * A single unit's fixed sequence of Heat-Phase resolution steps, run against
- * its post-dissipation-fold state (see [battletech.tactical.session.HeatPhaseHandler.onEntry],
+ * its post-dissipation-fold state (see [battletech.tactical.heat.HeatPhaseHandler.onEntry],
  * which folds every unit's heat first and then walks units in state order calling
  * this once each):
  *
@@ -113,7 +113,7 @@ private fun resolvePower(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit,
  *
  * [CritEffect.PilotDamageWhenHeatAtLeast] is checked against [unit], which has already
  * been through [GameState.applyHeatPhase]'s fold (the heat fold runs before any per-unit
- * resolution in [battletech.tactical.session.HeatPhaseHandler.onEntry]), so "this turn's
+ * resolution in [battletech.tactical.heat.HeatPhaseHandler.onEntry]), so "this turn's
  * heat" is exactly the standing heat we're looking at here.
  *
  * Captures whether the pilot was unconscious *before* this hit so the recovery

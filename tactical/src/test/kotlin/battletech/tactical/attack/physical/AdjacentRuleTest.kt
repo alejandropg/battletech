@@ -1,9 +1,9 @@
 package battletech.tactical.attack.physical
 
-import battletech.tactical.query.RuleResult
+import battletech.tactical.rules.RuleResult
 import battletech.tactical.query.aUnit
 import battletech.tactical.attack.aPhysicalAttackContext
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleRejection
 import battletech.tactical.model.HexCoordinates
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals

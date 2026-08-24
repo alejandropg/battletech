@@ -1,14 +1,17 @@
-package battletech.tactical.session
+package battletech.tactical.heat
 
 import battletech.tactical.dice.DiceRoller
-import battletech.tactical.heat.applyHeatPhase
-import battletech.tactical.heat.resolveUnitHeatPhase
 import battletech.tactical.model.GameState
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.session.GameEvent
+import battletech.tactical.session.HeatDissipated
+import battletech.tactical.session.PhaseOutcome
+import battletech.tactical.session.SystemPhaseHandler
+import battletech.tactical.session.TurnState
 
 /**
  * System phase. On entry, folds each unit's heat generated this turn into its
- * standing heat and dissipates ([battletech.tactical.heat.applyHeatPhase]), then
+ * standing heat and dissipates ([applyHeatPhase]), then
  * walks the units in state order running, per unit, [resolveUnitHeatPhase]'s fixed
  * sequence of per-unit effects (shutdown/restart, life support, consciousness
  * recovery, ammo explosion, drowning) — each gated so it only consumes dice when

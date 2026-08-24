@@ -1,9 +1,9 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.query.RuleResult
+import battletech.tactical.rules.RuleResult
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.attack.WeaponAttackContext
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleRejection
 import battletech.tactical.unit.availableAmmoBins
 
 public class HasAmmoRule : AttackRule<WeaponAttackContext> {

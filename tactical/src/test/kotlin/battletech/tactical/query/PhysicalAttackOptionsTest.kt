@@ -4,7 +4,7 @@ import battletech.tactical.attack.physical.PhysicalAttackKind
 import battletech.tactical.attack.physical.Side
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.PlayerId
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleRejection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

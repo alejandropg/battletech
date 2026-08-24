@@ -3,8 +3,8 @@ package battletech.tactical.attack.weapon
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.attack.WeaponAttackContext
 import battletech.tactical.model.unitWaterDepth
-import battletech.tactical.query.RuleResult
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleResult
+import battletech.tactical.rules.RuleRejection
 
 /**
  * Blocks weapon fire when the **attacker** is fully submerged and the weapon is not

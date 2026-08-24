@@ -5,8 +5,8 @@ import battletech.tactical.attack.AttackRule
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.unitWaterDepth
-import battletech.tactical.query.RuleResult
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleResult
+import battletech.tactical.rules.RuleRejection
 import kotlin.math.abs
 
 /** Punch reach: elevation and water-depth limits (`docs/rules/physical-attacks.md` §3). */

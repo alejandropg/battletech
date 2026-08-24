@@ -2,7 +2,7 @@ package battletech.tactical.query
 
 import battletech.tactical.attack.physical.PhysicalAttackKind
 import battletech.tactical.dice.twoD6AtLeastProbability
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleRejection
 import battletech.tactical.unit.UnitId
 
 /**

@@ -13,7 +13,7 @@ import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.aWeapon
 import battletech.tactical.query.anArmorLayout
-import battletech.tactical.session.HeatPhaseHandler
+import battletech.tactical.heat.HeatPhaseHandler
 import battletech.tactical.session.PilotHit
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.HeatSink
@@ -215,10 +215,10 @@ internal class WaterDepthEffectsTest {
 
         val result = SubmergedWeaponRule().evaluate(context)
 
-        assertThat(result).isInstanceOf(battletech.tactical.query.RuleResult.Unsatisfied::class.java)
-        assertThat((result as battletech.tactical.query.RuleResult.Unsatisfied).reason)
-            .isInstanceOf(battletech.tactical.session.RuleRejection.AttackerSubmerged::class.java)
-        assertEquals(2, (result.reason as battletech.tactical.session.RuleRejection.AttackerSubmerged).depth)
+        assertThat(result).isInstanceOf(battletech.tactical.rules.RuleResult.Unsatisfied::class.java)
+        assertThat((result as battletech.tactical.rules.RuleResult.Unsatisfied).reason)
+            .isInstanceOf(battletech.tactical.rules.RuleRejection.AttackerSubmerged::class.java)
+        assertEquals(2, (result.reason as battletech.tactical.rules.RuleRejection.AttackerSubmerged).depth)
     }
 
     @Test
@@ -235,7 +235,7 @@ internal class WaterDepthEffectsTest {
 
         val result = SubmergedWeaponRule().evaluate(context)
 
-        assertThat(result).isEqualTo(battletech.tactical.query.RuleResult.Satisfied)
+        assertThat(result).isEqualTo(battletech.tactical.rules.RuleResult.Satisfied)
     }
 
     @Test
@@ -266,7 +266,7 @@ internal class WaterDepthEffectsTest {
 
         val result = SubmergedWeaponRule().evaluate(context)
 
-        assertThat(result).isEqualTo(battletech.tactical.query.RuleResult.Satisfied)
+        assertThat(result).isEqualTo(battletech.tactical.rules.RuleResult.Satisfied)
     }
 
     @Test
@@ -279,7 +279,7 @@ internal class WaterDepthEffectsTest {
 
         val result = SubmergedWeaponRule().evaluate(context)
 
-        assertThat(result).isEqualTo(battletech.tactical.query.RuleResult.Satisfied)
+        assertThat(result).isEqualTo(battletech.tactical.rules.RuleResult.Satisfied)
     }
 
     // ── Submerged heat-sink dissipation bonus ─────────────────────────────────

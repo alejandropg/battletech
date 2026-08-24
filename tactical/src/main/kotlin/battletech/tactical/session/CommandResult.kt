@@ -1,5 +1,6 @@
 package battletech.tactical.session
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /** Outcome of submitting a [GameCommand] to a session. */
@@ -7,9 +8,11 @@ import kotlinx.serialization.Serializable
 public sealed interface CommandResult {
 
     @Serializable
+    @SerialName("accepted")
     public data class Accepted(public val events: List<GameEvent>) : CommandResult
 
     @Serializable
+    @SerialName("rejected")
     public data class Rejected(public val reason: RejectionReason) : CommandResult
 
     /**
@@ -23,5 +26,6 @@ public sealed interface CommandResult {
      * command gets a reply instead of tearing down the connection.
      */
     @Serializable
+    @SerialName("protocolError")
     public data class ProtocolError(public val message: String) : CommandResult
 }

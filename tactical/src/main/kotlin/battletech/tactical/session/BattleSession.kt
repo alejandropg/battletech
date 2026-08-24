@@ -4,6 +4,7 @@ import battletech.tactical.attack.physical.PhysicalAttackPhaseHandler
 import battletech.tactical.attack.weapon.WeaponAttackPhaseHandler
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.dice.RandomDiceRoller
+import battletech.tactical.heat.HeatPhaseHandler
 import battletech.tactical.model.GameState
 import battletech.tactical.model.MatchStatus
 import battletech.tactical.model.PlayerId

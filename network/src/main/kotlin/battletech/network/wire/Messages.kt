@@ -11,7 +11,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /** Wire protocol version; bumped whenever [ClientMessage]/[ServerMessage] shapes change incompatibly. */
-public const val PROTOCOL_VERSION: Int = 1
+public const val PROTOCOL_VERSION: Int = 2
 
 /**
  * A read-only replica of session state as sent to a client: everything

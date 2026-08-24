@@ -79,7 +79,7 @@ private fun pickSlot(unit: CombatUnit, location: MechLocation, roller: DiceRolle
  * §5): the total damage of [bin]'s remaining shots is applied through the standard
  * [applyDamage] path to [damageLocation] — the bin's own location for a critical-hit
  * detonation, or `CENTER_TORSO` for the heat-phase cook-off
- * ([battletech.tactical.session.HeatPhaseHandler]) — and the bin is emptied. A bin with
+ * ([battletech.tactical.heat.HeatPhaseHandler]) — and the bin is emptied. A bin with
  * no shots left does nothing.
  *
  * Pure and deterministic: the damage is a fixed function of the bin's contents, no

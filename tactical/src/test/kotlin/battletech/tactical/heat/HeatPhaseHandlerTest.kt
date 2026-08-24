@@ -1,10 +1,17 @@
-package battletech.tactical.session
+package battletech.tactical.heat
 
 import battletech.tactical.dice.DiceRoller
 import battletech.tactical.model.MechLocation
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.mediumLaser
+import battletech.tactical.session.AmmoExploded
+import battletech.tactical.session.PilotHit
+import battletech.tactical.session.PilotKnockedUnconscious
+import battletech.tactical.session.PilotRecoveredConsciousness
+import battletech.tactical.session.TurnState
+import battletech.tactical.session.UnitRestarted
+import battletech.tactical.session.UnitShutdown
 import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType

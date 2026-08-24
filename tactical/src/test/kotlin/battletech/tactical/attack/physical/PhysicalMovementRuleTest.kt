@@ -1,13 +1,13 @@
 package battletech.tactical.attack.physical
 
-import battletech.tactical.query.RuleResult
+import battletech.tactical.rules.RuleResult
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MovementMode
 import battletech.tactical.unit.MovementThisTurn
 import battletech.tactical.attack.PhysicalAttackContext
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleRejection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

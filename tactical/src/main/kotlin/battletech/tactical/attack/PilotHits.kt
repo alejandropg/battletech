@@ -71,7 +71,7 @@ public fun applyPilotHit(unit: CombatUnit, roller: DiceRoller): Pair<CombatUnit,
  * count, mirroring [HeatPhaseHandler]'s shutdown/restart pattern — an "avoid bad state"
  * roll while down, a recovery attempt every turn while up.
  *
- * Only called by [battletech.tactical.session.HeatPhaseHandler.onEntry] when
+ * Only called by [battletech.tactical.heat.HeatPhaseHandler.onEntry] when
  * `!unit.isPilotConscious && unit.pilotHits < PILOT_DEATH_THRESHOLD` (a dead pilot
  * never recovers; a conscious pilot never rolls) — so untouched fixtures consume no
  * dice. On success, sets [CombatUnit.isPilotConscious] back to true and emits
@@ -88,7 +88,7 @@ public fun attemptConsciousnessRecovery(unit: CombatUnit, roller: DiceRoller): P
  * Applies the pilot hits an ammo explosion inflicts on [unit] (`docs/rules/pilot.md` §1): each
  * hit runs its own consciousness check via [applyPilotHit]. Shared by [CriticalHitResolution]'s
  * two detonation sites (limb blow-off, ordinary crit) and
- * [battletech.tactical.session.HeatPhaseHandler]'s heat-driven cook-off.
+ * [battletech.tactical.heat.HeatPhaseHandler]'s heat-driven cook-off.
  *
  * **Canonical dice order:** consciousness check 2d6 (hit 1), then consciousness check 2d6 (hit 2).
  */

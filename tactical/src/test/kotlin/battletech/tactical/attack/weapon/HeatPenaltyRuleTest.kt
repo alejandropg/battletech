@@ -1,7 +1,7 @@
 package battletech.tactical.attack.weapon
 
 import battletech.tactical.attack.aPhysicalAttackContext
-import battletech.tactical.query.RuleResult
+import battletech.tactical.rules.RuleResult
 import battletech.tactical.query.aUnit
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType

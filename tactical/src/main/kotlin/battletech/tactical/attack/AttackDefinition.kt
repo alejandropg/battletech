@@ -1,7 +1,7 @@
 package battletech.tactical.attack
 
-import battletech.tactical.query.RuleResult
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleResult
+import battletech.tactical.rules.RuleRejection
 
 public interface AttackDefinition<C : AttackContext> {
     public val name: String

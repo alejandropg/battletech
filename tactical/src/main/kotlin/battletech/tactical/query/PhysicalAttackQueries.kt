@@ -10,6 +10,8 @@ import battletech.tactical.attack.physical.kickDamage
 import battletech.tactical.attack.physical.physicalToHitTargetNumber
 import battletech.tactical.attack.physical.punchDamage
 import battletech.tactical.model.MechLocation
+import battletech.tactical.rules.RuleRejection
+import battletech.tactical.rules.RuleResult
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.UnitId
 
@@ -81,14 +83,14 @@ internal class PhysicalAttackQueries(private val state: PlayerGameState) {
     private fun unsatisfiedReasons(
         rules: List<AttackRule<PhysicalAttackContext>>,
         context: PhysicalAttackContext,
-    ): List<battletech.tactical.session.RuleRejection> =
+    ): List<RuleRejection> =
         rules.mapNotNull { (it.evaluate(context) as? RuleResult.Unsatisfied)?.reason }
 
     private fun limbDestroyedReason(
         structure: Int,
         attackerId: UnitId,
-    ): List<battletech.tactical.session.RuleRejection> =
-        if (structure > 0) emptyList() else listOf(battletech.tactical.session.RuleRejection.LimbDestroyed(attackerId))
+    ): List<RuleRejection> =
+        if (structure > 0) emptyList() else listOf(RuleRejection.LimbDestroyed(attackerId))
 
     private fun armStructure(unit: CombatUnit, arm: Side): Int =
         unit.internalStructure.at(if (arm == Side.LEFT) MechLocation.LEFT_ARM else MechLocation.RIGHT_ARM)

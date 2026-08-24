@@ -26,7 +26,7 @@ import battletech.tactical.session.Impulse
 import battletech.tactical.session.ImpulseSequence
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.MoveUnit
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleRejection
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitFell

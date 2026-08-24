@@ -1,6 +1,4 @@
-package battletech.tactical.query
-
-import battletech.tactical.session.RuleRejection
+package battletech.tactical.rules
 
 public sealed interface RuleResult {
     public data object Satisfied : RuleResult

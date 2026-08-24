@@ -12,7 +12,7 @@ import battletech.tactical.session.Impulse
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.PhaseHandler
 import battletech.tactical.session.PhaseOutcome
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleRejection
 import battletech.tactical.session.TorsoFacingsApplied
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.calculateAttackOrder

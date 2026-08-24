@@ -15,7 +15,7 @@ import battletech.tactical.movement.MovementPhaseHandler
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachabilityCalculator
 import battletech.tactical.movement.ReachableHex
-import battletech.tactical.query.RuleResult
+import battletech.tactical.rules.RuleResult
 import battletech.tactical.query.aGameState
 import battletech.tactical.query.aUnit
 import battletech.tactical.query.anInternalStructureLayout

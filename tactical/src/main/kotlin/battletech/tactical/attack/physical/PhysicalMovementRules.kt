@@ -3,8 +3,8 @@ package battletech.tactical.attack.physical
 import battletech.tactical.attack.AttackContext
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.model.MovementMode
-import battletech.tactical.query.RuleResult
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleResult
+import battletech.tactical.rules.RuleRejection
 import battletech.tactical.unit.MovementThisTurn
 
 /** Movement restriction on kicking (`docs/rules/physical-attacks.md` §2). */

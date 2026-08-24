@@ -4,8 +4,8 @@ import battletech.tactical.attack.AttackContext
 import battletech.tactical.attack.AttackRule
 import battletech.tactical.attack.lineOfSight
 import battletech.tactical.model.Terrain
-import battletech.tactical.query.RuleResult
-import battletech.tactical.session.RuleRejection
+import battletech.tactical.rules.RuleResult
+import battletech.tactical.rules.RuleRejection
 
 /** Blocks an attack when line of sight is obstructed (`docs/rules/line-of-sight.md` §1–2). */
 public class LineOfSightRule : AttackRule<AttackContext> {
