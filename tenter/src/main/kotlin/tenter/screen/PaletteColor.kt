@@ -1,5 +1,7 @@
 package tenter.screen
 
+import com.github.ajalt.mordant.rendering.AnsiLevel
+
 /**
  * A color in whatever space its palette was authored in. Never converted between spaces — a
  * palette picks one [PaletteColor] subtype for every role it defines, matching the terminal
@@ -31,6 +33,30 @@ public sealed interface PaletteColor {
     public data class Ansi16(val code: Int) : PaletteColor {
         init {
             require(code in 30..37 || code in 90..97) { "code must be in 30..37 or 90..97, got: $code" }
+        }
+    }
+
+    public companion object {
+        /**
+         * Parses [raw] as a [PaletteColor] for [level]: `#RRGGBB` for [AnsiLevel.TRUECOLOR], a
+         * decimal `16..255` index for [AnsiLevel.ANSI256], a decimal `30..37`/`90..97` code for
+         * [AnsiLevel.ANSI16]. Throws [IllegalArgumentException] — same as the subtype
+         * constructors' own `require`s — on a malformed or out-of-range value.
+         *
+         * [AnsiLevel.NONE] has no corresponding [PaletteColor] subtype (there is nothing to
+         * render), so it throws rather than silently choosing one of the other three.
+         */
+        public fun parse(raw: String, level: AnsiLevel): PaletteColor = when (level) {
+            AnsiLevel.TRUECOLOR -> parseHex(raw)
+            AnsiLevel.ANSI256 -> Xterm256(raw.trim().toInt())
+            AnsiLevel.ANSI16 -> Ansi16(raw.trim().toInt())
+            AnsiLevel.NONE -> throw IllegalArgumentException("AnsiLevel.NONE has no PaletteColor to parse into")
+        }
+
+        private fun parseHex(raw: String): TrueColor {
+            require(raw.length == 7 && raw[0] == '#') { "expected #RRGGBB" }
+            val value = raw.substring(1).toInt(16)
+            return TrueColor((value shr 16) and 0xFF, (value shr 8) and 0xFF, value and 0xFF)
         }
     }
 }

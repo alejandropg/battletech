@@ -1,6 +1,16 @@
 package battletech.tui.screen
 
 import com.github.ajalt.mordant.rendering.AnsiLevel
+import tenter.screen.MapRolePalette
+
+/**
+ * This app's [MapRolePalette] — a [tenter.screen.RolePalette] loaded from a packaged/custom theme
+ * file. Kept as a local alias (rather than spelling out `MapRolePalette` at every call site) since
+ * every `Theme` in this codebase is specifically one built by [resolveTheme]/[ThemeLoader] from
+ * this app's own packaged theme files under `theme/` — see `docs/color-themes.md` for the file
+ * format.
+ */
+internal typealias Theme = MapRolePalette
 
 /**
  * Resolves a theme [spec] to a [Theme]. Mirrors

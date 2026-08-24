@@ -51,19 +51,9 @@ internal data class ThemeFile(
     }
 
     private fun parseColor(raw: String, context: String): PaletteColor = try {
-        when (colorSpace) {
-            ColorSpace.TRUECOLOR -> parseHex(raw)
-            ColorSpace.ANSI256 -> PaletteColor.Xterm256(raw.trim().toInt())
-            ColorSpace.ANSI16 -> PaletteColor.Ansi16(raw.trim().toInt())
-        }
+        PaletteColor.parse(raw, colorSpace.level)
     } catch (e: IllegalArgumentException) {
         throw ThemeLoadException("$context: invalid $colorSpace color \"$raw\" (${e.message})")
-    }
-
-    private fun parseHex(raw: String): PaletteColor.TrueColor {
-        require(raw.length == 7 && raw[0] == '#') { "expected #RRGGBB" }
-        val value = raw.substring(1).toInt(16)
-        return PaletteColor.TrueColor((value shr 16) and 0xFF, (value shr 8) and 0xFF, value and 0xFF)
     }
 }
 
