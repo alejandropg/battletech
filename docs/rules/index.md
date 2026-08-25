@@ -65,4 +65,5 @@ home**; other docs link to it rather than restating it.
 ## Notes
 
 - When a rule appears in more than one doc, the non-owning doc links to the canonical home above —
-  follow the link rather than trusting a restated number.
+  follow the link rather than trusting a restated number, and trust the owning doc over general
+  BattleTech knowledge too.

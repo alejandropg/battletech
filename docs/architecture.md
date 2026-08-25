@@ -1,6 +1,6 @@
 # Architecture detail
 
-Package-level, build-plugin, and invariant-rationale detail for the structure summarized in `CLAUDE.md`. Read this when navigating within a module or touching `buildSrc/`; not needed for everyday session context.
+Package-level and invariant-rationale detail for the structure summarized in `CLAUDE.md`. Read this when navigating within a module or moving content between doc tiers; not needed for everyday session context. Touching `buildSrc/` or a `build.gradle.kts`: `docs/build.md`. Adding or changing a wire-crossing sealed variant: `docs/wire-protocol.md`.
 
 ## Where context docs live
 
@@ -9,7 +9,7 @@ Two tiers, distinguished by **how they load** — not by topic:
 | Tier | Loads | Holds |
 |---|---|---|
 | Root `CLAUDE.md` | Always in context | Every rule and prohibition, stated completely but tersely — never its rationale |
-| `docs/` (this file, `rules/`, `agents/`, `tui-testing.md`, `color-themes.md`) | On demand, when something chooses to read it | Explanation, enumeration, history — what you look up once you know you have a question |
+| `docs/` (this file, `build.md`, `wire-protocol.md`, `rules/`, `agents/`, `tui-testing.md`, `color-themes.md`) | On demand, when something chooses to read it | Explanation, enumeration, history — what you look up once you know you have a question |
 
 **The ownership test**: does the content *prevent* a decision or *explain* one? Prevent → root `CLAUDE.md`. Explain → `docs/`. A referenced doc is only reached by someone who already suspects it applies, so every trigger has to be in root: the rules warning, the boundary rule, the `DiceRoller` rule. Each compresses to a line, which is why they are stated outright rather than pointed at.
 
@@ -19,23 +19,21 @@ Two tiers, distinguished by **how they load** — not by topic:
 
 **No `@path` imports in `CLAUDE.md`** — they expand eagerly at load and cost the same as inlining, which defeats the tiering. Plain backtick path mentions only.
 
+**`docs/agents/` filenames are fixed.** `issue-tracker.md` and `triage-labels.md` look like an obvious merge — 32 lines between them, and the first links to the second for its `Status:` role strings — but both are referenced by path from outside this repo, where a rename cannot follow. Do not merge, rename, or move them, despite their size and their overlap.
+
+**Granularity inside `docs/rules/` is deliberate.** The rules docs cross-link densely, but almost every link points at one of three hubs (`armor-damage.md`, `pilot.md`, `critical-hits.md`) — a conditional jump ("if damage penetrates, go here"), not evidence the files are one document. `index.md` is what makes a small file cheap to route to, so a 34-line `water.md` costs nothing. The one real triangle (`armor-damage ↔ critical-hits ↔ pilot`) is 24KB combined; merging it would make every single lookup pay for the rare full damage chain.
+
 ## Package layout per module
 
-- **`tactical/`** (`battletech.tactical.*`): `attack/` (incl. `physical/`, `weapon/` — attack resolution/declarations/crit tables for melee vs. gunnery, plus their own `PhaseHandler`s — see "Phase handlers live with their rules" below), `dice/` (`DiceRoller` abstraction), `heat/` (generation/dissipation/phase resolution, incl. `HeatPhaseHandler`), `io/` (`ResourceOrFileLoader` — the generic "existing filesystem path, else packaged classpath resource named `<dir>/<spec>.json`, else `<dir>/index.json` names the built-ins" loader shared by `model/map`'s map loading and `tui`'s theme loading; domain-free, no BattleTech types in its own signature), `model/` (incl. `map/` — core `GameState`/`GameMap`/hex coordinates, map loading as a thin `io.ResourceOrFileLoader` adapter), `movement/` (cost/reachability/phase handler), `query/` (per-player read/projection layer — `PlayerView`), `rules/` (`RuleResult`, `Warning`, `RuleRejection` — the shared vocabulary `attack/`'s rules return, extracted from `query/`/`session/` so the two most-imported attack abstractions depend on a leaf instead of the read layer), `session/` (`BattleSession`, `GameCommand`/`GameEvent`, the system-phase handlers with no rules package of their own, redaction), `unit/` (incl. `VisibleUnit`/`ForeignUnit`/`CombatUnit` — the redaction hierarchy; `CombatUnit` implements `VisibleUnit` directly, there is no separate "OwnUnit" type).
+- **`tactical/`** (`battletech.tactical.*`) — delivery-agnostic: every delivery (TUI, `network`, any future web UI) consumes it through the same public surface. `attack/` (incl. `physical/`, `weapon/` — attack resolution/declarations/crit tables for melee vs. gunnery, plus their own `PhaseHandler`s — see "Phase handlers live with their rules" below), `dice/` (`DiceRoller` abstraction), `heat/` (generation/dissipation/phase resolution, incl. `HeatPhaseHandler`), `io/` (`ResourceOrFileLoader` — the generic "existing filesystem path, else packaged classpath resource named `<dir>/<spec>.json`, else `<dir>/index.json` names the built-ins" loader shared by `model/map`'s map loading and `tui`'s theme loading; domain-free, no BattleTech types in its own signature), `model/` (incl. `map/` — core `GameState`/`GameMap`/hex coordinates, map loading as a thin `io.ResourceOrFileLoader` adapter), `movement/` (cost/reachability/phase handler), `query/` (per-player read/projection layer — `PlayerView`), `rules/` (`RuleResult`, `Warning`, `RuleRejection` — the shared vocabulary `attack/`'s rules return, extracted from `query/`/`session/` so the two most-imported attack abstractions depend on a leaf instead of the read layer), `session/` (`BattleSession`, `GameCommand`/`GameEvent`, the system-phase handlers with no rules package of their own, redaction), `unit/` (incl. `VisibleUnit`/`ForeignUnit`/`CombatUnit` — the redaction hierarchy; `CombatUnit` implements `VisibleUnit` directly, there is no separate "OwnUnit" type).
 - **`network/`** (`battletech.network.*`): `client/` (`ClientGameSession`), `server/` (`GameServer`, `SocketAcceptor`), `transport/` (`ServerConnection`/`ClientConnection` port + the `JsonLineConnection` and `InMemoryConnection` adapters), `wire/` (`Messages`, `SessionId`, `WireJson`). Reuses `tactical.session`/`tactical.query` types directly as wire DTOs (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) rather than redefining them.
-- **`tenter/`** (`tenter.*`): `screen/` (`Canvas`/`ScreenBuffer`/`Cell`/`Insets`, `ColorRole` — the marker interface hosts implement their own roles against, with the toolkit's own `ChromeRole` enum nested in the same file — `PaletteColor` (its `parse(raw, level)` companion owns `#RRGGBB`/xterm-256/ANSI-16 value parsing) and `RolePalette`, the map-backed `MapRolePalette` implementation, the diffing `ScreenRenderer`, the memoizing `StyleTagCache`), `view/` (`View` and its implementations only — layout decorators `Padded`/`Bordered`/`Viewport`/`scrollingPanel`/`ScrollingPanel`, sibling-composition decorators `Columns`/`Stack`, the pure `ScrollGeometry` math, leaf views `HelpView`/`FlashMessage`, and `TextCursor` — the row-cursor over a `Canvas` that `widget/` paints through, including `TextCursor.draw(View)`, the measure-then-place primitive `Stack` itself is built on), `widget/` (reusable fragments painted into a `TextCursor` rather than a raw `Canvas`: `Checkbox`/`CheckState`/`Gauge`/`ValueRow`/`PipTrack` — including `PipTrack.drawAdvancing`, the cursor-advancing sibling of `PipTrack.draw`), `text/` (dependency-free text metrics shared by `screen/` and `view/`: `CellWidth`/`TextWrap`/`TextTruncation`), `panel/` (`PanelId`, `PanelState`, the generic `Panel<K, I>`, `PanelSet`, `PanelLayout`, `VerticalTitleView`), `input/` (`ChromeInput` — quit/panel-chord/state-cycle/scroll/pan mappings — plus `KeyGlyph`/`KeyHint`/`KeySection`/`PanAction`/`ScrollAction`), `terminal/` (`TerminalEvent` + the raw-mode/resize `Flow` producers). No `battletech.*` imports anywhere in this module — see the invariant in `CLAUDE.md` and `tenter/src/test/kotlin/tenter/ArchitectureTest.kt`. Dependencies run one way, `text`/`input` (leaves) → `screen`/`terminal` → `view` → `widget`/`panel` (never the reverse) — `tenter/src/test/kotlin/tenter/LayeringTest.kt` (Konsist) enforces the full matrix, not just the general shape.
-- **`tui/`** (`battletech.tui.*`): `game/` (incl. `phase/` — app state, phase-specific UI logic like `AttackPhase`/`MovementPhase`/`WeaponAllocation`; `GamePanelId` — this app's `tenter.panel.PanelId`), `hex/` (hex-grid rendering/geometry — a `BoardRole`-flavored consumer of `tenter.screen`), `icon/` (`FontIcons.kt` — the app-wide NerdFont/Unicode glyph vocabulary: log-line markers, pip/ammo/infinity glyphs, dice faces, plus the hex-facing/terrain/movement icons `hex/` itself consumes; not `battletech.tui.hex` because most of its callers are outside the board — log formatting, the record sheet, weapon/pilot tracks), `input/` (`InputMapper` — the domain key mappings; `Keymap`'s BattleTech hint strings), `loop/` (`RunLoop` + `UiEvent`, the headless-testable event/render loop — composes `tenter.terminal`'s flows and `tenter.panel`'s `Panel`/`PanelSet`/`PanelLayout` into the game's own frame), `screen/` (`BoardRole` — the terrain/movement/player color roles — plus `ThemeFile`/`ThemeLoader`/`resolveTheme`, which load the six built-in `RolePalette`s from packaged theme files under `theme/`; `Theme` here is `internal typealias Theme = tenter.screen.MapRolePalette` — the app-specific pieces are the on-disk schema (`ThemeFile`'s `chrome`/`board`/`heatScale` role tables) and the loader, not the palette type or its color-value parsing, both of which live in `tenter` now; see `docs/color-themes.md`), `view/` (the board and every side panel built on `tenter.view`'s decorators and `tenter.panel`'s `Panel<GamePanelId, PanelInputs>`/`PanelSet<GamePanelId, PanelInputs>`, aliased `GamePanel`/`GamePanelSet`; `Workspace` owns the `GamePanelSet` for one run; `view/record/` — the maximized UNIT STATUS panel's graphical record sheet).
+- **`tenter/`** (`tenter.*`) — a standalone terminal-UI toolkit over [Mordant](https://github.com/ajalt/mordant); the one module deliberately meant to be lifted out into its own library later. `screen/` (`Canvas`/`ScreenBuffer`/`Cell`/`Insets`, `ColorRole` — the marker interface hosts implement their own roles against, with the toolkit's own `ChromeRole` enum nested in the same file — `PaletteColor` (its `parse(raw, level)` companion owns `#RRGGBB`/xterm-256/ANSI-16 value parsing) and `RolePalette`, the map-backed `MapRolePalette` implementation, the diffing `ScreenRenderer`, the memoizing `StyleTagCache`), `view/` (`View` and its implementations only — layout decorators `Padded`/`Bordered`/`Viewport`/`scrollingPanel`/`ScrollingPanel`, sibling-composition decorators `Columns`/`Stack`, the pure `ScrollGeometry` math, leaf views `HelpView`/`FlashMessage`, and `TextCursor` — the row-cursor over a `Canvas` that `widget/` paints through, including `TextCursor.draw(View)`, the measure-then-place primitive `Stack` itself is built on), `widget/` (reusable fragments painted into a `TextCursor` rather than a raw `Canvas`: `Checkbox`/`CheckState`/`Gauge`/`ValueRow`/`PipTrack` — including `PipTrack.drawAdvancing`, the cursor-advancing sibling of `PipTrack.draw`), `text/` (dependency-free text metrics shared by `screen/` and `view/`: `CellWidth`/`TextWrap`/`TextTruncation`), `panel/` (`PanelId`, `PanelState`, the generic `Panel<K, I>`, `PanelSet`, `PanelLayout`, `VerticalTitleView`), `input/` (`ChromeInput` — quit/panel-chord/state-cycle/scroll/pan mappings — plus `KeyGlyph`/`KeyHint`/`KeySection`/`PanAction`/`ScrollAction`), `terminal/` (`TerminalEvent` + the raw-mode/resize `Flow` producers). No `battletech.*` imports anywhere in this module — see the invariant in `CLAUDE.md` and `tenter/src/test/kotlin/tenter/ArchitectureTest.kt`. Dependencies run one way — `text`/`input` are leaves; `screen` → `text`; `terminal` → `input`; `view` → `input`/`screen`/`text`; `widget`/`panel` → `view` (+ `screen`) — never the reverse. `tenter/src/test/kotlin/tenter/LayeringTest.kt` (Konsist) enforces the full matrix, not just the general shape.
+- **`tui/`** (`battletech.tui.*`) — the BattleTech terminal UI, built on `tenter`. Uses [Clikt](https://github.com/ajalt/clikt) for the CLI (`host`/`join`/`serve` subcommands, bare invocation = hot-seat). Entry point `battletech.tui.MainKt`. `game/` (incl. `phase/` — app state, phase-specific UI logic like `AttackPhase`/`MovementPhase`/`WeaponAllocation`; `GamePanelId` — this app's `tenter.panel.PanelId`), `hex/` (hex-grid rendering/geometry — a `BoardRole`-flavored consumer of `tenter.screen`), `icon/` (`FontIcons.kt` — the app-wide NerdFont/Unicode glyph vocabulary: log-line markers, pip/ammo/infinity glyphs, dice faces, plus the hex-facing/terrain/movement icons `hex/` itself consumes; not `battletech.tui.hex` because most of its callers are outside the board — log formatting, the record sheet, weapon/pilot tracks), `input/` (`InputMapper` — the domain key mappings; `Keymap`'s BattleTech hint strings), `loop/` (`RunLoop` + `UiEvent`, the headless-testable event/render loop — composes `tenter.terminal`'s flows and `tenter.panel`'s `Panel`/`PanelSet`/`PanelLayout` into the game's own frame), `screen/` (`BoardRole` — the terrain/movement/player color roles — plus `ThemeFile`/`ThemeLoader`/`resolveTheme`, which load the six built-in `RolePalette`s from packaged theme files under `theme/`; `Theme` here is `internal typealias Theme = tenter.screen.MapRolePalette` — the app-specific pieces are the on-disk schema (`ThemeFile`'s `chrome`/`board`/`heatScale` role tables) and the loader, not the palette type or its color-value parsing, both of which live in `tenter` now; see `docs/color-themes.md`), `view/` (the board and every side panel built on `tenter.view`'s decorators and `tenter.panel`'s `Panel<GamePanelId, PanelInputs>`/`PanelSet<GamePanelId, PanelInputs>`, aliased `GamePanel`/`GamePanelSet`; `Workspace` owns the `GamePanelSet` for one run; `view/record/` — the maximized UNIT STATUS panel's graphical record sheet).
+- **`strategic/` + `bt/`** — placeholders. `strategic` holds one stub class (`calculateCampaignMovement(d) = d * 2`); `bt` (`battletech.MainKt`) is a hello-world that prints it. Ignore unless explicitly asked.
 
-## buildSrc convention plugins
+## Map and theme loading share one loader
 
-Applied via `id("battletech.<name>")`:
-
-- **`battletech.kotlin-common`** — base for every module: applies `kotlin("jvm")`, sets the JVM toolchain (JVM 21 when `CLAUDE_CODE` env var is set — Claude Cloud constraint — otherwise the catalog version), enables `explicitApi()`, configures JUnit Platform + test logging, wires standard test deps (JUnit BOM/bundle, MockK, AssertJ).
-- **`battletech.kotlin-library`** — applies `kotlin-common`; used by `strategic`, `tactical`, `network`, `tenter`.
-- **`battletech.kotlin-application`** — applies `kotlin-common` + the `application` plugin; used by `bt`, `tui`.
-- **`battletech.kotlin-serialization`** — applies the Kotlin serialization plugin; used by `tactical` and `network` (both need kotlinx-serialization for `GameState`/wire types).
-
-`tenter/build.gradle.kts` additionally applies the stock `java-test-fixtures` plugin (not a `battletech.*` convention plugin) to publish `ViewTestSupport.kt`'s `render`/`renderInPanel`/buffer helpers as `testFixtures(project(":tenter"))`, consumed by `tui`'s own tests — a fixture used across module boundaries belongs in `testFixtures`, not duplicated per consumer.
+Map and theme loading share one implementation, `battletech.tactical.io.ResourceOrFileLoader<T>`: `GameMapLoader` (`tactical`) and `ThemeLoader` (`tui`) are both thin adapters that hand it a `label` (`"Map"`/`"Theme"`), a `build(text, name) -> T`, and an exception constructor, and get "existing path is authoritative, else `<dir>/<spec>.json` from the classpath, else name the built-ins from `<dir>/index.json`" for free — including the built-in-name listing on a not-found error, which both `map/index.json` and `theme/index.json` now supply via the shared `<dir>/index.json` → `{"names": [...]}` schema. `ResourceOrFileLoader` lives in `tactical` (not `tui`) because that is the only module both a map loader and a theme loader can depend on without breaking the one-way dependency graph — `tactical` takes no `project(...)` dependencies of its own, and `tui` already depends on `tactical`. It carries no BattleTech-domain types in its own signature despite living in `tactical`, by the same discipline `tenter` uses for `battletech`-freedom, just not Konsist-enforced here. `ResourceOrFileLoader` only ever gets the file to text and hands it to `build`; the theme file's *own* concerns split three ways — `ThemeLoader` (loading), `ThemeFile` (the on-disk schema and role-table validation), and `tenter.screen.PaletteColor.parse` (the `#RRGGBB`/xterm-256/ANSI-16 color-value syntax, since that's a fact about `PaletteColor` itself, not about theme files) — see the `tenter/` package-layout entry above. Packaging detail (how `map/`/`theme/` land in the shadow jar): `docs/build.md`.
 
 ## Enforced package boundaries
 
@@ -81,27 +79,6 @@ invariant (`CLAUDE.md`) mechanically: only `battletech/tui/Main.kt` may import
 `tenter/`'s package-layout entry above — `tenter/src/test/kotlin/tenter/ArchitectureTest.kt`
 enforces the module's *external* seam (no `battletech.*`, nothing outside the third-party
 allowlist) but nothing previously checked the seams between `tenter`'s own packages.
-
-## Module dependency edges
-
-- `network → tactical`: `api(project(":tactical"))` in `network/build.gradle.kts` — deliberately transitive (not `implementation`). `network` re-exports `tactical` types (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) directly as wire DTOs instead of redefining them, so consumers of `network` need `tactical`'s types on their compile classpath too.
-- `bt → strategic`, `bt → tactical`: both `implementation(project(...))` in `bt/build.gradle.kts`.
-- `tui → tactical`, `tui → network`, `tui → tenter`: all `implementation(project(...))` in `tui/build.gradle.kts`; `tui` additionally takes `testImplementation(testFixtures(project(":tenter")))` for shared rendering test helpers.
-- `strategic`, `tactical`, and `tenter` declare no `project(...)` dependencies on other modules (`strategic/build.gradle.kts`, `tactical/build.gradle.kts`, `tenter/build.gradle.kts`). `tenter` depends only on `mordant` and `kotlinx-coroutines-core` (both `api`, since `Terminal`/`InputEvent`/`Flow` types appear in its own public surface) — no BattleTech module may appear on its classpath, enforced per the invariant in `CLAUDE.md`.
-
-## TUI packaging
-
-`tui/build.gradle.kts` applies `alias(libs.plugins.shadow)` — `com.gradleup.shadow`, version `9.4.2` per `gradle/libs.versions.toml`.
-
-Tactical's `processResources` copies the repository's root `map/` directory into the tactical runtime resources under `map/`. Because `tui` depends on `tactical`, Shadow JAR assembly includes those packaged maps transitively; map resources are not configured separately on `shadowJar`.
-
-Themes are packaged the same way but one module closer to the jar: `tui/build.gradle.kts` configures its OWN `processResources` (tactical's block cannot reach it) to copy the repository's root `theme/` directory into `tui`'s runtime resources under `theme/`, so the six built-in `theme/*.json` files and `theme/index.json` land in the shadow jar directly rather than transitively. See `docs/color-themes.md` for the file format.
-
-Map and theme loading share one implementation, `battletech.tactical.io.ResourceOrFileLoader<T>`: `GameMapLoader` (`tactical`) and `ThemeLoader` (`tui`) are both thin adapters that hand it a `label` (`"Map"`/`"Theme"`), a `build(text, name) -> T`, and an exception constructor, and get "existing path is authoritative, else `<dir>/<spec>.json` from the classpath, else name the built-ins from `<dir>/index.json`" for free — including the built-in-name listing on a not-found error, which both `map/index.json` and `theme/index.json` now supply via the shared `<dir>/index.json` → `{"names": [...]}` schema. `ResourceOrFileLoader` lives in `tactical` (not `tui`) because that is the only module both a map loader and a theme loader can depend on without breaking the one-way dependency graph — `tactical` takes no `project(...)` dependencies of its own, and `tui` already depends on `tactical`. It carries no BattleTech-domain types in its own signature despite living in `tactical`, by the same discipline `tenter` uses for `battletech`-freedom, just not Konsist-enforced here. `ResourceOrFileLoader` only ever gets the file to text and hands it to `build`; the theme file's *own* concerns split three ways — `ThemeLoader` (loading), `ThemeFile` (the on-disk schema and role-table validation), and `tenter.screen.PaletteColor.parse` (the `#RRGGBB`/xterm-256/ANSI-16 color-value syntax, since that's a fact about `PaletteColor` itself, not about theme files) — see the `tenter/` package-layout entry above.
-
-`tasks.shadowJar` is configured with `archiveBaseName = "tui"`, `archiveClassifier = ""`, `archiveVersion = ""`, so the fat jar lands at exactly `tui/build/libs/tui.jar` (no `-all`/version suffix). `mergeServiceFiles()` is set to correctly merge `META-INF/services` entries from bundled dependencies.
-
-The `createExecutable` task (group `distribution`) depends on `shadowJar` and prepends a POSIX shell stub — `#!/bin/sh\nexec java -jar "$0" "$@"\n` — to the shadow jar's bytes, writing the result to `build/tui` and marking it executable. A shell script prepended to a zip/jar is still a valid jar (the JVM's zip reader scans from the end of the file), so `build/tui` is simultaneously a runnable shell script and a runnable jar.
 
 ## Why `RunLoop` and `Workspace` stayed in `tui`
 
@@ -161,47 +138,6 @@ matrix above: the handler needs `PhaseOutcome`/`GameEvent`/`TurnState`/`GameComm
 package — the SPI (`PhaseHandler`, `PhaseOutcome`) can't be extracted to break the cycle without
 also moving the session types `PhaseOutcome` carries.
 
-## Wire discriminators and `PROTOCOL_VERSION`
+## Wire protocol
 
-`network/wire/WireJson.kt` sets `classDiscriminator = "type"`. With no `@SerialName`,
-kotlinx.serialization falls back to a variant's **fully-qualified class name** as that
-discriminator string, which welds the wire format to package layout: moving a variant between
-packages — not just adding/removing one — would silently change the wire format, and `network`'s
-round-trip tests can't catch that on their own, since they encode and decode with the same code
-on both sides of the assertion.
-
-Every `@Serializable sealed` hierarchy that's reachable under `battletech.` therefore carries
-`@SerialName` on every concrete variant, by one convention: **the serial name is the variant's
-lexical nesting path relative to its package, decapitalized segment by segment and joined with
-`.`, dropping only as many leading segments as needed for the name to stay unique among its
-hierarchy's other variants.** In practice that means a flat one-level hierarchy (`RuleRejection`,
-`CommandRejection`, `CommandResult`) drops the enclosing type entirely (`RuleRejection.NotAdjacent`
-→ `"notAdjacent"`), while a hierarchy whose sibling branches would otherwise collide keeps the
-disambiguating segment (`GameEvent`'s `UnitStoodUp.Detailed` → `"unitStoodUp.detailed"`, alongside
-`AmmoExploded.Detailed` → `"ammoExploded.detailed"` in the same hierarchy). A top-level variant
-that implements a bare marker root from a separate file (`CombatUnit`/`ForeignUnit` implementing
-`VisibleUnit`) uses its own name unprefixed, the same as any other single-segment case.
-
-This is build-enforced, not hand-maintained discipline, by two tests in
-`network/src/test/kotlin/battletech/network/wire/`:
-
-- `WireDiscriminatorConventionTest` discovers every top-level `@Serializable sealed`
-  interface/class under `battletech.` via Konsist, walks each down to its concrete leaves via
-  `KClass.sealedSubclasses`, and asserts every leaf's `@SerialName` is present, is a decapitalized
-  suffix of that leaf's own lexical nesting path (never an arbitrary invented string), and is
-  unique among its root's other variants.
-- `WireDiscriminatorGoldenFileTest` walks the actual `SerialDescriptor` graph kotlinx builds from
-  `ClientMessage`/`ServerMessage` (generics, nesting, and all) and pins the resulting discriminator
-  set — together with `PROTOCOL_VERSION` — against a checked-in golden file
-  (`network/src/test/resources/wire-discriminators.txt`), so a renamed discriminator or a type that
-  stops being reachable from the two message envelopes shows up as a diff there even if it isn't
-  caught by the Konsist-driven test above.
-
-A wire change that isn't purely additive should bump `PROTOCOL_VERSION` (`network/wire/Messages.kt`)
-in the same diff that updates the golden file — a mismatched client already rejects cleanly via
-`JoinRejectionReason.INCOMPATIBLE_PROTOCOL`.
-`network/src/test/kotlin/battletech/network/wire/WireFormatRoundTripTest.kt` additionally pins the
-literal JSON for one flat (`RuleRejection.NoAmmo`) and one nested (`GameEvent`'s
-`UnitStoodUp.Undisclosed`) variant, to catch a discriminator change that round-tripping alone would
-miss (encoding and decoding with the same code on both sides of an assertion agrees with itself
-even after a rename).
+Discriminator convention, its two enforcing tests, and `PROTOCOL_VERSION`: `docs/wire-protocol.md`.

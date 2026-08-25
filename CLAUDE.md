@@ -4,19 +4,18 @@
 
 BattleTech is a multi-module project implementing BattleTech, hexagonal board tabletop, turn-based, game rules.
 
-## Game Rules Reference
+## Docs (read on demand)
 
-`docs/rules/` — the canonical tabletop rules this engine implements (hit location, crits,
-heat scale, to-hit modifiers, LOS, cluster hits, pilot, ammo, water, victory). Business
-rules, not technical docs.
+Not needed for everyday context — read the row's doc when its trigger applies.
 
-**Read `docs/rules/index.md` first** — it is a routing table (doc-by-topic + find-by-keyword)
-that names the one doc owning each rule. Open only the doc it routes to; do not read the
-directory wholesale. Each rule has one canonical home — trust the owning doc over a
-restated number elsewhere, and over general BattleTech knowledge.
-
-Read when implementing, changing, or reviewing a game rule, or when a magic number in code
-or a test expectation is a rules value. Not needed for everyday context.
+| Doc | Read when |
+|---|---|
+| `docs/rules/index.md` | Implementing, changing, or reviewing a game rule, or a magic number in code or a test expectation is a rules value. It routes to the one doc owning each rule — trust that doc over a number restated elsewhere, and over general BattleTech knowledge. |
+| `docs/architecture.md` | Navigating inside a module or moving content between doc tiers. Package layout, invariant rationale. |
+| `docs/build.md` | Touching `buildSrc/`, a `build.gradle.kts`, module dependencies, or `map/`/`theme/`/shadow-jar packaging. |
+| `docs/wire-protocol.md` | Adding or changing a wire-crossing `@Serializable sealed` variant, a failing wire-discriminator test, or a non-additive protocol change. |
+| `docs/tui-testing.md` | Hand-checking TUI rendering that can't be expressed as a unit test; automated tests are the primary strategy. |
+| `docs/color-themes.md` | Touching `theme/*.json`, palette roles, or the theme contrast/distinctness guarantees. |
 
 ## Technology Stack
 
@@ -39,21 +38,17 @@ or a test expectation is a rules value. Not needed for everyday context.
 ./gradlew :tui:shadowJar && java -jar tui/build/libs/tui.jar
 ```
 
-Visual TUI spot-checks: see `docs/tui-testing.md`. Automated tests are the primary strategy.
-
 ## Architecture
 
 ### Module Structure
 
 Dependencies flow: `tui` → `tactical` + `network` + `tenter`; `network` → (`api`) `tactical`; `bt` → `strategic` + `tactical`.
 
-- **`tactical/`** — the engine: tactical-level rules (combat, to-hit, movement, heat). Delivery-agnostic — no UI assumptions, no I/O. Every delivery (TUI, `network`, any future web UI) consumes it through the same public surface. One deliberate exception: `tactical`'s wire-crossing types carry `kotlinx.serialization` annotations for `network`'s benefit (see the wire-discriminator rule below) — a wire-compatibility constraint on field layout, not a UI concern.
-- **`network/`** — client/server layer over `tactical` (`GameServer`, `SocketAcceptor`, `ClientGameSession`, the `transport/` connection port, wire protocol). No UI. Depends on `tactical` via `api` and reuses its types as wire DTOs rather than redefining them.
-- **`tenter/`** — a standalone terminal-UI toolkit over [Mordant](https://github.com/ajalt/mordant): screen buffer/diffing renderer/color-role palettes (`screen/`), `View` and its layout decorators (`view/`), reusable fragments painted into a `TextCursor` rather than a raw `Canvas` (`widget/`), dependency-free text metrics (`text/`), the panel framework (`panel/`), chrome input mappings and terminal event flows (`input/`, `terminal/`). Knows nothing about BattleTech — see the invariant below — so it is the one module meant to be lifted out into its own library later.
-- **`tui/`** — the BattleTech terminal UI, built on `tenter`: board/hex rendering, phase-specific input handling, game state → view-model wiring. Uses [Clikt](https://github.com/ajalt/clikt) for the CLI (`host`/`join`/`serve` subcommands, bare invocation = hot-seat). Entry point `battletech.tui.MainKt`.
-- **`strategic/` + `bt/`** — placeholders. `strategic` holds one stub class (`calculateCampaignMovement(d) = d * 2`); `bt` (`battletech.MainKt`) is a hello-world that prints it. Ignore unless explicitly asked.
-
-`docs/architecture.md` — package layout inside each module, buildSrc convention plugins, invariant rationale, and the rule for which tier (this file or `docs/`) owns a given piece of context. Read when navigating inside a module, touching the build, or moving content between docs; not needed for everyday context.
+- **`tactical/`** — the engine: tactical rules (combat, to-hit, movement, heat). Delivery-agnostic: no UI assumptions, no console I/O.
+- **`network/`** — client/server layer over `tactical` (`GameServer`, `SocketAcceptor`, `ClientGameSession`, `transport/`, wire protocol). No UI; reuses `tactical`'s types as wire DTOs rather than redefining them.
+- **`tenter/`** — BattleTech-free terminal-UI toolkit (`screen`/`view`/`widget`/`panel`/`input`/`terminal`/`text`) over Mordant; meant to be extractable as a library.
+- **`tui/`** — the BattleTech terminal UI, built on `tenter`. Entry point `battletech.tui.MainKt`.
+- **`strategic/` + `bt/`** — placeholders. Ignore unless explicitly asked.
 
 ### Architecture principles
 
@@ -69,10 +64,10 @@ OOP + SOLID + KISS + DRY + YAGNI
 - **Every player is a client — locality is an adapter, not a branch**: local and remote seats both reach the session through `transport/`'s connection port (`InMemoryConnection` / `JsonLineConnection`). `GameServer` cannot tell them apart and is deliberately NOT a `GameSession`. `main()` is the only place that knows which mode ran — do not add a branch anywhere else asking "is this hot-seat?", and do not give a local player a private path to the session. Rationale: `docs/architecture.md`.
 - **Subscription is canonical**: `session.subscribe(listener)` is the raw, session-wide event feed for clients — it is not the redaction seam. `CommandResult.Accepted.events` is a courtesy to the submitter; do not rely on it for cross-player notification.
 - **Package boundaries in `tactical` are test-enforced**: an allowed-dependency matrix between `attack/`, `dice/`, `heat/`, `io/`, `model/`, `movement/`, `query/`, `rules/`, `session/`, `unit/` — `model`/`dice`/`io`/`rules` are leaves relative to `session`/`query`. `ArchitectureTest` (Konsist) fails the build on any unlisted import; rationale and the two allowed cycles (`heat ⇄ attack`, `movement`/`attack` → `session`) are in `docs/architecture.md`.
-- **Phase handlers live with their rules**: `MovementPhaseHandler`, `WeaponAttackPhaseHandler`, `PhysicalAttackPhaseHandler`, and `HeatPhaseHandler` live in the package whose rules they drive (`movement/`, `attack/weapon/`, `attack/physical/`, `heat/`), not in `session/`. System phases with no rules package of their own (`InitiativePhaseHandler`, `EndPhaseHandler`) stay in `session/`.
-- **Every wire-crossing sealed variant needs a `@SerialName` following the one convention — test-enforced**: `WireJson` uses `classDiscriminator = "type"`, and an unannotated variant's discriminator defaults to its fully-qualified class name, welding the wire format to package layout. The convention: the serial name is the variant's lexical nesting path relative to its package, decapitalized and dot-joined, dropping only as many leading segments as needed to stay unique within its hierarchy (`RuleRejection.NotAdjacent` → `"notAdjacent"`; `GameEvent`'s `UnitStoodUp.Detailed` → `"unitStoodUp.detailed"`, since a bare `"detailed"` would collide with sibling `Detailed`s elsewhere in that hierarchy). `network/src/test/kotlin/battletech/network/wire/WireDiscriminatorConventionTest.kt` (Konsist + reflection) and `WireDiscriminatorGoldenFileTest.kt` (walks the live `SerialDescriptor` graph against a checked-in golden file) both fail the build on a missing, invented, or colliding value; rationale in `docs/architecture.md`. Bump `PROTOCOL_VERSION` (`network/wire/Messages.kt`) on any non-additive change to `GameCommand`/`GameEvent`/`CommandRejection`/`RuleRejection`/etc.
-- **`tenter` is BattleTech-free — Konsist-enforced**: no file under `tenter/` may import anything starting with `battletech.`, and every import there must resolve to `tenter.*`, `kotlin*`, `java*`, or `com.github.ajalt.*` (an allowlist, so a new third-party dependency also fails the build). `tenter/src/test/kotlin/tenter/ArchitectureTest.kt` (Konsist) enforces this — it is what keeps a future extraction into a standalone library viable.
-- **`tenter`'s internal layering is test-enforced**: `text`/`input` are leaves; `screen` → `text`; `terminal` → `input`; `view` → `input`/`screen`/`text`; `widget`/`panel` → `view` (+ `screen`) — never the reverse. `tenter/src/test/kotlin/tenter/LayeringTest.kt` (Konsist) enforces the matrix.
+- **Phase handlers live with their rules**: a `PhaseHandler` implementation lives in the package whose rules it drives (e.g. `movement/`, `attack/weapon/`), not in `session/`. System phases with no rules package of their own (`InitiativePhaseHandler`, `EndPhaseHandler`) stay in `session/`. Full registration order: `docs/architecture.md`.
+- **Every wire-crossing sealed variant needs a `@SerialName` following the one convention — test-enforced**: `WireJson` uses `classDiscriminator = "type"`, and an unannotated variant's discriminator defaults to its fully-qualified class name, welding the wire format to package layout. The convention: the serial name is the variant's lexical nesting path relative to its package, decapitalized and dot-joined, dropping only as many leading segments as needed to stay unique within its hierarchy (`RuleRejection.NotAdjacent` → `"notAdjacent"`; `GameEvent`'s `UnitStoodUp.Detailed` → `"unitStoodUp.detailed"`, since a bare `"detailed"` would collide with sibling `Detailed`s elsewhere in that hierarchy). This fails the build on a missing, invented, or colliding value; test paths and the golden-file mechanism are in `docs/wire-protocol.md`. Bump `PROTOCOL_VERSION` (`network/wire/Messages.kt`) on any non-additive change to `GameCommand`/`GameEvent`/`CommandRejection`/`RuleRejection`/etc.
+- **`tenter` is BattleTech-free — Konsist-enforced**: no file under `tenter/` may import anything starting with `battletech.`, and every import there must resolve to `tenter.*`, `kotlin*`, `java*`, or `com.github.ajalt.*` (an allowlist, so a new third-party dependency also fails the build).
+- **`tenter`'s internal layering is test-enforced**: `text`/`input` are leaves; `widget`/`panel` sit at the top — never the reverse. Full matrix: `docs/architecture.md`.
 - **No raw `Random`**: always go through `DiceRoller`. Seeded tests must match production roll order.
 
 ## Tool Preferences

@@ -14,7 +14,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
 
 /**
- * Enforces the wire-discriminator convention documented in `docs/architecture.md`: a concrete
+ * Enforces the wire-discriminator convention documented in `docs/wire-protocol.md`: a concrete
  * variant's `@SerialName` is the case-decapitalized dotted tail of its own lexical nesting path
  * (e.g. `RuleRejection.NotAdjacent` -> `"notAdjacent"`, `GameEvent`'s `UnitStoodUp.Detailed` ->
  * `"unitStoodUp.detailed"`), and is unique among every other variant reachable from the same
@@ -26,7 +26,7 @@ import kotlin.reflect.full.findAnnotation
  * every root's variants must not collide.
  *
  * Discovery is mechanical on both ends, not a hand-maintained list — that list is exactly what
- * went stale before (see `docs/architecture.md`'s wire-discriminator section):
+ * went stale before (see `docs/wire-protocol.md`):
  *  - Konsist finds every top-level `@Serializable sealed` interface/class under `battletech.`.
  *  - Reflection (`sealedSubclasses`) walks each one down to its concrete leaves.
  */
