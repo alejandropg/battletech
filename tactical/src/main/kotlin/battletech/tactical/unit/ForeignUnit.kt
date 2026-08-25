@@ -3,6 +3,7 @@ package battletech.tactical.unit
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -13,6 +14,7 @@ import kotlinx.serialization.Serializable
  * error, not a discipline problem.
  */
 @Serializable
+@SerialName("foreignUnit")
 public data class ForeignUnit(
     override val id: UnitId,
     override val owner: PlayerId,

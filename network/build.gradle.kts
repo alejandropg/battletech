@@ -7,4 +7,5 @@ dependencies {
     api(project(":tactical"))
     implementation(libs.kotlinx.serialization.json)
     testImplementation(kotlin("reflect"))
+    testImplementation(libs.konsist)
 }

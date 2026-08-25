@@ -163,21 +163,45 @@ also moving the session types `PhaseOutcome` carries.
 
 ## Wire discriminators and `PROTOCOL_VERSION`
 
-None of the `@Serializable` sealed hierarchies under `battletech.tactical.session`
-(`RejectionReason`/`CommandRejection`, `GameEvent`, `GameCommand`) carry `@SerialName` on their
-existing variants — `network/wire/WireJson.kt` sets `classDiscriminator = "type"`, and with no
-`@SerialName`, kotlinx.serialization falls back to the variant's **fully-qualified class name**
-as that discriminator string. This means moving or renaming one of those variants' *package* —
-not just adding/removing a variant — silently changes the wire format: old and new builds would
-disagree about what a message even is, and `network`'s round-trip tests can't catch it, since
-they encode and decode with the same code on both sides of the assertion.
+`network/wire/WireJson.kt` sets `classDiscriminator = "type"`. With no `@SerialName`,
+kotlinx.serialization falls back to a variant's **fully-qualified class name** as that
+discriminator string, which welds the wire format to package layout: moving a variant between
+packages — not just adding/removing one — would silently change the wire format, and `network`'s
+round-trip tests can't catch that on their own, since they encode and decode with the same code
+on both sides of the assertion.
 
-`battletech.tactical.rules.RuleRejection` and `battletech.tactical.session.CommandRejection` do
-carry `@SerialName` on every variant (added when `RuleRejection` moved `session/` → `rules/`,
-`PROTOCOL_VERSION` bumped `1` → `2` in the same change) — new variants anywhere in this wire
-surface should follow that precedent rather than leave the FQN fallback in place, and a change
-that isn't purely additive should bump `PROTOCOL_VERSION` (`network/wire/Messages.kt`), which a
-mismatched client already rejects cleanly via `JoinRejectionReason.INCOMPATIBLE_PROTOCOL`.
-`network/src/test/kotlin/battletech/network/wire/WireFormatRoundTripTest.kt` pins the literal
-JSON for one `RuleRejection` and one `GameEvent` variant specifically to catch a future
-discriminator change that round-tripping alone would miss.
+Every `@Serializable sealed` hierarchy that's reachable under `battletech.` therefore carries
+`@SerialName` on every concrete variant, by one convention: **the serial name is the variant's
+lexical nesting path relative to its package, decapitalized segment by segment and joined with
+`.`, dropping only as many leading segments as needed for the name to stay unique among its
+hierarchy's other variants.** In practice that means a flat one-level hierarchy (`RuleRejection`,
+`CommandRejection`, `CommandResult`) drops the enclosing type entirely (`RuleRejection.NotAdjacent`
+→ `"notAdjacent"`), while a hierarchy whose sibling branches would otherwise collide keeps the
+disambiguating segment (`GameEvent`'s `UnitStoodUp.Detailed` → `"unitStoodUp.detailed"`, alongside
+`AmmoExploded.Detailed` → `"ammoExploded.detailed"` in the same hierarchy). A top-level variant
+that implements a bare marker root from a separate file (`CombatUnit`/`ForeignUnit` implementing
+`VisibleUnit`) uses its own name unprefixed, the same as any other single-segment case.
+
+This is build-enforced, not hand-maintained discipline, by two tests in
+`network/src/test/kotlin/battletech/network/wire/`:
+
+- `WireDiscriminatorConventionTest` discovers every top-level `@Serializable sealed`
+  interface/class under `battletech.` via Konsist, walks each down to its concrete leaves via
+  `KClass.sealedSubclasses`, and asserts every leaf's `@SerialName` is present, is a decapitalized
+  suffix of that leaf's own lexical nesting path (never an arbitrary invented string), and is
+  unique among its root's other variants.
+- `WireDiscriminatorGoldenFileTest` walks the actual `SerialDescriptor` graph kotlinx builds from
+  `ClientMessage`/`ServerMessage` (generics, nesting, and all) and pins the resulting discriminator
+  set — together with `PROTOCOL_VERSION` — against a checked-in golden file
+  (`network/src/test/resources/wire-discriminators.txt`), so a renamed discriminator or a type that
+  stops being reachable from the two message envelopes shows up as a diff there even if it isn't
+  caught by the Konsist-driven test above.
+
+A wire change that isn't purely additive should bump `PROTOCOL_VERSION` (`network/wire/Messages.kt`)
+in the same diff that updates the golden file — a mismatched client already rejects cleanly via
+`JoinRejectionReason.INCOMPATIBLE_PROTOCOL`.
+`network/src/test/kotlin/battletech/network/wire/WireFormatRoundTripTest.kt` additionally pins the
+literal JSON for one flat (`RuleRejection.NoAmmo`) and one nested (`GameEvent`'s
+`UnitStoodUp.Undisclosed`) variant, to catch a discriminator change that round-tripping alone would
+miss (encoding and decoding with the same code on both sides of an assertion agrees with itself
+even after a rename).

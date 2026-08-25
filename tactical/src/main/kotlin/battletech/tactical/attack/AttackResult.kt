@@ -1,5 +1,6 @@
 package battletech.tactical.attack
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -16,6 +17,7 @@ public sealed interface AttackResult : ToHitAttempted {
     public val attempt: ToHitAttempt
 
     @Serializable
+    @SerialName("miss")
     public data class Miss(
         override val attempt: ToHitAttempt,
     ) : AttackResult, ToHitAttempted by attempt
@@ -50,6 +52,7 @@ public sealed interface AttackResult : ToHitAttempted {
     }
 
     @Serializable
+    @SerialName("singleHit")
     public data class SingleHit(
         override val attempt: ToHitAttempt,
         override val locationHits: List<LocationHit>,
@@ -69,6 +72,7 @@ public sealed interface AttackResult : ToHitAttempted {
      * render "LRM-20: 12 missiles → 5 CT, 5 RT, 2 LA".
      */
     @Serializable
+    @SerialName("clusterHit")
     public data class ClusterHit(
         override val attempt: ToHitAttempt,
         override val locationHits: List<LocationHit>,

@@ -1,5 +1,6 @@
 package battletech.tactical.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -13,9 +14,11 @@ import kotlinx.serialization.Serializable
 public sealed interface MatchOutcome {
     /** [winner] is the sole player with surviving units. */
     @Serializable
+    @SerialName("victory")
     public data class Victory(public val winner: PlayerId) : MatchOutcome
 
     /** Neither side has survivors. */
     @Serializable
+    @SerialName("draw")
     public data object Draw : MatchOutcome
 }

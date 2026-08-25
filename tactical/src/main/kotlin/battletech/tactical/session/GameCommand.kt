@@ -8,6 +8,7 @@ import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.unit.UnitId
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -27,6 +28,7 @@ public sealed interface GameCommand {
  * by [destination] (a [ReachableHex] carries path + facing + MP cost).
  */
 @Serializable
+@SerialName("moveUnit")
 public data class MoveUnit(
     override val playerId: PlayerId,
     public val unitId: UnitId,
@@ -40,6 +42,7 @@ public data class MoveUnit(
  * impulse; on failure it remains prone and its activation is spent.
  */
 @Serializable
+@SerialName("standUp")
 public data class StandUp(
     override val playerId: PlayerId,
     public val unitId: UnitId,
@@ -66,6 +69,7 @@ public sealed interface AttackImpulseCommand : GameCommand {
  * just records them.
  */
 @Serializable
+@SerialName("commitAttackImpulse")
 public data class CommitAttackImpulse(
     override val playerId: PlayerId,
     public val declarations: List<AttackDeclaration>,
@@ -80,6 +84,7 @@ public data class CommitAttackImpulse(
  * impulse and applies damage.
  */
 @Serializable
+@SerialName("commitPhysicalAttackImpulse")
 public data class CommitPhysicalAttackImpulse(
     override val playerId: PlayerId,
     public val declarations: List<PhysicalAttackDeclaration>,

@@ -11,7 +11,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /** Wire protocol version; bumped whenever [ClientMessage]/[ServerMessage] shapes change incompatibly. */
-public const val PROTOCOL_VERSION: Int = 2
+public const val PROTOCOL_VERSION: Int = 3
 
 /**
  * A read-only replica of session state as sent to a client: everything
@@ -55,7 +55,7 @@ public sealed interface ClientMessage {
 
     /** Submit [command] for processing; [requestId] correlates the eventual [ServerMessage.CommandReply]. */
     @Serializable
-    @SerialName("submit")
+    @SerialName("submitCommand")
     public data class SubmitCommand(public val requestId: Long, public val command: GameCommand) : ClientMessage
 }
 
@@ -101,7 +101,7 @@ public sealed interface ServerMessage {
      * full state. See the ordering invariant on [ServerMessage].
      */
     @Serializable
-    @SerialName("push")
+    @SerialName("statePush")
     public data class StatePush(public val entries: List<LogEntry>, public val snapshot: GameSnapshot) : ServerMessage
 
     /**
@@ -110,6 +110,6 @@ public sealed interface ServerMessage {
      * arrives after the [StatePush] carrying the same change.
      */
     @Serializable
-    @SerialName("reply")
+    @SerialName("commandReply")
     public data class CommandReply(public val requestId: Long, public val result: CommandResult) : ServerMessage
 }

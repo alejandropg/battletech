@@ -1,6 +1,7 @@
 package battletech.tactical.unit
 
 import battletech.tactical.model.MovementMode
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -22,11 +23,13 @@ public sealed interface MovementThisTurn {
     public val hexesMoved: Int
 
     @Serializable
+    @SerialName("stationary")
     public data object Stationary : MovementThisTurn {
         override val hexesMoved: Int get() = 0
     }
 
     @Serializable
+    @SerialName("moved")
     public data class Moved(
         public val mode: MovementMode,
         override val hexesMoved: Int,

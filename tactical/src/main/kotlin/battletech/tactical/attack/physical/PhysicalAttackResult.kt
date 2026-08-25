@@ -9,6 +9,7 @@ import battletech.tactical.dice.DiceRoll
 import battletech.tactical.session.GameEvent
 import battletech.tactical.unit.PilotingSkillRoll
 import battletech.tactical.unit.UnitId
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /** Outcome of resolving one declared physical attack. */
@@ -29,6 +30,7 @@ public sealed interface PhysicalAttackResult {
     public val knockdown: Knockdown
 
     @Serializable
+    @SerialName("miss")
     public data class Miss(
         override val attackerId: UnitId,
         override val targetId: UnitId,
@@ -40,6 +42,7 @@ public sealed interface PhysicalAttackResult {
     ) : PhysicalAttackResult
 
     @Serializable
+    @SerialName("hit")
     public data class Hit(
         override val attackerId: UnitId,
         override val targetId: UnitId,
@@ -69,16 +72,19 @@ public sealed interface PhysicalAttackResult {
 public sealed interface Knockdown {
     /** No PSR was forced — always the case for punches. */
     @Serializable
+    @SerialName("none")
     public data object None : Knockdown
 
     /** The PSR was made; no fall resulted. */
     @Serializable
     public sealed interface Resisted : Knockdown {
         @Serializable
+        @SerialName("resisted.detailed")
         public data class Detailed(public val psr: PilotingSkillRoll) : Resisted
 
         /** Foreign-viewer redaction of [Detailed]: only that the faller resisted. */
         @Serializable
+        @SerialName("resisted.undisclosed")
         public data object Undisclosed : Resisted
     }
 
@@ -97,6 +103,7 @@ public sealed interface Knockdown {
         public val pilotEvents: List<GameEvent>
 
         @Serializable
+        @SerialName("fell.detailed")
         public data class Detailed(
             override val unitId: UnitId,
             public val psr: PilotingSkillRoll,
@@ -106,6 +113,7 @@ public sealed interface Knockdown {
 
         /** Foreign-viewer redaction of [Detailed]: the fall (and its damage) stays observable, the PSR does not. */
         @Serializable
+        @SerialName("fell.undisclosed")
         public data class Undisclosed(
             override val unitId: UnitId,
             override val fall: FallResult,

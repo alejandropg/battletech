@@ -1,5 +1,6 @@
 package battletech.tactical.unit
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -23,14 +24,17 @@ public sealed interface WeaponKind {
 
     /** No ammo bin — fires while intact (lasers, PPCs). */
     @Serializable
+    @SerialName("energy")
     public data object Energy : WeaponKind
 
     /** Ammo-fed, resolves to a single hit location (autocannons, machine guns). */
     @Serializable
+    @SerialName("ballistic")
     public data class Ballistic(override val ammoType: AmmoType) : AmmoFed
 
     /** Ammo-fed, resolves through the Cluster Hits Table (SRM/LRM). */
     @Serializable
+    @SerialName("missile")
     public data class Missile(
         override val ammoType: AmmoType,
         /**

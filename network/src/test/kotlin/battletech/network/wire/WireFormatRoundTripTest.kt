@@ -330,7 +330,16 @@ internal class WireFormatRoundTripTest {
 
         val line = WireJson.json.encodeToString(event)
 
-        assertThat(line).isEqualTo("""{"type":"battletech.tactical.session.TurnEnded","turnNumber":2}""")
+        assertThat(line).isEqualTo("""{"type":"turnEnded","turnNumber":2}""")
+    }
+
+    @Test
+    fun `GameEvent UnitStoodUp Undisclosed encodes to the exact expected nested discriminator and fields`() {
+        val event: GameEvent = UnitStoodUp.Undisclosed(unitId = UnitId("attacker"), stoodUp = true)
+
+        val line = WireJson.json.encodeToString(event)
+
+        assertThat(line).isEqualTo("""{"type":"unitStoodUp.undisclosed","unitId":"attacker","stoodUp":true}""")
     }
 
     // ---------- CommandResult ----------

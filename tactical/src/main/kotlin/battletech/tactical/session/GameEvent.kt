@@ -31,6 +31,7 @@ import kotlinx.serialization.Serializable
 public sealed interface GameEvent
 
 @Serializable
+@SerialName("unitMoved")
 public data class UnitMoved(
     public val unitId: UnitId,
     public val from: HexCoordinates,
@@ -41,16 +42,19 @@ public data class UnitMoved(
 ) : GameEvent
 
 @Serializable
+@SerialName("attacksResolved")
 public data class AttacksResolved(
     public val results: List<AttackResult>
 ) : GameEvent
 
 @Serializable
+@SerialName("physicalAttacksResolved")
 public data class PhysicalAttacksResolved(
     public val results: List<PhysicalAttackResult>
 ) : GameEvent
 
 @Serializable
+@SerialName("unitFell")
 public data class UnitFell(
     public val unitId: UnitId,
     public val fall: FallResult,
@@ -68,6 +72,7 @@ public sealed interface UnitStoodUp : GameEvent {
     public val stoodUp: Boolean
 
     @Serializable
+    @SerialName("unitStoodUp.detailed")
     public data class Detailed(
         override val unitId: UnitId,
         public val psr: PilotingSkillRoll,
@@ -76,6 +81,7 @@ public sealed interface UnitStoodUp : GameEvent {
 
     /** Foreign-viewer redaction of [Detailed]: [stoodUp] stays, the PSR does not. */
     @Serializable
+    @SerialName("unitStoodUp.undisclosed")
     public data class Undisclosed(
         override val unitId: UnitId,
         override val stoodUp: Boolean,
@@ -83,28 +89,33 @@ public sealed interface UnitStoodUp : GameEvent {
 }
 
 @Serializable
+@SerialName("attackDeclarationsRecorded")
 public data class AttackDeclarationsRecorded(
     public val player: PlayerId,
     public val declarations: List<AttackDeclaration>,
 ) : GameEvent
 
 @Serializable
+@SerialName("torsoFacingsApplied")
 public data class TorsoFacingsApplied(
     public val facings: Map<UnitId, HexDirection>
 ) : GameEvent
 
 @Serializable
+@SerialName("phaseChanged")
 public data class PhaseChanged(
     public val from: TurnPhase,
     public val to: TurnPhase
 ) : GameEvent
 
 @Serializable
+@SerialName("initiativeRolled")
 public data class InitiativeRolled(
     public val initiative: Initiative
 ) : GameEvent
 
 @Serializable
+@SerialName("heatDissipated")
 public data class HeatDissipated(
     public val heatBefore: Map<UnitId, Int>,
     public val heatAfter: Map<UnitId, Int>
@@ -130,14 +141,17 @@ public sealed interface UnitShutdown : GameEvent {
 
     /** Automatic shutdown — heat reached the auto-shutdown threshold (≥ 30); no avoidance roll. */
     @Serializable
+    @SerialName("unitShutdown.automatic")
     public data class Automatic(override val unitId: UnitId) : UnitShutdown
 
     /** The unit failed its 2d6 shutdown-avoidance [roll]. */
     @Serializable
+    @SerialName("unitShutdown.avoidFailed")
     public data class AvoidFailed(override val unitId: UnitId, public val roll: DiceRoll) : UnitShutdown
 
     /** Foreign-viewer redaction of [Automatic] or [AvoidFailed]: the mechanism is withheld. */
     @Serializable
+    @SerialName("unitShutdown.undisclosed")
     public data class Undisclosed(override val unitId: UnitId) : UnitShutdown
 }
 
@@ -153,14 +167,17 @@ public sealed interface UnitRestarted : GameEvent {
 
     /** Automatic restart — heat fell below the lowest shutdown threshold; no roll needed. */
     @Serializable
+    @SerialName("unitRestarted.automatic")
     public data class Automatic(override val unitId: UnitId) : UnitRestarted
 
     /** The unit passed its 2d6 restart [roll]. */
     @Serializable
+    @SerialName("unitRestarted.rollPassed")
     public data class RollPassed(override val unitId: UnitId, public val roll: DiceRoll) : UnitRestarted
 
     /** Foreign-viewer redaction of [Automatic] or [RollPassed]: the mechanism is withheld. */
     @Serializable
+    @SerialName("unitRestarted.undisclosed")
     public data class Undisclosed(override val unitId: UnitId) : UnitRestarted
 }
 
@@ -176,6 +193,7 @@ public sealed interface AmmoExploded : GameEvent {
     public val damage: Int
 
     @Serializable
+    @SerialName("ammoExploded.detailed")
     public data class Detailed(
         override val unitId: UnitId,
         public val ammoType: AmmoType,
@@ -184,6 +202,7 @@ public sealed interface AmmoExploded : GameEvent {
 
     /** Foreign-viewer redaction of [Detailed]: the damage is observable, the ammo type is not. */
     @Serializable
+    @SerialName("ammoExploded.undisclosed")
     public data class Undisclosed(
         override val unitId: UnitId,
         override val damage: Int,
@@ -191,12 +210,14 @@ public sealed interface AmmoExploded : GameEvent {
 }
 
 @Serializable
+@SerialName("turnEnded")
 public data class TurnEnded(
     public val turnNumber: Int
 ) : GameEvent
 
 /** A unit was eliminated from play. [reason] is the structural (or later, pilot/crit) cause. */
 @Serializable
+@SerialName("unitDestroyed")
 public data class UnitDestroyed(
     public val unitId: UnitId,
     public val reason: DestructionReason,
@@ -204,6 +225,7 @@ public data class UnitDestroyed(
 
 /** The match has concluded. */
 @Serializable
+@SerialName("matchEnded")
 public data class MatchEnded(
     public val outcome: MatchOutcome,
 ) : GameEvent
@@ -221,6 +243,7 @@ public sealed interface CriticalHit : GameEvent {
     /** This stage only records the destroyed slot; per-component consequences (engine
      * heat, gyro PSR, weapon disable, ammo detonation, …) are wired in later stages. */
     @Serializable
+    @SerialName("criticalHit.detailed")
     public data class Detailed(
         override val unitId: UnitId,
         public val location: MechLocation,
@@ -230,6 +253,7 @@ public sealed interface CriticalHit : GameEvent {
 
     /** Foreign-viewer redaction of [Detailed]: only that a crit landed on [unitId]. */
     @Serializable
+    @SerialName("criticalHit.undisclosed")
     public data class Undisclosed(override val unitId: UnitId) : CriticalHit
 }
 
@@ -248,10 +272,12 @@ public sealed interface PilotHit : GameEvent {
      * no consciousness roll is made (see [DestructionReason.PILOT_DEAD]).
      */
     @Serializable
+    @SerialName("pilotHit.fatal")
     public data class Fatal(override val unitId: UnitId, public val pilotHits: Int) : PilotHit
 
     /** The pilot survived; [consciousnessRoll] is the scripted 2d6 roll and [conscious] its outcome. */
     @Serializable
+    @SerialName("pilotHit.checked")
     public data class Checked(
         override val unitId: UnitId,
         public val pilotHits: Int,
@@ -267,11 +293,13 @@ public sealed interface PilotHit : GameEvent {
      * this event only needs to say a hit landed.
      */
     @Serializable
+    @SerialName("pilotHit.undisclosed")
     public data class Undisclosed(override val unitId: UnitId) : PilotHit
 }
 
 /** [unitId]'s pilot failed a consciousness check (following a [PilotHit]) and blacked out. */
 @Serializable
+@SerialName("pilotKnockedUnconscious")
 public data class PilotKnockedUnconscious(
     public val unitId: UnitId,
 ) : GameEvent
@@ -299,6 +327,7 @@ public sealed interface PilotRecoveredConsciousness : GameEvent {
     public val unitId: UnitId
 
     @Serializable
+    @SerialName("pilotRecoveredConsciousness.detailed")
     public data class Detailed(
         override val unitId: UnitId,
         public val roll: DiceRoll,
@@ -306,6 +335,7 @@ public sealed interface PilotRecoveredConsciousness : GameEvent {
 
     /** Foreign-viewer redaction of [Detailed]: the pilot woke up; the roll that bounds `pilotHits` is withheld. */
     @Serializable
+    @SerialName("pilotRecoveredConsciousness.undisclosed")
     public data class Undisclosed(override val unitId: UnitId) : PilotRecoveredConsciousness
 }
 
