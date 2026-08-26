@@ -1,22 +1,32 @@
 package battletech.tactical.attack.weapon
 
-import battletech.tactical.attack.ToHitModifier
-import battletech.tactical.dice.twoD6AtLeastProbability
+import battletech.tactical.attack.ToHitBreakdown
 
 /**
- * [gunnery] is the attacker's base skill this target number was built from, or null when no
- * skill-based breakdown applies (e.g. a physical-attack option, which is never built with
- * [modifiers] populated either) — deliveries compose the two into a display breakdown
- * themselves; this type carries only the rule data.
+ * One weapon's line against one [TargetInfo]. Split by whether the weapon can actually fire:
+ * eligibility used to be encoded four correlated ways at once (`available = false`, a `13`
+ * target-number sentinel, `emptyList()` modifiers, `gunnery = null`) that nothing kept in
+ * agreement. Now it is one type choice, and [Unavailable] has no to-hit field to fake a
+ * prediction into — the same discipline as [battletech.tactical.query.DeclaredWeaponLine].
  */
-public data class WeaponTargetInfo(
-    val weaponIndex: Int,
-    val weaponName: String,
-    val targetDiceRoll: Int,
-    val damage: Int,
-    val modifiers: List<ToHitModifier>,
-    val gunnery: Int? = null,
-    val available: Boolean = true,
-) {
-    public val successChance: Int = twoD6AtLeastProbability(targetDiceRoll)
+public sealed interface WeaponTargetInfo {
+    public val weaponIndex: Int
+    public val weaponName: String
+    public val damage: Int
+
+    /** Passes every [FireWeaponActionDefinition] rule: full prediction attached. */
+    public data class Available(
+        override val weaponIndex: Int,
+        override val weaponName: String,
+        override val damage: Int,
+        public val toHit: ToHitBreakdown,
+    ) : WeaponTargetInfo
+
+    /** Out of range, no ammo, destroyed, submerged or no LOS — listed so the panel can grey
+     *  the row, carrying no to-hit math because none exists. */
+    public data class Unavailable(
+        override val weaponIndex: Int,
+        override val weaponName: String,
+        override val damage: Int,
+    ) : WeaponTargetInfo
 }

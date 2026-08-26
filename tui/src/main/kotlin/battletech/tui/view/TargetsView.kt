@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import battletech.tactical.attack.weapon.TargetInfo
+import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.unit.UnitId
 import tenter.screen.Canvas
 import tenter.screen.Cell
@@ -48,7 +49,7 @@ internal class TargetsView(
                 val isCursorHere = isCursorOnTarget && wi == cursorWeaponIndex
                 val isAssignedElsewhere = weapon.weaponIndex in assignedToOtherTargets
                 val isAssignedHere = weapon.weaponIndex in assignedToThisTarget
-                val isDisabled = !weapon.available || isAssignedElsewhere
+                val isDisabled = weapon !is WeaponTargetInfo.Available || isAssignedElsewhere
 
                 val state = when {
                     isAssignedElsewhere -> CheckState.INDETERMINATE
@@ -72,9 +73,12 @@ internal class TargetsView(
                 }
                 val row = content.row
                 if (isCursorHere) content.markReveal()
-                val modifierLabels = weapon.gunnery?.let { toHitBreakdownLabels(it, weapon.modifiers) }
-                    ?: weapon.modifiers.displayLabels()
-                ValueRow.draw(content, left, hitChanceLabel(weapon.targetDiceRoll, weapon.successChance), modifierLabels, color)
+                when (weapon) {
+                    is WeaponTargetInfo.Available ->
+                        ValueRow.draw(content, left, hitChanceLabel(weapon.toHit), weapon.toHit.displayLabels(), color)
+                    is WeaponTargetInfo.Unavailable ->
+                        ValueRow.draw(content, left, "—", emptyList(), color)
+                }
                 Checkbox.draw(content, 2, row, state, checkboxColor)
             }
 

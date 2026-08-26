@@ -85,10 +85,14 @@ private fun minimumRangeModifier(distance: Int, minimumRange: Int): Int =
     if (distance < minimumRange) minimumRange - distance + 1 else 0
 
 /**
- * Shared weapon-attack target number predictor: gunnery base + [modifiers] total, with no
- * clamp. Used by both attack resolution (never clamps) and
- * [battletech.tactical.query.WeaponTargeting.targetInfos], which applies its own
- * `.coerceAtLeast(2)` display clamp at the call site.
+ * Shared weapon-attack to-hit breakdown: gunnery base + [modifiers], with no clamp on the
+ * resulting target number. Used by both attack resolution and
+ * [battletech.tactical.query.WeaponTargeting.targetInfos] — the "you can never need less than
+ * 2" display floor is a delivery concern and lives in [battletech.tui.view.hitChanceLabel].
  */
+public fun weaponToHitBreakdown(attacker: CombatUnit, modifiers: List<ToHitModifier>): ToHitBreakdown =
+    ToHitBreakdown(ToHitBase.GUNNERY, attacker.gunnerySkill, modifiers)
+
+/** [weaponToHitBreakdown]'s target number, for callers that don't need the full breakdown. */
 public fun weaponTargetNumber(attacker: CombatUnit, modifiers: List<ToHitModifier>): Int =
-    attacker.gunnerySkill + modifiers.total()
+    weaponToHitBreakdown(attacker, modifiers).targetNumber

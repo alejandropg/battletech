@@ -114,14 +114,20 @@ internal sealed interface PhysicalAttackPhase : Phase {
                     unitId = targetId,
                     unitName = opts.first().targetName,
                     weapons = opts.mapIndexed { index, option ->
-                        WeaponTargetInfo(
-                            weaponIndex = index,
-                            weaponName = option.label,
-                            targetDiceRoll = option.targetDiceRoll,
-                            damage = option.expectedDamage,
-                            modifiers = emptyList(),
-                            available = option.available,
-                        )
+                        if (option.available) {
+                            WeaponTargetInfo.Available(
+                                weaponIndex = index,
+                                weaponName = option.label,
+                                damage = option.expectedDamage,
+                                toHit = option.toHit,
+                            )
+                        } else {
+                            WeaponTargetInfo.Unavailable(
+                                weaponIndex = index,
+                                weaponName = option.label,
+                                damage = option.expectedDamage,
+                            )
+                        }
                     },
                 )
             }

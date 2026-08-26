@@ -42,8 +42,8 @@ public class DefaultPlayerView(
     override fun validTargets(attackerId: UnitId, torsoFacing: HexDirection): Set<UnitId> =
         weaponTargeting.validTargets(attackerId, torsoFacing)
 
-    override fun targetInfos(attackerId: UnitId, torsoFacing: HexDirection): List<TargetInfo> =
-        weaponTargeting.targetInfos(attackerId, torsoFacing)
+    override fun targetInfos(attackerId: UnitId, torsoFacing: HexDirection, primaryTargetId: UnitId?): List<TargetInfo> =
+        weaponTargeting.targetInfos(attackerId, torsoFacing, primaryTargetId)
 
     override fun physicalAttackOptions(attackerId: UnitId): List<PhysicalAttackOption> =
         physicalAttackQueries.physicalAttackOptions(attackerId)
@@ -61,18 +61,11 @@ public class DefaultPlayerView(
                 attackerIds.forEach { attackerId ->
                     val attackerUnit = state.units.byId(attackerId)
                     val declarations = committedByAttacker[attackerId] ?: return@forEach
-                    // Only an attacker the viewer OWNS gets a to-hit prediction: the math
-                    // needs that attacker's gunnery/heat/sensor crits. For a foreign
-                    // attacker targetInfos is not merely unavailable, it is uncomputable
-                    // from the projection — hence the Undisclosed branch below rather than
-                    // a fabricated target number.
-                    val targetInfos =
-                        if (attackerUnit is CombatUnit) targetInfos(attackerId, attackerUnit.torsoFacing) else null
                     declarations.groupBy { it.targetId }.forEach { (targetId, decls) ->
                         val weaponIndices = decls.sortedBy { it.weaponIndex }.map { it.weaponIndex }
                         val isPrimary = decls.any { it.isPrimary }
                         val weapons = weaponIndices.map { weaponIndex ->
-                            declaredWeaponLine(attackerUnit, weaponIndex, targetId, targetInfos)
+                            declaredWeaponLine(attackerUnit, weaponIndex, targetId, isPrimary)
                         }
                         add(DeclaredWeaponAttack(attackerId, targetId, isPrimary, weapons))
                     }
@@ -113,35 +106,30 @@ public class DefaultPlayerView(
     }
 
     /**
-     * Builds one [DeclaredWeaponLine]. [targetInfos] is non-null exactly when [attackerUnit]
-     * is the viewer's own (see the call site), which is what selects
-     * [DeclaredWeaponLine.Detailed] over [DeclaredWeaponLine.Undisclosed]. The weapon NAME is
-     * public on both projections ([VisibleUnit.weapons] is a
-     * [battletech.tactical.unit.WeaponView] list), so the observable half of the declaration
-     * survives redaction intact.
+     * Builds one [DeclaredWeaponLine]. Only an attacker the viewer OWNS gets a to-hit
+     * prediction — the math needs that attacker's gunnery/heat/sensor crits, which a foreign
+     * attacker's projection never carries — hence [DeclaredWeaponLine.Undisclosed] rather than
+     * a fabricated number. The breakdown is computed directly from the committed declaration
+     * ([WeaponTargeting.breakdownFor]) rather than looked up in [PlayerView.targetInfos], so it
+     * reflects exactly what resolution will roll against even if the attacker has since
+     * twisted its target out of the current firing arc. The weapon NAME is public on both
+     * projections ([VisibleUnit.weapons] is a [battletech.tactical.unit.WeaponView] list), so
+     * the observable half of the declaration survives redaction intact.
      */
     private fun declaredWeaponLine(
         attackerUnit: VisibleUnit,
         weaponIndex: Int,
         targetId: UnitId,
-        targetInfos: List<TargetInfo>?,
+        isPrimary: Boolean,
     ): DeclaredWeaponLine {
         val weaponName = attackerUnit.weapons.getOrNull(weaponIndex)?.name ?: "Unknown"
-        if (targetInfos == null) {
-            return DeclaredWeaponLine.Undisclosed(weaponIndex = weaponIndex, weaponName = weaponName)
+        val toHit = (attackerUnit as? CombatUnit)
+            ?.let { weaponTargeting.breakdownFor(attackerUnit.id, targetId, weaponIndex, isPrimary) }
+        return if (toHit != null) {
+            DeclaredWeaponLine.Detailed(weaponIndex = weaponIndex, weaponName = weaponName, toHit = toHit)
+        } else {
+            DeclaredWeaponLine.Undisclosed(weaponIndex = weaponIndex, weaponName = weaponName)
         }
-        val weaponInfo = targetInfos
-            .firstOrNull { it.unitId == targetId }
-            ?.weapons
-            ?.firstOrNull { it.weaponIndex == weaponIndex }
-        return DeclaredWeaponLine.Detailed(
-            weaponIndex = weaponIndex,
-            weaponName = weaponName,
-            targetNumber = weaponInfo?.targetDiceRoll ?: 13,
-            successChance = weaponInfo?.successChance ?: 0,
-            modifiers = weaponInfo?.modifiers ?: emptyList(),
-            gunnery = weaponInfo?.gunnery,
-        )
     }
 
     override fun resolveTargetPositions(targetIds: Set<UnitId>): Set<HexCoordinates> =

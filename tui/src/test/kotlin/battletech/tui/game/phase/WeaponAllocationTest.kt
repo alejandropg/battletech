@@ -1,5 +1,7 @@
 package battletech.tui.game.phase
 
+import battletech.tactical.attack.ToHitBase
+import battletech.tactical.attack.ToHitBreakdown
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.model.HexDirection
@@ -17,14 +19,20 @@ internal class WeaponAllocationTest {
     private fun weaponInfo(
         index: Int,
         available: Boolean = true,
-    ) = WeaponTargetInfo(
-        weaponIndex = index,
-        weaponName = "ML-$index",
-        targetDiceRoll = 6,
-        damage = 5,
-        modifiers = emptyList(),
-        available = available,
-    )
+    ): WeaponTargetInfo = if (available) {
+        WeaponTargetInfo.Available(
+            weaponIndex = index,
+            weaponName = "ML-$index",
+            damage = 5,
+            toHit = ToHitBreakdown(ToHitBase.GUNNERY, skill = 6, modifiers = emptyList()),
+        )
+    } else {
+        WeaponTargetInfo.Unavailable(
+            weaponIndex = index,
+            weaponName = "ML-$index",
+            damage = 5,
+        )
+    }
 
     private fun targetInfo(
         id: String,

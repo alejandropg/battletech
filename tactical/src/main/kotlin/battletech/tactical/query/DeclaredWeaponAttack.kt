@@ -1,6 +1,6 @@
 package battletech.tactical.query
 
-import battletech.tactical.attack.ToHitModifier
+import battletech.tactical.attack.ToHitBreakdown
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
 
@@ -13,8 +13,9 @@ import battletech.tactical.unit.UnitId
  * weapons are pointed at WHICH target is observable (you watch the torso
  * swing), but the attacker's to-hit MATH is not — it is computed from the attacker's gunnery
  * skill, current heat, and sensor criticals, all record-sheet data. So the prediction rides
- * only on [Detailed], for attackers the viewer owns; a foreign attacker's declaration
- * arrives as [Undisclosed], carrying the observable fact and nothing more.
+ * only on [Detailed], for attackers the viewer owns; a foreign attacker's declaration, or one
+ * whose weapon index no longer resolves on the attacker (a corrupt declaration), arrives as
+ * [Undisclosed] — both render identically, so nothing downstream needs to tell them apart.
  *
  * There is deliberately no "unknown" target number: a sentinel like 13/0% would assert a
  * falsehood rather than withhold a truth.
@@ -23,19 +24,11 @@ public sealed interface DeclaredWeaponLine {
     public val weaponIndex: Int
     public val weaponName: String
 
-    /**
-     * A weapon on an attacker the viewer owns: carries [targetNumber], [successChance], and the
-     * [modifiers] that sum to it, plus the attacker's base [gunnery] skill — deliveries compose
-     * the two into a display breakdown themselves. [gunnery] is null only when no matching
-     * [battletech.tactical.attack.weapon.WeaponTargetInfo] was found for this declaration.
-     */
+    /** A weapon on an attacker the viewer owns: carries the full [toHit] prediction. */
     public data class Detailed(
         override val weaponIndex: Int,
         override val weaponName: String,
-        public val targetNumber: Int,
-        public val successChance: Int,
-        public val modifiers: List<ToHitModifier>,
-        public val gunnery: Int? = null,
+        public val toHit: ToHitBreakdown,
     ) : DeclaredWeaponLine
 
     /**

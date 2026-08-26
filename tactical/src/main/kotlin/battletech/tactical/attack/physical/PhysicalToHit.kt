@@ -1,5 +1,7 @@
 package battletech.tactical.attack.physical
 
+import battletech.tactical.attack.ToHitBase
+import battletech.tactical.attack.ToHitBreakdown
 import battletech.tactical.attack.ToHitFactor
 import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.attack.attackerMovementModifier
@@ -38,13 +40,21 @@ public fun physicalToHitModifiers(
     ToHitModifier(ToHitFactor.ATTACK_KIND, attackKindLabel(kind), attackKindModifier(kind)),
 )
 
-/** Physical-attack to-hit target number: piloting skill + [physicalToHitModifiers]. */
+/** Physical-attack to-hit breakdown: piloting skill + [physicalToHitModifiers]. */
+public fun physicalToHitBreakdown(
+    attacker: CombatUnit,
+    target: VisibleUnit,
+    kind: PhysicalAttackKind,
+    map: GameMap,
+): ToHitBreakdown = ToHitBreakdown(ToHitBase.PILOTING, attacker.pilotingSkill, physicalToHitModifiers(attacker, target, kind, map))
+
+/** [physicalToHitBreakdown]'s target number, for callers that don't need the full breakdown. */
 public fun physicalToHitTargetNumber(
     attacker: CombatUnit,
     target: VisibleUnit,
     kind: PhysicalAttackKind,
     map: GameMap,
-): Int = attacker.pilotingSkill + physicalToHitModifiers(attacker, target, kind, map).total()
+): Int = physicalToHitBreakdown(attacker, target, kind, map).targetNumber
 
 private fun terrainModifier(attacker: CombatUnit, target: VisibleUnit, map: GameMap): Int {
     val los = lineOfSight(attacker.position, target.position, map)

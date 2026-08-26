@@ -33,8 +33,14 @@ public interface PlayerView {
     /** Enemy unit IDs in arc AND having at least one weapon that can engage. */
     public fun validTargets(attackerId: UnitId, torsoFacing: HexDirection): Set<UnitId>
 
-    /** Full target/weapon legality and success-chance data for the cursor UI. */
-    public fun targetInfos(attackerId: UnitId, torsoFacing: HexDirection): List<TargetInfo>
+    /**
+     * Full target/weapon legality and success-chance data for the cursor UI. [primaryTargetId]
+     * is which of [attackerId]'s targets this impulse is primary — every other target is
+     * secondary and carries the `+1 SECONDARY_TARGET` modifier — or null when no primary has
+     * been elected yet, in which case every target previews as primary (today's rule for an
+     * attacker's first declared target of the impulse).
+     */
+    public fun targetInfos(attackerId: UnitId, torsoFacing: HexDirection, primaryTargetId: UnitId? = null): List<TargetInfo>
 
     /** Physical-attack options (punch per arm, kick) against each adjacent enemy. */
     public fun physicalAttackOptions(attackerId: UnitId): List<PhysicalAttackOption>

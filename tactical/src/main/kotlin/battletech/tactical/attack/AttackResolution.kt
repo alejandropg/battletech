@@ -194,7 +194,7 @@ private fun resolveOneAttack(
     // resolver's target is a CombatUnit or (over the wire) a ForeignUnit.
     val modifiers = weaponToHitModifiers(attacker, target, weapon, distance, declaration.isPrimary, gameState.map)
     val los = lineOfSight(attacker.position, target.position, gameState.map)
-    val targetNumber = weaponTargetNumber(attacker, modifiers)
+    val toHit = weaponToHitBreakdown(attacker, modifiers)
 
     // Canonical dice order:
     //   1. to-hit 2d6
@@ -206,13 +206,11 @@ private fun resolveOneAttack(
         attackerId = declaration.attackerId,
         targetId = declaration.targetId,
         weaponName = weapon.name,
-        targetNumber = targetNumber,
+        toHit = toHit,
         toHitRoll = toHitRoll,
-        gunnery = attacker.gunnerySkill,
-        modifiers = modifiers,
     )
 
-    return if (toHitRoll.total >= targetNumber) {
+    return if (toHitRoll.total >= toHit.targetNumber) {
         when (val kind = weapon.kind) {
             is WeaponKind.Missile ->
                 clusterHit(attempt, kind, direction, useRearArmor, los.partialCover, roller)

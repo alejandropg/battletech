@@ -2,6 +2,8 @@ package battletech.tui.game
 
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.ToHitAttempt
+import battletech.tactical.attack.ToHitBase
+import battletech.tactical.attack.ToHitBreakdown
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.TurnPhase
@@ -110,9 +112,8 @@ internal class PanelVisibilityTest {
             attackerId = UnitId("a"),
             targetId = UnitId("b"),
             weaponName = "Med Laser",
-            targetNumber = 7,
             toHitRoll = DiceRoll(2, 3),
-            gunnery = 4,
+            toHit = ToHitBreakdown(ToHitBase.GUNNERY, skill = 4, modifiers = emptyList()),
         ),
     )
 

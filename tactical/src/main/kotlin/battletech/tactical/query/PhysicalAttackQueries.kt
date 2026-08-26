@@ -7,7 +7,7 @@ import battletech.tactical.attack.physical.PhysicalAttackKind
 import battletech.tactical.attack.physical.PunchActionDefinition
 import battletech.tactical.attack.physical.Side
 import battletech.tactical.attack.physical.kickDamage
-import battletech.tactical.attack.physical.physicalToHitTargetNumber
+import battletech.tactical.attack.physical.physicalToHitBreakdown
 import battletech.tactical.attack.physical.punchDamage
 import battletech.tactical.model.MechLocation
 import battletech.tactical.rules.RuleRejection
@@ -36,9 +36,9 @@ internal class PhysicalAttackQueries(private val state: PlayerGameState) {
 
             val punchReasons = unsatisfiedReasons(punchDef.rules, context)
             // C4: the only to-hit-number math here is the shared predictor
-            // (battletech.tactical.attack.physical.physicalToHitTargetNumber), also used by
+            // (battletech.tactical.attack.physical.physicalToHitBreakdown), also used by
             // PhysicalAttackResolution — read and apply can't drift.
-            val punchTargetNumber = physicalToHitTargetNumber(attacker, enemy, PhysicalAttackKind.Punch(Side.LEFT), state.map)
+            val punchToHit = physicalToHitBreakdown(attacker, enemy, PhysicalAttackKind.Punch(Side.LEFT), state.map)
             val punchOptions = listOf(Side.LEFT, Side.RIGHT).map { arm ->
                 val limbReasons = punchReasons + limbDestroyedReason(armStructure(attacker, arm), attackerId)
                 PhysicalAttackOption(
@@ -47,14 +47,14 @@ internal class PhysicalAttackQueries(private val state: PlayerGameState) {
                     kind = PhysicalAttackKind.Punch(arm),
                     label = "Punch (${arm.name.lowercase()} arm)",
                     available = limbReasons.isEmpty(),
-                    targetDiceRoll = punchTargetNumber,
+                    toHit = punchToHit,
                     expectedDamage = punchDamage(attacker),
                     unavailableReasons = limbReasons,
                 )
             }
 
             val kickReasons = unsatisfiedReasons(kickDef.rules, context)
-            val kickTargetNumber = physicalToHitTargetNumber(attacker, enemy, PhysicalAttackKind.Kick(Side.RIGHT), state.map)
+            val kickToHit = physicalToHitBreakdown(attacker, enemy, PhysicalAttackKind.Kick(Side.RIGHT), state.map)
             // Kick uses whichever leg is intact (prefer right); the kicking leg only
             // matters for the attacker's own fall on a miss.
             val kickLeg = if (legStructure(attacker, Side.RIGHT) > 0) Side.RIGHT else Side.LEFT
@@ -65,7 +65,7 @@ internal class PhysicalAttackQueries(private val state: PlayerGameState) {
                 kind = PhysicalAttackKind.Kick(kickLeg),
                 label = "Kick",
                 available = kickLegReasons.isEmpty(),
-                targetDiceRoll = kickTargetNumber,
+                toHit = kickToHit,
                 expectedDamage = kickDamage(attacker),
                 unavailableReasons = kickLegReasons,
             )

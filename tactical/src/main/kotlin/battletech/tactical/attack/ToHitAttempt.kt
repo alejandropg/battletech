@@ -16,9 +16,7 @@ public interface ToHitAttempted {
     public val attackerId: UnitId
     public val targetId: UnitId
     public val weaponName: String
-    public val gunnery: Int
-    public val modifiers: List<ToHitModifier>
-    public val targetNumber: Int
+    public val toHit: ToHitBreakdown
     public val toHitRoll: DiceRoll
 }
 
@@ -28,8 +26,6 @@ public data class ToHitAttempt(
     override val attackerId: UnitId,
     override val targetId: UnitId,
     override val weaponName: String,
-    override val gunnery: Int,
-    override val targetNumber: Int,
+    override val toHit: ToHitBreakdown,
     override val toHitRoll: DiceRoll,
-    override val modifiers: List<ToHitModifier> = emptyList(),
 ) : ToHitAttempted

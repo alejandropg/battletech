@@ -1,6 +1,7 @@
 package battletech.tui.game.phase
 
 import battletech.tactical.attack.weapon.TargetInfo
+import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.model.HexDirection
 import battletech.tactical.unit.UnitId
 
@@ -37,7 +38,7 @@ internal data class WeaponAllocation(
         if (weapons.isEmpty()) return this
 
         val weapon = weapons[cursorWeaponIndex]
-        if (!weapon.available) return this
+        if (weapon !is WeaponTargetInfo.Available) return this
 
         val targetId = currentTarget.unitId
         val assignedElsewhere = weaponAssignments.any { (otherId, indices) ->

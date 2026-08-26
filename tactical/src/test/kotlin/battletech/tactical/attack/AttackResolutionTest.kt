@@ -132,7 +132,7 @@ internal class AttackResolutionTest {
         val roller = DiceRoller.seeded(42)
         val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
         val result = results.single()
-        assertEquals(5, result.targetNumber)
+        assertEquals(5, result.toHit.targetNumber)
     }
 
     @Test
@@ -148,7 +148,7 @@ internal class AttackResolutionTest {
         val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
         val result = results.single()
         // gunnery 4 + range 0 = 4
-        assertEquals(4, result.targetNumber)
+        assertEquals(4, result.toHit.targetNumber)
     }
 
     @Test
@@ -161,7 +161,7 @@ internal class AttackResolutionTest {
         val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         val result = results.single()
         // gunnery 4 + range 0 + heat penalty (heat 16 → +2) = 6
-        assertEquals(6, result.targetNumber)
+        assertEquals(6, result.toHit.targetNumber)
     }
 
     @Test
@@ -173,7 +173,7 @@ internal class AttackResolutionTest {
         val roller = DiceRoller.seeded(42)
         val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         // gunnery 4 + range 0 - 2 (prone adjacent) = 2
-        assertEquals(2, results.single().targetNumber)
+        assertEquals(2, results.single().toHit.targetNumber)
     }
 
     @Test
@@ -185,7 +185,7 @@ internal class AttackResolutionTest {
         val roller = DiceRoller.seeded(42)
         val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         // gunnery 4 + range 0 - 4 (immobile) = 0
-        assertEquals(0, results.single().targetNumber)
+        assertEquals(0, results.single().toHit.targetNumber)
     }
 
     @Test
@@ -197,7 +197,7 @@ internal class AttackResolutionTest {
         val roller = DiceRoller.seeded(42)
         val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         // gunnery 4 + medium range 2 + 1 (prone at range) = 7
-        assertEquals(7, results.single().targetNumber)
+        assertEquals(7, results.single().toHit.targetNumber)
     }
 
     @Test
@@ -213,8 +213,8 @@ internal class AttackResolutionTest {
         val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         val result = results.single()
         // gunnery 4 + range 0 + 2 (1 sensor crit) = 6
-        assertEquals(6, result.targetNumber)
-        assertEquals(2, result.modifiers.amountOf(ToHitFactor.SENSORS))
+        assertEquals(6, result.toHit.targetNumber)
+        assertEquals(2, result.toHit.modifiers.amountOf(ToHitFactor.SENSORS))
     }
 
     @Test
@@ -227,7 +227,7 @@ internal class AttackResolutionTest {
         val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         val result = results.single()
         // gunnery 4 + medium range 2 = 6
-        assertEquals(6, result.targetNumber)
+        assertEquals(6, result.toHit.targetNumber)
     }
 
     @Test
@@ -289,10 +289,10 @@ internal class AttackResolutionTest {
         val roller = DiceRoller.deterministic(4, 5, 3, 4)
         val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), gameState, roller)
         val result = results.single()
-        assertEquals(4, result.gunnery)
-        assertEquals(0, result.modifiers.amountOf(ToHitFactor.RANGE))
-        assertEquals(0, result.modifiers.amountOf(ToHitFactor.HEAT))
-        assertEquals(0, result.modifiers.amountOf(ToHitFactor.SECONDARY_TARGET))
+        assertEquals(4, result.toHit.skill)
+        assertEquals(0, result.toHit.modifiers.amountOf(ToHitFactor.RANGE))
+        assertEquals(0, result.toHit.modifiers.amountOf(ToHitFactor.HEAT))
+        assertEquals(0, result.toHit.modifiers.amountOf(ToHitFactor.SECONDARY_TARGET))
     }
 
     @Test
@@ -305,10 +305,10 @@ internal class AttackResolutionTest {
         val roller = DiceRoller.deterministic(1, 1)
         val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
         val result = results.single()
-        assertEquals(4, result.gunnery)
-        assertEquals(2, result.modifiers.amountOf(ToHitFactor.RANGE))
-        assertEquals(2, result.modifiers.amountOf(ToHitFactor.HEAT))
-        assertEquals(1, result.modifiers.amountOf(ToHitFactor.SECONDARY_TARGET))
+        assertEquals(4, result.toHit.skill)
+        assertEquals(2, result.toHit.modifiers.amountOf(ToHitFactor.RANGE))
+        assertEquals(2, result.toHit.modifiers.amountOf(ToHitFactor.HEAT))
+        assertEquals(1, result.toHit.modifiers.amountOf(ToHitFactor.SECONDARY_TARGET))
     }
 
     @Test
@@ -601,8 +601,8 @@ internal class AttackResolutionTest {
         val roller = DiceRoller.deterministic(1, 1) // guaranteed miss; just check TN
         val (_, results, _) = resolveAttacksWithCrits(listOf(declaration), state, roller)
 
-        assertEquals(7, results.single().targetNumber)
-        assertTrue(results.single().modifiers.any { it.label == "terrain" && it.amount == 3 })
+        assertEquals(7, results.single().toHit.targetNumber)
+        assertTrue(results.single().toHit.modifiers.any { it.label == "terrain" && it.amount == 3 })
     }
 
     @Test

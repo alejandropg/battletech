@@ -7,6 +7,8 @@ import battletech.tactical.attack.HitLocation
 import battletech.tactical.attack.LocationDamage
 import battletech.tactical.attack.LocationHit
 import battletech.tactical.attack.ToHitAttempt
+import battletech.tactical.attack.ToHitBase
+import battletech.tactical.attack.ToHitBreakdown
 import battletech.tactical.attack.physical.PhysicalAttackResult
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.model.GameMap
@@ -825,9 +827,8 @@ internal class GameLogFormatterTest {
                 attackerId = UnitId("a"),
                 targetId = targetId,
                 weaponName = weaponName,
-                targetNumber = 5,
                 toHitRoll = DiceRoll(4, 4),
-                gunnery = 2,
+                toHit = ToHitBreakdown(ToHitBase.GUNNERY, skill = 2, modifiers = emptyList()),
             ),
             locationHits = locationHits,
             missilesHit = missilesHit,
@@ -845,9 +846,8 @@ internal class GameLogFormatterTest {
                     attackerId = UnitId("a"),
                     targetId = targetId,
                     weaponName = "ML",
-                    targetNumber = 8,
                     toHitRoll = DiceRoll(5, 5),
-                    gunnery = 4,
+                    toHit = ToHitBreakdown(ToHitBase.GUNNERY, skill = 4, modifiers = emptyList()),
                 ),
                 damage = locationDamage,
                 locationHits = locationHits,
@@ -858,9 +858,8 @@ internal class GameLogFormatterTest {
                     attackerId = UnitId("a"),
                     targetId = targetId,
                     weaponName = "ML",
-                    targetNumber = 8,
                     toHitRoll = DiceRoll(2, 3),
-                    gunnery = 4,
+                    toHit = ToHitBreakdown(ToHitBase.GUNNERY, skill = 4, modifiers = emptyList()),
                 ),
             )
         }

@@ -2,7 +2,9 @@ package battletech.tactical.query
 
 import battletech.tactical.attack.AttackDeclaration
 import battletech.tactical.attack.ToHitFactor
+import battletech.tactical.attack.amountOf
 import battletech.tactical.attack.total
+import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.attack.weaponToHitModifiers
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.Hex
@@ -17,6 +19,7 @@ import battletech.tactical.session.Initiative
 import battletech.tactical.session.TurnState
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.UnknownUnitException
+import battletech.tactical.unit.WeaponMountId
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -166,7 +169,8 @@ internal class DefaultPlayerViewTest {
 
         assertThat(view.validTargets(UnitId("attacker"), HexDirection.N)).containsExactly(UnitId("enemy"))
         val info = view.targetInfos(UnitId("attacker"), HexDirection.N).single()
-        assertThat(info.weapons.single().modifiers).anyMatch { it.factor == ToHitFactor.SENSORS && it.amount == 2 }
+        val weaponInfo = info.weapons.single() as WeaponTargetInfo.Available
+        assertThat(weaponInfo.toHit.modifiers).anyMatch { it.factor == ToHitFactor.SENSORS && it.amount == 2 }
     }
 
     @Test
@@ -209,7 +213,6 @@ internal class DefaultPlayerViewTest {
     @Test
     fun `targetInfos modifier list starts with gunnery base and sums to target number`() {
         // Normal short-range engagement: attacker gunnery=4 (default), no special conditions.
-        // TN = 4 + Σ(modifiers) and will be well above 2, so coerceAtLeast does not apply.
         val attacker = aUnit(
             id = "attacker",
             owner = PlayerId.PLAYER_1,
@@ -227,14 +230,15 @@ internal class DefaultPlayerViewTest {
         val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
 
         val weaponInfo = view.targetInfos(UnitId("attacker"), HexDirection.N).single().weapons.single()
+            as WeaponTargetInfo.Available
 
         // The attacker's base skill is carried alongside the modifiers, not baked into them.
-        assertThat(weaponInfo.gunnery).isEqualTo(attacker.gunnerySkill)
+        assertThat(weaponInfo.toHit.skill).isEqualTo(attacker.gunnerySkill)
 
-        // Gunnery plus the modifier column must sum exactly to the target number (no clamping
-        // in this scenario).
-        val columnSum = weaponInfo.gunnery!! + weaponInfo.modifiers.total()
-        assertThat(columnSum).isEqualTo(weaponInfo.targetDiceRoll)
+        // Gunnery plus the modifier column must sum exactly to the target number — unconditionally,
+        // since ToHitBreakdown.targetNumber is derived from exactly these two fields.
+        val columnSum = weaponInfo.toHit.skill + weaponInfo.toHit.modifiers.total()
+        assertThat(columnSum).isEqualTo(weaponInfo.toHit.targetNumber)
     }
 
     @Test
@@ -259,17 +263,45 @@ internal class DefaultPlayerViewTest {
         val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
 
         val info = view.targetInfos(UnitId("attacker"), HexDirection.N).single()
-        val weaponInfo = info.weapons.single()
+        val weaponInfo = info.weapons.single() as WeaponTargetInfo.Available
         val weapon = attacker.weapons.single()
         val distance = attacker.position.distanceTo(proneEnemy.position)
 
-        val expectedTargetNumber = (
-            attacker.gunnerySkill +
-                weaponToHitModifiers(attacker, proneEnemy, weapon, distance, isPrimaryTarget = true, map = state.map).total()
-            ).coerceAtLeast(2)
+        val expectedTargetNumber = attacker.gunnerySkill +
+            weaponToHitModifiers(attacker, proneEnemy, weapon, distance, isPrimaryTarget = true, map = state.map).total()
 
-        assertThat(weaponInfo.targetDiceRoll).isEqualTo(expectedTargetNumber)
-        assertThat(weaponInfo.modifiers).anyMatch { it.factor == ToHitFactor.PRONE_TARGET }
+        assertThat(weaponInfo.toHit.targetNumber).isEqualTo(expectedTargetNumber)
+        assertThat(weaponInfo.toHit.modifiers).anyMatch { it.factor == ToHitFactor.PRONE_TARGET }
+    }
+
+    @Test
+    fun `an out-of-range weapon yields no to-hit prediction at all`() {
+        // Two weapons on the same attacker: one whose long range reaches the enemy, one that
+        // doesn't — so the enemy is a valid target (via the in-range weapon), but the
+        // out-of-range weapon carries no to-hit math, not a sentinel target number.
+        val inRangeWeapon = aWeapon(name = "Long Tom", shortRange = 3, mediumRange = 6, longRange = 9)
+        val shortRangedWeapon = aWeapon(name = "Flamer", shortRange = 1, mediumRange = 2, longRange = 3)
+        val attacker = aUnit(
+            id = "attacker",
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+            weapons = listOf(inRangeWeapon, shortRangedWeapon),
+        )
+        val enemy = aUnit(
+            id = "enemy",
+            owner = PlayerId.PLAYER_2,
+            position = HexCoordinates(0, -5), // due north, distance 5: in longRange for one, not the other
+        )
+        val state = aGameState(
+            units = listOf(attacker, enemy),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 6).hexes,
+        )
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1))
+
+        val weapons = view.targetInfos(UnitId("attacker"), HexDirection.N).single().weapons
+
+        assertThat(weapons[0]).isInstanceOf(WeaponTargetInfo.Available::class.java)
+        assertThat(weapons[1]).isInstanceOf(WeaponTargetInfo.Unavailable::class.java)
     }
 
     @Test
@@ -336,6 +368,39 @@ internal class DefaultPlayerViewTest {
     }
 
     @Test
+    fun `declaredWeaponAttacks includes the secondary-target modifier for a non-primary declaration`() {
+        val attacker = aUnit(
+            id = "attacker", owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+            weapons = listOf(mediumLaser(mountId = WeaponMountId(0)), mediumLaser(mountId = WeaponMountId(1))),
+        )
+        val primaryTarget = aUnit(id = "primary", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, -1))
+        val secondaryTarget = aUnit(id = "secondary", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, -2))
+        val state = aGameState(
+            units = listOf(attacker, primaryTarget, secondaryTarget),
+            hexes = mapWithRadius(HexCoordinates(0, 0), radius = 3).hexes,
+        )
+        val turnState = TurnState(
+            initiative = Initiative(emptyMap(), PlayerId.PLAYER_1, PlayerId.PLAYER_2),
+            attack = AttackProgress(
+                sequence = ImpulseSequence(listOf(Impulse(PlayerId.PLAYER_1, 1))),
+                weaponDeclarations = listOf(
+                    AttackDeclaration(attacker.id, primaryTarget.id, weaponIndex = 0, isPrimary = true),
+                    AttackDeclaration(attacker.id, secondaryTarget.id, weaponIndex = 1, isPrimary = false),
+                ),
+            ),
+        )
+        val view = DefaultPlayerView(PlayerId.PLAYER_1, state.projectFor(PlayerId.PLAYER_1), turnState)
+
+        val attacks = view.declaredWeaponAttacks().associateBy { it.targetId }
+        val primaryLine = attacks.getValue(primaryTarget.id).weapons.single() as DeclaredWeaponLine.Detailed
+        val secondaryLine = attacks.getValue(secondaryTarget.id).weapons.single() as DeclaredWeaponLine.Detailed
+
+        assertThat(primaryLine.toHit.modifiers.amountOf(ToHitFactor.SECONDARY_TARGET)).isEqualTo(0)
+        assertThat(secondaryLine.toHit.modifiers.amountOf(ToHitFactor.SECONDARY_TARGET)).isEqualTo(1)
+    }
+
+    @Test
     fun `declaredWeaponAttacks orders attackers by impulse-commit player order`() {
         val p1Unit = aUnit(id = "p1unit", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
         val p2Unit = aUnit(id = "p2unit", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, -3))
@@ -385,7 +450,7 @@ internal class DefaultPlayerViewTest {
         // PLAYER_1 (own): full to-hit prediction.
         val own = attacks.single { it.attackerId == p1Unit.id }.weapons.single()
         assertThat(own).isInstanceOf(DeclaredWeaponLine.Detailed::class.java)
-        assertThat((own as DeclaredWeaponLine.Detailed).gunnery).isEqualTo(p1Unit.gunnerySkill)
+        assertThat((own as DeclaredWeaponLine.Detailed).toHit.skill).isEqualTo(p1Unit.gunnerySkill)
 
         // PLAYER_2 (enemy): the declaration is still visible — you watch the torso swing and
         // see which weapon is aimed at you — but the to-hit math, which is computed from that

@@ -7,6 +7,8 @@ import battletech.tactical.attack.FallResult
 import battletech.tactical.attack.LocationDamage
 import battletech.tactical.attack.LocationHit
 import battletech.tactical.attack.ToHitAttempt
+import battletech.tactical.attack.ToHitBase
+import battletech.tactical.attack.ToHitBreakdown
 import battletech.tactical.attack.ToHitFactor
 import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.attack.physical.Knockdown
@@ -541,12 +543,14 @@ internal class WireFormatRoundTripTest {
                 attackerId = unitA,
                 targetId = unitB,
                 weaponName = "Medium Laser",
-                targetNumber = 7,
                 toHitRoll = DiceRoll(4, 4),
-                gunnery = 4,
-                modifiers = listOf(
-                    ToHitModifier(ToHitFactor.RANGE, "range", 2),
-                    ToHitModifier(ToHitFactor.HEAT, "heat", 0),
+                toHit = ToHitBreakdown(
+                    base = ToHitBase.GUNNERY,
+                    skill = 4,
+                    modifiers = listOf(
+                        ToHitModifier(ToHitFactor.RANGE, "range", 2),
+                        ToHitModifier(ToHitFactor.HEAT, "heat", 0),
+                    ),
                 ),
             ),
             damage = listOf(LocationDamage(MechLocation.CENTER_TORSO, armorDamage = 5, structureDamage = 0, destroyed = false)),

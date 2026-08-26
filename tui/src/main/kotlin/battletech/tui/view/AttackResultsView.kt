@@ -2,7 +2,6 @@ package battletech.tui.view
 
 import battletech.tactical.attack.AttackResult
 import battletech.tactical.attack.HitLocation
-import battletech.tactical.dice.twoD6AtLeastProbability
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.icon.attackOutcomeIcon
 import battletech.tui.icon.targetIcon
@@ -39,22 +38,20 @@ internal class AttackResultsView(private val data: AttackResultsRender) : View {
 
     private fun renderWeaponResult(content: TextCursor, result: AttackResult) {
         // Block 1: unified hit widget (weapon name, TN, success %, modifiers)
-        val successChance = twoD6AtLeastProbability(result.targetNumber)
         // The TN and modifier breakdown are both observable (announced at the table), so
         // AttackResult itself is never redacted (see GameEvent.redactFor's KDoc) — but the
         // explicit "+N gunnery" label is still dropped for a foreign attacker so the skill
-        // number isn't handed over for free. This is NOT a guarantee: targetNumber == gunnery
-        // + sum(modifiers), so gunnery stays derivable by subtraction from what's shown here.
+        // number isn't handed over for free. This is NOT a guarantee: targetNumber == skill
+        // + sum(modifiers), so the skill stays derivable by subtraction from what's shown here.
         val isOwnAttacker = data.units.byId(result.attackerId).owner == data.viewer
-        val breakdown = if (isOwnAttacker) toHitBreakdownLabels(result.gunnery, result.modifiers) else result.modifiers.displayLabels()
-        ValueRow.draw(content, "  ${result.weaponName}", hitChanceLabel(result.targetNumber, successChance), breakdown, ChromeRole.TEXT_PRIMARY)
+        val breakdown = if (isOwnAttacker) result.toHit.displayLabels() else result.toHit.modifiers.displayLabels()
+        ValueRow.draw(content, "  ${result.weaponName}", hitChanceLabel(result.toHit), breakdown, ChromeRole.TEXT_PRIMARY)
 
         // Block 2: raw roll (left) + outcome (right-aligned, in its own color)
         val hit = result is AttackResult.Hit
-        val toHit = result.toHitRoll
         val outcomeText = "${if (hit) "HIT" else "MISS"} ${attackOutcomeIcon(hit)}"
         val outcomeColor = if (hit) ChromeRole.SUCCESS else ChromeRole.DANGER
-        val rollLine = "   ${diceRollLabel(toHit)}"
+        val rollLine = "   ${diceRollLabel(result.toHitRoll)}"
         content.writeRow(rollLine, outcomeText, TEXT_PRIMARY_STYLE, Cell.Style(outcomeColor))
 
         // Block 3: location + damage (hit only)

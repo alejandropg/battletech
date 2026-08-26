@@ -1,5 +1,7 @@
 package battletech.tui.view
 
+import battletech.tactical.attack.ToHitBase
+import battletech.tactical.attack.ToHitBreakdown
 import battletech.tactical.attack.ToHitFactor
 import battletech.tactical.attack.ToHitModifier
 import battletech.tactical.attack.weapon.TargetInfo
@@ -21,8 +23,8 @@ internal class TargetsViewTest {
         unitId = UnitId("atlas"),
         unitName = "Atlas",
         weapons = listOf(
-            WeaponTargetInfo(0, "AC/20", 7, 20, listOf()),
-            WeaponTargetInfo(1, "Medium Laser", 6, 5, listOf()),
+            available(0, "AC/20", 20, skill = 7),
+            available(1, "Medium Laser", 5, skill = 6),
         ),
     )
 
@@ -30,8 +32,21 @@ internal class TargetsViewTest {
         unitId = UnitId("hunch"),
         unitName = "Hunchback",
         weapons = listOf(
-            WeaponTargetInfo(0, "LRM15", 8, 15, listOf(ToHitModifier(ToHitFactor.SECONDARY_TARGET, "second", 1))),
+            available(0, "LRM15", 15, skill = 7, modifiers = listOf(ToHitModifier(ToHitFactor.SECONDARY_TARGET, "second", 1))),
         ),
+    )
+
+    private fun available(
+        weaponIndex: Int,
+        weaponName: String,
+        damage: Int,
+        skill: Int,
+        modifiers: List<ToHitModifier> = emptyList(),
+    ) = WeaponTargetInfo.Available(
+        weaponIndex = weaponIndex,
+        weaponName = weaponName,
+        damage = damage,
+        toHit = ToHitBreakdown(ToHitBase.GUNNERY, skill, modifiers),
     )
 
     private fun renderToString(view: TargetsView, width: Int = 28, height: Int = 30): String =
@@ -170,36 +185,38 @@ internal class TargetsViewTest {
     }
 
     @Test
-    fun `disabled weapon renders with zero percent`() {
-        val targetWithDisabled = TargetInfo(
+    fun `unavailable weapon renders no target number or hit chance`() {
+        val targetWithUnavailable = TargetInfo(
             unitId = UnitId("atlas"),
             unitName = "Atlas",
             weapons = listOf(
-                WeaponTargetInfo(0, "AC/20", 7, 20, listOf()),
-                WeaponTargetInfo(1, "LRM15", 13, 15, listOf(), available = false),
+                available(0, "AC/20", 20, skill = 7),
+                WeaponTargetInfo.Unavailable(weaponIndex = 1, weaponName = "LRM15", damage = 15),
             ),
         )
         val view = TargetsView(
-            targets = listOf(targetWithDisabled),
+            targets = listOf(targetWithUnavailable),
             weaponAssignments = emptyMap(),
             primaryTargetId = null,
             cursorTargetIndex = 0,
         )
 
-        val output = renderToString(view)
-
         // Both weapons rendered
-        assertTrue(output.contains("AC/20"))
-        assertTrue(output.contains("LRM15"))
-        // Disabled weapon shows 0%
-        assertTrue(output.contains("0%"))
-
-        // Disabled weapon row is rendered in gray
         val width = 28
         val height = 30
         val buffer = render(view, width, height)
-        // Find the row containing "LRM15" and verify its color is DISABLED
+        assertTrue(buffer.text().contains("AC/20"))
+        assertTrue(buffer.text().contains("LRM15"))
+
+        // Unavailable weapon's own row carries no target number or hit chance — a sentinel like
+        // "⚄13 0%" would assert a falsehood (there is no to-hit math to show) rather than
+        // withhold a truth. Row-scoped: a global check would be fooled by AC/20's own "58%".
         val lrmRow = (0 until height).first { row -> "LRM15" in buffer.line(row) }
+        val lrmLine = buffer.line(lrmRow)
+        assertTrue("%" !in lrmLine) { "Expected no hit chance on the unavailable weapon's row: $lrmLine" }
+        assertTrue("13" !in lrmLine) { "Expected no target number sentinel on the unavailable weapon's row: $lrmLine" }
+
+        // Disabled weapon row is rendered in gray
         val rowColors = (0 until width).map { col -> buffer.get(col, lrmRow).style.fg }.toSet()
         assertTrue(rowColors.contains(ChromeRole.DISABLED)) { "Expected disabled weapon row to use ChromeRole.DISABLED, got: $rowColors" }
     }
@@ -210,8 +227,8 @@ internal class TargetsViewTest {
             unitId = UnitId("atlas"),
             unitName = "Atlas",
             weapons = listOf(
-                WeaponTargetInfo(0, "AC/20", 7, 20, listOf(ToHitModifier(ToHitFactor.RANGE, "med", 2))),
-                WeaponTargetInfo(1, "Medium Laser", 6, 5, listOf(ToHitModifier(ToHitFactor.RANGE, "long", 4))),
+                available(0, "AC/20", 20, skill = 5, modifiers = listOf(ToHitModifier(ToHitFactor.RANGE, "med", 2))),
+                available(1, "Medium Laser", 5, skill = 2, modifiers = listOf(ToHitModifier(ToHitFactor.RANGE, "long", 4))),
             ),
         )
         val view = TargetsView(

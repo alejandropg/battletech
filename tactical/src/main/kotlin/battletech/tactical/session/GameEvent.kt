@@ -318,7 +318,8 @@ public data class PilotKnockedUnconscious(
  * record-sheet number [PilotHit] withholds, so foreign viewers get [Undisclosed].
  *
  * The roll is never rendered (the log prints only "pilot regained consciousness"), so
- * unlike [battletech.tactical.attack.AttackResult.gunnery] — whose target number the UI
+ * unlike [battletech.tactical.attack.AttackResult]'s
+ * [battletech.tactical.attack.ToHitBreakdown.skill] (gunnery) — whose target number the UI
  * is obliged to show — withholding it costs no rendering fidelity at all. See
  * [battletech.tactical.session.redactFor].
  */

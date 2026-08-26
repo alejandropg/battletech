@@ -1,11 +1,12 @@
 package battletech.tactical.query
 
+import battletech.tactical.attack.ToHitBreakdown
 import battletech.tactical.attack.WeaponAttackContext
 import battletech.tactical.attack.weapon.FireWeaponActionDefinition
 import battletech.tactical.attack.weapon.FiringArc
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
-import battletech.tactical.attack.weaponTargetNumber
+import battletech.tactical.attack.weaponToHitBreakdown
 import battletech.tactical.attack.weaponToHitModifiers
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -48,12 +49,13 @@ internal class WeaponTargeting(private val state: PlayerGameState) {
             .toSet()
     }
 
-    fun targetInfos(attackerId: UnitId, torsoFacing: HexDirection): List<TargetInfo> {
+    fun targetInfos(attackerId: UnitId, torsoFacing: HexDirection, primaryTargetId: UnitId? = null): List<TargetInfo> {
         val attacker = state.ownUnitById(attackerId)
         val targetIds = validTargets(attackerId, torsoFacing)
         return targetIds.mapNotNull { targetId ->
             val target = state.units.byId(targetId)
             val distance = attacker.position.distanceTo(target.position)
+            val isPrimaryTarget = primaryTargetId == null || targetId == primaryTargetId
 
             val weapons = attacker.weapons.mapIndexed { index, weapon ->
                 val context = WeaponAttackContext(
@@ -63,13 +65,10 @@ internal class WeaponTargeting(private val state: PlayerGameState) {
                     map = state.map,
                 )
                 if (definition.firstRejection(context) != null) {
-                    WeaponTargetInfo(
+                    WeaponTargetInfo.Unavailable(
                         weaponIndex = index,
                         weaponName = weapon.name,
-                        targetDiceRoll = 13,
                         damage = weapon.damage,
-                        modifiers = emptyList(),
-                        available = false,
                     )
                 } else {
                     val modifiers = weaponToHitModifiers(
@@ -77,29 +76,53 @@ internal class WeaponTargeting(private val state: PlayerGameState) {
                         target = target,
                         weapon = weapon,
                         distance = distance,
-                        isPrimaryTarget = true,
+                        isPrimaryTarget = isPrimaryTarget,
                         map = state.map,
                     )
                     // C4: the only to-hit-number math here is the shared predictor
-                    // (battletech.tactical.attack.weaponTargetNumber), also used by
+                    // (battletech.tactical.attack.weaponToHitBreakdown), also used by
                     // AttackResolution.resolveOneAttack — read and apply can't drift.
-                    // The .coerceAtLeast(2) display clamp is query-only (resolution doesn't
-                    // clamp; see AttackResolution.kt).
-                    val targetNumber = weaponTargetNumber(attacker, modifiers).coerceAtLeast(2)
-                    WeaponTargetInfo(
+                    WeaponTargetInfo.Available(
                         weaponIndex = index,
                         weaponName = weapon.name,
-                        targetDiceRoll = targetNumber,
                         damage = weapon.damage,
-                        modifiers = modifiers,
-                        gunnery = attacker.gunnerySkill,
+                        toHit = weaponToHitBreakdown(attacker, modifiers),
                     )
                 }
             }
 
-            if (weapons.none { it.available }) return@mapNotNull null
+            if (weapons.none { it is WeaponTargetInfo.Available }) return@mapNotNull null
             TargetInfo(unitId = targetId, unitName = target.name, weapons = weapons)
         }
+    }
+
+    /**
+     * The to-hit breakdown for [attackerId] firing [weaponIndex] at [targetId], independent of
+     * current firing arc — used to render a COMMITTED declaration, which resolution will honor
+     * (or miss on range/arc) regardless of what the attacker's torso currently points at; see
+     * [battletech.tactical.attack.AttackResolution]. Null only when [weaponIndex] doesn't exist
+     * on the attacker (a corrupt declaration) — a case [DeclaredWeaponLine.Undisclosed] also
+     * covers.
+     */
+    fun breakdownFor(
+        attackerId: UnitId,
+        targetId: UnitId,
+        weaponIndex: Int,
+        isPrimaryTarget: Boolean,
+    ): ToHitBreakdown? {
+        val attacker = state.ownUnitById(attackerId)
+        val weapon = attacker.weapons.getOrNull(weaponIndex) ?: return null
+        val target = state.units.byId(targetId)
+        val distance = attacker.position.distanceTo(target.position)
+        val modifiers = weaponToHitModifiers(
+            attacker = attacker,
+            target = target,
+            weapon = weapon,
+            distance = distance,
+            isPrimaryTarget = isPrimaryTarget,
+            map = state.map,
+        )
+        return weaponToHitBreakdown(attacker, modifiers)
     }
 
     /**

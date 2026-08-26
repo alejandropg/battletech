@@ -1,6 +1,8 @@
 package battletech.tui.game.phase
 
 import battletech.tactical.attack.weapon.TargetInfo
+import battletech.tactical.attack.weapon.WeaponTargetInfo
+import battletech.tactical.attack.weapon.weaponAt
 import battletech.tactical.heat.weaponHeatSource
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -24,7 +26,6 @@ import battletech.tui.game.attackPlayer
 import battletech.tui.game.displayName
 import battletech.tui.game.losHighlights
 import battletech.tui.view.displayLabels
-import battletech.tui.view.toHitBreakdownLabels
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.selectedLosHighlights
 import battletech.tui.hex.HexHighlight
@@ -138,7 +139,7 @@ internal sealed interface AttackPhase : Phase {
             // Compute view + targets once per event; pass into pure allocation methods.
             val attacker = app.ownUnit(unitId)
             val view = app.viewFor(attacker.owner)
-            val targets = view.targetInfos(unitId, torsoFacing)
+            val targets = view.targetInfos(unitId, torsoFacing, primaryTargetId)
 
             return when (action) {
                 is AttackAction.NextAttacker -> nextAttacker(app)
@@ -153,7 +154,7 @@ internal sealed interface AttackPhase : Phase {
                     else torsoFacing.rotateCounterClockwise()
                     if (newTorso !in view.legalTorsoFacings(unitId)) return Transition(app)
                     val newValidIds = view.validTargets(unitId, newTorso)
-                    val newTargets = view.targetInfos(unitId, newTorso)
+                    val newTargets = view.targetInfos(unitId, newTorso, primaryTargetId)
                     val newAllocation = allocation.twist(newTorso, newTargets, newValidIds)
                     Transition(app.copy(phase = copy(allocation = newAllocation)))
                 }
@@ -239,7 +240,7 @@ internal sealed interface AttackPhase : Phase {
 
         /** Query target infos for this attacker's current torso facing — one call per render entry point. */
         private fun targetTable(view: PlayerView): List<TargetInfo> =
-            view.targetInfos(unitId, torsoFacing)
+            view.targetInfos(unitId, torsoFacing, primaryTargetId)
 
         private fun nextAttacker(app: AppState): Transition {
             val turn = app.turnState
@@ -266,13 +267,14 @@ internal fun enterDeclaring(
 ): AttackPhase.Declaring {
     val existingDecl = drafts[unit.id]
     val torsoFacing = existingDecl?.torsoFacing ?: unit.torsoFacing
-    val targets = view.targetInfos(unit.id, torsoFacing)
 
     val (weaponAssignments, primaryTargetId) = if (existingDecl != null && existingDecl.torsoFacing == torsoFacing) {
         existingDecl.weaponAssignments to existingDecl.primaryTargetId
     } else {
         emptyMap<UnitId, Set<Int>>() to null
     }
+
+    val targets = view.targetInfos(unit.id, torsoFacing, primaryTargetId)
 
     val (firstTargetIdx, firstWeaponIdx) = firstCursorPosition(targets)
 
@@ -296,7 +298,7 @@ internal fun enterDeclaring(
 
 private fun firstCursorPosition(targets: List<TargetInfo>): Pair<Int, Int> {
     for ((ti, target) in targets.withIndex()) {
-        val wi = target.weapons.indexOfFirst { it.available }
+        val wi = target.weapons.indexOfFirst { it is WeaponTargetInfo.Available }
         if (wi >= 0) return ti to wi
         if (target.weapons.isNotEmpty()) return ti to 0
     }
@@ -429,7 +431,7 @@ internal fun buildDeclaredTargetsRender(
                                 Triple(targetId, weaponIndices.sorted(), decl.primaryTargetId == targetId)
                             }
                         val targetInfos = app.viewFor(attackerUnit.owner)
-                            .targetInfos(attackerId, decl.torsoFacing)
+                            .targetInfos(attackerId, decl.torsoFacing, decl.primaryTargetId)
                         add(draftAttackerEntry(attackerUnit, normalized, playerAttacks.player, targetInfos))
                     }
             }
@@ -449,10 +451,9 @@ private fun committedAttackerEntry(
             when (line) {
                 is DeclaredWeaponLine.Detailed -> DeclaredWeaponEntry.Detailed(
                     weaponName = line.weaponName,
-                    successChance = line.successChance,
-                    targetDiceRoll = line.targetNumber,
-                    modifiers = line.gunnery?.let { toHitBreakdownLabels(it, line.modifiers) }
-                        ?: line.modifiers.displayLabels(),
+                    successChance = line.toHit.successChance,
+                    targetDiceRoll = line.toHit.targetNumber,
+                    modifiers = line.toHit.displayLabels(),
                 )
                 // An enemy attacker's to-hit math is not ours to render — and the type no
                 // longer carries it. See DeclaredWeaponLine's KDoc.
@@ -496,18 +497,16 @@ private fun resolveWeaponEntry(
     targetInfos: List<TargetInfo>,
 ): DeclaredWeaponEntry {
     val weaponName = attackerUnit.weapons.getOrNull(weaponIndex)?.name ?: "Unknown"
-    val weaponInfo = targetInfos
-        .firstOrNull { it.unitId == targetId }
-        ?.weapons
-        ?.firstOrNull { it.weaponIndex == weaponIndex }
-    // Detailed unconditionally: drafts only ever exist for the viewer's own attacker (the
-    // caller filters to unit.owner == viewingPlayer before building one).
-    val modifierLabels = weaponInfo?.gunnery?.let { toHitBreakdownLabels(it, weaponInfo.modifiers) }
-        ?: weaponInfo?.modifiers.orEmpty().displayLabels()
+    // Drafts only ever exist for the viewer's own attacker (the caller filters to
+    // unit.owner == viewingPlayer before building one), so Undisclosed here would mean the
+    // target left the arc since this weapon was assigned — not a redaction case, but the same
+    // "nothing to show" shape.
+    val available = targetInfos.weaponAt(targetId, weaponIndex) as? WeaponTargetInfo.Available
+        ?: return DeclaredWeaponEntry.Undisclosed(weaponName = weaponName)
     return DeclaredWeaponEntry.Detailed(
         weaponName = weaponName,
-        successChance = weaponInfo?.successChance ?: 0,
-        targetDiceRoll = weaponInfo?.targetDiceRoll ?: 13,
-        modifiers = modifierLabels,
+        successChance = available.toHit.successChance,
+        targetDiceRoll = available.toHit.targetNumber,
+        modifiers = available.toHit.displayLabels(),
     )
 }

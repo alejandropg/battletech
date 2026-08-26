@@ -38,10 +38,10 @@ import battletech.tactical.unit.UnitId
  * given on [battletech.tactical.query.PlayerGameState].
  *
  * **Known limitation, accepted by design**: [AttacksResolved] is NOT redacted here.
- * [battletech.tactical.attack.AttackResult.gunnery] is technically record-sheet data, but
- * [battletech.tactical.attack.AttackResult.targetNumber] and its `modifiers` breakdown are
- * both announced at the table (observable), and `targetNumber == gunnery + sum(modifiers)`
- * — redacting `gunnery` alone would leave it derivable by subtraction, a guarantee this
+ * [battletech.tactical.attack.AttackResult]'s [battletech.tactical.attack.ToHitBreakdown.skill]
+ * (gunnery) is technically record-sheet data, but its `targetNumber` and `modifiers` breakdown
+ * are both announced at the table (observable), and `targetNumber == skill + sum(modifiers)`
+ * — redacting `skill` alone would leave it derivable by subtraction, a guarantee this
  * function does not make. Hiding it fully would mean hiding the TN too, which contradicts
  * the observability rule. See `AttackResultsView` (tui) for the one concession taken: the
  * enemy attacker's breakdown drops the explicit "+N gunnery" label so the number is not
