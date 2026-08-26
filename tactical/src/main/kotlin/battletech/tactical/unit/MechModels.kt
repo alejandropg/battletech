@@ -328,4 +328,10 @@ public object MechModels {
 
     public operator fun get(variant: String): MechModel =
         registry[variant] ?: error("Unknown mech variant: $variant")
+
+    /** Non-throwing lookup for contexts (e.g. wire deserialization) that must report failure, not crash. */
+    public fun find(variant: String): MechModel? = registry[variant]
+
+    /** Every variant this build knows, e.g. to pin the wire's mech roster in a golden-file test. */
+    public val variants: Set<String> get() = registry.keys
 }

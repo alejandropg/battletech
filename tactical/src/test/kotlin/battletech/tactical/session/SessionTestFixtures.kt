@@ -8,10 +8,13 @@ import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.CriticalLayout
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
+import battletech.tactical.unit.MechModel
 import battletech.tactical.unit.UnitId
+import battletech.tactical.unit.empty
 import battletech.tactical.unit.Weapon
 import battletech.tactical.unit.WeaponModels
 import battletech.tactical.unit.WeaponMountId
@@ -22,31 +25,16 @@ internal fun aMech(
     position: HexCoordinates,
     pilotHits: Int = 0,
     isPilotConscious: Boolean = true,
-): CombatUnit = CombatUnit(
-    id = UnitId(id),
-    owner = owner,
-    name = id,
-    tonnage = 50,
-    gunnerySkill = 4,
-    pilotingSkill = 5,
-    weapons = listOf(Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO)),
-    position = position,
-    facing = HexDirection.N,
-    torsoFacing = HexDirection.N,
-    walkingMP = 4,
-    runningMP = 6,
-    heatSink = HeatSink(HeatSinkType.STS, 10),
-    pilotHits = pilotHits,
-    isPilotConscious = isPilotConscious,
-    armor = ArmorLayout(
+): CombatUnit {
+    val armor = ArmorLayout(
         head = 9,
         centerTorso = 30, centerTorsoRear = 10,
         leftTorso = 25, leftTorsoRear = 8,
         rightTorso = 25, rightTorsoRear = 8,
         leftArm = 20, rightArm = 20,
         leftLeg = 25, rightLeg = 25,
-    ),
-    internalStructure = InternalStructureLayout(
+    )
+    val internalStructure = InternalStructureLayout(
         head = 3,
         centerTorso = 31,
         leftTorso = 21,
@@ -55,8 +43,35 @@ internal fun aMech(
         rightArm = 17,
         leftLeg = 21,
         rightLeg = 21,
-    ),
-)
+    )
+    val weapons = listOf(Weapon(model = WeaponModels.mediumLaser, mountId = WeaponMountId(0), location = MechLocation.CENTER_TORSO))
+    val criticalLayout = CriticalLayout.empty()
+    return CombatUnit(
+        model = MechModel(
+            variant = "TEST",
+            name = id,
+            tonnage = 50,
+            walkingMP = 4,
+            runningMP = 6,
+            heatSink = HeatSink(HeatSinkType.STS, 10),
+            armor = armor,
+            internalStructure = internalStructure,
+            criticalLayout = criticalLayout,
+            weapons = weapons,
+        ),
+        id = UnitId(id),
+        owner = owner,
+        weapons = weapons,
+        position = position,
+        facing = HexDirection.N,
+        torsoFacing = HexDirection.N,
+        pilotHits = pilotHits,
+        isPilotConscious = isPilotConscious,
+        armor = armor,
+        internalStructure = internalStructure,
+        criticalLayout = criticalLayout,
+    )
+}
 
 /** Builds a map covering every hex occupied by or adjacent to the given units. */
 internal fun hexesFor(units: List<CombatUnit>): Map<HexCoordinates, Hex> {

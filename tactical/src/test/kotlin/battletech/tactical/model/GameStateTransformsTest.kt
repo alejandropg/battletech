@@ -6,12 +6,15 @@ import battletech.tactical.heat.applyHeatPhase
 import battletech.tactical.heat.movementHeatSources
 import battletech.tactical.unit.ArmorLayout
 import battletech.tactical.unit.CombatUnit
+import battletech.tactical.unit.CriticalLayout
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.InternalStructureLayout
+import battletech.tactical.unit.MechModel
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.UnitRoster
+import battletech.tactical.unit.empty
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -24,22 +27,35 @@ internal class GameStateTransformsTest {
         heatSink: HeatSink = HeatSink(HeatSinkType.STS, 10),
         facing: HexDirection = HexDirection.N,
         torsoFacing: HexDirection = HexDirection.N,
-    ): CombatUnit = CombatUnit(
-        id = UnitId(id),
-        owner = PlayerId.PLAYER_1,
-        name = "Atlas",
-        tonnage = 100,
-        gunnerySkill = 4,
-        pilotingSkill = 5,
-        weapons = emptyList(),
-        position = HexCoordinates(0, 0),
-        facing = facing,
-        torsoFacing = torsoFacing,
-        armor = ArmorLayout(9, 47, 14, 32, 10, 32, 10, 34, 34, 41, 41),
-        heatSink = heatSink,
-        internalStructure = InternalStructureLayout(3, 31, 21, 21, 17, 17, 21, 21),
-        currentHeat = currentHeat,
-    )
+    ): CombatUnit {
+        val armor = ArmorLayout(9, 47, 14, 32, 10, 32, 10, 34, 34, 41, 41)
+        val internalStructure = InternalStructureLayout(3, 31, 21, 21, 17, 17, 21, 21)
+        return CombatUnit(
+            model = MechModel(
+                variant = "TEST",
+                name = "Atlas",
+                tonnage = 100,
+                walkingMP = 0,
+                runningMP = 0,
+                heatSink = heatSink,
+                armor = armor,
+                internalStructure = internalStructure,
+                criticalLayout = CriticalLayout.empty(),
+                weapons = emptyList(),
+            ),
+            id = UnitId(id),
+            owner = PlayerId.PLAYER_1,
+            gunnerySkill = 4,
+            pilotingSkill = 5,
+            weapons = emptyList(),
+            position = HexCoordinates(0, 0),
+            facing = facing,
+            torsoFacing = torsoFacing,
+            armor = armor,
+            internalStructure = internalStructure,
+            currentHeat = currentHeat,
+        )
+    }
 
     private val map = GameMap(
         mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0), Terrain.CLEAR)),

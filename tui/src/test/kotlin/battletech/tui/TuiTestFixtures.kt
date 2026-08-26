@@ -22,6 +22,7 @@ import battletech.tactical.unit.CriticalLayout
 import battletech.tactical.unit.HeatSink
 import battletech.tactical.unit.HeatSinkType
 import battletech.tactical.unit.InternalStructureLayout
+import battletech.tactical.unit.MechModel
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.Weapon
@@ -125,25 +126,34 @@ internal fun aUnit(
     currentHeat: Int = 0,
     weapons: List<Weapon> = emptyList(),
     armor: ArmorLayout = anArmorLayout(),
+    maxArmor: ArmorLayout = armor,
     heatSink: HeatSink = HeatSink(HeatSinkType.STS, 10),
     internalStructure: InternalStructureLayout = anInternalStructureLayout(),
+    maxInternalStructure: InternalStructureLayout = internalStructure,
     criticalLayout: CriticalLayout = CriticalLayout.empty(),
 ): CombatUnit = CombatUnit(
+    model = MechModel(
+        variant = "TEST",
+        name = name,
+        tonnage = 50,
+        walkingMP = walkingMP,
+        runningMP = runningMP,
+        jumpMP = jumpMP,
+        heatSink = heatSink,
+        armor = maxArmor,
+        internalStructure = maxInternalStructure,
+        criticalLayout = criticalLayout,
+        weapons = weapons,
+    ),
     id = UnitId(id),
     owner = owner,
-    name = name,
-    tonnage = 50,
     gunnerySkill = 4,
     pilotingSkill = 5,
     weapons = weapons,
     position = position,
     facing = facing,
-    walkingMP = walkingMP,
-    runningMP = runningMP,
-    jumpMP = jumpMP,
     currentHeat = currentHeat,
     armor = armor,
-    heatSink = heatSink,
     internalStructure = internalStructure,
     criticalLayout = criticalLayout,
 )

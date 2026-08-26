@@ -1,5 +1,6 @@
 package battletech.network.wire
 
+import battletech.tactical.unit.MechModels
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -11,7 +12,7 @@ import org.junit.jupiter.api.Test
 /**
  * Pins every discriminator actually reachable on the wire — the two envelopes
  * ([ClientMessage]/[ServerMessage]) and everything nested under them — against a checked-in
- * golden file, alongside [PROTOCOL_VERSION].
+ * golden file, alongside [PROTOCOL_VERSION] and [MechModels.variants].
  *
  * [WireDiscriminatorConventionTest] checks the same values are well-formed and unique per root
  * by walking Kotlin's *subtype* graph (`sealedSubclasses`); this test walks the *serialization*
@@ -20,6 +21,11 @@ import org.junit.jupiter.api.Test
  * proves a discriminator someone renamed or a type someone stopped reaching from the two message
  * envelopes shows up as a diff here, and puts the required [PROTOCOL_VERSION] bump in the same
  * diff a wire change produces.
+ *
+ * [MechModels.variants] is pinned alongside the discriminators because `CombatUnit.model`
+ * (see `MechModelAsVariant`) ships as just a variant string: both sides of the wire must agree
+ * on the registry, so adding a mech to [MechModels] is a wire-protocol change, not a pure content
+ * change, and must bump [PROTOCOL_VERSION] like any other.
  */
 @OptIn(ExperimentalSerializationApi::class)
 internal class WireDiscriminatorGoldenFileTest {
@@ -30,7 +36,11 @@ internal class WireDiscriminatorGoldenFileTest {
             collectDiscriminators(ClientMessage.serializer().descriptor, mutableSetOf(), this)
             collectDiscriminators(ServerMessage.serializer().descriptor, mutableSetOf(), this)
         }
-        val actual = (listOf("PROTOCOL_VERSION=$PROTOCOL_VERSION") + discriminators).joinToString("\n") + "\n"
+        val header = listOf(
+            "PROTOCOL_VERSION=$PROTOCOL_VERSION",
+            "MECH_VARIANTS=${MechModels.variants.sorted().joinToString(",")}",
+        )
+        val actual = (header + discriminators).joinToString("\n") + "\n"
 
         val goldenFile = requireNotNull(javaClass.getResource("/wire-discriminators.txt")) {
             "network/src/test/resources/wire-discriminators.txt is missing"
@@ -38,9 +48,10 @@ internal class WireDiscriminatorGoldenFileTest {
         val expected = goldenFile.readText()
 
         assertThat(actual).describedAs(
-            "the wire's discriminators (or PROTOCOL_VERSION) changed — if intentional, bump " +
-                "PROTOCOL_VERSION (network/wire/Messages.kt) if it isn't already bumped for this " +
-                "change, then update network/src/test/resources/wire-discriminators.txt to match",
+            "the wire's discriminators, PROTOCOL_VERSION, or the MechModels roster changed — if " +
+                "intentional, bump PROTOCOL_VERSION (network/wire/Messages.kt) if it isn't already " +
+                "bumped for this change, then update network/src/test/resources/wire-discriminators.txt " +
+                "to match",
         ).isEqualTo(expected)
     }
 
