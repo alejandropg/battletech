@@ -73,6 +73,7 @@ import battletech.tui.icon.undisclosedCriticalHitIcon
 import battletech.tui.mediumLaser
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import tenter.screen.Cell
 
 internal class GameLogFormatterTest {
 
@@ -267,9 +268,9 @@ internal class GameLogFormatterTest {
         )
 
         // atlas has one weapon configured: medium laser ("Medium Laser").
-        assertThat(lines).isEqualTo(
-            listOf(GameLogFormatter.LogLine(targetIcon(), "atlas → locust (Medium Laser)")),
-        )
+        assertThat(lines).hasSize(1)
+        assertThat(lines[0].icon).isEqualTo(targetIcon())
+        assertThat(lines[0].text).isEqualTo("atlas → locust (Medium Laser)")
     }
 
     @Test
@@ -297,9 +298,9 @@ internal class GameLogFormatterTest {
             state = stateWithUnits,
         )
 
-        assertThat(lines).isEqualTo(
-            listOf(GameLogFormatter.LogLine(targetIcon(), "atlas → locust (Medium Laser, LRM 5)")),
-        )
+        assertThat(lines).hasSize(1)
+        assertThat(lines[0].icon).isEqualTo(targetIcon())
+        assertThat(lines[0].text).isEqualTo("atlas → locust (Medium Laser, LRM 5)")
     }
 
     @Test
@@ -320,9 +321,9 @@ internal class GameLogFormatterTest {
             state = stateWithUnits,
         )
 
-        assertThat(lines).isEqualTo(
-            listOf(GameLogFormatter.LogLine(targetIcon(), "atlas → locust (Medium Laser), marauder (Medium Laser)")),
-        )
+        assertThat(lines).hasSize(1)
+        assertThat(lines[0].icon).isEqualTo(targetIcon())
+        assertThat(lines[0].text).isEqualTo("atlas → locust (Medium Laser), marauder (Medium Laser)")
     }
 
     @Test
@@ -344,11 +345,10 @@ internal class GameLogFormatterTest {
             state = stateWithUnits,
         )
 
-        assertThat(lines).containsExactlyInAnyOrder(
-            GameLogFormatter.LogLine(targetIcon(), "atlas → locust (Medium Laser)"),
-            GameLogFormatter.LogLine(targetIcon(), "marauder → phoenixhawk (Medium Laser)"),
+        assertThat(lines.map { it.icon to it.text }).containsExactlyInAnyOrder(
+            targetIcon() to "atlas → locust (Medium Laser)",
+            targetIcon() to "marauder → phoenixhawk (Medium Laser)",
         )
-        assertThat(lines).hasSize(2)
     }
 
     @Test
@@ -367,9 +367,9 @@ internal class GameLogFormatterTest {
             state = stateWithUnits,
         )
 
-        assertThat(lines).containsExactly(
-            GameLogFormatter.LogLine(torsoArrowIcon(HexDirection.NE).first, "atlas torso → NE"),
-            GameLogFormatter.LogLine(torsoArrowIcon(HexDirection.S).first, "locust torso → S"),
+        assertThat(lines.map { it.icon to it.text }).containsExactly(
+            torsoArrowIcon(HexDirection.NE).first to "atlas torso → NE",
+            torsoArrowIcon(HexDirection.S).first to "locust torso → S",
         )
     }
 
@@ -633,14 +633,14 @@ internal class GameLogFormatterTest {
     fun `PlayerConnected renders the seat label with the lan-connect icon`() {
         val lines = GameLogFormatter.lines(PlayerConnected(PlayerId.PLAYER_1), emptyState)
 
-        assertThat(lines).containsExactly(GameLogFormatter.LogLine(sessionNoticeIcon(), "P1 connected"))
+        assertThat(lines.map { it.icon to it.text }).containsExactly(sessionNoticeIcon() to "P1 connected")
     }
 
     @Test
     fun `PlayerDisconnected renders the seat label with the lan-connect icon`() {
         val lines = GameLogFormatter.lines(PlayerDisconnected(PlayerId.PLAYER_2), emptyState)
 
-        assertThat(lines).containsExactly(GameLogFormatter.LogLine(sessionNoticeIcon(), "P2 disconnected — waiting for rejoin…"))
+        assertThat(lines.map { it.icon to it.text }).containsExactly(sessionNoticeIcon() to "P2 disconnected — waiting for rejoin…")
     }
 
     @Test
@@ -814,6 +814,123 @@ internal class GameLogFormatterTest {
         val missResult = anAttackResult(hit = false)
         val lines = GameLogFormatter.lines(AttacksResolved(listOf(missResult)), emptyState)
         assertThat(lines).hasSize(1) // only the summary line
+    }
+
+    @Test
+    fun `a unit's name carries its owner's board color`() {
+        val atlas = aMech(id = "atlas", name = "Atlas", owner = PlayerId.PLAYER_1)
+        val stateWithAtlas = emptyGameState.copy(units = UnitRoster(listOf(atlas))).projectFor(viewer = null, revealAll = true)
+
+        val content = GameLogFormatter.lines(
+            UnitMoved(atlas.id, HexCoordinates(0, 0), HexCoordinates(0, 1), HexDirection.N, MovementMode.WALK, 1),
+            stateWithAtlas,
+        ).single().content
+
+        val nameSpan = content.spans.first { it.text == "atlas" }
+        assertThat(nameSpan.style.fg).isEqualTo(playerColor(PlayerId.PLAYER_1))
+    }
+
+    @Test
+    fun `an enemy unit's name carries the other seat's color on the same line`() {
+        val atlas = aMech(id = "atlas", name = "Atlas", owner = PlayerId.PLAYER_1)
+        val locust = aMech(id = "locust", name = "Locust", owner = PlayerId.PLAYER_2)
+        val stateWithUnits = emptyGameState.copy(units = UnitRoster(listOf(atlas, locust))).projectFor(viewer = null, revealAll = true)
+
+        val content = GameLogFormatter.lines(
+            event = AttackDeclarationsRecorded(
+                player = PlayerId.PLAYER_1,
+                declarations = listOf(AttackDeclaration(attackerId = atlas.id, targetId = locust.id, weaponIndex = 0, isPrimary = true)),
+            ),
+            state = stateWithUnits,
+        ).single().content
+
+        assertThat(content.spans.first { it.text == "atlas" }.style.fg).isEqualTo(playerColor(PlayerId.PLAYER_1))
+        assertThat(content.spans.first { it.text == "locust" }.style.fg).isEqualTo(playerColor(PlayerId.PLAYER_2))
+    }
+
+    @Test
+    fun `a unit missing from the roster keeps the default style instead of throwing`() {
+        // A stale roster snapshot naming a unit that isn't in it must render, not crash.
+        val orphanId = UnitId("ghost")
+
+        val content = GameLogFormatter.lines(
+            UnitMoved(orphanId, HexCoordinates(0, 0), HexCoordinates(0, 1), HexDirection.N, MovementMode.WALK, 1),
+            emptyState,
+        ).single().content
+
+        // Unstyled, so it merges with the surrounding prose into one default-styled span —
+        // that merge is itself evidence of no color (a colored name could not merge with default text).
+        assertThat(content.spans).allMatch { it.style == Cell.Style.DEFAULT }
+        assertThat(content.plain).contains("ghost")
+    }
+
+    @Test
+    fun `coloring a name does not change the plain projection GameEventPrinter reads`() {
+        val initiative = Initiative(
+            rolls = mapOf(PlayerId.PLAYER_1 to DiceRoll(3, 3), PlayerId.PLAYER_2 to DiceRoll(1, 2)),
+            loser = PlayerId.PLAYER_2,
+            winner = PlayerId.PLAYER_1,
+        )
+        assertThat(text(InitiativeRolled(initiative))).isEqualTo(
+            "Initiative: P1 ${diceIcon(3)}+${diceIcon(3)}=6, P2 ${diceIcon(1)}+${diceIcon(2)}=3 — P2 moves first",
+        )
+
+        assertThat(text(MatchEnded(MatchOutcome.Victory(winner = PlayerId.PLAYER_1)))).isEqualTo("Match over — P1 wins!")
+
+        val locust = aMech(id = "locust", name = "Locust")
+        val stateWithLocust = emptyGameState.copy(units = UnitRoster(listOf(locust))).projectFor(viewer = null, revealAll = true)
+        val results = listOf(
+            anAttackResult(
+                hit = true,
+                targetId = locust.id,
+                locationDamage = listOf(LocationDamage(MechLocation.LEFT_ARM, armorDamage = 20, structureDamage = 6, destroyed = true)),
+                locationHits = listOf(LocationHit(HitLocation.LEFT_ARM, 24, DiceRoll(3, 4))),
+            ),
+        )
+        assertThat(GameLogFormatter.lines(AttacksResolved(results), stateWithLocust).first().text)
+            .isEqualTo("Attacks: 1 fired, 1 hit, 24 damage — locust Left Arm destroyed")
+    }
+
+    @Test
+    fun `a single-shot weapon-hit detail line's weapon name carries the attacker's owner color`() {
+        val attacker = aMech(id = "a", name = "Attacker", owner = PlayerId.PLAYER_1)
+        val stateWithAttacker = emptyGameState.copy(units = UnitRoster(listOf(attacker))).projectFor(viewer = null, revealAll = true)
+        val result = anAttackResult(
+            hit = true,
+            locationHits = listOf(LocationHit(HitLocation.CENTER_TORSO, 5, DiceRoll(3, 4))),
+        )
+
+        val detailLine = GameLogFormatter.lines(AttacksResolved(listOf(result)), stateWithAttacker)[1]
+
+        assertThat(detailLine.text).isEqualTo("ML → Center Torso (5 dmg)")
+        assertThat(detailLine.content.spans.first { it.text == "ML" }.style.fg).isEqualTo(playerColor(PlayerId.PLAYER_1))
+    }
+
+    @Test
+    fun `a cluster-hit detail line's weapon name carries the attacker's owner color`() {
+        val attacker = aMech(id = "a", name = "Attacker", owner = PlayerId.PLAYER_2)
+        val stateWithAttacker = emptyGameState.copy(units = UnitRoster(listOf(attacker))).projectFor(viewer = null, revealAll = true)
+        val result = aClusterAttackResult(
+            weaponName = "LRM 20",
+            missilesHit = 16,
+            locationHits = listOf(LocationHit(HitLocation.CENTER_TORSO, 5, DiceRoll(3, 4))),
+        )
+
+        val detailLine = GameLogFormatter.lines(AttacksResolved(listOf(result)), stateWithAttacker)[1]
+
+        assertThat(detailLine.content.spans.first { it.text == "LRM 20" }.style.fg).isEqualTo(playerColor(PlayerId.PLAYER_2))
+    }
+
+    @Test
+    fun `a physical-attack detail line's attack name carries the attacker's owner color`() {
+        val attacker = aMech(id = "a", name = "Attacker", owner = PlayerId.PLAYER_1)
+        val stateWithAttacker = emptyGameState.copy(units = UnitRoster(listOf(attacker))).projectFor(viewer = null, revealAll = true)
+        val result = aPhysicalAttackResult(hit = true, damage = 8, hitLocation = MechLocation.RIGHT_TORSO)
+
+        val detailLine = GameLogFormatter.lines(PhysicalAttacksResolved(listOf(result)), stateWithAttacker)[1]
+
+        assertThat(detailLine.text).isEqualTo("Punch → Right Torso (8 dmg)")
+        assertThat(detailLine.content.spans.first { it.text == "Punch" }.style.fg).isEqualTo(playerColor(PlayerId.PLAYER_1))
     }
 
     private fun aClusterAttackResult(

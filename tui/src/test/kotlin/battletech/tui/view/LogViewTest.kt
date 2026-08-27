@@ -18,6 +18,7 @@ import battletech.tactical.unit.UnitRoster
 import battletech.tui.aUnit
 import battletech.tui.game.GamePanelId
 import battletech.tui.icon.initiativeIcon
+import battletech.tui.icon.movementModeIcon
 import battletech.tui.icon.unitStoodUpIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -298,4 +299,65 @@ internal class LogViewTest {
         assert(entryLine.contains(dice4)) { "entry line should contain dice_4 glyph: '$entryLine'" }
     }
 
+    @Test
+    fun `a unit name is painted in its owner's color while the surrounding prose stays default`() {
+        val atlas = aUnit(id = "atlas", name = "Atlas", owner = PlayerId.PLAYER_1)
+        val stateWithAtlas = GameState(
+            units = UnitRoster(listOf(atlas)),
+            map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0)))),
+        ).projectFor(viewer = null, revealAll = true)
+        val moved = UnitMoved(
+            unitId = atlas.id,
+            from = HexCoordinates(0, 0),
+            to = HexCoordinates(0, 1),
+            finalFacing = atlas.facing,
+            mode = MovementMode.WALK,
+            mpSpent = 1,
+        )
+        val view = LogView(entries = listOf(LogEntry(1, moved)), state = stateWithAtlas)
+        val buffer = renderDecorated(view, scrollOffset = 0)
+
+        val entryLine = buffer.line(3, 2, 24)
+        assertEquals("${movementModeIcon(MovementMode.WALK)} atlas (1 MP) 0101→0102", entryLine)
+
+        // Layout: x=2 icon, x=3 space, x=4..8 "atlas", x=9 space before "(1 MP)".
+        assertEquals(ChromeRole.DEFAULT, buffer.get(2, 3).style.fg, "icon stays default")
+        assertEquals(playerColor(PlayerId.PLAYER_1), buffer.get(4, 3).style.fg, "'a' of atlas")
+        assertEquals(playerColor(PlayerId.PLAYER_1), buffer.get(8, 3).style.fg, "'s' of atlas")
+        assertEquals(ChromeRole.DEFAULT, buffer.get(9, 3).style.fg, "prose after the name stays default")
+    }
+
+    @Test
+    fun `a name straddling a wrap point stays colored on both rows`() {
+        val longNamed = aUnit(id = "longname", name = "Longname", owner = PlayerId.PLAYER_2)
+        val stateWithUnit = GameState(
+            units = UnitRoster(listOf(longNamed)),
+            map = GameMap(mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0)))),
+        ).projectFor(viewer = null, revealAll = true)
+        val moved = UnitMoved(
+            unitId = longNamed.id,
+            from = HexCoordinates(0, 0),
+            to = HexCoordinates(0, 1),
+            finalFacing = longNamed.facing,
+            mode = MovementMode.WALK,
+            mpSpent = 1,
+        )
+        val view = LogView(entries = listOf(LogEntry(1, moved)), state = stateWithUnit)
+        // Tall enough that every wrapped row (there are several, at this narrow a width) fits the
+        // viewport — otherwise LogView's bottom-follow reveal (see its class KDoc) would scroll
+        // past the rows this test wants to look at.
+        val buffer = renderDecorated(view, width = 10, height = 14, scrollOffset = 0)
+
+        // Inner content width = 10 - 4 = 6; prefix (icon + space) = 2; available = 4.
+        // "longname" (8 cells) is a single unbroken word wider than capacity, so it hard-splits
+        // into "long" then "name", each its own row.
+        assertEquals("${movementModeIcon(MovementMode.WALK)} long", buffer.line(3, 2, 6))
+        assertEquals("  name", buffer.line(4, 2, 6))
+
+        val color = playerColor(PlayerId.PLAYER_2)
+        assertEquals(color, buffer.get(4, 3).style.fg, "'l' of long")
+        assertEquals(color, buffer.get(7, 3).style.fg, "'g' of long")
+        assertEquals(color, buffer.get(4, 4).style.fg, "'n' of name")
+        assertEquals(color, buffer.get(7, 4).style.fg, "'e' of name")
+    }
 }

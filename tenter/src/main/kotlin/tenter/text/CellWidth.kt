@@ -10,10 +10,13 @@ public object CellWidth {
         else -> 1
     }
 
-    public fun of(text: String): Int {
+    public fun of(text: String): Int = of(text, 0, text.length)
+
+    /** Display width of the `[startIndex, endIndex)` code-unit slice of [text]. */
+    public fun of(text: String, startIndex: Int, endIndex: Int): Int {
         var total = 0
-        var i = 0
-        while (i < text.length) {
+        var i = startIndex
+        while (i < endIndex) {
             val cp = text.codePointAt(i)
             total += of(cp)
             i += Character.charCount(cp)

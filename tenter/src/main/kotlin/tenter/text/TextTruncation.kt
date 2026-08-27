@@ -2,17 +2,23 @@ package tenter.text
 
 public object TextTruncation {
 
-    private const val ELLIPSIS: String = "…"
+    public const val ELLIPSIS: String = "…"
 
     public fun ellipsize(text: String, maxWidth: Int): String {
         val availableWidth = maxWidth.coerceAtLeast(0)
         if (CellWidth.of(text) <= availableWidth) return text
         if (availableWidth == 0) return ""
 
-        return truncateToWidth(text, availableWidth - CellWidth.of(ELLIPSIS)) + ELLIPSIS
+        val keep = prefixLengthWithin(text, availableWidth - CellWidth.of(ELLIPSIS))
+        return text.substring(0, keep) + ELLIPSIS
     }
 
-    private fun truncateToWidth(text: String, maxWidth: Int): String {
+    /**
+     * The exclusive code-unit index of the longest prefix of [text] fitting in [maxWidth]
+     * display cells — never inside a surrogate pair. Public so a decorated-text caller
+     * (`tenter.screen.StyledText`) cuts where this cuts rather than re-deriving the rule.
+     */
+    public fun prefixLengthWithin(text: String, maxWidth: Int): Int {
         var displayWidth = 0
         var index = 0
         while (index < text.length) {
@@ -22,6 +28,6 @@ public object TextTruncation {
             displayWidth += codePointWidth
             index += Character.charCount(codePoint)
         }
-        return text.substring(0, index)
+        return index
     }
 }

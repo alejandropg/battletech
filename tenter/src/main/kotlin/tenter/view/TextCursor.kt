@@ -3,6 +3,7 @@ package tenter.view
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
+import tenter.screen.StyledText
 import tenter.text.CellWidth
 import tenter.text.TextTruncation
 
@@ -46,6 +47,22 @@ public class TextCursor(private val canvas: Canvas) {
     public fun writeLine(text: String, style: Cell.Style = Cell.Style.DEFAULT): Int {
         val written = row
         canvas.writeString(0, written, TextTruncation.ellipsize(text, width), style)
+        row += 1
+        return written
+    }
+
+    /**
+     * Styled counterpart of [writeLine] — one row, ellipsized to the canvas width exactly as
+     * the flat overload is, each span painted in its own style. This is the reason [StyledText]
+     * exists: the caller never computes a column.
+     */
+    public fun writeLine(text: StyledText): Int {
+        val written = row
+        var column = 0
+        for (span in text.ellipsize(width).spans) {
+            canvas.writeString(column, written, span.text, span.style)
+            column += CellWidth.of(span.text)
+        }
         row += 1
         return written
     }

@@ -3,8 +3,8 @@ package battletech.tui.view
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.session.LogEntry
 import tenter.screen.Canvas
+import tenter.screen.styled
 import tenter.text.CellWidth
-import tenter.text.TextWrap
 import tenter.view.TextCursor
 import tenter.view.Viewport
 import tenter.view.View
@@ -37,9 +37,15 @@ internal class LogView(
                 val icon = line.icon ?: ">"
                 val prefixWidth = CellWidth.of(icon) + 1
                 val indent = " ".repeat(prefixWidth)
+                val available = content.width - prefixWidth
 
-                TextWrap.wrap(line.text, content.width - prefixWidth, content.width - prefixWidth).forEachIndexed { i, wrapped ->
-                    content.writeLine(if (i == 0) "$icon $wrapped" else "$indent$wrapped")
+                line.content.wrap(available, available).forEachIndexed { i, wrapped ->
+                    content.writeLine(
+                        styled {
+                            append(if (i == 0) "$icon " else indent)
+                            append(wrapped)
+                        },
+                    )
                 }
             }
         }
