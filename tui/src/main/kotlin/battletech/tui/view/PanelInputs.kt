@@ -22,14 +22,14 @@ import tenter.view.View
  */
 internal class PanelInputs(private val appState: AppState) {
 
-    val visibleState get() = appState.visibleState
+    val state get() = appState.state
 
     private val renderData by lazy { appState.phase.board(appState) }
 
     /** The tactical board's view — see [Panels.build]'s board [tenter.panel.Panel]. */
     val boardView: View by lazy {
         BoardView(
-            appState.visibleState,
+            appState.state,
             cursorPosition = appState.cursor,
             hexHighlights = renderData.hexHighlights,
             reachableFacings = renderData.reachableFacings,
@@ -44,7 +44,7 @@ internal class PanelInputs(private val appState: AppState) {
 
     /** The board's fixed content extent — the map's own size, not measured from its content. */
     val boardExtent: ContentExtent by lazy {
-        val (width, height) = BoardView.contentSize(appState.visibleState.map)
+        val (width, height) = BoardView.contentSize(appState.state.map)
         ContentExtent.Fixed(width, height)
     }
 
@@ -64,7 +64,7 @@ internal class PanelInputs(private val appState: AppState) {
 
     val unitStatus by lazy { appState.phase.unitStatus(appState) }
 
-    val logEntries by lazy { appState.logFor(appState.viewer) }
+    val logEntries by lazy { appState.log }
 
     /** This frame's declared targets. Non-null by construction — see [phasePanels]. */
     val declaredTargets: DeclaredTargetsRender by lazy {
@@ -77,7 +77,7 @@ internal class PanelInputs(private val appState: AppState) {
             ?: error("ATTACK RESULTS panel built with no results — PanelVisibility should have hidden it")
         AttackResultsRender(
             results = results,
-            units = visibleState.units,
+            units = state.units,
             viewer = appState.viewer,
         )
     }

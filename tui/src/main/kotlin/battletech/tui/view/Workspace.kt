@@ -104,7 +104,7 @@ internal class Workspace {
             val status = appState.phase.status(appState)
             val actionUnit = status.actionUnitId
                 ?.takeIf { flash == null }
-                ?.let { appState.visibleState.units.byId(it) }
+                ?.let { appState.state.units.byId(it) }
             StatusBarView(
                 phase = appState.currentPhase,
                 prompt = flash?.text ?: status.prompt,

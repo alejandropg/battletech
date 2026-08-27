@@ -231,7 +231,7 @@ internal class AttackPhaseTest {
             // Commit the impulse via the helper
             val committed = commitAttackImpulse(twisted.app, twistedPhase.allDrafts())
 
-            val updatedUnit = committed.app.visibleState.units.first { it.id == unit.id }
+            val updatedUnit = committed.app.state.units.first { it.id == unit.id }
             assertThat(updatedUnit.torsoFacing).isEqualTo(HexDirection.NE)
         }
 

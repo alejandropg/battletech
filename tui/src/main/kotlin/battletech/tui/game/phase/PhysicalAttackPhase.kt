@@ -48,7 +48,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
                 event = event,
                 app = app,
                 activePlayer = { app.turnState.attack.activePlayer },
-                selectableUnits = { app.turnState.selectableAttackUnits(app.visibleState.units) },
+                selectableUnits = { app.turnState.selectableAttackUnits(app.state.units) },
                 onCommit = { a -> commitPhysicalImpulse(a, drafts) },
                 enterFor = { unit, a -> Transition(a.copy(phase = enterPhysicalDeclaring(unit.id, drafts))) },
             )
@@ -89,7 +89,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
         override fun status(app: AppState): PhaseStatus =
             PhaseStatus(PHYSICAL_DECLARING_PROMPT, attackPlayer(app.turnState, requireSeeded = false), unitId)
 
-        override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(app.visibleState.units.byId(unitId))
+        override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(app.state.units.byId(unitId))
 
         override fun onCancel(app: AppState): Transition = Transition(app.copy(phase = SelectingAttacker(allDrafts())))
 
@@ -147,10 +147,8 @@ internal sealed interface PhysicalAttackPhase : Phase {
         private fun allDrafts(): PhysicalDrafts =
             if (assignments.values.any { it.isNotEmpty() }) drafts + (unitId to assignments) else drafts - unitId
 
-        private fun optionsFor(app: AppState): List<PhysicalAttackOption> {
-            val owner = app.visibleState.units.byId(unitId).owner
-            return app.viewFor(owner).physicalAttackOptions(unitId)
-        }
+        private fun optionsFor(app: AppState): List<PhysicalAttackOption> =
+            app.view.physicalAttackOptions(unitId)
 
         private fun cursorPosition(options: List<PhysicalAttackOption>): Pair<Int, Int> {
             if (options.isEmpty()) return 0 to 0
@@ -190,7 +188,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
         }
 
         private fun nextAttacker(app: AppState): Transition {
-            val attackers = app.turnState.selectableAttackUnits(app.visibleState.units)
+            val attackers = app.turnState.selectableAttackUnits(app.state.units)
             val saved = allDrafts()
             if (attackers.isEmpty()) return Transition(app.copy(phase = SelectingAttacker(saved)))
             val idx = attackers.indexOfFirst { it.id == unitId }.coerceAtLeast(0)

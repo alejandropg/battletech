@@ -59,7 +59,7 @@ internal sealed interface MovementPhase : Phase {
                 event = event,
                 app = app,
                 activePlayer = { turnState.movement.activePlayer },
-                selectableUnits = { turnState.selectableUnits(app.visibleState.units) },
+                selectableUnits = { turnState.selectableUnits(app.state.units) },
                 selectGuard = { unit ->
                     if (unit.id in turnState.movement.movedUnitIds) FlashMessage("Already moved") else null
                 },
@@ -141,7 +141,7 @@ internal sealed interface MovementPhase : Phase {
             } ?: return null
 
             val newCursor = when (action) {
-                is BrowsingAction.MoveCursor -> moveCursor(app.cursor, action.direction, app.visibleState.map)
+                is BrowsingAction.MoveCursor -> moveCursor(app.cursor, action.direction, app.state.map)
                 is BrowsingAction.ClickHex -> action.coords
                 else -> app.cursor
             }
@@ -172,13 +172,13 @@ internal sealed interface MovementPhase : Phase {
         )
 
         override fun unitStatus(app: AppState): UnitStatusRender =
-            UnitStatusRender(app.visibleState.units.byId(unitId), pendingHeat(app))
+            UnitStatusRender(app.state.units.byId(unitId), pendingHeat(app))
 
         override fun onCancel(app: AppState): Transition = Transition(app.copy(phase = SelectingUnit))
 
         private fun pendingHeat(app: AppState): List<HeatSource> {
             val destination = hoveredDestination ?: return emptyList()
-            val position = app.visibleState.units.byId(unitId).position
+            val position = app.state.units.byId(unitId).position
             val hexes = hexesMoved(position, destination)
             return movementHeatSources(reachability.mode, hexes)
         }
@@ -266,13 +266,13 @@ internal sealed interface MovementPhase : Phase {
         )
 
         override fun unitStatus(app: AppState): UnitStatusRender =
-            UnitStatusRender(app.visibleState.units.byId(unitId), pendingHeat(app))
+            UnitStatusRender(app.state.units.byId(unitId), pendingHeat(app))
 
         override fun onCancel(app: AppState): Transition =
             Transition(app.copy(phase = toBrowsing().withCursorAt(app.cursor, app)))
 
         private fun pendingHeat(app: AppState): List<HeatSource> {
-            val position = app.visibleState.units.byId(unitId).position
+            val position = app.state.units.byId(unitId).position
             val destination = options.minByOrNull { it.mpSpent } ?: return emptyList()
             val hexes = hexesMoved(position, destination)
             return movementHeatSources(reachability.mode, hexes)
@@ -312,12 +312,12 @@ internal fun enterMovementSubMode(unit: CombatUnit, app: AppState): Transition =
         val result = app.submitCommand(StandUp(playerId = unit.owner, unitId = unit.id))
         Transition(app.copy(phase = mapToTuiPhase(app.anySession.currentPhase)), flash = rejectionFlash(result))
     } else {
-        val browsing = enterBrowsing(unit, app.viewFor(unit.owner))
+        val browsing = enterBrowsing(unit, app.view)
         Transition(app.copy(phase = browsing.withCursorAt(app.cursor, app)))
     }
 
 internal fun cycleToNextUnit(app: AppState, currentUnitId: UnitId?): Transition {
-    val units = app.turnState.selectableUnits(app.visibleState.units)
+    val units = app.turnState.selectableUnits(app.state.units)
     if (units.isEmpty()) return Transition(app)
     val currentIdx = units.indexOfFirst { it.id == currentUnitId }
     val nextIdx = if (currentIdx == -1) 0 else (currentIdx + 1) % units.size
@@ -337,7 +337,7 @@ private fun submitMove(
     destination: ReachableHex,
     mode: MovementMode,
 ): Transition {
-    val owner = app.visibleState.units.byId(unitId).owner
+    val owner = app.state.units.byId(unitId).owner
     val result = app.submitCommand(
         MoveUnit(
             playerId = owner,

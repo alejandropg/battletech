@@ -14,7 +14,6 @@ import battletech.tactical.query.PlayerView
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.CommitAttackImpulse
-import battletech.tactical.session.TurnState
 import battletech.tactical.session.UnitDeclaration
 import battletech.tactical.session.toAttackDeclarations
 import battletech.tactical.unit.CombatUnit
@@ -52,7 +51,7 @@ internal sealed interface AttackPhase : Phase {
 
     /** Committed + [drafts] declarations, as the DECLARED TARGETS panel would render them. */
     fun declaredTargets(app: AppState, drafts: Map<UnitId, UnitDeclaration>): DeclaredTargetsRender =
-        buildDeclaredTargetsRender(app, declaredTargetsViewingPlayer(app.turnState), drafts)
+        buildDeclaredTargetsRender(app, drafts)
 
     public data class SelectingAttacker(
         override val attackTurnPhase: TurnPhase,
@@ -74,10 +73,10 @@ internal sealed interface AttackPhase : Phase {
                 event = event,
                 app = app,
                 activePlayer = { app.turnState.attack.activePlayer },
-                selectableUnits = { app.turnState.selectableAttackUnits(app.visibleState.units) },
+                selectableUnits = { app.turnState.selectableAttackUnits(app.state.units) },
                 onCommit = { a -> commitAttackImpulse(a, drafts) },
                 enterFor = { unit, a ->
-                    Transition(a.copy(phase = enterDeclaring(unit, attackTurnPhase, a.viewFor(unit.owner), drafts)))
+                    Transition(a.copy(phase = enterDeclaring(unit, attackTurnPhase, a.view, drafts)))
                 },
             )
         }
@@ -136,7 +135,7 @@ internal sealed interface AttackPhase : Phase {
 
             // Compute view + targets once per event; pass into pure allocation methods.
             val attacker = app.ownUnit(unitId)
-            val view = app.viewFor(attacker.owner)
+            val view = app.view
             val targets = view.targetInfos(unitId, torsoFacing, primaryTargetId)
 
             return when (action) {
@@ -161,7 +160,7 @@ internal sealed interface AttackPhase : Phase {
                     Transition(app.copy(phase = copy(allocation = newAllocation)))
                 }
                 is AttackAction.ClickTarget -> {
-                    val targetUnitId = app.visibleState.units.at(app.cursor)?.id
+                    val targetUnitId = app.state.units.at(app.cursor)?.id
                     val validIds = view.validTargets(unitId, torsoFacing)
                     if (targetUnitId == null || targetUnitId !in validIds) return Transition(app)
                     val newAllocation = allocation.clickTarget(targetUnitId, targets)
@@ -174,19 +173,19 @@ internal sealed interface AttackPhase : Phase {
             PhaseStatus(DECLARING_PROMPT, attackPlayer(app.turnState, requireSeeded = false), unitId)
 
         override fun board(app: AppState): RenderData {
-            val visibleState = app.visibleState
+            val state = app.state
             val attacker = app.ownUnit(unitId)
-            val view: PlayerView = app.viewFor(attacker.owner)
+            val view: PlayerView = app.view
             val arc = view.fireArc(unitId, torsoFacing)
             val validIds = view.validTargets(unitId, torsoFacing)
             val targets = targetTable(view)
             val arcHighlights = arc.associateWith { HexHighlight.ATTACK_RANGE }
             val targetPositions = view.resolveTargetPositions(validIds)
             val selectedTargetPosition = targets.getOrNull(cursorTargetIndex)
-                ?.let { visibleState.units.byId(it.unitId).position }
-            val los = losHighlights(attacker.position, targetPositions, visibleState.map)
+                ?.let { state.units.byId(it.unitId).position }
+            val los = losHighlights(attacker.position, targetPositions, state.map)
             val selectedLos = selectedTargetPosition
-                ?.let { selectedLosHighlights(attacker.position, it, visibleState.map) }
+                ?.let { selectedLosHighlights(attacker.position, it, state.map) }
                 ?: emptyMap()
             return RenderData(
                 hexHighlights = arcHighlights + los + selectedLos,
@@ -197,7 +196,7 @@ internal sealed interface AttackPhase : Phase {
         }
 
         override fun unitStatus(app: AppState): UnitStatusRender =
-            UnitStatusRender(app.visibleState.units.byId(unitId), pendingHeat(app))
+            UnitStatusRender(app.state.units.byId(unitId), pendingHeat(app))
 
         override fun onCancel(app: AppState): Transition =
             Transition(app.copy(phase = SelectingAttacker(attackTurnPhase, allDrafts())))
@@ -212,8 +211,7 @@ internal sealed interface AttackPhase : Phase {
 
         /** This attacker's TARGETS-panel content — also the source of [panels]' visibility decisions. */
         private fun attackRender(app: AppState): AttackRender {
-            val owner = app.visibleState.units.byId(unitId).owner
-            val view = app.viewFor(owner)
+            val view = app.view
             return AttackRender(
                 targets = targetTable(view),
                 weaponAssignments = weaponAssignments,
@@ -226,7 +224,7 @@ internal sealed interface AttackPhase : Phase {
         override fun panels(app: AppState): PhasePanels {
             val render = attackRender(app) // one targetInfos query, shared by TARGETS and TARGET_STATUS
             val cursorTarget = render.targets.getOrNull(render.cursorTargetIndex)
-                ?.let { app.visibleState.units.byId(it.unitId) as? ForeignUnit }
+                ?.let { app.state.units.byId(it.unitId) as? ForeignUnit }
             return PhasePanels(
                 targets = render.takeIf { it.targets.isNotEmpty() },
                 targetStatus = cursorTarget,
@@ -242,7 +240,7 @@ internal sealed interface AttackPhase : Phase {
 
         private fun nextAttacker(app: AppState): Transition {
             val turn = app.turnState
-            val attackers = turn.selectableAttackUnits(app.visibleState.units)
+            val attackers = turn.selectableAttackUnits(app.state.units)
             val savedDrafts = allDrafts()
             if (attackers.isEmpty()) {
                 return Transition(app.copy(phase = SelectingAttacker(attackTurnPhase, savedDrafts)))
@@ -251,7 +249,7 @@ internal sealed interface AttackPhase : Phase {
             val nextIdx = (currentIdx + 1) % attackers.size
             val nextUnit = attackers[nextIdx]
             val nextCombatUnit = app.ownUnit(nextUnit.id)
-            val newPhase = enterDeclaring(nextCombatUnit, attackTurnPhase, app.viewFor(nextUnit.owner), savedDrafts)
+            val newPhase = enterDeclaring(nextCombatUnit, attackTurnPhase, app.view, savedDrafts)
             return Transition(app.copy(phase = newPhase, cursor = nextUnit.position))
         }
     }
@@ -343,12 +341,6 @@ internal fun commitAttackImpulse(
 }
 
 /**
- * The player whose in-progress drafts [buildDeclaredTargetsRender] should mix in alongside
- * committed declarations: the active attacker once the impulse sequence is seeded and still
- * running, else a stable default (PLAYER_1) so the panel renders sensibly before the sequence
- * seeds or after all attacks are declared.
- */
-/**
  * DECLARED TARGETS content for [PhasePanels], deferred — see [PhasePanels.declaredTargets]'s KDoc.
  * The declared-targets panel belongs to the weapon-attack declaration flow only; the physical-
  * attack flow (see [PhysicalAttackPhase]) never reserves its column.
@@ -358,13 +350,6 @@ internal fun AttackPhase.declaredTargetsPanel(
     drafts: Map<UnitId, UnitDeclaration>,
 ): Lazy<DeclaredTargetsRender>? =
     if (attackTurnPhase == TurnPhase.WEAPON_ATTACK) lazy { declaredTargets(app, drafts) } else null
-
-internal fun declaredTargetsViewingPlayer(turnState: TurnState): PlayerId =
-    if (turnState.attack.sequence.order.isEmpty() || turnState.attack.isComplete) {
-        PlayerId.PLAYER_1
-    } else {
-        turnState.attack.activePlayer
-    }
 
 /**
  * Board overrides for every torso twist the viewer has drafted but not committed, keyed by the
@@ -376,7 +361,7 @@ internal fun draftTorsoFacings(
     drafts: Map<UnitId, UnitDeclaration>,
 ): Map<HexCoordinates, HexDirection> =
     drafts.values.mapNotNull { decl ->
-        val unit = app.visibleState.units.byId(decl.unitId)
+        val unit = app.state.units.byId(decl.unitId)
         if (decl.torsoFacing == unit.torsoFacing) null else unit.position to decl.torsoFacing
     }.toMap()
 
@@ -386,21 +371,21 @@ internal fun draftTorsoFacings(
  * are folded in locally: they don't exist server-side until commit (see [WeaponAllocation]'s
  * KDoc for why that stays a client-side concern).
  *
- * Scoped to [viewingPlayer] via [AppState.stateFor] directly —
- * deliberately NOT [AppState.visibleState]/[AppState.ownUnit], since [viewingPlayer] (the
- * attacker whose drafts this panel folds in) need not equal [AppState.viewer] for every caller
- * of this function (it does in the live TUI, where the active attacker always renders their own
- * screen, but callers testing this fold logic directly may pass either player's perspective).
+ * Reads through [AppState]'s viewer-scoped path, so the panel always renders from the seat this
+ * process drives. It used to take the viewing player as a parameter and was handed the globally
+ * active attacker — routinely the opponent in host/join play, whom this process holds no seat for
+ * — which killed the client on every render of the opponent's attack impulse. There is no such
+ * parameter now: to render another perspective, build the [AppState] for it (which is what
+ * host/join does, and what this function's tests do).
  */
 internal fun buildDeclaredTargetsRender(
     app: AppState,
-    viewingPlayer: PlayerId,
     drafts: Map<UnitId, UnitDeclaration>,
 ): DeclaredTargetsRender {
-    val scopedState = app.stateFor(viewingPlayer)
+    val viewingPlayer = app.viewer
 
     val activeDrafts: Map<UnitId, UnitDeclaration> = drafts.filter { (unitId, decl) ->
-        val unit = scopedState.units.byId(unitId)
+        val unit = app.state.units.byId(unitId)
         unit.owner == viewingPlayer && decl.weaponAssignments.values.any { it.isNotEmpty() }
     }
 
@@ -409,7 +394,7 @@ internal fun buildDeclaredTargetsRender(
         // attacker id — and gives every player a slot (even an empty one), so the viewing
         // player's in-progress drafts fold into exactly the slot they'd occupy once committed,
         // with no player-order or attacker-grouping logic re-derived here.
-        for (playerAttacks in app.viewFor(viewingPlayer).declaredAttacksByPlayer()) {
+        for (playerAttacks in app.view.declaredAttacksByPlayer()) {
             playerAttacks.attackers.forEach { attacker ->
                 add(committedAttackerEntry(attacker.attackerId, attacker.attacks, playerAttacks.player))
             }
@@ -420,15 +405,15 @@ internal fun buildDeclaredTargetsRender(
                     .forEach { attackerId ->
                         val decl = activeDrafts[attackerId] ?: return@forEach
                         // Own by construction: activeDrafts was already filtered to
-                        // unit.owner == viewingPlayer above, and scopedState was projected
-                        // for that same viewingPlayer.
-                        val attackerUnit = scopedState.units.byId(attackerId) as CombatUnit
+                        // unit.owner == viewingPlayer above, over the same viewer-scoped
+                        // projection read here.
+                        val attackerUnit = app.state.units.byId(attackerId) as CombatUnit
                         val normalized = decl.weaponAssignments.entries
                             .filter { (_, weapons) -> weapons.isNotEmpty() }
                             .map { (targetId, weaponIndices) ->
                                 Triple(targetId, weaponIndices.sorted(), decl.primaryTargetId == targetId)
                             }
-                        val targetInfos = app.viewFor(attackerUnit.owner)
+                        val targetInfos = app.view
                             .targetInfos(attackerId, decl.torsoFacing, decl.primaryTargetId)
                         add(draftAttackerEntry(attackerUnit, normalized, playerAttacks.player, targetInfos))
                     }

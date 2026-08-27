@@ -30,12 +30,12 @@ import tenter.view.ScrollOffset
  *
  * Every seat's session is a replica of the same authoritative match, so [turnState] and the
  * domain-level fields on [GameSession] ([GameSession.currentPhase], [GameSession.activePlayer])
- * agree no matter which seat's session answers them — see [anySession]. Only per-viewer reads
- * ([visibleState], [viewFor], [stateFor], [logFor]) and command submission ([submitCommand]) are
- * seat-specific, because a remote seat's [GameSession] only ever knows how to act and project for
- * itself; those go through that exact seat's entry in [seats].
+ * agree no matter which seat's session answers them — see [anySession]. Only the per-viewer reads
+ * ([state], [view], [log]) and command submission ([submitCommand]) are seat-specific, because a
+ * remote seat's [GameSession] only ever knows how to act and project for itself; those go through
+ * that exact seat's entry in [seats].
  *
- * [visibleState] is the ONLY view of game state a delivery may read — see its KDoc.
+ * [state], [view] and [log] are the ONLY game state a delivery may read — see their KDoc.
  */
 internal data class AppState(
     val seats: Map<PlayerId, GameSession>,
@@ -61,8 +61,8 @@ internal data class AppState(
     /**
      * Any seat's session — safe ONLY for fields every replica agrees on ([turnState],
      * [GameSession.currentPhase], [GameSession.activePlayer]). Never use this for a per-viewer
-     * read ([visibleState], [viewFor], [stateFor], [logFor]) or for [submitCommand] — those must
-     * go through the specific seat in question via [seats].
+     * read ([state], [view], [log]) or for [submitCommand] — those must go through the
+     * specific seat in question via [seats].
      */
     internal val anySession: GameSession get() = seats.values.first()
 
@@ -82,16 +82,31 @@ internal data class AppState(
      */
     val viewer: PlayerId get() = anySession.activePlayer?.takeIf { it in seats } ?: seats.keys.min()
 
-    /** The only state the TUI can see. */
-    val visibleState: PlayerGameState get() = seats.getValue(viewer).stateFor(viewer)
+    /**
+     * The read path, and the only game state the TUI can see. All three are projected for
+     * [viewer] — the seat this process actually drives — and take no player argument on purpose:
+     * there is no way to ask this type for another seat's projection.
+     *
+     * That used to be a caller-side rule rather than a property of this interface, and a caller
+     * got it wrong: the DECLARED TARGETS panel scoped itself to the globally active attacker,
+     * which in host/join play is routinely the opponent, and every render during the opponent's
+     * attack impulse died in `Map.getValue`. Because [viewer] is a member of [seats] by
+     * construction, these lookups cannot miss and that bug is no longer expressible.
+     *
+     * The seat whose projection this is therefore follows [viewer], not the caller: in hot-seat
+     * it tracks the active player; in host/join it is this process's one seat. Redaction within
+     * a projection stays type-enforced one level down, in [PlayerGameState].
+     *
+     * [submitCommand] is deliberately NOT part of this — a command names the seat it acts for,
+     * and in hot-seat that is legitimately either of them.
+     */
+    val state: PlayerGameState get() = seats.getValue(viewer).stateFor(viewer)
 
-    fun viewFor(player: PlayerId): PlayerView = seats.getValue(player).viewFor(player)
+    /** [viewer]'s query surface: legal movement, target infos, declared attacks. See [state]. */
+    val view: PlayerView get() = seats.getValue(viewer).viewFor(viewer)
 
-    /** [PlayerGameState] projected for [player] specifically — [visibleState] is the viewer-scoped shorthand most callers want. */
-    fun stateFor(player: PlayerId): PlayerGameState = seats.getValue(player).stateFor(player)
-
-    /** [LogEntry] history redacted for [player], via that seat's own session. */
-    fun logFor(player: PlayerId): List<LogEntry> = seats.getValue(player).logFor(player)
+    /** [LogEntry] history redacted for [viewer]. See [state]. */
+    val log: List<LogEntry> get() = seats.getValue(viewer).logFor(viewer)
 
     /**
      * Submits [command] through the session for the seat it names ([GameCommand.playerId]).
@@ -107,7 +122,7 @@ internal data class AppState(
      * ([selectOwnUnit][battletech.tui.game.phase.selectOwnUnit]). Delegates to
      * [PlayerGameState.ownUnitById], which owns the throw-on-mismatch rule.
      */
-    fun ownUnit(id: UnitId): CombatUnit = visibleState.ownUnitById(id)
+    fun ownUnit(id: UnitId): CombatUnit = state.ownUnitById(id)
 }
 
 public fun moveCursor(

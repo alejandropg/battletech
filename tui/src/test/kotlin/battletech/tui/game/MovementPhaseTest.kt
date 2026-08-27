@@ -182,7 +182,7 @@ internal class MovementPhaseTest {
             val result = facingPhase.handle(KeyboardEvent("1"), facingResult.app)
 
             assertNotNull(result)
-            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+            val movedUnit = result!!.app.state.units.first { it.id == unit.id }
             assertEquals(unit.position, movedUnit.position)
             assertEquals(unit.facing, movedUnit.facing)
         }
@@ -205,7 +205,7 @@ internal class MovementPhaseTest {
             val result = phase.handle(KeyboardEvent("Enter"), state)
 
             assertNotNull(result)
-            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+            val movedUnit = result!!.app.state.units.first { it.id == unit.id }
             assertEquals(HexCoordinates(0, -2), movedUnit.position)
         }
 
@@ -280,7 +280,7 @@ internal class MovementPhaseTest {
             val result = phase.handle(KeyboardEvent("Enter"), state)
 
             assertNotNull(result)
-            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+            val movedUnit = result!!.app.state.units.first { it.id == unit.id }
             assertEquals(HexCoordinates(0, 0), movedUnit.position)
             assertEquals(HexDirection.N, movedUnit.facing)
         }
@@ -304,7 +304,7 @@ internal class MovementPhaseTest {
             val result = facingPhase.handle(KeyboardEvent("1"), state)
 
             assertNotNull(result)
-            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+            val movedUnit = result!!.app.state.units.first { it.id == unit.id }
             assertEquals(HexCoordinates(0, -1), movedUnit.position)
             assertEquals(HexDirection.N, movedUnit.facing)
         }
@@ -325,7 +325,7 @@ internal class MovementPhaseTest {
             val result = facingPhase.handle(KeyboardEvent("3"), state)
 
             assertNotNull(result)
-            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+            val movedUnit = result!!.app.state.units.first { it.id == unit.id }
             assertEquals(HexDirection.SE, movedUnit.facing)
         }
 
@@ -363,7 +363,7 @@ internal class MovementPhaseTest {
             val result = phase.handle(KeyboardEvent("1"), state)
 
             assertNotNull(result)
-            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+            val movedUnit = result!!.app.state.units.first { it.id == unit.id }
             assertEquals(HexDirection.N, movedUnit.facing)
         }
 
@@ -384,7 +384,7 @@ internal class MovementPhaseTest {
             val result = facingPhase.handle(KeyboardEvent("1"), state)
 
             assertNotNull(result)
-            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+            val movedUnit = result!!.app.state.units.first { it.id == unit.id }
             assertEquals(HexCoordinates(0, 0), movedUnit.position)
             assertEquals(HexDirection.N, movedUnit.facing)
         }
@@ -404,7 +404,7 @@ internal class MovementPhaseTest {
             val result = phase.handle(KeyboardEvent("1"), state)
 
             assertNotNull(result)
-            val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+            val movedUnit = result!!.app.state.units.first { it.id == unit.id }
             assertEquals(HexCoordinates(0, 0), movedUnit.position)
             assertEquals(HexDirection.N, movedUnit.facing)
         }
@@ -641,7 +641,7 @@ internal class MovementPhaseTest {
             val result = phase.handle(KeyboardEvent("Tab"), state)
 
             assertNotNull(result)
-            assertEquals(gameState.projectFor(result!!.app.viewer), result.app.visibleState)
+            assertEquals(gameState.projectFor(result!!.app.viewer), result.app.state)
             assertEquals(turnState.movement.movedUnitIds, result.app.turnState.movement.movedUnitIds)
         }
 

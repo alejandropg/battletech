@@ -84,14 +84,14 @@ internal class PhysicalAttackPhaseTest {
             assignments = mapOf(enemy.id to setOf(PhysicalAttackKind.Punch(Side.LEFT))),
         )
         val app = appWith(declaring)
-        val armorBefore = totalArmor(app.visibleState.units.byId(enemy.id).armor)
+        val armorBefore = totalArmor(app.state.units.byId(enemy.id).armor)
 
         declaring.handle(KeyboardEvent("c"), app)!!
 
         // The session resolved the punch (3+3 hit, ceil(50/10)=5 damage applied). app.session
-        // is the same mutable BattleSession before and after, so re-reading app.visibleState
+        // is the same mutable BattleSession before and after, so re-reading app.state
         // (not a fresh AppState) observes the post-command state.
-        val armorAfter = totalArmor(app.visibleState.units.byId(enemy.id).armor)
+        val armorAfter = totalArmor(app.state.units.byId(enemy.id).armor)
         assertThat(armorAfter).isEqualTo(armorBefore - 5)
     }
 

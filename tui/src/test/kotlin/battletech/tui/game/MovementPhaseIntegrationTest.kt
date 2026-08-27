@@ -81,7 +81,7 @@ internal class MovementPhaseIntegrationTest {
         val result = hoveredBrowsing.handle(KeyboardEvent("1"), hovered.app)
 
         assertNotNull(result)
-        val movedUnit = result!!.app.visibleState.units.first { it.id == unit.id }
+        val movedUnit = result!!.app.state.units.first { it.id == unit.id }
         assertEquals(unit.position, movedUnit.position)
         assertEquals(unit.facing, movedUnit.facing)
     }
@@ -104,7 +104,7 @@ internal class MovementPhaseIntegrationTest {
         val result = hoveredBrowsing.handle(KeyboardEvent("Enter"), hovered.app)
 
         assertNotNull(result)
-        val movedUnit = result!!.app.visibleState.units.first { it.id == jumpUnit.id }
+        val movedUnit = result!!.app.state.units.first { it.id == jumpUnit.id }
         assertEquals(jumpUnit.position, movedUnit.position)
         assertEquals(jumpUnit.facing, movedUnit.facing)
     }

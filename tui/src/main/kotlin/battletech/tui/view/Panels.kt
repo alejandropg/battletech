@@ -50,12 +50,12 @@ internal object Panels {
             sidePanel(
                 GamePanelId.UNIT_STATUS,
                 UnitStatusView.TITLE,
-                maximized = { frame -> MechRecordSheetView(frame.unitStatus.subject, frame.visibleState.map, frame.unitStatus.pendingHeat) },
+                maximized = { frame -> MechRecordSheetView(frame.unitStatus.subject, frame.state.map, frame.unitStatus.pendingHeat) },
             ) { frame ->
-                UnitStatusView(frame.unitStatus.subject, frame.visibleState.map, frame.unitStatus.pendingHeat)
+                UnitStatusView(frame.unitStatus.subject, frame.state.map, frame.unitStatus.pendingHeat)
             },
             sidePanel(GamePanelId.LOG, LogView.TITLE) { frame ->
-                LogView(entries = frame.logEntries, state = frame.visibleState)
+                LogView(entries = frame.logEntries, state = frame.state)
             },
             Panel(
                 id = GamePanelId.HELP,
