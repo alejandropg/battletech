@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Enforces two invariants stated in root `CLAUDE.md`: locality is an adapter, not a branch (no
- * delivery code outside `main()` may tell hot-seat/host/join/serve apart, which starts with
+ * delivery code outside `main()` may tell hot-seat/host/join/server apart, which starts with
  * nothing but `Main.kt` knowing `battletech.network` exists at all), and `tui` never depends on
  * `strategic` (a placeholder module, `CLAUDE.md` says to ignore it).
  */

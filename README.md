@@ -15,7 +15,7 @@ Supports hot seat and network play:
 battletech-tui                                  hot-seat (both players share this terminal)
 battletech-tui host [--port N]                  host a session
 battletech-tui join <ip[:port]> --session <id>  join a hosted session
-battletech-tui serve [--port N]                 headless dedicated server
+battletech-tui server [--port N]                headless dedicated server
 ```
 
 Run any form with `--help` for its full option list.

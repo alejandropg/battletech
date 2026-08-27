@@ -135,40 +135,40 @@ internal class CliArgsTest {
     }
 
     @Nested
-    inner class ServeCommand {
+    inner class ServerCommand {
         @Test
-        fun `serve with no port uses the default port`() {
-            assertEquals(Mode.Server(), parse("serve"))
+        fun `server with no port uses the default port`() {
+            assertEquals(Mode.Server(), parse("server"))
         }
 
         @Test
-        fun `serve --port N uses the given port`() {
-            assertEquals(Mode.Server(port = 9000), parse("serve", "--port", "9000"))
+        fun `server --port N uses the given port`() {
+            assertEquals(Mode.Server(port = 9000), parse("server", "--port", "9000"))
         }
 
         @Test
-        fun `serve --port with a non-integer value throws`() {
-            failing("serve", "--port", "nope")
+        fun `server --port with a non-integer value throws`() {
+            failing("server", "--port", "nope")
         }
 
         @Test
-        fun `serve --port with no value throws`() {
-            failing("serve", "--port")
+        fun `server --port with no value throws`() {
+            failing("server", "--port")
         }
 
         @Test
-        fun `serve with an unknown trailing flag throws`() {
-            failing("serve", "--bogus")
+        fun `server with an unknown trailing flag throws`() {
+            failing("server", "--bogus")
         }
 
         @Test
-        fun `serve --map name resolves to Server with mapName`() {
-            assertEquals(Mode.Server(mapName = "name"), parse("serve", "--map", "name"))
+        fun `server --map name resolves to Server with mapName`() {
+            assertEquals(Mode.Server(mapName = "name"), parse("server", "--map", "name"))
         }
 
         @Test
-        fun `serve has no --theme`() {
-            val ex = failing("serve", "--theme", "dark")
+        fun `server has no --theme`() {
+            val ex = failing("server", "--theme", "dark")
             assertTrue(ex.output.contains("--theme"))
         }
     }
@@ -241,10 +241,10 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `--map before the serve subcommand is rejected`() {
-            val ex = failing("--map", "x", "serve")
+        fun `--map before the server subcommand is rejected`() {
+            val ex = failing("--map", "x", "server")
             assertTrue(ex.output.contains("--map"))
-            assertTrue(ex.output.contains("serve"))
+            assertTrue(ex.output.contains("server"))
         }
 
         @Test
@@ -282,11 +282,17 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `host, join and serve are all listed`() {
+        fun `host, join and server are all listed`() {
             val help = failing("--help").output
             assertTrue(help.contains("host"))
             assertTrue(help.contains("join"))
-            assertTrue(help.contains("serve"))
+            assertTrue(help.lines().any { it.trimStart().startsWith("server ") })
+            assertTrue(help.lines().none { it.trimStart().startsWith("serve ") })
+        }
+
+        @Test
+        fun `serve is rejected as an unknown subcommand`() {
+            failing("serve")
         }
 
         @Test
@@ -321,8 +327,8 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `serve --help does not mention --theme`() {
-            assertTrue(!failing("serve", "--help").output.contains("--theme"))
+        fun `server --help does not mention --theme`() {
+            assertTrue(!failing("server", "--help").output.contains("--theme"))
         }
 
         @Test

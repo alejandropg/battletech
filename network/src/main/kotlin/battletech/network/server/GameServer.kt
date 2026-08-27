@@ -78,7 +78,7 @@ import kotlin.concurrent.thread
  * - **hot-seat**: two [connectLocal] calls; the second one's [attach] call completes the roster.
  * - **`host`**: one [connectLocal] call + one socket join; whichever completes the roster
  *   fires it — see [connectLocal]'s KDoc for why the local seat is guaranteed to be first.
- * - **`serve`**: two socket joins; the second fires it.
+ * - **`server`**: two socket joins; the second fires it.
  *
  * The `everStarted` flag (checked and set inside the same synchronized block that runs
  * [BattleSession.advance]) makes a second firing impossible, and [disconnect]'s identity check

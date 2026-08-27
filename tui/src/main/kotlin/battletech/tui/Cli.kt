@@ -17,7 +17,7 @@ import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.terminal.Terminal
 
-/** Default TCP port for `host`/`join`/`serve` when `--port`/an explicit port is not supplied. */
+/** Default TCP port for `host`/`join`/`server` when `--port`/an explicit port is not supplied. */
 internal const val DEFAULT_PORT: Int = 2470
 
 /** Built-in map name used when `--map` is not supplied. */
@@ -56,7 +56,7 @@ private fun ParameterHolder.portOption() =
     option("--port", help = "TCP port to listen on (default $DEFAULT_PORT)").int().default(DEFAULT_PORT)
 
 /**
- * Root command: hot-seat when invoked bare, or dispatches to [HostCommand]/[JoinCommand]/[ServeCommand].
+ * Root command: hot-seat when invoked bare, or dispatches to [HostCommand]/[JoinCommand]/[ServerCommand].
  * `--map`/`--theme` live here (not only on the subcommands) so the bare hot-seat form keeps taking
  * them directly — see [parseArgs]'s KDoc for why that shape was chosen over a `hotseat` subcommand.
  *
@@ -153,7 +153,7 @@ private class JoinCommand(private val emit: (Mode) -> Unit) : CliktCommand(name 
     }
 }
 
-private class ServeCommand(private val emit: (Mode) -> Unit) : CliktCommand(name = "serve") {
+private class ServerCommand(private val emit: (Mode) -> Unit) : CliktCommand(name = "server") {
     override fun help(context: Context): String = "Headless dedicated server; both players connect with 'join'."
 
     private val port by portOption()
@@ -186,11 +186,11 @@ private class ServeCommand(private val emit: (Mode) -> Unit) : CliktCommand(name
  * - (no args), or `[--map <name|path>] [--theme <name|path>]`: [Mode.Local]
  * - `host [--port N] [--map <name|path>] [--theme <name|path>]`: [Mode.Host]
  * - `join <ip[:port]> --session <id> [--theme <name|path>]`: [Mode.Join]
- * - `serve [--port N] [--map <name|path>]`: [Mode.Server]
+ * - `server [--port N] [--map <name|path>]`: [Mode.Server]
  *
  * `--map`/`--theme` are declared on both the root and the relevant subcommands (rather than only
- * the root) so `host --help`/`join --help`/`serve --help` each show exactly the options that
- * command accepts — `join --help` never mentions `--map` and `serve --help` never mentions
+ * the root) so `host --help`/`join --help`/`server --help` each show exactly the options that
+ * command accepts — `join --help` never mentions `--map` and `server --help` never mentions
  * `--theme`. That structural guarantee is what replaces the old hand-written "--map cannot be
  * combined with --join" / "--theme cannot be combined with --server" checks.
  */
@@ -202,7 +202,7 @@ internal fun parseArgs(
     var resolved: Mode? = null
     val emit: (Mode) -> Unit = { resolved = it }
     val root = BattletechTui(emit, terminal, exit)
-        .subcommands(HostCommand(emit), JoinCommand(emit), ServeCommand(emit))
+        .subcommands(HostCommand(emit), JoinCommand(emit), ServerCommand(emit))
     root.main(args.toList())
     return checkNotNull(resolved) { "no Mode was resolved from ${args.toList()}" }
 }
