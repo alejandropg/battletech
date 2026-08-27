@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.screen.ChromeRole
 import tenter.screen.ScreenBuffer
 import tenter.view.line
 import tenter.view.render
@@ -117,6 +118,18 @@ internal class MechRecordSheetViewTest {
 
         assertEquals(0, topRow)
         assertEquals(1, buffer.text().split("A1:").size - 1)
+    }
+
+    @Test
+    fun `an own unit renders each special status on a separate line`() {
+        val unit = atlas().copy(isDestroyed = true, isPilotConscious = false)
+        val buffer = render(MechRecordSheetView(unit, aGameMap()), width = 200, height = 300)
+
+        val destroyedRow = (0 until buffer.height).first { buffer.line(it).contains("DESTROYED") }
+        val unconsciousRow = (0 until buffer.height).first { buffer.line(it).contains("PILOT UNCONSCIOUS") }
+        assertEquals(destroyedRow + 1, unconsciousRow)
+        assertEquals(ChromeRole.DANGER, buffer.get(0, destroyedRow).style.fg)
+        assertEquals(ChromeRole.DANGER, buffer.get(0, unconsciousRow).style.fg)
     }
 
     @Test

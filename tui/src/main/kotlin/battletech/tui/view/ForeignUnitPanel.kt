@@ -6,8 +6,8 @@ import tenter.screen.ChromeRole
 import tenter.view.TextCursor
 
 /**
- * Renders a [ForeignUnit] — name, movement, armor (front + rear values only,
- * no internal structure), and weapon names — shared by [TargetStatusView]
+ * Renders a [ForeignUnit] — name, public special statuses, movement, armor (front + rear values
+ * only, no internal structure), and weapon names — shared by [TargetStatusView]
  * and [UnitStatusView]. This is the redacted view a player sees of a unit he
  * does not own; there is no private field to omit here because [ForeignUnit]
  * doesn't carry one.
@@ -23,6 +23,7 @@ internal object ForeignUnitPanel {
         // UNIT
         with(content) {
             writeLine(UnitLabel.of(unit), ACCENT_STYLE)
+            draw(SpecialUnitStatusList(unit))
             newLine()
         }
 

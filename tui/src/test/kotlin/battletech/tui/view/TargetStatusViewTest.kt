@@ -26,6 +26,10 @@ internal class TargetStatusViewTest {
         runningMP: Int = 6,
         jumpMP: Int = 0,
         weapons: List<PublicWeapon> = listOf(PublicWeapon("AC/20", WeaponMountId(0))),
+        isProne: Boolean = false,
+        isShutdown: Boolean = false,
+        isDestroyed: Boolean = false,
+        isPilotConscious: Boolean = true,
     ): ForeignUnit = ForeignUnit(
         id = UnitId("u1"),
         owner = PlayerId.PLAYER_1,
@@ -40,10 +44,10 @@ internal class TargetStatusViewTest {
         runningMP = runningMP,
         jumpMP = jumpMP,
         weapons = weapons,
-        isProne = false,
-        isShutdown = false,
-        isDestroyed = false,
-        isPilotConscious = true,
+        isProne = isProne,
+        isShutdown = isShutdown,
+        isDestroyed = isDestroyed,
+        isPilotConscious = isPilotConscious,
         movementThisTurn = MovementThisTurn.Stationary,
     )
 
@@ -75,6 +79,20 @@ internal class TargetStatusViewTest {
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).char }
         assertEquals("u1: Hunchback", line)
         assertEquals(ChromeRole.ACCENT, buffer.get(2, 2).style.fg)
+    }
+
+    @Test
+    fun `renders public special statuses between the unit name and movement section`() {
+        val unit = aForeignUnit(isDestroyed = true, isPilotConscious = false)
+        val buffer = renderDecorated(TargetStatusView(unit))
+
+        val destroyedRow = rowContaining(buffer, "DESTROYED")
+        val unconsciousRow = rowContaining(buffer, "PILOT UNCONSCIOUS")
+        assertEquals(destroyedRow + 1, unconsciousRow)
+        assertTrue(destroyedRow > rowContaining(buffer, "u1: Hunchback"))
+        assertTrue(unconsciousRow < rowContaining(buffer, "MOVEMENT"))
+        assertEquals(ChromeRole.DANGER, buffer.get(2, destroyedRow).style.fg)
+        assertEquals(ChromeRole.DANGER, buffer.get(2, unconsciousRow).style.fg)
     }
 
     @Test
@@ -136,5 +154,13 @@ internal class TargetStatusViewTest {
         }.joinToString("")
         assertFalse(allText.contains("Gunnery"))
         assertFalse(allText.contains("Piloting"))
+    }
+
+    private fun rowContaining(buffer: ScreenBuffer, text: String): Int {
+        for (row in 0 until buffer.height) {
+            val line = (2 until 26).joinToString("") { buffer.get(it, row).char }
+            if (line.contains(text)) return row
+        }
+        error("No row contains \"$text\"")
     }
 }

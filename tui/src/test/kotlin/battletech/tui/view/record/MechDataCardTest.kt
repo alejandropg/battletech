@@ -1,9 +1,11 @@
 package battletech.tui.view.record
 
 import battletech.tui.aUnit
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.view.line
 import tenter.view.render
 import tenter.view.text
 
@@ -31,10 +33,18 @@ internal class MechDataCardTest {
     }
 
     @Test
-    fun `flags a destroyed or shutdown unit`() {
-        val unit = aUnit().copy(isShutdown = true)
-        val buffer = render(MechDataCard(unit), width = 36, height = 10)
+    fun `prints each special status on a separate line`() {
+        val unit = aUnit().copy(
+            isDestroyed = true,
+            isShutdown = true,
+            isPilotConscious = false,
+            isProne = true,
+        )
+        val buffer = render(MechDataCard(unit), width = 36, height = 12)
 
-        assertTrue(buffer.text().contains("SHUTDOWN"))
+        assertEquals("DESTROYED", buffer.line(6, width = 36).trim())
+        assertEquals("SHUTDOWN", buffer.line(7, width = 36).trim())
+        assertEquals("PILOT UNCONSCIOUS", buffer.line(8, width = 36).trim())
+        assertEquals("PRONE", buffer.line(9, width = 36).trim())
     }
 }

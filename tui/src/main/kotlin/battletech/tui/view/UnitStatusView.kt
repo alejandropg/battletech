@@ -46,6 +46,7 @@ internal class UnitStatusView(
         // UNIT
         with(content) {
             writeLine(UnitLabel.of(unit), ACCENT_STYLE)
+            draw(SpecialUnitStatusList(unit))
             newLine()
         }
 

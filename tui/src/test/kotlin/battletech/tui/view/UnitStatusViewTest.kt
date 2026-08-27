@@ -49,6 +49,10 @@ internal class UnitStatusViewTest {
         runningMP: Int = 6,
         jumpMP: Int = 0,
         weapons: List<PublicWeapon> = listOf(PublicWeapon("AC/20", WeaponMountId(0))),
+        isProne: Boolean = false,
+        isShutdown: Boolean = false,
+        isDestroyed: Boolean = false,
+        isPilotConscious: Boolean = true,
     ): ForeignUnit = ForeignUnit(
         id = UnitId("u1"),
         owner = PlayerId.PLAYER_2,
@@ -63,10 +67,10 @@ internal class UnitStatusViewTest {
         runningMP = runningMP,
         jumpMP = jumpMP,
         weapons = weapons,
-        isProne = false,
-        isShutdown = false,
-        isDestroyed = false,
-        isPilotConscious = true,
+        isProne = isProne,
+        isShutdown = isShutdown,
+        isDestroyed = isDestroyed,
+        isPilotConscious = isPilotConscious,
         movementThisTurn = MovementThisTurn.Stationary,
     )
 
@@ -78,6 +82,21 @@ internal class UnitStatusViewTest {
 
         val text = (2 until 11).joinToString("") { buffer.get(it, 2).char }
         assertEquals("A1: Atlas", text)
+    }
+
+    @Test
+    fun `renders own special statuses between the unit name and pilot section`() {
+        val unit = aUnit(id = "A1").copy(isDestroyed = true, isPilotConscious = false)
+        val buffer = renderDecorated(UnitStatusView(unit, aGameMap()), height = 20)
+
+        val destroyedRow = rowContaining(buffer, 20, "DESTROYED")
+        val unconsciousRow = rowContaining(buffer, 20, "PILOT UNCONSCIOUS")
+        val pilotRow = rowContaining(buffer, 20, "── PILOT")
+        assertEquals(destroyedRow + 1, unconsciousRow)
+        assertTrue(destroyedRow > rowContaining(buffer, 20, "A1: Atlas"))
+        assertTrue(unconsciousRow < pilotRow)
+        assertEquals(ChromeRole.DANGER, buffer.get(2, destroyedRow).style.fg)
+        assertEquals(ChromeRole.DANGER, buffer.get(2, unconsciousRow).style.fg)
     }
 
     @Test
@@ -580,6 +599,20 @@ internal class UnitStatusViewTest {
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).char }
         assertEquals("u1: Hunchback", line)
         assertEquals(ChromeRole.ACCENT, buffer.get(2, 2).style.fg)
+    }
+
+    @Test
+    fun `renders public special statuses for a foreign subject`() {
+        val unit = aForeignUnit(isShutdown = true, isProne = true)
+        val buffer = renderDecorated(UnitStatusView(unit, aGameMap()))
+
+        val shutdownRow = rowContaining(buffer, 30, "SHUTDOWN")
+        val proneRow = rowContaining(buffer, 30, "PRONE")
+        assertEquals(shutdownRow + 1, proneRow)
+        assertTrue(shutdownRow > rowContaining(buffer, 30, "u1: Hunchback"))
+        assertTrue(proneRow < rowContaining(buffer, 30, "MOVEMENT"))
+        assertEquals(ChromeRole.DANGER, buffer.get(2, shutdownRow).style.fg)
+        assertEquals(ChromeRole.DANGER, buffer.get(2, proneRow).style.fg)
     }
 
     @Test
