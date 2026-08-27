@@ -136,4 +136,43 @@ internal class MapSourceTest {
             assertThat(resolveMap(name).hexes).describedAs(name).isNotEmpty()
         }
     }
+
+    // ---------- name ----------
+
+    @Test
+    fun `a packaged map is named after the spec it was resolved from`() {
+        assertThat(resolveMap("default").name).isEqualTo("default")
+        assertThat(resolveMap("battletech-classic").name).isEqualTo("battletech-classic")
+    }
+
+    @Test
+    fun `a filesystem map is named after the path it was loaded from`(@TempDir tempDir: Path) {
+        val file = tempDir.resolve("map.json")
+        file.writeText("""{"width":2,"height":2,"hexes":[]}""")
+
+        assertThat(resolveMap(file.toString()).name).isEqualTo(file.toString())
+    }
+
+    // ---------- compareWithLocalMap ----------
+
+    @Test
+    fun `compareWithLocalMap reports MATCHES when the local map of the same name has identical hexes`() {
+        val hostMap = resolveMap("default")
+
+        assertThat(compareWithLocalMap(hostMap)).isEqualTo(LocalMapMatch.MATCHES)
+    }
+
+    @Test
+    fun `compareWithLocalMap reports DIFFERS when the local map of the same name has different hexes`() {
+        val hostMap = resolveMap("default").copy(name = "battletech-classic")
+
+        assertThat(compareWithLocalMap(hostMap)).isEqualTo(LocalMapMatch.DIFFERS)
+    }
+
+    @Test
+    fun `compareWithLocalMap reports UNAVAILABLE when no local map of that name exists`() {
+        val hostMap = resolveMap("default").copy(name = "not-a-packaged-map-for-test")
+
+        assertThat(compareWithLocalMap(hostMap)).isEqualTo(LocalMapMatch.UNAVAILABLE)
+    }
 }

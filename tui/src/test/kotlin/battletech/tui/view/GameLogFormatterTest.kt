@@ -21,6 +21,7 @@ import battletech.tactical.model.MechLocation
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.map.LocalMapMatch
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.projectFor
 import battletech.tactical.session.AmmoExploded
@@ -32,6 +33,7 @@ import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.InitiativeRolled
+import battletech.tactical.session.MapIdentified
 import battletech.tactical.session.MatchEnded
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
@@ -64,6 +66,8 @@ import battletech.tui.icon.criticalHitIcon
 import battletech.tui.icon.destroyedIcon
 import battletech.tui.icon.diceIcon
 import battletech.tui.icon.locationDestroyedIcon
+import battletech.tui.icon.mapMismatchIcon
+import battletech.tui.icon.mapNoticeIcon
 import battletech.tui.icon.movementModeIcon
 import battletech.tui.icon.pilotDeadIcon
 import battletech.tui.icon.sessionNoticeIcon
@@ -658,6 +662,33 @@ internal class GameLogFormatterTest {
             GameLogFormatter.LogLine(
                 sessionNoticeIcon(),
                 "Disconnected from host — restart with 'battletech-tui join <host> --session <id>' to rejoin",
+            ),
+        )
+    }
+
+    @Test
+    fun `MapIdentified with MATCHES renders only the map name line`() {
+        val lines = GameLogFormatter.lines(MapIdentified(name = "default", localMatch = LocalMapMatch.MATCHES), emptyState)
+
+        assertThat(lines).containsExactly(GameLogFormatter.LogLine(mapNoticeIcon(), "Map: default"))
+    }
+
+    @Test
+    fun `MapIdentified with UNAVAILABLE renders only the map name line`() {
+        val lines = GameLogFormatter.lines(MapIdentified(name = "default", localMatch = LocalMapMatch.UNAVAILABLE), emptyState)
+
+        assertThat(lines).containsExactly(GameLogFormatter.LogLine(mapNoticeIcon(), "Map: default"))
+    }
+
+    @Test
+    fun `MapIdentified with DIFFERS renders the name line plus a mismatch warning`() {
+        val lines = GameLogFormatter.lines(MapIdentified(name = "battletech-classic", localMatch = LocalMapMatch.DIFFERS), emptyState)
+
+        assertThat(lines).containsExactly(
+            GameLogFormatter.LogLine(mapNoticeIcon(), "Map: battletech-classic"),
+            GameLogFormatter.LogLine(
+                mapMismatchIcon(),
+                "Local map 'battletech-classic' differs from the host's — using the host's map",
             ),
         )
     }

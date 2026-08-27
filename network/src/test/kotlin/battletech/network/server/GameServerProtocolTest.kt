@@ -59,7 +59,8 @@ internal class GameServerProtocolTest {
             LogEntry(turn = 1, event = PlayerConnected(PlayerId.PLAYER_2)),
         )
         assertThat(joinAccepted.snapshot.currentPhase).isEqualTo(TurnPhase.INITIATIVE)
-        assertThat(joinAccepted.snapshot.gameState).isEqualTo(server.stateFor(PlayerId.PLAYER_2))
+        assertThat(joinAccepted.snapshot.units).isEqualTo(server.stateFor(PlayerId.PLAYER_2).units)
+        assertThat(joinAccepted.map).isEqualTo(server.stateFor(PlayerId.PLAYER_2).map)
 
         assertThat(push.entries).isNotEmpty
         assertThat(push.snapshot.currentPhase).isEqualTo(TurnPhase.MOVEMENT)
@@ -77,7 +78,7 @@ internal class GameServerProtocolTest {
 
         val (joinAccepted, _) = connection.joinAndConsumeKickstart(sessionId)
 
-        val units = joinAccepted.snapshot.gameState.units
+        val units = joinAccepted.snapshot.units
         assertThat(units).isNotEmpty
         units.filter { it.owner == PlayerId.PLAYER_1 }.forEach { assertThat(it).isInstanceOf(ForeignUnit::class.java) }
         units.filter { it.owner == PlayerId.PLAYER_2 }.forEach { assertThat(it).isInstanceOf(battletech.tactical.unit.CombatUnit::class.java) }

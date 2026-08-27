@@ -261,8 +261,10 @@ internal class LocalhostEndToEndTest {
             remote2.turnState == gameServer.turnState &&
             remote1.currentPhase == gameServer.currentPhase &&
             remote2.currentPhase == gameServer.currentPhase &&
-            remote1.gameLog.snapshot().size == gameServer.gameLog.snapshot().size &&
-            remote2.gameLog.snapshot().size == gameServer.gameLog.snapshot().size
+            // See REMOTE_LOG_OFFSET's KDoc: each client's log carries one client-local entry
+            // (MapIdentified) the host's never does.
+            remote1.gameLog.snapshot().size == gameServer.gameLog.snapshot().size + REMOTE_LOG_OFFSET &&
+            remote2.gameLog.snapshot().size == gameServer.gameLog.snapshot().size + REMOTE_LOG_OFFSET
 
     private fun assertHeadlessConverged(gameServer: GameServer, remote1: ClientGameSession, remote2: ClientGameSession) {
         assertThat(remote1.stateFor(remote1.playerId)).isEqualTo(gameServer.stateFor(remote1.playerId))
@@ -271,8 +273,8 @@ internal class LocalhostEndToEndTest {
         assertThat(remote2.turnState).isEqualTo(gameServer.turnState)
         assertThat(remote1.currentPhase).isEqualTo(gameServer.currentPhase)
         assertThat(remote2.currentPhase).isEqualTo(gameServer.currentPhase)
-        assertThat(remote1.gameLog.snapshot()).hasSize(gameServer.gameLog.snapshot().size)
-        assertThat(remote2.gameLog.snapshot()).hasSize(gameServer.gameLog.snapshot().size)
+        assertThat(remote1.gameLog.snapshot()).hasSize(gameServer.gameLog.snapshot().size + REMOTE_LOG_OFFSET)
+        assertThat(remote2.gameLog.snapshot()).hasSize(gameServer.gameLog.snapshot().size + REMOTE_LOG_OFFSET)
     }
 
     // ---------- setup ----------
@@ -363,12 +365,23 @@ internal class LocalhostEndToEndTest {
         remote.stateFor(remote.playerId) == host.stateFor(remote.playerId) &&
             remote.turnState == host.turnState &&
             remote.currentPhase == host.currentPhase &&
-            remote.gameLog.snapshot().size == host.gameLog.snapshot().size
+            remote.gameLog.snapshot().size == host.gameLog.snapshot().size + REMOTE_LOG_OFFSET
 
     private fun assertConverged(host: GameServer, remote: ClientGameSession) {
         assertThat(remote.stateFor(remote.playerId)).isEqualTo(host.stateFor(remote.playerId))
         assertThat(remote.turnState).isEqualTo(host.turnState)
         assertThat(remote.currentPhase).isEqualTo(host.currentPhase)
-        assertThat(remote.gameLog.snapshot()).hasSize(host.gameLog.snapshot().size)
+        assertThat(remote.gameLog.snapshot()).hasSize(host.gameLog.snapshot().size + REMOTE_LOG_OFFSET)
+    }
+
+    private companion object {
+        /**
+         * Every [ClientGameSession] appends exactly one client-local
+         * [battletech.tactical.session.MapIdentified] entry to its own [ClientGameSession.gameLog]
+         * at construction — never mirrored to [GameServer.gameLog], the same way
+         * [battletech.tactical.session.HostConnectionLost] is client-local (see its KDoc). A
+         * client's log is therefore always exactly one entry ahead of the host's.
+         */
+        private const val REMOTE_LOG_OFFSET = 1
     }
 }

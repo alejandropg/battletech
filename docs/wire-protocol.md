@@ -45,7 +45,12 @@ This is build-enforced, not hand-maintained discipline, by two tests in
 
 A wire change that isn't purely additive should bump `PROTOCOL_VERSION` (`network/wire/Messages.kt`)
 in the same diff that updates the golden file — a mismatched client already rejects cleanly via
-`JoinRejectionReason.INCOMPATIBLE_PROTOCOL`.
+`JoinRejectionReason.INCOMPATIBLE_PROTOCOL`. `PROTOCOL_VERSION` is currently 6: it moved to 6 when
+`GameMap` came out of `GameSnapshot` (sent on every `StatePush`) and into `ServerMessage.JoinAccepted`
+(sent once, at join) — the board is immutable for a match, so re-sending it on every push was pure
+redundant bytes. A joining client therefore has no map of its own to negotiate; the host's map
+(named via `GameMap.name`) is authoritative, and `ClientGameSession` only checks it against a local
+map source of the same name to log a `MapIdentified` notice, never to reject or substitute it.
 `network/src/test/kotlin/battletech/network/wire/WireFormatRoundTripTest.kt` additionally pins the
 literal JSON for one flat (`RuleRejection.NoAmmo`) and one nested (`GameEvent`'s
 `UnitStoodUp.Undisclosed`) variant, to catch a discriminator change that round-tripping alone would

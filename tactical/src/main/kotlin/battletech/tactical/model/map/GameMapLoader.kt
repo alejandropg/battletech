@@ -18,12 +18,12 @@ public class GameMapLoader(json: Json = mapJson) {
         resourceDir = "map",
         label = "Map",
         json = json,
-        build = { text, _ -> json.decodeFromString<MapFile>(text).toGameMap() },
+        build = { text, name -> json.decodeFromString<MapFile>(text).toGameMap(name) },
         exception = ::MapLoadException,
     )
 
     /** Resolves [spec] as in [resolveMap] — see that function's KDoc. */
-    internal fun resolve(spec: String): GameMap = loader.resolve(spec)
+    public fun resolve(spec: String): GameMap = loader.resolve(spec)
 
     /** Reads and parses the map file at [path], throwing [MapLoadException] on any failure. */
     public fun load(path: Path): GameMap = loader.load(path)

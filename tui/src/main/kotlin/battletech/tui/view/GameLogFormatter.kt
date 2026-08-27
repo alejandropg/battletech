@@ -7,6 +7,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
+import battletech.tactical.model.map.LocalMapMatch
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.session.AmmoExploded
 import battletech.tactical.session.AttackDeclarationsRecorded
@@ -16,6 +17,7 @@ import battletech.tactical.session.GameEvent
 import battletech.tactical.session.HeatDissipated
 import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.InitiativeRolled
+import battletech.tactical.session.MapIdentified
 import battletech.tactical.session.MatchEnded
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
@@ -44,6 +46,8 @@ import battletech.tui.icon.destroyedIcon
 import battletech.tui.icon.heatChangeIcon
 import battletech.tui.icon.initiativeIcon
 import battletech.tui.icon.locationDestroyedIcon
+import battletech.tui.icon.mapMismatchIcon
+import battletech.tui.icon.mapNoticeIcon
 import battletech.tui.icon.matchEndedIcon
 import battletech.tui.icon.movementModeIcon
 import battletech.tui.icon.physicalAttacksResolvedIcon
@@ -259,6 +263,12 @@ internal object GameLogFormatter {
         is SessionOpened -> listOf(LogLine(sessionNoticeIcon(), "Session ID: ${event.sessionId}"))
         is HostConnectionLost ->
             listOf(LogLine(sessionNoticeIcon(), "Disconnected from host — restart with 'battletech-tui join <host> --session <id>' to rejoin"))
+        is MapIdentified -> buildList {
+            add(LogLine(mapNoticeIcon(), "Map: ${event.name}"))
+            if (event.localMatch == LocalMapMatch.DIFFERS) {
+                add(LogLine(mapMismatchIcon(), "Local map '${event.name}' differs from the host's — using the host's map"))
+            }
+        }
     }
 
     /**

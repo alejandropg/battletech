@@ -18,6 +18,7 @@ import battletech.tactical.attack.physical.PhysicalAttackResult
 import battletech.tactical.attack.physical.Side
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.RandomDiceRoller
+import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
@@ -27,6 +28,7 @@ import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.Terrain
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.map.LocalMapMatch
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.query.projectFor
@@ -48,6 +50,7 @@ import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.Initiative
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.LogEntry
+import battletech.tactical.session.MapIdentified
 import battletech.tactical.session.MatchEnded
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.PhaseChanged
@@ -425,6 +428,7 @@ internal class WireFormatRoundTripTest {
     fun `ServerMessage JoinAccepted wrapping a GameSnapshot and log round-trips`() {
         val message = ServerMessage.JoinAccepted(
             playerId = PlayerId.PLAYER_2,
+            map = aGameMap(),
             snapshot = aGameSnapshot(),
             log = listOf(LogEntry(turn = 1, event = gameEventFixtures.getValue(PhaseChanged::class))),
         )
@@ -443,7 +447,7 @@ internal class WireFormatRoundTripTest {
         session.advance()
 
         val snapshot = GameSnapshot(
-            gameState = session.stateFor(PlayerId.PLAYER_1),
+            units = session.stateFor(PlayerId.PLAYER_1).units,
             turnState = session.turnState,
             currentPhase = session.currentPhase,
             activePlayer = session.activePlayer,
@@ -464,7 +468,7 @@ internal class WireFormatRoundTripTest {
         val push = ServerMessage.StatePush(
             entries = session.gameLog.snapshot(),
             snapshot = GameSnapshot(
-                gameState = session.stateFor(PlayerId.PLAYER_1),
+                units = session.stateFor(PlayerId.PLAYER_1).units,
                 turnState = session.turnState,
                 currentPhase = session.currentPhase,
                 activePlayer = session.activePlayer,
@@ -477,6 +481,37 @@ internal class WireFormatRoundTripTest {
         val decoded = WireJson.decodeServerMessage(line)
 
         assertThat(decoded).isEqualTo(push)
+    }
+
+    /**
+     * The point of splitting the map out of [GameSnapshot] (see its KDoc): a [ServerMessage.StatePush]
+     * must never re-encode the board, while [ServerMessage.JoinAccepted] — which carries it exactly
+     * once — must.
+     */
+    @Test
+    fun `the map's hexes are absent from a StatePush and present in JoinAccepted`() {
+        val session = aSampleSession()
+        session.advance()
+
+        val push = ServerMessage.StatePush(
+            entries = session.gameLog.snapshot(),
+            snapshot = GameSnapshot(
+                units = session.stateFor(PlayerId.PLAYER_1).units,
+                turnState = session.turnState,
+                currentPhase = session.currentPhase,
+                activePlayer = session.activePlayer,
+                isMatchOver = session.isMatchOver,
+            ),
+        )
+        val joinAccepted = ServerMessage.JoinAccepted(
+            playerId = PlayerId.PLAYER_1,
+            map = session.stateFor(PlayerId.PLAYER_1).map,
+            snapshot = push.snapshot,
+            log = session.logFor(PlayerId.PLAYER_1),
+        )
+
+        assertThat(WireJson.encodeToLine(push)).doesNotContain("hexes")
+        assertThat(WireJson.encodeToLine(joinAccepted)).contains("hexes")
     }
 
     @Test
@@ -512,12 +547,14 @@ internal class WireFormatRoundTripTest {
         )
 
         private fun aGameSnapshot(): GameSnapshot = GameSnapshot(
-            gameState = GameStateFactory().sampleGameState().projectFor(PlayerId.PLAYER_1),
+            units = GameStateFactory().sampleGameState().projectFor(PlayerId.PLAYER_1).units,
             turnState = aTurnStateFixture(),
             currentPhase = TurnPhase.MOVEMENT,
             activePlayer = PlayerId.PLAYER_1,
             isMatchOver = false,
         )
+
+        private fun aGameMap(): GameMap = GameStateFactory().sampleGameState().map
 
         private fun aTurnStateFixture(): TurnState = TurnState(initiative = anInitiativeFixture())
 
@@ -637,6 +674,7 @@ internal class WireFormatRoundTripTest {
             PlayerDisconnected::class to PlayerDisconnected(player = PlayerId.PLAYER_1),
             SessionOpened::class to SessionOpened(sessionId = "ABCDEF"),
             HostConnectionLost::class to HostConnectionLost,
+            MapIdentified::class to MapIdentified(name = "default", localMatch = LocalMapMatch.MATCHES),
         )
 
         private val ruleRejectionFixtures: Map<KClass<out RuleRejection>, RuleRejection> = mapOf(

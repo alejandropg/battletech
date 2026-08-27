@@ -32,6 +32,8 @@ private val NF_MD_ACCOUNT_CIRCLE: String = String(Character.toChars(0xF0009))
 private val NF_MD_SKULL: String = String(Character.toChars(0xF068C))
 private val NF_MD_ROBOT_DEAD: String = String(Character.toChars(0xF16A1))
 private val NF_MD_LAN_CONNECT: String = String(Character.toChars(0xF0318))
+private val NF_MD_MAP: String = String(Character.toChars(0xF034D))
+private val NF_MD_ALERT: String = String(Character.toChars(0xF0026))
 private val NF_MD_TRANSFER_DOWN: String = String(Character.toChars(0xF0DA1))
 private val NF_MD_TRANSFER_UP: String = String(Character.toChars(0xF0DA3))
 private val NF_MD_ACCOUNT_ALERT: String = String(Character.toChars(0xF0005))
@@ -222,6 +224,12 @@ internal fun destroyedIcon(): String = NF_MD_ROBOT_DEAD
 
 /** Marker for [battletech.tactical.session.SessionNotice] log entries (network happenings). */
 internal fun sessionNoticeIcon(): String = NF_MD_LAN_CONNECT
+
+/** Marker for the "Map: <name>" line a [battletech.tactical.session.MapIdentified] event renders. */
+internal fun mapNoticeIcon(): String = NF_MD_MAP
+
+/** Marker for the warning line when [battletech.tactical.session.MapIdentified]'s local map check disagrees with the host. */
+internal fun mapMismatchIcon(): String = NF_MD_ALERT
 
 /** Marker for a unit that fell / was knocked prone. */
 internal fun unitFellIcon(): String = NF_MD_TRANSFER_DOWN

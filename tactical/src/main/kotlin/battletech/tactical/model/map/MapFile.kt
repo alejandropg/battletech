@@ -18,8 +18,8 @@ public data class MapFile(
     public val hexes: List<HexSpec> = emptyList(),
 ) {
 
-    /** Expands this compact description into a full 0-based [GameMap], validating bounds. */
-    public fun toGameMap(): GameMap {
+    /** Expands this compact description into a full 0-based [GameMap] named [name], validating bounds. */
+    public fun toGameMap(name: String = ""): GameMap {
         if (width <= 0) throw MapLoadException("Map width must be positive, was $width")
         if (height <= 0) throw MapLoadException("Map height must be positive, was $height")
 
@@ -42,7 +42,7 @@ public data class MapFile(
             grid[coords] = Hex(coords, spec.terrain, spec.elevation, spec.depth)
         }
 
-        return GameMap(grid)
+        return GameMap(grid, name)
     }
 }
 

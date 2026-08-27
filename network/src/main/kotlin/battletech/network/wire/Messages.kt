@@ -1,25 +1,30 @@
 package battletech.network.wire
 
+import battletech.tactical.model.GameMap
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.query.PlayerGameState
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.LogEntry
 import battletech.tactical.session.TurnState
+import battletech.tactical.unit.VisibleUnit
+import battletech.tactical.unit.UnitRoster
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /** Wire protocol version; bumped whenever [ClientMessage]/[ServerMessage] shapes change incompatibly. */
-public const val PROTOCOL_VERSION: Int = 5
+public const val PROTOCOL_VERSION: Int = 6
 
 /**
  * A read-only replica of session state as sent to a client: everything
- * [battletech.tactical.session.GameSession] exposes except [battletech.tactical.session.GameLog],
- * which travels separately as [LogEntry] deltas so the client can maintain its own log.
+ * [battletech.tactical.session.GameSession] exposes except [battletech.tactical.session.GameLog]
+ * (which travels separately as [LogEntry] deltas so the client can maintain its own log) and the
+ * board ([GameMap]), which travels exactly once, in [ServerMessage.JoinAccepted.map] — the board
+ * is immutable for a match, so re-sending it in every [ServerMessage.StatePush] would be pure
+ * redundant bytes on the wire. A [ClientGameSession][battletech.network.client.ClientGameSession]
+ * reassembles [battletech.tactical.query.PlayerGameState] from that join-time map plus [units].
  *
- * [gameState] is [PlayerGameState] — the per-viewer projection
- * ([battletech.tactical.query.projectFor]) built by
+ * [units] is the per-viewer projection ([battletech.tactical.query.projectFor]) built by
  * [battletech.network.server.GameServer.snapshotFor] for the specific seat this snapshot is
  * addressed to. See [battletech.network.server.GameServer] for the other two outbound paths
  * ([ServerMessage.StatePush]'s log delta and [ServerMessage.JoinAccepted]'s log) that must
@@ -34,7 +39,7 @@ public const val PROTOCOL_VERSION: Int = 5
  */
 @Serializable
 public data class GameSnapshot(
-    public val gameState: PlayerGameState,
+    public val units: UnitRoster<VisibleUnit>,
     public val turnState: TurnState,
     public val currentPhase: TurnPhase,
     public val activePlayer: PlayerId?,
@@ -81,11 +86,15 @@ public enum class JoinRejectionReason {
 @Serializable
 public sealed interface ServerMessage {
 
-    /** Join succeeded: [playerId] is the seat assigned to the joiner, with a full [snapshot] and [log]. */
+    /**
+     * Join succeeded: [playerId] is the seat assigned to the joiner, with the board ([map]),
+     * a full [snapshot], and [log]. [map] travels only here — see [GameSnapshot]'s KDoc for why.
+     */
     @Serializable
     @SerialName("joinAccepted")
     public data class JoinAccepted(
         public val playerId: PlayerId,
+        public val map: GameMap,
         public val snapshot: GameSnapshot,
         public val log: List<LogEntry>,
     ) : ServerMessage

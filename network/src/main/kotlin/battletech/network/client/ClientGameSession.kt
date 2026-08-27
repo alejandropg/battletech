@@ -8,8 +8,11 @@ import battletech.network.wire.JoinRejectionReason
 import battletech.network.wire.PROTOCOL_VERSION
 import battletech.network.wire.ServerMessage
 import battletech.network.wire.SessionId
+import battletech.tactical.model.GameMap
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.map.LocalMapMatch
+import battletech.tactical.model.map.compareWithLocalMap
 import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
@@ -21,6 +24,7 @@ import battletech.tactical.session.GameLog
 import battletech.tactical.session.GameSession
 import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.LogEntry
+import battletech.tactical.session.MapIdentified
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
 import java.io.BufferedReader
@@ -54,8 +58,11 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
  * returns, [turnState]/[currentPhase] already reflect the accepted command.
  * Callers may read post-submit state immediately.
  *
- * [snapshot]`.gameState` is already [PlayerGameState] — [playerId]'s own projection, exactly
- * as the host computed and sent it (see [battletech.network.server.GameServer.snapshotFor]).
+ * [snapshot]`.units` plus [map] together ARE [PlayerGameState] — [playerId]'s own projection,
+ * exactly as the host computed and sent it (see [battletech.network.server.GameServer.snapshotFor]).
+ * [map] arrives once, in the [ServerMessage.JoinAccepted] that builds this session, and never
+ * changes again (the board is immutable for a match — see [battletech.network.wire.GameSnapshot]'s
+ * KDoc for why it isn't repeated in every [ServerMessage.StatePush]).
  *
  * That projection is enough to serve this seat completely, with no round trip: [stateFor],
  * [logFor] and [viewFor] all answer locally for [playerId]. The query engine
@@ -72,10 +79,17 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
 public class ClientGameSession internal constructor(
     private val connection: ClientConnection,
     initial: ServerMessage.JoinAccepted,
+    mapMatch: (GameMap) -> LocalMapMatch = ::compareWithLocalMap,
 ) : GameSession, AutoCloseable {
 
     /** The seat the server assigned this connection at join time. */
     public val playerId: PlayerId = initial.playerId
+
+    /**
+     * The board, as sent once in [initial] — see the class KDoc for why this never changes
+     * again over this session's lifetime.
+     */
+    private val map: GameMap = initial.map
 
     @Volatile
     private var snapshot: GameSnapshot = initial.snapshot
@@ -91,6 +105,11 @@ public class ClientGameSession internal constructor(
 
     init {
         initial.log.forEach { log.append(it) }
+        // Recorded locally, not sent by the host: every seat (remote joiner or connectLocal's
+        // hot-seat/host seat alike) runs the same check against its own map source, so this
+        // fires uniformly rather than branching on "is this hot-seat?".
+        val mapIdentified = MapIdentified(map.name, mapMatch(map))
+        log.append(LogEntry(snapshot.turnState.turnNumber, mapIdentified))
         readerThread = thread(isDaemon = true, name = "client-session-reader") { readLoop() }
     }
 
@@ -114,25 +133,25 @@ public class ClientGameSession internal constructor(
             "ClientGameSession.viewFor: this replica can only build a view for its own seat " +
                 "(${this.playerId}); it holds no projection for $playerId."
         }
-        return DefaultPlayerView(playerId, snapshot.gameState, snapshot.turnState)
+        return DefaultPlayerView(playerId, PlayerGameState(snapshot.units, map), snapshot.turnState)
     }
 
     /**
-     * Serves ONLY [playerId] (this connection's own seat): [snapshot]`.gameState` already
-     * IS that projection, exactly as the host built and sent it, so no re-projection
-     * happens here. Any other [viewer] — including `null` — throws rather than guess: this
-     * class holds no raw state to re-project from, so returning [snapshot]`.gameState`
-     * unchanged for a different viewer would silently hand back the wrong player's shape
-     * under a false label, and returning it for `null` would misrepresent "I don't know who
-     * is looking" as "here is player X's view" — both are the "return the wrong thing
-     * silently" this design explicitly rules out.
+     * Serves ONLY [playerId] (this connection's own seat): [snapshot]`.units` plus [map]
+     * together already ARE that projection, exactly as the host built and sent it, so no
+     * re-projection happens here. Any other [viewer] — including `null` — throws rather than
+     * guess: this class holds no raw state to re-project from, so returning it unchanged for a
+     * different viewer would silently hand back the wrong player's shape under a false label,
+     * and returning it for `null` would misrepresent "I don't know who is looking" as "here is
+     * player X's view" — both are the "return the wrong thing silently" this design explicitly
+     * rules out.
      */
     public override fun stateFor(viewer: PlayerId?): PlayerGameState {
         require(viewer == playerId) {
             "ClientGameSession.stateFor: this replica only holds $playerId's own projection " +
                 "(from the host's snapshot); it cannot serve viewer=$viewer without raw state to re-project from."
         }
-        return snapshot.gameState
+        return PlayerGameState(snapshot.units, map)
     }
 
     /**

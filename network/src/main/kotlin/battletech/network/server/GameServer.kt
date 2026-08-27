@@ -30,7 +30,9 @@ import battletech.tactical.session.SessionOpened
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.redactFor
+import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.UnknownUnitException
+import battletech.tactical.unit.VisibleUnit
 import java.io.IOException
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
@@ -97,10 +99,13 @@ import kotlin.concurrent.thread
  * exact same check freezes the whole session for every remaining seat, [connectLocal] ones
  * included, until [attach] sees that seat rejoin.
  *
- * [snapshotFor] is the one seam every outbound [GameSnapshot] (join acceptance and pushes alike)
- * is built through — see its KDoc for how redaction happens there, and why the log traveling
+ * [BattleSession.stateFor] is the one seam every outbound [GameSnapshot] (join acceptance and
+ * pushes alike, via [snapshotFor]/[snapshotFrom]) and [ServerMessage.JoinAccepted.map] are built
+ * through — see [snapshotFor]'s KDoc for how redaction happens there, and why the log traveling
  * alongside it ([ServerMessage.JoinAccepted.log], [ServerMessage.StatePush.entries]) must redact
- * in lockstep.
+ * in lockstep. [ServerMessage.JoinAccepted.map] is the fourth outbound path: unlike the other
+ * three it is sent only once, at join (see [GameSnapshot]'s KDoc for why), but it comes from that
+ * same per-seat [BattleSession.stateFor] projection, not a separate unredacted read.
  */
 public class GameServer(
     private val session: BattleSession,
@@ -209,16 +214,20 @@ public class GameServer(
     /**
      * Projects [session]'s state for [seat] via [BattleSession.stateFor].
      *
-     * This is only ONE of three outbound paths that must agree:
+     * This is only ONE of four outbound paths that must agree:
      * [ServerMessage.JoinAccepted] carries [BattleSession.logFor] (not the raw
-     * [session]`.gameLog.snapshot()`), and every [ServerMessage.StatePush] carries a log
-     * delta run through [redactedDeltaFor] — see [attach] and [submitAndPush]. Redacting
-     * only this snapshot and leaving either log channel un-redacted leaks everything
-     * through that other channel; that mismatch is exactly why the previous (deleted)
+     * [session]`.gameLog.snapshot()`) and its own [ServerMessage.JoinAccepted.map] (built from
+     * the same [BattleSession.stateFor] call, not a separate read), and every
+     * [ServerMessage.StatePush] carries a log delta run through [redactedDeltaFor] — see [attach]
+     * and [submitAndPush]. Redacting only this snapshot and leaving another channel un-redacted
+     * leaks everything through that channel; that mismatch is exactly why the previous (deleted)
      * redaction attempt never worked.
      */
-    private fun snapshotFor(seat: PlayerId): GameSnapshot = GameSnapshot(
-        gameState = session.stateFor(seat),
+    private fun snapshotFor(seat: PlayerId): GameSnapshot = snapshotFrom(session.stateFor(seat).units)
+
+    /** Builds the non-map half of a [GameSnapshot] around an already-projected [units] roster. */
+    private fun snapshotFrom(units: UnitRoster<VisibleUnit>): GameSnapshot = GameSnapshot(
+        units = units,
         turnState = session.turnState,
         currentPhase = session.currentPhase,
         activePlayer = session.activePlayer,
@@ -289,8 +298,19 @@ public class GameServer(
             startWriterThread(client)
             val markBeforeKickstart = session.gameLog.snapshot().size
             // logFor(seat), not gameLog.snapshot() — the joiner's very first message must
-            // already be redacted, same as every later push (see snapshotFor's KDoc).
-            client.outbound.put(ServerMessage.JoinAccepted(seat, snapshotFor(seat), session.logFor(seat)))
+            // already be redacted, same as every later push (see snapshotFor's KDoc). The map
+            // travels here, once, and never again in a StatePush (see GameSnapshot's KDoc) —
+            // projected once and split into JoinAccepted's two fields rather than calling
+            // stateFor(seat) twice.
+            val projection = session.stateFor(seat)
+            client.outbound.put(
+                ServerMessage.JoinAccepted(
+                    playerId = seat,
+                    map = projection.map,
+                    snapshot = snapshotFrom(projection.units),
+                    log = session.logFor(seat),
+                ),
+            )
 
             val kickstarted = !everStarted && clients.keys == allSeats
             if (kickstarted) {

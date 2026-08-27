@@ -108,6 +108,7 @@ public fun GameEvent.redactFor(viewer: PlayerId?, state: GameState, revealAll: B
         is PlayerDisconnected -> this
         is SessionOpened -> this
         is HostConnectionLost -> this
+        is MapIdentified -> this
     }
 }
 
