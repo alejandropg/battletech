@@ -82,19 +82,6 @@ internal class StatusBarViewTest {
     }
 
     @Test
-    fun `removes player prefix from prompt and capitalizes message`() {
-        val view = StatusBarView(
-            TurnPhase.WEAPON_ATTACK,
-            "Player 2: select a unit to attack",
-            PlayerId.PLAYER_2,
-        )
-
-        val buffer = render(view, 120, Workspace.STATUS_BAR_HEIGHT)
-
-        assertEquals("Select a unit to attack", row(buffer).substring(41, 64))
-    }
-
-    @Test
     fun `leaves prompt unchanged when it has no player prefix`() {
         val view = StatusBarView(TurnPhase.MOVEMENT, "Jump (5 MP)", PlayerId.PLAYER_2)
 

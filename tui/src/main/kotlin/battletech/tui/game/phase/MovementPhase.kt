@@ -18,7 +18,6 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.FacingSelection
 import battletech.tui.game.RenderData
-import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.moveCursor
 import battletech.tui.game.pathHighlights
@@ -75,10 +74,9 @@ internal sealed interface MovementPhase : Phase {
             // isComplete is true in that case (0 >= 0), same as a normally-finished sequence.
             if (turnState.movement.isComplete) return PhaseStatus("Waiting for game to start…")
             val activePlayer = turnState.movement.activePlayer
-            val playerName = activePlayer.displayName
             val remaining = turnState.movement.remainingInImpulse
             return PhaseStatus(
-                "$playerName: select a unit to move ($remaining remaining in this impulse)",
+                "Select a unit to move ($remaining remaining in this impulse)",
                 activePlayer,
             )
         }

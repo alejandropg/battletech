@@ -11,7 +11,6 @@ import battletech.tactical.session.CommitPhysicalAttackImpulse
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.attackPlayer
-import battletech.tui.game.displayName
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.AttackAction
 import battletech.tui.input.IdleAction
@@ -59,8 +58,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
             val turnState = app.turnState
             if (turnState.attack.isComplete) return PhaseStatus("All physical attacks declared")
             val activePlayer = turnState.attack.activePlayer
-            val name = activePlayer.displayName
-            return PhaseStatus("$name: select a unit to punch/kick", activePlayer)
+            return PhaseStatus("Select a unit to punch/kick", activePlayer)
         }
 
         override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(cursorUnitStatus(app))

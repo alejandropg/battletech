@@ -4,8 +4,8 @@ import tenter.input.KeySection
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
+import tenter.screen.styled
 import tenter.text.CellWidth
-import tenter.text.TextWrap
 
 /**
  * Content for a HELP panel: a single `KEYS` section (the top-level rule, via
@@ -23,14 +23,13 @@ public class HelpView(private val sections: List<KeySection>) : View {
             for (hint in section.hints) {
                 val prefixWidth = CellWidth.of(hint.keys) + 2
                 val indent = " ".repeat(prefixWidth)
-                TextWrap.wrap(hint.description, content.width - prefixWidth, content.width - prefixWidth).forEachIndexed { i, wrapped ->
-                    if (i == 0) {
-                        content.write(0, hint.keys, KEY_STYLE)
-                        content.write(prefixWidth, wrapped, DESC_STYLE)
-                        content.newLine()
-                    } else {
-                        content.writeLine("$indent$wrapped", DESC_STYLE)
-                    }
+                val line = styled {
+                    append(hint.keys, KEY_STYLE)
+                    append("  ")
+                    append(hint.description, DESC_STYLE)
+                }
+                line.wrap(content.width, content.width - prefixWidth).forEachIndexed { i, wrapped ->
+                    content.writeLine(if (i == 0) wrapped else styled { append(indent); append(wrapped) })
                 }
             }
             if (index < sections.size - 1) content.newLine()

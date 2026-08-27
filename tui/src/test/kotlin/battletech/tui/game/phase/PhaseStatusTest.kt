@@ -87,7 +87,7 @@ internal class PhaseStatusTest {
         val status = MovementPhase.SelectingUnit.status(app)
 
         assertEquals(
-            "Player 1: select a unit to move (2 remaining in this impulse)",
+            "Select a unit to move (2 remaining in this impulse)",
             status.prompt,
         )
     }

@@ -325,11 +325,6 @@ internal object GameLogFormatter {
         DestructionReason.PILOT_DEAD -> "pilot dead"
     }
 
-    private fun playerLabel(player: PlayerId): String = when (player) {
-        PlayerId.PLAYER_1 -> "P1"
-        PlayerId.PLAYER_2 -> "P2"
-    }
-
     /** A unit's name in its owner's board color. */
     private fun unitName(unitId: UnitId, state: PlayerGameState): StyledText =
         playerColored(unitId.value, unitId, state)

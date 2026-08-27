@@ -9,9 +9,12 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.screen.Insets
+import tenter.screen.StyledText
+import tenter.screen.styled
 import tenter.text.CellWidth
 import tenter.text.TextTruncation
 import tenter.view.Bordered
+import tenter.view.TextCursor
 import tenter.view.View
 
 internal class StatusBarView(
@@ -34,26 +37,22 @@ internal class StatusBarView(
             val separator = if (compact) COMPACT_SEPARATOR else PADDED_SEPARATOR
             val playerWidth = if (compact) activePlayer?.let { CellWidth.of(it.displayName) } ?: 0 else PLAYER_WIDTH
 
-            var column = CellWidth.of(leadingPadding)
-
-            canvas.writeString(column, 0, phaseText, ACCENT_STYLE)
-            column += CellWidth.of(phaseText)
-
-            canvas.writeString(column, 0, separator, TEXT_PRIMARY_STYLE)
-            column += CellWidth.of(separator)
-
-            activePlayer?.let {
-                canvas.writeString(column, 0, it.displayName, Cell.Style(playerColor(it)))
+            val prefix = styled {
+                append(leadingPadding)
+                append(phaseText, ACCENT_STYLE)
+                append(separator, TEXT_PRIMARY_STYLE)
+                if (activePlayer != null) {
+                    append(activePlayer.displayName, Cell.Style(playerColor(activePlayer)))
+                    append(" ".repeat(playerWidth - CellWidth.of(activePlayer.displayName)))
+                } else {
+                    append(" ".repeat(playerWidth))
+                }
+                append(separator, TEXT_PRIMARY_STYLE)
             }
-            column += playerWidth
-
-            canvas.writeString(column, 0, separator, TEXT_PRIMARY_STYLE)
-            column += CellWidth.of(separator)
 
             val helpColumn = canvas.width - HELP_WIDTH
-            val messageWidth = (helpColumn - MESSAGE_HELP_GAP - column).coerceAtLeast(0)
-            canvas.region(column, 0, messageWidth, 1)
-                .writeString(0, 0, TextTruncation.ellipsize(message, messageWidth), TEXT_PRIMARY_STYLE)
+            val messageWidth = (helpColumn - MESSAGE_HELP_GAP - prefix.width).coerceAtLeast(0)
+            TextCursor(canvas).writeLine(prefix + StyledText.of(TextTruncation.ellipsize(message, messageWidth), TEXT_PRIMARY_STYLE))
 
             if (helpColumn >= 0) {
                 canvas.writeString(helpColumn, 0, HELP_LABEL, TEXT_PRIMARY_STYLE)
@@ -71,20 +70,8 @@ internal class StatusBarView(
             MESSAGE_HELP_GAP +
             HELP_WIDTH
 
-    private fun messageText(): String {
-        val message = normalizedPrompt()
-        return actionUnit?.let { "${UnitLabel.of(it)}$UNIT_MESSAGE_SEPARATOR$message" } ?: message
-    }
-
-    private fun normalizedPrompt(): String {
-        val playerPrefix = PlayerId.entries
-            .map { "${it.displayName}:" }
-            .firstOrNull(prompt::startsWith)
-            ?: return prompt
-        return prompt.removePrefix(playerPrefix)
-            .trimStart()
-            .replaceFirstChar { it.titlecase() }
-    }
+    private fun messageText(): String =
+        actionUnit?.let { "${UnitLabel.of(it)}$UNIT_MESSAGE_SEPARATOR$prompt" } ?: prompt
 
     private companion object {
         private const val LEADING_PADDING: String = "  "

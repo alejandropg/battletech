@@ -1,7 +1,6 @@
 package battletech.tui.view
 
 import battletech.tactical.model.MatchOutcome
-import battletech.tactical.model.PlayerId
 import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
@@ -98,7 +97,7 @@ internal class Workspace {
         val statusBarView = if (matchEnded != null) {
             val outcomeText = when (val outcome = matchEnded.outcome) {
                 is MatchOutcome.Draw -> "Draw"
-                is MatchOutcome.Victory -> "${playerName(outcome.winner)} wins!"
+                is MatchOutcome.Victory -> "${playerLabel(outcome.winner)} wins!"
             }
             StatusBarView(appState.currentPhase, "Match over — $outcomeText  |  ${KeyGlyph.CTRL}c: quit")
         } else {
@@ -138,7 +137,7 @@ internal class Workspace {
 private fun renderGameOverBanner(board: Canvas, outcome: MatchOutcome) {
     val winnerLine = when (outcome) {
         is MatchOutcome.Draw -> "Draw"
-        is MatchOutcome.Victory -> "${playerName(outcome.winner)} wins!"
+        is MatchOutcome.Victory -> "${playerLabel(outcome.winner)} wins!"
     }
     val bannerWidth = maxOf(winnerLine.length + 8, 24)
     val bannerHeight = 7
@@ -161,9 +160,4 @@ private class BannerLine(private val text: String, private val column: Int, priv
     override fun draw(canvas: Canvas) {
         canvas.writeString(column, row, text, TEXT_PRIMARY_STYLE)
     }
-}
-
-private fun playerName(player: PlayerId): String = when (player) {
-    PlayerId.PLAYER_1 -> "P1"
-    PlayerId.PLAYER_2 -> "P2"
 }

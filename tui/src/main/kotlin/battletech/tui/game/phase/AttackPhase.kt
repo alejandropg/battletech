@@ -23,7 +23,6 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.RenderData
 import battletech.tui.game.attackPlayer
-import battletech.tui.game.displayName
 import battletech.tui.game.losHighlights
 import battletech.tui.view.displayLabels
 import battletech.tui.game.mapToTuiPhase
@@ -87,8 +86,7 @@ internal sealed interface AttackPhase : Phase {
             val turnState = app.turnState
             if (turnState.attack.isComplete) return PhaseStatus("All attacks declared")
             val activePlayer = turnState.attack.activePlayer
-            val playerName = activePlayer.displayName
-            return PhaseStatus("$playerName: select a unit to attack", activePlayer)
+            return PhaseStatus("Select a unit to attack", activePlayer)
         }
 
         override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(cursorUnitStatus(app))
