@@ -7,7 +7,10 @@ import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
-import battletech.tui.input.InputMapper
+import battletech.tui.hex.HexGeometry
+import battletech.tui.input.ChromeAction
+import battletech.tui.input.ContextId
+import battletech.tui.input.Keybindings
 import battletech.tui.view.Workspace
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
@@ -21,7 +24,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
-import tenter.input.ChromeInput
+import tenter.input.InputAction
+import tenter.input.MouseInput
 import tenter.input.PanAction
 import tenter.input.ScrollAction
 import tenter.view.FlashMessage
@@ -40,6 +44,7 @@ internal suspend fun runLoop(
     terminal: Terminal,
     renderer: ScreenRenderer,
     initialState: AppState,
+    keys: Keybindings,
 ): Unit = coroutineScope {
     var appState = initialState
     var activeFlash: FlashMessage? = null
@@ -87,10 +92,10 @@ internal suspend fun runLoop(
                     // Handle scroll events before any other input dispatch.
                     // The panel is looked up first so overPanel can be passed to scrollDelta,
                     // which applies the Mordant posix wheel-parsing workaround (left/right
-                    // press over a panel treated as wheel-up/down; see ChromeInput.scrollDelta).
+                    // press over a panel treated as wheel-up/down; see MouseInput.scrollDelta).
                     if (event is MouseEvent) {
                         val panelId = workspace.panelAt(event.x, event.y)
-                        val delta = ChromeInput.scrollDelta(event, overPanel = panelId != null)
+                        val delta = MouseInput.scrollDelta(event, overPanel = panelId != null)
                         if (delta != null) {
                             panelId?.let { workspace.scrollPanel(it, delta) }
                             render()
@@ -98,71 +103,61 @@ internal suspend fun runLoop(
                         }
                     }
 
-                    val panel = (event as? KeyboardEvent)?.let(ChromeInput::panelKey)?.let(GamePanelId::byBadge)
-                    if (panel != null) {
-                        // Alt+h is a different action from every other panel's Alt+<key>: it also
-                        // toggles whether HELP EXISTS this frame (an AppState fact PanelVisibility
-                        // reads), not just a focus request — see AppState.helpOpen's KDoc. Every
-                        // other panel's chord only focuses it, and only when it's actually shown
-                        // this frame — focusing a panel that isn't on screen would be a no-op
-                        // anyway, so the guard just makes that explicit.
-                        if (panel == GamePanelId.HELP) {
-                            if (appState.helpOpen && workspace.focused == GamePanelId.HELP) {
-                                appState = appState.copy(helpOpen = false)
-                                workspace.focus(GamePanelId.BOARD)
-                            } else {
-                                appState = appState.copy(helpOpen = true)
-                                workspace.focus(GamePanelId.HELP)
-                            }
-                        } else if (panel == GamePanelId.BOARD || panel in PanelVisibility.visiblePanels(appState)) {
-                            workspace.focus(panel)
-                        }
-                        render()
-                        return@collect
-                    }
+                    val action: InputAction? = (event as? KeyboardEvent)?.let { keys.resolve(activeContexts(workspace), it) }
 
-                    // `+`/`-`: cycle the focused panel's state. Always consumed — a no-op on the board.
-                    val cycle = (event as? KeyboardEvent)?.let(ChromeInput::stateCycle)
-                    if (cycle != null) {
-                        workspace.cycleFocusedState(cycle)
-                        render()
-                        return@collect
-                    }
-
-                    // Keyboard scroll of the focused panel — never the board, so wasd/arrows still
-                    // reach the phase there. hjkl/ctrl+arrows (board pan) are excluded by
-                    // ChromeInput.scrollAction itself.
-                    if (workspace.focused != GamePanelId.BOARD) {
-                        when (val scroll = (event as? KeyboardEvent)?.let(ChromeInput::scrollAction)) {
-                            is ScrollAction.Lines -> {
-                                workspace.scrollFocused(0, scroll.delta)
-                                render()
-                                return@collect
+                    when (action) {
+                        is ChromeAction -> {
+                            when (action) {
+                                is ChromeAction.FocusPanel ->
+                                    if (action.panel == GamePanelId.BOARD || action.panel in PanelVisibility.visiblePanels(appState)) {
+                                        workspace.focus(action.panel)
+                                    }
+                                // Alt+h is a different action from every other panel's Alt+<key>: it also
+                                // toggles whether HELP EXISTS this frame (an AppState fact PanelVisibility
+                                // reads), not just a focus request — see AppState.helpOpen's KDoc.
+                                ChromeAction.ToggleHelp ->
+                                    if (appState.helpOpen && workspace.focused == GamePanelId.HELP) {
+                                        appState = appState.copy(helpOpen = false)
+                                        workspace.focus(GamePanelId.BOARD)
+                                    } else {
+                                        appState = appState.copy(helpOpen = true)
+                                        workspace.focus(GamePanelId.HELP)
+                                    }
+                                is ChromeAction.CycleState -> workspace.cycleFocusedState(action.delta)
+                                // Absorbed by terminalEvents' takeWhile — unreachable here by construction.
+                                ChromeAction.Quit -> Unit
                             }
-                            is ScrollAction.Pages -> {
-                                workspace.pageFocused(scroll.delta)
-                                render()
-                                return@collect
-                            }
-                            null -> Unit
+                            render()
+                            return@collect
                         }
-                    }
 
-                    // Manual board panning: independent of game phase and focus, and, like scroll
-                    // and panel-focus above, still active once the match has ended.
-                    val pan = (event as? KeyboardEvent)?.let(InputMapper::mapPanEvent)
-                    if (pan != null) {
-                        when (pan) {
-                            is PanAction.Pan -> {
-                                workspace.panBoard(pan.dx, pan.dy)
-                                render()
+                        is ScrollAction -> {
+                            when (action) {
+                                is ScrollAction.Lines -> workspace.scrollFocused(0, action.delta)
+                                is ScrollAction.Pages -> workspace.pageFocused(action.delta)
                             }
-                            PanAction.Recenter -> {
-                                workspace.recenterBoard()
-                                render()
-                            }
+                            render()
+                            return@collect
                         }
-                        return@collect
+
+                        is PanAction -> {
+                            when (action) {
+                                is PanAction.Pan -> {
+                                    val (dx, dy) = when (action.direction) {
+                                        PanAction.Direction.LEFT -> -HexGeometry.COL_STRIDE to 0
+                                        PanAction.Direction.RIGHT -> HexGeometry.COL_STRIDE to 0
+                                        PanAction.Direction.UP -> 0 to -HexGeometry.ROW_STRIDE
+                                        PanAction.Direction.DOWN -> 0 to HexGeometry.ROW_STRIDE
+                                    }
+                                    workspace.panBoard(dx, dy)
+                                }
+                                PanAction.Recenter -> workspace.recenterBoard()
+                            }
+                            render()
+                            return@collect
+                        }
+
+                        else -> Unit // not a chrome/scroll/pan binding — falls through to the phase below
                     }
 
                     // Block game input (movement/attacks) once the match is over.
@@ -244,6 +239,12 @@ internal suspend fun runLoop(
 
     // Cancel any pending flash job so the coroutineScope can complete cleanly.
     flashJob?.cancel()
+}
+
+/** Which key layers are live this frame, in resolution-precedence order. */
+private fun activeContexts(workspace: Workspace): List<ContextId> = buildList {
+    if (workspace.focused != GamePanelId.BOARD) add(ContextId.PANEL_SCROLL)
+    add(ContextId.CHROME)
 }
 
 private fun currentSize(terminal: Terminal): Size {

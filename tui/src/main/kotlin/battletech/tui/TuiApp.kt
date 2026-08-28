@@ -5,6 +5,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.session.GameSession
 import battletech.tui.game.AppState
 import battletech.tui.game.mapToTuiPhase
+import battletech.tui.input.Keybindings
 import battletech.tui.loop.UiEvent
 import battletech.tui.loop.runLoop
 import battletech.tui.screen.Theme
@@ -66,6 +67,7 @@ public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val t
         val terminal = Terminal()
         val resolvedTheme = theme ?: resolveTheme(defaultThemeName(terminal.terminalInfo.ansiLevel))
         val renderer = ScreenRenderer(terminal, resolvedTheme)
+        val keys = Keybindings.DEFAULT
 
         val appState = AppState(
             seats = seats,
@@ -83,7 +85,7 @@ public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val t
                 try {
                     runLoop(
                         events = merge(
-                            terminal.inputEvents(MouseTracking.Normal).map { it.toUiEvent() },
+                            terminal.inputEvents(MouseTracking.Normal, isQuit = keys::isQuit).map { it.toUiEvent() },
                             terminal.resizeEvents().map { it.toUiEvent() },
                             internalEvents.receiveAsFlow(),
                         ),
@@ -91,6 +93,7 @@ public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val t
                         terminal = terminal,
                         renderer = renderer,
                         initialState = appState,
+                        keys = keys,
                     )
                 } finally {
                     subscriptions.forEach { it.unsubscribe() }

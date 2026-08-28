@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import tenter.input.PanAction
 
 internal class InputMapperTest {
 
@@ -284,47 +283,6 @@ internal class InputMapperTest {
             val result = InputMapper.mapMouseToHex(event, boardX = 2, boardY = 2, scrollX = 7, scrollY = 4)
 
             assertEquals(HexCoordinates(1, 0), result)
-        }
-    }
-
-    @Nested
-    inner class MapPanEventTest {
-        @Test
-        fun `h l k j pan left right up down by one hex stride`() {
-            assertEquals(PanAction.Pan(-7, 0), InputMapper.mapPanEvent(key("h")))
-            assertEquals(PanAction.Pan(7, 0), InputMapper.mapPanEvent(key("l")))
-            assertEquals(PanAction.Pan(0, -4), InputMapper.mapPanEvent(key("k")))
-            assertEquals(PanAction.Pan(0, 4), InputMapper.mapPanEvent(key("j")))
-        }
-
-        @Test
-        fun `ctrl+arrows pan the same as hjkl`() {
-            assertEquals(PanAction.Pan(-7, 0), InputMapper.mapPanEvent(key("ArrowLeft", ctrl = true)))
-            assertEquals(PanAction.Pan(7, 0), InputMapper.mapPanEvent(key("ArrowRight", ctrl = true)))
-            assertEquals(PanAction.Pan(0, -4), InputMapper.mapPanEvent(key("ArrowUp", ctrl = true)))
-            assertEquals(PanAction.Pan(0, 4), InputMapper.mapPanEvent(key("ArrowDown", ctrl = true)))
-        }
-
-        @Test
-        fun `plain arrows without ctrl are not pan actions`() {
-            assertNull(InputMapper.mapPanEvent(key("ArrowLeft")))
-            assertNull(InputMapper.mapPanEvent(key("ArrowUp")))
-        }
-
-        @Test
-        fun `Home recenters`() {
-            assertEquals(PanAction.Recenter, InputMapper.mapPanEvent(key("Home")))
-        }
-
-        @Test
-        fun `alt+h is not a pan action — it is the HELP panel chord`() {
-            assertNull(InputMapper.mapPanEvent(key("h", alt = true)))
-        }
-
-        @Test
-        fun `unrelated keys are not pan actions`() {
-            assertNull(InputMapper.mapPanEvent(key("Enter")))
-            assertNull(InputMapper.mapPanEvent(key("x")))
         }
     }
 }

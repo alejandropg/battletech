@@ -24,26 +24,28 @@ internal class TerminalEventTest {
     private val someKey = key("ArrowUp")
     private val otherKey = key("Enter")
 
+    private val isQuit: (KeyboardEvent) -> Boolean = { it.ctrl && it.key == "c" }
+
     @Nested
     inner class TerminalEventsTest {
 
         @Test
         fun `key before ctrl+c emits Input then Quit, ctrl+c is not forwarded as Input`() = runTest {
-            val events = terminalEvents(flowOf(someKey, ctrlC)).toList()
+            val events = terminalEvents(flowOf(someKey, ctrlC), isQuit).toList()
 
             assertEquals(listOf(TerminalEvent.Input(someKey), TerminalEvent.Quit), events)
         }
 
         @Test
         fun `flow that completes without quit key still ends with Quit`() = runTest {
-            val events = terminalEvents(flowOf(someKey, otherKey)).toList()
+            val events = terminalEvents(flowOf(someKey, otherKey), isQuit).toList()
 
             assertEquals(listOf(TerminalEvent.Input(someKey), TerminalEvent.Input(otherKey), TerminalEvent.Quit), events)
         }
 
         @Test
         fun `quit placed before other keys suppresses the rest`() = runTest {
-            val events = terminalEvents(flowOf(ctrlC, otherKey)).toList()
+            val events = terminalEvents(flowOf(ctrlC, otherKey), isQuit).toList()
 
             assertEquals(listOf(TerminalEvent.Quit), events)
         }

@@ -19,6 +19,7 @@ import battletech.tui.game.AppState
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.icon.sessionNoticeIcon
+import battletech.tui.input.Keybindings
 import battletech.tui.loop.UiEvent
 import battletech.tui.loop.runLoop
 import battletech.tui.screen.resolveTheme
@@ -111,6 +112,7 @@ internal class TuiAppLoopTest {
             terminal = terminal,
             renderer = renderer,
             initialState = buildAppState(),
+            keys = Keybindings.DEFAULT,
         )
 
         // The diffing renderer (see ScreenRenderer) only sends a full cursor-home + repaint on
@@ -144,6 +146,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -175,6 +178,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -213,6 +217,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -245,6 +250,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -307,6 +313,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -346,6 +353,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -370,6 +378,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -398,6 +407,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -435,6 +445,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -482,6 +493,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = initialState,
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -520,6 +532,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = initialState,
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -563,6 +576,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = initialState,
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -603,6 +617,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -631,6 +646,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -660,6 +676,7 @@ internal class TuiAppLoopTest {
                 terminal = terminal,
                 renderer = renderer,
                 initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
             )
         }
 
@@ -717,6 +734,7 @@ internal class TuiAppLoopTest {
                     terminal = terminal,
                     renderer = renderer,
                     initialState = buildWideMapAppState(),
+                    keys = Keybindings.DEFAULT,
                 )
             }
 
@@ -780,6 +798,7 @@ internal class TuiAppLoopTest {
                     terminal = terminal,
                     renderer = renderer,
                     initialState = buildWideMapAppState(),
+                    keys = Keybindings.DEFAULT,
                 )
             }
 

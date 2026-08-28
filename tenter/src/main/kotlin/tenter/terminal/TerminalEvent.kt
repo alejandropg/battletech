@@ -1,6 +1,5 @@
 package tenter.terminal
 
-import tenter.input.ChromeInput
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseTracking
@@ -41,8 +40,8 @@ public sealed interface TerminalEvent {
  *
  * This function is pure and unit-testable: it does not reference the terminal or any I/O.
  */
-public fun terminalEvents(raw: Flow<InputEvent>): Flow<TerminalEvent> =
-    raw.takeWhile { !(it is KeyboardEvent && ChromeInput.isQuit(it)) }
+public fun terminalEvents(raw: Flow<InputEvent>, isQuit: (KeyboardEvent) -> Boolean): Flow<TerminalEvent> =
+    raw.takeWhile { !(it is KeyboardEvent && isQuit(it)) }
         .map<InputEvent, TerminalEvent> { TerminalEvent.Input(it) }
         .onCompletion { emit(TerminalEvent.Quit) }
 
@@ -62,8 +61,8 @@ public fun terminalEvents(raw: Flow<InputEvent>): Flow<TerminalEvent> =
  * timeout and checks [isActive] between polls so any cancellation, from any cause, is noticed
  * within [pollTimeout] instead of depending on the next keystroke.
  */
-public fun Terminal.inputEvents(mouseTracking: MouseTracking): Flow<TerminalEvent> =
-    terminalEvents(rawModePollingFlow(mouseTracking)).flowOn(Dispatchers.IO)
+public fun Terminal.inputEvents(mouseTracking: MouseTracking, isQuit: (KeyboardEvent) -> Boolean): Flow<TerminalEvent> =
+    terminalEvents(rawModePollingFlow(mouseTracking), isQuit).flowOn(Dispatchers.IO)
 
 /**
  * Enters raw mode and emits input events, polling with [pollTimeout] instead of blocking

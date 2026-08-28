@@ -2,12 +2,9 @@ package battletech.tui.input
 
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
-import battletech.tui.hex.HexGeometry
 import battletech.tui.hex.HexLayout
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
-import tenter.input.ChromeInput
-import tenter.input.PanAction
 
 public object InputMapper {
 
@@ -73,16 +70,4 @@ public object InputMapper {
         if (x < 0 || y < 0) return null
         return HexLayout.screenToHex(x, y, scrollX, scrollY)
     }
-
-    /**
-     * Manual board panning: `hjkl` or ctrl+arrows shift the viewport by one hex stride; `Home`
-     * recenters on the cursor. Bound globally (see `RunLoop`'s dispatch), so it never competes
-     * with plain arrows/wasd (cursor movement) or the attack-declaring torso-twist/weapon-nav
-     * bindings on arrows — `hjkl` and `Home` are unused everywhere else, and ctrl+arrow is a
-     * distinct key from plain arrow. Delegates the actual key mapping to [ChromeInput.panAction],
-     * supplying the hex grid's own stride as the pan step.
-     */
-    internal fun mapPanEvent(event: KeyboardEvent): PanAction? =
-        ChromeInput.panAction(event, HexGeometry.COL_STRIDE, HexGeometry.ROW_STRIDE)
-
 }

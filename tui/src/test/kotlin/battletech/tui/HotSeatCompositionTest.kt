@@ -14,6 +14,7 @@ import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.phase.BOARD_ORIGIN_X
 import battletech.tui.game.phase.BOARD_ORIGIN_Y
 import battletech.tui.hex.HexLayout
+import battletech.tui.input.Keybindings
 import battletech.tui.loop.UiEvent
 import battletech.tui.loop.runLoop
 import battletech.tui.screen.resolveTheme
@@ -177,6 +178,7 @@ internal class HotSeatCompositionTest {
                     terminal = terminal,
                     renderer = renderer,
                     initialState = initialState,
+                    keys = Keybindings.DEFAULT,
                 )
             }
 
