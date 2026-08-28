@@ -35,7 +35,7 @@ internal class Workspace {
 
     /**
      * The board panel's settled scroll offset. The one piece of panel state a non-rendering reader
-     * also needs — [battletech.tui.game.phase.mapIdleInput]'s click-to-hex mapping — so callers
+     * also needs — [battletech.tui.loop.runLoop]'s click-to-hex mapping — so callers
      * mirror it into [AppState.boardScroll] after every [render]. That mirror is one-way: the board
      * [tenter.panel.Panel] owns this offset exactly as a side panel owns its own, and nothing ever
      * writes it back through [AppState] — see [AppState.boardScroll]'s KDoc.

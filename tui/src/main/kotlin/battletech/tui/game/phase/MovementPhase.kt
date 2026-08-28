@@ -22,14 +22,13 @@ import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.moveCursor
 import battletech.tui.game.pathHighlights
 import battletech.tui.game.reachabilityHighlights
+import battletech.tui.input.BoardClick
 import battletech.tui.input.BrowsingAction
+import battletech.tui.input.ContextId
 import battletech.tui.input.FacingAction
 import battletech.tui.input.IdleAction
-import battletech.tui.input.InputMapper
 import battletech.tui.input.Keymap
-import com.github.ajalt.mordant.input.InputEvent
-import com.github.ajalt.mordant.input.KeyboardEvent
-import com.github.ajalt.mordant.input.MouseEvent
+import tenter.input.InputAction
 import tenter.input.KeySection
 import tenter.view.FlashMessage
 
@@ -45,18 +44,19 @@ internal sealed interface MovementPhase : Phase {
 
     data object SelectingUnit : MovementPhase {
 
-        override fun handle(event: InputEvent, app: AppState): Transition? {
+        override val keyContext: ContextId get() = ContextId.MOVEMENT_IDLE
+
+        override fun handle(action: InputAction, app: AppState): Transition? {
             val turnState = app.turnState
             // Host mode renders (and accepts input) before the session's advance() kickstart
             // fires — the movement impulse sequence is empty until a client joins. Every other
             // field this phase touches (activePlayer, selectableUnits) indexes into that
             // sequence and would throw, so only cursor movement is safe here.
             if (turnState.movement.isComplete) {
-                val action = mapIdleInput(event, app) ?: return null
                 return if (action is IdleAction.MoveCursor) handleCursorMove(app, action) else Transition(app)
             }
             return handleUnitSelection(
-                event = event,
+                action = action,
                 app = app,
                 activePlayer = { turnState.movement.activePlayer },
                 selectableUnits = { turnState.selectableUnits(app.state.units) },
@@ -131,33 +131,27 @@ internal sealed interface MovementPhase : Phase {
             )
         }
 
-        override fun handle(event: InputEvent, app: AppState): Transition? {
-            val action = when (event) {
-                is KeyboardEvent -> InputMapper.mapBrowsingEvent(event)
-                is MouseEvent -> InputMapper.mapMouseToHex(
-                    event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y,
-                    scrollX = app.boardScroll.x, scrollY = app.boardScroll.y,
-                )?.let { BrowsingAction.ClickHex(it) }
-            } ?: return null
+        override val keyContext: ContextId get() = ContextId.BROWSING
 
+        override fun handle(action: InputAction, app: AppState): Transition? {
             val newCursor = when (action) {
                 is BrowsingAction.MoveCursor -> moveCursor(app.cursor, action.direction, app.state.map)
-                is BrowsingAction.ClickHex -> action.coords
+                is BoardClick -> action.coords
                 else -> app.cursor
             }
             val updated = app.copy(cursor = newCursor)
 
             return when (action) {
-                is BrowsingAction.Cancel -> onCancel(updated)
-                is BrowsingAction.ConfirmPath -> confirm(updated)
-                is BrowsingAction.SelectFacing -> selectFacing(updated, action.index)
-                is BrowsingAction.MoveCursor, is BrowsingAction.ClickHex ->
-                    Transition(updated.copy(phase = withCursorAt(newCursor, updated)))
-
-                is BrowsingAction.CycleMode ->
-                    Transition(updated.copy(phase = cycleMode().withCursorAt(newCursor, updated)))
-
-                is BrowsingAction.CycleUnit -> cycleToNextUnit(app, unitId)
+                is BoardClick -> Transition(updated.copy(phase = withCursorAt(newCursor, updated)))
+                is BrowsingAction -> when (action) {
+                    is BrowsingAction.Cancel -> onCancel(updated)
+                    is BrowsingAction.ConfirmPath -> confirm(updated)
+                    is BrowsingAction.SelectFacing -> selectFacing(updated, action.index)
+                    is BrowsingAction.MoveCursor -> Transition(updated.copy(phase = withCursorAt(newCursor, updated)))
+                    is BrowsingAction.CycleMode -> Transition(updated.copy(phase = cycleMode().withCursorAt(newCursor, updated)))
+                    is BrowsingAction.CycleUnit -> cycleToNextUnit(app, unitId)
+                }
+                else -> null
             }
         }
 
@@ -241,17 +235,15 @@ internal sealed interface MovementPhase : Phase {
             hoveredDestination = null,
         )
 
-        override fun handle(event: InputEvent, app: AppState): Transition? {
-            val action = when (event) {
-                is KeyboardEvent -> InputMapper.mapFacingEvent(event)
-                is MouseEvent -> return null
-            } ?: return null
+        override val keyContext: ContextId get() = ContextId.FACING
 
-            return when (action) {
+        override fun handle(action: InputAction, app: AppState): Transition? = when (action) {
+            is FacingAction -> when (action) {
                 is FacingAction.Cancel -> onCancel(app)
                 is FacingAction.SelectFacing -> commitByFacing(app, action.index)
                 is FacingAction.CycleUnit -> cycleToNextUnit(app, unitId)
             }
+            else -> null
         }
 
         override fun status(app: AppState): PhaseStatus =

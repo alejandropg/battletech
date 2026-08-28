@@ -12,8 +12,6 @@ import tenter.text.CellWidth
 /**
  * Invariants over [Keybindings.DEFAULT]'s [tenter.input.KeyMap] — enforced here rather than left as
  * prose, so a binding change that breaks one of them fails the build instead of drifting silently.
- * Only [ContextId.CHROME] and [ContextId.PANEL_SCROLL] exist yet; the seven phase contexts join
- * these invariants (and invariant 2, total context coverage) once they land.
  */
 internal class KeybindingsTest {
 
@@ -32,10 +30,21 @@ internal class KeybindingsTest {
     }
 
     @Test
-    fun `every binding's hint group is declared, and every declared group is used or bindingless`() {
-        val declaredIds = map.allHintGroups().map { it.id }
-        assertEquals(declaredIds.toSet().size, declaredIds.size, "duplicate hint group ids: $declaredIds")
+    fun `every declared context has a layer`() {
+        assertEquals(ContextId.entries.toSet(), map.contexts)
+    }
 
+    @Test
+    fun `every binding's hint group is declared, and every declared group is used or bindingless`() {
+        // Uniqueness is per layer, not global: MOVEMENT_IDLE/WEAPON_IDLE/PHYSICAL_IDLE (and
+        // BROWSING/FACING) intentionally reuse ids like "moveCursor"/"cancel"/"cycleUnit" — they
+        // are never active at the same time, and each layer's own hints() reads only its own list.
+        for (context in ContextId.entries) {
+            val layerIds = map.layer(context).hintGroups.map { it.id }
+            assertEquals(layerIds.toSet().size, layerIds.size, "duplicate hint group ids within $context: $layerIds")
+        }
+
+        val declaredIds = map.allHintGroups().map { it.id }
         val (_, bindings) = map.allBindings().unzip()
         val boundGroupIds = bindings.map { it.hintGroup }.toSet()
         for (binding in bindings) {
@@ -58,6 +67,10 @@ internal class KeybindingsTest {
             val ok = when (context) {
                 ContextId.CHROME -> binding.action is ChromeAction || binding.action is PanAction
                 ContextId.PANEL_SCROLL -> binding.action is ScrollAction
+                ContextId.MOVEMENT_IDLE, ContextId.WEAPON_IDLE, ContextId.PHYSICAL_IDLE -> binding.action is IdleAction
+                ContextId.BROWSING -> binding.action is BrowsingAction
+                ContextId.FACING -> binding.action is FacingAction
+                ContextId.WEAPON_DECLARING, ContextId.PHYSICAL_DECLARING -> binding.action is AttackAction
             }
             assertTrue(ok, "binding for ${binding.chord} in $context has action ${binding.action} of the wrong family")
         }
@@ -88,5 +101,16 @@ internal class KeybindingsTest {
             keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("h", alt = true)),
             keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("H", alt = true, shift = true)),
         )
+    }
+
+    @Test
+    fun `characterisation - default phase bindings`() {
+        val keys = Keybindings.DEFAULT
+
+        assertEquals(IdleAction.CommitDeclarations, keys.resolve(listOf(ContextId.MOVEMENT_IDLE), KeyboardEvent("c")))
+        assertEquals(BrowsingAction.CycleMode, keys.resolve(listOf(ContextId.BROWSING), KeyboardEvent("x")))
+        assertEquals(FacingAction.SelectFacing(3), keys.resolve(listOf(ContextId.FACING), KeyboardEvent("3")))
+        assertEquals(AttackAction.ToggleWeapon, keys.resolve(listOf(ContextId.WEAPON_DECLARING), KeyboardEvent(" ")))
+        assertEquals(AttackAction.ToggleWeapon, keys.resolve(listOf(ContextId.PHYSICAL_DECLARING), KeyboardEvent(" ")))
     }
 }

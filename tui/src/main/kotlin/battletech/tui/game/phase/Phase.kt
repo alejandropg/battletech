@@ -3,7 +3,8 @@ package battletech.tui.game.phase
 import battletech.tactical.model.TurnPhase
 import battletech.tui.game.AppState
 import battletech.tui.game.RenderData
-import com.github.ajalt.mordant.input.InputEvent
+import battletech.tui.input.ContextId
+import tenter.input.InputAction
 import tenter.input.KeySection
 
 /**
@@ -16,8 +17,11 @@ import tenter.input.KeySection
 internal sealed interface Phase {
     val turnPhase: TurnPhase
 
-    /** Null means this phase does not consume [event] — a real three-valued protocol [battletech.tui.loop.runLoop] relies on. */
-    fun handle(event: InputEvent, app: AppState): Transition?
+    /** Which [tenter.input.KeyLayer] resolves keyboard input for this phase — see `Keybindings`. */
+    val keyContext: ContextId
+
+    /** Null means this phase does not consume [action] — a real three-valued protocol [battletech.tui.loop.runLoop] relies on. */
+    fun handle(action: InputAction, app: AppState): Transition?
 
     fun board(app: AppState): RenderData = RenderData.EMPTY
 

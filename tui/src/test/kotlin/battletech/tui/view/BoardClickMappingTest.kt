@@ -8,7 +8,7 @@ import battletech.tui.aGameState
 import battletech.tui.aUnit
 import battletech.tui.game.phase.BOARD_ORIGIN_X
 import battletech.tui.game.phase.BOARD_ORIGIN_Y
-import battletech.tui.input.InputMapper
+import battletech.tui.input.BoardMouse
 import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -23,7 +23,7 @@ import tenter.view.scrollingPanel
  * exactly as `RunLoop.renderFrame` composes it (status bar, board region at
  * [Workspace.STATUS_BAR_HEIGHT], [scrollingPanel] chrome, [BoardView] content), its glyph is
  * located by scanning the resulting screen buffer, and that screen position is fed back through
- * [InputMapper.mapMouseToHex].
+ * [BoardMouse.mapMouseToHex].
  *
  * Deliberately *finds* the glyph rather than computing where it ought to be: a test that derived
  * the expected position from the same constants as the production mapping would agree with it
@@ -72,7 +72,7 @@ internal class BoardClickMappingTest {
         val buffer = renderFrame(state)
         val (x, y) = findMarker(buffer) ?: error("marker glyph not rendered for $hex")
 
-        val clicked = InputMapper.mapMouseToHex(
+        val clicked = BoardMouse.mapMouseToHex(
             MouseEvent(x = x, y = y, left = true),
             boardX = BOARD_ORIGIN_X,
             boardY = BOARD_ORIGIN_Y,

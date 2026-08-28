@@ -1,6 +1,7 @@
 package battletech.tui.game
 
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.Impulse
@@ -9,11 +10,9 @@ import battletech.tui.aGameState
 import battletech.tui.aTurnState
 import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackPhase
-import battletech.tui.game.phase.BOARD_ORIGIN_X
-import battletech.tui.game.phase.BOARD_ORIGIN_Y
 import battletech.tui.game.phase.MovementPhase
-import com.github.ajalt.mordant.input.KeyboardEvent
-import com.github.ajalt.mordant.input.MouseEvent
+import battletech.tui.input.BoardClick
+import battletech.tui.input.IdleAction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -35,17 +34,14 @@ import org.junit.jupiter.api.Test
  */
 internal class SeatGuardTest {
 
-    private fun enterKey(): KeyboardEvent = KeyboardEvent("Enter")
-    private fun tabKey(): KeyboardEvent = KeyboardEvent("Tab")
-    private fun cKey(): KeyboardEvent = KeyboardEvent("c")
-    private fun arrowUp(): KeyboardEvent = KeyboardEvent("ArrowUp")
+    private fun enterKey(): IdleAction = IdleAction.SelectUnit
+    private fun tabKey(): IdleAction = IdleAction.CycleUnit
+    private fun cKey(): IdleAction = IdleAction.CommitDeclarations
+    private fun arrowUp(): IdleAction = IdleAction.MoveCursor(HexDirection.N)
 
-    // A click in the middle of hex (0, 0), expressed relative to the board origin rather than as
-    // fixed screen coordinates — the previous hardcoded (5, 3) silently encoded a BOARD_ORIGIN_Y
-    // that ignored the status bar, and would have to be edited again on any chrome change.
-    // (+4, +3) is the hex's centre cell; see BoardClickMappingTest for the real round-trip.
-    private fun clickOnOrigin(): MouseEvent =
-        MouseEvent(x = BOARD_ORIGIN_X + 4, y = BOARD_ORIGIN_Y + 3, left = true)
+    // A click resolved to the middle of hex (0, 0) — see BoardClickMappingTest for the real
+    // screen-coordinate round-trip; here the phase only ever sees the already-resolved hex.
+    private fun clickOnOrigin(): BoardClick = BoardClick(HexCoordinates(0, 0))
 
     @Nested
     inner class MovementIdleBlockedOnOpponentTurn {

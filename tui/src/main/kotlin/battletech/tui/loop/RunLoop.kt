@@ -7,7 +7,11 @@ import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
+import battletech.tui.game.phase.BOARD_ORIGIN_X
+import battletech.tui.game.phase.BOARD_ORIGIN_Y
 import battletech.tui.hex.HexGeometry
+import battletech.tui.input.BoardClick
+import battletech.tui.input.BoardMouse
 import battletech.tui.input.ChromeAction
 import battletech.tui.input.ContextId
 import battletech.tui.input.Keybindings
@@ -103,9 +107,28 @@ internal suspend fun runLoop(
                         }
                     }
 
-                    val action: InputAction? = (event as? KeyboardEvent)?.let { keys.resolve(activeContexts(workspace), it) }
+                    val action: InputAction? = when (event) {
+                        is KeyboardEvent -> keys.resolve(activeContexts(workspace, appState), event)
+                        // Gated on matchEnded here too — a board click, like a keyboard chord
+                        // routed through activeContexts, must not reach the phase once the match
+                        // is over.
+                        is MouseEvent ->
+                            if (appState.matchEnded != null) {
+                                null
+                            } else {
+                                BoardMouse.mapMouseToHex(
+                                    event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y,
+                                    scrollX = appState.boardScroll.x, scrollY = appState.boardScroll.y,
+                                )?.let(::BoardClick)
+                            }
+                    }
 
                     when (action) {
+                        null -> {
+                            render()
+                            return@collect
+                        }
+
                         is ChromeAction -> {
                             when (action) {
                                 is ChromeAction.FocusPanel ->
@@ -157,18 +180,10 @@ internal suspend fun runLoop(
                             return@collect
                         }
 
-                        else -> Unit // not a chrome/scroll/pan binding — falls through to the phase below
+                        else -> Unit // game action — falls through to the phase below
                     }
 
-                    // Block game input (movement/attacks) once the match is over.
-                    // Scroll, panel-focus, and board panning are handled above and remain active.
-                    // Only quit (handled by takeWhile) exits the loop.
-                    if (appState.matchEnded != null) {
-                        render()
-                        return@collect
-                    }
-
-                    val transition = appState.phase.handle(event, appState) ?: run {
+                    val transition = appState.phase.handle(action, appState) ?: run {
                         render()
                         return@collect
                     }
@@ -241,10 +256,15 @@ internal suspend fun runLoop(
     flashJob?.cancel()
 }
 
-/** Which key layers are live this frame, in resolution-precedence order. */
-private fun activeContexts(workspace: Workspace): List<ContextId> = buildList {
+/**
+ * Which key layers are live this frame, in resolution-precedence order. Game input
+ * (the active phase's own context) is omitted once the match has ended — chrome (focus, resize,
+ * pan, quit) stays live regardless.
+ */
+private fun activeContexts(workspace: Workspace, appState: AppState): List<ContextId> = buildList {
     if (workspace.focused != GamePanelId.BOARD) add(ContextId.PANEL_SCROLL)
     add(ContextId.CHROME)
+    if (appState.matchEnded == null) add(appState.phase.keyContext)
 }
 
 private fun currentSize(terminal: Terminal): Size {

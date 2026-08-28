@@ -1,6 +1,7 @@
 package battletech.tui.game
 
 import battletech.tactical.model.HexCoordinates
+import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.session.Impulse
 import battletech.tactical.session.TurnState
@@ -12,7 +13,7 @@ import battletech.tui.aGameState
 import battletech.tui.aTurnState
 import battletech.tui.aUnit
 import battletech.tui.game.phase.MovementPhase
-import com.github.ajalt.mordant.input.KeyboardEvent
+import battletech.tui.input.IdleAction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -28,9 +29,9 @@ internal class MovementSelectingUnitPhaseTest {
         turnState: TurnState = TurnState.NULL,
     ): AppState = AppState(gameState, turnState, MovementPhase.SelectingUnit, cursor)
 
-    private fun enterKey(): KeyboardEvent = KeyboardEvent("Enter")
-    private fun tabKey(): KeyboardEvent = KeyboardEvent("Tab")
-    private fun arrowUp(): KeyboardEvent = KeyboardEvent("ArrowUp")
+    private fun enterKey(): IdleAction = IdleAction.SelectUnit
+    private fun tabKey(): IdleAction = IdleAction.CycleUnit
+    private fun arrowUp(): IdleAction = IdleAction.MoveCursor(HexDirection.N)
 
     @Nested
     inner class MoveCursorTest {

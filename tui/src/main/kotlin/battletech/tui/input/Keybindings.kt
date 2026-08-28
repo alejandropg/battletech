@@ -1,5 +1,6 @@
 package battletech.tui.input
 
+import battletech.tactical.model.HexDirection
 import battletech.tui.game.GamePanelId
 import com.github.ajalt.mordant.input.KeyboardEvent
 import tenter.input.HintGroup
@@ -43,6 +44,25 @@ internal class Keybindings(private val keyMap: KeyMap<ContextId>) {
 private fun defaultLayers(): Map<ContextId, KeyLayer> = mapOf(
     ContextId.CHROME to chromeLayer(),
     ContextId.PANEL_SCROLL to panelScrollLayer(),
+    ContextId.MOVEMENT_IDLE to idleLayer(
+        title = "MOVEMENT",
+        commitAction = IdleAction.CommitDeclarations,
+        commitDescription = "commit declarations",
+    ),
+    ContextId.BROWSING to browsingLayer(),
+    ContextId.FACING to facingLayer(),
+    ContextId.WEAPON_IDLE to idleLayer(
+        title = "WEAPON ATTACK",
+        commitAction = IdleAction.CommitDeclarations,
+        commitDescription = "commit",
+    ),
+    ContextId.WEAPON_DECLARING to declaringLayer(title = "DECLARE FIRE", includeTwistTorso = true),
+    ContextId.PHYSICAL_IDLE to idleLayer(
+        title = "PHYSICAL ATTACK",
+        commitAction = IdleAction.CommitDeclarations,
+        commitDescription = "commit",
+    ),
+    ContextId.PHYSICAL_DECLARING to declaringLayer(title = "DECLARE PHYSICAL", includeTwistTorso = false),
 )
 
 private fun chromeLayer(): KeyLayer {
@@ -99,3 +119,109 @@ private fun panelScrollLayer(): KeyLayer = KeyLayer(
         KeyBinding(KeyChord("PageDown"), ScrollAction.Pages(1), "scrollFocused"),
     ),
 )
+
+/**
+ * The eight key-to-direction chords shared by every idle-selecting state and by [MovementPhase.
+ * Browsing][battletech.tui.game.phase.MovementPhase.Browsing] — mirrors the old `InputMapper.
+ * keyToDirection`, including `q`/`e`→NW/NE and `a`→SW alongside the wasd/arrow set.
+ */
+private fun cursorBindings(action: (HexDirection) -> InputAction): List<KeyBinding> = listOf(
+    KeyChord("ArrowUp") to HexDirection.N,
+    KeyChord("w") to HexDirection.N,
+    KeyChord("ArrowDown") to HexDirection.S,
+    KeyChord("s") to HexDirection.S,
+    KeyChord("ArrowRight") to HexDirection.SE,
+    KeyChord("d") to HexDirection.SE,
+    KeyChord("ArrowLeft") to HexDirection.NW,
+    KeyChord("q") to HexDirection.NW,
+    KeyChord("e") to HexDirection.NE,
+    KeyChord("a") to HexDirection.SW,
+).map { (chord, direction) -> KeyBinding(chord, action(direction), "moveCursor") }
+
+private fun facingBindings(action: (Int) -> InputAction): List<KeyBinding> =
+    (1..6).map { index -> KeyBinding(KeyChord(index.toString()), action(index), "selectFacing") }
+
+private val MOVE_CURSOR_HINT = HintGroup("moveCursor", "←→↑↓/wasd", "move cursor")
+
+/** Shared by MOVEMENT_IDLE, WEAPON_IDLE, and PHYSICAL_IDLE — identical bindings, different title/commit wording. */
+private fun idleLayer(title: String, commitAction: IdleAction, commitDescription: String): KeyLayer = KeyLayer(
+    title = title,
+    bindings = cursorBindings { IdleAction.MoveCursor(it) } + listOf(
+        KeyBinding(KeyChord("Enter"), IdleAction.SelectUnit, "selectUnit"),
+        KeyBinding(KeyChord("Tab"), IdleAction.CycleUnit, "cycleUnit"),
+        KeyBinding(KeyChord("c"), commitAction, "commit"),
+    ),
+    hintGroups = listOf(
+        MOVE_CURSOR_HINT,
+        HintGroup("selectUnit", KeyGlyph.ENTER, "select unit"),
+        HintGroup("cycleUnit", KeyGlyph.TAB, "cycle unit"),
+        HintGroup("commit", "c", commitDescription),
+    ),
+)
+
+private fun browsingLayer(): KeyLayer = KeyLayer(
+    title = "BROWSE DESTINATION",
+    bindings = cursorBindings { BrowsingAction.MoveCursor(it) } + facingBindings { BrowsingAction.SelectFacing(it) } + listOf(
+        KeyBinding(KeyChord("Enter"), BrowsingAction.ConfirmPath, "confirmPath"),
+        KeyBinding(KeyChord("Escape"), BrowsingAction.Cancel, "cancel"),
+        KeyBinding(KeyChord("Tab"), BrowsingAction.CycleUnit, "cycleUnit"),
+        KeyBinding(KeyChord("x"), BrowsingAction.CycleMode, "cycleMode"),
+    ),
+    hintGroups = listOf(
+        MOVE_CURSOR_HINT,
+        HintGroup("selectFacing", "1-6", "select facing"),
+        HintGroup("confirmPath", KeyGlyph.ENTER, "confirm path"),
+        HintGroup("cancel", KeyGlyph.ESC, "back"),
+        HintGroup("cycleUnit", KeyGlyph.TAB, "cycle unit"),
+        HintGroup("cycleMode", "x", "cycle movement mode"),
+    ),
+)
+
+private fun facingLayer(): KeyLayer = KeyLayer(
+    title = "SELECT FACING",
+    bindings = facingBindings { FacingAction.SelectFacing(it) } + listOf(
+        KeyBinding(KeyChord("Escape"), FacingAction.Cancel, "cancel"),
+        KeyBinding(KeyChord("Tab"), FacingAction.CycleUnit, "cycleUnit"),
+    ),
+    hintGroups = listOf(
+        HintGroup("selectFacing", "1-6", "select facing"),
+        HintGroup("cancel", KeyGlyph.ESC, "back"),
+        HintGroup("cycleUnit", KeyGlyph.TAB, "cycle unit"),
+    ),
+)
+
+/** Shared by WEAPON_DECLARING and PHYSICAL_DECLARING — the latter drops the torso-twist rows (§4.2). */
+private fun declaringLayer(title: String, includeTwistTorso: Boolean): KeyLayer {
+    val twistTorsoBindings = if (includeTwistTorso) {
+        listOf(
+            KeyBinding(KeyChord("ArrowRight"), AttackAction.TwistTorso(clockwise = true), "twistTorso"),
+            KeyBinding(KeyChord("d"), AttackAction.TwistTorso(clockwise = true), "twistTorso"),
+            KeyBinding(KeyChord("ArrowLeft"), AttackAction.TwistTorso(clockwise = false), "twistTorso"),
+            KeyBinding(KeyChord("a"), AttackAction.TwistTorso(clockwise = false), "twistTorso"),
+        )
+    } else {
+        emptyList()
+    }
+
+    val bindings = twistTorsoBindings + listOf(
+        KeyBinding(KeyChord("ArrowUp"), AttackAction.NavigateWeapons(-1), "navigate"),
+        KeyBinding(KeyChord("w"), AttackAction.NavigateWeapons(-1), "navigate"),
+        KeyBinding(KeyChord("ArrowDown"), AttackAction.NavigateWeapons(1), "navigate"),
+        KeyBinding(KeyChord("s"), AttackAction.NavigateWeapons(1), "navigate"),
+        KeyBinding(KeyChord(" "), AttackAction.ToggleWeapon, "toggleWeapon"),
+        KeyBinding(KeyChord("Escape"), AttackAction.Cancel, "cancel"),
+        KeyBinding(KeyChord("Tab"), AttackAction.NextAttacker, "nextAttacker"),
+        KeyBinding(KeyChord("c"), AttackAction.Commit, "commit"),
+    )
+
+    val hintGroups = buildList {
+        if (includeTwistTorso) add(HintGroup("twistTorso", "←→/ad", "twist torso"))
+        add(HintGroup("navigate", if (includeTwistTorso) "↑↓/ws" else "↑↓", if (includeTwistTorso) "navigate weapons" else "navigate"))
+        add(HintGroup("toggleWeapon", KeyGlyph.SPACE, if (includeTwistTorso) "toggle weapon" else "toggle punch/kick"))
+        add(HintGroup("cancel", KeyGlyph.ESC, "back"))
+        add(HintGroup("nextAttacker", KeyGlyph.TAB, "next attacker"))
+        add(HintGroup("commit", "c", "commit"))
+    }
+
+    return KeyLayer(title = title, bindings = bindings, hintGroups = hintGroups)
+}

@@ -9,7 +9,7 @@ import battletech.tui.aGameState
 import battletech.tui.aTurnState
 import battletech.tui.aUnit
 import battletech.tui.game.phase.AttackPhase
-import com.github.ajalt.mordant.input.KeyboardEvent
+import battletech.tui.input.IdleAction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -26,9 +26,9 @@ internal class AttackSelectingAttackerPhaseTest {
         attackTurnPhase: TurnPhase = TurnPhase.WEAPON_ATTACK,
     ) = AppState(gameState, turnState, AttackPhase.SelectingAttacker(attackTurnPhase), cursor)
 
-    private fun enterKey(): KeyboardEvent = KeyboardEvent("Enter")
-    private fun cKey(): KeyboardEvent = KeyboardEvent("c")
-    private fun tabKey(): KeyboardEvent = KeyboardEvent("Tab")
+    private fun enterKey(): IdleAction = IdleAction.SelectUnit
+    private fun cKey(): IdleAction = IdleAction.CommitDeclarations
+    private fun tabKey(): IdleAction = IdleAction.CycleUnit
 
     @Nested
     inner class TrySelectUnitTest {

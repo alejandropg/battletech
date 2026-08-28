@@ -13,8 +13,8 @@ import battletech.tui.aUnit
 import battletech.tui.anAppState
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.enterBrowsing
+import battletech.tui.input.BrowsingAction
 import battletech.tui.viewFor
-import com.github.ajalt.mordant.input.KeyboardEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -55,12 +55,12 @@ internal class MovementPhaseIntegrationTest {
         val startCursor = unit.position.neighbor(HexDirection.N)
         val state = anAppState(phase = phase, cursor = startCursor, gameState = gameState)
 
-        val hovered = phase.handle(KeyboardEvent("ArrowDown"), state)
+        val hovered = phase.handle(BrowsingAction.MoveCursor(HexDirection.S), state)
         assertNotNull(hovered)
         val hoveredBrowsing = hovered!!.app.phase as MovementPhase.Browsing
         assertEquals(MovementRules.stationaryHex(unit), hoveredBrowsing.hoveredDestination)
 
-        val confirmed = hoveredBrowsing.handle(KeyboardEvent("Enter"), hovered.app)
+        val confirmed = hoveredBrowsing.handle(BrowsingAction.ConfirmPath, hovered.app)
         assertNotNull(confirmed)
         val facingPhase = assertInstanceOf(MovementPhase.SelectingFacing::class.java, confirmed!!.app.phase)
         assertTrue(facingPhase.options.any { it.facing == unit.facing && it.mpSpent == 0 && it.path.isEmpty() })
@@ -73,12 +73,12 @@ internal class MovementPhaseIntegrationTest {
         val startCursor = unit.position.neighbor(HexDirection.N)
         val state = anAppState(phase = browsing, cursor = startCursor, gameState = gameState)
 
-        val hovered = browsing.handle(KeyboardEvent("ArrowDown"), state)
+        val hovered = browsing.handle(BrowsingAction.MoveCursor(HexDirection.S), state)
         assertNotNull(hovered)
         val hoveredBrowsing = hovered!!.app.phase as MovementPhase.Browsing
 
         // "1" is FACING_ORDER[0] == N, the unit's current facing.
-        val result = hoveredBrowsing.handle(KeyboardEvent("1"), hovered.app)
+        val result = hoveredBrowsing.handle(BrowsingAction.SelectFacing(1), hovered.app)
 
         assertNotNull(result)
         val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -96,12 +96,12 @@ internal class MovementPhaseIntegrationTest {
         val startCursor = jumpUnit.position.neighbor(HexDirection.N)
         val state = anAppState(phase = browsing, cursor = startCursor, gameState = jumpGameState)
 
-        val hovered = browsing.handle(KeyboardEvent("ArrowDown"), state)
+        val hovered = browsing.handle(BrowsingAction.MoveCursor(HexDirection.S), state)
         assertNotNull(hovered)
         val hoveredBrowsing = hovered!!.app.phase as MovementPhase.Browsing
         assertEquals(MovementRules.stationaryHex(jumpUnit), hoveredBrowsing.hoveredDestination)
 
-        val result = hoveredBrowsing.handle(KeyboardEvent("Enter"), hovered.app)
+        val result = hoveredBrowsing.handle(BrowsingAction.ConfirmPath, hovered.app)
 
         assertNotNull(result)
         val movedUnit = result!!.app.state.units.first { it.id == jumpUnit.id }
@@ -120,14 +120,14 @@ internal class MovementPhaseIntegrationTest {
         // Tab moves the cursor onto u2's own hex — this is the seam under test: the cursor never
         // moves again before Enter is pressed, so the fresh Browsing must have already resolved
         // hover there instead of relying on a subsequent cursor nudge.
-        val tabbed = browsing.handle(KeyboardEvent("Tab"), state)
+        val tabbed = browsing.handle(BrowsingAction.CycleUnit, state)
         assertNotNull(tabbed)
         val nextBrowsing = tabbed!!.app.phase as MovementPhase.Browsing
         assertEquals(u2.id, nextBrowsing.unitId)
         assertEquals(u2.position, tabbed.app.cursor)
         assertEquals(MovementRules.stationaryHex(u2), nextBrowsing.hoveredDestination)
 
-        val confirmed = nextBrowsing.handle(KeyboardEvent("Enter"), tabbed.app)
+        val confirmed = nextBrowsing.handle(BrowsingAction.ConfirmPath, tabbed.app)
 
         assertNotNull(confirmed)
         val facingPhase = assertInstanceOf(MovementPhase.SelectingFacing::class.java, confirmed!!.app.phase)

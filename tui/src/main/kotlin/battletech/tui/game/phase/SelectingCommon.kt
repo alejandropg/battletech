@@ -8,18 +8,16 @@ import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
 import tenter.view.FlashMessage
 import battletech.tui.game.moveCursor
+import battletech.tui.input.BoardClick
 import battletech.tui.input.IdleAction
-import battletech.tui.input.InputMapper
+import tenter.input.InputAction
 import tenter.view.Bordered
 import battletech.tui.view.BoardView
 import battletech.tui.view.Workspace
-import com.github.ajalt.mordant.input.InputEvent
-import com.github.ajalt.mordant.input.KeyboardEvent
-import com.github.ajalt.mordant.input.MouseEvent
 
 /**
  * Where the board's hex (0,0)'s top-left corner at zero scroll — after the coordinate-label
- * margins — sits in ABSOLUTE screen coordinates, which is what a [MouseEvent] carries. Used by
+ * margins — sits in ABSOLUTE screen coordinates, which is what a [com.github.ajalt.mordant.input.MouseEvent] carries. Used by
  * all idle-selecting states to turn a click into a hex.
  *
  * Every term is derived rather than hardcoded so these cannot drift from the code that actually
@@ -56,20 +54,6 @@ internal fun rejectionFlash(result: CommandResult): FlashMessage? = when (result
     // Only reachable over the network seam (GameServer catches UnknownUnitException) — the
     // host-embedded UI path never produces this, it would crash instead. See CommandResult.ProtocolError.
     is CommandResult.ProtocolError -> FlashMessage("Command error")
-}
-
-/**
- * Map an [InputEvent] to an [IdleAction], or return null if the event is not
- * handled in idle/selecting states. This is the shared input-mapping block
- * used by [MovementPhase.SelectingUnit], [AttackPhase.SelectingAttacker], and
- * [PhysicalAttackPhase.SelectingAttacker].
- */
-internal fun mapIdleInput(event: InputEvent, app: AppState): IdleAction? = when (event) {
-    is KeyboardEvent -> InputMapper.mapIdleEvent(event)
-    is MouseEvent -> InputMapper.mapMouseToHex(
-        event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y,
-        scrollX = app.boardScroll.x, scrollY = app.boardScroll.y,
-    )?.let { IdleAction.ClickHex(it) }
 }
 
 /**
@@ -152,18 +136,17 @@ internal fun selectOwnUnit(
  * [selectOwnUnit], since Tab ([cycleAndEnter]) and 'c' ([onCommit]) never go
  * through it and would otherwise let a remote client act as the opponent.
  *
- * Returns null when the event maps to no idle action, matching [mapIdleInput].
+ * Returns null when [action] is not one this shared handler understands.
  */
 internal fun handleUnitSelection(
-    event: InputEvent,
+    action: InputAction,
     app: AppState,
     activePlayer: () -> PlayerId,
     selectableUnits: () -> List<VisibleUnit>,
     selectGuard: (CombatUnit) -> FlashMessage? = { null },
     onCommit: (AppState) -> Transition = { Transition(it) },
     enterFor: (CombatUnit, AppState) -> Transition,
-): Transition? {
-    val action = mapIdleInput(event, app) ?: return null
+): Transition? = when (action) {
     // [activePlayer] and [selectableUnits] are evaluated lazily: cursor moves must not touch
     // turn-state fields that may be absent (e.g. TurnState.NULL) when no unit selection is
     // actually happening. Every other branch is an acting move and calls [activePlayer]
@@ -173,15 +156,16 @@ internal fun handleUnitSelection(
     // [AttackPhase.SelectingAttacker]'s / [PhysicalAttackPhase.SelectingAttacker]'s
     // `turnState.attack.isComplete` guard, each of which short-circuits to cursor-only handling
     // (never calling this function) while its sequence is unseeded.
-    return when (action) {
+    is BoardClick ->
+        localTurnGuard(app, activePlayer) ?: selectUnitAt(app.copy(cursor = action.coords), activePlayer(), selectGuard, enterFor)
+    is IdleAction -> when (action) {
         is IdleAction.MoveCursor -> handleCursorMove(app, action)
-        is IdleAction.ClickHex ->
-            localTurnGuard(app, activePlayer) ?: selectUnitAt(app.copy(cursor = action.coords), activePlayer(), selectGuard, enterFor)
         is IdleAction.SelectUnit ->
             localTurnGuard(app, activePlayer) ?: selectUnitAt(app, activePlayer(), selectGuard, enterFor)
         is IdleAction.CycleUnit -> localTurnGuard(app, activePlayer) ?: cycleAndEnter(app, selectableUnits(), enterFor)
         is IdleAction.CommitDeclarations -> localTurnGuard(app, activePlayer) ?: onCommit(app)
     }
+    else -> null
 }
 
 /**

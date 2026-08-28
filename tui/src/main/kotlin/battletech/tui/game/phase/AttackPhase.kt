@@ -28,12 +28,11 @@ import battletech.tui.game.mapToTuiPhase
 import battletech.tui.game.selectedLosHighlights
 import battletech.tui.hex.HexHighlight
 import battletech.tui.input.AttackAction
+import battletech.tui.input.BoardClick
+import battletech.tui.input.ContextId
 import battletech.tui.input.IdleAction
-import battletech.tui.input.InputMapper
 import battletech.tui.input.Keymap
-import com.github.ajalt.mordant.input.InputEvent
-import com.github.ajalt.mordant.input.KeyboardEvent
-import com.github.ajalt.mordant.input.MouseEvent
+import tenter.input.InputAction
 import tenter.input.KeySection
 
 internal const val DECLARING_PROMPT = "Declare weapon fire"
@@ -58,7 +57,9 @@ internal sealed interface AttackPhase : Phase {
         override val drafts: Map<UnitId, UnitDeclaration> = emptyMap(),
     ) : AttackPhase {
 
-        override fun handle(event: InputEvent, app: AppState): Transition? {
+        override val keyContext: ContextId get() = ContextId.WEAPON_IDLE
+
+        override fun handle(action: InputAction, app: AppState): Transition? {
             val turnState = app.turnState
             // The attack impulse sequence may not be seeded yet (fresh TurnState.NULL, or a
             // host-mode render before the roster completes and the session's advance() kickstart
@@ -66,11 +67,10 @@ internal sealed interface AttackPhase : Phase {
             // indexes into that sequence and would throw, so only cursor movement is safe here.
             // Mirrors MovementPhase.SelectingUnit's `turnState.movement.isComplete` guard.
             if (turnState.attack.isComplete) {
-                val action = mapIdleInput(event, app) ?: return null
                 return if (action is IdleAction.MoveCursor) handleCursorMove(app, action) else Transition(app)
             }
             return handleUnitSelection(
-                event = event,
+                action = action,
                 app = app,
                 activePlayer = { app.turnState.attack.activePlayer },
                 selectableUnits = { app.turnState.selectableAttackUnits(app.state.units) },
@@ -124,48 +124,47 @@ internal sealed interface AttackPhase : Phase {
         public fun allDrafts(): Map<UnitId, UnitDeclaration> =
             drafts + (unitId to currentDeclaration())
 
-        override fun handle(event: InputEvent, app: AppState): Transition? {
-            val action = when (event) {
-                is KeyboardEvent -> InputMapper.mapAttackEvent(event)
-                is MouseEvent -> InputMapper.mapMouseToHex(
-                    event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y,
-                    scrollX = app.boardScroll.x, scrollY = app.boardScroll.y,
-                )?.let { AttackAction.ClickTarget(it) }
-            } ?: return null
+        override val keyContext: ContextId get() = ContextId.WEAPON_DECLARING
 
+        override fun handle(action: InputAction, app: AppState): Transition? {
             // Compute view + targets once per event; pass into pure allocation methods.
             val attacker = app.ownUnit(unitId)
             val view = app.view
             val targets = view.targetInfos(unitId, torsoFacing, primaryTargetId)
 
             return when (action) {
-                is AttackAction.NextAttacker -> nextAttacker(app)
-                is AttackAction.Commit -> commitAttackImpulse(app, allDrafts())
-                is AttackAction.Cancel -> onCancel(app)
-                is AttackAction.ToggleWeapon -> {
-                    val newAllocation = allocation.toggle(targets)
-                    Transition(app.copy(phase = copy(allocation = newAllocation)))
-                }
-                is AttackAction.TwistTorso -> {
-                    val newTorso = if (action.clockwise) torsoFacing.rotateClockwise()
-                    else torsoFacing.rotateCounterClockwise()
-                    if (newTorso !in view.legalTorsoFacings(unitId)) return Transition(app)
-                    val newValidIds = view.validTargets(unitId, newTorso)
-                    val newTargets = view.targetInfos(unitId, newTorso, primaryTargetId)
-                    val newAllocation = allocation.twist(newTorso, newTargets, newValidIds)
-                    Transition(app.copy(phase = copy(allocation = newAllocation)))
-                }
-                is AttackAction.NavigateWeapons -> {
-                    val newAllocation = allocation.navigate(action.delta, targets)
-                    Transition(app.copy(phase = copy(allocation = newAllocation)))
-                }
-                is AttackAction.ClickTarget -> {
+                // Reads app.cursor, not the clicked coordinates — a latent pre-existing bug,
+                // preserved verbatim rather than fixed as part of this migration.
+                is BoardClick -> {
                     val targetUnitId = app.state.units.at(app.cursor)?.id
                     val validIds = view.validTargets(unitId, torsoFacing)
                     if (targetUnitId == null || targetUnitId !in validIds) return Transition(app)
                     val newAllocation = allocation.clickTarget(targetUnitId, targets)
                     Transition(app.copy(phase = copy(allocation = newAllocation)))
                 }
+                is AttackAction -> when (action) {
+                    is AttackAction.NextAttacker -> nextAttacker(app)
+                    is AttackAction.Commit -> commitAttackImpulse(app, allDrafts())
+                    is AttackAction.Cancel -> onCancel(app)
+                    is AttackAction.ToggleWeapon -> {
+                        val newAllocation = allocation.toggle(targets)
+                        Transition(app.copy(phase = copy(allocation = newAllocation)))
+                    }
+                    is AttackAction.TwistTorso -> {
+                        val newTorso = if (action.clockwise) torsoFacing.rotateClockwise()
+                        else torsoFacing.rotateCounterClockwise()
+                        if (newTorso !in view.legalTorsoFacings(unitId)) return Transition(app)
+                        val newValidIds = view.validTargets(unitId, newTorso)
+                        val newTargets = view.targetInfos(unitId, newTorso, primaryTargetId)
+                        val newAllocation = allocation.twist(newTorso, newTargets, newValidIds)
+                        Transition(app.copy(phase = copy(allocation = newAllocation)))
+                    }
+                    is AttackAction.NavigateWeapons -> {
+                        val newAllocation = allocation.navigate(action.delta, targets)
+                        Transition(app.copy(phase = copy(allocation = newAllocation)))
+                    }
+                }
+                else -> null
             }
         }
 

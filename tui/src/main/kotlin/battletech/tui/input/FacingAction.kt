@@ -1,7 +1,17 @@
 package battletech.tui.input
 
-public sealed interface FacingAction {
-    public data class SelectFacing(val index: Int) : FacingAction
-    public data object Cancel : FacingAction
-    public data object CycleUnit : FacingAction
+import tenter.input.InputAction
+
+public sealed interface FacingAction : InputAction {
+    public data class SelectFacing(val index: Int) : FacingAction {
+        override val id: String get() = "selectFacing.$index"
+    }
+
+    public data object Cancel : FacingAction {
+        override val id: String get() = "cancel"
+    }
+
+    public data object CycleUnit : FacingAction {
+        override val id: String get() = "cycleUnit"
+    }
 }

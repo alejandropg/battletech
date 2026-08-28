@@ -21,8 +21,9 @@ import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.enterBrowsing
 import battletech.tui.game.phase.enterMovementSubMode
+import battletech.tui.input.BrowsingAction
+import battletech.tui.input.FacingAction
 import battletech.tui.viewFor
-import com.github.ajalt.mordant.input.KeyboardEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -172,14 +173,14 @@ internal class MovementPhaseTest {
             val browsing = entered.app.phase as MovementPhase.Browsing
             assertEquals(MovementRules.stationaryHex(unit), browsing.hoveredDestination)
 
-            val facingResult = browsing.handle(KeyboardEvent("Enter"), entered.app)
+            val facingResult = browsing.handle(BrowsingAction.ConfirmPath, entered.app)
 
             assertNotNull(facingResult)
             val facingPhase = assertInstanceOf(MovementPhase.SelectingFacing::class.java, facingResult!!.app.phase)
             assertTrue(facingPhase.options.any { it.facing == unit.facing && it.mpSpent == 0 })
 
             // "1" is FACING_ORDER[0] == N, the unit's current facing.
-            val result = facingPhase.handle(KeyboardEvent("1"), facingResult.app)
+            val result = facingPhase.handle(FacingAction.SelectFacing(1), facingResult.app)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -202,7 +203,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, -2), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Enter"), state)
+            val result = phase.handle(BrowsingAction.ConfirmPath, state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -221,7 +222,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Enter"), state)
+            val result = phase.handle(BrowsingAction.ConfirmPath, state)
 
             assertNotNull(result)
             assertInstanceOf(MovementPhase.SelectingFacing::class.java, result!!.app.phase)
@@ -239,7 +240,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Enter"), state)
+            val result = phase.handle(BrowsingAction.ConfirmPath, state)
 
             assertNotNull(result)
             val facingPhase = assertInstanceOf(MovementPhase.SelectingFacing::class.java, result!!.app.phase)
@@ -258,7 +259,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Enter"), state)
+            val result = phase.handle(BrowsingAction.ConfirmPath, state)
 
             assertNotNull(result)
             val facingPhase = assertInstanceOf(MovementPhase.SelectingFacing::class.java, result!!.app.phase)
@@ -277,7 +278,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Enter"), state)
+            val result = phase.handle(BrowsingAction.ConfirmPath, state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -301,7 +302,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(0, -1), gameState = gameState)
 
-            val result = facingPhase.handle(KeyboardEvent("1"), state)
+            val result = facingPhase.handle(FacingAction.SelectFacing(1), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -322,7 +323,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(0, -1), gameState = gameState)
 
-            val result = facingPhase.handle(KeyboardEvent("3"), state)
+            val result = facingPhase.handle(FacingAction.SelectFacing(3), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -342,7 +343,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = facingPhase.handle(KeyboardEvent("4"), state)
+            val result = facingPhase.handle(FacingAction.SelectFacing(4), state)
 
             assertNotNull(result)
             assertInstanceOf(MovementPhase.SelectingFacing::class.java, result!!.app.phase)
@@ -360,7 +361,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("1"), state)
+            val result = phase.handle(BrowsingAction.SelectFacing(1), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -381,7 +382,7 @@ internal class MovementPhaseTest {
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
             // "1" is FACING_ORDER[0] == N, the unit's current facing.
-            val result = facingPhase.handle(KeyboardEvent("1"), state)
+            val result = facingPhase.handle(FacingAction.SelectFacing(1), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -401,7 +402,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("1"), state)
+            val result = phase.handle(BrowsingAction.SelectFacing(1), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -424,7 +425,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Escape"), state)
+            val result = phase.handle(BrowsingAction.Cancel, state)
 
             assertNotNull(result)
             assertInstanceOf(MovementPhase.SelectingUnit::class.java, result!!.app.phase)
@@ -443,7 +444,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = facingPhase.handle(KeyboardEvent("Escape"), state)
+            val result = facingPhase.handle(FacingAction.Cancel, state)
 
             assertNotNull(result)
             assertInstanceOf(MovementPhase.Browsing::class.java, result!!.app.phase)
@@ -464,7 +465,7 @@ internal class MovementPhaseTest {
             // withCursorAt should resolve a non-null hover there rather than the old hard-coded null.
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(0, -1), gameState = gameState)
 
-            val result = facingPhase.handle(KeyboardEvent("Escape"), state)
+            val result = facingPhase.handle(FacingAction.Cancel, state)
 
             assertNotNull(result)
             val browsing = result!!.app.phase as MovementPhase.Browsing
@@ -486,7 +487,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("x"), state)
+            val result = phase.handle(BrowsingAction.CycleMode, state)
 
             val browsing = result!!.app.phase as MovementPhase.Browsing
             assertEquals(1, browsing.currentModeIndex)
@@ -507,7 +508,7 @@ internal class MovementPhaseTest {
             // hover there directly instead of leaving it null until the cursor next moves.
             val state = anAppState(phase = phase, cursor = unit.position, gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("x"), state)
+            val result = phase.handle(BrowsingAction.CycleMode, state)
 
             val browsing = result!!.app.phase as MovementPhase.Browsing
             assertEquals(1, browsing.currentModeIndex)
@@ -530,7 +531,7 @@ internal class MovementPhaseTest {
             // Start one hex away (north of the unit) and move south, landing on (0,0).
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, -1), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("ArrowDown"), state)
+            val result = phase.handle(BrowsingAction.MoveCursor(HexDirection.S), state)
 
             assertNotNull(result)
             val browsing = result!!.app.phase as MovementPhase.Browsing
@@ -549,7 +550,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, -1), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("ArrowDown"), state)
+            val result = phase.handle(BrowsingAction.MoveCursor(HexDirection.S), state)
 
             assertNotNull(result)
             val browsing = result!!.app.phase as MovementPhase.Browsing
@@ -568,7 +569,7 @@ internal class MovementPhaseTest {
             val phase = enterBrowsing(u1, view)
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Tab"), state)
+            val result = phase.handle(BrowsingAction.CycleUnit, state)
 
             assertNotNull(result)
             val browsing = result!!.app.phase as MovementPhase.Browsing
@@ -584,7 +585,7 @@ internal class MovementPhaseTest {
             val phase = enterBrowsing(u1, view)
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Tab"), state)
+            val result = phase.handle(BrowsingAction.CycleUnit, state)
 
             assertEquals(HexCoordinates(2, 2), result!!.app.cursor)
         }
@@ -598,7 +599,7 @@ internal class MovementPhaseTest {
             val phase = enterBrowsing(u2, view)
             val state = anAppState(phase = phase, cursor = HexCoordinates(2, 2), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Tab"), state)
+            val result = phase.handle(BrowsingAction.CycleUnit, state)
 
             assertNotNull(result)
             val browsing = result!!.app.phase as MovementPhase.Browsing
@@ -617,7 +618,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
-            val result = phase.handle(KeyboardEvent("Tab"), state)
+            val result = phase.handle(BrowsingAction.CycleUnit, state)
 
             assertNotNull(result)
             val browsing = result!!.app.phase as MovementPhase.Browsing
@@ -638,7 +639,7 @@ internal class MovementPhaseTest {
             val phase = enterBrowsing(u1, view)
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState, turnState = turnState)
 
-            val result = phase.handle(KeyboardEvent("Tab"), state)
+            val result = phase.handle(BrowsingAction.CycleUnit, state)
 
             assertNotNull(result)
             assertEquals(gameState.projectFor(result!!.app.viewer), result.app.state)
@@ -659,7 +660,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = facingPhase.handle(KeyboardEvent("Tab"), state)
+            val result = facingPhase.handle(FacingAction.CycleUnit, state)
 
             assertNotNull(result)
             val nextBrowsing = result!!.app.phase as MovementPhase.Browsing
@@ -687,7 +688,7 @@ internal class MovementPhaseTest {
                 turnState = aTurnState(movementOrder = listOf(Impulse(PlayerId.PLAYER_1, 1))),
             )
 
-            val result = phase.handle(KeyboardEvent("Enter"), state)
+            val result = phase.handle(BrowsingAction.ConfirmPath, state)
 
             assertInstanceOf(AttackPhase.SelectingAttacker::class.java, result!!.app.phase)
         }
@@ -714,7 +715,7 @@ internal class MovementPhaseTest {
                 ),
             )
 
-            val result = phase.handle(KeyboardEvent("Enter"), state)
+            val result = phase.handle(BrowsingAction.ConfirmPath, state)
 
             assertInstanceOf(MovementPhase.SelectingUnit::class.java, result!!.app.phase)
         }

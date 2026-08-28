@@ -13,11 +13,11 @@ import battletech.tui.game.AppState
 import battletech.tui.game.attackPlayer
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.AttackAction
+import battletech.tui.input.BoardClick
+import battletech.tui.input.ContextId
 import battletech.tui.input.IdleAction
-import battletech.tui.input.InputMapper
 import battletech.tui.input.Keymap
-import com.github.ajalt.mordant.input.InputEvent
-import com.github.ajalt.mordant.input.KeyboardEvent
+import tenter.input.InputAction
 import tenter.input.KeySection
 import tenter.view.FlashMessage
 
@@ -35,17 +35,18 @@ internal sealed interface PhysicalAttackPhase : Phase {
         override val drafts: PhysicalDrafts = emptyMap(),
     ) : PhysicalAttackPhase {
 
-        override fun handle(event: InputEvent, app: AppState): Transition? {
+        override val keyContext: ContextId get() = ContextId.PHYSICAL_IDLE
+
+        override fun handle(action: InputAction, app: AppState): Transition? {
             val turnState = app.turnState
             // Mirrors AttackPhase.SelectingAttacker's / MovementPhase.SelectingUnit's guard: the
             // (shared) attack impulse sequence may not be seeded yet, and every other field this
             // phase touches indexes into it.
             if (turnState.attack.isComplete) {
-                val action = mapIdleInput(event, app) ?: return null
                 return if (action is IdleAction.MoveCursor) handleCursorMove(app, action) else Transition(app)
             }
             return handleUnitSelection(
-                event = event,
+                action = action,
                 app = app,
                 activePlayer = { app.turnState.attack.activePlayer },
                 selectableUnits = { app.turnState.selectableAttackUnits(app.state.units) },
@@ -73,17 +74,21 @@ internal sealed interface PhysicalAttackPhase : Phase {
         override val drafts: PhysicalDrafts = emptyMap(),
     ) : PhysicalAttackPhase, CancelableSubPhase {
 
-        override fun handle(event: InputEvent, app: AppState): Transition? {
-            val action = (event as? KeyboardEvent)?.let { InputMapper.mapAttackEvent(it) } ?: return null
-            return when (action) {
+        override val keyContext: ContextId get() = ContextId.PHYSICAL_DECLARING
+
+        override fun handle(action: InputAction, app: AppState): Transition? = when (action) {
+            is BoardClick -> Transition(app)
+            is AttackAction -> when (action) {
                 is AttackAction.NavigateWeapons -> Transition(app.copy(phase = navigate(action.delta, app)))
                 is AttackAction.ToggleWeapon -> toggle(app)
                 is AttackAction.NextAttacker -> nextAttacker(app)
                 is AttackAction.Commit -> commitPhysicalImpulse(app, allDrafts())
                 is AttackAction.Cancel -> onCancel(app)
-                is AttackAction.TwistTorso -> Transition(app) // physical attacks don't twist
-                is AttackAction.ClickTarget -> Transition(app)
+                // No chord reaches this in PHYSICAL_DECLARING (see Keybindings' declaringLayer) —
+                // kept only so this `when` stays exhaustive over AttackAction.
+                is AttackAction.TwistTorso -> Transition(app)
             }
+            else -> null
         }
 
         override fun status(app: AppState): PhaseStatus =

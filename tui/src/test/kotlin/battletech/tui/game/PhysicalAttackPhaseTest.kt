@@ -16,7 +16,8 @@ import battletech.tui.aGameMap
 import battletech.tui.aUnit
 import battletech.tui.game.phase.PhysicalAttackPhase
 import battletech.tui.game.phase.enterPhysicalDeclaring
-import com.github.ajalt.mordant.input.KeyboardEvent
+import battletech.tui.input.AttackAction
+import battletech.tui.input.IdleAction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -50,7 +51,7 @@ internal class PhysicalAttackPhaseTest {
     @Test
     fun `selecting an adjacent attacker enters the declaring phase`() {
         val app = appWith(PhysicalAttackPhase.SelectingAttacker())
-        val transition = app.phase.handle(KeyboardEvent("Enter"), app)!!
+        val transition = app.phase.handle(IdleAction.SelectUnit, app)!!
 
         val phase = transition.app.phase
         assertThat(phase).isInstanceOf(PhysicalAttackPhase.Declaring::class.java)
@@ -61,7 +62,7 @@ internal class PhysicalAttackPhaseTest {
     fun `toggling adds a physical attack to the draft`() {
         val declaring = enterPhysicalDeclaring(attacker.id, emptyMap())
         val app = appWith(declaring)
-        val transition = declaring.handle(KeyboardEvent(" "), app)!!
+        val transition = declaring.handle(AttackAction.ToggleWeapon, app)!!
 
         val phase = transition.app.phase as PhysicalAttackPhase.Declaring
         assertThat(phase.assignments.values.flatten()).isNotEmpty()
@@ -71,7 +72,7 @@ internal class PhysicalAttackPhaseTest {
     fun `escape cancels back to SelectingAttacker`() {
         val declaring = enterPhysicalDeclaring(attacker.id, emptyMap())
         val app = appWith(declaring)
-        val transition = declaring.handle(KeyboardEvent("Escape"), app)!!
+        val transition = declaring.handle(AttackAction.Cancel, app)!!
 
         assertThat(transition.app.phase).isInstanceOf(PhysicalAttackPhase.SelectingAttacker::class.java)
     }
@@ -86,7 +87,7 @@ internal class PhysicalAttackPhaseTest {
         val app = appWith(declaring)
         val armorBefore = totalArmor(app.state.units.byId(enemy.id).armor)
 
-        declaring.handle(KeyboardEvent("c"), app)!!
+        declaring.handle(AttackAction.Commit, app)!!
 
         // The session resolved the punch (3+3 hit, ceil(50/10)=5 damage applied). app.session
         // is the same mutable BattleSession before and after, so re-reading app.state
