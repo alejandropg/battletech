@@ -182,6 +182,6 @@ internal class GameEventPrinter(private val out: Appendable) {
             out.append("== TURN $turnNumber ==\n")
             lastPrintedTurn = turnNumber
         }
-        lines.forEach { line -> out.append("${line.icon ?: ">"} ${line.text}\n") }
+        lines.forEach { line -> out.append("${line.icon} ${line.text}\n") }
     }
 }

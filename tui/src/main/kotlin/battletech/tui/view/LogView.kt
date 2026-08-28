@@ -34,15 +34,14 @@ internal class LogView(
             }
 
             for (line in logLines) {
-                val icon = line.icon ?: ">"
-                val prefixWidth = CellWidth.of(icon) + 1
+                val prefixWidth = CellWidth.of(line.icon) + 1
                 val indent = " ".repeat(prefixWidth)
                 val available = content.width - prefixWidth
 
                 line.content.wrap(available, available).forEachIndexed { i, wrapped ->
                     content.writeLine(
                         styled {
-                            append(if (i == 0) "$icon " else indent)
+                            append(if (i == 0) "${line.icon} " else indent)
                             append(wrapped)
                         },
                     )

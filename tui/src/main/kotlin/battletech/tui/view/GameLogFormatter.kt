@@ -69,8 +69,8 @@ import tenter.screen.styled
 
 internal object GameLogFormatter {
 
-    data class LogLine(val icon: String?, val content: StyledText) {
-        constructor(icon: String?, text: String) : this(icon, StyledText.of(text))
+    data class LogLine(val icon: String, val content: StyledText) {
+        constructor(icon: String, text: String) : this(icon, StyledText.of(text))
 
         /** Plain-text projection for un-styled consumers ([battletech.tui.GameEventPrinter], assertions). */
         val text: String get() = content.plain
