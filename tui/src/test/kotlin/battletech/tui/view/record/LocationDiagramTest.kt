@@ -187,17 +187,18 @@ internal class LocationDiagramTest {
     }
 
     @Test
-    fun `armor side labels flank the final head row before the torso heading`() {
+    fun `armor side labels flank the first head row before the torso heading`() {
         val unit = aUnit(armor = exampleArmor)
 
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
+        val (headTopRow, _) = buffer.locate("╭─────╮")
         val (headBottomRow, _) = buffer.locate("╰─────╯")
         val (leftRow, leftCol) = buffer.locate("Left")
         val (rightRow, _) = buffer.locate("Right")
         val (torsoHeadingRow, _) = buffer.locate("Torso")
 
-        assertEquals(headBottomRow - 1, leftRow)
-        assertEquals(headBottomRow - 1, rightRow)
+        assertEquals(headTopRow + 1, leftRow)
+        assertEquals(headTopRow + 1, rightRow)
         assertEquals(23, leftCol)
         assertEquals("Left          │", buffer.line(leftRow, x = leftCol, width = 15))
         assertEquals("│          Right", buffer.line(rightRow, x = 43, width = 16))

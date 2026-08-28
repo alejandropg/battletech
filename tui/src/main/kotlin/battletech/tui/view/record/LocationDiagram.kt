@@ -101,8 +101,9 @@ internal class LocationDiagram private constructor(
             text = "Head " + value(body.head),
             style = locationStyle(body.head),
         )
-        val headBottom = drawSimpleBox(canvas, body.head, geometry.headX, topY = 2, width = sizes.head)
-        drawSideLabels(canvas, geometry, sizes, headBottom - 1)
+        val headTop = 2
+        val headBottom = drawSimpleBox(canvas, body.head, geometry.headX, topY = headTop, width = sizes.head)
+        drawSideLabels(canvas, geometry, sizes, headTop + 1)
         val torsoTop = headBottom + 3
         drawTorsoLabels(canvas, geometry, sizes, torsoTop)
 
