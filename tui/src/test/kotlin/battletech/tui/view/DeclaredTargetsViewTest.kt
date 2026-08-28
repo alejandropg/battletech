@@ -2,7 +2,6 @@ package battletech.tui.view
 
 import battletech.tactical.model.PlayerId
 import battletech.tactical.unit.UnitId
-import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.DeclaredAttackerEntry
 import battletech.tui.game.phase.DeclaredTargetEntry
 import battletech.tui.game.phase.DeclaredTargetsRender
@@ -167,7 +166,7 @@ internal class DeclaredTargetsViewTest {
         val height = 10
         val buffer = renderInPanel(
             view,
-            badge = GamePanelId.DECLARED_TARGETS.badge,
+            badge = '2',
             title = DeclaredTargetsView.TITLE,
             width = width,
             height = height,
@@ -184,7 +183,7 @@ internal class DeclaredTargetsViewTest {
 
         val buffer = renderInPanel(
             view,
-            badge = GamePanelId.DECLARED_TARGETS.badge,
+            badge = '2',
             title = DeclaredTargetsView.TITLE,
             height = 10,
         )

@@ -5,7 +5,6 @@ import battletech.tui.game.AppState
 import battletech.tui.game.RenderData
 import battletech.tui.input.ContextId
 import tenter.input.InputAction
-import tenter.input.KeySection
 
 /**
  * UI sub-state machine for the active player phase. Phases are pure
@@ -40,9 +39,6 @@ internal sealed interface Phase {
      * KDoc for why presence and visibility are the same fact here.
      */
     fun panels(app: AppState): PhasePanels = PhasePanels.NONE
-
-    /** This phase's local keys, shown as their own section in the HELP panel. */
-    fun keySection(): KeySection
 }
 
 /**

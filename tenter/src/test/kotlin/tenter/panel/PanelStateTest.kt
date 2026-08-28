@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.view.View
 
-private enum class TestPanelId(override val badge: Char) : PanelId { A('a') }
+private enum class TestPanelId : PanelId { A }
 
 /** [Panel]'s [PanelState] cycling, restore-on-demote, and per-state width — see [Panel.cycleState]'s KDoc. */
 internal class PanelStateTest {

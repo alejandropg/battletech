@@ -27,9 +27,7 @@ import battletech.tui.input.BrowsingAction
 import battletech.tui.input.ContextId
 import battletech.tui.input.FacingAction
 import battletech.tui.input.IdleAction
-import battletech.tui.input.Keymap
 import tenter.input.InputAction
-import tenter.input.KeySection
 import tenter.view.FlashMessage
 
 internal val FACING_ORDER: List<HexDirection> = listOf(
@@ -83,7 +81,6 @@ internal sealed interface MovementPhase : Phase {
 
         override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(cursorUnitStatus(app))
 
-        override fun keySection(): KeySection = KeySection("MOVEMENT", Keymap.MOVEMENT_IDLE)
     }
 
     public data class Browsing(
@@ -177,8 +174,6 @@ internal sealed interface MovementPhase : Phase {
             return movementHeatSources(reachability.mode, hexes)
         }
 
-        override fun keySection(): KeySection = KeySection("BROWSE DESTINATION", Keymap.BROWSING)
-
         private fun confirm(app: AppState): Transition {
             val destination = hoveredDestination ?: return Transition(app.copy(phase = this))
             val facingsAtHex = destinationsAt(destination.position, app)
@@ -269,8 +264,6 @@ internal sealed interface MovementPhase : Phase {
             val hexes = hexesMoved(position, destination)
             return movementHeatSources(reachability.mode, hexes)
         }
-
-        override fun keySection(): KeySection = KeySection("SELECT FACING", Keymap.FACING)
 
         private fun commitByFacing(app: AppState, index: Int): Transition {
             val direction = FACING_ORDER.getOrNull(index - 1) ?: return Transition(app.copy(phase = this))

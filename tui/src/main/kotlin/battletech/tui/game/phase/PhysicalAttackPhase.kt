@@ -16,9 +16,7 @@ import battletech.tui.input.AttackAction
 import battletech.tui.input.BoardClick
 import battletech.tui.input.ContextId
 import battletech.tui.input.IdleAction
-import battletech.tui.input.Keymap
 import tenter.input.InputAction
-import tenter.input.KeySection
 import tenter.view.FlashMessage
 
 internal const val PHYSICAL_DECLARING_PROMPT = "Declare punch/kick"
@@ -64,7 +62,6 @@ internal sealed interface PhysicalAttackPhase : Phase {
 
         override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(cursorUnitStatus(app))
 
-        override fun keySection(): KeySection = KeySection("PHYSICAL ATTACK", Keymap.ATTACK_IDLE)
     }
 
     public data class Declaring(
@@ -97,8 +94,6 @@ internal sealed interface PhysicalAttackPhase : Phase {
         override fun unitStatus(app: AppState): UnitStatusRender = UnitStatusRender(app.state.units.byId(unitId))
 
         override fun onCancel(app: AppState): Transition = Transition(app.copy(phase = SelectingAttacker(allDrafts())))
-
-        override fun keySection(): KeySection = KeySection("DECLARE PHYSICAL", Keymap.PHYSICAL_DECLARING)
 
         // Physical attacks reuse the TARGETS panel but never the declared-targets column (that
         // belongs to the weapon-attack flow — see AttackPhase.declaredTargetsPanel) or TARGET

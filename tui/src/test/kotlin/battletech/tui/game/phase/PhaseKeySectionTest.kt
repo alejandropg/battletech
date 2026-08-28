@@ -4,13 +4,14 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.unit.UnitId
+import battletech.tui.input.Keybindings
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * Every reachable [Phase] state must declare local HELP-panel content: a non-blank
- * [Phase.keySection] title and a non-empty hints list. Mirrors
+ * Every reachable [Phase] state must declare a [Phase.keyContext] whose keymap layer renders local
+ * HELP-panel content: a non-blank title and a non-empty hints list. Mirrors
  * [PhaseVisiblePanelsTest]'s one-instance-per-state coverage.
  */
 internal class PhaseKeySectionTest {
@@ -55,18 +56,19 @@ internal class PhaseKeySectionTest {
         physicalDeclaring,
     )
 
+    private val keys = Keybindings.DEFAULT
+
     @Test
-    fun `every phase declares a non-blank key context`() {
+    fun `every phase's key context declares a non-blank title`() {
         for (phase in phases) {
-            assertFalse(phase.keySection().title.isBlank()) { "${phase::class.simpleName} has a blank keySection title" }
+            assertFalse(keys.hints(phase.keyContext).title.isBlank()) { "${phase::class.simpleName}'s ${phase.keyContext} has a blank title" }
         }
     }
 
     @Test
-    fun `every phase declares at least one key hint`() {
+    fun `every phase's key context declares at least one key hint`() {
         for (phase in phases) {
-            assertTrue(phase.keySection().hints.isNotEmpty()) { "${phase::class.simpleName} has no key hints" }
+            assertTrue(keys.hints(phase.keyContext).hints.isNotEmpty()) { "${phase::class.simpleName}'s ${phase.keyContext} has no key hints" }
         }
     }
-
 }

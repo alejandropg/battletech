@@ -22,7 +22,6 @@ import battletech.tui.aGameMap
 import battletech.tui.aUnit
 import battletech.tui.anArmorLayout
 import battletech.tui.anInternalStructureLayout
-import battletech.tui.game.GamePanelId
 import battletech.tui.icon.ammoIcon
 import battletech.tui.icon.emptyCircleIcon
 import battletech.tui.icon.filledCircleIcon
@@ -41,7 +40,7 @@ internal class UnitStatusViewTest {
 
     /** Render via decorator at (0,0) — pixel-parity regression guard for box/coordinates. */
     private fun renderDecorated(view: UnitStatusView, width: Int = 28, height: Int = 30): ScreenBuffer =
-        renderInPanel(view, badge = GamePanelId.UNIT_STATUS.badge, title = UnitStatusView.TITLE, width = width, height = height)
+        renderInPanel(view, badge = '1', title = UnitStatusView.TITLE, width = width, height = height)
 
     private fun aForeignUnit(
         name: String = "Hunchback",

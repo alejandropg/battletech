@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.view.View
 
-private enum class LayoutPanelId(override val badge: Char) : PanelId { MAIN('0'), A('a'), B('b') }
+private enum class LayoutPanelId : PanelId { MAIN, A, B }
 
 internal class PanelLayoutTest {
 

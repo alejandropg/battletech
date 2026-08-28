@@ -8,7 +8,7 @@ import tenter.screen.ScreenBuffer
 import tenter.view.ScrollOffset
 import tenter.view.View
 
-private enum class SetPanelId(override val badge: Char) : PanelId { MAIN('0'), A('a'), B('b') }
+private enum class SetPanelId : PanelId { MAIN, A, B }
 
 internal class PanelSetTest {
 

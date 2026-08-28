@@ -113,4 +113,27 @@ internal class KeybindingsTest {
         assertEquals(AttackAction.ToggleWeapon, keys.resolve(listOf(ContextId.WEAPON_DECLARING), KeyboardEvent(" ")))
         assertEquals(AttackAction.ToggleWeapon, keys.resolve(listOf(ContextId.PHYSICAL_DECLARING), KeyboardEvent(" ")))
     }
+
+    /**
+     * The badge doubles as the user-facing `Alt+<badge>` chord and the bordered decoration badge —
+     * now sourced from the keymap (see [Keybindings.badgeFor]) instead of a field on [GamePanelId].
+     * Pinning these values guards against a future binding change silently remapping which panel
+     * each keystroke acts on.
+     */
+    @Test
+    fun `badgeFor returns the stable per-panel badge, and every badge is unique`() {
+        val keys = Keybindings.DEFAULT
+
+        assertEquals('0', keys.badgeFor(GamePanelId.BOARD))
+        assertEquals('1', keys.badgeFor(GamePanelId.UNIT_STATUS))
+        assertEquals('2', keys.badgeFor(GamePanelId.DECLARED_TARGETS))
+        assertEquals('3', keys.badgeFor(GamePanelId.TARGETS))
+        assertEquals('4', keys.badgeFor(GamePanelId.TARGET_STATUS))
+        assertEquals('5', keys.badgeFor(GamePanelId.ATTACK_RESULTS))
+        assertEquals('9', keys.badgeFor(GamePanelId.LOG))
+        assertEquals('h', keys.badgeFor(GamePanelId.HELP))
+
+        val badges = GamePanelId.entries.map { keys.badgeFor(it) }
+        assertEquals(badges.size, badges.toSet().size, "duplicate badge would let one chord ambiguously resolve two panels")
+    }
 }

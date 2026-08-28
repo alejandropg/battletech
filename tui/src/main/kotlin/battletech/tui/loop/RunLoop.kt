@@ -60,7 +60,7 @@ internal suspend fun runLoop(
     // maximized), scroll offset, and auto-follow reveal across frames (see Panel's KDoc) —
     // nothing but the board's scroll offset round-trips back through appState (see
     // AppState.boardScroll's KDoc).
-    val workspace = Workspace()
+    val workspace = Workspace(keys)
 
     /**
      * Every render goes through here so the board's settled scroll offset is folded back into

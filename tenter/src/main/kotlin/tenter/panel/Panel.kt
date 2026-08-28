@@ -8,10 +8,8 @@ import tenter.view.ScrollOffset
 import tenter.view.View
 import tenter.view.scrollingPanel
 
-/** Stable identity for a [Panel]: what [Panel.render] shows as its `[badge]` in its border. */
-public interface PanelId {
-    public val badge: Char
-}
+/** Stable identity for a [Panel] — a bare marker interface for the [Panel]'s [K] type parameter. */
+public interface PanelId
 
 /**
  * One panel: stable [id] and [title], the per-[PanelState] view builders, and — unlike a
@@ -40,6 +38,7 @@ public class Panel<K : PanelId, I>(
     public val title: String,
     private val normalWidth: Int,
     private val extent: (I) -> ContentExtent = { ContentExtent.Measured() },
+    private val badge: Char? = null,
     private val normal: (I) -> View,
     private val minimized: ((I) -> View)? = null,
     private val maximized: ((I) -> View)? = null,
@@ -116,7 +115,7 @@ public class Panel<K : PanelId, I>(
         val role = if (focused) ChromeRole.PANEL_BORDER_FOCUSED else ChromeRole.PANEL_BORDER
         val panel = scrollingPanel(
             title = title,
-            badge = id.badge.toString(),
+            badge = badge?.toString(),
             content = content,
             extent = extent(inputs),
             offset = scroll,

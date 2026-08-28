@@ -5,6 +5,7 @@ import battletech.tui.aGameState
 import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.MovementPhase
+import battletech.tui.input.Keybindings
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
@@ -27,7 +28,10 @@ internal class PanelTest {
 
     // build lambdas below ignore their PanelInputs argument, so this stand-in never needs to be a
     // realistic frame — only a valid one to pass through.
-    private val inputs = PanelInputs(AppState(gameState = aGameState(), phase = MovementPhase.SelectingUnit, cursor = HexCoordinates(0, 0)))
+    private val inputs = PanelInputs(
+        AppState(gameState = aGameState(), phase = MovementPhase.SelectingUnit, cursor = HexCoordinates(0, 0)),
+        Keybindings.DEFAULT,
+    )
 
     private fun stubContent(lines: Int): View = object : View {
         override fun draw(canvas: Canvas) {
@@ -59,12 +63,12 @@ internal class PanelTest {
     fun `renders its chrome even when the content view draws nothing`() {
         // A builder always returns a view (see Panel's KDoc — "nothing to show" is a visibility
         // decision, not a builder's), so an empty view still gets a bordered, badged panel.
-        val panel: GamePanel = Panel(GamePanelId.LOG, "T", normalWidth = 28, normal = { EMPTY_VIEW })
+        val panel: GamePanel = Panel(GamePanelId.LOG, "T", normalWidth = 28, badge = '9', normal = { EMPTY_VIEW })
 
         val buffer = renderPanel(panel)
 
         assertEquals("╭", buffer.get(0, 0).char, "the border is drawn regardless of what the content view paints")
-        assertEquals(GamePanelId.LOG.badge.toString(), buffer.get(3, 0).char, "the badge identifies the panel")
+        assertEquals("9", buffer.get(3, 0).char, "the badge identifies the panel")
     }
 
     @Test
@@ -123,6 +127,7 @@ internal class PanelTest {
             GamePanelId.LOG,
             LOG_TITLE,
             normalWidth = 28,
+            badge = '9',
             normal = {
                 normalBuilds++
                 stubContent(3)
@@ -136,7 +141,7 @@ internal class PanelTest {
         // The full "[badge] title" run can't fit in a 7-column stub, so Bordered falls back to the
         // badge alone — the one thing that still identifies which panel this stub is (Alt+9 here).
         assertEquals("[", buffer.get(2, 0).char)
-        assertEquals(GamePanelId.LOG.badge.toString(), buffer.get(3, 0).char)
+        assertEquals("9", buffer.get(3, 0).char)
         assertEquals("]", buffer.get(4, 0).char)
 
         // Title runs vertically down the stub's 3-column content area: border(1) + gutter(1) puts

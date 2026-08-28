@@ -4,6 +4,7 @@ import battletech.tactical.model.MatchOutcome
 import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
+import battletech.tui.input.Keybindings
 import tenter.input.KeyGlyph
 import tenter.screen.Canvas
 import tenter.screen.Cell
@@ -27,8 +28,8 @@ private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
  * KDoc. [panels] is built fresh per [Workspace] (never a global singleton), so one test's panel
  * state can never leak into another's.
  */
-internal class Workspace {
-    private val panels: GamePanelSet = Panels.build()
+internal class Workspace(private val keys: Keybindings) {
+    private val panels: GamePanelSet = Panels.build(keys)
 
     /** The panel currently receiving keyboard focus — border/title/thumb render green for it. */
     val focused: GamePanelId get() = panels.focused
@@ -89,7 +90,7 @@ internal class Workspace {
 
         val buffer = ScreenBuffer(width, height)
         val screen = Canvas.of(buffer)
-        val inputs = PanelInputs(appState)
+        val inputs = PanelInputs(appState, keys)
 
         val layout = panels.render(screen, inputs, visible, reservedTop = STATUS_BAR_HEIGHT, forgetReveal = forgetReveal)
 

@@ -12,6 +12,7 @@ import battletech.tui.aUnit
 import battletech.tui.anAppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.MovementPhase
+import battletech.tui.input.Keybindings
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -39,7 +40,7 @@ internal class WorkspaceTest {
 
     @Test
     fun `visible panels render, in Panels_build order, right-aligned against the board`() {
-        val workspace = Workspace()
+        val workspace = Workspace(Keybindings.DEFAULT)
 
         val buffer = workspace.render(appState, width = 120, height = 40, flash = null)
 
@@ -52,7 +53,7 @@ internal class WorkspaceTest {
 
     @Test
     fun `HELP does not exist in the layout until AppState_helpOpen is set`() {
-        val workspace = Workspace()
+        val workspace = Workspace(Keybindings.DEFAULT)
 
         val closed = workspace.render(appState, width = 120, height = 40, flash = null)
         assertFalse(closed.text().contains(HelpView.TITLE))
@@ -71,7 +72,7 @@ internal class WorkspaceTest {
             hoveredDestination = null,
         )
         val selected = anAppState(phase, gameState = aGameState(units = listOf(unit), map = aGameMap()))
-        val workspace = Workspace()
+        val workspace = Workspace(Keybindings.DEFAULT)
 
         val promptBuffer = workspace.render(selected, width = 120, height = 40, flash = null)
         val flashBuffer = workspace.render(selected, width = 120, height = 40, flash = FlashMessage("Not available"))
@@ -83,7 +84,7 @@ internal class WorkspaceTest {
 
     @Test
     fun `minimizing the focused panel shrinks it to its stub — no more horizontal title, board absorbs the freed width`() {
-        val workspace = Workspace()
+        val workspace = Workspace(Keybindings.DEFAULT)
         workspace.render(appState, width = 120, height = 40, flash = null)
 
         workspace.focus(GamePanelId.LOG)
@@ -99,7 +100,7 @@ internal class WorkspaceTest {
 
     @Test
     fun `panelAt returns null over the board and the status bar`() {
-        val workspace = Workspace()
+        val workspace = Workspace(Keybindings.DEFAULT)
         workspace.render(appState, width = 120, height = 40, flash = null)
 
         assertNull(workspace.panelAt(x = 5, y = 10), "board area")
@@ -108,7 +109,7 @@ internal class WorkspaceTest {
 
     @Test
     fun `scrollPanel does not touch the board`() {
-        val workspace = Workspace()
+        val workspace = Workspace(Keybindings.DEFAULT)
         workspace.render(appState, width = 120, height = 40, flash = null)
 
         workspace.scrollPanel(GamePanelId.UNIT_STATUS, delta = 3)
@@ -119,7 +120,7 @@ internal class WorkspaceTest {
 
     @Test
     fun `scrollPanel on a panel that is not currently placed is a safe no-op`() {
-        val workspace = Workspace()
+        val workspace = Workspace(Keybindings.DEFAULT)
         workspace.render(appState, width = 120, height = 40, flash = null) // TARGETS isn't visible in MOVEMENT
 
         workspace.scrollPanel(GamePanelId.TARGETS, delta = 3) // must not throw
@@ -131,7 +132,7 @@ internal class WorkspaceTest {
     @Test
     fun `boardOffset reflects a manual pan once the cursor isn't driving auto-follow`() {
         val wideMap = anAppState(MovementPhase.SelectingUnit, gameState = aGameState(map = aGameMap(cols = 60, rows = 20)))
-        val workspace = Workspace()
+        val workspace = Workspace(Keybindings.DEFAULT)
 
         // First render follows the cursor into view. The cursor doesn't move afterward, so a
         // manual pan on top of that settled offset must survive the next render untouched.
@@ -144,7 +145,7 @@ internal class WorkspaceTest {
 
     @Test
     fun `the focused panel renders a green border while unfocused panels render neutral`() {
-        val workspace = Workspace()
+        val workspace = Workspace(Keybindings.DEFAULT)
         workspace.focus(GamePanelId.LOG)
 
         val buffer = workspace.render(appState, width = 120, height = 40, flash = null)
@@ -157,7 +158,7 @@ internal class WorkspaceTest {
 
     @Test
     fun `a maximized panel hides the board and the other panels`() {
-        val workspace = Workspace()
+        val workspace = Workspace(Keybindings.DEFAULT)
         workspace.focus(GamePanelId.LOG)
         workspace.cycleFocusedState(1) // NORMAL -> MAXIMIZED
 
@@ -172,7 +173,7 @@ internal class WorkspaceTest {
     fun `maximizing UNIT_STATUS shows the record sheet, not the compact list`() {
         val unit = aUnit(id = "A1", position = HexCoordinates(0, 0))
         val state = anAppState(MovementPhase.SelectingUnit, gameState = aGameState(units = listOf(unit), map = aGameMap()))
-        val workspace = Workspace()
+        val workspace = Workspace(Keybindings.DEFAULT)
 
         val normal = workspace.render(state, width = 120, height = 40, flash = null)
         assertTrue(normal.text().contains(UnitStatusView.TITLE))
@@ -188,7 +189,7 @@ internal class WorkspaceTest {
 
     @Test
     fun `game-over banner renders once matchEnded is set`() {
-        val workspace = Workspace()
+        val workspace = Workspace(Keybindings.DEFAULT)
         val ended = appState.copy(matchEnded = MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1)))
 
         val buffer = workspace.render(ended, width = 120, height = 40, flash = null)

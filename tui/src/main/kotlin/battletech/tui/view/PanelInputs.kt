@@ -6,8 +6,9 @@ import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.AttackRender
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.game.phase.DeclaredTargetsRender
+import battletech.tui.input.ContextId
+import battletech.tui.input.Keybindings
 import tenter.input.KeySection
-import battletech.tui.input.Keymap
 import tenter.view.ContentExtent
 import tenter.view.View
 
@@ -20,7 +21,7 @@ import tenter.view.View
  * This is the single place that interprets [AppState] into view inputs; the
  * panels themselves only read these prepared values.
  */
-internal class PanelInputs(private val appState: AppState) {
+internal class PanelInputs(private val appState: AppState, private val keys: Keybindings) {
 
     val state get() = appState.state
 
@@ -83,7 +84,7 @@ internal class PanelInputs(private val appState: AppState) {
     }
 
     val helpSections: List<KeySection> by lazy {
-        listOf(appState.phase.keySection(), Keymap.GLOBAL)
+        listOf(keys.hints(appState.phase.keyContext), keys.hints(ContextId.CHROME))
     }
 }
 

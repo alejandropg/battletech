@@ -31,9 +31,7 @@ import battletech.tui.input.AttackAction
 import battletech.tui.input.BoardClick
 import battletech.tui.input.ContextId
 import battletech.tui.input.IdleAction
-import battletech.tui.input.Keymap
 import tenter.input.InputAction
-import tenter.input.KeySection
 
 internal const val DECLARING_PROMPT = "Declare weapon fire"
 
@@ -95,7 +93,6 @@ internal sealed interface AttackPhase : Phase {
         override fun board(app: AppState): RenderData =
             if (drafts.isEmpty()) RenderData.EMPTY else RenderData(draftTorsoFacings = draftTorsoFacings(app, drafts))
 
-        override fun keySection(): KeySection = KeySection("WEAPON ATTACK", Keymap.ATTACK_IDLE)
     }
 
     public data class Declaring(
@@ -230,8 +227,6 @@ internal sealed interface AttackPhase : Phase {
                 declaredTargets = declaredTargetsPanel(app, allDrafts()),
             )
         }
-
-        override fun keySection(): KeySection = KeySection("DECLARE FIRE", Keymap.WEAPON_DECLARING)
 
         /** Query target infos for this attacker's current torso facing — one call per render entry point. */
         private fun targetTable(view: PlayerView): List<TargetInfo> =

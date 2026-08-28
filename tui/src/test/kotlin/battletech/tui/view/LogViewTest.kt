@@ -16,7 +16,6 @@ import battletech.tactical.session.UnitStoodUp
 import battletech.tactical.unit.PilotingSkillRoll
 import battletech.tactical.unit.UnitRoster
 import battletech.tui.aUnit
-import battletech.tui.game.GamePanelId
 import battletech.tui.icon.initiativeIcon
 import battletech.tui.icon.movementModeIcon
 import battletech.tui.icon.unitStoodUpIcon
@@ -62,7 +61,7 @@ internal class LogViewTest {
         scrollOffset: Int? = null,
     ): ScreenBuffer = renderInPanel(
         view,
-        badge = GamePanelId.LOG.badge,
+        badge = '9',
         title = LogView.TITLE,
         width = width,
         height = height,
@@ -202,7 +201,7 @@ internal class LogViewTest {
         // First render: no previousReveal, so it follows to the bottom — establishes the reveal.
         val first = scrollingPanel(
             title = LogView.TITLE,
-            badge = GamePanelId.LOG.badge.toString(),
+            badge = "9",
             content = view,
             extent = ContentExtent.Measured(),
         )
@@ -213,7 +212,7 @@ internal class LogViewTest {
         // reveal row is identical — the manual offset must be respected, not re-followed.
         val second = scrollingPanel(
             title = LogView.TITLE,
-            badge = GamePanelId.LOG.badge.toString(),
+            badge = "9",
             content = view,
             extent = ContentExtent.Measured(),
             offset = ScrollOffset(),
@@ -236,7 +235,7 @@ internal class LogViewTest {
         val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val scrolledAway = scrollingPanel(
             title = LogView.TITLE,
-            badge = GamePanelId.LOG.badge.toString(),
+            badge = "9",
             content = LogView(tenEntries, state = emptyState),
             extent = ContentExtent.Measured(),
         )
@@ -244,7 +243,7 @@ internal class LogViewTest {
         val revealedAtTen = scrolledAway.scroll.revealed!!
         val manuallyScrolledUp = scrollingPanel(
             title = LogView.TITLE,
-            badge = GamePanelId.LOG.badge.toString(),
+            badge = "9",
             content = LogView(tenEntries, state = emptyState),
             extent = ContentExtent.Measured(),
             offset = ScrollOffset(),
@@ -257,7 +256,7 @@ internal class LogViewTest {
         val elevenEntries = tenEntries + LogEntry(turn = 11, event = stoodUp())
         val newEntryArrives = scrollingPanel(
             title = LogView.TITLE,
-            badge = GamePanelId.LOG.badge.toString(),
+            badge = "9",
             content = LogView(elevenEntries, state = emptyState),
             extent = ContentExtent.Measured(),
             offset = manuallyScrolledUp.scroll.offset,
