@@ -87,6 +87,12 @@ Resolution precedence is an ordered list of active contexts — `CHROME` and, wh
 focused, the shadowing `PANEL_SCROLL` layer, always first; the active phase's own context, last,
 and omitted entirely once the match has ended — computed fresh every frame in `RunLoop.
 activeContexts`, not encoded as `if`/`when` order the way it was before this table existed. A
+board click is the one input that does *not* go through the table (the mouse is deliberately not
+bindable), so it carries the match-ended gate by hand; both halves live together in
+`RunLoop.resolveInput` precisely so they cannot drift apart, and `RunLoopInputResolutionTest`
+checks them there rather than through rendered output — once the match ends `Workspace.render`
+swaps the status bar for the match-over line and stops drawing flash text, so a blocked input and
+a handled one produce the same frame and any assertion on output passes vacuously. A
 `Phase` never sees a key or a mouse coordinate, only the resolved `InputAction`; the HELP panel's
 sections and every panel's border badge are *derived* from the same table (`Keybindings.hints`/
 `badgeFor`) rather than hand-maintained copies that could drift from what a chord actually does.

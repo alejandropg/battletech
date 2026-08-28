@@ -17,6 +17,8 @@ import battletech.tactical.session.TurnEnded
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.phase.AttackPhase
+import battletech.tui.game.phase.BOARD_ORIGIN_X
+import battletech.tui.game.phase.BOARD_ORIGIN_Y
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.icon.sessionNoticeIcon
 import battletech.tui.input.Keybindings
@@ -26,6 +28,7 @@ import battletech.tui.screen.resolveTheme
 import battletech.tui.view.AttackResultsView
 import battletech.tui.view.LogView
 import com.github.ajalt.mordant.input.KeyboardEvent
+import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
@@ -393,11 +396,21 @@ internal class TuiAppLoopTest {
     }
 
     // -------------------------------------------------------------------------
-    // Test 7: Input is blocked after match ends — no phase transitions fire
+    // Test 7: a board click reaches the phase.
+    //
+    // The match-ended input block that used to be tested here now lives in
+    // RunLoopInputResolutionTest: once the match is over, Workspace.render swaps
+    // the status bar for the match-over line and stops drawing flash text at all,
+    // so a blocked input and a handled one render identically and any assertion
+    // on rendered output passes whether or not the block exists.
+    //
+    // What IS worth asserting end-to-end is the positive: that a click composes
+    // all the way through — mouse-scroll interception, hit-testing against the
+    // real frame's board origin, BoardClick, and the phase's own handling.
     // -------------------------------------------------------------------------
 
     @Test
-    fun `game input is blocked after MatchEnded and no phase transitions fire`() = runTest(UnconfinedTestDispatcher()) {
+    fun `a board click on the enemy unit reaches the phase and flashes`() = runTest(UnconfinedTestDispatcher()) {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -411,17 +424,14 @@ internal class TuiAppLoopTest {
             )
         }
 
-        // End the match, then clear recorded output to isolate subsequent renders.
-        internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1))))
-        recorder.clearOutput()
+        // Deliberately no clearOutput(): the diffing renderer rewrites only changed cells, and a
+        // style run can split the flash text with escape sequences mid-string, so this matches on
+        // the same "Not your" prefix the Enter-flash test above uses.
+        internalEvents.send(UiEvent.Input(MouseEvent(x = BOARD_ORIGIN_X, y = BOARD_ORIGIN_Y, left = true)))
 
-        // Pressing Enter on the enemy unit at (0,0) would normally produce the
-        // "Not your unit" flash, but input must be blocked after match ends.
-        internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
-
-        assertFalse(
-            recorder.output().contains("Not your unit"),
-            "Phase input should be blocked after MatchEnded — 'Not your unit' flash must not appear",
+        assertTrue(
+            recorder.output().contains("Not your"),
+            "A left click on hex (0,0) must resolve to a BoardClick and reach the phase",
         )
 
         internalEvents.send(UiEvent.Quit)

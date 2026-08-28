@@ -16,6 +16,7 @@ import battletech.tui.input.ChromeAction
 import battletech.tui.input.ContextId
 import battletech.tui.input.Keybindings
 import battletech.tui.view.Workspace
+import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.rendering.Size
@@ -107,21 +108,7 @@ internal suspend fun runLoop(
                         }
                     }
 
-                    val action: InputAction? = when (event) {
-                        is KeyboardEvent -> keys.resolve(activeContexts(workspace, appState), event)
-                        // Gated on matchEnded here too — a board click, like a keyboard chord
-                        // routed through activeContexts, must not reach the phase once the match
-                        // is over.
-                        is MouseEvent ->
-                            if (appState.matchEnded != null) {
-                                null
-                            } else {
-                                BoardMouse.mapMouseToHex(
-                                    event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y,
-                                    scrollX = appState.boardScroll.x, scrollY = appState.boardScroll.y,
-                                )?.let(::BoardClick)
-                            }
-                    }
+                    val action = resolveInput(event, keys, workspace.focused, appState)
 
                     when (action) {
                         null -> {
@@ -257,12 +244,43 @@ internal suspend fun runLoop(
 }
 
 /**
+ * What [event] means in this frame, or null when nothing live is bound to it.
+ *
+ * Both halves of "what is live right now" live here, because they have to agree: a keyboard chord
+ * reaches the phase only while [activeContexts] still includes the phase's own layer, and a board
+ * click — which never goes through the keymap at all — needs the same match-ended gate applied by
+ * hand, or clicking would still drive the game after the match was over.
+ *
+ * Split out of [runLoop]'s collect block so that agreement is directly testable. It cannot be
+ * observed through rendered output: once `matchEnded` is set, `Workspace.render` swaps the status
+ * bar for the match-over line and stops drawing flash text at all, so a blocked and an unblocked
+ * input produce the same frame.
+ */
+internal fun resolveInput(
+    event: InputEvent,
+    keys: Keybindings,
+    focused: GamePanelId,
+    appState: AppState,
+): InputAction? = when (event) {
+    is KeyboardEvent -> keys.resolve(activeContexts(focused, appState), event)
+    is MouseEvent ->
+        if (appState.matchEnded != null) {
+            null
+        } else {
+            BoardMouse.mapMouseToHex(
+                event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y,
+                scrollX = appState.boardScroll.x, scrollY = appState.boardScroll.y,
+            )?.let(::BoardClick)
+        }
+}
+
+/**
  * Which key layers are live this frame, in resolution-precedence order. Game input
  * (the active phase's own context) is omitted once the match has ended — chrome (focus, resize,
  * pan, quit) stays live regardless.
  */
-private fun activeContexts(workspace: Workspace, appState: AppState): List<ContextId> = buildList {
-    if (workspace.focused != GamePanelId.BOARD) add(ContextId.PANEL_SCROLL)
+private fun activeContexts(focused: GamePanelId, appState: AppState): List<ContextId> = buildList {
+    if (focused != GamePanelId.BOARD) add(ContextId.PANEL_SCROLL)
     add(ContextId.CHROME)
     if (appState.matchEnded == null) add(appState.phase.keyContext)
 }
