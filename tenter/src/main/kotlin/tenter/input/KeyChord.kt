@@ -10,6 +10,12 @@ import com.github.ajalt.mordant.input.KeyboardEvent
  * name for special keys (`"ArrowLeft"`, `"PageUp"`, `"Home"`, `"Enter"`, `"Tab"`, `"Escape"`,
  * `" "` for space). That spelling is already config-file-friendly, which is why no separate key
  * vocabulary exists.
+ *
+ * A chord is only ever matched against [of]'s output, so one that [of] can never produce could
+ * never fire. Declaring `KeyChord("H", alt = true)` would be exactly that: silently dead, and
+ * indistinguishable from a working binding at the declaration site. The constructor rejects it
+ * instead, which is what keeps "declared" and "resolvable" the same set — including for a future
+ * config file, whose parsed chords come through this same constructor.
  */
 public data class KeyChord(
     val key: String,
@@ -17,6 +23,21 @@ public data class KeyChord(
     val alt: Boolean = false,
     val shift: Boolean = false,
 ) {
+    init {
+        require(key.isNotEmpty()) { "A key chord needs a key" }
+        if (key.length == 1) {
+            require(key == key.lowercase()) {
+                "Single-character key '$key' must be declared lowercase — a shifted printable key is " +
+                    "reported by the terminal as the character it produces, so KeyChord.of folds it to " +
+                    "lowercase and '$key' could never be resolved"
+            }
+            require(!shift) {
+                "Single-character key '$key' must not carry shift — KeyChord.of clears it for printable " +
+                    "keys, since the character already encodes it"
+            }
+        }
+    }
+
     public companion object {
         /**
          * The chord an event names, normalised for lookup.

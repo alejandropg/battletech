@@ -122,5 +122,34 @@ internal class KeyMapTest {
                 KeyChord.of(KeyboardEvent("ArrowUp", shift = true)),
             )
         }
+
+        @Test
+        fun `of only ever produces chords the constructor accepts`() {
+            // The two are the same set by construction — this pins that they stay so, since a
+            // chord `of` could not produce would be a binding that silently never fires.
+            val events = listOf(
+                KeyboardEvent("H", alt = true, shift = true),
+                KeyboardEvent("h"),
+                KeyboardEvent("+"),
+                KeyboardEvent(" "),
+                KeyboardEvent("ArrowUp", shift = true),
+                KeyboardEvent("PageDown", ctrl = true),
+            )
+
+            for (event in events) {
+                val chord = KeyChord.of(event)
+                assertEquals(chord, KeyChord(chord.key, chord.ctrl, chord.alt, chord.shift))
+            }
+        }
+
+        @Test
+        fun `an uppercase single-character chord is rejected rather than left silently dead`() {
+            assertThrows(IllegalArgumentException::class.java) { KeyChord("H", alt = true) }
+        }
+
+        @Test
+        fun `a shifted printable chord is rejected — the character already encodes the shift`() {
+            assertThrows(IllegalArgumentException::class.java) { KeyChord("h", shift = true) }
+        }
     }
 }
