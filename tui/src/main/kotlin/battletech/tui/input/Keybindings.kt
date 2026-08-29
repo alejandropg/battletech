@@ -87,7 +87,7 @@ private fun chromeLayer(): KeyLayer {
     ).map { (chord, direction) -> KeyBinding(chord, PanAction.Pan(direction), "pan") }
 
     val bindings = focusPanelBindings + listOf(
-        KeyBinding(KeyboardEvent("h", alt = true), ChromeAction.ToggleHelp, "focusPanel"),
+        KeyBinding(KeyboardEvent("?"), ChromeAction.ToggleHelp, "toggleHelp"),
         KeyBinding(KeyboardEvent("+"), ChromeAction.CycleState(1), "cycleState"),
         KeyBinding(KeyboardEvent("-"), ChromeAction.CycleState(-1), "cycleState"),
     ) + panBindings + listOf(
@@ -96,7 +96,8 @@ private fun chromeLayer(): KeyLayer {
     )
 
     val hintGroups = listOf(
-        HintGroup("focusPanel", "${KeyGlyph.ALT}0-9/${KeyGlyph.ALT}h", "focus a panel"),
+        HintGroup("focusPanel", "${KeyGlyph.ALT}0-9", "focus a panel"),
+        HintGroup("toggleHelp", "?", "toggle help"),
         HintGroup("cycleState", "+/-", "resize focused panel"),
         HintGroup("scrollFocused", "↑↓/PgUp/PgDn", "scroll focused panel"),
         HintGroup("wheel", "wheel", "scroll a panel", bindingless = true),

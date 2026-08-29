@@ -142,14 +142,14 @@ internal class KeybindingsTest {
         val keys = Keybindings.DEFAULT
 
         assertEquals(ChromeAction.FocusPanel(GamePanelId.BOARD), keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("0", alt = true)))
-        assertEquals(ChromeAction.ToggleHelp, keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("h", alt = true)))
+        assertEquals(ChromeAction.ToggleHelp, keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("?")))
         assertEquals(PanAction.Pan(PanAction.Direction.LEFT), keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("h")))
         assertEquals(PanAction.Recenter, keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("Home")))
         assertEquals(ChromeAction.Quit, keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("c", ctrl = true)))
         assertEquals(ChromeAction.CycleState(1), keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("+")))
         assertEquals(
-            keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("h", alt = true)),
-            keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("H", alt = true, shift = true)),
+            keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("?")),
+            keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("?", shift = true)),
         )
     }
 
@@ -165,10 +165,11 @@ internal class KeybindingsTest {
     }
 
     /**
-     * The badge doubles as the user-facing `Alt+<badge>` chord and the bordered decoration badge —
-     * now sourced from the keymap (see [Keybindings.badgeFor]) instead of a field on [GamePanelId].
-     * Pinning these values guards against a future binding change silently remapping which panel
-     * each keystroke acts on.
+     * The badge doubles as the user-facing focus chord (`Alt+<badge>` for every panel but HELP,
+     * whose badge — `?` — is the whole chord) and the bordered decoration badge — now sourced from
+     * the keymap (see [Keybindings.badgeFor]) instead of a field on [GamePanelId]. Pinning these
+     * values guards against a future binding change silently remapping which panel each keystroke
+     * acts on.
      */
     @Test
     fun `badgeFor returns the stable per-panel badge, and every badge is unique`() {
@@ -181,7 +182,7 @@ internal class KeybindingsTest {
         assertEquals('4', keys.badgeFor(GamePanelId.TARGET_STATUS))
         assertEquals('5', keys.badgeFor(GamePanelId.ATTACK_RESULTS))
         assertEquals('9', keys.badgeFor(GamePanelId.LOG))
-        assertEquals('h', keys.badgeFor(GamePanelId.HELP))
+        assertEquals('?', keys.badgeFor(GamePanelId.HELP))
 
         val badges = GamePanelId.entries.map { keys.badgeFor(it) }
         assertEquals(badges.size, badges.toSet().size, "duplicate badge would let one chord ambiguously resolve two panels")

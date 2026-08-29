@@ -9,7 +9,7 @@ import tenter.panel.PanelId
  * `FocusPanel`/`ToggleHelp` for this panel, so a rebinding relabels the border too.
  *
  * `+`/`-` cycle the focused panel's [tenter.panel.PanelState]; `tenter.panel.Panel` remembers its
- * own state and scroll, keyed by the [GamePanelId] declared here. `Alt+h` is the one chord with an
+ * own state and scroll, keyed by the [GamePanelId] declared here. `?` is the one chord with an
  * extra effect: it also opens HELP if closed, or closes it if it was already open and focused —
  * see `AppState.helpOpen`'s KDoc.
  *

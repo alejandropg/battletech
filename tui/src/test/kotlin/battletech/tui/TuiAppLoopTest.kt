@@ -610,14 +610,14 @@ internal class TuiAppLoopTest {
     }
 
     // -------------------------------------------------------------------------
-    // Test 12: alt+h opens/closes the HELP panel (and focuses it while open);
+    // Test 12: ? opens/closes the HELP panel (and focuses it while open);
     // alt+9 focuses LOG so `-` can minimize it to its stub; arrows belong to
-    // the focused panel, not the phase; alt+h keeps working once the match has
+    // the focused panel, not the phase; ? keeps working once the match has
     // ended.
     // -------------------------------------------------------------------------
 
     @Test
-    fun `alt+h opens and closes the HELP panel`() = runTest(UnconfinedTestDispatcher()) {
+    fun `question mark opens and closes the HELP panel`() = runTest(UnconfinedTestDispatcher()) {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -634,12 +634,12 @@ internal class TuiAppLoopTest {
         assertFalse(recorder.output().contains(HelpView.TITLE), "HELP should be closed by default")
 
         recorder.clearOutput()
-        internalEvents.send(UiEvent.Input(KeyboardEvent("h", alt = true)))
-        assertTrue(recorder.output().contains(HelpView.TITLE), "alt+h should open HELP")
+        internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
+        assertTrue(recorder.output().contains(HelpView.TITLE), "? should open HELP")
 
         recorder.clearOutput()
-        internalEvents.send(UiEvent.Input(KeyboardEvent("h", alt = true)))
-        assertFalse(recorder.output().contains(HelpView.TITLE), "alt+h again should close HELP")
+        internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
+        assertFalse(recorder.output().contains(HelpView.TITLE), "? again should close HELP")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -676,7 +676,7 @@ internal class TuiAppLoopTest {
     }
 
     @Test
-    fun `alt+h still opens HELP after the match ends`() = runTest(UnconfinedTestDispatcher()) {
+    fun `question mark still opens HELP after the match ends`() = runTest(UnconfinedTestDispatcher()) {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -693,9 +693,9 @@ internal class TuiAppLoopTest {
         internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1))))
         recorder.clearOutput()
 
-        internalEvents.send(UiEvent.Input(KeyboardEvent("h", alt = true)))
+        internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
 
-        assertTrue(recorder.output().contains(HelpView.TITLE), "alt+h should still open HELP after MatchEnded")
+        assertTrue(recorder.output().contains(HelpView.TITLE), "? should still open HELP after MatchEnded")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -767,16 +767,16 @@ internal class TuiAppLoopTest {
             // board back to the cursor and redraw the unit — the diffing renderer emits exactly
             // the cells that changed, so its reappearance would show up here.
             recorder.clearOutput()
-            internalEvents.send(UiEvent.Input(KeyboardEvent("h", alt = true)))
+            internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
             assertFalse(
                 recorder.output().contains("QQ"),
                 "an unrelated re-render must not snap the board back to the cursor",
             )
 
-            // Alt+h opened AND focused HELP — while it's focused, arrow keys scroll HELP rather
+            // ? opened AND focused HELP — while it's focused, arrow keys scroll HELP rather
             // than reaching the phase (see RunLoop's dispatch order). Close it again so focus
             // returns to the board and ArrowDown reaches the phase's cursor movement below.
-            internalEvents.send(UiEvent.Input(KeyboardEvent("h", alt = true)))
+            internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
 
             // Moving the cursor is a reveal-target change, so follow re-engages and brings it back.
             recorder.clearOutput()

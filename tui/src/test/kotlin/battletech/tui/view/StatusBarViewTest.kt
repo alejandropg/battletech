@@ -25,7 +25,7 @@ internal class StatusBarViewTest {
         assertEquals("Player 2", row(buffer).substring(26, 34))
         assertEquals("   |   ", row(buffer).substring(34, 41))
         assertEquals("Jump (5 MP) (+3 to-hit)", row(buffer).substring(41, 64))
-        assertEquals("⌥h : help", row(buffer).substring(109, 118))
+        assertEquals("? : help", row(buffer).substring(110, 118))
         assertEquals("╰" + "─".repeat(118) + "╯", row(buffer, 2))
     }
 
@@ -116,7 +116,7 @@ internal class StatusBarViewTest {
 
             val buffer = render(view, width, Workspace.STATUS_BAR_HEIGHT)
 
-            assertEquals("⌥h : help", row(buffer).substring(width - 11, width - 2))
+            assertEquals("? : help", row(buffer).substring(width - 10, width - 2))
             assertEquals(" ", buffer.get(width - 2, 1).char)
             assertEquals("│", buffer.get(width - 1, 1).char)
         }
@@ -126,11 +126,11 @@ internal class StatusBarViewTest {
     fun `removes hunk padding when padded content does not fit`() {
         val view = StatusBarView(TurnPhase.MOVEMENT, "Select destination", PlayerId.PLAYER_1)
 
-        val buffer = render(view, 70, Workspace.STATUS_BAR_HEIGHT)
+        val buffer = render(view, 69, Workspace.STATUS_BAR_HEIGHT)
 
         assertEquals("MOVEMENT | Player 1 | Select destination", row(buffer).substring(2, 42))
-        assertEquals("⌥h : help", row(buffer).substring(59, 68))
-        assertEquals("│", buffer.get(69, 1).char)
+        assertEquals("? : help", row(buffer).substring(59, 67))
+        assertEquals("│", buffer.get(68, 1).char)
     }
 
     @Test
@@ -139,8 +139,8 @@ internal class StatusBarViewTest {
 
         val buffer = render(view, 50, Workspace.STATUS_BAR_HEIGHT)
 
-        assertEquals("END |  | All phases complete and th…", row(buffer).substring(2, 38))
-        assertEquals("⌥h : help", row(buffer).substring(39, 48))
+        assertEquals("END |  | All phases complete and the…", row(buffer).substring(2, 39))
+        assertEquals("? : help", row(buffer).substring(40, 48))
     }
 
     @Test
@@ -155,10 +155,10 @@ internal class StatusBarViewTest {
 
         val buffer = render(view, 80, Workspace.STATUS_BAR_HEIGHT)
 
-        val expected = "W1: Wolverine WVR-6R ┆ ${"x".repeat(20)}…"
-        assertEquals(expected, row(buffer).substring(24, 68))
-        assertEquals(" ", buffer.get(68, 1).char)
-        assertEquals("⌥h : help", row(buffer).substring(69, 78))
+        val expected = "W1: Wolverine WVR-6R ┆ ${"x".repeat(21)}…"
+        assertEquals(expected, row(buffer).substring(24, 69))
+        assertEquals(" ", buffer.get(69, 1).char)
+        assertEquals("? : help", row(buffer).substring(70, 78))
         assertEquals("│", buffer.get(79, 1).char)
     }
 

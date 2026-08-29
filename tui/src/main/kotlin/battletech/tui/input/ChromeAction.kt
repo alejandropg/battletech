@@ -15,7 +15,7 @@ internal sealed interface ChromeAction : InputAction {
         override val id: String get() = "focusPanel.${panel.name.lowercase()}"
     }
 
-    /** Alt+h is not FocusPanel(HELP): it also decides whether HELP exists this frame. */
+    /** ? is not FocusPanel(HELP): it also decides whether HELP exists this frame. */
     data object ToggleHelp : ChromeAction {
         override val id: String get() = "toggleHelp"
     }

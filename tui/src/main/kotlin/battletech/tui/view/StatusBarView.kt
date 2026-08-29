@@ -4,7 +4,6 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.displayName
-import tenter.input.KeyGlyph
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
@@ -79,7 +78,7 @@ internal class StatusBarView(
         private const val COMPACT_SEPARATOR: String = " | "
         private const val UNIT_MESSAGE_SEPARATOR: String = " ┆ "
         private const val MESSAGE_HELP_GAP: Int = 1
-        private const val HELP_LABEL: String = "${KeyGlyph.ALT}h : help"
+        private const val HELP_LABEL: String = "? : help"
 
         private val ACCENT_STYLE = Cell.Style(ChromeRole.ACCENT)
         private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)

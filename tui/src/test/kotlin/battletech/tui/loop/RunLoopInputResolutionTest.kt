@@ -87,7 +87,7 @@ internal class RunLoopInputResolutionTest {
     fun `chrome chords stay live after the match has ended`() {
         assertEquals(
             ChromeAction.ToggleHelp,
-            resolveInput(KeyboardEvent("h", alt = true), keys, GamePanelId.BOARD, ended()),
+            resolveInput(KeyboardEvent("?"), keys, GamePanelId.BOARD, ended()),
         )
         assertEquals(
             ChromeAction.FocusPanel(GamePanelId.LOG),

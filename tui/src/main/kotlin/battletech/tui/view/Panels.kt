@@ -66,7 +66,7 @@ internal object Panels {
                 normalWidth = 28,
                 badge = keys.badgeFor(GamePanelId.HELP),
                 normal = { frame -> HelpView(frame.helpSections) },
-                // No minimized state — Alt+h dismisses HELP entirely instead (see AppState.helpOpen).
+                // No minimized state — ? dismisses HELP entirely instead (see AppState.helpOpen).
                 maximized = { frame -> HelpView(frame.helpSections) },
             ),
         )

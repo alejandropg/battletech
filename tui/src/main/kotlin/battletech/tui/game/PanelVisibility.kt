@@ -8,9 +8,9 @@ import battletech.tactical.model.TurnPhase
  * Composes four kinds of owner:
  *
  *  - **Always-on** structural panels (LOG, UNIT STATUS).
- *  - **User-opened** panels (HELP) — [AppState.helpOpen], toggled by `Alt+h`. Unlike every other
+ *  - **User-opened** panels (HELP) — [AppState.helpOpen], toggled by `?`. Unlike every other
  *    panel's `Alt+<key>`, which focuses a panel that already exists (a display preference owned
- *    by `tenter.panel.Panel` itself), `Alt+h` toggles whether HELP exists AT ALL — a different
+ *    by `tenter.panel.Panel` itself), `?` toggles whether HELP exists AT ALL — a different
  *    action, so it is a different piece of state, and one that belongs here rather than on the
  *    panel (see [AppState.helpOpen]'s KDoc).
  *  - **Cross-phase** state-driven panels (ATTACK RESULTS) whose visibility spans

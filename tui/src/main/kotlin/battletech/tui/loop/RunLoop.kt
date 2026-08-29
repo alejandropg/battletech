@@ -122,7 +122,7 @@ internal suspend fun runLoop(
                                     if (action.panel == GamePanelId.BOARD || action.panel in PanelVisibility.visiblePanels(appState)) {
                                         workspace.focus(action.panel)
                                     }
-                                // Alt+h is a different action from every other panel's Alt+<key>: it also
+                                // ? is a different action from every other panel's Alt+<key>: it also
                                 // toggles whether HELP EXISTS this frame (an AppState fact PanelVisibility
                                 // reads), not just a focus request — see AppState.helpOpen's KDoc.
                                 ChromeAction.ToggleHelp ->
