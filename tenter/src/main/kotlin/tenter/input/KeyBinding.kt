@@ -1,5 +1,7 @@
 package tenter.input
 
+import com.github.ajalt.mordant.input.KeyboardEvent
+
 /**
  * Something a key can do. The [id] is a stable, human-readable name — it exists so the HELP panel
  * and a future config file can refer to an action without depending on its type. Implementations
@@ -10,12 +12,45 @@ public interface InputAction {
     public val id: String
 }
 
-/** One chord bound to one action, credited to the [HintGroup] that documents it in a help panel. */
+/**
+ * This key press in the one form [KeyMap] matches against, so that two spellings of the same
+ * keystroke are the same key.
+ *
+ * A printable key is reported by the terminal as the character it actually produces, so `shift+h`
+ * arrives as `key = "H"` with [KeyboardEvent.shift] set — the modifier carries nothing the key
+ * does not already say. Folding single-character keys to lowercase and clearing `shift` for them
+ * is what keeps `alt+H` and `alt+h` the same key. Named keys (`"ArrowUp"`, `"PageUp"`, …) keep
+ * `shift` as reported, so `shift+ArrowUp` stays expressible.
+ */
+public fun KeyboardEvent.normalized(): KeyboardEvent =
+    if (key.length == 1) copy(key = key.lowercase(), shift = false) else this
+
+/**
+ * One chord bound to one action, credited to the [HintGroup] that documents it in a help panel.
+ *
+ * [chord] is a plain Mordant [KeyboardEvent] — `tenter` adds vocabulary on top of Mordant rather
+ * than wrapping it, so a caller already holding an event binds it directly. It names the keystroke
+ * a binding waits for, not one that happened; the property name carries that, not a separate type.
+ *
+ * A chord is only ever matched against [normalized] output, so one that [normalized] can never
+ * produce could never fire. `KeyBinding(KeyboardEvent("H", alt = true), …)` would be exactly that:
+ * silently dead, and indistinguishable from a working binding at the declaration site. Rejecting it
+ * here is what keeps "declared" and "resolvable" the same set — including for a future config file,
+ * whose parsed bindings are built through this same constructor.
+ */
 public data class KeyBinding(
-    val chord: KeyChord,
+    val chord: KeyboardEvent,
     val action: InputAction,
     val hintGroup: String,
-)
+) {
+    init {
+        require(chord.key.isNotEmpty()) { "A key binding needs a key" }
+        require(chord == chord.normalized()) {
+            "Chord $chord could never be resolved: KeyMap matches against normalized() output, which " +
+                "would fold this to ${chord.normalized()}"
+        }
+    }
+}
 
 /**
  * One row of a help panel: a hand-written [label] for the keys (`"←→↑↓/wasd"`) and what they do.

@@ -6,7 +6,6 @@ import com.github.ajalt.mordant.input.KeyboardEvent
 import tenter.input.HintGroup
 import tenter.input.InputAction
 import tenter.input.KeyBinding
-import tenter.input.KeyChord
 import tenter.input.KeyGlyph
 import tenter.input.KeyLayer
 import tenter.input.KeyMap
@@ -67,33 +66,33 @@ private fun defaultLayers(): Map<ContextId, KeyLayer> = mapOf(
 
 private fun chromeLayer(): KeyLayer {
     val focusPanelBindings = listOf(
-        KeyChord("0", alt = true) to GamePanelId.BOARD,
-        KeyChord("1", alt = true) to GamePanelId.UNIT_STATUS,
-        KeyChord("2", alt = true) to GamePanelId.DECLARED_TARGETS,
-        KeyChord("3", alt = true) to GamePanelId.TARGETS,
-        KeyChord("4", alt = true) to GamePanelId.TARGET_STATUS,
-        KeyChord("5", alt = true) to GamePanelId.ATTACK_RESULTS,
-        KeyChord("9", alt = true) to GamePanelId.LOG,
+        KeyboardEvent("0", alt = true) to GamePanelId.BOARD,
+        KeyboardEvent("1", alt = true) to GamePanelId.UNIT_STATUS,
+        KeyboardEvent("2", alt = true) to GamePanelId.DECLARED_TARGETS,
+        KeyboardEvent("3", alt = true) to GamePanelId.TARGETS,
+        KeyboardEvent("4", alt = true) to GamePanelId.TARGET_STATUS,
+        KeyboardEvent("5", alt = true) to GamePanelId.ATTACK_RESULTS,
+        KeyboardEvent("9", alt = true) to GamePanelId.LOG,
     ).map { (chord, panel) -> KeyBinding(chord, ChromeAction.FocusPanel(panel), "focusPanel") }
 
     val panBindings = listOf(
-        KeyChord("h") to PanAction.Direction.LEFT,
-        KeyChord("l") to PanAction.Direction.RIGHT,
-        KeyChord("k") to PanAction.Direction.UP,
-        KeyChord("j") to PanAction.Direction.DOWN,
-        KeyChord("ArrowLeft", ctrl = true) to PanAction.Direction.LEFT,
-        KeyChord("ArrowRight", ctrl = true) to PanAction.Direction.RIGHT,
-        KeyChord("ArrowUp", ctrl = true) to PanAction.Direction.UP,
-        KeyChord("ArrowDown", ctrl = true) to PanAction.Direction.DOWN,
+        KeyboardEvent("h") to PanAction.Direction.LEFT,
+        KeyboardEvent("l") to PanAction.Direction.RIGHT,
+        KeyboardEvent("k") to PanAction.Direction.UP,
+        KeyboardEvent("j") to PanAction.Direction.DOWN,
+        KeyboardEvent("ArrowLeft", ctrl = true) to PanAction.Direction.LEFT,
+        KeyboardEvent("ArrowRight", ctrl = true) to PanAction.Direction.RIGHT,
+        KeyboardEvent("ArrowUp", ctrl = true) to PanAction.Direction.UP,
+        KeyboardEvent("ArrowDown", ctrl = true) to PanAction.Direction.DOWN,
     ).map { (chord, direction) -> KeyBinding(chord, PanAction.Pan(direction), "pan") }
 
     val bindings = focusPanelBindings + listOf(
-        KeyBinding(KeyChord("h", alt = true), ChromeAction.ToggleHelp, "focusPanel"),
-        KeyBinding(KeyChord("+"), ChromeAction.CycleState(1), "cycleState"),
-        KeyBinding(KeyChord("-"), ChromeAction.CycleState(-1), "cycleState"),
+        KeyBinding(KeyboardEvent("h", alt = true), ChromeAction.ToggleHelp, "focusPanel"),
+        KeyBinding(KeyboardEvent("+"), ChromeAction.CycleState(1), "cycleState"),
+        KeyBinding(KeyboardEvent("-"), ChromeAction.CycleState(-1), "cycleState"),
     ) + panBindings + listOf(
-        KeyBinding(KeyChord("Home"), PanAction.Recenter, "recenter"),
-        KeyBinding(KeyChord("c", ctrl = true), ChromeAction.Quit, "quit"),
+        KeyBinding(KeyboardEvent("Home"), PanAction.Recenter, "recenter"),
+        KeyBinding(KeyboardEvent("c", ctrl = true), ChromeAction.Quit, "quit"),
     )
 
     val hintGroups = listOf(
@@ -113,10 +112,10 @@ private fun panelScrollLayer(): KeyLayer = KeyLayer(
     title = null,
     shadowing = true,
     bindings = listOf(
-        KeyBinding(KeyChord("ArrowUp"), ScrollAction.Lines(-1), "scrollFocused"),
-        KeyBinding(KeyChord("ArrowDown"), ScrollAction.Lines(1), "scrollFocused"),
-        KeyBinding(KeyChord("PageUp"), ScrollAction.Pages(-1), "scrollFocused"),
-        KeyBinding(KeyChord("PageDown"), ScrollAction.Pages(1), "scrollFocused"),
+        KeyBinding(KeyboardEvent("ArrowUp"), ScrollAction.Lines(-1), "scrollFocused"),
+        KeyBinding(KeyboardEvent("ArrowDown"), ScrollAction.Lines(1), "scrollFocused"),
+        KeyBinding(KeyboardEvent("PageUp"), ScrollAction.Pages(-1), "scrollFocused"),
+        KeyBinding(KeyboardEvent("PageDown"), ScrollAction.Pages(1), "scrollFocused"),
     ),
 )
 
@@ -126,20 +125,20 @@ private fun panelScrollLayer(): KeyLayer = KeyLayer(
  * keyToDirection`, including `q`/`e`→NW/NE and `a`→SW alongside the wasd/arrow set.
  */
 private fun cursorBindings(action: (HexDirection) -> InputAction): List<KeyBinding> = listOf(
-    KeyChord("ArrowUp") to HexDirection.N,
-    KeyChord("w") to HexDirection.N,
-    KeyChord("ArrowDown") to HexDirection.S,
-    KeyChord("s") to HexDirection.S,
-    KeyChord("ArrowRight") to HexDirection.SE,
-    KeyChord("d") to HexDirection.SE,
-    KeyChord("ArrowLeft") to HexDirection.NW,
-    KeyChord("q") to HexDirection.NW,
-    KeyChord("e") to HexDirection.NE,
-    KeyChord("a") to HexDirection.SW,
+    KeyboardEvent("ArrowUp") to HexDirection.N,
+    KeyboardEvent("w") to HexDirection.N,
+    KeyboardEvent("ArrowDown") to HexDirection.S,
+    KeyboardEvent("s") to HexDirection.S,
+    KeyboardEvent("ArrowRight") to HexDirection.SE,
+    KeyboardEvent("d") to HexDirection.SE,
+    KeyboardEvent("ArrowLeft") to HexDirection.NW,
+    KeyboardEvent("q") to HexDirection.NW,
+    KeyboardEvent("e") to HexDirection.NE,
+    KeyboardEvent("a") to HexDirection.SW,
 ).map { (chord, direction) -> KeyBinding(chord, action(direction), "moveCursor") }
 
 private fun facingBindings(action: (Int) -> InputAction): List<KeyBinding> =
-    (1..6).map { index -> KeyBinding(KeyChord(index.toString()), action(index), "selectFacing") }
+    (1..6).map { index -> KeyBinding(KeyboardEvent(index.toString()), action(index), "selectFacing") }
 
 private val MOVE_CURSOR_HINT = HintGroup("moveCursor", "←→↑↓/wasd", "move cursor")
 
@@ -147,9 +146,9 @@ private val MOVE_CURSOR_HINT = HintGroup("moveCursor", "←→↑↓/wasd", "mov
 private fun idleLayer(title: String, commitAction: IdleAction, commitDescription: String): KeyLayer = KeyLayer(
     title = title,
     bindings = cursorBindings { IdleAction.MoveCursor(it) } + listOf(
-        KeyBinding(KeyChord("Enter"), IdleAction.SelectUnit, "selectUnit"),
-        KeyBinding(KeyChord("Tab"), IdleAction.CycleUnit, "cycleUnit"),
-        KeyBinding(KeyChord("c"), commitAction, "commit"),
+        KeyBinding(KeyboardEvent("Enter"), IdleAction.SelectUnit, "selectUnit"),
+        KeyBinding(KeyboardEvent("Tab"), IdleAction.CycleUnit, "cycleUnit"),
+        KeyBinding(KeyboardEvent("c"), commitAction, "commit"),
     ),
     hintGroups = listOf(
         MOVE_CURSOR_HINT,
@@ -162,10 +161,10 @@ private fun idleLayer(title: String, commitAction: IdleAction, commitDescription
 private fun browsingLayer(): KeyLayer = KeyLayer(
     title = "BROWSE DESTINATION",
     bindings = cursorBindings { BrowsingAction.MoveCursor(it) } + facingBindings { BrowsingAction.SelectFacing(it) } + listOf(
-        KeyBinding(KeyChord("Enter"), BrowsingAction.ConfirmPath, "confirmPath"),
-        KeyBinding(KeyChord("Escape"), BrowsingAction.Cancel, "cancel"),
-        KeyBinding(KeyChord("Tab"), BrowsingAction.CycleUnit, "cycleUnit"),
-        KeyBinding(KeyChord("x"), BrowsingAction.CycleMode, "cycleMode"),
+        KeyBinding(KeyboardEvent("Enter"), BrowsingAction.ConfirmPath, "confirmPath"),
+        KeyBinding(KeyboardEvent("Escape"), BrowsingAction.Cancel, "cancel"),
+        KeyBinding(KeyboardEvent("Tab"), BrowsingAction.CycleUnit, "cycleUnit"),
+        KeyBinding(KeyboardEvent("x"), BrowsingAction.CycleMode, "cycleMode"),
     ),
     hintGroups = listOf(
         MOVE_CURSOR_HINT,
@@ -180,8 +179,8 @@ private fun browsingLayer(): KeyLayer = KeyLayer(
 private fun facingLayer(): KeyLayer = KeyLayer(
     title = "SELECT FACING",
     bindings = facingBindings { FacingAction.SelectFacing(it) } + listOf(
-        KeyBinding(KeyChord("Escape"), FacingAction.Cancel, "cancel"),
-        KeyBinding(KeyChord("Tab"), FacingAction.CycleUnit, "cycleUnit"),
+        KeyBinding(KeyboardEvent("Escape"), FacingAction.Cancel, "cancel"),
+        KeyBinding(KeyboardEvent("Tab"), FacingAction.CycleUnit, "cycleUnit"),
     ),
     hintGroups = listOf(
         HintGroup("selectFacing", "1-6", "select facing"),
@@ -194,24 +193,24 @@ private fun facingLayer(): KeyLayer = KeyLayer(
 private fun declaringLayer(title: String, includeTwistTorso: Boolean): KeyLayer {
     val twistTorsoBindings = if (includeTwistTorso) {
         listOf(
-            KeyBinding(KeyChord("ArrowRight"), AttackAction.TwistTorso(clockwise = true), "twistTorso"),
-            KeyBinding(KeyChord("d"), AttackAction.TwistTorso(clockwise = true), "twistTorso"),
-            KeyBinding(KeyChord("ArrowLeft"), AttackAction.TwistTorso(clockwise = false), "twistTorso"),
-            KeyBinding(KeyChord("a"), AttackAction.TwistTorso(clockwise = false), "twistTorso"),
+            KeyBinding(KeyboardEvent("ArrowRight"), AttackAction.TwistTorso(clockwise = true), "twistTorso"),
+            KeyBinding(KeyboardEvent("d"), AttackAction.TwistTorso(clockwise = true), "twistTorso"),
+            KeyBinding(KeyboardEvent("ArrowLeft"), AttackAction.TwistTorso(clockwise = false), "twistTorso"),
+            KeyBinding(KeyboardEvent("a"), AttackAction.TwistTorso(clockwise = false), "twistTorso"),
         )
     } else {
         emptyList()
     }
 
     val bindings = twistTorsoBindings + listOf(
-        KeyBinding(KeyChord("ArrowUp"), AttackAction.NavigateWeapons(-1), "navigate"),
-        KeyBinding(KeyChord("w"), AttackAction.NavigateWeapons(-1), "navigate"),
-        KeyBinding(KeyChord("ArrowDown"), AttackAction.NavigateWeapons(1), "navigate"),
-        KeyBinding(KeyChord("s"), AttackAction.NavigateWeapons(1), "navigate"),
-        KeyBinding(KeyChord(" "), AttackAction.ToggleWeapon, "toggleWeapon"),
-        KeyBinding(KeyChord("Escape"), AttackAction.Cancel, "cancel"),
-        KeyBinding(KeyChord("Tab"), AttackAction.NextAttacker, "nextAttacker"),
-        KeyBinding(KeyChord("c"), AttackAction.Commit, "commit"),
+        KeyBinding(KeyboardEvent("ArrowUp"), AttackAction.NavigateWeapons(-1), "navigate"),
+        KeyBinding(KeyboardEvent("w"), AttackAction.NavigateWeapons(-1), "navigate"),
+        KeyBinding(KeyboardEvent("ArrowDown"), AttackAction.NavigateWeapons(1), "navigate"),
+        KeyBinding(KeyboardEvent("s"), AttackAction.NavigateWeapons(1), "navigate"),
+        KeyBinding(KeyboardEvent(" "), AttackAction.ToggleWeapon, "toggleWeapon"),
+        KeyBinding(KeyboardEvent("Escape"), AttackAction.Cancel, "cancel"),
+        KeyBinding(KeyboardEvent("Tab"), AttackAction.NextAttacker, "nextAttacker"),
+        KeyBinding(KeyboardEvent("c"), AttackAction.Commit, "commit"),
     )
 
     val hintGroups = buildList {

@@ -22,7 +22,7 @@ public class KeyMap<C : Any>(private val layers: Map<C, KeyLayer>) {
 
     /** The action bound to [event] by the first layer in [active] that binds its chord, else null. */
     public fun resolve(active: List<C>, event: KeyboardEvent): InputAction? {
-        val chord = KeyChord.of(event)
+        val chord = event.normalized()
         for (context in active) {
             val hit = layer(context).bindings.firstOrNull { it.chord == chord }
             if (hit != null) return hit.action
@@ -38,7 +38,7 @@ public class KeyMap<C : Any>(private val layers: Map<C, KeyLayer>) {
     }
 
     /** Every chord bound to [action], across every layer. Used to derive labels such as a panel badge. */
-    public fun chordsFor(action: InputAction): List<KeyChord> =
+    public fun chordsFor(action: InputAction): List<KeyboardEvent> =
         layers.values.flatMap { layer -> layer.bindings.filter { it.action == action }.map { it.chord } }
 
     /** Every binding in the map, for invariant tests. */

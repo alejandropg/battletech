@@ -21,7 +21,7 @@ internal class KeyMapTest {
     inner class ResolveTest {
         @Test
         fun `first active layer wins when two layers bind the same chord`() {
-            val chord = KeyChord("x")
+            val chord = KeyboardEvent("x")
             val map = KeyMap(
                 mapOf(
                     Ctx.FIRST to KeyLayer(title = "FIRST", bindings = listOf(KeyBinding(chord, actionA, "group"))),
@@ -34,7 +34,7 @@ internal class KeyMapTest {
 
         @Test
         fun `a later layer's binding is not consulted when an earlier layer already binds the chord`() {
-            val chord = KeyChord("x")
+            val chord = KeyboardEvent("x")
             val map = KeyMap(
                 mapOf(
                     Ctx.FIRST to KeyLayer(title = "FIRST", bindings = listOf(KeyBinding(chord, actionA, "group"))),
@@ -51,7 +51,7 @@ internal class KeyMapTest {
             val map = KeyMap(
                 mapOf(
                     Ctx.FIRST to KeyLayer(title = "FIRST", bindings = emptyList()),
-                    Ctx.SECOND to KeyLayer(title = "SECOND", bindings = listOf(KeyBinding(KeyChord("x"), actionB, "group"))),
+                    Ctx.SECOND to KeyLayer(title = "SECOND", bindings = listOf(KeyBinding(KeyboardEvent("x"), actionB, "group"))),
                 ),
             )
 
@@ -72,12 +72,12 @@ internal class KeyMapTest {
         fun `finds every chord bound to an action across every layer`() {
             val map = KeyMap(
                 mapOf(
-                    Ctx.FIRST to KeyLayer(title = "FIRST", bindings = listOf(KeyBinding(KeyChord("x"), actionA, "group"))),
-                    Ctx.SECOND to KeyLayer(title = "SECOND", bindings = listOf(KeyBinding(KeyChord("y"), actionA, "group"))),
+                    Ctx.FIRST to KeyLayer(title = "FIRST", bindings = listOf(KeyBinding(KeyboardEvent("x"), actionA, "group"))),
+                    Ctx.SECOND to KeyLayer(title = "SECOND", bindings = listOf(KeyBinding(KeyboardEvent("y"), actionA, "group"))),
                 ),
             )
 
-            assertEquals(setOf(KeyChord("x"), KeyChord("y")), map.chordsFor(actionA).toSet())
+            assertEquals(setOf(KeyboardEvent("x"), KeyboardEvent("y")), map.chordsFor(actionA).toSet())
         }
     }
 
@@ -106,27 +106,28 @@ internal class KeyMapTest {
     }
 
     @Nested
-    inner class KeyChordOfTest {
+    inner class NormalizedTest {
         @Test
-        fun `alt+H normalises to the same chord as alt+h`() {
+        fun `alt+H normalizes to the same chord as alt+h`() {
             assertEquals(
-                KeyChord.of(KeyboardEvent("h", alt = true)),
-                KeyChord.of(KeyboardEvent("H", alt = true, shift = true)),
+                KeyboardEvent("h", alt = true).normalized(),
+                KeyboardEvent("H", alt = true, shift = true).normalized(),
             )
         }
 
         @Test
         fun `a named key keeps its reported shift state`() {
             assertEquals(
-                KeyChord("ArrowUp", shift = true),
-                KeyChord.of(KeyboardEvent("ArrowUp", shift = true)),
+                KeyboardEvent("ArrowUp", shift = true),
+                KeyboardEvent("ArrowUp", shift = true).normalized(),
             )
         }
 
         @Test
-        fun `of only ever produces chords the constructor accepts`() {
-            // The two are the same set by construction — this pins that they stay so, since a
-            // chord `of` could not produce would be a binding that silently never fires.
+        fun `normalized is idempotent, so every resolvable chord is bindable`() {
+            // KeyMap matches against normalized() output and KeyBinding only accepts chords already
+            // in that form. This pins the two sets as one: a chord normalized() can produce must
+            // always be one a binding can declare, or a keystroke would be unbindable.
             val events = listOf(
                 KeyboardEvent("H", alt = true, shift = true),
                 KeyboardEvent("h"),
@@ -137,19 +138,34 @@ internal class KeyMapTest {
             )
 
             for (event in events) {
-                val chord = KeyChord.of(event)
-                assertEquals(chord, KeyChord(chord.key, chord.ctrl, chord.alt, chord.shift))
+                val chord = event.normalized()
+                assertEquals(chord, chord.normalized())
+                KeyBinding(chord, actionA, "group") // must not throw
+            }
+        }
+    }
+
+    @Nested
+    inner class BindingValidationTest {
+        @Test
+        fun `an uppercase single-character chord is rejected rather than left silently dead`() {
+            assertThrows(IllegalArgumentException::class.java) {
+                KeyBinding(KeyboardEvent("H", alt = true), actionA, "group")
             }
         }
 
         @Test
-        fun `an uppercase single-character chord is rejected rather than left silently dead`() {
-            assertThrows(IllegalArgumentException::class.java) { KeyChord("H", alt = true) }
+        fun `a shifted printable chord is rejected — the character already encodes the shift`() {
+            assertThrows(IllegalArgumentException::class.java) {
+                KeyBinding(KeyboardEvent("h", shift = true), actionA, "group")
+            }
         }
 
         @Test
-        fun `a shifted printable chord is rejected — the character already encodes the shift`() {
-            assertThrows(IllegalArgumentException::class.java) { KeyChord("h", shift = true) }
+        fun `an empty key is rejected`() {
+            assertThrows(IllegalArgumentException::class.java) {
+                KeyBinding(KeyboardEvent(""), actionA, "group")
+            }
         }
     }
 }
