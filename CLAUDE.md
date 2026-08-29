@@ -12,7 +12,7 @@ Not needed for everyday context — read the row's doc when its trigger applies.
 |---|---|
 | `docs/rules/index.md` | Implementing, changing, or reviewing a game rule, or a magic number in code or a test expectation is a rules value. It routes to the one doc owning each rule — trust that doc over a number restated elsewhere, and over general BattleTech knowledge. |
 | `docs/architecture.md` | Navigating inside a module or moving content between doc tiers. Package layout, invariant rationale. |
-| `docs/build.md` | Touching `buildSrc/`, a `build.gradle.kts`, module dependencies, or `map/`/`theme/`/shadow-jar packaging. |
+| `docs/build.md` | Touching `buildSrc/`, a `build.gradle.kts`, module dependencies, or `game/`/`map/`/`theme/`/shadow-jar packaging. |
 | `docs/wire-protocol.md` | Adding or changing a wire-crossing `@Serializable sealed` variant, a failing wire-discriminator test, or a non-additive protocol change. |
 | `docs/tui-testing.md` | Hand-checking TUI rendering that can't be expressed as a unit test; automated tests are the primary strategy. |
 | `docs/color-themes.md` | Touching `theme/*.json`, palette roles, or the theme contrast/distinctness guarantees. |

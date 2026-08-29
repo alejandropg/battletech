@@ -47,7 +47,7 @@ import org.junit.jupiter.api.Test
  * being that [GameServer] cannot tell the difference, so neither should this test file's own
  * scripts.
  *
- * No unit in [battletech.tactical.model.GameStateFactory.sampleGameState] is
+ * No unit in the packaged default game is
  * ever prone during this test — falls only follow combat damage, and every
  * attack impulse here is empty — so [battletech.tactical.session.StandUp]
  * never comes up.

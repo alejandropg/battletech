@@ -12,10 +12,13 @@ file; see `docs/color-themes.md` for the file format.
 Supports hot seat and network play:
 
 ```
-battletech-tui                                  hot-seat (both players share this terminal)
-battletech-tui host [--port N]                  host a session
-battletech-tui join <ip[:port]> --session <id>  join a hosted session
-battletech-tui server [--port N]                headless dedicated server
+battletech-tui [--game <name|path>] [--map <path>]...                   hot-seat
+battletech-tui host [--port N] [--game <name|path>] [--map <path>]...   host a session
+battletech-tui join <ip[:port]> --session <id>                          join a session
+battletech-tui server [--port N] [--game <name|path>] [--map <path>]... headless server
 ```
 
-Run any form with `--help` for its full option list.
+`--game` selects a packaged or external starting-game definition. Each repeated `--map` registers
+an external map under its filename so the selected game can reference it. See
+[`docs/game-files.md`](docs/game-files.md) for the JSON format and examples. Run any form with
+`--help` for its full option list.

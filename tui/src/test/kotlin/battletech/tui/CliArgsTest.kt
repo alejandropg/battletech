@@ -39,8 +39,21 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `--map name resolves to Local with mapName`() {
-            assertEquals(Mode.Local(mapName = "name"), parse("--map", "name"))
+        fun `--game name resolves to Local with gameName`() {
+            assertEquals(Mode.Local(gameName = "name"), parse("--game", "name"))
+        }
+
+        @Test
+        fun `--map path registers external map`() {
+            assertEquals(Mode.Local(mapPaths = listOf("arena.json")), parse("--map", "arena.json"))
+        }
+
+        @Test
+        fun `repeated --map preserves every registration in order`() {
+            assertEquals(
+                Mode.Local(mapPaths = listOf("one.json", "two.json")),
+                parse("--map", "one.json", "--map", "two.json"),
+            )
         }
 
         @Test
@@ -77,8 +90,11 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `host --map name resolves to Host with mapName`() {
-            assertEquals(Mode.Host(mapName = "name"), parse("host", "--map", "name"))
+        fun `host --game name and maps resolve to Host`() {
+            assertEquals(
+                Mode.Host(gameName = "game", mapPaths = listOf("one.json", "two.json")),
+                parse("host", "--game", "game", "--map", "one.json", "--map", "two.json"),
+            )
         }
     }
 
@@ -132,6 +148,12 @@ internal class CliArgsTest {
             val ex = failing("join", "192.168.1.5", "--session", "s", "--map", "x")
             assertTrue(ex.output.contains("--map"))
         }
+
+        @Test
+        fun `join has no --game -- the game comes from the host`() {
+            val ex = failing("join", "192.168.1.5", "--session", "s", "--game", "x")
+            assertTrue(ex.output.contains("--game"))
+        }
     }
 
     @Nested
@@ -162,8 +184,11 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `server --map name resolves to Server with mapName`() {
-            assertEquals(Mode.Server(mapName = "name"), parse("server", "--map", "name"))
+        fun `server --game name and maps resolve to Server`() {
+            assertEquals(
+                Mode.Server(gameName = "game", mapPaths = listOf("arena.json")),
+                parse("server", "--game", "game", "--map", "arena.json"),
+            )
         }
 
         @Test
@@ -192,7 +217,7 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `--theme name resolves to Local with themeName, unvalidated (like --map)`() {
+        fun `--theme name resolves to Local with themeName, unvalidated`() {
             assertEquals(Mode.Local(themeName = "dark"), parse("--theme", "dark"))
             assertEquals(Mode.Local(themeName = "not-a-real-theme"), parse("--theme", "not-a-real-theme"))
         }
@@ -226,7 +251,7 @@ internal class CliArgsTest {
     }
 
     /**
-     * `--map`/`--theme` live on the root so the bare hot-seat form keeps taking them directly
+     * `--game`/`--map`/`--theme` live on the root so the bare hot-seat form keeps taking them directly
      * (see [parseArgs]'s KDoc), but that means they must come AFTER the subcommand name — giving
      * them before it would otherwise silently set the wrong (root) copy, so the root command
      * guards against that explicitly rather than letting it degrade to "option ignored".
@@ -237,6 +262,13 @@ internal class CliArgsTest {
         fun `--map before the host subcommand is rejected`() {
             val ex = failing("--map", "x", "host")
             assertTrue(ex.output.contains("--map"))
+            assertTrue(ex.output.contains("host"))
+        }
+
+        @Test
+        fun `--game before the host subcommand is rejected`() {
+            val ex = failing("--game", "x", "host")
+            assertTrue(ex.output.contains("--game"))
             assertTrue(ex.output.contains("host"))
         }
 
@@ -262,15 +294,16 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `both --map and --theme before a subcommand are named in one error`() {
-            val ex = failing("--map", "x", "--theme", "dark", "host")
+        fun `game map and theme before a subcommand are named in one error`() {
+            val ex = failing("--game", "g", "--map", "x", "--theme", "dark", "host")
+            assertTrue(ex.output.contains("--game"))
             assertTrue(ex.output.contains("--map"))
             assertTrue(ex.output.contains("--theme"))
         }
 
         @Test
         fun `--map after the host subcommand is accepted`() {
-            assertEquals(Mode.Host(mapName = "x"), parse("host", "--map", "x"))
+            assertEquals(Mode.Host(mapPaths = listOf("x")), parse("host", "--map", "x"))
         }
     }
 
@@ -296,8 +329,8 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `--map host is a hot-seat map named host, not the host subcommand`() {
-            assertEquals(Mode.Local(mapName = "host"), parse("--map", "host"))
+        fun `--game host is a hot-seat game named host, not the host subcommand`() {
+            assertEquals(Mode.Local(gameName = "host"), parse("--game", "host"))
         }
     }
 
@@ -317,14 +350,17 @@ internal class CliArgsTest {
         fun `host --help renders host's own options`() {
             val help = failing("host", "--help").output
             assertTrue(help.contains("--port"))
+            assertTrue(help.contains("--game"))
             assertTrue(help.contains("--map"))
             assertTrue(help.contains("--theme"))
-            assertTrue(help.contains("battletech-classic"))
+            assertTrue(help.contains("default"))
         }
 
         @Test
         fun `join --help does not mention --map`() {
-            assertTrue(!failing("join", "--help").output.contains("--map"))
+            val help = failing("join", "--help").output
+            assertTrue(!help.contains("--map"))
+            assertTrue(!help.contains("--game"))
         }
 
         @Test

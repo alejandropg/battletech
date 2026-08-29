@@ -19,7 +19,6 @@ import battletech.tactical.attack.physical.Side
 import battletech.tactical.dice.DiceRoll
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.GameMap
-import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MatchOutcome
@@ -28,6 +27,8 @@ import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.Terrain
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.game.DEFAULT_GAME_NAME
+import battletech.tactical.model.game.resolveGame
 import battletech.tactical.model.map.LocalMapMatch
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
@@ -542,19 +543,19 @@ internal class WireFormatRoundTripTest {
         private val unitB = UnitId("W1")
 
         private fun aSampleSession(): BattleSession = BattleSession(
-            initialGameState = GameStateFactory().sampleGameState(),
+            initialGameState = resolveGame(DEFAULT_GAME_NAME),
             roller = RandomDiceRoller(Random(42L)),
         )
 
         private fun aGameSnapshot(): GameSnapshot = GameSnapshot(
-            units = GameStateFactory().sampleGameState().projectFor(PlayerId.PLAYER_1).units,
+            units = resolveGame(DEFAULT_GAME_NAME).projectFor(PlayerId.PLAYER_1).units,
             turnState = aTurnStateFixture(),
             currentPhase = TurnPhase.MOVEMENT,
             activePlayer = PlayerId.PLAYER_1,
             isMatchOver = false,
         )
 
-        private fun aGameMap(): GameMap = GameStateFactory().sampleGameState().map
+        private fun aGameMap(): GameMap = resolveGame(DEFAULT_GAME_NAME).map
 
         private fun aTurnStateFixture(): TurnState = TurnState(initiative = anInitiativeFixture())
 

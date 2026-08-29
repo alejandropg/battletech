@@ -419,9 +419,8 @@ public class GameServer(
          * Builds the [BattleSession] + [SessionId] + [GameServer] triple every launcher needs,
          * seeded with the two notices ("Session ID: …", "Waiting for players to join…") every
          * launcher prints. Takes [GameState], not a [battletech.tactical.model.GameMap] or a
-         * [battletech.tactical.model.GameStateFactory] call — map/scenario resolution is a `tui`
-         * concern ([battletech.network] must not depend on [battletech.tactical.model.GameStateFactory]
-         * for that), so callers pass `GameStateFactory().sampleGameState(map)` themselves.
+         * game-loader call — map/scenario resolution is a `tui` concern, so callers pass the
+         * already-resolved starting state themselves.
          *
          * Takes no port: this class no longer binds a socket at all — see the class KDoc's "What
          * this class does NOT own". A caller that wants a listening socket constructs a

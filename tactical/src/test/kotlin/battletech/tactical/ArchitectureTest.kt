@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test
 
 /**
  * Enforces the allowed-dependency matrix between the direct child packages of
- * `battletech.tactical` (a file under `attack/physical/`, `attack/weapon/`, or `model/map/`
- * counts as its parent — `attack`/`attack`/`model` — for this purpose; only the first path
+ * `battletech.tactical` (a file under `attack/physical/`, `attack/weapon/`, `model/map/`, or
+ * `model/game/` counts as its parent for this purpose; only the first path
  * segment after `battletech.tactical.` matters).
  *
  * Two edges are allowed but are real cycles, not oversights — see [allowed]'s comments for why.

@@ -1,6 +1,6 @@
 package battletech.tui
 
-import battletech.tactical.model.map.DEFAULT_MAP_NAME
+import battletech.tactical.model.game.DEFAULT_GAME_NAME
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.ParameterHolder
@@ -12,6 +12,7 @@ import com.github.ajalt.clikt.core.terminal
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.convert
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
@@ -30,10 +31,26 @@ internal const val DEFAULT_PORT: Int = 2470
  * [Server] starts a headless dedicated server — no TUI — and both players connect via [Join].
  */
 internal sealed interface Mode {
-    data class Local(val mapName: String? = null, val themeName: String? = null) : Mode
-    data class Host(val port: Int = DEFAULT_PORT, val mapName: String? = null, val themeName: String? = null) : Mode
+    data class Local(
+        val gameName: String? = null,
+        val mapPaths: List<String> = emptyList(),
+        val themeName: String? = null,
+    ) : Mode
+
+    data class Host(
+        val port: Int = DEFAULT_PORT,
+        val gameName: String? = null,
+        val mapPaths: List<String> = emptyList(),
+        val themeName: String? = null,
+    ) : Mode
+
     data class Join(val host: String, val port: Int = DEFAULT_PORT, val sessionId: String, val themeName: String? = null) : Mode
-    data class Server(val port: Int = DEFAULT_PORT, val mapName: String? = null) : Mode
+
+    data class Server(
+        val port: Int = DEFAULT_PORT,
+        val gameName: String? = null,
+        val mapPaths: List<String> = emptyList(),
+    ) : Mode
 }
 
 private fun ParameterHolder.themeOption() =
@@ -43,22 +60,29 @@ private fun ParameterHolder.themeOption() =
         help = "Built-in theme name or theme-file path; default is chosen from the terminal's detected color support",
     )
 
-private fun ParameterHolder.mapOption() =
+private fun ParameterHolder.gameOption() =
+    option(
+        "--game",
+        metavar = "<name|path>",
+        help = "Built-in game name or game-file path; default is \"$DEFAULT_GAME_NAME\"",
+    )
+
+private fun ParameterHolder.mapOptions() =
     option(
         "--map",
-        metavar = "<name|path>",
-        help = "Built-in map name or map-file path; default is \"$DEFAULT_MAP_NAME\"",
-    )
+        metavar = "<path>",
+        help = "External map file to register by filename; may be repeated",
+    ).multiple()
 
 private fun ParameterHolder.portOption() =
     option("--port", help = "TCP port to listen on (default $DEFAULT_PORT)").int().default(DEFAULT_PORT)
 
 /**
  * Root command: hot-seat when invoked bare, or dispatches to [HostCommand]/[JoinCommand]/[ServerCommand].
- * `--map`/`--theme` live here (not only on the subcommands) so the bare hot-seat form keeps taking
+ * `--game`/`--map`/`--theme` live here (not only on the subcommands) so the bare hot-seat form keeps taking
  * them directly — see [parseArgs]'s KDoc for why that shape was chosen over a `hotseat` subcommand.
  *
- * If `--map`/`--theme` are given ahead of a subcommand, e.g. `battletech-tui --map x host`, they
+ * If these options are given ahead of a subcommand, e.g. `battletech-tui --game x host`, they
  * would silently apply to THIS command while `host` uses its own (unset) copies; [run] catches
  * that and fails loudly instead of silently dropping the flag.
  *
@@ -86,16 +110,21 @@ private class BattletechTui(
 
     override val invokeWithoutSubcommand: Boolean = true
 
-    private val mapName by mapOption()
+    private val gameName by gameOption()
+    private val mapPaths by mapOptions()
     private val themeName by themeOption()
 
     override fun run() {
         val sub = currentContext.invokedSubcommand
         if (sub == null) {
-            emit(Mode.Local(mapName = mapName, themeName = themeName))
+            emit(Mode.Local(gameName = gameName, mapPaths = mapPaths, themeName = themeName))
             return
         }
-        val misplaced = listOfNotNull("--map".takeIf { mapName != null }, "--theme".takeIf { themeName != null })
+        val misplaced = listOfNotNull(
+            "--game".takeIf { gameName != null },
+            "--map".takeIf { mapPaths.isNotEmpty() },
+            "--theme".takeIf { themeName != null },
+        )
         if (misplaced.isNotEmpty()) {
             throw UsageError("${misplaced.joinToString(" and ")} must come after '${sub.commandName}'")
         }
@@ -106,11 +135,12 @@ private class HostCommand(private val emit: (Mode) -> Unit) : CliktCommand(name 
     override fun help(context: Context): String = "Host a session; other players connect with 'join'."
 
     private val port by portOption()
-    private val mapName by mapOption()
+    private val gameName by gameOption()
+    private val mapPaths by mapOptions()
     private val themeName by themeOption()
 
     override fun run() {
-        emit(Mode.Host(port = port, mapName = mapName, themeName = themeName))
+        emit(Mode.Host(port = port, gameName = gameName, mapPaths = mapPaths, themeName = themeName))
     }
 }
 
@@ -155,10 +185,11 @@ private class ServerCommand(private val emit: (Mode) -> Unit) : CliktCommand(nam
     override fun help(context: Context): String = "Headless dedicated server; both players connect with 'join'."
 
     private val port by portOption()
-    private val mapName by mapOption()
+    private val gameName by gameOption()
+    private val mapPaths by mapOptions()
 
     override fun run() {
-        emit(Mode.Server(port = port, mapName = mapName))
+        emit(Mode.Server(port = port, gameName = gameName, mapPaths = mapPaths))
     }
 }
 
@@ -181,14 +212,14 @@ private class ServerCommand(private val emit: (Mode) -> Unit) : CliktCommand(nam
  * re-entrant for tests.
  *
  * Syntax:
- * - (no args), or `[--map <name|path>] [--theme <name|path>]`: [Mode.Local]
- * - `host [--port N] [--map <name|path>] [--theme <name|path>]`: [Mode.Host]
+ * - (no args), or `[--game <name|path>] [--map <path>]... [--theme <name|path>]`: [Mode.Local]
+ * - `host [--port N] [--game <name|path>] [--map <path>]... [--theme <name|path>]`: [Mode.Host]
  * - `join <ip[:port]> --session <id> [--theme <name|path>]`: [Mode.Join]
- * - `server [--port N] [--map <name|path>]`: [Mode.Server]
+ * - `server [--port N] [--game <name|path>] [--map <path>]...`: [Mode.Server]
  *
- * `--map`/`--theme` are declared on both the root and the relevant subcommands (rather than only
+ * The game/map/theme options are declared on both the root and the relevant subcommands (rather than only
  * the root) so `host --help`/`join --help`/`server --help` each show exactly the options that
- * command accepts — `join --help` never mentions `--map` and `server --help` never mentions
+ * command accepts — `join --help` never mentions `--game`/`--map` and `server --help` never mentions
  * `--theme`. That structural guarantee is what replaces the old hand-written "--map cannot be
  * combined with --join" / "--theme cannot be combined with --server" checks.
  */

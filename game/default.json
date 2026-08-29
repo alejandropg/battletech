@@ -1,0 +1,41 @@
+{
+  "map": "battletech-classic",
+  "units": [
+    {
+      "id": "A1",
+      "player": 1,
+      "variant": "AS7-D",
+      "gunnerySkill": 4,
+      "pilotingSkill": 5,
+      "position": { "col": 2, "row": 2 },
+      "facing": "SE"
+    },
+    {
+      "id": "H1",
+      "player": 1,
+      "variant": "HBK-4G",
+      "gunnerySkill": 4,
+      "pilotingSkill": 5,
+      "position": { "col": 3, "row": 4 },
+      "facing": "N"
+    },
+    {
+      "id": "W1",
+      "player": 2,
+      "variant": "WVR-6R",
+      "gunnerySkill": 4,
+      "pilotingSkill": 4,
+      "position": { "col": 8, "row": 4 },
+      "facing": "N"
+    },
+    {
+      "id": "W2",
+      "player": 2,
+      "variant": "WVR-6R",
+      "gunnerySkill": 4,
+      "pilotingSkill": 5,
+      "position": { "col": 9, "row": 6 },
+      "facing": "N"
+    }
+  ]
+}

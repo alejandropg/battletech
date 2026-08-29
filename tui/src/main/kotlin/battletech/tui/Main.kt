@@ -4,13 +4,13 @@ import battletech.network.client.JoinRejectedException
 import battletech.network.client.ClientGameSession
 import battletech.network.server.GameServer
 import battletech.network.server.SocketAcceptor
-import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
-import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.PlayerId
-import battletech.tactical.model.map.DEFAULT_MAP_NAME
+import battletech.tactical.model.game.DEFAULT_GAME_NAME
+import battletech.tactical.model.game.GameLoadException
+import battletech.tactical.model.game.resolveGame
+import battletech.tactical.model.map.GameMapCatalog
 import battletech.tactical.model.map.MapLoadException
-import battletech.tactical.model.map.resolveMap
 import battletech.tactical.query.projectFor
 import battletech.tactical.session.GameEvent
 import battletech.tui.screen.Theme
@@ -19,10 +19,15 @@ import battletech.tui.screen.resolveTheme
 import battletech.tui.view.GameLogFormatter
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
+import kotlin.io.path.Path
 
-private fun resolveMapOrExit(mapName: String?) = try {
-    resolveMap(mapName ?: DEFAULT_MAP_NAME)
+private fun resolveGameOrExit(gameName: String?, mapPaths: List<String>): GameState = try {
+    val catalog = GameMapCatalog.load(mapPaths.map(::Path))
+    resolveGame(gameName ?: DEFAULT_GAME_NAME, catalog)
 } catch (e: MapLoadException) {
+    System.err.println(e.message)
+    kotlin.system.exitProcess(2)
+} catch (e: GameLoadException) {
     System.err.println(e.message)
     kotlin.system.exitProcess(2)
 }
@@ -75,8 +80,7 @@ public fun main(args: Array<String>) {
 
     when (mode) {
         is Mode.Local -> {
-            val map = resolveMapOrExit(mode.mapName)
-            val server = GameServer.host(GameStateFactory().sampleGameState(map))
+            val server = GameServer.host(resolveGameOrExit(mode.gameName, mode.mapPaths))
             // Build the map from each returned session's OWN playerId — connectLocal() assigns
             // seats via (allSeats - clients.keys).min(), not call order, so the Nth call is not
             // guaranteed to be the Nth PlayerId. See GameServer.connectLocal's KDoc.
@@ -91,8 +95,7 @@ public fun main(args: Array<String>) {
         }
 
         is Mode.Host -> {
-            val map = resolveMapOrExit(mode.mapName)
-            val server = GameServer.host(GameStateFactory().sampleGameState(map))
+            val server = GameServer.host(resolveGameOrExit(mode.gameName, mode.mapPaths))
             // connectLocal() BEFORE the acceptor starts — see GameServer.connectLocal's KDoc
             // for why that order is what makes the local seat deterministically PLAYER_1.
             val localSession = server.connectLocal()
@@ -121,7 +124,7 @@ public fun main(args: Array<String>) {
             }
         }
 
-        is Mode.Server -> runHeadlessServer(mode.port, resolveMapOrExit(mode.mapName))
+        is Mode.Server -> runHeadlessServer(mode.port, resolveGameOrExit(mode.gameName, mode.mapPaths))
     }
 }
 
@@ -130,8 +133,8 @@ public fun main(args: Array<String>) {
  * remotely via the `join` subcommand. Runs until Ctrl-C (or another SIGTERM), printing every game
  * event to stdout as it happens; the process stays up after [battletech.tactical.session.MatchEnded].
  */
-private fun runHeadlessServer(port: Int, map: GameMap) {
-    val server = GameServer.host(GameStateFactory().sampleGameState(map))
+private fun runHeadlessServer(port: Int, initialGameState: GameState) {
+    val server = GameServer.host(initialGameState)
 
     val printer = GameEventPrinter(System.out)
     // Replay the seeded notices before subscribing so the printer sees the whole log from the

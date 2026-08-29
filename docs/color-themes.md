@@ -44,9 +44,9 @@ Resolution is not theme-specific: `battletech.tui.screen.ThemeLoader` is a thin 
 `battletech.tactical.model.map.GameMapLoader` uses for maps. A packaged theme is resolved as
 `theme/<name>.json` on the classpath; `theme/index.json` lists the built-in names
 (`{"names": [...]}` — the same schema `map/index.json` uses) so an unrecognized `--theme` name can
-name the built-ins in its error, since a jar can't otherwise list a resource directory. `--theme
-<name|path>` behaves exactly like `--map` (down to the shared implementation): an existing
-filesystem path is authoritative and never falls back to a packaged theme.
+name the built-ins in its error, since a jar can't otherwise list a resource directory. For
+`--theme <name|path>`, an existing filesystem path is authoritative and never falls back to a
+packaged theme; otherwise the value is resolved as a built-in name.
 
 ## Why the values are what they are
 
