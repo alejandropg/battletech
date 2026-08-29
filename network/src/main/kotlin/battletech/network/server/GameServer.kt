@@ -7,6 +7,7 @@ import battletech.network.transport.ServerConnection
 import battletech.network.wire.ClientMessage
 import battletech.network.wire.GameSnapshot
 import battletech.network.wire.JoinRejectionReason
+import battletech.network.wire.MatchBootstrap
 import battletech.network.wire.PROTOCOL_VERSION
 import battletech.network.wire.ServerMessage
 import battletech.network.wire.SessionId
@@ -30,6 +31,7 @@ import battletech.tactical.session.SessionOpened
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.redactFor
+import battletech.tactical.unit.MechModel
 import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.UnknownUnitException
 import battletech.tactical.unit.VisibleUnit
@@ -100,10 +102,10 @@ import kotlin.concurrent.thread
  * included, until [attach] sees that seat rejoin.
  *
  * [BattleSession.stateFor] is the one seam every outbound [GameSnapshot] (join acceptance and
- * pushes alike, via [snapshotFor]/[snapshotFrom]) and [ServerMessage.JoinAccepted.map] are built
+ * pushes alike, via [snapshotFor]/[snapshotFrom]) and [MatchBootstrap.map] are built
  * through — see [snapshotFor]'s KDoc for how redaction happens there, and why the log traveling
- * alongside it ([ServerMessage.JoinAccepted.log], [ServerMessage.StatePush.entries]) must redact
- * in lockstep. [ServerMessage.JoinAccepted.map] is the fourth outbound path: unlike the other
+ * alongside it ([MatchBootstrap.log], [ServerMessage.StatePush.entries]) must redact
+ * in lockstep. [MatchBootstrap.map] is the fourth outbound path: unlike the other
  * three it is sent only once, at join (see [GameSnapshot]'s KDoc for why), but it comes from that
  * same per-seat [BattleSession.stateFor] projection, not a separate unredacted read.
  */
@@ -119,6 +121,7 @@ public class GameServer(
 
     private val clients: MutableMap<PlayerId, ConnectedClient> = mutableMapOf()
     private var everStarted: Boolean = false
+    private val matchModels: List<MechModel> = distinctMatchModels(session.gameState)
 
     // ---------- reads of the authoritative session ----------
 
@@ -216,7 +219,7 @@ public class GameServer(
      *
      * This is only ONE of four outbound paths that must agree:
      * [ServerMessage.JoinAccepted] carries [BattleSession.logFor] (not the raw
-     * [session]`.gameLog.snapshot()`) and its own [ServerMessage.JoinAccepted.map] (built from
+     * [session]`.gameLog.snapshot()`) and its own [MatchBootstrap.map] (built from
      * the same [BattleSession.stateFor] call, not a separate read), and every
      * [ServerMessage.StatePush] carries a log delta run through [redactedDeltaFor] — see [attach]
      * and [submitAndPush]. Redacting only this snapshot and leaving another channel un-redacted
@@ -291,24 +294,26 @@ public class GameServer(
             val alreadyConnected = clients.values.toList()
 
             // Everything from here up to (and including) the connect notice is new to
-            // alreadyConnected clients, but the joiner gets it all for free via JoinAccepted.log below.
+            // alreadyConnected clients, but the joiner gets it all in the bootstrap log below.
             val markBeforeConnectNotice = session.gameLog.snapshot().size
             session.annotate(PlayerConnected(seat))
             clients[seat] = client
             startWriterThread(client)
             val markBeforeKickstart = session.gameLog.snapshot().size
-            // logFor(seat), not gameLog.snapshot() — the joiner's very first message must
+            // logFor(seat), not gameLog.snapshot() — the joiner's JoinAccepted message must
             // already be redacted, same as every later push (see snapshotFor's KDoc). The map
             // travels here, once, and never again in a StatePush (see GameSnapshot's KDoc) —
-            // projected once and split into JoinAccepted's two fields rather than calling
-            // stateFor(seat) twice.
+            // projected once into one MatchBootstrap rather than calling stateFor(seat) twice.
             val projection = session.stateFor(seat)
             client.outbound.put(
                 ServerMessage.JoinAccepted(
-                    playerId = seat,
-                    map = projection.map,
-                    snapshot = snapshotFrom(projection.units),
-                    log = session.logFor(seat),
+                    MatchBootstrap(
+                        playerId = seat,
+                        mechModels = matchModels,
+                        map = projection.map,
+                        snapshot = snapshotFrom(projection.units),
+                        log = session.logFor(seat),
+                    ),
                 ),
             )
 
@@ -320,7 +325,7 @@ public class GameServer(
 
             // Already-connected clients missed the connect notice (and the kickstart, if it just
             // fired) entirely — push them the combined delta, redacted for THEIR OWN seat (not the
-            // joiner's). The joiner already has the connect notice via JoinAccepted.log above, so
+            // joiner's). The joiner already has the connect notice via the bootstrap log above, so
             // it only needs the kickstart delta, if any.
             val finalLog = session.gameLog.snapshot()
             alreadyConnected.forEach { c ->
@@ -444,4 +449,16 @@ public class GameServer(
             return server
         }
     }
+}
+
+private fun distinctMatchModels(state: GameState): List<MechModel> {
+    val byVariant = linkedMapOf<String, MechModel>()
+    for (unit in state.units) {
+        val previous = byVariant[unit.variant]
+        check(previous == null || previous == unit.model) {
+            "Match contains conflicting definitions for mech variant '${unit.variant}'"
+        }
+        byVariant[unit.variant] = unit.model
+    }
+    return byVariant.values.toList()
 }

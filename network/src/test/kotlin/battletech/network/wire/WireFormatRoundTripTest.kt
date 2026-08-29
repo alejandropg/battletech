@@ -53,6 +53,7 @@ import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.LogEntry
 import battletech.tactical.session.MapIdentified
 import battletech.tactical.session.MatchEnded
+import battletech.tactical.session.MechModelMismatch
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
@@ -426,12 +427,15 @@ internal class WireFormatRoundTripTest {
     }
 
     @Test
-    fun `ServerMessage JoinAccepted wrapping a GameSnapshot and log round-trips`() {
+    fun `ServerMessage JoinAccepted wrapping a complete MatchBootstrap round-trips`() {
         val message = ServerMessage.JoinAccepted(
-            playerId = PlayerId.PLAYER_2,
-            map = aGameMap(),
-            snapshot = aGameSnapshot(),
-            log = listOf(LogEntry(turn = 1, event = gameEventFixtures.getValue(PhaseChanged::class))),
+            MatchBootstrap(
+                playerId = PlayerId.PLAYER_2,
+                mechModels = matchModels(),
+                map = aGameMap(),
+                snapshot = aGameSnapshot(),
+                log = listOf(LogEntry(turn = 1, event = gameEventFixtures.getValue(PhaseChanged::class))),
+            ),
         )
 
         val line = WireJson.encodeToLine(message)
@@ -486,11 +490,11 @@ internal class WireFormatRoundTripTest {
 
     /**
      * The point of splitting the map out of [GameSnapshot] (see its KDoc): a [ServerMessage.StatePush]
-     * must never re-encode the board, while [ServerMessage.JoinAccepted] — which carries it exactly
-     * once — must.
+     * must never re-encode immutable match content, while [ServerMessage.JoinAccepted] — which
+     * carries it exactly once — must.
      */
     @Test
-    fun `the map's hexes are absent from a StatePush and present in JoinAccepted`() {
+    fun `map and mech models are absent from StatePush and present in JoinAccepted`() {
         val session = aSampleSession()
         session.advance()
 
@@ -505,14 +509,18 @@ internal class WireFormatRoundTripTest {
             ),
         )
         val joinAccepted = ServerMessage.JoinAccepted(
-            playerId = PlayerId.PLAYER_1,
-            map = session.stateFor(PlayerId.PLAYER_1).map,
-            snapshot = push.snapshot,
-            log = session.logFor(PlayerId.PLAYER_1),
+            MatchBootstrap(
+                playerId = PlayerId.PLAYER_1,
+                mechModels = matchModels(),
+                map = session.stateFor(PlayerId.PLAYER_1).map,
+                snapshot = push.snapshot,
+                log = session.logFor(PlayerId.PLAYER_1),
+            ),
         )
 
         assertThat(WireJson.encodeToLine(push)).doesNotContain("hexes")
-        assertThat(WireJson.encodeToLine(joinAccepted)).contains("hexes")
+        assertThat(WireJson.encodeToLine(push)).doesNotContain("mechModels")
+        assertThat(WireJson.encodeToLine(joinAccepted)).contains("hexes", "mechModels")
     }
 
     @Test
@@ -556,6 +564,10 @@ internal class WireFormatRoundTripTest {
         )
 
         private fun aGameMap(): GameMap = resolveGame(DEFAULT_GAME_NAME).map
+
+        private fun matchModels() = resolveGame(DEFAULT_GAME_NAME).units
+            .map { it.model }
+            .distinctBy { it.variant }
 
         private fun aTurnStateFixture(): TurnState = TurnState(initiative = anInitiativeFixture())
 
@@ -676,6 +688,7 @@ internal class WireFormatRoundTripTest {
             SessionOpened::class to SessionOpened(sessionId = "ABCDEF"),
             HostConnectionLost::class to HostConnectionLost,
             MapIdentified::class to MapIdentified(name = "default", localMatch = LocalMapMatch.MATCHES),
+            MechModelMismatch::class to MechModelMismatch(variant = "WVR-6R"),
         )
 
         private val ruleRejectionFixtures: Map<KClass<out RuleRejection>, RuleRejection> = mapOf(

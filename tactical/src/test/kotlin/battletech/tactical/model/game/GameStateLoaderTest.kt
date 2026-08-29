@@ -5,6 +5,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.map.GameMapCatalog
+import battletech.tactical.model.mech.MechModelCatalog
 import battletech.tactical.unit.UnitId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -46,6 +47,35 @@ internal class GameStateLoaderTest {
         assertThat(state.map.name).isEqualTo("arena")
         assertThat(state.units.all).hasSize(2)
         assertThat(state.units.byId(UnitId("P1")).position).isEqualTo(HexCoordinates(0, 0))
+    }
+
+    @Test
+    fun `load game that selects a variant from an external mech collection`() {
+        val mech = tempDir.resolve("custom-mechs.json")
+        mech.writeText(
+            """
+            {
+              "models":[{
+                "variant":"CUSTOM-1",
+                "name":"Custom CUSTOM-1",
+                "tonnage":20,
+                "walkingMP":4,
+                "runningMP":6,
+                "armor":{
+                  "head":0,"centerTorso":0,"centerTorsoRear":0,
+                  "leftTorso":0,"leftTorsoRear":0,"rightTorso":0,"rightTorsoRear":0,
+                  "leftArm":0,"rightArm":0,"leftLeg":0,"rightLeg":0
+                }
+              }]
+            }
+            """.trimIndent(),
+        )
+        val game = writeGame(gameJson(firstUnit = unitJson(variant = "CUSTOM-1")))
+        val externalLoader = GameStateLoader(catalog, MechModelCatalog.load(listOf(mech)))
+
+        val state = externalLoader.load(game)
+
+        assertThat(state.units.byId(UnitId("P1")).variant).isEqualTo("CUSTOM-1")
     }
 
     @Test

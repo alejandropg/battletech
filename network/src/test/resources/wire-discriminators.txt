@@ -1,5 +1,4 @@
-PROTOCOL_VERSION=6
-MECH_VARIANTS=ARC-2R,AS7-D,GRF-1N,HBK-4G,LCT-1V,MAD-3R,PXH-1,SHD-2H,STG-3R,WHM-6R,WSP-1A,WVR-6R
+PROTOCOL_VERSION=8
 accepted
 actuator
 ammoBin
@@ -50,6 +49,7 @@ limbDestroyed
 mapIdentified
 matchEnded
 matchOver
+mechModelMismatch
 miss
 missile
 moveUnit

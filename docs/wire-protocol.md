@@ -45,12 +45,17 @@ This is build-enforced, not hand-maintained discipline, by two tests in
 
 A wire change that isn't purely additive should bump `PROTOCOL_VERSION` (`network/wire/Messages.kt`)
 in the same diff that updates the golden file — a mismatched client already rejects cleanly via
-`JoinRejectionReason.INCOMPATIBLE_PROTOCOL`. `PROTOCOL_VERSION` is currently 6: it moved to 6 when
-`GameMap` came out of `GameSnapshot` (sent on every `StatePush`) and into `ServerMessage.JoinAccepted`
-(sent once, at join) — the board is immutable for a match, so re-sending it on every push was pure
-redundant bytes. A joining client therefore has no map of its own to negotiate; the host's map
-(named via `GameMap.name`) is authoritative, and `ClientGameSession` only checks it against a local
-map source of the same name to log a `MapIdentified` notice, never to reject or substitute it.
+`JoinRejectionReason.INCOMPATIBLE_PROTOCOL`. `PROTOCOL_VERSION` is currently 8. Version 6 moved
+`GameMap` out of every `GameSnapshot` and into the one-time `ServerMessage.JoinAccepted`. Version 7
+made match mech definitions host-authoritative. Version 8 unified those definitions, the map, and
+the player's initial projected snapshot and log into one `MatchBootstrap` carried by
+`ServerMessage.JoinAccepted`. Its `CombatUnit.model` fields and all later snapshots remain compact
+variant strings. The connection-scoped decoder stages the bootstrap: it validates and installs the
+embedded catalog before decoding the snapshot, then retains that resolver for later pushes. Adding
+a packaged variant is therefore not itself a protocol change. Neither maps nor mech files are
+supplied by `join`. After decoding, the client compares same-variant host models with its packaged
+catalog and records a local `MechModelMismatch` event for each difference. This comparison is
+informational and never changes the connection-scoped host resolver.
 `network/src/test/kotlin/battletech/network/wire/WireFormatRoundTripTest.kt` additionally pins the
 literal JSON for one flat (`RuleRejection.NoAmmo`) and one nested (`GameEvent`'s
 `UnitStoodUp.Undisclosed`) variant, to catch a discriminator change that round-tripping alone would

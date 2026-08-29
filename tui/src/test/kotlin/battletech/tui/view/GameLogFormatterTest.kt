@@ -35,6 +35,7 @@ import battletech.tactical.session.Initiative
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.MapIdentified
 import battletech.tactical.session.MatchEnded
+import battletech.tactical.session.MechModelMismatch
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.PilotHit
@@ -68,6 +69,7 @@ import battletech.tui.icon.diceIcon
 import battletech.tui.icon.locationDestroyedIcon
 import battletech.tui.icon.mapMismatchIcon
 import battletech.tui.icon.mapNoticeIcon
+import battletech.tui.icon.mechModelMismatchIcon
 import battletech.tui.icon.movementModeIcon
 import battletech.tui.icon.pilotDeadIcon
 import battletech.tui.icon.sessionNoticeIcon
@@ -689,6 +691,18 @@ internal class GameLogFormatterTest {
             GameLogFormatter.LogLine(
                 mapMismatchIcon(),
                 "Local map 'battletech-classic' differs from the host's — using the host's map",
+            ),
+        )
+    }
+
+    @Test
+    fun `MechModelMismatch renders a warning that the host model is used`() {
+        val lines = GameLogFormatter.lines(MechModelMismatch("WVR-6R"), emptyState)
+
+        assertThat(lines).containsExactly(
+            GameLogFormatter.LogLine(
+                mechModelMismatchIcon(),
+                "Local mech model 'WVR-6R' differs from the host's — using the host's model",
             ),
         )
     }

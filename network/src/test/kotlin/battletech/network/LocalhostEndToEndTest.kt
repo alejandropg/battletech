@@ -5,11 +5,15 @@ import battletech.network.server.GameServer
 import battletech.network.server.SocketAcceptor
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.game.DEFAULT_GAME_NAME
+import battletech.tactical.model.game.resolveGame
+import battletech.tactical.unit.UnitRoster
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.CommitPhysicalAttackImpulse
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameSession
+import battletech.tactical.session.MechModelMismatch
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.TurnEnded
 import org.assertj.core.api.Assertions.assertThat
@@ -82,6 +86,59 @@ internal class LocalhostEndToEndTest {
         awaitConvergence(host, remote)
         assertThat(remote.gameLog.snapshot()).isNotEmpty
         assertThat(remote.currentPhase).isEqualTo(TurnPhase.MOVEMENT)
+    }
+
+    @Test
+    fun `joining over a real socket installs a model that is absent from packaged resources`() {
+        val base = resolveGame(DEFAULT_GAME_NAME)
+        val custom = base.units.all.first { it.id.value == "W1" }.model.copy(variant = "CUSTOM-WVR")
+        val replaced = base.units.all.map { unit ->
+            if (unit.owner == PlayerId.PLAYER_2 && unit.id.value == "W1") unit.copy(model = custom) else unit
+        }
+        val gameServer = GameServer.host(base.copy(units = UnitRoster(replaced)))
+        server = gameServer
+        local = gameServer.connectLocal()
+        val socketAcceptor = SocketAcceptor(gameServer, port = 0)
+        acceptor = socketAcceptor
+        socketAcceptor.start()
+
+        val remote = ClientGameSession.connect("127.0.0.1", socketAcceptor.boundPort, gameServer.sessionId)
+        client = remote
+
+        val received = remote.stateFor(remote.playerId).units
+            .filterIsInstance<battletech.tactical.unit.CombatUnit>()
+            .first { it.variant == "CUSTOM-WVR" }
+
+        assertThat(received.model).isEqualTo(custom)
+        assertThat(remote.gameLog.snapshot().map { it.event })
+            .doesNotContain(MechModelMismatch(custom.variant))
+    }
+
+    @Test
+    fun `joining over a real socket warns when a packaged model differs and uses the host definition`() {
+        val base = resolveGame(DEFAULT_GAME_NAME)
+        val packaged = base.units.all.first { it.owner == PlayerId.PLAYER_2 && it.id.value == "W1" }.model
+        val hostModel = packaged.copy(name = "${packaged.name} (host revision)")
+        val replaced = base.units.all.map { unit ->
+            if (unit.variant == hostModel.variant) unit.copy(model = hostModel) else unit
+        }
+        val gameServer = GameServer.host(base.copy(units = UnitRoster(replaced)))
+        server = gameServer
+        local = gameServer.connectLocal()
+        val socketAcceptor = SocketAcceptor(gameServer, port = 0)
+        acceptor = socketAcceptor
+        socketAcceptor.start()
+
+        val remote = ClientGameSession.connect("127.0.0.1", socketAcceptor.boundPort, gameServer.sessionId)
+        client = remote
+
+        val received = remote.stateFor(remote.playerId).units
+            .filterIsInstance<battletech.tactical.unit.CombatUnit>()
+            .first { it.variant == hostModel.variant }
+
+        assertThat(received.model).isEqualTo(hostModel)
+        assertThat(remote.gameLog.snapshot().map { it.event })
+            .contains(MechModelMismatch(hostModel.variant))
     }
 
     @Test

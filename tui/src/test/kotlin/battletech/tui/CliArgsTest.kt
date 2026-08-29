@@ -60,6 +60,14 @@ internal class CliArgsTest {
         fun `--map with no value throws`() {
             failing("--map")
         }
+
+        @Test
+        fun `repeated --mech preserves every collection in order`() {
+            assertEquals(
+                Mode.Local(mechPaths = listOf("custom.json", "more.json")),
+                parse("--mech", "custom.json", "--mech", "more.json"),
+            )
+        }
     }
 
     @Nested
@@ -94,6 +102,14 @@ internal class CliArgsTest {
             assertEquals(
                 Mode.Host(gameName = "game", mapPaths = listOf("one.json", "two.json")),
                 parse("host", "--game", "game", "--map", "one.json", "--map", "two.json"),
+            )
+        }
+
+        @Test
+        fun `host accepts repeated mech collections`() {
+            assertEquals(
+                Mode.Host(mechPaths = listOf("one.json", "two.json")),
+                parse("host", "--mech", "one.json", "--mech", "two.json"),
             )
         }
     }
@@ -154,6 +170,12 @@ internal class CliArgsTest {
             val ex = failing("join", "192.168.1.5", "--session", "s", "--game", "x")
             assertTrue(ex.output.contains("--game"))
         }
+
+        @Test
+        fun `join has no --mech -- the models come from the host`() {
+            val ex = failing("join", "192.168.1.5", "--session", "s", "--mech", "x")
+            assertTrue(ex.output.contains("--mech"))
+        }
     }
 
     @Nested
@@ -188,6 +210,14 @@ internal class CliArgsTest {
             assertEquals(
                 Mode.Server(gameName = "game", mapPaths = listOf("arena.json")),
                 parse("server", "--game", "game", "--map", "arena.json"),
+            )
+        }
+
+        @Test
+        fun `server accepts mech collections`() {
+            assertEquals(
+                Mode.Server(mechPaths = listOf("custom.json")),
+                parse("server", "--mech", "custom.json"),
             )
         }
 
@@ -251,7 +281,7 @@ internal class CliArgsTest {
     }
 
     /**
-     * `--game`/`--map`/`--theme` live on the root so the bare hot-seat form keeps taking them directly
+     * `--game`/`--map`/`--mech`/`--theme` live on the root so the bare hot-seat form keeps taking them directly
      * (see [parseArgs]'s KDoc), but that means they must come AFTER the subcommand name — giving
      * them before it would otherwise silently set the wrong (root) copy, so the root command
      * guards against that explicitly rather than letting it degrade to "option ignored".
@@ -280,6 +310,13 @@ internal class CliArgsTest {
         }
 
         @Test
+        fun `--mech before the host subcommand is rejected`() {
+            val ex = failing("--mech", "x", "host")
+            assertTrue(ex.output.contains("--mech"))
+            assertTrue(ex.output.contains("host"))
+        }
+
+        @Test
         fun `--theme before the host subcommand is rejected`() {
             val ex = failing("--theme", "dark", "host")
             assertTrue(ex.output.contains("--theme"))
@@ -294,10 +331,11 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `game map and theme before a subcommand are named in one error`() {
-            val ex = failing("--game", "g", "--map", "x", "--theme", "dark", "host")
+        fun `game map mech and theme before a subcommand are named in one error`() {
+            val ex = failing("--game", "g", "--map", "x", "--mech", "m", "--theme", "dark", "host")
             assertTrue(ex.output.contains("--game"))
             assertTrue(ex.output.contains("--map"))
+            assertTrue(ex.output.contains("--mech"))
             assertTrue(ex.output.contains("--theme"))
         }
 
@@ -352,6 +390,7 @@ internal class CliArgsTest {
             assertTrue(help.contains("--port"))
             assertTrue(help.contains("--game"))
             assertTrue(help.contains("--map"))
+            assertTrue(help.contains("--mech"))
             assertTrue(help.contains("--theme"))
             assertTrue(help.contains("default"))
         }
@@ -361,6 +400,7 @@ internal class CliArgsTest {
             val help = failing("join", "--help").output
             assertTrue(!help.contains("--map"))
             assertTrue(!help.contains("--game"))
+            assertTrue(!help.contains("--mech"))
         }
 
         @Test

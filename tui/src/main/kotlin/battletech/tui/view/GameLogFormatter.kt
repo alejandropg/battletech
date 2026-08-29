@@ -19,6 +19,7 @@ import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.MapIdentified
 import battletech.tactical.session.MatchEnded
+import battletech.tactical.session.MechModelMismatch
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.PilotHit
@@ -49,6 +50,7 @@ import battletech.tui.icon.locationDestroyedIcon
 import battletech.tui.icon.mapMismatchIcon
 import battletech.tui.icon.mapNoticeIcon
 import battletech.tui.icon.matchEndedIcon
+import battletech.tui.icon.mechModelMismatchIcon
 import battletech.tui.icon.movementModeIcon
 import battletech.tui.icon.physicalAttacksResolvedIcon
 import battletech.tui.icon.pilotConsciousIcon
@@ -269,6 +271,12 @@ internal object GameLogFormatter {
                 add(LogLine(mapMismatchIcon(), "Local map '${event.name}' differs from the host's — using the host's map"))
             }
         }
+        is MechModelMismatch -> listOf(
+            LogLine(
+                mechModelMismatchIcon(),
+                "Local mech model '${event.variant}' differs from the host's — using the host's model",
+            ),
+        )
     }
 
     /**

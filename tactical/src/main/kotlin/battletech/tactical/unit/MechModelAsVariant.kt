@@ -10,16 +10,18 @@ import kotlinx.serialization.encoding.Encoder
 
 /**
  * Serializes a [MechModel] as just its [MechModel.variant] on the wire, resolving it back
- * through [MechModels] on the way in. Both sides of the wire ship the same registry, so shipping
+ * through the supplied [find] function on the way in. A client installs the host's match catalog
+ * before decoding any snapshots, so shipping
  * the full chassis blob (armor, internal structure, ~78 critical slots, weapons) on every
  * [CombatUnit] would duplicate data the receiver already has, without conveying anything the
  * variant string doesn't already say.
  *
- * A variant absent from the receiver's [MechModels] registry (a rolled-back client, a mech added
- * without a version bump) is a wire protocol error, not a crash: it surfaces as
- * [SerializationException] at the decode boundary rather than [MechModels]'s own `error(...)`.
+ * A variant absent from the receiver's match catalog is a wire protocol error, not a crash: it
+ * surfaces as [SerializationException] at the decode seam.
  */
-public object MechModelAsVariant : KSerializer<MechModel> {
+public class MechModelAsVariant(
+    private val find: (String) -> MechModel?,
+) : KSerializer<MechModel> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("battletech.tactical.unit.MechModel", PrimitiveKind.STRING)
 
@@ -28,7 +30,7 @@ public object MechModelAsVariant : KSerializer<MechModel> {
 
     override fun deserialize(decoder: Decoder): MechModel {
         val variant = decoder.decodeString()
-        return MechModels.find(variant)
+        return find(variant)
             ?: throw SerializationException("Unknown mech variant: $variant")
     }
 }

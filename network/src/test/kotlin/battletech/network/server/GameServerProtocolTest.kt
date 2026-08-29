@@ -52,15 +52,19 @@ internal class GameServerProtocolTest {
         server.attachInBackground(connection)
 
         val (joinAccepted, push) = connection.joinAndConsumeKickstart(sessionId)
+        val bootstrap = joinAccepted.bootstrap
 
-        assertThat(joinAccepted.playerId).isEqualTo(PlayerId.PLAYER_2)
-        assertThat(joinAccepted.log).containsExactly(
+        assertThat(bootstrap.playerId).isEqualTo(PlayerId.PLAYER_2)
+        assertThat(bootstrap.log).containsExactly(
             LogEntry(turn = 1, event = PlayerConnected(PlayerId.PLAYER_1)),
             LogEntry(turn = 1, event = PlayerConnected(PlayerId.PLAYER_2)),
         )
-        assertThat(joinAccepted.snapshot.currentPhase).isEqualTo(TurnPhase.INITIATIVE)
-        assertThat(joinAccepted.snapshot.units).isEqualTo(server.stateFor(PlayerId.PLAYER_2).units)
-        assertThat(joinAccepted.map).isEqualTo(server.stateFor(PlayerId.PLAYER_2).map)
+        assertThat(bootstrap.snapshot.currentPhase).isEqualTo(TurnPhase.INITIATIVE)
+        assertThat(bootstrap.snapshot.units).isEqualTo(server.stateFor(PlayerId.PLAYER_2).units)
+        assertThat(bootstrap.map).isEqualTo(server.stateFor(PlayerId.PLAYER_2).map)
+        assertThat(bootstrap.mechModels.map { it.variant }).containsExactlyInAnyOrderElementsOf(
+            server.gameState.units.map { it.variant }.distinct(),
+        )
 
         assertThat(push.entries).isNotEmpty
         assertThat(push.snapshot.currentPhase).isEqualTo(TurnPhase.MOVEMENT)
@@ -78,7 +82,7 @@ internal class GameServerProtocolTest {
 
         val (joinAccepted, _) = connection.joinAndConsumeKickstart(sessionId)
 
-        val units = joinAccepted.snapshot.units
+        val units = joinAccepted.bootstrap.snapshot.units
         assertThat(units).isNotEmpty
         units.filter { it.owner == PlayerId.PLAYER_1 }.forEach { assertThat(it).isInstanceOf(ForeignUnit::class.java) }
         units.filter { it.owner == PlayerId.PLAYER_2 }.forEach { assertThat(it).isInstanceOf(battletech.tactical.unit.CombatUnit::class.java) }
@@ -106,7 +110,7 @@ internal class GameServerProtocolTest {
 
         val (joinAccepted, _) = connection.joinAndConsumeKickstart(sessionId)
 
-        val criticalEvents = joinAccepted.log.map { it.event }.filterIsInstance<CriticalHit>()
+        val criticalEvents = joinAccepted.bootstrap.log.map { it.event }.filterIsInstance<CriticalHit>()
         assertThat(criticalEvents).hasSize(1)
         assertThat(criticalEvents.single()).isEqualTo(CriticalHit.Undisclosed(player1Unit.id))
     }
@@ -283,9 +287,10 @@ internal class GameServerProtocolTest {
         server.attachInBackground(secondConnection)
         val rejoinAccepted = secondConnection.join(sessionId) as ServerMessage.JoinAccepted
 
-        assertThat(rejoinAccepted.playerId).isEqualTo(PlayerId.PLAYER_2)
-        assertThat(rejoinAccepted.log).hasSize(logSizeBeforeRejoin + 2)
-        val connectivityEvents = rejoinAccepted.log.map { it.event }.filter { it is PlayerConnected || it is PlayerDisconnected }
+        assertThat(rejoinAccepted.bootstrap.playerId).isEqualTo(PlayerId.PLAYER_2)
+        assertThat(rejoinAccepted.bootstrap.log).hasSize(logSizeBeforeRejoin + 2)
+        val connectivityEvents = rejoinAccepted.bootstrap.log.map { it.event }
+            .filter { it is PlayerConnected || it is PlayerDisconnected }
         assertThat(connectivityEvents).containsExactly(
             PlayerConnected(PlayerId.PLAYER_1),
             PlayerConnected(PlayerId.PLAYER_2),
@@ -310,8 +315,8 @@ internal class GameServerProtocolTest {
         server.attachInBackground(first)
 
         val firstAccepted = first.join(sessionId) as ServerMessage.JoinAccepted
-        assertThat(firstAccepted.playerId).isEqualTo(PlayerId.PLAYER_1)
-        assertThat(firstAccepted.snapshot.currentPhase).isEqualTo(TurnPhase.INITIATIVE)
+        assertThat(firstAccepted.bootstrap.playerId).isEqualTo(PlayerId.PLAYER_1)
+        assertThat(firstAccepted.bootstrap.snapshot.currentPhase).isEqualTo(TurnPhase.INITIATIVE)
 
         // No kickstart yet: give a wrongful push a generous window, then confirm none arrived.
         Thread.sleep(200)
@@ -321,7 +326,7 @@ internal class GameServerProtocolTest {
         val second = PipedConnection()
         server.attachInBackground(second)
         val secondAccepted = second.join(sessionId) as ServerMessage.JoinAccepted
-        assertThat(secondAccepted.playerId).isEqualTo(PlayerId.PLAYER_2)
+        assertThat(secondAccepted.bootstrap.playerId).isEqualTo(PlayerId.PLAYER_2)
 
         val firstPush = WireJson.decodeServerMessage(first.clientInput.readLine()) as ServerMessage.StatePush
         val secondPush = WireJson.decodeServerMessage(second.clientInput.readLine()) as ServerMessage.StatePush
@@ -430,7 +435,7 @@ internal class GameServerProtocolTest {
         server.attachInBackground(first)
         server.attachInBackground(second)
         val bothJoined = joinBothSeats(sessionId, first, second)
-        assertThat(bothJoined.firstAccepted.playerId).isEqualTo(PlayerId.PLAYER_1)
+        assertThat(bothJoined.firstAccepted.bootstrap.playerId).isEqualTo(PlayerId.PLAYER_1)
         val logSizeBeforeDisconnect = server.gameLog.snapshot().size
 
         first.closeClientSide()
@@ -452,10 +457,11 @@ internal class GameServerProtocolTest {
         server.attachInBackground(rejoin)
         val rejoinAccepted = rejoin.join(sessionId) as ServerMessage.JoinAccepted
 
-        assertThat(rejoinAccepted.playerId).isEqualTo(PlayerId.PLAYER_1)
+        assertThat(rejoinAccepted.bootstrap.playerId).isEqualTo(PlayerId.PLAYER_1)
         // +1 for the disconnect notice, +1 for the rejoin's own PlayerConnected event.
-        assertThat(rejoinAccepted.log).hasSize(logSizeBeforeDisconnect + 2)
-        val connectivityEvents = rejoinAccepted.log.map { it.event }.filter { it is PlayerConnected || it is PlayerDisconnected }
+        assertThat(rejoinAccepted.bootstrap.log).hasSize(logSizeBeforeDisconnect + 2)
+        val connectivityEvents = rejoinAccepted.bootstrap.log.map { it.event }
+            .filter { it is PlayerConnected || it is PlayerDisconnected }
         assertThat(connectivityEvents).containsSequence(
             PlayerDisconnected(PlayerId.PLAYER_1),
             PlayerConnected(PlayerId.PLAYER_1),

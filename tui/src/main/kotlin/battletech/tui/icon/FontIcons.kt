@@ -231,6 +231,9 @@ internal fun mapNoticeIcon(): String = NF_MD_MAP
 /** Marker for the warning line when [battletech.tactical.session.MapIdentified]'s local map check disagrees with the host. */
 internal fun mapMismatchIcon(): String = NF_MD_ALERT
 
+/** Marker for a warning that a local mech definition disagrees with the host. */
+internal fun mechModelMismatchIcon(): String = NF_MD_ALERT
+
 /** Marker for a unit that fell / was knocked prone. */
 internal fun unitFellIcon(): String = NF_MD_TRANSFER_DOWN
 

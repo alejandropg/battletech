@@ -67,17 +67,16 @@ internal fun GameSession.advanceMovementUntilActivePlayerIs(target: PlayerId): I
     return moves
 }
 
-/** Writes a [ClientMessage.Join] for [sessionId] and blocks for the raw first reply line. */
+/** Writes a [ClientMessage.Join] for [sessionId]. */
 internal fun PipedConnection.sendJoin(sessionId: String, protocolVersion: Int = PROTOCOL_VERSION) {
     clientOutput.write(WireJson.encodeToLine(ClientMessage.Join(sessionId, protocolVersion)) + "\n")
     clientOutput.flush()
 }
 
 /**
- * Sends a [ClientMessage.Join] and reads exactly one reply line, decoded as a
- * [ServerMessage]. Use for handshake-only assertions (acceptance/rejection)
- * where no kickstart push is expected (rejections, or a rejoin after the
- * server's one-time kickstart has already fired).
+ * Sends a [ClientMessage.Join] and returns its single bootstrap acceptance or rejection. Use for
+ * handshake-only assertions where no kickstart push is expected (rejections, or a rejoin after
+ * the server's one-time kickstart has already fired).
  */
 internal fun PipedConnection.join(sessionId: String, protocolVersion: Int = PROTOCOL_VERSION): ServerMessage {
     sendJoin(sessionId, protocolVersion)
@@ -85,9 +84,9 @@ internal fun PipedConnection.join(sessionId: String, protocolVersion: Int = PROT
 }
 
 /**
- * Sends a [ClientMessage.Join] and reads the two reply lines a *first-ever*
- * successful join produces: [ServerMessage.JoinAccepted] followed by the
- * kickstart's [ServerMessage.StatePush] (see [GameServer] KDoc — the
+ * Sends a [ClientMessage.Join] and reads the successful handshake plus the
+ * kickstart reply: [ServerMessage.JoinAccepted] followed by the kickstart's
+ * [ServerMessage.StatePush] (see [GameServer] KDoc — the
  * kickstart fires at most once per server lifetime).
  *
  * Only valid when this join is the one that completes the roster (every

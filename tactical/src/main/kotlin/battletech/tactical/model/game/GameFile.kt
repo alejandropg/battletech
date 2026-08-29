@@ -6,7 +6,7 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.map.GameMapCatalog
 import battletech.tactical.model.map.MapLoadException
-import battletech.tactical.unit.MechModels
+import battletech.tactical.model.mech.MechModelCatalog
 import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.createUnit
@@ -20,11 +20,11 @@ internal data class GameFile(
     internal val units: List<UnitSpec>,
 ) {
 
-    internal fun toGameState(catalog: GameMapCatalog): GameState {
+    internal fun toGameState(mapCatalog: GameMapCatalog, mechCatalog: MechModelCatalog): GameState {
         if (map.isBlank()) throw GameLoadException("Game map name must not be blank")
 
         val gameMap = try {
-            catalog.resolve(map)
+            mapCatalog.resolve(map)
         } catch (e: MapLoadException) {
             throw GameLoadException("Could not resolve game map '$map': ${e.message}", e)
         }
@@ -47,10 +47,10 @@ internal data class GameFile(
                 throw GameLoadException("Unit '${spec.id}' pilotingSkill must be in 0..8, was ${spec.pilotingSkill}")
             }
 
-            val model = MechModels.find(spec.variant)
+            val model = mechCatalog.find(spec.variant)
                 ?: throw GameLoadException(
                     "Unit '${spec.id}' has unknown mech variant '${spec.variant}'. " +
-                        "Known variants: ${MechModels.variants.sorted().joinToString(", ")}"
+                        "Known variants: ${mechCatalog.variants.sorted().joinToString(", ")}"
                 )
             val position = spec.position.toCoordinates()
             if (position !in gameMap.hexes) {

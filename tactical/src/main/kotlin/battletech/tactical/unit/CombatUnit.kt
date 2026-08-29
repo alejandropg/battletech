@@ -4,6 +4,7 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -14,10 +15,10 @@ public data class CombatUnit(
      * The chassis this unit was built from — everything about it that never changes across a
      * game: name, tonnage, movement points, heat sink count, and the pristine armor/internal
      * structure/critical layout/weapons loadout. Ships on the wire as just [MechModel.variant]
-     * (see [MechModelAsVariant]) and is resolved back through [MechModels] on the other side, so
-     * both sides must agree on the registry — see `docs/wire-protocol.md`.
+     * (see [MechModelAsVariant]) and is resolved through the match catalog the host sends before
+     * `JoinAccepted` — see `docs/wire-protocol.md`.
      */
-    @Serializable(with = MechModelAsVariant::class)
+    @Contextual
     public val model: MechModel,
     override val id: UnitId,
     override val owner: PlayerId,

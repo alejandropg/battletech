@@ -22,4 +22,8 @@ tasks.named<ProcessResources>("processResources") {
         into("game")
         exclude(".DS_Store")
     }
+    from(rootProject.layout.projectDirectory.dir("mech")) {
+        into("mech")
+        exclude(".DS_Store")
+    }
 }

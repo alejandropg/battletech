@@ -133,4 +133,25 @@ public object WeaponModels {
         criticalSlots = 4,
         kind = WeaponKind.Ballistic(AmmoType.AC5),
     )
+
+    private val registry: Map<String, WeaponModel> = mapOf(
+        "mediumLaser" to mediumLaser,
+        "largeLaser" to largeLaser,
+        "ac20" to ac20,
+        "srm6" to srm6,
+        "smallLaser" to smallLaser,
+        "machineGun" to machineGun,
+        "srm2" to srm2,
+        "ppc" to ppc,
+        "lrm5" to lrm5,
+        "lrm10" to lrm10,
+        "lrm20" to lrm20,
+        "ac5" to ac5,
+    )
+
+    /** Finds a weapon definition by its stable mech-file identifier. */
+    public fun find(id: String): WeaponModel? = registry[id]
+
+    /** Every stable identifier accepted by mech collection files. */
+    public val ids: Set<String> get() = registry.keys
 }

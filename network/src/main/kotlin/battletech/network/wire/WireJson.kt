@@ -1,5 +1,10 @@
 package battletech.network.wire
 
+import battletech.tactical.unit.MechModel
+import battletech.tactical.unit.MechModelAsVariant
+import battletech.tactical.unit.MechModels
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.contextual
 import kotlinx.serialization.json.Json
 
 /**
@@ -16,9 +21,14 @@ import kotlinx.serialization.json.Json
  */
 public object WireJson {
 
-    public val json: Json = Json {
+    public val json: Json = createJson(MechModels::find)
+
+    internal fun createJson(findMech: (String) -> MechModel?): Json = Json {
         allowStructuredMapKeys = true
         classDiscriminator = "type"
+        serializersModule = SerializersModule {
+            contextual(MechModel::class, MechModelAsVariant(findMech))
+        }
     }
 
     /** Encodes [msg] to a single line of JSON (no trailing newline — see class doc). */
@@ -30,6 +40,11 @@ public object WireJson {
     /** Decodes a line previously produced by [encodeToLine] back into a [ClientMessage]. */
     public fun decodeClientMessage(line: String): ClientMessage = json.decodeFromString(line)
 
-    /** Decodes a line previously produced by [encodeToLine] back into a [ServerMessage]. */
-    public fun decodeServerMessage(line: String): ServerMessage = json.decodeFromString(line)
+    /**
+     * Decodes one standalone server line using the packaged mech catalog as an initial fallback.
+     * A live client uses one connection-scoped [ServerMessageDecoder] instead so a received
+     * bootstrap becomes authoritative for all subsequent messages.
+     */
+    public fun decodeServerMessage(line: String): ServerMessage =
+        ServerMessageDecoder(MechModels::find).decode(line)
 }

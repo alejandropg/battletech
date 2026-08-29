@@ -2,6 +2,7 @@ package battletech.network.transport
 
 import battletech.network.wire.ClientMessage
 import battletech.network.wire.ServerMessage
+import battletech.network.wire.ServerMessageDecoder
 import battletech.network.wire.WireJson
 import java.io.BufferedReader
 import java.io.IOException
@@ -95,6 +96,8 @@ internal object JsonLineConnection {
 
     /** The client-side form: sends [ClientMessage]s, receives [ServerMessage]s. */
     internal class Client(private val input: BufferedReader, private val output: Writer) : ClientConnection {
+        private val decoder: ServerMessageDecoder = ServerMessageDecoder()
+
         override fun send(message: ClientMessage) {
             output.write(WireJson.encodeToLine(message) + "\n")
             output.flush()
@@ -106,7 +109,7 @@ internal object JsonLineConnection {
             } catch (e: IOException) {
                 return null
             }
-            return WireJson.decodeServerMessage(line)
+            return decoder.decode(line)
         }
 
         override fun close() {

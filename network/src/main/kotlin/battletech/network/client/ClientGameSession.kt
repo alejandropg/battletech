@@ -5,6 +5,7 @@ import battletech.network.transport.JsonLineConnection
 import battletech.network.wire.ClientMessage
 import battletech.network.wire.GameSnapshot
 import battletech.network.wire.JoinRejectionReason
+import battletech.network.wire.MatchBootstrap
 import battletech.network.wire.PROTOCOL_VERSION
 import battletech.network.wire.ServerMessage
 import battletech.network.wire.SessionId
@@ -13,6 +14,7 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.model.map.LocalMapMatch
 import battletech.tactical.model.map.compareWithLocalMap
+import battletech.tactical.model.mech.MechLoadException
 import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
@@ -25,8 +27,12 @@ import battletech.tactical.session.GameSession
 import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.LogEntry
 import battletech.tactical.session.MapIdentified
+import battletech.tactical.session.MechModelMismatch
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
+import battletech.tactical.unit.MechModel
+import battletech.tactical.unit.MechModels
+import kotlinx.serialization.SerializationException
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -63,6 +69,10 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
  * [map] arrives once, in the [ServerMessage.JoinAccepted] that builds this session, and never
  * changes again (the board is immutable for a match — see [battletech.network.wire.GameSnapshot]'s
  * KDoc for why it isn't repeated in every [ServerMessage.StatePush]).
+ * Host mech definitions are equally authoritative. At construction they are compared with any
+ * same-variant packaged definitions supplied by [findLocalMech]; differences add local
+ * [MechModelMismatch] events but never replace or reject the host definitions already resolved
+ * into [snapshot].
  *
  * That projection is enough to serve this seat completely, with no round trip: [stateFor],
  * [logFor] and [viewFor] all answer locally for [playerId]. The query engine
@@ -78,8 +88,9 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
  */
 public class ClientGameSession internal constructor(
     private val connection: ClientConnection,
-    initial: ServerMessage.JoinAccepted,
+    initial: MatchBootstrap,
     mapMatch: (GameMap) -> LocalMapMatch = ::compareWithLocalMap,
+    findLocalMech: (String) -> MechModel? = MechModels::find,
 ) : GameSession, AutoCloseable {
 
     /** The seat the server assigned this connection at join time. */
@@ -110,6 +121,19 @@ public class ClientGameSession internal constructor(
         // fires uniformly rather than branching on "is this hot-seat?".
         val mapIdentified = MapIdentified(map.name, mapMatch(map))
         log.append(LogEntry(snapshot.turnState.turnNumber, mapIdentified))
+        initial.mechModels
+            .filter { hostModel ->
+                val localModel = try {
+                    findLocalMech(hostModel.variant)
+                } catch (e: MechLoadException) {
+                    null
+                }
+                localModel != null && localModel != hostModel
+            }
+            .sortedBy { it.variant }
+            .forEach { model ->
+                log.append(LogEntry(snapshot.turnState.turnNumber, MechModelMismatch(model.variant)))
+            }
         readerThread = thread(isDaemon = true, name = "client-session-reader") { readLoop() }
     }
 
@@ -228,11 +252,16 @@ public class ClientGameSession internal constructor(
                         }
                     }
                     is ServerMessage.CommandReply -> pendingReply.offer(message)
-                    is ServerMessage.JoinAccepted, is ServerMessage.JoinRejected -> Unit // handshake-only, unexpected here
+                    is ServerMessage.JoinAccepted ->
+                        throw SerializationException("Host sent more than one match bootstrap")
+                    is ServerMessage.JoinRejected ->
+                        throw SerializationException("Host sent JoinRejected after accepting the connection")
                 }
             }
         } catch (e: InterruptedException) {
             return // close() requested shutdown; nothing more to report
+        } catch (e: SerializationException) {
+            runCatching { connection.close() }
         }
 
         connectionLost = true
@@ -274,22 +303,23 @@ public class ClientGameSession internal constructor(
          * @throws JoinRejectedException if the host refuses the join.
          */
         internal fun handshake(connection: ClientConnection, sessionId: String): ClientGameSession {
-            connection.send(ClientMessage.Join(SessionId.normalize(sessionId), PROTOCOL_VERSION))
+            try {
+                connection.send(ClientMessage.Join(SessionId.normalize(sessionId), PROTOCOL_VERSION))
 
-            val message = connection.receive() ?: run {
-                connection.close()
-                throw IOException("Connection closed before the host replied to Join")
-            }
-            return when (message) {
-                is ServerMessage.JoinAccepted -> ClientGameSession(connection, message)
-                is ServerMessage.JoinRejected -> {
-                    connection.close()
-                    throw JoinRejectedException(message.reason)
+                val response = connection.receive()
+                    ?: throw IOException("Connection closed before the host replied to Join")
+                return when (response) {
+                    is ServerMessage.JoinRejected -> throw JoinRejectedException(response.reason)
+                    is ServerMessage.JoinAccepted -> ClientGameSession(connection, response.bootstrap)
+                    else -> throw IOException("Unexpected first message from host: $response")
                 }
-                else -> {
+            } catch (failure: Exception) {
+                try {
                     connection.close()
-                    throw IOException("Unexpected first message from host: $message")
+                } catch (closeFailure: Exception) {
+                    failure.addSuppressed(closeFailure)
                 }
+                throw failure
             }
         }
     }

@@ -3,6 +3,7 @@ package battletech.tactical.model.game
 import battletech.tactical.io.ResourceOrFileLoader
 import battletech.tactical.model.GameState
 import battletech.tactical.model.map.GameMapCatalog
+import battletech.tactical.model.mech.MechModelCatalog
 import kotlinx.serialization.json.Json
 import java.nio.file.Path
 
@@ -14,7 +15,8 @@ private val gameJson: Json = Json {
 
 /** Loads a compact JSON starting-game definition into a fully initialized [GameState]. */
 internal class GameStateLoader(
-    catalog: GameMapCatalog,
+    mapCatalog: GameMapCatalog,
+    mechCatalog: MechModelCatalog = MechModelCatalog.load(),
     json: Json = gameJson,
 ) {
 
@@ -22,7 +24,7 @@ internal class GameStateLoader(
         resourceDir = "game",
         label = "Game",
         json = json,
-        build = { text, _ -> GameFile.decode(json, text).toGameState(catalog) },
+        build = { text, _ -> GameFile.decode(json, text).toGameState(mapCatalog, mechCatalog) },
         exception = ::GameLoadException,
     )
 

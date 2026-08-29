@@ -32,7 +32,7 @@ heat, ammunition, and destroyed equipment is constructed from each registered me
 Coordinates are one-based. Facing is one of `N`, `NE`, `SE`, `S`, `SW`, or `NW`. Unit IDs must
 be nonblank and unique, positions cannot overlap, both players must own at least one unit, and
 both skills must be between 0 and 8 inclusive. The map name must exist in the startup catalog and
-the variant must exist in the engine's `MechModels` registry. Unknown JSON fields are rejected.
+the variant must exist in the startup `MechModelCatalog`. Unknown JSON fields are rejected.
 
 The packaged `default` game is used when `--game` is omitted. To use an external game with an
 external map, register the map path and reference its filename without the final `.json`:
@@ -44,3 +44,11 @@ battletech-tui --map ./maps/arena.json --game ./games/arena-duel.json
 Here the game file uses `"map": "arena"`. `--map` may be repeated. External names are exact and
 case-sensitive; startup fails if two external files produce the same name or if an external name
 collides with a packaged map.
+
+External mech variants are registered before the game is resolved, so a game can reference them:
+
+```shell
+battletech-tui --mech ./mechs/custom.json --game ./games/custom-duel.json
+```
+
+`--mech` may be repeated. See `docs/mech-files.md` for the collection format and collision rules.

@@ -1,0 +1,264 @@
+{
+  "models": [
+    {
+      "variant": "LCT-1V",
+      "name": "Locust LCT-1V",
+      "tonnage": 20,
+      "walkingMP": 8,
+      "runningMP": 12,
+      "armor": {
+        "head": 8, "centerTorso": 10, "centerTorsoRear": 2,
+        "leftTorso": 8, "leftTorsoRear": 2,
+        "rightTorso": 8, "rightTorsoRear": 2,
+        "leftArm": 4, "rightArm": 4, "leftLeg": 4, "rightLeg": 4
+      },
+      "loadout": [
+        { "type": "weapon", "location": "CENTER_TORSO", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "LEFT_TORSO", "weapon": "machineGun" },
+        { "type": "weapon", "location": "RIGHT_TORSO", "weapon": "machineGun" },
+        { "type": "ammo", "location": "CENTER_TORSO", "ammo": "MG" }
+      ]
+    },
+    {
+      "variant": "STG-3R",
+      "name": "Stinger STG-3R",
+      "tonnage": 20,
+      "walkingMP": 6,
+      "runningMP": 9,
+      "jumpMP": 6,
+      "armor": {
+        "head": 6, "centerTorso": 6, "centerTorsoRear": 2,
+        "leftTorso": 6, "leftTorsoRear": 2,
+        "rightTorso": 6, "rightTorsoRear": 2,
+        "leftArm": 4, "rightArm": 4, "leftLeg": 5, "rightLeg": 5
+      },
+      "loadout": [
+        { "type": "weapon", "location": "LEFT_ARM", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "RIGHT_ARM", "weapon": "machineGun" },
+        { "type": "weapon", "location": "RIGHT_ARM", "weapon": "machineGun" },
+        { "type": "ammo", "location": "CENTER_TORSO", "ammo": "MG" }
+      ]
+    },
+    {
+      "variant": "WSP-1A",
+      "name": "Wasp WSP-1A",
+      "tonnage": 20,
+      "walkingMP": 6,
+      "runningMP": 9,
+      "jumpMP": 6,
+      "armor": {
+        "head": 4, "centerTorso": 6, "centerTorsoRear": 2,
+        "leftTorso": 4, "leftTorsoRear": 2,
+        "rightTorso": 4, "rightTorsoRear": 2,
+        "leftArm": 4, "rightArm": 4, "leftLeg": 5, "rightLeg": 5
+      },
+      "loadout": [
+        { "type": "weapon", "location": "RIGHT_ARM", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "LEFT_ARM", "weapon": "srm2" },
+        { "type": "ammo", "location": "LEFT_ARM", "ammo": "SRM2" }
+      ]
+    },
+    {
+      "variant": "PXH-1",
+      "name": "Phoenix Hawk PXH-1",
+      "tonnage": 45,
+      "walkingMP": 6,
+      "runningMP": 9,
+      "jumpMP": 6,
+      "heatSinks": { "type": "STS", "units": 13 },
+      "armor": {
+        "head": 6, "centerTorso": 23, "centerTorsoRear": 5,
+        "leftTorso": 18, "leftTorsoRear": 4,
+        "rightTorso": 18, "rightTorsoRear": 4,
+        "leftArm": 10, "rightArm": 10, "leftLeg": 15, "rightLeg": 15
+      },
+      "loadout": [
+        { "type": "weapon", "location": "RIGHT_ARM", "weapon": "largeLaser" },
+        { "type": "weapon", "location": "LEFT_ARM", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "LEFT_ARM", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "RIGHT_TORSO", "weapon": "machineGun" },
+        { "type": "weapon", "location": "LEFT_TORSO", "weapon": "machineGun" },
+        { "type": "ammo", "location": "CENTER_TORSO", "ammo": "MG" }
+      ]
+    },
+    {
+      "variant": "GRF-1N",
+      "name": "Griffin GRF-1N",
+      "tonnage": 55,
+      "walkingMP": 5,
+      "runningMP": 8,
+      "jumpMP": 5,
+      "heatSinks": { "type": "STS", "units": 12 },
+      "armor": {
+        "head": 9, "centerTorso": 20, "centerTorsoRear": 7,
+        "leftTorso": 20, "leftTorsoRear": 6,
+        "rightTorso": 20, "rightTorsoRear": 6,
+        "leftArm": 14, "rightArm": 14, "leftLeg": 18, "rightLeg": 18
+      },
+      "loadout": [
+        { "type": "weapon", "location": "RIGHT_ARM", "weapon": "ppc" },
+        { "type": "weapon", "location": "RIGHT_TORSO", "weapon": "lrm10" },
+        { "type": "ammo", "location": "RIGHT_TORSO", "ammo": "LRM10" }
+      ]
+    },
+    {
+      "variant": "SHD-2H",
+      "name": "Shadow Hawk SHD-2H",
+      "tonnage": 55,
+      "walkingMP": 5,
+      "runningMP": 8,
+      "jumpMP": 5,
+      "heatSinks": { "type": "STS", "units": 12 },
+      "armor": {
+        "head": 9, "centerTorso": 23, "centerTorsoRear": 8,
+        "leftTorso": 18, "leftTorsoRear": 6,
+        "rightTorso": 18, "rightTorsoRear": 6,
+        "leftArm": 16, "rightArm": 16, "leftLeg": 26, "rightLeg": 26
+      },
+      "loadout": [
+        { "type": "weapon", "location": "RIGHT_TORSO", "weapon": "ac5" },
+        { "type": "ammo", "location": "RIGHT_TORSO", "ammo": "AC5" },
+        { "type": "weapon", "location": "LEFT_TORSO", "weapon": "lrm5" },
+        { "type": "ammo", "location": "LEFT_TORSO", "ammo": "LRM5" },
+        { "type": "weapon", "location": "LEFT_TORSO", "weapon": "srm2" },
+        { "type": "ammo", "location": "LEFT_TORSO", "ammo": "SRM2" },
+        { "type": "weapon", "location": "CENTER_TORSO", "weapon": "mediumLaser" }
+      ]
+    },
+    {
+      "variant": "WHM-6R",
+      "name": "Warhammer WHM-6R",
+      "tonnage": 70,
+      "walkingMP": 4,
+      "runningMP": 6,
+      "heatSinks": { "type": "STS", "units": 18 },
+      "armor": {
+        "head": 9, "centerTorso": 20, "centerTorsoRear": 8,
+        "leftTorso": 14, "leftTorsoRear": 9,
+        "rightTorso": 14, "rightTorsoRear": 9,
+        "leftArm": 20, "rightArm": 20, "leftLeg": 15, "rightLeg": 15
+      },
+      "loadout": [
+        { "type": "weapon", "location": "RIGHT_ARM", "weapon": "ppc" },
+        { "type": "weapon", "location": "LEFT_ARM", "weapon": "ppc" },
+        { "type": "weapon", "location": "RIGHT_TORSO", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "LEFT_TORSO", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "RIGHT_ARM", "weapon": "smallLaser" },
+        { "type": "weapon", "location": "LEFT_ARM", "weapon": "smallLaser" },
+        { "type": "weapon", "location": "LEFT_TORSO", "weapon": "machineGun" },
+        { "type": "weapon", "location": "LEFT_TORSO", "weapon": "machineGun" },
+        { "type": "ammo", "location": "LEFT_TORSO", "ammo": "MG" },
+        { "type": "weapon", "location": "RIGHT_TORSO", "weapon": "srm6" },
+        { "type": "ammo", "location": "RIGHT_TORSO", "ammo": "SRM6" }
+      ]
+    },
+    {
+      "variant": "MAD-3R",
+      "name": "Marauder MAD-3R",
+      "tonnage": 75,
+      "walkingMP": 4,
+      "runningMP": 6,
+      "heatSinks": { "type": "STS", "units": 18 },
+      "armor": {
+        "head": 9, "centerTorso": 35, "centerTorsoRear": 10,
+        "leftTorso": 17, "leftTorsoRear": 8,
+        "rightTorso": 17, "rightTorsoRear": 8,
+        "leftArm": 22, "rightArm": 22, "leftLeg": 18, "rightLeg": 18
+      },
+      "loadout": [
+        { "type": "weapon", "location": "RIGHT_ARM", "weapon": "ppc" },
+        { "type": "weapon", "location": "LEFT_ARM", "weapon": "ppc" },
+        { "type": "weapon", "location": "RIGHT_ARM", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "LEFT_ARM", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "RIGHT_TORSO", "weapon": "ac5" },
+        { "type": "ammo", "location": "RIGHT_TORSO", "ammo": "AC5" }
+      ]
+    },
+    {
+      "variant": "ARC-2R",
+      "name": "Archer ARC-2R",
+      "tonnage": 70,
+      "walkingMP": 4,
+      "runningMP": 6,
+      "heatSinks": { "type": "STS", "units": 15 },
+      "armor": {
+        "head": 9, "centerTorso": 33, "centerTorsoRear": 10,
+        "leftTorso": 24, "leftTorsoRear": 6,
+        "rightTorso": 24, "rightTorsoRear": 6,
+        "leftArm": 22, "rightArm": 22, "leftLeg": 26, "rightLeg": 26
+      },
+      "loadout": [
+        { "type": "weapon", "location": "RIGHT_TORSO", "weapon": "lrm20" },
+        { "type": "weapon", "location": "LEFT_TORSO", "weapon": "lrm20" },
+        { "type": "ammo", "location": "RIGHT_TORSO", "ammo": "LRM20", "tons": 2 },
+        { "type": "ammo", "location": "LEFT_TORSO", "ammo": "LRM20", "tons": 2 },
+        { "type": "weapon", "location": "CENTER_TORSO", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "CENTER_TORSO", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "RIGHT_TORSO", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "LEFT_TORSO", "weapon": "mediumLaser" }
+      ]
+    },
+    {
+      "variant": "AS7-D",
+      "name": "Atlas AS7-D",
+      "tonnage": 100,
+      "walkingMP": 3,
+      "runningMP": 5,
+      "heatSinks": { "type": "STS", "units": 20 },
+      "armor": {
+        "head": 9, "centerTorso": 47, "centerTorsoRear": 14,
+        "leftTorso": 32, "leftTorsoRear": 10,
+        "rightTorso": 32, "rightTorsoRear": 10,
+        "leftArm": 34, "rightArm": 34, "leftLeg": 41, "rightLeg": 41
+      },
+      "loadout": [
+        { "type": "weapon", "location": "RIGHT_TORSO", "weapon": "ac20" },
+        { "type": "ammo", "location": "RIGHT_TORSO", "ammo": "AC20", "tons": 2 },
+        { "type": "weapon", "location": "LEFT_TORSO", "weapon": "lrm20" },
+        { "type": "ammo", "location": "LEFT_TORSO", "ammo": "LRM20", "tons": 2 },
+        { "type": "weapon", "location": "CENTER_TORSO", "weapon": "srm6" },
+        { "type": "ammo", "location": "LEFT_TORSO", "ammo": "SRM6" },
+        { "type": "weapon", "location": "LEFT_ARM", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "RIGHT_ARM", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "LEFT_ARM", "weapon": "mediumLaser" },
+        { "type": "weapon", "location": "RIGHT_ARM", "weapon": "mediumLaser" }
+      ]
+    },
+    {
+      "variant": "HBK-4G",
+      "name": "Hunchback HBK-4G",
+      "tonnage": 50,
+      "walkingMP": 4,
+      "runningMP": 6,
+      "armor": {
+        "head": 9, "centerTorso": 24, "centerTorsoRear": 8,
+        "leftTorso": 20, "leftTorsoRear": 4,
+        "rightTorso": 20, "rightTorsoRear": 4,
+        "leftArm": 10, "rightArm": 10, "leftLeg": 16, "rightLeg": 16
+      },
+      "loadout": [
+        { "type": "weapon", "location": "RIGHT_TORSO", "weapon": "ac20" },
+        { "type": "ammo", "location": "RIGHT_TORSO", "ammo": "AC20", "tons": 2 }
+      ]
+    },
+    {
+      "variant": "WVR-6R",
+      "name": "Wolverine WVR-6R",
+      "tonnage": 55,
+      "walkingMP": 5,
+      "runningMP": 8,
+      "jumpMP": 5,
+      "armor": {
+        "head": 9, "centerTorso": 22, "centerTorsoRear": 8,
+        "leftTorso": 16, "leftTorsoRear": 5,
+        "rightTorso": 16, "rightTorsoRear": 5,
+        "leftArm": 14, "rightArm": 14, "leftLeg": 18, "rightLeg": 18
+      },
+      "loadout": [
+        { "type": "weapon", "location": "RIGHT_TORSO", "weapon": "srm6" },
+        { "type": "ammo", "location": "RIGHT_TORSO", "ammo": "SRM6" },
+        { "type": "weapon", "location": "RIGHT_ARM", "weapon": "mediumLaser" }
+      ]
+    }
+  ]
+}

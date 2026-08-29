@@ -34,6 +34,7 @@ internal sealed interface Mode {
     data class Local(
         val gameName: String? = null,
         val mapPaths: List<String> = emptyList(),
+        val mechPaths: List<String> = emptyList(),
         val themeName: String? = null,
     ) : Mode
 
@@ -41,6 +42,7 @@ internal sealed interface Mode {
         val port: Int = DEFAULT_PORT,
         val gameName: String? = null,
         val mapPaths: List<String> = emptyList(),
+        val mechPaths: List<String> = emptyList(),
         val themeName: String? = null,
     ) : Mode
 
@@ -50,6 +52,7 @@ internal sealed interface Mode {
         val port: Int = DEFAULT_PORT,
         val gameName: String? = null,
         val mapPaths: List<String> = emptyList(),
+        val mechPaths: List<String> = emptyList(),
     ) : Mode
 }
 
@@ -74,12 +77,19 @@ private fun ParameterHolder.mapOptions() =
         help = "External map file to register by filename; may be repeated",
     ).multiple()
 
+private fun ParameterHolder.mechOptions() =
+    option(
+        "--mech",
+        metavar = "<path>",
+        help = "External mech-model collection file; may be repeated",
+    ).multiple()
+
 private fun ParameterHolder.portOption() =
     option("--port", help = "TCP port to listen on (default $DEFAULT_PORT)").int().default(DEFAULT_PORT)
 
 /**
  * Root command: hot-seat when invoked bare, or dispatches to [HostCommand]/[JoinCommand]/[ServerCommand].
- * `--game`/`--map`/`--theme` live here (not only on the subcommands) so the bare hot-seat form keeps taking
+ * `--game`/`--map`/`--mech`/`--theme` live here (not only on the subcommands) so the bare hot-seat form keeps taking
  * them directly — see [parseArgs]'s KDoc for why that shape was chosen over a `hotseat` subcommand.
  *
  * If these options are given ahead of a subcommand, e.g. `battletech-tui --game x host`, they
@@ -112,17 +122,19 @@ private class BattletechTui(
 
     private val gameName by gameOption()
     private val mapPaths by mapOptions()
+    private val mechPaths by mechOptions()
     private val themeName by themeOption()
 
     override fun run() {
         val sub = currentContext.invokedSubcommand
         if (sub == null) {
-            emit(Mode.Local(gameName = gameName, mapPaths = mapPaths, themeName = themeName))
+            emit(Mode.Local(gameName = gameName, mapPaths = mapPaths, mechPaths = mechPaths, themeName = themeName))
             return
         }
         val misplaced = listOfNotNull(
             "--game".takeIf { gameName != null },
             "--map".takeIf { mapPaths.isNotEmpty() },
+            "--mech".takeIf { mechPaths.isNotEmpty() },
             "--theme".takeIf { themeName != null },
         )
         if (misplaced.isNotEmpty()) {
@@ -137,10 +149,19 @@ private class HostCommand(private val emit: (Mode) -> Unit) : CliktCommand(name 
     private val port by portOption()
     private val gameName by gameOption()
     private val mapPaths by mapOptions()
+    private val mechPaths by mechOptions()
     private val themeName by themeOption()
 
     override fun run() {
-        emit(Mode.Host(port = port, gameName = gameName, mapPaths = mapPaths, themeName = themeName))
+        emit(
+            Mode.Host(
+                port = port,
+                gameName = gameName,
+                mapPaths = mapPaths,
+                mechPaths = mechPaths,
+                themeName = themeName,
+            ),
+        )
     }
 }
 
@@ -187,9 +208,10 @@ private class ServerCommand(private val emit: (Mode) -> Unit) : CliktCommand(nam
     private val port by portOption()
     private val gameName by gameOption()
     private val mapPaths by mapOptions()
+    private val mechPaths by mechOptions()
 
     override fun run() {
-        emit(Mode.Server(port = port, gameName = gameName, mapPaths = mapPaths))
+        emit(Mode.Server(port = port, gameName = gameName, mapPaths = mapPaths, mechPaths = mechPaths))
     }
 }
 
@@ -212,14 +234,14 @@ private class ServerCommand(private val emit: (Mode) -> Unit) : CliktCommand(nam
  * re-entrant for tests.
  *
  * Syntax:
- * - (no args), or `[--game <name|path>] [--map <path>]... [--theme <name|path>]`: [Mode.Local]
- * - `host [--port N] [--game <name|path>] [--map <path>]... [--theme <name|path>]`: [Mode.Host]
+ * - (no args), or `[--game <name|path>] [--map <path>]... [--mech <path>]... [--theme <name|path>]`: [Mode.Local]
+ * - `host [--port N] [--game <name|path>] [--map <path>]... [--mech <path>]... [--theme <name|path>]`: [Mode.Host]
  * - `join <ip[:port]> --session <id> [--theme <name|path>]`: [Mode.Join]
- * - `server [--port N] [--game <name|path>] [--map <path>]...`: [Mode.Server]
+ * - `server [--port N] [--game <name|path>] [--map <path>]... [--mech <path>]...`: [Mode.Server]
  *
- * The game/map/theme options are declared on both the root and the relevant subcommands (rather than only
+ * The game/map/mech/theme options are declared on both the root and the relevant subcommands (rather than only
  * the root) so `host --help`/`join --help`/`server --help` each show exactly the options that
- * command accepts — `join --help` never mentions `--game`/`--map` and `server --help` never mentions
+ * command accepts — `join --help` never mentions `--game`/`--map`/`--mech` and `server --help` never mentions
  * `--theme`. That structural guarantee is what replaces the old hand-written "--map cannot be
  * combined with --join" / "--theme cannot be combined with --server" checks.
  */

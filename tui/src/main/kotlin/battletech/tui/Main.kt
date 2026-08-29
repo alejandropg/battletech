@@ -11,6 +11,8 @@ import battletech.tactical.model.game.GameLoadException
 import battletech.tactical.model.game.resolveGame
 import battletech.tactical.model.map.GameMapCatalog
 import battletech.tactical.model.map.MapLoadException
+import battletech.tactical.model.mech.MechLoadException
+import battletech.tactical.model.mech.MechModelCatalog
 import battletech.tactical.query.projectFor
 import battletech.tactical.session.GameEvent
 import battletech.tui.screen.Theme
@@ -21,13 +23,17 @@ import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import kotlin.io.path.Path
 
-private fun resolveGameOrExit(gameName: String?, mapPaths: List<String>): GameState = try {
-    val catalog = GameMapCatalog.load(mapPaths.map(::Path))
-    resolveGame(gameName ?: DEFAULT_GAME_NAME, catalog)
+private fun resolveGameOrExit(gameName: String?, mapPaths: List<String>, mechPaths: List<String>): GameState = try {
+    val mapCatalog = GameMapCatalog.load(mapPaths.map(::Path))
+    val mechCatalog = MechModelCatalog.load(mechPaths.map(::Path))
+    resolveGame(gameName ?: DEFAULT_GAME_NAME, mapCatalog, mechCatalog)
 } catch (e: MapLoadException) {
     System.err.println(e.message)
     kotlin.system.exitProcess(2)
 } catch (e: GameLoadException) {
+    System.err.println(e.message)
+    kotlin.system.exitProcess(2)
+} catch (e: MechLoadException) {
     System.err.println(e.message)
     kotlin.system.exitProcess(2)
 }
@@ -80,7 +86,7 @@ public fun main(args: Array<String>) {
 
     when (mode) {
         is Mode.Local -> {
-            val server = GameServer.host(resolveGameOrExit(mode.gameName, mode.mapPaths))
+            val server = GameServer.host(resolveGameOrExit(mode.gameName, mode.mapPaths, mode.mechPaths))
             // Build the map from each returned session's OWN playerId — connectLocal() assigns
             // seats via (allSeats - clients.keys).min(), not call order, so the Nth call is not
             // guaranteed to be the Nth PlayerId. See GameServer.connectLocal's KDoc.
@@ -95,7 +101,7 @@ public fun main(args: Array<String>) {
         }
 
         is Mode.Host -> {
-            val server = GameServer.host(resolveGameOrExit(mode.gameName, mode.mapPaths))
+            val server = GameServer.host(resolveGameOrExit(mode.gameName, mode.mapPaths, mode.mechPaths))
             // connectLocal() BEFORE the acceptor starts — see GameServer.connectLocal's KDoc
             // for why that order is what makes the local seat deterministically PLAYER_1.
             val localSession = server.connectLocal()
@@ -124,7 +130,10 @@ public fun main(args: Array<String>) {
             }
         }
 
-        is Mode.Server -> runHeadlessServer(mode.port, resolveGameOrExit(mode.gameName, mode.mapPaths))
+        is Mode.Server -> runHeadlessServer(
+            mode.port,
+            resolveGameOrExit(mode.gameName, mode.mapPaths, mode.mechPaths),
+        )
     }
 }
 

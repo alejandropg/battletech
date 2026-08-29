@@ -12,13 +12,14 @@ file; see `docs/color-themes.md` for the file format.
 Supports hot seat and network play:
 
 ```
-battletech-tui [--game <name|path>] [--map <path>]...                   hot-seat
-battletech-tui host [--port N] [--game <name|path>] [--map <path>]...   host a session
+battletech-tui [--game <name|path>] [--map <path>]... [--mech <path>]...                 hot-seat
+battletech-tui host [--port N] [--game <name|path>] [--map <path>]... [--mech <path>]... host a session
 battletech-tui join <ip[:port]> --session <id>                          join a session
-battletech-tui server [--port N] [--game <name|path>] [--map <path>]... headless server
+battletech-tui server [--port N] [--game <name|path>] [--map <path>]... [--mech <path>]... headless server
 ```
 
 `--game` selects a packaged or external starting-game definition. Each repeated `--map` registers
-an external map under its filename so the selected game can reference it. See
-[`docs/game-files.md`](docs/game-files.md) for the JSON format and examples. Run any form with
-`--help` for its full option list.
+an external map under its filename so the selected game can reference it. Each repeated `--mech`
+adds every variant from an external mech-model collection. See [`docs/game-files.md`](docs/game-files.md)
+and [`docs/mech-files.md`](docs/mech-files.md) for formats and examples. Run any form with `--help`
+for its full option list.

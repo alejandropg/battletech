@@ -6,6 +6,7 @@ import battletech.network.advanceMovementUntilActivePlayerIs
 import battletech.network.attachInBackground
 import battletech.network.awaitTrue
 import battletech.network.server.GameServer
+import battletech.network.transport.ClientConnection
 import battletech.network.transport.JsonLineConnection
 import battletech.network.wire.ClientMessage
 import battletech.network.wire.PROTOCOL_VERSION
@@ -16,18 +17,25 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.model.map.LocalMapMatch
 import battletech.tactical.model.map.compareWithLocalMap
+import battletech.tactical.model.mech.MechLoadException
 import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.GameEvent
 import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.MapIdentified
+import battletech.tactical.session.MechModelMismatch
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.UnitMoved
+import battletech.tactical.unit.MechModel
+import battletech.tactical.unit.MechModels
 import battletech.tactical.unit.UnitId
+import kotlinx.serialization.SerializationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import java.io.IOException
 
 /**
  * Drives [ClientGameSession] over in-memory pipes against a real
@@ -74,6 +82,32 @@ internal class ClientGameSessionTest {
         assertThat(remote.playerId).isEqualTo(PlayerId.PLAYER_2)
     }
 
+    @Test
+    fun `close connection when bootstrap decoding fails`() {
+        val connection = FailingHandshakeConnection(
+            failure = SerializationException("malformed bootstrap"),
+        )
+
+        val error = assertThrows<SerializationException> {
+            ClientGameSession.handshake(connection, sessionId)
+        }
+
+        assertThat(error).hasMessage("malformed bootstrap")
+        assertThat(connection.closed).isTrue()
+    }
+
+    @Test
+    fun `close connection when peer closes before bootstrap`() {
+        val connection = FailingHandshakeConnection(response = null)
+
+        val error = assertThrows<IOException> {
+            ClientGameSession.handshake(connection, sessionId)
+        }
+
+        assertThat(error).hasMessageContaining("before the host replied")
+        assertThat(connection.closed).isTrue()
+    }
+
     // ---------- map identity ----------
 
     @Test
@@ -104,7 +138,7 @@ internal class ClientGameSessionTest {
         val connection = PipedConnection()
         server.attachInBackground(connection)
 
-        val remote = connectRemoteOverPipes(sessionId, connection) { LocalMapMatch.MATCHES }
+        val remote = connectRemoteOverPipes(sessionId, connection, mapMatch = { LocalMapMatch.MATCHES })
 
         assertThat(remote.gameLog.snapshot().map { it.event })
             .contains(MapIdentified(name = remote.stateFor(remote.playerId).map.name, localMatch = LocalMapMatch.MATCHES))
@@ -117,7 +151,7 @@ internal class ClientGameSessionTest {
         val connection = PipedConnection()
         server.attachInBackground(connection)
 
-        val remote = connectRemoteOverPipes(sessionId, connection) { LocalMapMatch.DIFFERS }
+        val remote = connectRemoteOverPipes(sessionId, connection, mapMatch = { LocalMapMatch.DIFFERS })
 
         assertThat(remote.gameLog.snapshot().map { it.event })
             .contains(MapIdentified(name = remote.stateFor(remote.playerId).map.name, localMatch = LocalMapMatch.DIFFERS))
@@ -132,10 +166,64 @@ internal class ClientGameSessionTest {
         val connection = PipedConnection()
         server.attachInBackground(connection)
 
-        val remote = connectRemoteOverPipes(sessionId, connection) { LocalMapMatch.UNAVAILABLE }
+        val remote = connectRemoteOverPipes(sessionId, connection, mapMatch = { LocalMapMatch.UNAVAILABLE })
 
         assertThat(remote.gameLog.snapshot().map { it.event })
             .contains(MapIdentified(name = remote.stateFor(remote.playerId).map.name, localMatch = LocalMapMatch.UNAVAILABLE))
+    }
+
+    @Test
+    fun `a differing local model logs a warning while the host model remains authoritative`() {
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
+        val hostModel = server.gameState.units.of(PlayerId.PLAYER_2).first().model
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+
+        val remote = connectRemoteOverPipes(
+            sessionId = sessionId,
+            connection = connection,
+            findLocalMech = { variant ->
+                if (variant == hostModel.variant) hostModel.copy(name = "Locally modified") else null
+            },
+        )
+
+        assertThat(remote.gameLog.snapshot().map { it.event }.filterIsInstance<MechModelMismatch>())
+            .containsExactly(MechModelMismatch(hostModel.variant))
+        val receivedModel = remote.stateFor(remote.playerId).units
+            .filterIsInstance<battletech.tactical.unit.CombatUnit>()
+            .first { it.variant == hostModel.variant }
+            .model
+        assertThat(receivedModel).isEqualTo(hostModel)
+    }
+
+    @Test
+    fun `matching local models do not log mismatch warnings`() {
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+
+        val remote = connectRemoteOverPipes(sessionId, connection)
+
+        assertThat(remote.gameLog.snapshot().map { it.event }.filterIsInstance<MechModelMismatch>()).isEmpty()
+    }
+
+    @Test
+    fun `an unreadable local model catalog is treated as unavailable`() {
+        val server = GameServer(aSampleSession(), sessionId)
+        server.connectLocal()
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+
+        val remote = connectRemoteOverPipes(
+            sessionId = sessionId,
+            connection = connection,
+            findLocalMech = { throw MechLoadException("local catalog unavailable") },
+        )
+
+        assertThat(remote.gameLog.snapshot().map { it.event }.filterIsInstance<MechModelMismatch>()).isEmpty()
+        assertThat(remote.stateFor(remote.playerId)).isEqualTo(server.stateFor(remote.playerId))
     }
 
     // ---------- the payoff: what this client actually holds is already redacted ----------
@@ -352,14 +440,30 @@ internal class ClientGameSessionTest {
         sessionId: String,
         connection: PipedConnection,
         mapMatch: (GameMap) -> LocalMapMatch = ::compareWithLocalMap,
+        findLocalMech: (String) -> MechModel? = MechModels::find,
     ): ClientGameSession {
         val jsonConnection = JsonLineConnection.Client(connection.clientInput, connection.clientOutput)
         jsonConnection.send(ClientMessage.Join(sessionId, PROTOCOL_VERSION))
         val message = jsonConnection.receive() ?: error("connection closed before join response")
         return when (message) {
-            is ServerMessage.JoinAccepted -> ClientGameSession(jsonConnection, message, mapMatch)
+            is ServerMessage.JoinAccepted -> ClientGameSession(jsonConnection, message.bootstrap, mapMatch, findLocalMech)
             is ServerMessage.JoinRejected -> throw JoinRejectedException(message.reason)
             else -> error("unexpected first message from host: $message")
+        }
+    }
+
+    private class FailingHandshakeConnection(
+        private val response: ServerMessage? = null,
+        private val failure: RuntimeException? = null,
+    ) : ClientConnection {
+        internal var closed: Boolean = false
+
+        override fun send(message: ClientMessage) = Unit
+
+        override fun receive(): ServerMessage? = failure?.let { throw it } ?: response
+
+        override fun close() {
+            closed = true
         }
     }
 }

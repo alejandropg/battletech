@@ -12,10 +12,12 @@ Not needed for everyday context — read the row's doc when its trigger applies.
 |---|---|
 | `docs/rules/index.md` | Implementing, changing, or reviewing a game rule, or a magic number in code or a test expectation is a rules value. It routes to the one doc owning each rule — trust that doc over a number restated elsewhere, and over general BattleTech knowledge. |
 | `docs/architecture.md` | Navigating inside a module or moving content between doc tiers. Package layout, invariant rationale. |
-| `docs/build.md` | Touching `buildSrc/`, a `build.gradle.kts`, module dependencies, or `game/`/`map/`/`theme/`/shadow-jar packaging. |
+| `docs/build.md` | Touching `buildSrc/`, a `build.gradle.kts`, module dependencies, or `game/`/`map/`/`mech/`/`theme/`/shadow-jar packaging. |
 | `docs/wire-protocol.md` | Adding or changing a wire-crossing `@Serializable sealed` variant, a failing wire-discriminator test, or a non-additive protocol change. |
 | `docs/tui-testing.md` | Hand-checking TUI rendering that can't be expressed as a unit test; automated tests are the primary strategy. |
 | `docs/color-themes.md` | Touching `theme/*.json`, palette roles, or the theme contrast/distinctness guarantees. |
+| `docs/game-files.md` | Touching `game/*.json` or starting-game definition loading and validation. |
+| `docs/mech-files.md` | Touching `mech/*.json`, mech collection loading, or stable weapon identifiers used by those files. |
 
 ## Technology Stack
 
@@ -44,7 +46,7 @@ Not needed for everyday context — read the row's doc when its trigger applies.
 
 Dependencies flow: `tui` → `tactical` + `network` + `tenter`; `network` → (`api`) `tactical`; `bt` → `strategic` + `tactical`.
 
-- **`tactical/`** — the engine: tactical rules (combat, to-hit, movement, heat). Delivery-agnostic: no UI assumptions, no console I/O.
+- **`tactical/`** — the engine: tactical rules (combat, to-hit, movement, heat) plus game/map/mech loading. Delivery-agnostic: no UI assumptions, no console I/O.
 - **`network/`** — client/server layer over `tactical` (`GameServer`, `SocketAcceptor`, `ClientGameSession`, `transport/`, wire protocol). No UI; reuses `tactical`'s types as wire DTOs rather than redefining them.
 - **`tenter/`** — BattleTech-free terminal-UI toolkit (`screen`/`view`/`widget`/`panel`/`input`/`terminal`/`text`) over Mordant; meant to be extractable as a library.
 - **`tui/`** — the BattleTech terminal UI, built on `tenter`. Entry point `battletech.tui.MainKt`.
