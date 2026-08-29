@@ -147,6 +147,8 @@ internal class KeybindingsTest {
         assertEquals(PanAction.Recenter, keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("Home")))
         assertEquals(ChromeAction.Quit, keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("c", ctrl = true)))
         assertEquals(ChromeAction.CycleState(1), keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("+")))
+        // Posix reports "?" with shift = false, Windows with shift = true (see shiftedPunctuation's
+        // KDoc). Both are declared bindings, not one folded into the other, so both resolve alike.
         assertEquals(
             keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("?")),
             keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("?", shift = true)),

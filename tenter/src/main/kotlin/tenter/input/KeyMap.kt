@@ -22,9 +22,8 @@ public class KeyMap<C : Any>(private val layers: Map<C, KeyLayer>) {
 
     /** The action bound to [event] by the first layer in [active] that binds its chord, else null. */
     public fun resolve(active: List<C>, event: KeyboardEvent): InputAction? {
-        val chord = event.normalized()
         for (context in active) {
-            val hit = layer(context).bindings.firstOrNull { it.chord == chord }
+            val hit = layer(context).bindings.firstOrNull { it.chord == event }
             if (hit != null) return hit.action
         }
         return null

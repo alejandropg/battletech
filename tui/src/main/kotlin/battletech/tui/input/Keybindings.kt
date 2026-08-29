@@ -86,11 +86,11 @@ private fun chromeLayer(): KeyLayer {
         KeyboardEvent("ArrowDown", ctrl = true) to PanAction.Direction.DOWN,
     ).map { (chord, direction) -> KeyBinding(chord, PanAction.Pan(direction), "pan") }
 
-    val bindings = focusPanelBindings + listOf(
-        KeyBinding(KeyboardEvent("?"), ChromeAction.ToggleHelp, "toggleHelp"),
-        KeyBinding(KeyboardEvent("+"), ChromeAction.CycleState(1), "cycleState"),
-        KeyBinding(KeyboardEvent("-"), ChromeAction.CycleState(-1), "cycleState"),
-    ) + panBindings + listOf(
+    val bindings = focusPanelBindings +
+        shiftedPunctuation("?", ChromeAction.ToggleHelp, "toggleHelp") +
+        shiftedPunctuation("+", ChromeAction.CycleState(1), "cycleState") +
+        listOf(KeyBinding(KeyboardEvent("-"), ChromeAction.CycleState(-1), "cycleState")) +
+        panBindings + listOf(
         KeyBinding(KeyboardEvent("Home"), PanAction.Recenter, "recenter"),
         KeyBinding(KeyboardEvent("c", ctrl = true), ChromeAction.Quit, "quit"),
     )
@@ -140,6 +140,17 @@ private fun cursorBindings(action: (HexDirection) -> InputAction): List<KeyBindi
 
 private fun facingBindings(action: (Int) -> InputAction): List<KeyBinding> =
     (1..6).map { index -> KeyBinding(KeyboardEvent(index.toString()), action(index), "selectFacing") }
+
+/**
+ * Both encodings of one shifted-punctuation keystroke. Posix derives `shift` from the character
+ * produced (`?` arrives with `shift = false`); Windows reports the physical key state
+ * (`shift = true`). One key, spelled two ways by two terminals — not two ways to do one thing.
+ */
+private fun shiftedPunctuation(key: String, action: InputAction, hintGroup: String): List<KeyBinding> =
+    listOf(
+        KeyBinding(KeyboardEvent(key), action, hintGroup),
+        KeyBinding(KeyboardEvent(key, shift = true), action, hintGroup),
+    )
 
 private val MOVE_CURSOR_HINT = HintGroup("moveCursor", "←→↑↓/wasd", "move cursor")
 

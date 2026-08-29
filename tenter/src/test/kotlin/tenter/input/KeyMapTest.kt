@@ -64,6 +64,22 @@ internal class KeyMapTest {
 
             assertNull(map.resolve(listOf(Ctx.FIRST), KeyboardEvent("z")))
         }
+
+        @Test
+        fun `case and shift are part of the chord, so Q and q resolve to different actions`() {
+            val map = KeyMap(mapOf(Ctx.FIRST to KeyLayer(
+                title = "T",
+                bindings = listOf(
+                    KeyBinding(KeyboardEvent("q"), actionA, "group"),
+                    KeyBinding(KeyboardEvent("Q", shift = true), actionB, "group"),
+                ),
+                hintGroups = listOf(HintGroup("group", "q", "d")),
+            )))
+
+            assertEquals(actionA, map.resolve(listOf(Ctx.FIRST), KeyboardEvent("q")))
+            assertEquals(actionB, map.resolve(listOf(Ctx.FIRST), KeyboardEvent("Q", shift = true)))
+            assertNull(map.resolve(listOf(Ctx.FIRST), KeyboardEvent("Q")))
+        }
     }
 
     @Nested
@@ -106,59 +122,15 @@ internal class KeyMapTest {
     }
 
     @Nested
-    inner class NormalizedTest {
-        @Test
-        fun `alt+H normalizes to the same chord as alt+h`() {
-            assertEquals(
-                KeyboardEvent("h", alt = true).normalized(),
-                KeyboardEvent("H", alt = true, shift = true).normalized(),
-            )
-        }
-
-        @Test
-        fun `a named key keeps its reported shift state`() {
-            assertEquals(
-                KeyboardEvent("ArrowUp", shift = true),
-                KeyboardEvent("ArrowUp", shift = true).normalized(),
-            )
-        }
-
-        @Test
-        fun `normalized is idempotent, so every resolvable chord is bindable`() {
-            // KeyMap matches against normalized() output and KeyBinding only accepts chords already
-            // in that form. This pins the two sets as one: a chord normalized() can produce must
-            // always be one a binding can declare, or a keystroke would be unbindable.
-            val events = listOf(
-                KeyboardEvent("H", alt = true, shift = true),
-                KeyboardEvent("h"),
-                KeyboardEvent("+"),
-                KeyboardEvent(" "),
-                KeyboardEvent("ArrowUp", shift = true),
-                KeyboardEvent("PageDown", ctrl = true),
-            )
-
-            for (event in events) {
-                val chord = event.normalized()
-                assertEquals(chord, chord.normalized())
-                KeyBinding(chord, actionA, "group") // must not throw
-            }
-        }
-    }
-
-    @Nested
     inner class BindingValidationTest {
         @Test
-        fun `an uppercase single-character chord is rejected rather than left silently dead`() {
-            assertThrows(IllegalArgumentException::class.java) {
-                KeyBinding(KeyboardEvent("H", alt = true), actionA, "group")
-            }
+        fun `an uppercase single-character chord is a distinct chord from its lowercase form`() {
+            KeyBinding(KeyboardEvent("H", alt = true), actionA, "group") // must not throw
         }
 
         @Test
-        fun `a shifted printable chord is rejected — the character already encodes the shift`() {
-            assertThrows(IllegalArgumentException::class.java) {
-                KeyBinding(KeyboardEvent("h", shift = true), actionA, "group")
-            }
+        fun `a shifted printable chord is distinct from its unshifted form`() {
+            KeyBinding(KeyboardEvent("h", shift = true), actionA, "group") // must not throw
         }
 
         @Test

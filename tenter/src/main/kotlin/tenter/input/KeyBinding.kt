@@ -13,30 +13,16 @@ public interface InputAction {
 }
 
 /**
- * This key press in the one form [KeyMap] matches against, so that two spellings of the same
- * keystroke are the same key.
- *
- * A printable key is reported by the terminal as the character it actually produces, so `shift+h`
- * arrives as `key = "H"` with [KeyboardEvent.shift] set — the modifier carries nothing the key
- * does not already say. Folding single-character keys to lowercase and clearing `shift` for them
- * is what keeps `alt+H` and `alt+h` the same key. Named keys (`"ArrowUp"`, `"PageUp"`, …) keep
- * `shift` as reported, so `shift+ArrowUp` stays expressible.
- */
-public fun KeyboardEvent.normalized(): KeyboardEvent =
-    if (key.length == 1) copy(key = key.lowercase(), shift = false) else this
-
-/**
  * One chord bound to one action, credited to the [HintGroup] that documents it in a help panel.
  *
  * [chord] is a plain Mordant [KeyboardEvent] — `tenter` adds vocabulary on top of Mordant rather
  * than wrapping it, so a caller already holding an event binds it directly. It names the keystroke
  * a binding waits for, not one that happened; the property name carries that, not a separate type.
  *
- * A chord is only ever matched against [normalized] output, so one that [normalized] can never
- * produce could never fire. `KeyBinding(KeyboardEvent("H", alt = true), …)` would be exactly that:
- * silently dead, and indistinguishable from a working binding at the declaration site. Rejecting it
- * here is what keeps "declared" and "resolvable" the same set — including for a future config file,
- * whose parsed bindings are built through this same constructor.
+ * The chord is compared to the event exactly as the terminal reported it — `tenter` applies no
+ * folding. A binding must therefore be declared in the form its platform actually produces; whether
+ * two spellings are the same keystroke (`?` vs. shift+`?` across posix and Windows, say) is an
+ * application decision, not one `tenter` makes on a caller's behalf.
  */
 public data class KeyBinding(
     val chord: KeyboardEvent,
@@ -45,10 +31,6 @@ public data class KeyBinding(
 ) {
     init {
         require(chord.key.isNotEmpty()) { "A key binding needs a key" }
-        require(chord == chord.normalized()) {
-            "Chord $chord could never be resolved: KeyMap matches against normalized() output, which " +
-                "would fold this to ${chord.normalized()}"
-        }
     }
 }
 
