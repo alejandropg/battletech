@@ -120,7 +120,11 @@ internal suspend fun runLoop(
                             when (action) {
                                 is ChromeAction.FocusPanel ->
                                     if (action.panel == GamePanelId.BOARD || action.panel in PanelVisibility.visiblePanels(appState)) {
-                                        workspace.focus(action.panel)
+                                        if (action.panel == workspace.focused) {
+                                            workspace.cycleFocusedState(1)
+                                        } else {
+                                            workspace.focus(action.panel)
+                                        }
                                     }
                                 // ? is a different action from every other panel's Alt+<key>: it also
                                 // toggles whether HELP EXISTS this frame (an AppState fact PanelVisibility

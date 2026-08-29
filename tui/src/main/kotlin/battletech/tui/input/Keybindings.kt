@@ -96,7 +96,7 @@ private fun chromeLayer(): KeyLayer {
     )
 
     val hintGroups = listOf(
-        HintGroup("focusPanel", "0-9", "focus a panel"),
+        HintGroup("focusPanel", "0-9", "focus/resize a panel"),
         HintGroup("toggleHelp", "?", "toggle help"),
         HintGroup("cycleState", "+/-", "resize focused panel"),
         HintGroup("scrollFocused", "↑↓/PgUp/PgDn", "scroll focused panel"),
