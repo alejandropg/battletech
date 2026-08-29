@@ -138,8 +138,17 @@ private fun cursorBindings(action: (HexDirection) -> InputAction): List<KeyBindi
     KeyboardEvent("a") to HexDirection.SW,
 ).map { (chord, direction) -> KeyBinding(chord, action(direction), "moveCursor") }
 
-private fun facingBindings(action: (Int) -> InputAction): List<KeyBinding> =
-    (1..6).map { index -> KeyBinding(KeyboardEvent(index.toString()), action(index), "selectFacing") }
+private val FACING_KEYS: List<Pair<String, HexDirection>> = listOf(
+    "q" to HexDirection.NW, "w" to HexDirection.N,  "e" to HexDirection.NE,
+    "a" to HexDirection.SW, "s" to HexDirection.S,  "d" to HexDirection.SE,
+)
+
+/** Lowercase for SELECT FACING; uppercase for BROWSE DESTINATION, where lowercase moves the cursor. */
+private fun facingBindings(shifted: Boolean, action: (HexDirection) -> InputAction): List<KeyBinding> =
+    FACING_KEYS.map { (key, direction) ->
+        val chord = if (shifted) KeyboardEvent(key.uppercase(), shift = true) else KeyboardEvent(key)
+        KeyBinding(chord, action(direction), "selectFacing")
+    }
 
 /**
  * Both encodings of one shifted-punctuation keystroke. Posix derives `shift` from the character
@@ -152,7 +161,7 @@ private fun shiftedPunctuation(key: String, action: InputAction, hintGroup: Stri
         KeyBinding(KeyboardEvent(key, shift = true), action, hintGroup),
     )
 
-private val MOVE_CURSOR_HINT = HintGroup("moveCursor", "←→↑↓/wasd", "move cursor")
+private val MOVE_CURSOR_HINT = HintGroup("moveCursor", "qweasd/←→↑↓", "move cursor")
 
 /** Shared by MOVEMENT_IDLE, WEAPON_IDLE, and PHYSICAL_IDLE — identical bindings, different title/commit wording. */
 private fun idleLayer(title: String, commitAction: IdleAction, commitDescription: String): KeyLayer = KeyLayer(
@@ -172,7 +181,8 @@ private fun idleLayer(title: String, commitAction: IdleAction, commitDescription
 
 private fun browsingLayer(): KeyLayer = KeyLayer(
     title = "BROWSE DESTINATION",
-    bindings = cursorBindings { BrowsingAction.MoveCursor(it) } + facingBindings { BrowsingAction.SelectFacing(it) } + listOf(
+    bindings = cursorBindings { BrowsingAction.MoveCursor(it) } +
+        facingBindings(shifted = true) { BrowsingAction.SelectFacing(it) } + listOf(
         KeyBinding(KeyboardEvent("Enter"), BrowsingAction.ConfirmPath, "confirmPath"),
         KeyBinding(KeyboardEvent("Escape"), BrowsingAction.Cancel, "cancel"),
         KeyBinding(KeyboardEvent("Tab"), BrowsingAction.CycleUnit, "cycleUnit"),
@@ -180,7 +190,7 @@ private fun browsingLayer(): KeyLayer = KeyLayer(
     ),
     hintGroups = listOf(
         MOVE_CURSOR_HINT,
-        HintGroup("selectFacing", "1-6", "select facing"),
+        HintGroup("selectFacing", "QWEASD", "commit with facing"),
         HintGroup("confirmPath", KeyGlyph.ENTER, "confirm path"),
         HintGroup("cancel", KeyGlyph.ESC, "back"),
         HintGroup("cycleUnit", KeyGlyph.TAB, "cycle unit"),
@@ -190,12 +200,12 @@ private fun browsingLayer(): KeyLayer = KeyLayer(
 
 private fun facingLayer(): KeyLayer = KeyLayer(
     title = "SELECT FACING",
-    bindings = facingBindings { FacingAction.SelectFacing(it) } + listOf(
+    bindings = facingBindings(shifted = false) { FacingAction.SelectFacing(it) } + listOf(
         KeyBinding(KeyboardEvent("Escape"), FacingAction.Cancel, "cancel"),
         KeyBinding(KeyboardEvent("Tab"), FacingAction.CycleUnit, "cycleUnit"),
     ),
     hintGroups = listOf(
-        HintGroup("selectFacing", "1-6", "select facing"),
+        HintGroup("selectFacing", "qweasd", "select facing"),
         HintGroup("cancel", KeyGlyph.ESC, "back"),
         HintGroup("cycleUnit", KeyGlyph.TAB, "cycle unit"),
     ),

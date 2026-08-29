@@ -66,7 +66,7 @@ internal class BoardView(
             // Facing overlays (drawn after base render, over the reachability dot)
             when (coords) {
                 cursorPosition if facingSelectionFacings != null ->
-                    HexRenderer.renderFacingNumbers(canvas, x, y, facingSelectionFacings)
+                    HexRenderer.renderFacingKeys(canvas, x, y, facingSelectionFacings)
 
                 in reachableFacings if highlight != HexHighlight.PATH -> {
                     val facings = reachableFacings.getValue(coords)

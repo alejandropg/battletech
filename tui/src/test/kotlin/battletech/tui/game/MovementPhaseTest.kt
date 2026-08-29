@@ -179,8 +179,7 @@ internal class MovementPhaseTest {
             val facingPhase = assertInstanceOf(MovementPhase.SelectingFacing::class.java, facingResult!!.app.phase)
             assertTrue(facingPhase.options.any { it.facing == unit.facing && it.mpSpent == 0 })
 
-            // "1" is FACING_ORDER[0] == N, the unit's current facing.
-            val result = facingPhase.handle(FacingAction.SelectFacing(1), facingResult.app)
+            val result = facingPhase.handle(FacingAction.SelectFacing(HexDirection.N), facingResult.app)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -302,7 +301,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(0, -1), gameState = gameState)
 
-            val result = facingPhase.handle(FacingAction.SelectFacing(1), state)
+            val result = facingPhase.handle(FacingAction.SelectFacing(HexDirection.N), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -311,7 +310,7 @@ internal class MovementPhaseTest {
         }
 
         @Test
-        fun `SelectFacing picks correct facing by number`() {
+        fun `SelectFacing picks correct facing by direction`() {
             val unit = aUnit(walkingMP = 4)
             val gameState = aGameState(units = listOf(unit), map = bigMap)
             val facingPhase = MovementPhase.SelectingFacing(
@@ -323,7 +322,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(0, -1), gameState = gameState)
 
-            val result = facingPhase.handle(FacingAction.SelectFacing(3), state)
+            val result = facingPhase.handle(FacingAction.SelectFacing(HexDirection.SE), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -343,7 +342,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = facingPhase.handle(FacingAction.SelectFacing(4), state)
+            val result = facingPhase.handle(FacingAction.SelectFacing(HexDirection.S), state)
 
             assertNotNull(result)
             assertInstanceOf(MovementPhase.SelectingFacing::class.java, result!!.app.phase)
@@ -361,7 +360,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(1, 0), gameState = gameState)
 
-            val result = phase.handle(BrowsingAction.SelectFacing(1), state)
+            val result = phase.handle(BrowsingAction.SelectFacing(HexDirection.N), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -381,8 +380,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = facingPhase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
-            // "1" is FACING_ORDER[0] == N, the unit's current facing.
-            val result = facingPhase.handle(FacingAction.SelectFacing(1), state)
+            val result = facingPhase.handle(FacingAction.SelectFacing(HexDirection.N), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }
@@ -402,7 +400,7 @@ internal class MovementPhaseTest {
             )
             val state = anAppState(phase = phase, cursor = HexCoordinates(0, 0), gameState = gameState)
 
-            val result = phase.handle(BrowsingAction.SelectFacing(1), state)
+            val result = phase.handle(BrowsingAction.SelectFacing(HexDirection.N), state)
 
             assertNotNull(result)
             val movedUnit = result!!.app.state.units.first { it.id == unit.id }

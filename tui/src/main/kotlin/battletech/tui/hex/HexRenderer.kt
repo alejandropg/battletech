@@ -9,7 +9,7 @@ import battletech.tui.hex.HexRenderer.terrainFill
 import battletech.tui.icon.depthIcon
 import battletech.tui.icon.elevationIcon
 import battletech.tui.icon.facingIcon
-import battletech.tui.icon.facingNumber
+import battletech.tui.icon.facingKey
 import battletech.tui.icon.movementModeIcon
 import battletech.tui.icon.targetIcon
 import battletech.tui.icon.terrainIcon
@@ -56,14 +56,15 @@ public object HexRenderer {
     }
 
     /**
-     * Renders number labels (1-6) for available facings during facing selection.
+     * Renders the `qweasd` key labels for available facings during facing selection — the letter a
+     * player presses to commit that facing.
      * Drawn in [BoardRole.BOARD_ACTIVE] — same role as the cursor and the active path, since facing
      * selection is itself an active-cursor interaction.
      */
-    public fun renderFacingNumbers(canvas: Canvas, x: Int, y: Int, facings: Set<HexDirection>) {
+    public fun renderFacingKeys(canvas: Canvas, x: Int, y: Int, facings: Set<HexDirection>) {
         for (direction in facings) {
             val (dx, dy) = facingPosition(direction)
-            canvas.setFg(x + dx, y + dy, facingNumber(direction), BoardRole.BOARD_ACTIVE)
+            canvas.setFg(x + dx, y + dy, facingKey(direction), BoardRole.BOARD_ACTIVE)
         }
     }
 

@@ -77,8 +77,7 @@ internal class MovementPhaseIntegrationTest {
         assertNotNull(hovered)
         val hoveredBrowsing = hovered!!.app.phase as MovementPhase.Browsing
 
-        // "1" is FACING_ORDER[0] == N, the unit's current facing.
-        val result = hoveredBrowsing.handle(BrowsingAction.SelectFacing(1), hovered.app)
+        val result = hoveredBrowsing.handle(BrowsingAction.SelectFacing(HexDirection.N), hovered.app)
 
         assertNotNull(result)
         val movedUnit = result!!.app.state.units.first { it.id == unit.id }

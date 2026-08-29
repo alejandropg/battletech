@@ -12,8 +12,8 @@ public sealed interface BrowsingAction : InputAction {
         override val id: String get() = "confirmPath"
     }
 
-    public data class SelectFacing(val index: Int) : BrowsingAction {
-        override val id: String get() = "selectFacing.$index"
+    public data class SelectFacing(val direction: HexDirection) : BrowsingAction {
+        override val id: String get() = "selectFacing.${direction.name.lowercase()}"
     }
 
     public data object CycleMode : BrowsingAction {

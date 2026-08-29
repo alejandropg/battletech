@@ -1,5 +1,6 @@
 package battletech.tui.input
 
+import battletech.tactical.model.HexDirection
 import battletech.tui.game.GamePanelId
 import com.github.ajalt.mordant.input.KeyboardEvent
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -161,7 +162,9 @@ internal class KeybindingsTest {
 
         assertEquals(IdleAction.CommitDeclarations, keys.resolve(listOf(ContextId.MOVEMENT_IDLE), KeyboardEvent("c")))
         assertEquals(BrowsingAction.CycleMode, keys.resolve(listOf(ContextId.BROWSING), KeyboardEvent("x")))
-        assertEquals(FacingAction.SelectFacing(3), keys.resolve(listOf(ContextId.FACING), KeyboardEvent("3")))
+        assertEquals(FacingAction.SelectFacing(HexDirection.SE), keys.resolve(listOf(ContextId.FACING), KeyboardEvent("d")))
+        assertEquals(BrowsingAction.MoveCursor(HexDirection.SE), keys.resolve(listOf(ContextId.BROWSING), KeyboardEvent("d")))
+        assertEquals(BrowsingAction.SelectFacing(HexDirection.SE), keys.resolve(listOf(ContextId.BROWSING), KeyboardEvent("D", shift = true)))
         assertEquals(AttackAction.ToggleWeapon, keys.resolve(listOf(ContextId.WEAPON_DECLARING), KeyboardEvent(" ")))
         assertEquals(AttackAction.ToggleWeapon, keys.resolve(listOf(ContextId.PHYSICAL_DECLARING), KeyboardEvent(" ")))
     }

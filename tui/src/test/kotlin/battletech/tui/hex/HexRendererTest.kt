@@ -324,14 +324,14 @@ internal class HexRendererTest {
     }
 
     @Test
-    fun `facing numbers inherit the terrain background and render in BOARD_ACTIVE`() {
+    fun `facing keys inherit the terrain background and render in BOARD_ACTIVE`() {
         val buffer = ScreenBuffer(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
-        HexRenderer.renderFacingNumbers(Canvas.of(buffer), 0, 0, setOf(HexDirection.N))
+        HexRenderer.renderFacingKeys(Canvas.of(buffer), 0, 0, setOf(HexDirection.N))
 
-        assertEquals("1", buffer.get(4, 2).char)
+        assertEquals("w", buffer.get(4, 2).char)
         assertEquals(BoardRole.BOARD_ACTIVE, buffer.get(4, 2).style.fg)
         assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
     }

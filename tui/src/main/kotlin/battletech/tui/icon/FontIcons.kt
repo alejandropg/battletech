@@ -142,14 +142,14 @@ internal fun facingIcon(direction: HexDirection): String = when (direction) {
     HexDirection.NW -> NF_MD_ARROW_UP_THIN_NW
 }
 
-// Number mapping: 1=N, 2=NE, 3=SE, 4=S, 5=SW, 6=NW
-internal fun facingNumber(direction: HexDirection): String = when (direction) {
-    HexDirection.N  -> "1"
-    HexDirection.NE -> "2"
-    HexDirection.SE -> "3"
-    HexDirection.S  -> "4"
-    HexDirection.SW -> "5"
-    HexDirection.NW -> "6"
+// Key mapping: q=NW, w=N, e=NE, a=SW, s=S, d=SE
+internal fun facingKey(direction: HexDirection): String = when (direction) {
+    HexDirection.NW -> "q"
+    HexDirection.N  -> "w"
+    HexDirection.NE -> "e"
+    HexDirection.SW -> "a"
+    HexDirection.S  -> "s"
+    HexDirection.SE -> "d"
 }
 
 internal fun facingArrowIcon(direction: HexDirection): Pair<String, Int> = when (direction) {

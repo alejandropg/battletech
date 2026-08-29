@@ -30,11 +30,6 @@ import battletech.tui.input.IdleAction
 import tenter.input.InputAction
 import tenter.view.FlashMessage
 
-internal val FACING_ORDER: List<HexDirection> = listOf(
-    HexDirection.N, HexDirection.NE, HexDirection.SE,
-    HexDirection.S, HexDirection.SW, HexDirection.NW,
-)
-
 internal const val SELECT_FACING_PROMPT = "Select facing"
 
 internal sealed interface MovementPhase : Phase {
@@ -143,7 +138,7 @@ internal sealed interface MovementPhase : Phase {
                 is BrowsingAction -> when (action) {
                     is BrowsingAction.Cancel -> onCancel(updated)
                     is BrowsingAction.ConfirmPath -> confirm(updated)
-                    is BrowsingAction.SelectFacing -> selectFacing(updated, action.index)
+                    is BrowsingAction.SelectFacing -> selectFacing(updated, action.direction)
                     is BrowsingAction.MoveCursor -> Transition(updated.copy(phase = withCursorAt(newCursor, updated)))
                     is BrowsingAction.CycleMode -> Transition(updated.copy(phase = cycleMode().withCursorAt(newCursor, updated)))
                     is BrowsingAction.CycleUnit -> cycleToNextUnit(app, unitId)
@@ -194,11 +189,9 @@ internal sealed interface MovementPhase : Phase {
             }
         }
 
-        private fun selectFacing(app: AppState, index: Int): Transition {
+        private fun selectFacing(app: AppState, direction: HexDirection): Transition {
             val destination = hoveredDestination ?: return Transition(app.copy(phase = this))
-            val facingsAtHex = destinationsAt(destination.position, app)
-            val direction = FACING_ORDER.getOrNull(index - 1) ?: return Transition(app.copy(phase = this))
-            val choice = facingsAtHex.find { it.facing == direction }
+            val choice = destinationsAt(destination.position, app).find { it.facing == direction }
                 ?: return Transition(app.copy(phase = this))
             return commitMove(app, choice)
         }
@@ -235,7 +228,7 @@ internal sealed interface MovementPhase : Phase {
         override fun handle(action: InputAction, app: AppState): Transition? = when (action) {
             is FacingAction -> when (action) {
                 is FacingAction.Cancel -> onCancel(app)
-                is FacingAction.SelectFacing -> commitByFacing(app, action.index)
+                is FacingAction.SelectFacing -> commitByFacing(app, action.direction)
                 is FacingAction.CycleUnit -> cycleToNextUnit(app, unitId)
             }
             else -> null
@@ -265,8 +258,7 @@ internal sealed interface MovementPhase : Phase {
             return movementHeatSources(reachability.mode, hexes)
         }
 
-        private fun commitByFacing(app: AppState, index: Int): Transition {
-            val direction = FACING_ORDER.getOrNull(index - 1) ?: return Transition(app.copy(phase = this))
+        private fun commitByFacing(app: AppState, direction: HexDirection): Transition {
             val destination = options.find { it.facing == direction }
                 ?: return Transition(app.copy(phase = this))
             return submitMove(app, unitId, destination, reachability.mode)
