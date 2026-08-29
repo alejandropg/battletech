@@ -63,7 +63,7 @@ internal object Panels {
             Panel(
                 id = GamePanelId.HELP,
                 title = HelpView.TITLE,
-                normalWidth = 28,
+                normalWidth = 42,
                 badge = keys.badgeFor(GamePanelId.HELP),
                 normal = { frame -> HelpView(frame.helpSections) },
                 // No minimized state — ? dismisses HELP entirely instead (see AppState.helpOpen).
