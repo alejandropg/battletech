@@ -1,5 +1,6 @@
 package battletech.tui
 
+import battletech.tactical.model.map.DEFAULT_MAP_NAME
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.ParameterHolder
@@ -19,9 +20,6 @@ import com.github.ajalt.mordant.terminal.Terminal
 
 /** Default TCP port for `host`/`join`/`server` when `--port`/an explicit port is not supplied. */
 internal const val DEFAULT_PORT: Int = 2470
-
-/** Built-in map name used when `--map` is not supplied. */
-internal const val DEFAULT_MAP_NAME: String = "default"
 
 /**
  * The four ways the TUI can be launched, resolved from CLI args by [parseArgs].

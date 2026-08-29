@@ -56,7 +56,7 @@ import kotlin.random.Random
  * single accepted move always swings [TurnState.movement][battletech.tactical.session.TurnState.movement]`.activePlayer`
  * to the other seat.
  *
- * Reuses [GameStateFactory.sampleGameState]'s default 10x10 map/roster (the same one
+ * Reuses [GameStateFactory.sampleGameState]'s default map/roster (the same one
  * `network`'s [aSampleSession][battletech.network.aSampleSession] and
  * [LocalhostEndToEndTest][battletech.network.LocalhostEndToEndTest] already build sessions
  * over) rather than fabricating a smaller one — it is already small, and reusing it means one

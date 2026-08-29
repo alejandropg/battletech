@@ -8,6 +8,7 @@ import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.GameStateFactory
 import battletech.tactical.model.PlayerId
+import battletech.tactical.model.map.DEFAULT_MAP_NAME
 import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.map.resolveMap
 import battletech.tactical.query.projectFor

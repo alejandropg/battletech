@@ -1,5 +1,6 @@
 package battletech.tactical.model
 
+import battletech.tactical.model.map.DEFAULT_MAP_NAME
 import battletech.tactical.model.map.resolveMap
 import battletech.tactical.unit.MechModels
 import battletech.tactical.unit.UnitId
@@ -8,7 +9,7 @@ import battletech.tactical.unit.createUnit
 
 public class GameStateFactory {
 
-    public fun sampleGameState(map: GameMap = resolveMap("default")): GameState {
+    public fun sampleGameState(map: GameMap = resolveMap(DEFAULT_MAP_NAME)): GameState {
         val units = listOf(
             MechModels["AS7-D"].createUnit(
                 id = UnitId("A1"),

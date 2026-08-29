@@ -2,6 +2,9 @@ package battletech.tactical.model.map
 
 import battletech.tactical.model.GameMap
 
+/** Built-in map used when a caller does not specify a map source. */
+public const val DEFAULT_MAP_NAME: String = "battletech-classic"
+
 /**
  * Resolves a map [spec] to a [GameMap]. If [spec] identifies an existing filesystem path, that
  * source is authoritative and is loaded via [loader]. Otherwise, [spec] is treated as an

@@ -319,6 +319,7 @@ internal class CliArgsTest {
             assertTrue(help.contains("--port"))
             assertTrue(help.contains("--map"))
             assertTrue(help.contains("--theme"))
+            assertTrue(help.contains("battletech-classic"))
         }
 
         @Test
