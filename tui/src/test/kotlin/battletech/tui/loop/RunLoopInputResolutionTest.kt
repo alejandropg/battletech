@@ -91,7 +91,7 @@ internal class RunLoopInputResolutionTest {
         )
         assertEquals(
             ChromeAction.FocusPanel(GamePanelId.LOG),
-            resolveInput(KeyboardEvent("9", alt = true), keys, GamePanelId.BOARD, ended()),
+            resolveInput(KeyboardEvent("9"), keys, GamePanelId.BOARD, ended()),
         )
     }
 

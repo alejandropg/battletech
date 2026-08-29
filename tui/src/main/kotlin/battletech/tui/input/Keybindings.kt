@@ -66,13 +66,13 @@ private fun defaultLayers(): Map<ContextId, KeyLayer> = mapOf(
 
 private fun chromeLayer(): KeyLayer {
     val focusPanelBindings = listOf(
-        KeyboardEvent("0", alt = true) to GamePanelId.BOARD,
-        KeyboardEvent("1", alt = true) to GamePanelId.UNIT_STATUS,
-        KeyboardEvent("2", alt = true) to GamePanelId.DECLARED_TARGETS,
-        KeyboardEvent("3", alt = true) to GamePanelId.TARGETS,
-        KeyboardEvent("4", alt = true) to GamePanelId.TARGET_STATUS,
-        KeyboardEvent("5", alt = true) to GamePanelId.ATTACK_RESULTS,
-        KeyboardEvent("9", alt = true) to GamePanelId.LOG,
+        KeyboardEvent("0") to GamePanelId.BOARD,
+        KeyboardEvent("1") to GamePanelId.UNIT_STATUS,
+        KeyboardEvent("2") to GamePanelId.DECLARED_TARGETS,
+        KeyboardEvent("3") to GamePanelId.TARGETS,
+        KeyboardEvent("4") to GamePanelId.TARGET_STATUS,
+        KeyboardEvent("5") to GamePanelId.ATTACK_RESULTS,
+        KeyboardEvent("9") to GamePanelId.LOG,
     ).map { (chord, panel) -> KeyBinding(chord, ChromeAction.FocusPanel(panel), "focusPanel") }
 
     val panBindings = listOf(
@@ -96,7 +96,7 @@ private fun chromeLayer(): KeyLayer {
     )
 
     val hintGroups = listOf(
-        HintGroup("focusPanel", "${KeyGlyph.ALT}0-9", "focus a panel"),
+        HintGroup("focusPanel", "0-9", "focus a panel"),
         HintGroup("toggleHelp", "?", "toggle help"),
         HintGroup("cycleState", "+/-", "resize focused panel"),
         HintGroup("scrollFocused", "↑↓/PgUp/PgDn", "scroll focused panel"),

@@ -142,7 +142,7 @@ internal class KeybindingsTest {
     fun `characterisation - default chrome bindings`() {
         val keys = Keybindings.DEFAULT
 
-        assertEquals(ChromeAction.FocusPanel(GamePanelId.BOARD), keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("0", alt = true)))
+        assertEquals(ChromeAction.FocusPanel(GamePanelId.BOARD), keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("0")))
         assertEquals(ChromeAction.ToggleHelp, keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("?")))
         assertEquals(PanAction.Pan(PanAction.Direction.LEFT), keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("h")))
         assertEquals(PanAction.Recenter, keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("Home")))

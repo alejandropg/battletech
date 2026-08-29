@@ -611,7 +611,7 @@ internal class TuiAppLoopTest {
 
     // -------------------------------------------------------------------------
     // Test 12: ? opens/closes the HELP panel (and focuses it while open);
-    // alt+9 focuses LOG so `-` can minimize it to its stub; arrows belong to
+    // 9 focuses LOG so `-` can minimize it to its stub; arrows belong to
     // the focused panel, not the phase; ? keeps working once the match has
     // ended.
     // -------------------------------------------------------------------------
@@ -646,7 +646,7 @@ internal class TuiAppLoopTest {
     }
 
     @Test
-    fun `alt+9 focuses LOG, then minus minimizes it to its stub`() = runTest(UnconfinedTestDispatcher()) {
+    fun `9 focuses LOG, then minus minimizes it to its stub`() = runTest(UnconfinedTestDispatcher()) {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -662,7 +662,7 @@ internal class TuiAppLoopTest {
 
         assertTrue(recorder.output().contains(LogView.TITLE), "LOG should render at NORMAL initially")
 
-        internalEvents.send(UiEvent.Input(KeyboardEvent("9", alt = true))) // focus LOG (badge '9')
+        internalEvents.send(UiEvent.Input(KeyboardEvent("9"))) // focus LOG (badge '9')
 
         recorder.clearOutput()
         internalEvents.send(UiEvent.Input(KeyboardEvent("-"))) // NORMAL -> MINIMIZED
@@ -818,7 +818,7 @@ internal class TuiAppLoopTest {
 
             // Focus LOG. ArrowDown now scrolls LOG; if it still reached the phase the cursor would
             // move, follow would re-engage, and the marker would be redrawn.
-            internalEvents.send(UiEvent.Input(KeyboardEvent("9", alt = true)))
+            internalEvents.send(UiEvent.Input(KeyboardEvent("9")))
             recorder.clearOutput()
             internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
             assertFalse(
@@ -826,8 +826,8 @@ internal class TuiAppLoopTest {
                 "ArrowDown must not reach the phase while a side panel is focused",
             )
 
-            // Alt+0 focuses the board again, and the very same key moves the cursor once more.
-            internalEvents.send(UiEvent.Input(KeyboardEvent("0", alt = true)))
+            // "0" focuses the board again, and the very same key moves the cursor once more.
+            internalEvents.send(UiEvent.Input(KeyboardEvent("0")))
             recorder.clearOutput()
             internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
             assertTrue(
