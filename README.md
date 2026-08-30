@@ -12,7 +12,8 @@ file; see `docs/color-themes.md` for the file format.
 Supports hot seat and network play:
 
 ```
-battletech-tui [--game <name|path>] [--map <path>]... [--mech <path>]...                 hot-seat
+battletech-tui                                                                        hot-seat (default)
+battletech-tui hot-seat [--game <name|path>] [--map <path>]... [--mech <path>]...      hot-seat
 battletech-tui host [--port N] [--game <name|path>] [--map <path>]... [--mech <path>]... host a session
 battletech-tui join <ip[:port]> --session <id>                          join a session
 battletech-tui server [--port N] [--game <name|path>] [--map <path>]... [--mech <path>]... headless server
@@ -24,6 +25,12 @@ adds every variant from an external mech-model collection. See [`docs/game-files
 and [`docs/mech-files.md`](docs/mech-files.md) for formats and examples. Run any form with `--help`
 for its full option list.
 
-Each of `--map`, `--mech`, `--game`, `--theme` has a matching `--list-maps`, `--list-mechs`,
-`--list-games`, `--list-themes` flag that prints the built-in and any externally-registered assets
-for that kind, then exits — combine several in one invocation to see multiple kinds at once.
+Customized hot-seat games use the explicit `hot-seat` subcommand; bare invocation remains the
+zero-configuration hot-seat shortcut. Each mode exposes only the options it consumes: `join`
+receives its map, game, and mech definitions from the host, while `server` has no theme because it
+is headless.
+
+Each content or theme option has a matching `--list-maps`, `--list-mechs`, `--list-games`, or
+`--list-themes` flag on the modes where that option is valid. Listing includes built-in and any
+externally registered assets, then exits — combine several flags in one invocation to see multiple
+kinds at once.

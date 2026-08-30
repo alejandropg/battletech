@@ -37,38 +37,43 @@ internal class CliArgsTest {
     @Nested
     inner class HotSeat {
         @Test
-        fun `no args resolves to Local`() {
-            assertEquals(Mode.Local(), parse())
+        fun `no args resolves to HotSeat`() {
+            assertEquals(Mode.HotSeat(), parse())
         }
 
         @Test
-        fun `--game name resolves to Local with gameName`() {
-            assertEquals(Mode.Local(gameName = "name"), parse("--game", "name"))
+        fun `explicit hot-seat is equivalent to the bare invocation`() {
+            assertEquals(parse(), parse("hot-seat"))
         }
 
         @Test
-        fun `--map path registers external map`() {
-            assertEquals(Mode.Local(mapPaths = listOf("arena.json")), parse("--map", "arena.json"))
+        fun `hot-seat --game name resolves to HotSeat with gameName`() {
+            assertEquals(Mode.HotSeat(gameName = "name"), parse("hot-seat", "--game", "name"))
         }
 
         @Test
-        fun `repeated --map preserves every registration in order`() {
+        fun `hot-seat --map path registers external map`() {
+            assertEquals(Mode.HotSeat(mapPaths = listOf("arena.json")), parse("hot-seat", "--map", "arena.json"))
+        }
+
+        @Test
+        fun `hot-seat repeated --map preserves every registration in order`() {
             assertEquals(
-                Mode.Local(mapPaths = listOf("one.json", "two.json")),
-                parse("--map", "one.json", "--map", "two.json"),
+                Mode.HotSeat(mapPaths = listOf("one.json", "two.json")),
+                parse("hot-seat", "--map", "one.json", "--map", "two.json"),
             )
         }
 
         @Test
-        fun `--map with no value throws`() {
-            failing("--map")
+        fun `hot-seat --map with no value throws`() {
+            failing("hot-seat", "--map")
         }
 
         @Test
-        fun `repeated --mech preserves every collection in order`() {
+        fun `hot-seat repeated --mech preserves every collection in order`() {
             assertEquals(
-                Mode.Local(mechPaths = listOf("custom.json", "more.json")),
-                parse("--mech", "custom.json", "--mech", "more.json"),
+                Mode.HotSeat(mechPaths = listOf("custom.json", "more.json")),
+                parse("hot-seat", "--mech", "custom.json", "--mech", "more.json"),
             )
         }
     }
@@ -244,15 +249,18 @@ internal class CliArgsTest {
     inner class ThemeOption {
         @Test
         fun `no --theme resolves to auto (null) for hot-seat, host, and join`() {
-            assertEquals(null, (parse() as Mode.Local).themeName)
+            assertEquals(null, (parse() as Mode.HotSeat).themeName)
             assertEquals(null, (parse("host") as Mode.Host).themeName)
             assertEquals(null, (parse("join", "192.168.1.5", "--session", "ABC123") as Mode.Join).themeName)
         }
 
         @Test
-        fun `--theme name resolves to Local with themeName, unvalidated`() {
-            assertEquals(Mode.Local(themeName = "dark"), parse("--theme", "dark"))
-            assertEquals(Mode.Local(themeName = "not-a-real-theme"), parse("--theme", "not-a-real-theme"))
+        fun `hot-seat --theme name resolves to HotSeat with themeName, unvalidated`() {
+            assertEquals(Mode.HotSeat(themeName = "dark"), parse("hot-seat", "--theme", "dark"))
+            assertEquals(
+                Mode.HotSeat(themeName = "not-a-real-theme"),
+                parse("hot-seat", "--theme", "not-a-real-theme"),
+            )
         }
 
         @Test
@@ -267,84 +275,58 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `--theme with no value throws`() {
-            val ex = failing("--theme")
+        fun `hot-seat --theme with no value throws`() {
+            val ex = failing("hot-seat", "--theme")
             assertTrue(ex.output.contains("--theme"))
         }
 
         @Test
-        fun `--theme=light is accepted (Clikt supports the = form)`() {
-            assertEquals(Mode.Local(themeName = "light"), parse("--theme=light"))
+        fun `hot-seat --theme=light is accepted (Clikt supports the = form)`() {
+            assertEquals(Mode.HotSeat(themeName = "light"), parse("hot-seat", "--theme=light"))
         }
 
         @Test
-        fun `a repeated --theme takes the last value`() {
-            assertEquals(Mode.Local(themeName = "light"), parse("--theme", "dark", "--theme", "light"))
+        fun `hot-seat repeated --theme takes the last value`() {
+            assertEquals(
+                Mode.HotSeat(themeName = "light"),
+                parse("hot-seat", "--theme", "dark", "--theme", "light"),
+            )
         }
     }
 
-    /**
-     * `--game`/`--map`/`--mech`/`--theme` live on the root so the bare hot-seat form keeps taking them directly
-     * (see [parseArgs]'s KDoc), but that means they must come AFTER the subcommand name — giving
-     * them before it would otherwise silently set the wrong (root) copy, so the root command
-     * guards against that explicitly rather than letting it degrade to "option ignored".
-     */
     @Nested
-    inner class RootOptionPlacement {
+    inner class RootOptions {
         @Test
-        fun `--map before the host subcommand is rejected`() {
-            val ex = failing("--map", "x", "host")
+        fun `root has no configurable options`() {
+            val ex = failing("--map", "x")
+
             assertTrue(ex.output.contains("--map"))
-            assertTrue(ex.output.contains("host"))
         }
 
         @Test
-        fun `--game before the host subcommand is rejected`() {
+        fun `root rejects theme option`() {
+            val ex = failing("--theme", "dark")
+
+            assertTrue(ex.output.contains("--theme"))
+        }
+
+        @Test
+        fun `root rejects listing options`() {
+            val ex = failing("--list-maps")
+
+            assertTrue(ex.output.contains("--list-maps"))
+        }
+
+        @Test
+        fun `root rejects options before a subcommand`() {
             val ex = failing("--game", "x", "host")
+
             assertTrue(ex.output.contains("--game"))
-            assertTrue(ex.output.contains("host"))
         }
 
         @Test
-        fun `--map before the server subcommand is rejected`() {
-            val ex = failing("--map", "x", "server")
-            assertTrue(ex.output.contains("--map"))
-            assertTrue(ex.output.contains("server"))
-        }
-
-        @Test
-        fun `--mech before the host subcommand is rejected`() {
-            val ex = failing("--mech", "x", "host")
-            assertTrue(ex.output.contains("--mech"))
-            assertTrue(ex.output.contains("host"))
-        }
-
-        @Test
-        fun `--theme before the host subcommand is rejected`() {
-            val ex = failing("--theme", "dark", "host")
-            assertTrue(ex.output.contains("--theme"))
-            assertTrue(ex.output.contains("host"))
-        }
-
-        @Test
-        fun `--theme before the join subcommand is rejected`() {
-            val ex = failing("--theme", "light", "join", "192.168.1.5", "--session", "ABC123")
-            assertTrue(ex.output.contains("--theme"))
-            assertTrue(ex.output.contains("join"))
-        }
-
-        @Test
-        fun `game map mech and theme before a subcommand are named in one error`() {
-            val ex = failing("--game", "g", "--map", "x", "--mech", "m", "--theme", "dark", "host")
-            assertTrue(ex.output.contains("--game"))
-            assertTrue(ex.output.contains("--map"))
-            assertTrue(ex.output.contains("--mech"))
-            assertTrue(ex.output.contains("--theme"))
-        }
-
-        @Test
-        fun `--map after the host subcommand is accepted`() {
-            assertEquals(Mode.Host(mapPaths = listOf("x")), parse("host", "--map", "x"))
+        fun `configured hot-seat options are accepted after the subcommand`() {
+            assertEquals(Mode.HotSeat(mapPaths = listOf("x")), parse("hot-seat", "--map", "x"))
         }
     }
 
@@ -356,8 +338,10 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `host, join and server are all listed`() {
+        fun `hot-seat, host, join and server are all listed`() {
             val help = failing("--help").output
+
+            assertTrue(help.contains("hot-seat"))
             assertTrue(help.contains("host"))
             assertTrue(help.contains("join"))
             assertTrue(help.lines().any { it.trimStart().startsWith("server ") })
@@ -365,13 +349,13 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `serve is rejected as an unknown subcommand`() {
-            failing("serve")
+        fun `hot-seat is accepted as an explicit subcommand`() {
+            assertEquals(Mode.HotSeat(), parse("hot-seat"))
         }
 
         @Test
-        fun `--game host is a hot-seat game named host, not the host subcommand`() {
-            assertEquals(Mode.Local(gameName = "host"), parse("--game", "host"))
+        fun `serve is rejected as an unknown subcommand`() {
+            failing("serve")
         }
     }
 
@@ -379,7 +363,7 @@ internal class CliArgsTest {
     inner class ListFlags {
         @Test
         fun `--list-maps prints built-in maps and exits 0`() {
-            val result = failing("--list-maps")
+            val result = failing("hot-seat", "--list-maps")
             assertEquals(0, result.statusCode)
             assertTrue(result.output.contains("Maps:"))
             assertTrue(result.output.contains("battletech-classic"))
@@ -387,7 +371,7 @@ internal class CliArgsTest {
 
         @Test
         fun `--list-mechs prints the collection hierarchy`() {
-            val output = failing("--list-mechs").output
+            val output = failing("hot-seat", "--list-mechs").output
             assertTrue(output.contains("Mechs:"))
             assertTrue(output.contains("classic:"))
             assertTrue(output.contains("AS7-D"))
@@ -395,25 +379,25 @@ internal class CliArgsTest {
 
         @Test
         fun `--list-games prints built-in games`() {
-            assertTrue(failing("--list-games").output.contains("default"))
+            assertTrue(failing("hot-seat", "--list-games").output.contains("default"))
         }
 
         @Test
         fun `--list-themes prints built-in themes`() {
-            assertTrue(failing("--list-themes").output.contains("dark"))
+            assertTrue(failing("hot-seat", "--list-themes").output.contains("dark"))
         }
 
         @Test
         fun `combining list flags prints both sections, maps before mechs`() {
-            val output = failing("--list-mechs", "--list-maps").output
+            val output = failing("hot-seat", "--list-mechs", "--list-maps").output
             assertTrue(output.contains("Maps:"))
             assertTrue(output.contains("Mechs:"))
             assertTrue(output.indexOf("Maps:") < output.indexOf("Mechs:"))
         }
 
         @Test
-        fun `host --list-maps behaves the same as root`() {
-            assertTrue(failing("host", "--list-maps").output.contains("battletech-classic"))
+        fun `hot-seat --list-maps behaves like other content commands`() {
+            assertTrue(failing("hot-seat", "--list-maps").output.contains("battletech-classic"))
         }
 
         @Test
@@ -439,7 +423,7 @@ internal class CliArgsTest {
             val custom = tempDir.resolve("custom.json")
             custom.writeText("""{"width":1,"height":1,"hexes":[]}""")
 
-            val output = failing("--map", custom.toString(), "--list-maps").output
+            val output = failing("hot-seat", "--map", custom.toString(), "--list-maps").output
 
             assertTrue(output.contains("battletech-classic"))
             assertTrue(output.contains("custom (external)"))
@@ -467,7 +451,7 @@ internal class CliArgsTest {
                 """.trimIndent(),
             )
 
-            val output = failing("--mech", custom.toString(), "--list-mechs").output
+            val output = failing("hot-seat", "--mech", custom.toString(), "--list-mechs").output
 
             assertTrue(output.contains("classic:"))
             assertTrue(output.contains("my-lance (external):"))
@@ -478,7 +462,7 @@ internal class CliArgsTest {
         fun `a bad external mech path fails with the loader's own message`(@TempDir tempDir: Path) {
             val missing = tempDir.resolve("does-not-exist.json")
 
-            val result = failing("--mech", missing.toString(), "--list-mechs")
+            val result = failing("hot-seat", "--mech", missing.toString(), "--list-mechs")
 
             assertEquals(2, result.statusCode)
         }
@@ -505,6 +489,35 @@ internal class CliArgsTest {
             assertTrue(help.contains("--mech"))
             assertTrue(help.contains("--theme"))
             assertTrue(help.contains("default"))
+        }
+
+        @Test
+        fun `root help is a dispatcher overview without mode options`() {
+            val help = failing("--help").output
+
+            assertTrue(help.contains("hot-seat"))
+            assertTrue(!help.contains("--game"))
+            assertTrue(!help.contains("--map"))
+            assertTrue(!help.contains("--theme"))
+        }
+
+        @Test
+        fun `root help explains how to show command-specific help`() {
+            val help = failing("--help").output
+
+            assertTrue(help.contains("Run 'battletech-tui <command> --help' for command-specific help."))
+        }
+
+        @Test
+        fun `hot-seat --help renders hot-seat options`() {
+            val help = failing("hot-seat", "--help").output
+
+            assertTrue(help.contains("--game"))
+            assertTrue(help.contains("--map"))
+            assertTrue(help.contains("--mech"))
+            assertTrue(help.contains("--theme"))
+            assertTrue(help.contains("--list-maps"))
+            assertTrue(help.contains("--list-themes"))
         }
 
         @Test

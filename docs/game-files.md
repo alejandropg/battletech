@@ -38,7 +38,7 @@ The packaged `default` game is used when `--game` is omitted. To use an external
 external map, register the map path and reference its filename without the final `.json`:
 
 ```shell
-battletech-tui --map ./maps/arena.json --game ./games/arena-duel.json
+battletech-tui hot-seat --map ./maps/arena.json --game ./games/arena-duel.json
 ```
 
 Here the game file uses `"map": "arena"`. `--map` may be repeated. External names are exact and
@@ -48,7 +48,7 @@ collides with a packaged map.
 External mech variants are registered before the game is resolved, so a game can reference them:
 
 ```shell
-battletech-tui --mech ./mechs/custom.json --game ./games/custom-duel.json
+battletech-tui hot-seat --mech ./mechs/custom.json --game ./games/custom-duel.json
 ```
 
 `--mech` may be repeated. See `docs/mech-files.md` for the collection format and collision rules.

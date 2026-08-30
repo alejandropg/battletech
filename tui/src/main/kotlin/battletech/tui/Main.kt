@@ -85,7 +85,7 @@ public fun main(args: Array<String>) {
     val mode = parseArgs(args)
 
     when (mode) {
-        is Mode.Local -> {
+        is Mode.HotSeat -> {
             val server = GameServer.host(resolveGameOrExit(mode.gameName, mode.mapPaths, mode.mechPaths))
             // Build the map from each returned session's OWN playerId — connectLocal() assigns
             // seats via (allSeats - clients.keys).min(), not call order, so the Nth call is not

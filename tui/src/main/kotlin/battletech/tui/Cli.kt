@@ -12,7 +12,6 @@ import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.ParameterHolder
 import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.ProgramResult
-import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.core.main
 import com.github.ajalt.clikt.core.subcommands
@@ -36,14 +35,14 @@ internal const val DEFAULT_PORT: Int = 2470
 
 /**
  * The four ways the TUI can be launched, resolved from CLI args by [parseArgs].
- * [Local] is today's hot-seat behavior (both players share one terminal).
+ * [HotSeat] is today's hot-seat behavior (both players share one terminal).
  * [Host] starts a [battletech.network.server.GameServer] and seats the local player as
  * [battletech.tactical.model.PlayerId.PLAYER_1].
  * [Join] connects to a remote host and seats the local player as whatever seat the server assigns.
  * [Server] starts a headless dedicated server — no TUI — and both players connect via [Join].
  */
 internal sealed interface Mode {
-    data class Local(
+    data class HotSeat(
         val gameName: String? = null,
         val mapPaths: List<String> = emptyList(),
         val mechPaths: List<String> = emptyList(),
@@ -184,14 +183,6 @@ private fun CliktCommand.exitIfAnyListingRequested(sections: List<String>) {
 }
 
 /**
- * Root command: hot-seat when invoked bare, or dispatches to [HostCommand]/[JoinCommand]/[ServerCommand].
- * `--game`/`--map`/`--mech`/`--theme` live here (not only on the subcommands) so the bare hot-seat form keeps taking
- * them directly — see [parseArgs]'s KDoc for why that shape was chosen over a `hotseat` subcommand.
- *
- * If these options are given ahead of a subcommand, e.g. `battletech-tui --game x host`, they
- * would silently apply to THIS command while `host` uses its own (unset) copies; [run] catches
- * that and fails loudly instead of silently dropping the flag.
- *
  * [cliTerminal]/[cliExit] are only set on the root: [Context.Builder]'s `terminal`/`exitProcess`
  * both default to `parent?.terminal`/`parent?.exitProcess` (the same reason Clikt's own
  * `installMordant` early-returns once a parent has installed one), so every subcommand inherits
@@ -200,7 +191,6 @@ private fun CliktCommand.exitIfAnyListingRequested(sections: List<String>) {
  * a same-named constructor parameter would shadow it.
  */
 private class BattletechTui(
-    private val emit: (Mode) -> Unit,
     cliTerminal: Terminal,
     cliExit: (Int) -> Unit,
 ) : CliktCommand(name = "battletech-tui") {
@@ -212,9 +202,18 @@ private class BattletechTui(
     }
 
     override fun help(context: Context): String =
-        "BattleTech TUI. With no subcommand: hot-seat, both players share this terminal."
+        "BattleTech TUI. With no arguments: hot-seat, both players share this terminal."
 
-    override val invokeWithoutSubcommand: Boolean = true
+    override fun helpEpilog(context: Context): String =
+        "Run '${context.commandNameWithParents().joinToString(" ")} <command> --help' " +
+            "for command-specific help."
+
+    override fun run() = Unit
+}
+
+private class HotSeatCommand(private val emit: (Mode) -> Unit) : CliktCommand(name = "hot-seat") {
+    override fun help(context: Context): String =
+        "Play hot-seat; both players share this terminal. This is also the default with no arguments."
 
     private val gameName by gameOption()
     private val mapPaths by mapOptions()
@@ -235,20 +234,14 @@ private class BattletechTui(
     )
 
     override fun run() {
-        val sub = currentContext.invokedSubcommand
-        if (sub == null) {
-            emit(Mode.Local(gameName = gameName, mapPaths = mapPaths, mechPaths = mechPaths, themeName = themeName))
-            return
-        }
-        val misplaced = listOfNotNull(
-            "--game".takeIf { gameName != null },
-            "--map".takeIf { mapPaths.isNotEmpty() },
-            "--mech".takeIf { mechPaths.isNotEmpty() },
-            "--theme".takeIf { themeName != null },
+        emit(
+            Mode.HotSeat(
+                gameName = gameName,
+                mapPaths = mapPaths,
+                mechPaths = mechPaths,
+                themeName = themeName,
+            ),
         )
-        if (misplaced.isNotEmpty()) {
-            throw UsageError("${misplaced.joinToString(" and ")} must come after '${sub.commandName}'")
-        }
     }
 }
 
@@ -374,16 +367,17 @@ private class ServerCommand(private val emit: (Mode) -> Unit) : CliktCommand(nam
  * re-entrant for tests.
  *
  * Syntax:
- * - (no args), or `[--game <name|path>] [--map <path>]... [--mech <path>]... [--theme <name|path>]`: [Mode.Local]
+ * - (no args): equivalent to `hot-seat` with all defaults, resolved as [Mode.HotSeat]
+ * - `hot-seat [--game <name|path>] [--map <path>]... [--mech <path>]... [--theme <name|path>]`: [Mode.HotSeat]
  * - `host [--port N] [--game <name|path>] [--map <path>]... [--mech <path>]... [--theme <name|path>]`: [Mode.Host]
  * - `join <ip[:port]> --session <id> [--theme <name|path>]`: [Mode.Join]
  * - `server [--port N] [--game <name|path>] [--map <path>]... [--mech <path>]...`: [Mode.Server]
  *
- * The game/map/mech/theme options are declared on both the root and the relevant subcommands (rather than only
- * the root) so `host --help`/`join --help`/`server --help` each show exactly the options that
- * command accepts — `join --help` never mentions `--game`/`--map`/`--mech` and `server --help` never mentions
- * `--theme`. That structural guarantee is what replaces the old hand-written "--map cannot be
- * combined with --join" / "--theme cannot be combined with --server" checks.
+ * The game/map/mech/theme options are declared only on the commands that consume them, so the
+ * root help is a dispatcher overview and each subcommand help shows exactly its own interface —
+ * `join --help` never mentions `--game`/`--map`/`--mech` and `server --help` never mentions
+ * `--theme`. Unsupported combinations are therefore rejected by Clikt's command tree rather than
+ * by a second, hand-written mode validator.
  *
  * Each of `--game`/`--map`/`--mech`/`--theme` has a matching `--list-games`/`--list-maps`/`--list-mechs`/
  * `--list-themes` flag (declared wherever its counterpart is), following the same per-command availability
@@ -397,8 +391,9 @@ internal fun parseArgs(
 ): Mode {
     var resolved: Mode? = null
     val emit: (Mode) -> Unit = { resolved = it }
-    val root = BattletechTui(emit, terminal, exit)
-        .subcommands(HostCommand(emit), JoinCommand(emit), ServerCommand(emit))
-    root.main(args.toList())
+    val root = BattletechTui(terminal, exit)
+        .subcommands(HotSeatCommand(emit), HostCommand(emit), JoinCommand(emit), ServerCommand(emit))
+    val normalizedArgs = if (args.isEmpty()) listOf("hot-seat") else args.toList()
+    root.main(normalizedArgs)
     return checkNotNull(resolved) { "no Mode was resolved from ${args.toList()}" }
 }

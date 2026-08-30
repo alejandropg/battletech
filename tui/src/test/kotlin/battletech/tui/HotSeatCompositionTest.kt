@@ -80,7 +80,7 @@ internal class HotSeatCompositionTest {
             roller = RandomDiceRoller(Random(42L)),
         )
         server = GameServer(session = session, sessionId = "TESTID")
-        // Mirrors Main.kt's Mode.Local branch exactly: build the roster, then await the
+        // Mirrors Main.kt's Mode.HotSeat branch exactly: build the roster, then await the
         // kickstart before anything reads currentPhase/turnState off a seat.
         seats = List(PlayerId.entries.size) { server.connectLocal() }.associateBy { it.playerId }
         awaitKickstart(server, seats)
