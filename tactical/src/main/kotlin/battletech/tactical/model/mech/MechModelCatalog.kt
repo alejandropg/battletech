@@ -59,3 +59,14 @@ public class MechModelCatalog private constructor(
         }
     }
 }
+
+/** Packaged mech-collection-file names from `mech/index.json`. */
+public fun builtInMechCollectionNames(): List<String> = MechModelLoader().builtInCollectionNames()
+
+/** Variant identifiers contained in the packaged collection named [collectionName]. */
+public fun mechCollectionVariants(collectionName: String): List<String> =
+    MechModelLoader().loadBuiltIn(collectionName).map { it.variant }
+
+/** Variant identifiers contained in the external collection file at [collectionPath]. */
+public fun mechCollectionVariants(collectionPath: Path): List<String> =
+    MechModelLoader().load(collectionPath).map { it.variant }

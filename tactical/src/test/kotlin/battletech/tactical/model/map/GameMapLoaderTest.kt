@@ -33,6 +33,11 @@ internal class GameMapLoaderTest {
     }
 
     @Test
+    fun `built-in names lists the packaged maps`() {
+        assertThat(loader.builtInNames()).containsExactly("battletech-classic")
+    }
+
+    @Test
     fun `missing file throws MapLoadException`(@TempDir tempDir: Path) {
         val missing = tempDir.resolve("does-not-exist.json")
 

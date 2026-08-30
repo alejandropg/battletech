@@ -13,3 +13,7 @@ public fun resolveGame(
     mapCatalog: GameMapCatalog = GameMapCatalog.load(),
     mechCatalog: MechModelCatalog = MechModelCatalog.load(),
 ): GameState = GameStateLoader(mapCatalog, mechCatalog).resolve(spec)
+
+/** Packaged game names from `game/index.json`. */
+public fun builtInGameNames(): List<String> =
+    GameStateLoader(GameMapCatalog.load(), MechModelCatalog.load()).builtInNames()

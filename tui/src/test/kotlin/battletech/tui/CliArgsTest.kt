@@ -8,6 +8,9 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Path
+import kotlin.io.path.writeText
 
 internal class CliArgsTest {
 
@@ -369,6 +372,115 @@ internal class CliArgsTest {
         @Test
         fun `--game host is a hot-seat game named host, not the host subcommand`() {
             assertEquals(Mode.Local(gameName = "host"), parse("--game", "host"))
+        }
+    }
+
+    @Nested
+    inner class ListFlags {
+        @Test
+        fun `--list-maps prints built-in maps and exits 0`() {
+            val result = failing("--list-maps")
+            assertEquals(0, result.statusCode)
+            assertTrue(result.output.contains("Maps:"))
+            assertTrue(result.output.contains("battletech-classic"))
+        }
+
+        @Test
+        fun `--list-mechs prints the collection hierarchy`() {
+            val output = failing("--list-mechs").output
+            assertTrue(output.contains("Mechs:"))
+            assertTrue(output.contains("classic:"))
+            assertTrue(output.contains("AS7-D"))
+        }
+
+        @Test
+        fun `--list-games prints built-in games`() {
+            assertTrue(failing("--list-games").output.contains("default"))
+        }
+
+        @Test
+        fun `--list-themes prints built-in themes`() {
+            assertTrue(failing("--list-themes").output.contains("dark"))
+        }
+
+        @Test
+        fun `combining list flags prints both sections, maps before mechs`() {
+            val output = failing("--list-mechs", "--list-maps").output
+            assertTrue(output.contains("Maps:"))
+            assertTrue(output.contains("Mechs:"))
+            assertTrue(output.indexOf("Maps:") < output.indexOf("Mechs:"))
+        }
+
+        @Test
+        fun `host --list-maps behaves the same as root`() {
+            assertTrue(failing("host", "--list-maps").output.contains("battletech-classic"))
+        }
+
+        @Test
+        fun `server --help does not mention --list-themes`() {
+            assertTrue(!failing("server", "--help").output.contains("--list-themes"))
+        }
+
+        @Test
+        fun `join --help does not mention --list-maps`() {
+            assertTrue(!failing("join", "--help").output.contains("--list-maps"))
+        }
+
+        @Test
+        fun `join --list-themes lists themes despite a missing ADDRESS and --session`() {
+            val result = failing("join", "--list-themes")
+            assertEquals(0, result.statusCode)
+            assertTrue(result.output.contains("Themes:"))
+            assertTrue(result.output.contains("dark"))
+        }
+
+        @Test
+        fun `external map is tagged and listed after built-ins`(@TempDir tempDir: Path) {
+            val custom = tempDir.resolve("custom.json")
+            custom.writeText("""{"width":1,"height":1,"hexes":[]}""")
+
+            val output = failing("--map", custom.toString(), "--list-maps").output
+
+            assertTrue(output.contains("battletech-classic"))
+            assertTrue(output.contains("custom (external)"))
+            assertTrue(output.indexOf("battletech-classic") < output.indexOf("custom (external)"))
+        }
+
+        @Test
+        fun `external mech collection is tagged and lists its variants`(@TempDir tempDir: Path) {
+            val custom = tempDir.resolve("my-lance.json")
+            custom.writeText(
+                """
+                {"models":[{
+                  "variant":"CPLT-C1",
+                  "name":"Catapult CPLT-C1",
+                  "tonnage":20,
+                  "walkingMP":4,
+                  "runningMP":6,
+                  "armor":{
+                    "head":0,"centerTorso":0,"centerTorsoRear":0,
+                    "leftTorso":0,"leftTorsoRear":0,"rightTorso":0,"rightTorsoRear":0,
+                    "leftArm":0,"rightArm":0,"leftLeg":0,"rightLeg":0
+                  },
+                  "loadout":[]
+                }]}
+                """.trimIndent(),
+            )
+
+            val output = failing("--mech", custom.toString(), "--list-mechs").output
+
+            assertTrue(output.contains("classic:"))
+            assertTrue(output.contains("my-lance (external):"))
+            assertTrue(output.contains("CPLT-C1"))
+        }
+
+        @Test
+        fun `a bad external mech path fails with the loader's own message`(@TempDir tempDir: Path) {
+            val missing = tempDir.resolve("does-not-exist.json")
+
+            val result = failing("--mech", missing.toString(), "--list-mechs")
+
+            assertEquals(2, result.statusCode)
         }
     }
 

@@ -107,6 +107,36 @@ internal class MechModelCatalogTest {
             .contains("not enough contiguous free slots")
     }
 
+    @Test
+    fun `built-in mech collection names lists the packaged collections`() {
+        assertThat(builtInMechCollectionNames()).containsExactly("classic")
+    }
+
+    @Test
+    fun `mech collection variants lists every variant in a packaged collection`() {
+        assertThat(mechCollectionVariants("classic")).containsExactlyInAnyOrder(
+            "LCT-1V",
+            "STG-3R",
+            "WSP-1A",
+            "PXH-1",
+            "GRF-1N",
+            "SHD-2H",
+            "WHM-6R",
+            "MAD-3R",
+            "ARC-2R",
+            "AS7-D",
+            "HBK-4G",
+            "WVR-6R",
+        )
+    }
+
+    @Test
+    fun `mech collection variants lists every variant in an external collection file`() {
+        val path = writeCollection(modelJson("TEST-1"), modelJson("TEST-2"))
+
+        assertThat(mechCollectionVariants(path)).containsExactlyInAnyOrder("TEST-1", "TEST-2")
+    }
+
     private fun writeCollection(vararg models: String, filename: String = "models.json"): Path {
         val path = tempDir.resolve(filename)
         path.writeText("""{"models":[${models.joinToString(",")}]}""")

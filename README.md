@@ -23,3 +23,7 @@ an external map under its filename so the selected game can reference it. Each r
 adds every variant from an external mech-model collection. See [`docs/game-files.md`](docs/game-files.md)
 and [`docs/mech-files.md`](docs/mech-files.md) for formats and examples. Run any form with `--help`
 for its full option list.
+
+Each of `--map`, `--mech`, `--game`, `--theme` has a matching `--list-maps`, `--list-mechs`,
+`--list-games`, `--list-themes` flag that prints the built-in and any externally-registered assets
+for that kind, then exits — combine several in one invocation to see multiple kinds at once.

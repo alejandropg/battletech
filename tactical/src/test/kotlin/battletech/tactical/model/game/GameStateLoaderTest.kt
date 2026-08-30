@@ -87,6 +87,11 @@ internal class GameStateLoaderTest {
     }
 
     @Test
+    fun `builtInGameNames lists every shipped game`() {
+        assertThat(builtInGameNames()).containsExactly("default")
+    }
+
+    @Test
     fun `reject unknown fields`() {
         val game = writeGame(gameJson().replaceFirst("\"map\":", "\"unexpected\":true,\"map\":"))
 

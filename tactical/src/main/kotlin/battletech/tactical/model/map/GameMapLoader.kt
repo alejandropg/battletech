@@ -29,7 +29,7 @@ public class GameMapLoader(json: Json = mapJson) {
     public fun load(path: Path): GameMap = loader.load(path)
 
     /** Packaged map names from `map/index.json` — see [ResourceOrFileLoader.builtInNames]'s KDoc. */
-    internal fun builtInNames(): List<String> = loader.builtInNames()
+    public fun builtInNames(): List<String> = loader.builtInNames()
 }
 
 /** Raised when a JSON map source cannot be read or parsed into a valid [GameMap]. */
