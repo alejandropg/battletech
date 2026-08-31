@@ -4,6 +4,7 @@ import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.terminal.Terminal
 import com.github.ajalt.mordant.terminal.TerminalRecorder
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
@@ -354,19 +355,93 @@ internal class CliArgsTest {
         }
 
         @Test
-        fun `--list-mechs prints the collection hierarchy`() {
+        fun `--list-mechs prints one aligned table for every collection`() {
             val output = failing("--list-mechs", "hot-seat").output
-            assertTrue(output.contains("Mechs:"))
-            assertTrue(output.contains("classic:"))
-            assertTrue(output.contains("AS7-D"))
+            val lines = output.lines()
+            val mechsIndex = lines.indexOf("Mechs:")
+
+            assertTrue(mechsIndex >= 0)
+            val header = lines[mechsIndex + 1]
+            assertTrue(header.contains("variant"))
+            assertTrue(header.contains("name"))
+            assertTrue(header.contains("tonnage"))
+            assertTrue(header.contains("walking"))
+            assertTrue(header.contains("running"))
+            assertTrue(header.contains("jumping"))
+            assertFalse(header.contains("walkingMP"))
+            assertFalse(header.contains("runningMP"))
+            assertFalse(header.contains("jumpingMP"))
+            assertEquals(1, lines.count { it.contains("jumping") })
+            assertTrue(lines.indexOf("  classic:") > mechsIndex + 1)
+
+            val atlas = lines.first { it.contains("AS7-D") }
+            val stinger = lines.first { it.contains("STG-3R") }
+            assertEquals(header.indexOf("variant"), atlas.indexOf("AS7-D"))
+            assertEquals(header.indexOf("name"), atlas.indexOf("Atlas"))
+            assertEquals(
+                header.indexOf("tonnage") + "tonnage".length - "100".length,
+                atlas.indexOf("100"),
+            )
+            assertEquals(
+                header.indexOf("walking") + "walking".length - 1,
+                atlas.indexOf("3", header.indexOf("walking")),
+            )
+            assertEquals(
+                header.indexOf("running") + "running".length - 1,
+                atlas.indexOf("5", header.indexOf("running")),
+            )
+            assertTrue(atlas.contains("Atlas AS7-D"))
+            assertTrue(atlas.contains("100"))
+            assertTrue(atlas.contains(" 3"))
+            assertTrue(atlas.contains(" 5"))
+            assertTrue(atlas.endsWith(" ".repeat("jumping".length)))
+            assertTrue(stinger.contains("Stinger STG-3R"))
+            assertTrue(stinger.trimEnd().endsWith("6"))
         }
 
         @Test
-        fun `--list-units prints the collection hierarchy`() {
+        fun `--list-units prints one aligned table for every collection`() {
             val output = failing("--list-units", "hot-seat").output
-            assertTrue(output.contains("Units:"))
-            assertTrue(output.contains("default:"))
-            assertTrue(output.contains("A1"))
+            val lines = output.lines()
+            val unitsIndex = lines.indexOf("Units:")
+
+            assertTrue(unitsIndex >= 0)
+            val header = lines[unitsIndex + 1]
+            assertTrue(header.contains("id"))
+            assertTrue(header.contains("player"))
+            assertTrue(header.contains("variant"))
+            assertTrue(header.contains("gunnery"))
+            assertTrue(header.contains("piloting"))
+            assertTrue(header.contains("col"))
+            assertTrue(header.contains("row"))
+            assertTrue(header.contains("facing"))
+            assertEquals(1, lines.count { it.contains("gunnery") })
+            assertTrue(lines.indexOf("  default:") > unitsIndex + 1)
+
+            val atlas = lines.first { it.contains("A1") }
+            assertEquals(header.indexOf("id"), atlas.indexOf("A1"))
+            assertEquals(
+                header.indexOf("player") + "player".length - 1,
+                atlas.indexOf("1", header.indexOf("player")),
+            )
+            assertEquals(header.indexOf("variant"), atlas.indexOf("AS7-D"))
+            assertEquals(
+                header.indexOf("gunnery") + "gunnery".length - 1,
+                atlas.indexOf("4", header.indexOf("gunnery")),
+            )
+            assertEquals(
+                header.indexOf("piloting") + "piloting".length - 1,
+                atlas.indexOf("5", header.indexOf("piloting")),
+            )
+            assertEquals(
+                header.indexOf("col") + "col".length - 1,
+                atlas.indexOf("2", header.indexOf("col")),
+            )
+            assertEquals(
+                header.indexOf("row") + "row".length - 1,
+                atlas.indexOf("2", header.indexOf("row")),
+            )
+            assertEquals(header.indexOf("facing"), atlas.indexOf("SE"))
         }
 
         @Test
@@ -437,10 +512,11 @@ internal class CliArgsTest {
             assertTrue(output.contains("classic:"))
             assertTrue(output.contains("my-lance (external):"))
             assertTrue(output.contains("CPLT-C1"))
+            assertEquals(1, output.lines().count { it.contains("jumping") })
         }
 
         @Test
-        fun `external unit collection is tagged and lists its unit ids`(@TempDir tempDir: Path) {
+        fun `external unit collection is tagged and lists its unit details`(@TempDir tempDir: Path) {
             val custom = tempDir.resolve("duel.json")
             custom.writeText(
                 """{"units":[{"id":"X1","player":1,"variant":"LCT-1V","gunnerySkill":4,"pilotingSkill":5,
@@ -451,7 +527,35 @@ internal class CliArgsTest {
 
             assertTrue(output.contains("default:"))
             assertTrue(output.contains("duel (external):"))
-            assertTrue(output.contains("X1"))
+            val lines = output.lines()
+            val unitsIndex = lines.indexOf("Units:")
+            val header = lines[unitsIndex + 1]
+            val x1 = lines.first { it.contains("X1") }
+
+            assertEquals(1, lines.count { it.contains("gunnery") })
+            assertEquals(header.indexOf("id"), x1.indexOf("X1"))
+            assertEquals(
+                header.indexOf("player") + "player".length - 1,
+                x1.indexOf("1", header.indexOf("player")),
+            )
+            assertEquals(header.indexOf("variant"), x1.indexOf("LCT-1V"))
+            assertEquals(
+                header.indexOf("gunnery") + "gunnery".length - 1,
+                x1.indexOf("4", header.indexOf("gunnery")),
+            )
+            assertEquals(
+                header.indexOf("piloting") + "piloting".length - 1,
+                x1.indexOf("5", header.indexOf("piloting")),
+            )
+            assertEquals(
+                header.indexOf("col") + "col".length - 1,
+                x1.indexOf("1", header.indexOf("col")),
+            )
+            assertEquals(
+                header.indexOf("row") + "row".length - 1,
+                x1.indexOf("1", header.indexOf("row")),
+            )
+            assertEquals(header.indexOf("facing"), x1.indexOf("N"))
         }
 
         @Test

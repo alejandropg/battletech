@@ -38,6 +38,11 @@ public class UnitCatalog private constructor(
         builtInNames.map { name -> NestedCatalogEntry(name, external = false, items = loader.resolve(name).unitIds()) } +
             externalUnits.map { (name, file) -> NestedCatalogEntry(name, external = true, items = file.unitIds()) }
 
+    /** Every registered collection paired with the complete rows displayed by `--list-units`. */
+    public fun collectionListings(): List<UnitCollectionListing> =
+        builtInNames.map { name -> UnitCollectionListing(name, external = false, units = loader.resolve(name).listings()) } +
+            externalUnits.map { (name, file) -> UnitCollectionListing(name, external = true, units = file.listings()) }
+
     public companion object {
 
         /**
@@ -69,4 +74,17 @@ public class UnitCatalog private constructor(
             return UnitCatalog(loader, builtIns, external)
         }
     }
+}
+
+private fun UnitFile.listings(): List<UnitListing> = units.map { spec ->
+    UnitListing(
+        id = spec.id,
+        player = spec.player,
+        variant = spec.variant,
+        gunnery = spec.gunnerySkill,
+        piloting = spec.pilotingSkill,
+        col = spec.position.col,
+        row = spec.position.row,
+        facing = spec.facing,
+    )
 }

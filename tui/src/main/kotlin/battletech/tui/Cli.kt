@@ -7,7 +7,9 @@ import battletech.tactical.model.map.DEFAULT_MAP_NAME
 import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.mech.MechLoadException
 import battletech.tactical.model.unit.DEFAULT_UNITS_NAME
+import battletech.tactical.model.unit.UnitCollectionListing
 import battletech.tactical.model.unit.UnitLoadException
+import battletech.tactical.unit.MechModel
 import battletech.tui.screen.ThemeLoader
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
@@ -144,6 +146,92 @@ private fun renderNestedSection(title: String, entries: List<NestedCatalogEntry>
     return (listOf("$title:") + lines).joinToString("\n")
 }
 
+private fun renderMechsSection(
+    entries: List<NestedCatalogEntry>,
+    findMech: (String) -> MechModel?,
+): String {
+    val modelsByCollection = entries.map { entry ->
+        entry to entry.items.map { variant ->
+            checkNotNull(findMech(variant)) { "Mech variant '$variant' is missing from the catalog" }
+        }
+    }
+    val models = modelsByCollection.flatMap { it.second }
+    val variantWidth = maxOf("variant".length, models.maxOfOrNull { it.variant.length } ?: 0)
+    val nameWidth = maxOf("name".length, models.maxOfOrNull { it.name.length } ?: 0)
+    val tonnageWidth = maxOf("tonnage".length, models.maxOfOrNull { it.tonnage.toString().length } ?: 0)
+    val walkingWidth = maxOf("walking".length, models.maxOfOrNull { it.walkingMP.toString().length } ?: 0)
+    val runningWidth = maxOf("running".length, models.maxOfOrNull { it.runningMP.toString().length } ?: 0)
+    val jumpingWidth = maxOf("jumping".length, models.maxOfOrNull { it.jumpMP.toString().length } ?: 0)
+
+    val header = listOf(
+        "variant".padEnd(variantWidth),
+        "name".padEnd(nameWidth),
+        "tonnage".padEnd(tonnageWidth),
+        "walking".padStart(walkingWidth),
+        "running".padStart(runningWidth),
+        "jumping".padStart(jumpingWidth),
+    ).joinToString(" ")
+    val lines = mutableListOf("Mechs:", "    $header")
+    for ((entry, collectionModels) in modelsByCollection) {
+        val collectionHeader = if (entry.external) "  ${entry.name} (external):" else "  ${entry.name}:"
+        lines += collectionHeader
+        lines += collectionModels.map { model ->
+            val jumping = model.jumpMP.takeIf { it > 0 }?.toString()?.padStart(jumpingWidth)
+                ?: "".padStart(jumpingWidth)
+            "    " + listOf(
+                model.variant.padEnd(variantWidth),
+                model.name.padEnd(nameWidth),
+                model.tonnage.toString().padStart(tonnageWidth),
+                model.walkingMP.toString().padStart(walkingWidth),
+                model.runningMP.toString().padStart(runningWidth),
+                jumping,
+            ).joinToString(" ")
+        }
+    }
+    return lines.joinToString("\n")
+}
+
+private fun renderUnitsSection(entries: List<UnitCollectionListing>): String {
+    val units = entries.flatMap { it.units }
+    val idWidth = maxOf("id".length, units.maxOfOrNull { it.id.length } ?: 0)
+    val playerWidth = maxOf("player".length, units.maxOfOrNull { it.player.toString().length } ?: 0)
+    val variantWidth = maxOf("variant".length, units.maxOfOrNull { it.variant.length } ?: 0)
+    val gunneryWidth = maxOf("gunnery".length, units.maxOfOrNull { it.gunnery.toString().length } ?: 0)
+    val pilotingWidth = maxOf("piloting".length, units.maxOfOrNull { it.piloting.toString().length } ?: 0)
+    val colWidth = maxOf("col".length, units.maxOfOrNull { it.col.toString().length } ?: 0)
+    val rowWidth = maxOf("row".length, units.maxOfOrNull { it.row.toString().length } ?: 0)
+    val facingWidth = maxOf("facing".length, units.maxOfOrNull { it.facing.toString().length } ?: 0)
+
+    val header = listOf(
+        "id".padEnd(idWidth),
+        "player".padStart(playerWidth),
+        "variant".padEnd(variantWidth),
+        "gunnery".padStart(gunneryWidth),
+        "piloting".padStart(pilotingWidth),
+        "col".padStart(colWidth),
+        "row".padStart(rowWidth),
+        "facing".padEnd(facingWidth),
+    ).joinToString(" ")
+    val lines = mutableListOf("Units:", "    $header")
+    for (entry in entries) {
+        val collectionHeader = if (entry.external) "  ${entry.name} (external):" else "  ${entry.name}:"
+        lines += collectionHeader
+        lines += entry.units.map { unit ->
+            "    " + listOf(
+                unit.id.padEnd(idWidth),
+                unit.player.toString().padStart(playerWidth),
+                unit.variant.padEnd(variantWidth),
+                unit.gunnery.toString().padStart(gunneryWidth),
+                unit.piloting.toString().padStart(pilotingWidth),
+                unit.col.toString().padStart(colWidth),
+                unit.row.toString().padStart(rowWidth),
+                unit.facing.toString().padEnd(facingWidth),
+            ).joinToString(" ")
+        }
+    }
+    return lines.joinToString("\n")
+}
+
 private fun renderThemesSection(themeName: String?): String {
     val externalName = themeName?.takeIf { Path(it).exists() }?.let(::externalThemeName)
     val builtIns = ThemeLoader().builtInNames()
@@ -232,8 +320,8 @@ private class BattletechTui(
     private fun exitIfListingRequested(): Unit = exitIfAnyListingRequested(
         buildList {
             if (listMaps) add(renderFlatSection("Maps", content.listing().maps))
-            if (listMechs) add(renderNestedSection("Mechs", content.listing().mechs))
-            if (listUnits) add(renderNestedSection("Units", content.listing().units))
+            if (listMechs) add(renderMechsSection(content.listing().mechs, content.mechFinder()))
+            if (listUnits) add(renderUnitsSection(content.unitListings()))
             if (listThemes) add(renderThemesSection(themeName))
         },
     )

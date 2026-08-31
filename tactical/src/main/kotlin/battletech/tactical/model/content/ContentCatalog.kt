@@ -12,6 +12,7 @@ import battletech.tactical.model.map.compareWithLocalMap
 import battletech.tactical.model.mech.MechModelCatalog
 import battletech.tactical.model.unit.DEFAULT_UNITS_NAME
 import battletech.tactical.model.unit.UnitCatalog
+import battletech.tactical.model.unit.UnitCollectionListing
 import battletech.tactical.model.unit.UnitLoadException
 import battletech.tactical.unit.MechModel
 import java.nio.file.Path
@@ -58,6 +59,9 @@ public class ContentCatalog private constructor(
         mechs = mechs.collectionEntries(),
         units = units.entries(),
     )
+
+    /** Every registered unit collection paired with the complete rows displayed by `--list-units`. */
+    public fun unitListings(): List<UnitCollectionListing> = units.collectionListings()
 
     /**
      * A client's join-time local-drift comparator, backed by this catalog's registered maps —
