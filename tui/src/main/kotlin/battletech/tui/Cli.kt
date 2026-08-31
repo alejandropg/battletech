@@ -330,8 +330,10 @@ private class BattletechTui(
         "BattleTech TUI. No default command — name one: hot-seat, host, join, or server."
 
     override fun helpEpilog(context: Context): String =
-        "Root options (this line's options) must come BEFORE the command name, e.g. " +
-            "'${context.commandNameWithParents().joinToString(" ")} --add-map arena.json hot-seat --map arena'. " +
+            "Root options (this line's options) must come BEFORE the command name, e.g. " +
+            "'${context.commandNameWithParents().joinToString(" ")} --add-map arena.json hot-seat --map arena'." +
+            // Mordant collapses ordinary newlines in wrapped text; NEL is its hard line-break marker.
+            "\u0085" +
             "Run '${context.commandNameWithParents().joinToString(" ")} <command> --help' for command-specific help."
 
     /**

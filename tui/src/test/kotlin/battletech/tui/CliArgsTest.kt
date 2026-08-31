@@ -622,16 +622,18 @@ internal class CliArgsTest {
 
         @Test
         fun `root help explains how to show command-specific help`() {
-            // Mordant soft-wraps the epilog at terminal width, so normalize wrap points back to
-            // spaces before checking — this sentence is logically one line regardless of width.
-            val help = failing("--help").output.replace("\n", " ")
+            val help = failing("--help").output
 
-            assertTrue(help.contains("Run 'battletech-tui <command> --help' for command-specific help."))
+            assertTrue(
+                help.contains(
+                    "arena'.\nRun 'battletech-tui <command> --help' for command-specific help.",
+                ),
+            )
         }
 
         @Test
         fun `root help explains that root options must precede the command name`() {
-            val help = failing("--help").output.replace("\n", " ")
+            val help = failing("--help").output
 
             assertTrue(help.contains("must come BEFORE the command name"))
         }
