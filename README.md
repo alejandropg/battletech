@@ -9,28 +9,30 @@ glyph instead of a hex fill. The theme is auto-selected from the terminal's dete
 (`dark`, `light`, `dark-256`, `light-256`, `dark-16`, `light-16`) or the path to your own theme
 file; see `docs/color-themes.md` for the file format.
 
-Supports hot seat and network play:
+Supports hot seat and network play. There is no default command — one must always be named — and
+every root option (registration, theme, listing) must come BEFORE the command name:
 
 ```
-battletech-tui                                                                        hot-seat (default)
-battletech-tui hot-seat [--game <name|path>] [--map <path>]... [--mech <path>]...      hot-seat
-battletech-tui host [--port N] [--game <name|path>] [--map <path>]... [--mech <path>]... host a session
-battletech-tui join <ip[:port]> --session <id>                          join a session
-battletech-tui server [--port N] [--game <name|path>] [--map <path>]... [--mech <path>]... headless server
+battletech-tui [--add-map <path>]... [--add-mech <path>]... [--add-unit <path>]... [--theme <name|path>] hot-seat [--map <name>] [--unit <name>]   hot-seat
+battletech-tui [--add-*]... [--theme <name|path>] host [--port N] [--map <name>] [--unit <name>]     host a session
+battletech-tui [--add-*]... join <ip[:port]> --session <id>                                          join a session
+battletech-tui [--add-*]... [--theme <name|path>] server [--port N] [--map <name>] [--unit <name>]   headless server
 ```
 
-`--game` selects a packaged or external starting-game definition. Each repeated `--map` registers
-an external map under its filename so the selected game can reference it. Each repeated `--mech`
-adds every variant from an external mech-model collection. See [`docs/game-files.md`](docs/game-files.md)
-and [`docs/mech-files.md`](docs/mech-files.md) for formats and examples. Run any form with `--help`
-for its full option list.
+Registration and selection are two different verbs. `--add-map`/`--add-mech`/`--add-unit` (root
+options, repeatable) each register an external file under its filename minus `.json`; `--map`/
+`--unit` (on `hot-seat`/`host`/`server` only) then SELECT a board and a unit collection by name
+from everything registered — built-in content plus whatever `--add-*` added. A unit collection is
+just a roster: it carries no board of its own, so the same one is playable on any registered map.
+See [`docs/unit-files.md`](docs/unit-files.md) and [`docs/mech-files.md`](docs/mech-files.md) for
+file formats and examples. Run any form with `--help` for its full option list.
 
-Customized hot-seat games use the explicit `hot-seat` subcommand; bare invocation remains the
-zero-configuration hot-seat shortcut. Each mode exposes only the options it consumes: `join`
-receives its map, game, and mech definitions from the host, while `server` has no theme because it
-is headless.
+Each mode exposes only the options it consumes: `join` never selects a map or unit collection —
+those come from the host — though it still accepts `--add-*` so its local-drift check has
+registered content to compare the host's map and mechs against. `server` accepts `--theme` (it's a
+root option, valid everywhere) but discards it, being headless.
 
-Each content or theme option has a matching `--list-maps`, `--list-mechs`, `--list-games`, or
-`--list-themes` flag on the modes where that option is valid. Listing includes built-in and any
-externally registered assets, then exits — combine several flags in one invocation to see multiple
-kinds at once.
+Each content or theme option has a matching `--list-maps`, `--list-mechs`, `--list-units`, or
+`--list-themes` flag, valid everywhere (they're root options too). Listing includes built-in and
+any externally registered assets, then exits — combine several flags in one invocation to see
+multiple kinds at once, with or without a command name.

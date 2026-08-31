@@ -5,8 +5,7 @@ import battletech.network.server.GameServer
 import battletech.network.server.SocketAcceptor
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.game.DEFAULT_GAME_NAME
-import battletech.tactical.model.game.resolveGame
+import battletech.tactical.model.content.ContentCatalog
 import battletech.tactical.unit.UnitRoster
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.CommitAttackImpulse
@@ -90,7 +89,7 @@ internal class LocalhostEndToEndTest {
 
     @Test
     fun `joining over a real socket installs a model that is absent from packaged resources`() {
-        val base = resolveGame(DEFAULT_GAME_NAME)
+        val base = ContentCatalog.load().resolveGame()
         val custom = base.units.all.first { it.id.value == "W1" }.model.copy(variant = "CUSTOM-WVR")
         val replaced = base.units.all.map { unit ->
             if (unit.owner == PlayerId.PLAYER_2 && unit.id.value == "W1") unit.copy(model = custom) else unit
@@ -116,7 +115,7 @@ internal class LocalhostEndToEndTest {
 
     @Test
     fun `joining over a real socket warns when a packaged model differs and uses the host definition`() {
-        val base = resolveGame(DEFAULT_GAME_NAME)
+        val base = ContentCatalog.load().resolveGame()
         val packaged = base.units.all.first { it.owner == PlayerId.PLAYER_2 && it.id.value == "W1" }.model
         val hostModel = packaged.copy(name = "${packaged.name} (host revision)")
         val replaced = base.units.all.map { unit ->

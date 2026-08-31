@@ -283,14 +283,26 @@ public class ClientGameSession internal constructor(
          * Opens a socket to [host]:[port], sends [ClientMessage.Join] for
          * [sessionId], and blocks for the host's handshake response.
          *
+         * [mapMatch]/[findLocalMech] default to built-ins-only (see [ClientGameSession]'s
+         * primary constructor); a launcher with externally registered content passes its
+         * catalog-backed equivalents (e.g. `battletech.tactical.model.content.ContentCatalog`'s
+         * `mapMatcher()`/`mechFinder()`) so this seat's local-drift check sees `--add-map`/
+         * `--add-mech` registrations too, not just packaged content.
+         *
          * @throws JoinRejectedException if the host refuses the join.
          */
-        public fun connect(host: String, port: Int, sessionId: String): ClientGameSession {
+        public fun connect(
+            host: String,
+            port: Int,
+            sessionId: String,
+            mapMatch: (GameMap) -> LocalMapMatch = ::compareWithLocalMap,
+            findLocalMech: (String) -> MechModel? = MechModels::find,
+        ): ClientGameSession {
             val socket = Socket(host, port)
             val input = BufferedReader(InputStreamReader(socket.getInputStream()))
             val output = OutputStreamWriter(socket.getOutputStream())
             val connection = JsonLineConnection.Client(input, output)
-            return handshake(connection, sessionId)
+            return handshake(connection, sessionId, mapMatch, findLocalMech)
         }
 
         /**
@@ -302,7 +314,12 @@ public class ClientGameSession internal constructor(
          *
          * @throws JoinRejectedException if the host refuses the join.
          */
-        internal fun handshake(connection: ClientConnection, sessionId: String): ClientGameSession {
+        internal fun handshake(
+            connection: ClientConnection,
+            sessionId: String,
+            mapMatch: (GameMap) -> LocalMapMatch = ::compareWithLocalMap,
+            findLocalMech: (String) -> MechModel? = MechModels::find,
+        ): ClientGameSession {
             try {
                 connection.send(ClientMessage.Join(SessionId.normalize(sessionId), PROTOCOL_VERSION))
 
@@ -310,7 +327,7 @@ public class ClientGameSession internal constructor(
                     ?: throw IOException("Connection closed before the host replied to Join")
                 return when (response) {
                     is ServerMessage.JoinRejected -> throw JoinRejectedException(response.reason)
-                    is ServerMessage.JoinAccepted -> ClientGameSession(connection, response.bootstrap)
+                    is ServerMessage.JoinAccepted -> ClientGameSession(connection, response.bootstrap, mapMatch, findLocalMech)
                     else -> throw IOException("Unexpected first message from host: $response")
                 }
             } catch (failure: Exception) {

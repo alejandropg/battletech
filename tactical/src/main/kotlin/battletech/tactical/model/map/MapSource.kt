@@ -32,3 +32,15 @@ public fun compareWithLocalMap(hostMap: GameMap, loader: GameMapLoader = GameMap
     } catch (e: MapLoadException) {
         LocalMapMatch.UNAVAILABLE
     }
+
+/**
+ * As [compareWithLocalMap], but resolves the local map through a [GameMapCatalog] — the packaged
+ * and externally registered maps a launcher assembled — instead of a bare [GameMapLoader]. Lets a
+ * joining client's drift check see maps registered via `--add-map` and not just packaged ones.
+ */
+public fun compareWithLocalMap(hostMap: GameMap, catalog: GameMapCatalog): LocalMapMatch =
+    try {
+        if (catalog.resolve(hostMap.name).hexes == hostMap.hexes) LocalMapMatch.MATCHES else LocalMapMatch.DIFFERS
+    } catch (e: MapLoadException) {
+        LocalMapMatch.UNAVAILABLE
+    }

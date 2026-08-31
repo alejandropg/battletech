@@ -27,8 +27,7 @@ import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.Terrain
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.game.DEFAULT_GAME_NAME
-import battletech.tactical.model.game.resolveGame
+import battletech.tactical.model.content.ContentCatalog
 import battletech.tactical.model.map.LocalMapMatch
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
@@ -551,21 +550,21 @@ internal class WireFormatRoundTripTest {
         private val unitB = UnitId("W1")
 
         private fun aSampleSession(): BattleSession = BattleSession(
-            initialGameState = resolveGame(DEFAULT_GAME_NAME),
+            initialGameState = ContentCatalog.load().resolveGame(),
             roller = RandomDiceRoller(Random(42L)),
         )
 
         private fun aGameSnapshot(): GameSnapshot = GameSnapshot(
-            units = resolveGame(DEFAULT_GAME_NAME).projectFor(PlayerId.PLAYER_1).units,
+            units = ContentCatalog.load().resolveGame().projectFor(PlayerId.PLAYER_1).units,
             turnState = aTurnStateFixture(),
             currentPhase = TurnPhase.MOVEMENT,
             activePlayer = PlayerId.PLAYER_1,
             isMatchOver = false,
         )
 
-        private fun aGameMap(): GameMap = resolveGame(DEFAULT_GAME_NAME).map
+        private fun aGameMap(): GameMap = ContentCatalog.load().resolveGame().map
 
-        private fun matchModels() = resolveGame(DEFAULT_GAME_NAME).units
+        private fun matchModels() = ContentCatalog.load().resolveGame().units
             .map { it.model }
             .distinctBy { it.variant }
 

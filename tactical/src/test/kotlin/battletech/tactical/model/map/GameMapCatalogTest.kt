@@ -1,5 +1,6 @@
 package battletech.tactical.model.map
 
+import battletech.tactical.io.CatalogEntry
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.Terrain
 import org.assertj.core.api.Assertions.assertThat
@@ -19,10 +20,25 @@ internal class GameMapCatalogTest {
     fun `resolve packaged map by catalog name`() {
         val catalog = GameMapCatalog.load()
 
-        val map = catalog.resolve("default")
+        val map = catalog.resolve("test")
 
-        assertThat(map.name).isEqualTo("default")
+        assertThat(map.name).isEqualTo("test")
         assertThat(map.hexes).hasSize(100)
+    }
+
+    @Test
+    fun `entries lists built-ins then externals in registration order`() {
+        val path = writeMap(tempDir.resolve("arena.json"))
+        val catalog = GameMapCatalog.load(listOf(path))
+
+        val entries = catalog.entries()
+
+        assertThat(entries).contains(
+            CatalogEntry("battletech-classic", external = false),
+            CatalogEntry("arena", external = true),
+        )
+        assertThat(entries.indexOf(CatalogEntry("battletech-classic", external = false)))
+            .isLessThan(entries.indexOf(CatalogEntry("arena", external = true)))
     }
 
     @Test
@@ -46,11 +62,11 @@ internal class GameMapCatalogTest {
 
     @Test
     fun `reject external map whose name collides with a built-in`() {
-        val path = writeMap(tempDir.resolve("default.json"))
+        val path = writeMap(tempDir.resolve("test.json"))
 
         val exception = assertThrows<MapLoadException> { GameMapCatalog.load(listOf(path)) }
 
-        assertThat(exception.message).contains("conflicts with built-in map 'default'")
+        assertThat(exception.message).contains("conflicts with built-in map 'test'")
     }
 
     @Test
@@ -87,7 +103,7 @@ internal class GameMapCatalogTest {
 
         val exception = assertThrows<MapLoadException> { catalog.resolve("missing") }
 
-        assertThat(exception.message).contains("arena", "battletech-classic", "default")
+        assertThat(exception.message).contains("arena", "battletech-classic", "test")
     }
 
     private fun writeMap(path: Path): Path {

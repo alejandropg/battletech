@@ -18,8 +18,8 @@ tasks.named<ProcessResources>("processResources") {
         into("map")
         exclude(".DS_Store")
     }
-    from(rootProject.layout.projectDirectory.dir("game")) {
-        into("game")
+    from(rootProject.layout.projectDirectory.dir("unit")) {
+        into("unit")
         exclude(".DS_Store")
     }
     from(rootProject.layout.projectDirectory.dir("mech")) {

@@ -1,5 +1,7 @@
 package battletech.tactical.model.map
 
+import battletech.tactical.io.CatalogEntry
+import battletech.tactical.io.externalResourceName
 import battletech.tactical.model.GameMap
 import java.nio.file.Path
 
@@ -25,6 +27,15 @@ public class GameMapCatalog private constructor(
         return loader.resolve(name)
     }
 
+    /**
+     * Every registered map name, packaged maps in `map/index.json` order first, then externals
+     * in registration order — the shape `--list-maps` renders. [builtInNames] is a
+     * [LinkedHashSet] under the hood (built via [Iterable.toSet] over an ordered list in
+     * [load]), so this preserves that order rather than sorting.
+     */
+    public fun entries(): List<CatalogEntry> =
+        builtInNames.map { CatalogEntry(it, external = false) } + externalMaps.keys.map { CatalogEntry(it, external = true) }
+
     public companion object {
 
         /**
@@ -40,8 +51,7 @@ public class GameMapCatalog private constructor(
             val external = linkedMapOf<String, GameMap>()
 
             for (path in externalPaths) {
-                val filename = path.fileName?.toString().orEmpty()
-                val name = filename.removeSuffix(".json")
+                val name = externalResourceName(path)
                 if (name.isBlank()) {
                     throw MapLoadException("External map filename must provide a catalog name: $path")
                 }

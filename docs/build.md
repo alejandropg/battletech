@@ -26,7 +26,7 @@ Applied via `id("battletech.<name>")`:
 
 `tui/build.gradle.kts` applies `alias(libs.plugins.shadow)` — `com.gradleup.shadow`, version `9.4.2` per `gradle/libs.versions.toml`.
 
-Tactical's `processResources` copies the repository's root `map/`, `game/`, and `mech/` directories into the tactical runtime resources under the same names. Because `tui` depends on `tactical`, Shadow JAR assembly includes the packaged maps, games, and mech collections transitively; none is configured separately on `shadowJar`.
+Tactical's `processResources` copies the repository's root `map/`, `unit/`, and `mech/` directories into the tactical runtime resources under the same names. Because `tui` depends on `tactical`, Shadow JAR assembly includes the packaged maps, unit collections, and mech collections transitively; none is configured separately on `shadowJar`.
 
 Themes are packaged the same way but one module closer to the jar: `tui/build.gradle.kts` configures its OWN `processResources` (tactical's block cannot reach it) to copy the repository's root `theme/` directory into `tui`'s runtime resources under `theme/`, so the six built-in `theme/*.json` files and `theme/index.json` land in the shadow jar directly rather than transitively. See `docs/color-themes.md` for the file format, and `docs/architecture.md`'s resource-loading section for the shared loader design.
 

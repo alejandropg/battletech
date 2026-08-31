@@ -1,13 +1,14 @@
 # Mech model collection files
 
 Packaged models live under `mech/`; `mech/index.json` names every packaged collection loaded at
-startup. An external collection is added with repeatable `--mech <path>` on hot-seat, `host`, and
-`server`. A joining client needs no local model files because the host includes the match's
-definitions in the same bootstrap as the map and initial state. The client installs them before
-decoding compact model references in that state. After joining, each host definition whose variant
-also exists in the client's packaged catalog is compared structurally with the local definition.
-A difference adds a warning to the local game log, but the host definition remains authoritative;
-a variant unavailable locally is accepted silently.
+startup. An external collection is added with repeatable `--add-mech <path>`, a root option valid
+for every command (it must precede the command name). A joining client needs no local model files
+— the host includes the match's definitions in the same bootstrap as the map and initial state,
+and the client installs them before decoding compact model references in that state — but `join`
+still accepts `--add-mech` if given: after joining, each host definition whose variant also exists
+in the client's registered catalog (packaged or externally added) is compared structurally with
+the local definition. A difference adds a warning to the local game log, but the host definition
+remains authoritative; a variant unavailable locally is accepted silently.
 
 Each file contains a `models` array. A variant is an exact, case-sensitive identifier and may occur
 only once across all packaged and external collections. Duplicate definitions fail startup even when

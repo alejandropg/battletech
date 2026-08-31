@@ -8,8 +8,7 @@ import battletech.network.wire.ServerMessage
 import battletech.network.wire.WireJson
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.PlayerId
-import battletech.tactical.model.game.DEFAULT_GAME_NAME
-import battletech.tactical.model.game.resolveGame
+import battletech.tactical.model.content.ContentCatalog
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.GameSession
@@ -19,7 +18,7 @@ import kotlin.random.Random
 
 /** A fresh session over the standard sample map/units, deterministic under seed 42. */
 internal fun aSampleSession(): BattleSession = BattleSession(
-    initialGameState = resolveGame(DEFAULT_GAME_NAME),
+    initialGameState = ContentCatalog.load().resolveGame(),
     roller = RandomDiceRoller(Random(42L)),
 )
 

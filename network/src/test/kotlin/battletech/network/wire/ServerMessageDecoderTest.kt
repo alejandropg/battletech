@@ -2,8 +2,7 @@ package battletech.network.wire
 
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.game.DEFAULT_GAME_NAME
-import battletech.tactical.model.game.resolveGame
+import battletech.tactical.model.content.ContentCatalog
 import battletech.tactical.query.projectFor
 import battletech.tactical.session.TurnState
 import kotlinx.serialization.SerializationException
@@ -17,7 +16,7 @@ import org.junit.jupiter.api.assertThrows
 
 internal class ServerMessageDecoderTest {
 
-    private val game = resolveGame(DEFAULT_GAME_NAME)
+    private val game = ContentCatalog.load().resolveGame()
     private val snapshot = GameSnapshot(
         units = game.projectFor(PlayerId.PLAYER_1).units,
         turnState = TurnState.NULL,

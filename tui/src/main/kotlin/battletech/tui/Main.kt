@@ -6,13 +6,10 @@ import battletech.network.server.GameServer
 import battletech.network.server.SocketAcceptor
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
-import battletech.tactical.model.game.DEFAULT_GAME_NAME
-import battletech.tactical.model.game.GameLoadException
-import battletech.tactical.model.game.resolveGame
-import battletech.tactical.model.map.GameMapCatalog
+import battletech.tactical.model.content.ContentCatalog
 import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.mech.MechLoadException
-import battletech.tactical.model.mech.MechModelCatalog
+import battletech.tactical.model.unit.UnitLoadException
 import battletech.tactical.query.projectFor
 import battletech.tactical.session.GameEvent
 import battletech.tui.screen.Theme
@@ -23,17 +20,27 @@ import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import kotlin.io.path.Path
 
-private fun resolveGameOrExit(gameName: String?, mapPaths: List<String>, mechPaths: List<String>): GameState = try {
-    val mapCatalog = GameMapCatalog.load(mapPaths.map(::Path))
-    val mechCatalog = MechModelCatalog.load(mechPaths.map(::Path))
-    resolveGame(gameName ?: DEFAULT_GAME_NAME, mapCatalog, mechCatalog)
+/** Builds the [ContentCatalog] for one launch: every built-in plus [launch]'s `--add-*` registrations. */
+private fun resolveContentOrExit(launch: Launch): ContentCatalog = try {
+    ContentCatalog.load(launch.mapPaths.map(::Path), launch.mechPaths.map(::Path), launch.unitPaths.map(::Path))
 } catch (e: MapLoadException) {
     System.err.println(e.message)
     kotlin.system.exitProcess(2)
-} catch (e: GameLoadException) {
+} catch (e: MechLoadException) {
     System.err.println(e.message)
     kotlin.system.exitProcess(2)
-} catch (e: MechLoadException) {
+} catch (e: UnitLoadException) {
+    System.err.println(e.message)
+    kotlin.system.exitProcess(2)
+}
+
+/** Assembles [setup]'s board/roster selection out of [content] into a validated starting [GameState]. */
+private fun resolveGameOrExit(content: ContentCatalog, setup: Setup): GameState = try {
+    content.resolveGame(setup.mapName, setup.unitsName)
+} catch (e: MapLoadException) {
+    System.err.println(e.message)
+    kotlin.system.exitProcess(2)
+} catch (e: UnitLoadException) {
     System.err.println(e.message)
     kotlin.system.exitProcess(2)
 }
@@ -82,11 +89,12 @@ private fun awaitKickstart(server: GameServer, seats: Map<PlayerId, ClientGameSe
  * Processes command-line arguments and launches the [TuiApp].
  */
 public fun main(args: Array<String>) {
-    val mode = parseArgs(args)
+    val launch = parseArgs(args)
 
-    when (mode) {
+    when (val mode = launch.mode) {
         is Mode.HotSeat -> {
-            val server = GameServer.host(resolveGameOrExit(mode.gameName, mode.mapPaths, mode.mechPaths))
+            val content = resolveContentOrExit(launch)
+            val server = GameServer.host(resolveGameOrExit(content, mode.setup))
             // Build the map from each returned session's OWN playerId — connectLocal() assigns
             // seats via (allSeats - clients.keys).min(), not call order, so the Nth call is not
             // guaranteed to be the Nth PlayerId. See GameServer.connectLocal's KDoc.
@@ -97,11 +105,12 @@ public fun main(args: Array<String>) {
             // TuiApp reads currentPhase to build its initial AppState, so composition must
             // absorb the kickstart race here — see awaitKickstart's KDoc.
             awaitKickstart(server, seats)
-            server.use { TuiApp(seats, resolveThemeOrExit(mode.themeName)).run() }
+            server.use { TuiApp(seats, resolveThemeOrExit(launch.themeName)).run() }
         }
 
         is Mode.Host -> {
-            val server = GameServer.host(resolveGameOrExit(mode.gameName, mode.mapPaths, mode.mechPaths))
+            val content = resolveContentOrExit(launch)
+            val server = GameServer.host(resolveGameOrExit(content, mode.setup))
             // connectLocal() BEFORE the acceptor starts — see GameServer.connectLocal's KDoc
             // for why that order is what makes the local seat deterministically PLAYER_1.
             val localSession = server.connectLocal()
@@ -110,14 +119,21 @@ public fun main(args: Array<String>) {
             println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
             acceptor.use {
                 server.use {
-                    TuiApp(seats = mapOf(localSession.playerId to localSession), theme = resolveThemeOrExit(mode.themeName)).run()
+                    TuiApp(
+                        seats = mapOf(localSession.playerId to localSession),
+                        theme = resolveThemeOrExit(launch.themeName),
+                    ).run()
                 }
             }
         }
 
         is Mode.Join -> {
+            // --add-map/--add-mech/--add-unit register content this seat can compare the host's
+            // supplied map/mechs against for local drift, even though join never SELECTS a map
+            // or unit collection of its own — see ContentCatalog.mapMatcher/mechFinder's KDoc.
+            val content = resolveContentOrExit(launch)
             val remote = try {
-                ClientGameSession.connect(mode.host, mode.port, mode.sessionId)
+                ClientGameSession.connect(mode.host, mode.port, mode.sessionId, content.mapMatcher(), content.mechFinder())
             } catch (e: JoinRejectedException) {
                 System.err.println("Join rejected: ${e.reason}")
                 kotlin.system.exitProcess(1)
@@ -126,14 +142,16 @@ public fun main(args: Array<String>) {
                 kotlin.system.exitProcess(1)
             }
             remote.use { remote ->
-                TuiApp(seats = mapOf(remote.playerId to remote), theme = resolveThemeOrExit(mode.themeName)).run()
+                TuiApp(seats = mapOf(remote.playerId to remote), theme = resolveThemeOrExit(launch.themeName)).run()
             }
         }
 
-        is Mode.Server -> runHeadlessServer(
-            mode.port,
-            resolveGameOrExit(mode.gameName, mode.mapPaths, mode.mechPaths),
-        )
+        // --theme is accepted at the root for every mode but is meaningless for a headless
+        // server, so launch.themeName is simply never read on this path — no branch needed.
+        is Mode.Server -> {
+            val content = resolveContentOrExit(launch)
+            runHeadlessServer(mode.port, resolveGameOrExit(content, mode.setup))
+        }
     }
 }
 

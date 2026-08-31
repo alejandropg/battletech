@@ -5,8 +5,7 @@ import battletech.network.server.GameServer
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.game.DEFAULT_GAME_NAME
-import battletech.tactical.model.game.resolveGame
+import battletech.tactical.model.content.ContentCatalog
 import battletech.tactical.session.BattleSession
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ForeignUnit
@@ -57,7 +56,7 @@ import kotlin.random.Random
  * single accepted move always swings [TurnState.movement][battletech.tactical.session.TurnState.movement]`.activePlayer`
  * to the other seat.
  *
- * Reuses [resolveGame]'s default map/roster (the same one
+ * Reuses [ContentCatalog.resolveGame]'s default map/roster (the same one
  * `network`'s [aSampleSession][battletech.network.aSampleSession] and
  * [LocalhostEndToEndTest][battletech.network.LocalhostEndToEndTest] already build sessions
  * over) rather than fabricating a smaller one — it is already small, and reusing it means one
@@ -76,7 +75,7 @@ internal class HotSeatCompositionTest {
     @BeforeEach
     fun setUp() {
         val session = BattleSession(
-            initialGameState = resolveGame(DEFAULT_GAME_NAME),
+            initialGameState = ContentCatalog.load().resolveGame(),
             roller = RandomDiceRoller(Random(42L)),
         )
         server = GameServer(session = session, sessionId = "TESTID")

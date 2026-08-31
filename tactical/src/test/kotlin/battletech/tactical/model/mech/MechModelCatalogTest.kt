@@ -1,5 +1,6 @@
 package battletech.tactical.model.mech
 
+import battletech.tactical.io.NestedCatalogEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -105,6 +106,34 @@ internal class MechModelCatalogTest {
             .contains("unknown weapon 'nope'")
         assertThat(assertThrows<MechLoadException> { MechModelCatalog.load(listOf(overflowing)) }.message)
             .contains("not enough contiguous free slots")
+    }
+
+    @Test
+    fun `collectionEntries lists built-in and external collections with their variants`() {
+        val path = writeCollection(modelJson("TEST-1"), modelJson("TEST-2"), filename = "my-lance.json")
+
+        val entries = MechModelCatalog.load(listOf(path)).collectionEntries()
+
+        val classic = entries.first { it.name == "classic" }
+        assertThat(classic.external).isFalse()
+        assertThat(classic.items).contains("AS7-D", "HBK-4G")
+
+        val external = entries.first { it.name == "my-lance" }
+        assertThat(external.external).isTrue()
+        assertThat(external.items).containsExactlyInAnyOrder("TEST-1", "TEST-2")
+
+        assertThat(entries.indexOf(classic)).isLessThan(entries.indexOf(external))
+    }
+
+    @Test
+    fun `a catalog with a cross-collection variant collision cannot be built at all`() {
+        val first = writeCollection(modelJson("DUP"), filename = "first.json")
+        val second = writeCollection(modelJson("DUP"), filename = "second.json")
+
+        // collectionEntries() is computed in the same load() pass as the registry, so there is no
+        // way to obtain a catalog whose listing is fine but whose launch would fail (or vice
+        // versa) — the failure happens here, before any catalog instance exists to list from.
+        assertThrows<MechLoadException> { MechModelCatalog.load(listOf(first, second)) }
     }
 
     @Test

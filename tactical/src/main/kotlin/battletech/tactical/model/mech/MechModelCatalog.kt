@@ -1,5 +1,7 @@
 package battletech.tactical.model.mech
 
+import battletech.tactical.io.NestedCatalogEntry
+import battletech.tactical.io.externalResourceName
 import battletech.tactical.unit.MechModel
 import java.nio.file.Path
 
@@ -9,6 +11,7 @@ import java.nio.file.Path
  */
 public class MechModelCatalog private constructor(
     private val registry: Map<String, MechModel>,
+    private val collections: List<NestedCatalogEntry>,
 ) {
     public operator fun get(variant: String): MechModel =
         registry[variant] ?: error("Unknown mech variant: $variant")
@@ -16,6 +19,14 @@ public class MechModelCatalog private constructor(
     public fun find(variant: String): MechModel? = registry[variant]
 
     public val variants: Set<String> get() = registry.keys
+
+    /**
+     * Every registered collection (packaged first, in `mech/index.json` order, then externals in
+     * registration order) paired with the variants it contributes — the shape `--list-mechs`
+     * renders. Computed in the same [load] pass that builds [registry], so a listing and an
+     * actual launch can never disagree about what a collection contains or whether it is valid.
+     */
+    public fun collectionEntries(): List<NestedCatalogEntry> = collections
 
     public companion object {
         /**
@@ -29,15 +40,20 @@ public class MechModelCatalog private constructor(
         internal fun load(externalPaths: List<Path>, loader: MechModelLoader): MechModelCatalog {
             val registry = linkedMapOf<String, MechModel>()
             val sources = mutableMapOf<String, String>()
+            val collections = mutableListOf<NestedCatalogEntry>()
 
             for (name in loader.builtInCollectionNames()) {
-                addModels(registry, sources, loader.loadBuiltIn(name), "mech/$name.json")
+                val models = loader.loadBuiltIn(name)
+                addModels(registry, sources, models, "mech/$name.json")
+                collections += NestedCatalogEntry(name, external = false, items = models.map { it.variant })
             }
             for (path in externalPaths) {
-                addModels(registry, sources, loader.load(path), path.toString())
+                val models = loader.load(path)
+                addModels(registry, sources, models, path.toString())
+                collections += NestedCatalogEntry(externalResourceName(path), external = true, items = models.map { it.variant })
             }
 
-            return MechModelCatalog(registry)
+            return MechModelCatalog(registry, collections)
         }
 
         private fun addModels(

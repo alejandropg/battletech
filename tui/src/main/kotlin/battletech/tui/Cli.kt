@@ -1,11 +1,13 @@
 package battletech.tui
 
-import battletech.tactical.model.game.DEFAULT_GAME_NAME
-import battletech.tactical.model.game.builtInGameNames
-import battletech.tactical.model.map.GameMapLoader
+import battletech.tactical.io.CatalogEntry
+import battletech.tactical.io.NestedCatalogEntry
+import battletech.tactical.model.content.ContentCatalog
+import battletech.tactical.model.map.DEFAULT_MAP_NAME
+import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.mech.MechLoadException
-import battletech.tactical.model.mech.builtInMechCollectionNames
-import battletech.tactical.model.mech.mechCollectionVariants
+import battletech.tactical.model.unit.DEFAULT_UNITS_NAME
+import battletech.tactical.model.unit.UnitLoadException
 import battletech.tui.screen.ThemeLoader
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
@@ -33,79 +35,83 @@ import kotlin.io.path.exists
 /** Default TCP port for `host`/`join`/`server` when `--port`/an explicit port is not supplied. */
 internal const val DEFAULT_PORT: Int = 2470
 
+/** Board and unit-collection selection shared by [Mode.HotSeat], [Mode.Host], and [Mode.Server]. */
+internal data class Setup(
+    val mapName: String = DEFAULT_MAP_NAME,
+    val unitsName: String = DEFAULT_UNITS_NAME,
+)
+
 /**
- * The four ways the TUI can be launched, resolved from CLI args by [parseArgs].
- * [HotSeat] is today's hot-seat behavior (both players share one terminal).
- * [Host] starts a [battletech.network.server.GameServer] and seats the local player as
- * [battletech.tactical.model.PlayerId.PLAYER_1].
- * [Join] connects to a remote host and seats the local player as whatever seat the server assigns.
- * [Server] starts a headless dedicated server — no TUI — and both players connect via [Join].
+ * The four ways the TUI can be launched, resolved from CLI args by [parseArgs]. [HotSeat] is
+ * today's hot-seat behavior (both players share one terminal). [Host] starts a
+ * [battletech.network.server.GameServer] and seats the local player as
+ * [battletech.tactical.model.PlayerId.PLAYER_1]. [Join] connects to a remote host and seats the
+ * local player as whatever seat the server assigns — the board and roster come from the host, so
+ * it carries neither a [Setup] nor a theme. [Server] starts a headless dedicated server — no TUI —
+ * and both players connect via [Join].
  */
 internal sealed interface Mode {
-    data class HotSeat(
-        val gameName: String? = null,
-        val mapPaths: List<String> = emptyList(),
-        val mechPaths: List<String> = emptyList(),
-        val themeName: String? = null,
-    ) : Mode
-
-    data class Host(
-        val port: Int = DEFAULT_PORT,
-        val gameName: String? = null,
-        val mapPaths: List<String> = emptyList(),
-        val mechPaths: List<String> = emptyList(),
-        val themeName: String? = null,
-    ) : Mode
-
-    data class Join(val host: String, val port: Int = DEFAULT_PORT, val sessionId: String, val themeName: String? = null) : Mode
-
-    data class Server(
-        val port: Int = DEFAULT_PORT,
-        val gameName: String? = null,
-        val mapPaths: List<String> = emptyList(),
-        val mechPaths: List<String> = emptyList(),
-    ) : Mode
+    data class HotSeat(val setup: Setup = Setup()) : Mode
+    data class Host(val port: Int = DEFAULT_PORT, val setup: Setup = Setup()) : Mode
+    data class Join(val host: String, val port: Int = DEFAULT_PORT, val sessionId: String) : Mode
+    data class Server(val port: Int = DEFAULT_PORT, val setup: Setup = Setup()) : Mode
 }
 
-/**
- * These four are declared `eager = true` not because they behave eagerly themselves, but because
- * the `--list-*` flags' own eager [CliktCommand.exitIfListingRequested] check needs to read their
- * values — Clikt finalizes eager options in a separate, earlier pass than non-eager ones (see that
- * function's KDoc), so a non-eager option's value is unavailable — reading it throws
- * [com.github.ajalt.clikt.parameters.internal.LateinitException] — from inside an eager option's
- * `validate { }`. Marking these four eager too puts them in that same early pass.
- */
+/** What one `parseArgs` call resolved: every root-level registration plus the dispatched [Mode]. */
+internal data class Launch(
+    val mapPaths: List<String>,
+    val mechPaths: List<String>,
+    val unitPaths: List<String>,
+    val themeName: String?,
+    val mode: Mode,
+)
+
 private fun ParameterHolder.themeOption() =
     option(
         "--theme",
         metavar = "<name|path>",
         eager = true,
-        help = "Built-in theme name or theme-file path; default is chosen from the terminal's detected color support",
+        help = "Built-in theme name or theme-file path; default is chosen from the terminal's detected color support. " +
+            "No effect on 'server', which is headless.",
     )
 
-private fun ParameterHolder.gameOption() =
+private fun ParameterHolder.addMapOption() =
     option(
-        "--game",
-        metavar = "<name|path>",
+        "--add-map",
+        metavar = "<path>",
         eager = true,
-        help = "Built-in game name or game-file path; default is \"$DEFAULT_GAME_NAME\"",
-    )
+        help = "Register an external map file, by filename; may be repeated",
+    ).multiple()
 
-private fun ParameterHolder.mapOptions() =
+private fun ParameterHolder.addMechOption() =
+    option(
+        "--add-mech",
+        metavar = "<path>",
+        eager = true,
+        help = "Register an external mech-model collection file; may be repeated",
+    ).multiple()
+
+private fun ParameterHolder.addUnitOption() =
+    option(
+        "--add-unit",
+        metavar = "<path>",
+        eager = true,
+        help = "Register an external unit-collection file, by filename; may be repeated",
+    ).multiple()
+
+private fun ParameterHolder.mapOption() =
     option(
         "--map",
-        metavar = "<path>",
-        eager = true,
-        help = "External map file to register by filename; may be repeated",
-    ).multiple()
+        metavar = "<name>",
+        help = "Board to play on, from the registered maps; default is \"$DEFAULT_MAP_NAME\"",
+    ).default(DEFAULT_MAP_NAME)
 
-private fun ParameterHolder.mechOptions() =
+private fun ParameterHolder.unitOption() =
     option(
-        "--mech",
-        metavar = "<path>",
-        eager = true,
-        help = "External mech-model collection file; may be repeated",
-    ).multiple()
+        "--unit",
+        metavar = "<name>",
+        help = "Unit collection to play, from the registered units; default is \"$DEFAULT_UNITS_NAME\"",
+    ).default(DEFAULT_UNITS_NAME)
 
 private fun ParameterHolder.portOption() =
     option("--port", help = "TCP port to listen on (default $DEFAULT_PORT)").int().default(DEFAULT_PORT)
@@ -116,54 +122,33 @@ private fun ParameterHolder.listMapsFlag() =
 private fun ParameterHolder.listMechsFlag() =
     option("--list-mechs", eager = true, help = "List built-in and registered mech collections, then exit").flag()
 
-private fun ParameterHolder.listGamesFlag() =
-    option("--list-games", eager = true, help = "List built-in and registered games, then exit").flag()
+private fun ParameterHolder.listUnitsFlag() =
+    option("--list-units", eager = true, help = "List built-in and registered unit collections, then exit").flag()
 
 private fun ParameterHolder.listThemesFlag() =
     option("--list-themes", eager = true, help = "List built-in and registered themes, then exit").flag()
 
-/** Derives the display name an external asset is registered under: its filename minus `.json`. */
-private fun externalAssetName(path: String): String =
-    Path(path).fileName?.toString().orEmpty().removeSuffix(".json")
+/** Derives the display name an external theme is registered under: its filename minus `.json`. */
+private fun externalThemeName(path: String): String = Path(path).fileName?.toString().orEmpty().removeSuffix(".json")
 
-private fun renderFlatSection(title: String, builtIns: List<String>, externalNames: List<String>): String {
-    val lines = builtIns.map { "  $it" } + externalNames.map { "  $it (external)" }
+private fun renderFlatSection(title: String, entries: List<CatalogEntry>): String {
+    val lines = entries.map { e -> if (e.external) "  ${e.name} (external)" else "  ${e.name}" }
     return (listOf("$title:") + lines).joinToString("\n")
 }
 
-private fun renderMapsSection(externalPaths: List<String>): String =
-    renderFlatSection("Maps", GameMapLoader().builtInNames(), externalPaths.map(::externalAssetName))
-
-private fun renderGamesSection(gameName: String?): String {
-    val externalName = gameName?.takeIf { Path(it).exists() }?.let(::externalAssetName)
-    return renderFlatSection("Games", builtInGameNames(), listOfNotNull(externalName))
+private fun renderNestedSection(title: String, entries: List<NestedCatalogEntry>): String {
+    val lines = entries.flatMap { e ->
+        val header = if (e.external) "  ${e.name} (external):" else "  ${e.name}:"
+        listOf(header) + e.items.map { "    $it" }
+    }
+    return (listOf("$title:") + lines).joinToString("\n")
 }
 
 private fun renderThemesSection(themeName: String?): String {
-    val externalName = themeName?.takeIf { Path(it).exists() }?.let(::externalAssetName)
-    return renderFlatSection("Themes", ThemeLoader().builtInNames(), listOfNotNull(externalName))
-}
-
-/**
- * Unlike maps/games/themes, a mech collection's listing requires opening the file to enumerate its
- * variants, so a bad external path can genuinely fail here — routed through [PrintMessage] (not a
- * raw `exitProcess`) so it still exits via the same injected, test-safe mechanism as every other
- * Clikt-side error in this file.
- */
-private fun renderMechsSection(externalPaths: List<String>): String {
-    val builtInLines = builtInMechCollectionNames().flatMap { name ->
-        listOf("  $name:") + mechCollectionVariants(name).map { "    $it" }
-    }
-    val externalLines = externalPaths.flatMap { p ->
-        val name = externalAssetName(p)
-        val variants = try {
-            mechCollectionVariants(Path(p))
-        } catch (e: MechLoadException) {
-            throw PrintMessage(e.message.orEmpty(), statusCode = 2, printError = true)
-        }
-        listOf("  $name (external):") + variants.map { "    $it" }
-    }
-    return (listOf("Mechs:") + builtInLines + externalLines).joinToString("\n")
+    val externalName = themeName?.takeIf { Path(it).exists() }?.let(::externalThemeName)
+    val builtIns = ThemeLoader().builtInNames()
+    val lines = builtIns.map { "  $it" } + listOfNotNull(externalName).map { "  $it (external)" }
+    return (listOf("Themes:") + lines).joinToString("\n")
 }
 
 /**
@@ -183,12 +168,18 @@ private fun CliktCommand.exitIfAnyListingRequested(sections: List<String>) {
 }
 
 /**
- * [cliTerminal]/[cliExit] are only set on the root: [Context.Builder]'s `terminal`/`exitProcess`
- * both default to `parent?.terminal`/`parent?.exitProcess` (the same reason Clikt's own
- * `installMordant` early-returns once a parent has installed one), so every subcommand inherits
- * them for free. Named `cliTerminal`/`cliExit` rather than `terminal`/`exit` because inside
- * `context { }` the receiver is [Context.Builder], whose `terminal` is an extension property —
- * a same-named constructor parameter would shadow it.
+ * The root command. Every registration (`--add-map`/`--add-mech`/`--add-unit`), listing
+ * (`--list-*`), and `--theme` lives here — valid for every mode, and (per Clikt's token
+ * consumption; see [parseArgs]'s KDoc) must precede the subcommand name. This is what deleted the
+ * four near-identical option/list blocks the previous per-subcommand tree carried: one
+ * [ContentCatalog] now backs every mode's launch and every `--list-*` rendering, so they can
+ * never disagree (see [ContentCatalog]'s class KDoc).
+ *
+ * [cliTerminal]/[cliExit] are only set here: [Context.Builder]'s `terminal`/`exitProcess` both
+ * default to `parent?.terminal`/`parent?.exitProcess`, so every subcommand inherits them for
+ * free. Named `cliTerminal`/`cliExit` rather than `terminal`/`exit` because inside `context { }`
+ * the receiver is [Context.Builder], whose `terminal` is an extension property — a same-named
+ * constructor parameter would shadow it.
  */
 private class BattletechTui(
     cliTerminal: Terminal,
@@ -201,47 +192,82 @@ private class BattletechTui(
         }
     }
 
-    override fun help(context: Context): String =
-        "BattleTech TUI. With no arguments: hot-seat, both players share this terminal."
+    /**
+     * Clikt's own built-in "no subcommand given" handling (thrown from `finalizeCommand` when
+     * this is left `false`) exits status 0 — it treats bare `battletech-tui` as equivalent to
+     * `--help`, not as a usage error. That reads as success to a shell caller, which contradicts
+     * "there is no default command, so one always has to be specified." Overriding it to `true`
+     * disables that automatic throw and routes control to [run] instead, even with no
+     * subcommand, so [run] can throw its own [PrintMessage] with the [statusCode] this CLI
+     * actually wants (1, matching every other usage error here — e.g. an unknown flag).
+     */
+    override val invokeWithoutSubcommand: Boolean = true
 
-    override fun helpEpilog(context: Context): String =
-        "Run '${context.commandNameWithParents().joinToString(" ")} <command> --help' " +
-            "for command-specific help."
-
-    override fun run() = Unit
-}
-
-private class HotSeatCommand(private val emit: (Mode) -> Unit) : CliktCommand(name = "hot-seat") {
-    override fun help(context: Context): String =
-        "Play hot-seat; both players share this terminal. This is also the default with no arguments."
-
-    private val gameName by gameOption()
-    private val mapPaths by mapOptions()
-    private val mechPaths by mechOptions()
-    private val themeName by themeOption()
+    internal val mapPaths: List<String> by addMapOption()
+    internal val mechPaths: List<String> by addMechOption()
+    internal val unitPaths: List<String> by addUnitOption()
+    internal val themeName: String? by themeOption()
     private val listMaps by listMapsFlag().validate { exitIfListingRequested() }
     private val listMechs by listMechsFlag().validate { exitIfListingRequested() }
-    private val listGames by listGamesFlag().validate { exitIfListingRequested() }
+    private val listUnits by listUnitsFlag().validate { exitIfListingRequested() }
     private val listThemes by listThemesFlag().validate { exitIfListingRequested() }
+
+    /**
+     * Built lazily, once, only when a `--list-*` flag actually needs it — so a bad `--add-*`
+     * registration reported here uses the same [PrintMessage] exit path (status 2) every other
+     * Clikt-side error in this file uses, rather than a raw `exitProcess`.
+     */
+    private val content: ContentCatalog by lazy {
+        try {
+            ContentCatalog.load(mapPaths.map(::Path), mechPaths.map(::Path), unitPaths.map(::Path))
+        } catch (e: MapLoadException) {
+            throw PrintMessage(e.message.orEmpty(), statusCode = 2, printError = true)
+        } catch (e: MechLoadException) {
+            throw PrintMessage(e.message.orEmpty(), statusCode = 2, printError = true)
+        } catch (e: UnitLoadException) {
+            throw PrintMessage(e.message.orEmpty(), statusCode = 2, printError = true)
+        }
+    }
 
     private fun exitIfListingRequested(): Unit = exitIfAnyListingRequested(
         buildList {
-            if (listMaps) add(renderMapsSection(mapPaths))
-            if (listMechs) add(renderMechsSection(mechPaths))
-            if (listGames) add(renderGamesSection(gameName))
+            if (listMaps) add(renderFlatSection("Maps", content.listing().maps))
+            if (listMechs) add(renderNestedSection("Mechs", content.listing().mechs))
+            if (listUnits) add(renderNestedSection("Units", content.listing().units))
             if (listThemes) add(renderThemesSection(themeName))
         },
     )
 
+    override fun help(context: Context): String =
+        "BattleTech TUI. No default command — name one: hot-seat, host, join, or server."
+
+    override fun helpEpilog(context: Context): String =
+        "Root options (this line's options) must come BEFORE the command name, e.g. " +
+            "'${context.commandNameWithParents().joinToString(" ")} --add-map arena.json hot-seat --map arena'. " +
+            "Run '${context.commandNameWithParents().joinToString(" ")} <command> --help' for command-specific help."
+
+    /**
+     * Runs even with no subcommand (see [invokeWithoutSubcommand]'s KDoc). When a subcommand WAS
+     * given, [currentContext.invokedSubcommand][com.github.ajalt.clikt.core.Context.invokedSubcommand]
+     * is already populated by the time this runs — parsing builds the whole invocation tree
+     * before any finalization/run happens — so this is a no-op and that subcommand's own [run]
+     * does the actual work.
+     */
     override fun run() {
-        emit(
-            Mode.HotSeat(
-                gameName = gameName,
-                mapPaths = mapPaths,
-                mechPaths = mechPaths,
-                themeName = themeName,
-            ),
-        )
+        if (currentContext.invokedSubcommand == null) {
+            throw PrintMessage(getFormattedHelp().orEmpty(), statusCode = 1, printError = true)
+        }
+    }
+}
+
+private class HotSeatCommand(private val emit: (Mode) -> Unit) : CliktCommand(name = "hot-seat") {
+    override fun help(context: Context): String = "Play hot-seat; both players share this terminal."
+
+    private val mapName by mapOption()
+    private val unitsName by unitOption()
+
+    override fun run() {
+        emit(Mode.HotSeat(Setup(mapName, unitsName)))
     }
 }
 
@@ -249,34 +275,11 @@ private class HostCommand(private val emit: (Mode) -> Unit) : CliktCommand(name 
     override fun help(context: Context): String = "Host a session; other players connect with 'join'."
 
     private val port by portOption()
-    private val gameName by gameOption()
-    private val mapPaths by mapOptions()
-    private val mechPaths by mechOptions()
-    private val themeName by themeOption()
-    private val listMaps by listMapsFlag().validate { exitIfListingRequested() }
-    private val listMechs by listMechsFlag().validate { exitIfListingRequested() }
-    private val listGames by listGamesFlag().validate { exitIfListingRequested() }
-    private val listThemes by listThemesFlag().validate { exitIfListingRequested() }
-
-    private fun exitIfListingRequested(): Unit = exitIfAnyListingRequested(
-        buildList {
-            if (listMaps) add(renderMapsSection(mapPaths))
-            if (listMechs) add(renderMechsSection(mechPaths))
-            if (listGames) add(renderGamesSection(gameName))
-            if (listThemes) add(renderThemesSection(themeName))
-        },
-    )
+    private val mapName by mapOption()
+    private val unitsName by unitOption()
 
     override fun run() {
-        emit(
-            Mode.Host(
-                port = port,
-                gameName = gameName,
-                mapPaths = mapPaths,
-                mechPaths = mechPaths,
-                themeName = themeName,
-            ),
-        )
+        emit(Mode.Host(port = port, setup = Setup(mapName, unitsName)))
     }
 }
 
@@ -284,7 +287,7 @@ private class HostCommand(private val emit: (Mode) -> Unit) : CliktCommand(name 
 private data class Endpoint(val host: String, val port: Int)
 
 private class JoinCommand(private val emit: (Mode) -> Unit) : CliktCommand(name = "join") {
-    override fun help(context: Context): String = "Join a hosted session. The map comes from the host."
+    override fun help(context: Context): String = "Join a hosted session. The map and units come from the host."
 
     // fail() belongs to the convert{} receiver (ArgumentTransformContext), so the host:port split
     // stays inline rather than being extracted to a top-level helper. Bracketed IPv6 addresses
@@ -310,17 +313,9 @@ private class JoinCommand(private val emit: (Mode) -> Unit) : CliktCommand(name 
         metavar = "ID",
         help = "Session ID printed by the host on startup",
     ).required()
-    private val themeName by themeOption()
-    private val listThemes by listThemesFlag().validate { exitIfListingRequested() }
-
-    private fun exitIfListingRequested(): Unit = exitIfAnyListingRequested(
-        buildList {
-            if (listThemes) add(renderThemesSection(themeName))
-        },
-    )
 
     override fun run() {
-        emit(Mode.Join(host = endpoint.host, port = endpoint.port, sessionId = sessionId, themeName = themeName))
+        emit(Mode.Join(host = endpoint.host, port = endpoint.port, sessionId = sessionId))
     }
 }
 
@@ -328,32 +323,20 @@ private class ServerCommand(private val emit: (Mode) -> Unit) : CliktCommand(nam
     override fun help(context: Context): String = "Headless dedicated server; both players connect with 'join'."
 
     private val port by portOption()
-    private val gameName by gameOption()
-    private val mapPaths by mapOptions()
-    private val mechPaths by mechOptions()
-    private val listMaps by listMapsFlag().validate { exitIfListingRequested() }
-    private val listMechs by listMechsFlag().validate { exitIfListingRequested() }
-    private val listGames by listGamesFlag().validate { exitIfListingRequested() }
-
-    private fun exitIfListingRequested(): Unit = exitIfAnyListingRequested(
-        buildList {
-            if (listMaps) add(renderMapsSection(mapPaths))
-            if (listMechs) add(renderMechsSection(mechPaths))
-            if (listGames) add(renderGamesSection(gameName))
-        },
-    )
+    private val mapName by mapOption()
+    private val unitsName by unitOption()
 
     override fun run() {
-        emit(Mode.Server(port = port, gameName = gameName, mapPaths = mapPaths, mechPaths = mechPaths))
+        emit(Mode.Server(port = port, setup = Setup(mapName, unitsName)))
     }
 }
 
 /**
- * Parses [args] into a [Mode] via Clikt's standard [CliktCommand.main] entry point: returns the
- * resolved [Mode], or the process exits — with `--help`/usage text on the correct stream and
- * Clikt's own exit code — without returning at all. `main()`'s body is therefore a single call:
- * these commands only ever *name* a [Mode] via [emit], they never branch on one, so `main()`
- * stays the only place that knows which mode ran.
+ * Parses [args] into a [Launch] via Clikt's standard [CliktCommand.main] entry point: returns the
+ * resolved [Launch], or the process exits — with `--help`/usage text on the correct stream and
+ * Clikt's own exit code — without returning at all. There is no default command: an empty [args]
+ * is a usage error (Clikt's own `PrintHelpMessage(error = true)`, exit code 1), same as any other
+ * missing-subcommand invocation — see the mechanism note below.
  *
  * [terminal]/[exit] exist only so tests can drive this without touching the real stdout/stderr or
  * the real JVM `exitProcess` (which [CliktCommand.main] calls for real on the success-exits-early
@@ -366,34 +349,40 @@ private class ServerCommand(private val emit: (Mode) -> Unit) : CliktCommand(nam
  * cannot be reused across [CliktCommand.main] calls — which is also what keeps this function
  * re-entrant for tests.
  *
- * Syntax:
- * - (no args): equivalent to `hot-seat` with all defaults, resolved as [Mode.HotSeat]
- * - `hot-seat [--game <name|path>] [--map <path>]... [--mech <path>]... [--theme <name|path>]`: [Mode.HotSeat]
- * - `host [--port N] [--game <name|path>] [--map <path>]... [--mech <path>]... [--theme <name|path>]`: [Mode.Host]
- * - `join <ip[:port]> --session <id> [--theme <name|path>]`: [Mode.Join]
- * - `server [--port N] [--game <name|path>] [--map <path>]... [--mech <path>]...`: [Mode.Server]
+ * Syntax — root options MUST precede the command name (Clikt's token consumer commits to a
+ * subcommand at the first matching token and stops considering root options after that; see
+ * `ParserInternals.consumeTokens`), so `battletech-tui hot-seat --add-map x.json` is a usage
+ * error, not `battletech-tui --add-map x.json hot-seat`:
+ * - `[--add-map <path>]... [--add-mech <path>]... [--add-unit <path>]... [--theme <name|path>] hot-seat [--map <name>] [--unit <name>]`: [Mode.HotSeat]
+ * - `... host [--port N] [--map <name>] [--unit <name>]`: [Mode.Host]
+ * - `... join <ip[:port]> --session <id>`: [Mode.Join] — no `--map`/`--unit`, no theme; all three come from the host
+ * - `... server [--port N] [--map <name>] [--unit <name>]`: [Mode.Server] — `--theme` is accepted at the root but has no effect
  *
- * The game/map/mech/theme options are declared only on the commands that consume them, so the
- * root help is a dispatcher overview and each subcommand help shows exactly its own interface —
- * `join --help` never mentions `--game`/`--map`/`--mech` and `server --help` never mentions
- * `--theme`. Unsupported combinations are therefore rejected by Clikt's command tree rather than
- * by a second, hand-written mode validator.
+ * `--add-map`/`--add-mech`/`--add-unit`/`--theme`/`--list-maps`/`--list-mechs`/`--list-units`/
+ * `--list-themes` are declared once, on the root, and are therefore identical across every
+ * subcommand; `--map`/`--unit` (selecting FROM what was registered, as opposed to `--add-*`
+ * registering it) are declared per-subcommand and absent from `join`, whose board, mechs, and
+ * roster all come from the host at join time.
  *
- * Each of `--game`/`--map`/`--mech`/`--theme` has a matching `--list-games`/`--list-maps`/`--list-mechs`/
- * `--list-themes` flag (declared wherever its counterpart is), following the same per-command availability
- * rule. These are eager, like `--help`: they fire and exit 0 before any other option is validated — even a
- * missing required `--session`/`ADDRESS` on `join` — and any combination of them prints its sections together.
+ * The four `--list-*` flags are eager, like `--help`: they fire and exit 0 before any other
+ * option is validated — even a missing required `--session`/`ADDRESS` on `join` — and any
+ * combination of them prints its sections together, maps then mechs then units then themes.
  */
 internal fun parseArgs(
     args: Array<String>,
     terminal: Terminal = Terminal(ansiLevel = AnsiLevel.NONE),
     exit: (Int) -> Unit = { kotlin.system.exitProcess(it) },
-): Mode {
-    var resolved: Mode? = null
-    val emit: (Mode) -> Unit = { resolved = it }
+): Launch {
+    var resolvedMode: Mode? = null
+    val emit: (Mode) -> Unit = { resolvedMode = it }
     val root = BattletechTui(terminal, exit)
         .subcommands(HotSeatCommand(emit), HostCommand(emit), JoinCommand(emit), ServerCommand(emit))
-    val normalizedArgs = if (args.isEmpty()) listOf("hot-seat") else args.toList()
-    root.main(normalizedArgs)
-    return checkNotNull(resolved) { "no Mode was resolved from ${args.toList()}" }
+    root.main(args.toList())
+    return Launch(
+        mapPaths = root.mapPaths,
+        mechPaths = root.mechPaths,
+        unitPaths = root.unitPaths,
+        themeName = root.themeName,
+        mode = checkNotNull(resolvedMode) { "no Mode was resolved from ${args.toList()}" },
+    )
 }
