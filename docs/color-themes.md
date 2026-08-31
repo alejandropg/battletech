@@ -32,7 +32,7 @@ One file per theme, one color space per file — there is no conversion between 
 ```
 
 `chrome` must hold exactly the 13 `tenter.screen.ChromeRole` names; `board` must hold exactly the
-26 `battletech.tui.screen.BoardRole` names; and `heatScale` must hold exactly the three
+27 `battletech.tui.screen.BoardRole` names; and `heatScale` must hold exactly the three
 `battletech.tui.screen.HeatScaleRole` names. A missing or unrecognized role name fails to load with
 a `ThemeLoadException` naming the offending role and table — this is the load-time replacement for
 the compile-time exhaustiveness check a hand-written `RolePalette` object used to get for free (see
@@ -131,13 +131,19 @@ The 16-color space holds only one other green, and `92` is already `SUCCESS` (pl
 fills** rather than a small badge cell. The fills were brightened back toward the original
 literal-color values (density now needing to read at a glance across a whole hex), while the three
 badge backgrounds were darkened a tier — a bright badge that only had to pop as a small chip became
-overpowering once it could cover an entire hex. `WATER_SHALLOW_BG` moved the least of the four
+overpowering once it could cover an entire hex. `WATER_SHALLOW_BG` moved the least of the five
 fills: it has almost no headroom before `DANGER`/`TARGET_SELECTED`'s 4.5:1 guarantee against it
 would break.
 
+Water has three visual depth tiers in truecolor themes: `TERRAIN_WATER_SHALLOW_BG` for depth 0–1,
+`TERRAIN_WATER_DEEP_BG` for depth 2, and `TERRAIN_WATER_VERY_DEEP_BG` for depth 3+. The very-deep
+dark fill is `#193E59`. The light theme uses the subtle `#B3D2E4` step because its existing water
+icon and board foregrounds already sit near the documented 4.5:1 contrast floor. Reduced themes
+keep all terrain fills collapsed to their default background.
+
 ### ANSI-256 (`dark-256`, `light-256`)
 
-All six `TERRAIN_*_BG` roles collapse to the theme's default background. The xterm-256 cube has no
+All seven `TERRAIN_*_BG` roles collapse to the theme's default background. The xterm-256 cube has no
 usable dark brown and only one usable dark green; any tinted terrain fill that still clears 4.5:1
 against board foregrounds forces every foreground toward the same near-white. Trading tinted hexes
 for eleven distinguishable foregrounds is the better tradeoff — terrain material is carried by the

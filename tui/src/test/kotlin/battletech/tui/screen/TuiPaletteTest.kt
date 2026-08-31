@@ -24,7 +24,7 @@ import tenter.screen.PaletteColor
  *
  * Deliberately does NOT assert every non-default role value one by one — that would duplicate
  * the theme file's own values in the test and fail on every deliberate tweak while catching
- * nothing these properties don't already cover. The two default-surface values and the four
+ * nothing these properties don't already cover. The two default-surface values and the five
  * intentionally restored dark-theme terrain fills are pinned exactly: renderer output depends on
  * the former, while the latter are an explicit compatibility target from the previous palette.
  */
@@ -42,7 +42,7 @@ internal class TuiPaletteTest {
     private val allRoles: List<ColorRole> = ChromeRole.entries + BoardRole.entries + HeatScaleRole.entries
 
     /**
-     * Every semantic role except the six terrain fills, four terrain icons, three badge
+     * Every semantic role except the seven terrain fills, four terrain icons, three badge
      * backgrounds, and the badge foreground — the general UI roles a screen surface actually
      * paints text with. [SUBTLE_ROLES] (checked separately, at a lower bar) are excluded too.
      */
@@ -77,6 +77,7 @@ internal class TuiPaletteTest {
         assertThat(dark.background(BoardRole.TERRAIN_WOODS_HEAVY_BG)).isEqualTo(rgb(0x2C, 0x48, 0x26))
         assertThat(dark.background(BoardRole.TERRAIN_WATER_SHALLOW_BG)).isEqualTo(rgb(0x2F, 0x5E, 0x7E))
         assertThat(dark.background(BoardRole.TERRAIN_WATER_DEEP_BG)).isEqualTo(rgb(0x23, 0x4C, 0x68))
+        assertThat(dark.background(BoardRole.TERRAIN_WATER_VERY_DEEP_BG)).isEqualTo(rgb(0x19, 0x3E, 0x59))
     }
 
     @Test
@@ -191,7 +192,7 @@ internal class TuiPaletteTest {
     }
 
     @Test
-    fun `truecolor- all six terrain fills are mutually distinct`() {
+    fun `truecolor- all seven terrain fills are mutually distinct`() {
         for (theme in truecolorThemes) {
             val fills = TERRAIN_FILLS.map { theme.background(it) }
             assertThat(fills.toSet()).describedAs("$theme terrain fills").hasSize(TERRAIN_FILLS.size)
@@ -199,7 +200,7 @@ internal class TuiPaletteTest {
     }
 
     @Test
-    fun `truecolor- light woods is brighter than heavy woods, shallow water is brighter than deep water`() {
+    fun `truecolor- terrain fills follow their density ordering`() {
         for (theme in truecolorThemes) {
             val light = luminance(theme.background(BoardRole.TERRAIN_WOODS_LIGHT_BG))
             val heavy = luminance(theme.background(BoardRole.TERRAIN_WOODS_HEAVY_BG))
@@ -207,7 +208,9 @@ internal class TuiPaletteTest {
 
             val shallow = luminance(theme.background(BoardRole.TERRAIN_WATER_SHALLOW_BG))
             val deep = luminance(theme.background(BoardRole.TERRAIN_WATER_DEEP_BG))
+            val veryDeep = luminance(theme.background(BoardRole.TERRAIN_WATER_VERY_DEEP_BG))
             assertThat(shallow).describedAs("$theme shallow vs deep water luminance").isGreaterThan(deep)
+            assertThat(deep).describedAs("$theme deep vs very deep water luminance").isGreaterThan(veryDeep)
         }
     }
 
@@ -397,6 +400,7 @@ internal class TuiPaletteTest {
             BoardRole.TERRAIN_WOODS_HEAVY_BG,
             BoardRole.TERRAIN_WATER_SHALLOW_BG,
             BoardRole.TERRAIN_WATER_DEEP_BG,
+            BoardRole.TERRAIN_WATER_VERY_DEEP_BG,
             BoardRole.TERRAIN_ROUGH_BG,
         )
         private val TERRAIN_ICONS = listOf(
@@ -435,7 +439,11 @@ internal class TuiPaletteTest {
         private val ICON_TO_FILLS = mapOf(
             BoardRole.TERRAIN_WOODS_LIGHT_ICON to listOf(BoardRole.TERRAIN_WOODS_LIGHT_BG),
             BoardRole.TERRAIN_WOODS_HEAVY_ICON to listOf(BoardRole.TERRAIN_WOODS_HEAVY_BG),
-            BoardRole.TERRAIN_WATER_ICON to listOf(BoardRole.TERRAIN_WATER_SHALLOW_BG, BoardRole.TERRAIN_WATER_DEEP_BG),
+            BoardRole.TERRAIN_WATER_ICON to listOf(
+                BoardRole.TERRAIN_WATER_SHALLOW_BG,
+                BoardRole.TERRAIN_WATER_DEEP_BG,
+                BoardRole.TERRAIN_WATER_VERY_DEEP_BG,
+            ),
             BoardRole.TERRAIN_ROUGH_ICON to listOf(BoardRole.TERRAIN_ROUGH_BG),
         )
 

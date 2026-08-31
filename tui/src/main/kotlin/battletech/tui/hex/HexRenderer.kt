@@ -113,12 +113,16 @@ public object HexRenderer {
      * elevation never changes it, so an elevated forest stays green and its height shows only via
      * the elevation badge. A CLEAR hex has no material of its own, so elevation gets to fill the
      * whole hex instead of just the badge cell: an elevated clear hex reads as a hill, not a plain
-     * with a small numbered sticker on it. WATER's shallow/deep split is the only terrain sub-case.
+     * with a small numbered sticker on it. WATER's depth tiers are the only terrain sub-case.
      */
     private fun terrainFill(hex: Hex): BoardRole = when (hex.terrain) {
         Terrain.LIGHT_WOODS -> BoardRole.TERRAIN_WOODS_LIGHT_BG
         Terrain.HEAVY_WOODS -> BoardRole.TERRAIN_WOODS_HEAVY_BG
-        Terrain.WATER       -> if (hex.depth <= 1) BoardRole.TERRAIN_WATER_SHALLOW_BG else BoardRole.TERRAIN_WATER_DEEP_BG
+        Terrain.WATER       -> when {
+            hex.depth <= 1 -> BoardRole.TERRAIN_WATER_SHALLOW_BG
+            hex.depth == 2 -> BoardRole.TERRAIN_WATER_DEEP_BG
+            else -> BoardRole.TERRAIN_WATER_VERY_DEEP_BG
+        }
         Terrain.ROUGH       -> BoardRole.TERRAIN_ROUGH_BG
         Terrain.CLEAR       -> if (hex.elevation > 0) elevationBadgeBg(hex.elevation) else BoardRole.TERRAIN_CLEAR_BG
     }

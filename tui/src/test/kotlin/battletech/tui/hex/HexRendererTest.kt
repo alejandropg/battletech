@@ -98,14 +98,25 @@ internal class HexRendererTest {
     }
 
     @Test
-    fun `deep water (depth greater than or equal to 2) fills with TERRAIN_WATER_DEEP_BG`() {
+    fun `deep water (depth 2) fills with TERRAIN_WATER_DEEP_BG`() {
         val buffer = ScreenBuffer(10, 6)
-        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 3)
+        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 2)
 
         HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.TERRAIN_WATER_DEEP_BG, buffer.get(4, 3).style.bg)
         // The water terrain icon color does not vary with depth — only the fill does.
+        assertEquals(BoardRole.TERRAIN_WATER_ICON, buffer.get(2, 1).style.fg)
+    }
+
+    @Test
+    fun `very deep water (depth greater than or equal to 3) fills with TERRAIN_WATER_VERY_DEEP_BG`() {
+        val buffer = ScreenBuffer(10, 6)
+        val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 3)
+
+        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+
+        assertEquals(BoardRole.TERRAIN_WATER_VERY_DEEP_BG, buffer.get(4, 3).style.bg)
         assertEquals(BoardRole.TERRAIN_WATER_ICON, buffer.get(2, 1).style.fg)
     }
 
@@ -144,7 +155,11 @@ internal class HexRendererTest {
             HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
 
             val badge = buffer.get(6, 1)
-            val expectedBg = if (depth == 1) BoardRole.TERRAIN_WATER_SHALLOW_BG else BoardRole.TERRAIN_WATER_DEEP_BG
+            val expectedBg = when {
+                depth == 1 -> BoardRole.TERRAIN_WATER_SHALLOW_BG
+                depth == 2 -> BoardRole.TERRAIN_WATER_DEEP_BG
+                else -> BoardRole.TERRAIN_WATER_VERY_DEEP_BG
+            }
             assertEquals(String(Character.toChars(codePoint)), badge.char, "depth=$depth")
             assertEquals(expectedBg, badge.style.bg, "depth=$depth")
         }
