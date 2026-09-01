@@ -1,5 +1,6 @@
 package battletech.tui.setup
 
+import battletech.tui.input.ChromeAction
 import battletech.tui.input.Keybindings
 import tenter.panel.Panel
 import tenter.panel.PanelSet
@@ -21,35 +22,35 @@ internal object SetupPanels {
                 id = SetupPanelId.MODE,
                 title = "MODE",
                 normalWidth = 0,
-                badge = keys.badgeFor(SetupPanelId.MODE),
+                badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.MODE)),
                 normal = { it.modeView },
             ),
             SetupPanel(
                 id = SetupPanelId.MAP,
                 title = "MAP",
                 normalWidth = 0,
-                badge = keys.badgeFor(SetupPanelId.MAP),
+                badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.MAP)),
                 normal = { it.mapView },
             ),
             SetupPanel(
                 id = SetupPanelId.PLAYER_1,
                 title = "PLAYER 1",
                 normalWidth = 0,
-                badge = keys.badgeFor(SetupPanelId.PLAYER_1),
+                badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.PLAYER_1)),
                 normal = { it.player1View },
             ),
             SetupPanel(
                 id = SetupPanelId.PLAYER_2,
                 title = "PLAYER 2",
                 normalWidth = 0,
-                badge = keys.badgeFor(SetupPanelId.PLAYER_2),
+                badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.PLAYER_2)),
                 normal = { it.player2View },
             ),
             SetupPanel(
                 id = SetupPanelId.HELP,
                 title = HelpView.TITLE,
                 normalWidth = 0,
-                badge = keys.badgeFor(SetupPanelId.HELP),
+                badge = keys.badgeFor(ChromeAction.ToggleHelp),
                 normal = { HelpView(it.helpSections) },
                 maximized = { HelpView(it.helpSections) },
             ),

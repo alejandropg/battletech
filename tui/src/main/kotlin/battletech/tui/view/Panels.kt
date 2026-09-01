@@ -1,6 +1,7 @@
 package battletech.tui.view
 
 import battletech.tui.game.GamePanelId
+import battletech.tui.input.ChromeAction
 import battletech.tui.input.Keybindings
 import battletech.tui.view.record.MechRecordSheetView
 import tenter.panel.Panel
@@ -25,7 +26,7 @@ internal object Panels {
             // whatever the side panels leave over.
             normalWidth = 0,
             extent = { it.boardExtent },
-            badge = keys.badgeFor(GamePanelId.BOARD),
+            badge = keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.BOARD)),
             normal = { it.boardView },
         )
 
@@ -64,7 +65,7 @@ internal object Panels {
                 id = GamePanelId.HELP,
                 title = HelpView.TITLE,
                 normalWidth = 28,
-                badge = keys.badgeFor(GamePanelId.HELP),
+                badge = keys.badgeFor(ChromeAction.ToggleHelp),
                 normal = { frame -> HelpView(frame.helpSections) },
                 // No minimized state — ? dismisses HELP entirely instead (see AppState.helpOpen).
                 maximized = { frame -> HelpView(frame.helpSections) },
@@ -86,7 +87,7 @@ internal object Panels {
         id = id,
         title = title,
         normalWidth = width,
-        badge = keys.badgeFor(id),
+        badge = keys.badgeFor(ChromeAction.FocusPanel(id)),
         normal = build,
         minimized = { VerticalTitleView(title) },
         maximized = maximized ?: build,

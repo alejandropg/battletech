@@ -14,7 +14,6 @@ import tenter.input.KeyMap
 import tenter.input.KeySection
 import tenter.input.PanAction
 import tenter.input.ScrollAction
-import tenter.panel.PanelId
 
 /** The domain facade over the generic [KeyMap] — every keyboard binding in this application. */
 internal class Keybindings(private val keyMap: KeyMap<ContextId>) {
@@ -28,17 +27,17 @@ internal class Keybindings(private val keyMap: KeyMap<ContextId>) {
         keyMap.resolve(listOf(ContextId.CHROME), event) == ChromeAction.Quit
 
     /**
-     * The character a panel shows in its border: the single-character key of its own focus chord,
-     * so rebinding `alt+p` to LOG relabels LOG's border too. Null when nothing focuses it.
+     * The character a panel shows in its border: the single-character key of the chord bound to
+     * [action], so rebinding `alt+p` to LOG relabels LOG's border too. Null when nothing is bound.
+     *
+     * Takes the ACTION rather than the panel because which action focuses a panel is the caller's
+     * own fact: every panel but HELP is focused by [ChromeAction.FocusPanel], while HELP is
+     * reached by [ChromeAction.ToggleHelp] (`?` does more than focus — see `AppState.helpOpen`).
+     * Asking for a panel instead would force this class to hold a list of which panel ids are
+     * "the help one" in every screen that exists — a list that silently rots the moment a screen
+     * is added.
      */
-    fun badgeFor(panel: PanelId): Char? {
-        val action = if (panel == GamePanelId.HELP || panel == SetupPanelId.HELP) {
-            ChromeAction.ToggleHelp
-        } else {
-            ChromeAction.FocusPanel(panel)
-        }
-        return keyMap.chordsFor(action).firstOrNull()?.key?.singleOrNull()
-    }
+    fun badgeFor(action: InputAction): Char? = keyMap.chordsFor(action).firstOrNull()?.key?.singleOrNull()
 
     internal fun map(): KeyMap<ContextId> = keyMap // invariant tests only
 

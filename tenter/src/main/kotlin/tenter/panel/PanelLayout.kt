@@ -88,6 +88,7 @@ public class PanelLayout<K : PanelId, I> private constructor(
             reservedTop: Int,
             panels: List<Panel<K, I>>,
         ): PanelLayout<K, I> {
+            require(panels.isNotEmpty()) { "A uniform layout needs at least one panel to divide the width between" }
             val contentHeight = height - reservedTop
 
             val maximizedPanel = panels.firstOrNull { it.state == PanelState.MAXIMIZED }

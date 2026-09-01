@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.input.PanAction
 import tenter.input.ScrollAction
+import tenter.panel.PanelId
 import tenter.text.CellWidth
 
 /**
@@ -184,16 +185,16 @@ internal class KeybindingsTest {
     fun `badgeFor returns the stable per-panel badge, and every badge is unique`() {
         val keys = Keybindings.DEFAULT
 
-        assertEquals('0', keys.badgeFor(GamePanelId.BOARD))
-        assertEquals('1', keys.badgeFor(GamePanelId.UNIT_STATUS))
-        assertEquals('2', keys.badgeFor(GamePanelId.DECLARED_TARGETS))
-        assertEquals('3', keys.badgeFor(GamePanelId.TARGETS))
-        assertEquals('4', keys.badgeFor(GamePanelId.TARGET_STATUS))
-        assertEquals('5', keys.badgeFor(GamePanelId.ATTACK_RESULTS))
-        assertEquals('9', keys.badgeFor(GamePanelId.LOG))
-        assertEquals('?', keys.badgeFor(GamePanelId.HELP))
+        assertEquals('0', keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.BOARD)))
+        assertEquals('1', keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.UNIT_STATUS)))
+        assertEquals('2', keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.DECLARED_TARGETS)))
+        assertEquals('3', keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.TARGETS)))
+        assertEquals('4', keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.TARGET_STATUS)))
+        assertEquals('5', keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.ATTACK_RESULTS)))
+        assertEquals('9', keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.LOG)))
+        assertEquals('?', keys.badgeFor(ChromeAction.ToggleHelp))
 
-        val badges = GamePanelId.entries.map { keys.badgeFor(it) }
+        val badges = GamePanelId.entries.map { keys.badgeFor(focusActionFor(it)) }
         assertEquals(badges.size, badges.toSet().size, "duplicate badge would let one chord ambiguously resolve two panels")
     }
 
@@ -201,13 +202,21 @@ internal class KeybindingsTest {
     fun `badgeFor returns the stable per-panel badge for the setup screen too`() {
         val keys = Keybindings.DEFAULT
 
-        assertEquals('1', keys.badgeFor(SetupPanelId.MODE))
-        assertEquals('2', keys.badgeFor(SetupPanelId.MAP))
-        assertEquals('3', keys.badgeFor(SetupPanelId.PLAYER_1))
-        assertEquals('4', keys.badgeFor(SetupPanelId.PLAYER_2))
-        assertEquals('?', keys.badgeFor(SetupPanelId.HELP))
+        assertEquals('1', keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.MODE)))
+        assertEquals('2', keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.MAP)))
+        assertEquals('3', keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.PLAYER_1)))
+        assertEquals('4', keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.PLAYER_2)))
+        assertEquals('?', keys.badgeFor(ChromeAction.ToggleHelp))
 
-        val badges = SetupPanelId.entries.map { keys.badgeFor(it) }
+        val badges = SetupPanelId.entries.map { keys.badgeFor(focusActionFor(it)) }
         assertEquals(badges.size, badges.toSet().size, "duplicate badge would let one chord ambiguously resolve two panels")
     }
+
+    /** What each panel builder passes to `badgeFor`: `?` reaches HELP, every other panel its own focus chord. */
+    private fun focusActionFor(panel: PanelId): ChromeAction =
+        if (panel == GamePanelId.HELP || panel == SetupPanelId.HELP) {
+            ChromeAction.ToggleHelp
+        } else {
+            ChromeAction.FocusPanel(panel)
+        }
 }
