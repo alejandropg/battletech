@@ -34,7 +34,7 @@ internal class GameMapLoaderTest {
 
     @Test
     fun `built-in names lists the packaged maps`() {
-        assertThat(loader.builtInNames()).containsExactly("battletech-classic")
+        assertThat(loader.builtInNames()).containsExactly("battletech-classic", "lake-area", "river-valley", "test")
     }
 
     @Test

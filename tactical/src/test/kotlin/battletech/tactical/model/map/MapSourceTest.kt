@@ -12,8 +12,8 @@ import kotlin.io.path.writeText
 internal class MapSourceTest {
 
     @Test
-    fun `packaged default name resolves the expected terrain families`() {
-        val map = resolveMap("default")
+    fun `packaged test map name resolves the expected terrain families`() {
+        val map = resolveMap("test")
 
         assertThat(map.hexes).hasSize(100)
 
@@ -36,8 +36,8 @@ internal class MapSourceTest {
     }
 
     @Test
-    fun `packaged default map preserves elevation depth and rough terrain`() {
-        val map = resolveMap("default")
+    fun `packaged test map preserves elevation depth and rough terrain`() {
+        val map = resolveMap("test")
 
         assertThat(map.hexes.getValue(HexCoordinates(5, 1)).elevation).isEqualTo(3)
         assertThat(map.hexes.getValue(HexCoordinates(5, 2)).elevation).isEqualTo(2)
@@ -68,8 +68,8 @@ internal class MapSourceTest {
     }
 
     @Test
-    fun `packaged default map keeps sample spawn cells clear at elevation zero`() {
-        val map = resolveMap("default")
+    fun `packaged test map keeps sample spawn cells clear at elevation zero`() {
+        val map = resolveMap("test")
 
         for (coords in listOf(HexCoordinates(1, 1), HexCoordinates(2, 3), HexCoordinates(7, 3), HexCoordinates(8, 5))) {
             val hex = map.hexes.getValue(coords)
@@ -122,12 +122,12 @@ internal class MapSourceTest {
         val exception = assertThrows<MapLoadException> { resolveMap(spec) }
 
         assertThat(exception.message)
-            .isEqualTo("Map resource not found: map/$spec.json\nBuilt-in maps: default, battletech-classic")
+            .isEqualTo("Map resource not found: map/$spec.json\nBuilt-in maps: battletech-classic, lake-area, river-valley, test")
     }
 
     @Test
-    fun `the built-in index lists exactly the two shipped maps`() {
-        assertThat(GameMapLoader().builtInNames()).containsExactlyInAnyOrder("default", "battletech-classic")
+    fun `the built-in index lists exactly the shipped maps`() {
+        assertThat(GameMapLoader().builtInNames()).containsExactlyInAnyOrder("battletech-classic", "lake-area", "river-valley", "test")
     }
 
     @Test
@@ -141,7 +141,7 @@ internal class MapSourceTest {
 
     @Test
     fun `a packaged map is named after the spec it was resolved from`() {
-        assertThat(resolveMap("default").name).isEqualTo("default")
+        assertThat(resolveMap("test").name).isEqualTo("test")
         assertThat(resolveMap("battletech-classic").name).isEqualTo("battletech-classic")
     }
 
@@ -157,21 +157,21 @@ internal class MapSourceTest {
 
     @Test
     fun `compareWithLocalMap reports MATCHES when the local map of the same name has identical hexes`() {
-        val hostMap = resolveMap("default")
+        val hostMap = resolveMap("test")
 
         assertThat(compareWithLocalMap(hostMap)).isEqualTo(LocalMapMatch.MATCHES)
     }
 
     @Test
     fun `compareWithLocalMap reports DIFFERS when the local map of the same name has different hexes`() {
-        val hostMap = resolveMap("default").copy(name = "battletech-classic")
+        val hostMap = resolveMap("test").copy(name = "battletech-classic")
 
         assertThat(compareWithLocalMap(hostMap)).isEqualTo(LocalMapMatch.DIFFERS)
     }
 
     @Test
     fun `compareWithLocalMap reports UNAVAILABLE when no local map of that name exists`() {
-        val hostMap = resolveMap("default").copy(name = "not-a-packaged-map-for-test")
+        val hostMap = resolveMap("test").copy(name = "not-a-packaged-map-for-test")
 
         assertThat(compareWithLocalMap(hostMap)).isEqualTo(LocalMapMatch.UNAVAILABLE)
     }

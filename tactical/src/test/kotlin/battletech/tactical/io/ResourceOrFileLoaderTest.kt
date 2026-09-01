@@ -27,7 +27,7 @@ internal class ResourceOrFileLoaderTest {
 
     @Test
     fun `resolve loads an existing filesystem path over a packaged resource of the same name`(@TempDir tempDir: Path) {
-        val file = tempDir.resolve("default")
+        val file = tempDir.resolve("test")
         file.writeText("FROM DISK")
 
         val result = loader("map").resolve(file.toString())
@@ -37,9 +37,9 @@ internal class ResourceOrFileLoaderTest {
 
     @Test
     fun `resolve loads a packaged resource when spec is not an existing path`() {
-        val result = loader("map").resolve("default")
+        val result = loader("map").resolve("test")
 
-        assertThat(result).startsWith("default:")
+        assertThat(result).startsWith("test:")
     }
 
     @Test
@@ -68,7 +68,7 @@ internal class ResourceOrFileLoaderTest {
         val exception = assertThrows<TestLoadException> { loader("map").loadResource("map/not-a-real-one.json") }
 
         assertThat(exception.message)
-            .isEqualTo("Thing resource not found: map/not-a-real-one.json\nBuilt-in things: default, battletech-classic")
+            .isEqualTo("Thing resource not found: map/not-a-real-one.json\nBuilt-in things: battletech-classic, lake-area, river-valley, test")
     }
 
     @Test
@@ -80,7 +80,7 @@ internal class ResourceOrFileLoaderTest {
 
     @Test
     fun `builtInNames reads the packaged index`() {
-        assertThat(loader("map").builtInNames()).containsExactlyInAnyOrder("default", "battletech-classic")
+        assertThat(loader("map").builtInNames()).containsExactlyInAnyOrder("battletech-classic", "lake-area", "river-valley", "test")
     }
 
     @Test
