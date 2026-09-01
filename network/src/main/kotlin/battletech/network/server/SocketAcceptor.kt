@@ -10,23 +10,30 @@ import java.net.Socket
 import kotlin.concurrent.thread
 
 /**
- * Owns the listening TCP socket for a [GameServer]: binds [port] eagerly in the constructor (so
- * [boundPort] is meaningful immediately, even before [start] runs the accept loop), accepts
- * connections on a daemon thread, and hands each one to [GameServer.attach] as a
+ * Owns the listening TCP socket for whatever [ConnectionSink] it is constructed over — a
+ * committed [GameServer] or a still-forming [LobbyHost]: binds [port] eagerly in the constructor
+ * (so [boundPort] is meaningful immediately, even before [start] runs the accept loop), accepts
+ * connections on a daemon thread, and hands each one to [ConnectionSink.attach] as a
  * [JsonLineConnection.Server].
  *
  * Every socket-specific concern — the [ServerSocket], the accept loop, the per-connection
- * handshake timeout — lives here, so [GameServer] itself knows nothing about TCP, sockets, or
- * ports and can be constructed without any of them.
+ * handshake timeout — lives here, so neither [GameServer] nor [LobbyHost] knows anything about
+ * TCP, sockets, or ports.
  *
  * A launch that wants BOTH a local seat and a listening port constructs both, and must call
  * [GameServer.connectLocal] before calling [start] here — see [GameServer]'s KDoc for why that
  * order is what guarantees the local player gets `PLAYER_1`.
  */
-public class SocketAcceptor(
-    private val server: GameServer,
+public class SocketAcceptor internal constructor(
+    private val sink: ConnectionSink,
     port: Int,
 ) : AutoCloseable {
+
+    /** Listens for a committed match. */
+    public constructor(server: GameServer, port: Int) : this(server.asConnectionSink(), port)
+
+    /** Listens for a still-forming lobby — see [LobbyHost]. */
+    public constructor(lobby: LobbyHost, port: Int) : this(lobby.asConnectionSink(), port)
 
     private val serverSocket: ServerSocket = ServerSocket(port)
 
@@ -66,7 +73,7 @@ public class SocketAcceptor(
                 val input = BufferedReader(InputStreamReader(socket.getInputStream()))
                 val output = OutputStreamWriter(socket.getOutputStream())
                 val connection = JsonLineConnection.Server(input, output)
-                server.attach(connection, onJoinAccepted = { socket.soTimeout = 0 })
+                sink.attach(connection, onJoinAccepted = { socket.soTimeout = 0 })
             } catch (e: IOException) {
                 socket.close()
             }

@@ -277,15 +277,33 @@ public class GameServer(
      * `soTimeout`; there is no `onDisconnect` counterpart because tearing the
      * transport down is just [ServerConnection.close] now, called from [disconnect].
      */
-    internal fun attach(
-        connection: ServerConnection,
-        onJoinAccepted: () -> Unit = {},
-    ) {
+    internal fun attach(connection: ServerConnection, onJoinAccepted: () -> Unit = {}) {
         val join = connection.receive() as? ClientMessage.Join ?: run {
             connection.close()
             return
         }
+        attach(connection, join, onJoinAccepted)
+    }
 
+    /**
+     * Adapts [attach] to the [ConnectionSink] seam [SocketAcceptor] depends on. A plain `object :
+     * ConnectionSink` — rather than declaring `GameServer : ConnectionSink` directly — because
+     * [GameServer] is a public class and [ConnectionSink]'s parameter type ([ServerConnection]) is
+     * deliberately `internal`; a direct override would force that parameter public right along
+     * with it. The anonymous adapter keeps the leak from ever being expressible.
+     */
+    internal fun asConnectionSink(): ConnectionSink = object : ConnectionSink {
+        override fun attach(connection: ServerConnection, onJoinAccepted: () -> Unit) =
+            this@GameServer.attach(connection, onJoinAccepted)
+    }
+
+    /**
+     * [attach]'s body once a [ClientMessage.Join] is already in hand — [LobbyHost] re-attaches a
+     * parked connection through this overload with the SECOND `Join` it reads itself (the one
+     * sent after [ServerMessage.LobbyCommitted]), so this thread becomes that seat's reader
+     * thread exactly as [attach] would set up for a fresh socket join.
+     */
+    internal fun attach(connection: ServerConnection, join: ClientMessage.Join, onJoinAccepted: () -> Unit) {
         val rejection = synchronized(lock) {
             when {
                 clients.keys.containsAll(allSeats) -> JoinRejectionReason.SEAT_TAKEN
@@ -480,13 +498,22 @@ public class GameServer(
          * the units, so it always wins first-registrant anyway. A malformed bundle, by contrast,
          * is this process's own bug rather than a peer's — a joining seat's earns a
          * [JoinRejectionReason.INVALID_CONTENT], the host's fails loudly here.
+         *
+         * [sessionId] defaults to a fresh [SessionId.generate]d one; [LobbyHost.commit] passes
+         * its OWN id instead, so a peer that parked against that id (and already validated it)
+         * can re-join the committed match with the identical id it was given at park time —
+         * generating a new one here would make every parked peer's reconnect fail
+         * [JoinRejectionReason.UNKNOWN_SESSION].
          */
-        public fun host(initialGameState: GameState, content: AssetBundle = AssetBundle.EMPTY): GameServer {
+        public fun host(
+            initialGameState: GameState,
+            content: AssetBundle = AssetBundle.EMPTY,
+            sessionId: String = SessionId.generate(),
+        ): GameServer {
             require(content.duplicateId() == null) {
                 "Host content repeats an id: ${content.duplicateId()}"
             }
             val session = BattleSession(initialGameState = initialGameState, initialTurnState = TurnState.NULL)
-            val sessionId = SessionId.generate()
             val server = GameServer(session, sessionId)
             server.registry = server.registry.merge(content).registry
             session.annotate(SessionOpened(sessionId))
