@@ -36,15 +36,23 @@ internal class CliArgsTest {
     }
 
     @Nested
-    inner class NoDefaultCommand {
+    inner class Interactive {
         @Test
-        fun `no args is a usage error, not an implicit hot-seat`() {
-            assertEquals(1, failing().statusCode)
+        fun `no args opens the interactive setup screen, not a usage error`() {
+            assertEquals(Mode.Interactive, parse().mode)
         }
 
         @Test
-        fun `no args prints the root help on stderr`() {
-            assertTrue(failing().output.contains("hot-seat"))
+        fun `--add-map with no subcommand still registers, and does not preselect`() {
+            val launch = parse("--add-map", "arena.json")
+
+            assertEquals(Mode.Interactive, launch.mode)
+            assertEquals(listOf("arena.json"), launch.mapPaths)
+        }
+
+        @Test
+        fun `--theme with no subcommand is carried on the Launch`() {
+            assertEquals("light", parse("--theme", "light").themeName)
         }
     }
 

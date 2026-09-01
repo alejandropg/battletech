@@ -7,19 +7,30 @@ import battletech.network.server.SocketAcceptor
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.content.AssetBundle
+import battletech.tactical.model.content.AssetRegistry
 import battletech.tactical.model.content.ContentCatalog
+import battletech.tactical.model.content.summarize
 import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.mech.MechLoadException
 import battletech.tactical.model.unit.UnitLoadException
 import battletech.tactical.query.projectFor
 import battletech.tactical.session.GameEvent
+import battletech.tactical.unit.AutoDeploy
+import battletech.tui.input.Keybindings
 import battletech.tui.screen.Theme
 import battletech.tui.screen.ThemeLoadException
+import battletech.tui.screen.defaultThemeName
 import battletech.tui.screen.resolveTheme
+import battletech.tui.setup.NoLobby
+import battletech.tui.setup.SetupApp
+import battletech.tui.setup.SetupOutcome
+import battletech.tui.setup.SetupState
 import battletech.tui.view.GameLogFormatter
+import com.github.ajalt.mordant.terminal.Terminal
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import kotlin.io.path.Path
+import tenter.screen.ScreenRenderer
 
 /** Builds the [ContentCatalog] for one launch: every built-in plus [launch]'s `--add-*` registrations. */
 private fun resolveContentOrExit(launch: Launch): ContentCatalog = try {
@@ -86,6 +97,24 @@ private fun awaitKickstart(server: GameServer, seats: Map<PlayerId, ClientGameSe
 }
 
 /**
+ * Enters raw mode once and leaves it once (D17): constructs the one [Terminal] + [ScreenRenderer]
+ * this process uses for its whole run — whether that means only [TuiApp], or [SetupApp] followed
+ * by [TuiApp] on the interactive path — and hands both to [block]. [themeName] null auto-selects
+ * from the terminal's detected color support, exactly as [TuiApp] used to do internally.
+ */
+private fun withScreen(themeName: String?, block: (Terminal, ScreenRenderer) -> Unit) {
+    val terminal = Terminal()
+    val theme = resolveThemeOrExit(themeName) ?: resolveTheme(defaultThemeName(terminal.terminalInfo.ansiLevel))
+    val renderer = ScreenRenderer(terminal, theme)
+    renderer.clear()
+    try {
+        block(terminal, renderer)
+    } finally {
+        renderer.cleanup()
+    }
+}
+
+/**
  * Entry point for the TUI application.
  * Processes command-line arguments and launches the [TuiApp].
  */
@@ -108,7 +137,7 @@ public fun main(args: Array<String>) {
             // TuiApp reads currentPhase to build its initial AppState, so composition must
             // absorb the kickstart race here — see awaitKickstart's KDoc.
             awaitKickstart(server, seats)
-            server.use { TuiApp(seats, resolveThemeOrExit(launch.themeName)).run() }
+            server.use { withScreen(launch.themeName) { terminal, renderer -> TuiApp(seats, terminal, renderer).run() } }
         }
 
         is Mode.Host -> {
@@ -122,10 +151,9 @@ public fun main(args: Array<String>) {
             println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
             acceptor.use {
                 server.use {
-                    TuiApp(
-                        seats = mapOf(localSession.playerId to localSession),
-                        theme = resolveThemeOrExit(launch.themeName),
-                    ).run()
+                    withScreen(launch.themeName) { terminal, renderer ->
+                        TuiApp(seats = mapOf(localSession.playerId to localSession), terminal, renderer).run()
+                    }
                 }
             }
         }
@@ -145,7 +173,9 @@ public fun main(args: Array<String>) {
                 kotlin.system.exitProcess(1)
             }
             remote.use { remote ->
-                TuiApp(seats = mapOf(remote.playerId to remote), theme = resolveThemeOrExit(launch.themeName)).run()
+                withScreen(launch.themeName) { terminal, renderer ->
+                    TuiApp(seats = mapOf(remote.playerId to remote), terminal, renderer).run()
+                }
             }
         }
 
@@ -154,6 +184,33 @@ public fun main(args: Array<String>) {
         is Mode.Server -> {
             val content = resolveContentOrExit(launch)
             runHeadlessServer(mode.port, resolveGameOrExit(content, mode.setup), content.contribution())
+        }
+
+        // Bare invocation (D1). Landing 1: hot-seat only — the lobby (host/join) wiring lands in
+        // a later commit, replacing NoLobby with an adapter over battletech.network without any
+        // other change to this branch (D12). Nothing is printed on this path (D3): a stray
+        // println would corrupt the setup screen's first frame.
+        Mode.Interactive -> {
+            val content = resolveContentOrExit(launch)
+            val registry = AssetRegistry.EMPTY.merge(content.contribution()).registry
+            withScreen(launch.themeName) { terminal, renderer ->
+                val initial = SetupState(catalog = registry.summarize(), registry = registry)
+                when (val outcome = SetupApp(terminal, renderer, Keybindings.DEFAULT, NoLobby, initial).run()) {
+                    SetupOutcome.Quit -> Unit
+                    SetupOutcome.MatchStarted -> Unit // unreachable for NoLobby
+                    is SetupOutcome.Commit -> {
+                        val state = AutoDeploy.deploy(outcome.plan, outcome.registry)
+                        val server = GameServer.host(state, content.contribution())
+                        val seats =
+                            List(PlayerId.entries.size) { server.connectLocal(content.contribution()) }.associateBy { it.playerId }
+                        check(seats.keys == PlayerId.entries.toSet()) {
+                            "interactive roster incomplete: expected ${PlayerId.entries.toSet()}, got ${seats.keys}"
+                        }
+                        awaitKickstart(server, seats)
+                        server.use { TuiApp(seats, terminal, renderer).run() }
+                    }
+                }
+            }
         }
     }
 }

@@ -57,6 +57,9 @@ internal sealed interface Mode {
     data class Host(val port: Int = DEFAULT_PORT, val setup: Setup = Setup()) : Mode
     data class Join(val host: String, val port: Int = DEFAULT_PORT, val sessionId: String) : Mode
     data class Server(val port: Int = DEFAULT_PORT, val setup: Setup = Setup()) : Mode
+
+    /** Bare invocation, no subcommand: opens the interactive setup screen (D1). */
+    data object Interactive : Mode
 }
 
 /** What one `parseArgs` call resolved: every root-level registration plus the dispatched [Mode]. */
@@ -272,6 +275,7 @@ private fun CliktCommand.exitIfAnyListingRequested(sections: List<String>) {
 private class BattletechTui(
     cliTerminal: Terminal,
     cliExit: (Int) -> Unit,
+    private val emit: (Mode) -> Unit,
 ) : CliktCommand(name = "battletech-tui") {
     init {
         context {
@@ -283,11 +287,9 @@ private class BattletechTui(
     /**
      * Clikt's own built-in "no subcommand given" handling (thrown from `finalizeCommand` when
      * this is left `false`) exits status 0 — it treats bare `battletech-tui` as equivalent to
-     * `--help`, not as a usage error. That reads as success to a shell caller, which contradicts
-     * "there is no default command, so one always has to be specified." Overriding it to `true`
-     * disables that automatic throw and routes control to [run] instead, even with no
-     * subcommand, so [run] can throw its own [PrintMessage] with the [statusCode] this CLI
-     * actually wants (1, matching every other usage error here — e.g. an unknown flag).
+     * `--help`, not as a usage error. Overriding it to `true` disables that automatic throw and
+     * routes control to [run] instead, even with no subcommand, so [run] can [emit]
+     * [Mode.Interactive] (D1) rather than being forced to a `--help`-shaped exit.
      */
     override val invokeWithoutSubcommand: Boolean = true
 
@@ -327,9 +329,11 @@ private class BattletechTui(
     )
 
     override fun help(context: Context): String =
-        "BattleTech TUI. No default command — name one: hot-seat, host, join, or server."
+        "BattleTech TUI. No command: opens the interactive setup screen. Or name one: hot-seat, host, join, server."
 
     override fun helpEpilog(context: Context): String =
+            "Running with no command opens the interactive setup screen, which defines a match and starts it." +
+            "\u0085" +
             "Root options (this line's options) must come BEFORE the command name, e.g. " +
             "'${context.commandNameWithParents().joinToString(" ")} --add-map arena.json hot-seat --map arena'." +
             // Mordant collapses ordinary newlines in wrapped text; NEL is its hard line-break marker.
@@ -341,11 +345,13 @@ private class BattletechTui(
      * given, [currentContext.invokedSubcommand][com.github.ajalt.clikt.core.Context.invokedSubcommand]
      * is already populated by the time this runs — parsing builds the whole invocation tree
      * before any finalization/run happens — so this is a no-op and that subcommand's own [run]
-     * does the actual work.
+     * does the actual work. Otherwise (D1), bare invocation opens the interactive setup screen —
+     * every root option (`--add-map`/`--add-mech`/`--add-unit`/`--theme`) and the eager
+     * `--list-*` flags still apply exactly as they do for every other mode.
      */
     override fun run() {
         if (currentContext.invokedSubcommand == null) {
-            throw PrintMessage(getFormattedHelp().orEmpty(), statusCode = 1, printError = true)
+            emit(Mode.Interactive)
         }
     }
 }
@@ -465,7 +471,7 @@ internal fun parseArgs(
 ): Launch {
     var resolvedMode: Mode? = null
     val emit: (Mode) -> Unit = { resolvedMode = it }
-    val root = BattletechTui(terminal, exit)
+    val root = BattletechTui(terminal, exit, emit)
         .subcommands(HotSeatCommand(emit), HostCommand(emit), JoinCommand(emit), ServerCommand(emit))
     root.main(args.toList())
     return Launch(

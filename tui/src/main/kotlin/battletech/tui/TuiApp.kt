@@ -8,9 +8,6 @@ import battletech.tui.game.mapToTuiPhase
 import battletech.tui.input.Keybindings
 import battletech.tui.loop.UiEvent
 import battletech.tui.loop.runLoop
-import battletech.tui.screen.Theme
-import battletech.tui.screen.defaultThemeName
-import battletech.tui.screen.resolveTheme
 import com.github.ajalt.mordant.input.MouseTracking
 import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
@@ -34,12 +31,16 @@ import tenter.terminal.resizeEvents
  * [battletech.network.client.ClientGameSession] never kickstarts at all. This class never builds
  * a session or calls `advance()` itself.
  *
- * [theme] selects the color theme; `null` auto-selects from the terminal's detected color support
- * (see [ScreenRenderer]'s KDoc and [defaultThemeName]) by loading the matching packaged theme —
- * that load can therefore throw [battletech.tui.screen.ThemeLoadException] if the jar's own
- * `theme/` resources are missing or malformed, before raw mode is ever entered.
+ * [terminal]/[renderer] are accepted, not constructed (D17): `Main.kt` builds one [Terminal] +
+ * [ScreenRenderer] for the whole process and hands the same pair to both the setup screen
+ * ([battletech.tui.setup.SetupApp]) and this class, so raw mode is entered once and left once,
+ * with no flicker at the hand-off between the two screens.
  */
-public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val theme: Theme? = null) {
+public class TuiApp(
+    private val seats: Map<PlayerId, GameSession>,
+    private val terminal: Terminal,
+    private val renderer: ScreenRenderer,
+) {
 
     /**
      * Entry point. Wires a subscription for every seat's session into [internalEvents], merges
@@ -64,9 +65,6 @@ public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val t
      * terminal in raw mode.
      */
     public fun run() {
-        val terminal = Terminal()
-        val resolvedTheme = theme ?: resolveTheme(defaultThemeName(terminal.terminalInfo.ansiLevel))
-        val renderer = ScreenRenderer(terminal, resolvedTheme)
         val keys = Keybindings.DEFAULT
 
         val appState = AppState(
@@ -75,32 +73,27 @@ public class TuiApp(private val seats: Map<PlayerId, GameSession>, private val t
             cursor = HexCoordinates(0, 0),
         )
 
-        renderer.clear()
-        try {
-            runBlocking {
-                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-                val subscriptions = seats.values.map { session ->
-                    session.subscribe { internalEvents.trySend(UiEvent.Session(it)) }
-                }
-                try {
-                    runLoop(
-                        events = merge(
-                            terminal.inputEvents(MouseTracking.Normal, isQuit = keys::isQuit).map { it.toUiEvent() },
-                            terminal.resizeEvents().map { it.toUiEvent() },
-                            internalEvents.receiveAsFlow(),
-                        ),
-                        internalEvents = internalEvents,
-                        terminal = terminal,
-                        renderer = renderer,
-                        initialState = appState,
-                        keys = keys,
-                    )
-                } finally {
-                    subscriptions.forEach { it.unsubscribe() }
-                }
+        runBlocking {
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            val subscriptions = seats.values.map { session ->
+                session.subscribe { internalEvents.trySend(UiEvent.Session(it)) }
             }
-        } finally {
-            renderer.cleanup()
+            try {
+                runLoop(
+                    events = merge(
+                        terminal.inputEvents(MouseTracking.Normal, isQuit = keys::isQuit).map { it.toUiEvent() },
+                        terminal.resizeEvents().map { it.toUiEvent() },
+                        internalEvents.receiveAsFlow(),
+                    ),
+                    internalEvents = internalEvents,
+                    terminal = terminal,
+                    renderer = renderer,
+                    initialState = appState,
+                    keys = keys,
+                )
+            } finally {
+                subscriptions.forEach { it.unsubscribe() }
+            }
         }
     }
 }
