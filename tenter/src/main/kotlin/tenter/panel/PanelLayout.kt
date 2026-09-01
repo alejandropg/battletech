@@ -48,20 +48,10 @@ public class PanelLayout<K : PanelId, I> private constructor(
             main: Panel<K, I>,
             sides: List<Panel<K, I>>,
         ): PanelLayout<K, I> {
-            val contentX = 0
             val contentHeight = height - reservedTop
 
             val maximizedSide = sides.firstOrNull { it.state == PanelState.MAXIMIZED }
-            if (maximizedSide != null) {
-                return PanelLayout(
-                    contentX = contentX,
-                    contentY = reservedTop,
-                    contentWidth = width,
-                    contentHeight = contentHeight,
-                    main = null,
-                    sides = listOf(Slot(maximizedSide, contentX, reservedTop, width, contentHeight)),
-                )
-            }
+            if (maximizedSide != null) return maximizedLayout(width, reservedTop, contentHeight, maximizedSide)
 
             val totalSideWidth = sides.sumOf { it.width }
             val mainWidth = width - totalSideWidth
@@ -76,7 +66,7 @@ public class PanelLayout<K : PanelId, I> private constructor(
             }
 
             return PanelLayout(
-                contentX = contentX,
+                contentX = 0,
                 contentY = reservedTop,
                 contentWidth = width,
                 contentHeight = contentHeight,
@@ -84,5 +74,58 @@ public class PanelLayout<K : PanelId, I> private constructor(
                 sides = slots,
             )
         }
+
+        /**
+         * Lays [panels] out as equal-width columns across [width], left to right, reserving
+         * [reservedTop] rows. Leftover columns from the integer division go to the leftmost
+         * panels, one each, so the row is exactly [width] wide. A MAXIMIZED panel still wins the
+         * whole content region, exactly as in [compute]. `main` is null for a uniform layout —
+         * there is no derived-width panel. A panel's declared [Panel.width] is ignored here.
+         */
+        public fun <K : PanelId, I> computeUniform(
+            width: Int,
+            height: Int,
+            reservedTop: Int,
+            panels: List<Panel<K, I>>,
+        ): PanelLayout<K, I> {
+            val contentHeight = height - reservedTop
+
+            val maximizedPanel = panels.firstOrNull { it.state == PanelState.MAXIMIZED }
+            if (maximizedPanel != null) return maximizedLayout(width, reservedTop, contentHeight, maximizedPanel)
+
+            val columnWidth = width / panels.size
+            val remainder = width % panels.size
+            val slots = buildList {
+                var nextX = 0
+                for ((index, panel) in panels.withIndex()) {
+                    val slotWidth = columnWidth + if (index < remainder) 1 else 0
+                    add(Slot(panel, nextX, reservedTop, slotWidth, contentHeight))
+                    nextX += slotWidth
+                }
+            }
+
+            return PanelLayout(
+                contentX = 0,
+                contentY = reservedTop,
+                contentWidth = width,
+                contentHeight = contentHeight,
+                main = null,
+                sides = slots,
+            )
+        }
+
+        private fun <K : PanelId, I> maximizedLayout(
+            width: Int,
+            reservedTop: Int,
+            contentHeight: Int,
+            panel: Panel<K, I>,
+        ): PanelLayout<K, I> = PanelLayout(
+            contentX = 0,
+            contentY = reservedTop,
+            contentWidth = width,
+            contentHeight = contentHeight,
+            main = null,
+            sides = listOf(Slot(panel, 0, reservedTop, width, contentHeight)),
+        )
     }
 }

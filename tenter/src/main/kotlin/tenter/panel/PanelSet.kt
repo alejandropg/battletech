@@ -8,21 +8,28 @@ import tenter.view.ScrollOffset
  * Every panel on one screen, plus the two invariants no single panel can hold: exactly one is
  * focused, and at most one is MAXIMIZED. [main] is the panel whose width is derived rather than
  * declared (e.g. a central content view the side panels leave room around) — it is always
- * visible, always focusable, and never maximized.
+ * visible, always focusable, and never maximized. `null` when this set was built with the
+ * uniform constructor: every panel is then a [sides] entry laid out in equal-width columns
+ * (see [PanelLayout.computeUniform]), and there is no derived-width panel.
  */
 public class PanelSet<K : PanelId, I>(
     /** The main panel — read it for identity and declarations; every state change goes through this set. */
-    public val main: Panel<K, I>,
+    public val main: Panel<K, I>?,
     /** The side panels in layout order — as with [main], read-only from outside; mutate via this set. */
     public val sides: List<Panel<K, I>>,
 ) {
+    /** Uniform layout: every [panels] entry is a side panel laid out in equal-width columns. */
+    public constructor(panels: List<Panel<K, I>>) : this(main = null, sides = panels) {
+        require(panels.isNotEmpty()) { "A uniform PanelSet needs at least one panel" }
+    }
+
     private var pendingRecenter: K? = null
     private var lastLayout: PanelLayout<K, I>? = null
 
-    public var focused: K = main.id
+    public var focused: K = main?.id ?: sides.first().id
         private set
 
-    private fun panelFor(id: K): Panel<K, I>? = if (id == main.id) main else sides.firstOrNull { it.id == id }
+    private fun panelFor(id: K): Panel<K, I>? = if (id == main?.id) main else sides.firstOrNull { it.id == id }
 
     /** Focus [id] if it names a panel in this set, demoting whatever was maximized. Unknown id: no-op. */
     public fun focus(id: K) {
@@ -81,12 +88,17 @@ public class PanelSet<K : PanelId, I>(
         reservedTop: Int,
         forgetReveal: Boolean = false,
     ): PanelLayout<K, I> {
-        if (focused != main.id && sides.none { it.id == focused && it.id in visible }) {
-            focus(main.id)
+        val visibleSides = sides.filter { it.id in visible }
+        val focusedIsVisible = focused == main?.id || visibleSides.any { it.id == focused }
+        if (!focusedIsVisible) {
+            (main?.id ?: visibleSides.firstOrNull()?.id)?.let { focus(it) }
         }
 
-        val visibleSides = sides.filter { it.id in visible }
-        val layout = PanelLayout.compute(canvas.width, canvas.height, reservedTop, main, visibleSides)
+        val layout = if (main != null) {
+            PanelLayout.compute(canvas.width, canvas.height, reservedTop, main, visibleSides)
+        } else {
+            PanelLayout.computeUniform(canvas.width, canvas.height, reservedTop, visibleSides)
+        }
         lastLayout = layout
 
         layout.main?.let { slot ->

@@ -140,4 +140,33 @@ internal class PanelSetTest {
         assertEquals(ScrollOffset(y = 3), a.offset)
         assertEquals(ScrollOffset.ZERO, b.offset)
     }
+
+    @Test
+    fun `uniform constructor has no main and focuses the first panel`() {
+        val set = PanelSet(listOf(sidePanel(SetPanelId.MAIN), sidePanel(SetPanelId.A)))
+
+        assertNull(set.main)
+        assertEquals(SetPanelId.MAIN, set.focused)
+    }
+
+    @Test
+    fun `uniform set with one visible panel gives it the full width`() {
+        val set = PanelSet(listOf(sidePanel(SetPanelId.MAIN), sidePanel(SetPanelId.A)))
+
+        val layout = set.render(Canvas.of(ScreenBuffer(80, 24)), Unit, visible = setOf(SetPanelId.MAIN), reservedTop = 0)
+
+        assertNull(layout.main)
+        assertEquals(1, layout.sides.size)
+        assertEquals(80, layout.sides.single().width)
+    }
+
+    @Test
+    fun `uniform set falls back focus to the first visible panel when the focused one is hidden`() {
+        val set = PanelSet(listOf(sidePanel(SetPanelId.MAIN), sidePanel(SetPanelId.A)))
+        set.focus(SetPanelId.A)
+
+        set.render(Canvas.of(ScreenBuffer(80, 24)), Unit, visible = setOf(SetPanelId.MAIN), reservedTop = 0)
+
+        assertEquals(SetPanelId.MAIN, set.focused)
+    }
 }
