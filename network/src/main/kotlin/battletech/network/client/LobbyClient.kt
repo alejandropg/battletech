@@ -39,8 +39,16 @@ public class LobbyClient private constructor(
     private val immediateBootstrap: MatchBootstrap?,
 ) : AutoCloseable {
 
+    /**
+     * Guards the listener lists AND the lobby state they replay from ([lastSelections],
+     * [committedSeen]). Both are written by [readerThread] and read by whichever thread registers
+     * a listener, so neither may be a bare field.
+     */
+    private val listenerLock: Any = Any()
     private val selectionsListeners: MutableList<(MatchPlan) -> Unit> = mutableListOf()
     private val committedListeners: MutableList<() -> Unit> = mutableListOf()
+    private var lastSelections: MatchPlan? = null
+    private var committedSeen: Boolean = false
     private val matchReady: CompletableFuture<MatchBootstrap> = CompletableFuture()
 
     /** True when [connect] found the match already committed — [awaitMatch] returns at once and there is no lobby phase to render. */
@@ -51,12 +59,34 @@ public class LobbyClient private constructor(
     private val readerThread: Thread? =
         if (immediateBootstrap == null) thread(isDaemon = true, name = "lobby-client-reader") { readLoop() } else null
 
+    /**
+     * Registers [listener] and immediately replays the latest plan already received, if any.
+     *
+     * The replay is not a convenience: [readerThread] starts the moment this object exists, while
+     * a caller cannot register until [connect] has returned — and on the interactive path a whole
+     * terminal, theme and renderer are built in between. Without the replay, everything the host
+     * published in that window is dropped.
+     */
     public fun onSelections(listener: (MatchPlan) -> Unit) {
-        selectionsListeners += listener
+        val replay = synchronized(listenerLock) {
+            selectionsListeners += listener
+            lastSelections
+        }
+        replay?.let(listener)
     }
 
+    /**
+     * Registers [listener] and fires it immediately if the host has ALREADY committed — see
+     * [onSelections] for the registration window this closes. Dropping this particular event is
+     * not merely lossy: the mirror screen would never learn the match had started, and would sit
+     * there forever while the host's match waits, frozen, for the seat.
+     */
     public fun onCommitted(listener: () -> Unit) {
-        committedListeners += listener
+        val replay = synchronized(listenerLock) {
+            committedListeners += listener
+            committedSeen
+        }
+        if (replay) listener()
     }
 
     /**
@@ -93,9 +123,19 @@ public class LobbyClient private constructor(
                 return
             }
             when (message) {
-                is ServerMessage.LobbySelections -> selectionsListeners.forEach { it(message.plan) }
+                is ServerMessage.LobbySelections -> {
+                    val listeners = synchronized(listenerLock) {
+                        lastSelections = message.plan
+                        selectionsListeners.toList()
+                    }
+                    listeners.forEach { it(message.plan) }
+                }
                 ServerMessage.LobbyCommitted -> {
-                    committedListeners.forEach { it() }
+                    val listeners = synchronized(listenerLock) {
+                        committedSeen = true
+                        committedListeners.toList()
+                    }
+                    listeners.forEach { it() }
                     try {
                         connection.send(originalJoin)
                         val response = connection.receive()

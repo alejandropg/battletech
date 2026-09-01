@@ -121,6 +121,46 @@ internal class LobbyClientTest {
     }
 
     @Test
+    fun `a listener registered after the fact still sees the lobby state it missed`() {
+        // The reader thread starts the instant connect() returns, but a caller cannot register
+        // until after that — and on the interactive path a whole terminal, theme and renderer are
+        // built in between. Anything that lands in that window must be replayed on registration:
+        // a dropped LobbyCommitted would leave the mirror screen waiting forever for a match that
+        // had already started.
+        val lobby = LobbyHost()
+        val socketAcceptor = SocketAcceptor(lobby, port = 0)
+        acceptor = socketAcceptor
+        socketAcceptor.start()
+
+        val client = LobbyClient.connect("127.0.0.1", socketAcceptor.boundPort, lobby.sessionId)
+        lobbyClient = client
+        awaitTrue { lobby.opponentConnected }
+
+        // A first listener only to prove the reader has ALREADY consumed both messages, so the
+        // assertions below are about replay rather than about winning a race.
+        val plan = MatchPlan(mapName = "arena")
+        val seenEarly = ArrayBlockingQueue<MatchPlan>(1)
+        val committedEarly = CountDownLatch(1)
+        client.onSelections { seenEarly.offer(it) }
+        client.onCommitted { committedEarly.countDown() }
+        lobby.publish(plan)
+        assertThat(seenEarly.poll(2, TimeUnit.SECONDS)).isEqualTo(plan)
+        lateinit var local: ClientGameSession
+        lobby.commit(ContentCatalog.load().resolveGame()) { local = it.connectLocal() }
+        localSeat = local
+        assertThat(committedEarly.await(2, TimeUnit.SECONDS)).isTrue()
+
+        // Registering now: both must fire immediately, from the replayed state.
+        val lateSelections = mutableListOf<MatchPlan>()
+        var lateCommitted = false
+        client.onSelections { lateSelections += it }
+        client.onCommitted { lateCommitted = true }
+
+        assertThat(lateSelections).containsExactly(plan)
+        assertThat(lateCommitted).isTrue()
+    }
+
+    @Test
     fun `joining an already-committed match returns immediately, with no lobby phase`() {
         val server = GameServer.host(ContentCatalog.load().resolveGame())
         val socketAcceptor = SocketAcceptor(server, port = 0)
