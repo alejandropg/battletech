@@ -59,10 +59,16 @@ public class LobbyHost(
      * tells the parked peer (if any) to re-join. The caller must [GameServer.connectLocal] its own
      * local seat(s) immediately afterward — see this class's KDoc on ordering, mirroring
      * [GameServer.connectLocal]'s own "local seat before the acceptor could let a socket client
-     * attach" rule: here, the parked peer only re-attaches after it reads [ServerMessage.LobbyCommitted],
-     * but that happens as soon as this method sends it, so the caller must not delay.
+     * attach" rule — but unlike that rule, "immediately afterward, same thread" is NOT enough to
+     * guarantee it here on its own: the parked peer's reader thread is already alive and blocked
+     * in a socket read, ready to react to [ServerMessage.LobbyCommitted] the instant it arrives,
+     * while [GameServer.connectLocal] must first spin up a fresh thread — measurably slower, and
+     * not reliably faster than a live socket peer reacting to bytes that already arrived. So
+     * [onServerReady] runs BEFORE [ServerMessage.LobbyCommitted] is sent at all: a caller that
+     * calls [GameServer.connectLocal] from inside it is racing nothing, deterministically, rather
+     * than merely favored to win a race it might still lose under load.
      */
-    public fun commit(initial: GameState): GameServer {
+    public fun commit(initial: GameState, onServerReady: (GameServer) -> Unit = {}): GameServer {
         val (server, peer) = synchronized(lock) {
             check(gameServer == null) { "LobbyHost.commit called more than once" }
             val bundle = AssetBundle(maps = mergedRegistry.maps.values.toList(), mechs = mergedRegistry.mechs.values.toList())
@@ -70,6 +76,7 @@ public class LobbyHost(
             gameServer = built
             built to parked
         }
+        onServerReady(server)
         peer?.send(ServerMessage.LobbyCommitted)
         return server
     }

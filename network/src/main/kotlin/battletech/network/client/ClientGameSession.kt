@@ -1,7 +1,6 @@
 package battletech.network.client
 
 import battletech.network.transport.ClientConnection
-import battletech.network.transport.JsonLineConnection
 import battletech.network.wire.ClientMessage
 import battletech.network.wire.GameSnapshot
 import battletech.network.wire.JoinRejectionReason
@@ -27,11 +26,7 @@ import battletech.tactical.session.LogEntry
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
 import kotlinx.serialization.SerializationException
-import java.io.BufferedReader
 import java.io.IOException
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
-import java.net.Socket
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
@@ -45,7 +40,7 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
  * [battletech.tactical.session.BattleSession], seated at whichever [playerId]
  * the server assigned at join time, kept fresh by a background reader
  * thread that applies [ServerMessage.StatePush]es as they arrive. The transport
- * underneath may be a real socket ([JsonLineConnection]) or an in-process
+ * underneath may be a real socket ([battletech.network.transport.JsonLineConnection]) or an in-process
  * [battletech.network.transport.InMemoryConnection] half (see
  * [battletech.network.server.GameServer.connectLocal]); this class neither knows nor cares
  * which.
@@ -261,12 +256,10 @@ public class ClientGameSession internal constructor(
 
         /**
          * Opens a socket to [host]:[port], sends [ClientMessage.Join] for [sessionId]
-         * contributing [content], and blocks for the host's handshake response.
-         *
-         * [content] defaults to empty; a launcher with registered content passes its catalog's
-         * contribution (`battletech.tactical.model.content.ContentCatalog.contribution`) so the
-         * host's shared registry sees this seat's `--add-map`/`--add-mech` registrations too, not
-         * just packaged content.
+         * contributing [content], and blocks for the match to become available — immediately if
+         * already committed, or after the full lobby exchange ([LobbyClient]) otherwise. A caller
+         * that cares about the lobby phase (the setup screen's joiner mirror) uses [LobbyClient]
+         * directly instead of this shortcut.
          *
          * @throws JoinRejectedException if the host refuses the join.
          */
@@ -275,13 +268,7 @@ public class ClientGameSession internal constructor(
             port: Int,
             sessionId: String,
             content: AssetBundle = AssetBundle.EMPTY,
-        ): ClientGameSession {
-            val socket = Socket(host, port)
-            val input = BufferedReader(InputStreamReader(socket.getInputStream()))
-            val output = OutputStreamWriter(socket.getOutputStream())
-            val connection = JsonLineConnection.Client(input, output)
-            return handshake(connection, sessionId, content)
-        }
+        ): ClientGameSession = LobbyClient.connect(host, port, sessionId, content).awaitMatch()
 
         /**
          * Sends [ClientMessage.Join] on [connection] and blocks for the host's handshake
