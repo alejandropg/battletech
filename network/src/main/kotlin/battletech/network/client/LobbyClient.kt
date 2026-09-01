@@ -43,6 +43,9 @@ public class LobbyClient private constructor(
     private val committedListeners: MutableList<() -> Unit> = mutableListOf()
     private val matchReady: CompletableFuture<MatchBootstrap> = CompletableFuture()
 
+    /** True when [connect] found the match already committed — [awaitMatch] returns at once and there is no lobby phase to render. */
+    public val isCommitted: Boolean get() = immediateBootstrap != null
+
     // Only started when parked (immediateBootstrap == null) — an already-committed join has
     // nothing left for this class to read before ClientGameSession starts its own reader.
     private val readerThread: Thread? =

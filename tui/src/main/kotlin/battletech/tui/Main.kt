@@ -2,7 +2,9 @@ package battletech.tui
 
 import battletech.network.client.JoinRejectedException
 import battletech.network.client.ClientGameSession
+import battletech.network.client.LobbyClient
 import battletech.network.server.GameServer
+import battletech.network.server.LobbyHost
 import battletech.network.server.SocketAcceptor
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
@@ -21,8 +23,8 @@ import battletech.tui.screen.Theme
 import battletech.tui.screen.ThemeLoadException
 import battletech.tui.screen.defaultThemeName
 import battletech.tui.screen.resolveTheme
-import battletech.tui.setup.NoLobby
 import battletech.tui.setup.SetupApp
+import battletech.tui.setup.SetupMode
 import battletech.tui.setup.SetupOutcome
 import battletech.tui.setup.SetupState
 import battletech.tui.view.GameLogFormatter
@@ -124,7 +126,9 @@ public fun main(args: Array<String>) {
     when (val mode = launch.mode) {
         is Mode.HotSeat -> {
             val content = resolveContentOrExit(launch)
-            val server = GameServer.host(resolveGameOrExit(content, mode.setup), content.contribution())
+            // Every match commits through LobbyHost now, hot-seat included (D12) — with nothing
+            // ever parked here, this is exactly GameServer.host's own behavior.
+            val server = LobbyHost(ownContent = content.contribution()).commit(resolveGameOrExit(content, mode.setup))
             // Build the map from each returned session's OWN playerId — connectLocal() assigns
             // seats via (allSeats - clients.keys).min(), not call order, so the Nth call is not
             // guaranteed to be the Nth PlayerId. See GameServer.connectLocal's KDoc.
@@ -142,10 +146,13 @@ public fun main(args: Array<String>) {
 
         is Mode.Host -> {
             val content = resolveContentOrExit(launch)
-            val server = GameServer.host(resolveGameOrExit(content, mode.setup), content.contribution())
-            // connectLocal() BEFORE the acceptor starts — see GameServer.connectLocal's KDoc
-            // for why that order is what makes the local seat deterministically PLAYER_1.
-            val localSession = server.connectLocal(content.contribution())
+            // Commits immediately (today's --map/--unit are already given, D2) — a joiner that
+            // connects after this always hits the committed JoinAccepted fast path, never the
+            // lobby's park phase (D13). connectLocal() runs inside onServerReady, before the
+            // acceptor exists at all, so it's deterministically PLAYER_1 regardless.
+            lateinit var localSession: ClientGameSession
+            val server = LobbyHost(ownContent = content.contribution())
+                .commit(resolveGameOrExit(content, mode.setup)) { localSession = it.connectLocal(content.contribution()) }
             val acceptor = SocketAcceptor(server, mode.port)
             acceptor.start()
             println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
@@ -163,8 +170,8 @@ public fun main(args: Array<String>) {
             // shared asset registry, even though join never SELECTS a map or unit collection of
             // its own — see ContentCatalog.contribution's KDoc.
             val content = resolveContentOrExit(launch)
-            val remote = try {
-                ClientGameSession.connect(mode.host, mode.port, mode.sessionId, content.contribution())
+            val lobbyClient = try {
+                LobbyClient.connect(mode.host, mode.port, mode.sessionId, content.contribution())
             } catch (e: JoinRejectedException) {
                 System.err.println("Join rejected: ${e.reason}")
                 kotlin.system.exitProcess(1)
@@ -172,9 +179,29 @@ public fun main(args: Array<String>) {
                 System.err.println("Could not connect to ${mode.host}:${mode.port}: ${e.message}")
                 kotlin.system.exitProcess(1)
             }
-            remote.use { remote ->
+
+            if (lobbyClient.isCommitted) {
+                lobbyClient.awaitMatch().use { remote ->
+                    withScreen(launch.themeName) { terminal, renderer ->
+                        TuiApp(seats = mapOf(remote.playerId to remote), terminal, renderer).run()
+                    }
+                }
+            } else {
                 withScreen(launch.themeName) { terminal, renderer ->
-                    TuiApp(seats = mapOf(remote.playerId to remote), terminal, renderer).run()
+                    val initial = SetupState(
+                        catalog = lobbyClient.catalog,
+                        registry = AssetRegistry.EMPTY,
+                        mode = SetupMode.HOST,
+                        modeLocked = true,
+                        opponentConnected = true,
+                        readOnly = true,
+                    )
+                    val outcome = SetupApp(terminal, renderer, Keybindings.DEFAULT, LobbyMirrorAdapter(lobbyClient), initial).run()
+                    if (outcome == SetupOutcome.MatchStarted) {
+                        lobbyClient.awaitMatch().use { remote -> TuiApp(mapOf(remote.playerId to remote), terminal, renderer).run() }
+                    } else {
+                        lobbyClient.close()
+                    }
                 }
             }
         }
@@ -186,28 +213,40 @@ public fun main(args: Array<String>) {
             runHeadlessServer(mode.port, resolveGameOrExit(content, mode.setup), content.contribution())
         }
 
-        // Bare invocation (D1). Landing 1: hot-seat only — the lobby (host/join) wiring lands in
-        // a later commit, replacing NoLobby with an adapter over battletech.network without any
-        // other change to this branch (D12). Nothing is printed on this path (D3): a stray
-        // println would corrupt the setup screen's first frame.
+        // Bare invocation (D1). Nothing is printed on this path (D3): a stray println would
+        // corrupt the setup screen's first frame — the host endpoint lives in panel 1 instead.
         Mode.Interactive -> {
             val content = resolveContentOrExit(launch)
             val registry = AssetRegistry.EMPTY.merge(content.contribution()).registry
+            // Always constructed, inert until the user locks HOST mode — beginHosting() is only
+            // ever called then, so hot-seat never opens a socket at all (D12).
+            val hostAdapter = LobbyHostAdapter(content.contribution())
             withScreen(launch.themeName) { terminal, renderer ->
                 val initial = SetupState(catalog = registry.summarize(), registry = registry)
-                when (val outcome = SetupApp(terminal, renderer, Keybindings.DEFAULT, NoLobby, initial).run()) {
+                when (val outcome = SetupApp(terminal, renderer, Keybindings.DEFAULT, hostAdapter, initial).run()) {
                     SetupOutcome.Quit -> Unit
-                    SetupOutcome.MatchStarted -> Unit // unreachable for NoLobby
+                    SetupOutcome.MatchStarted -> Unit // unreachable — hostAdapter never emits it
                     is SetupOutcome.Commit -> {
                         val state = AutoDeploy.deploy(outcome.plan, outcome.registry)
-                        val server = GameServer.host(state, content.contribution())
-                        val seats =
-                            List(PlayerId.entries.size) { server.connectLocal(content.contribution()) }.associateBy { it.playerId }
-                        check(seats.keys == PlayerId.entries.toSet()) {
-                            "interactive roster incomplete: expected ${PlayerId.entries.toSet()}, got ${seats.keys}"
+                        val existingLobby = hostAdapter.lobbyHost
+                        if (existingLobby != null) {
+                            // HOST: one local seat (the parked peer re-attaches on its own,
+                            // exactly like the direct `host` subcommand above).
+                            lateinit var localSession: ClientGameSession
+                            val server = existingLobby.commit(state) { localSession = it.connectLocal(content.contribution()) }
+                            server.use { TuiApp(seats = mapOf(localSession.playerId to localSession), terminal, renderer).run() }
+                        } else {
+                            // HOT_SEAT: beginHosting() was never called — a throwaway LobbyHost
+                            // with nothing parked, exactly like the direct `hot-seat` subcommand.
+                            val server = LobbyHost(ownContent = content.contribution()).commit(state)
+                            val seats =
+                                List(PlayerId.entries.size) { server.connectLocal(content.contribution()) }.associateBy { it.playerId }
+                            check(seats.keys == PlayerId.entries.toSet()) {
+                                "interactive roster incomplete: expected ${PlayerId.entries.toSet()}, got ${seats.keys}"
+                            }
+                            awaitKickstart(server, seats)
+                            server.use { TuiApp(seats, terminal, renderer).run() }
                         }
-                        awaitKickstart(server, seats)
-                        server.use { TuiApp(seats, terminal, renderer).run() }
                     }
                 }
             }
@@ -223,7 +262,8 @@ public fun main(args: Array<String>) {
  * the same way any other seat's is (D-Q24).
  */
 private fun runHeadlessServer(port: Int, initialGameState: GameState, content: AssetBundle = AssetBundle.EMPTY) {
-    val server = GameServer.host(initialGameState, content)
+    // Commits immediately, nothing ever parked (D12/D13) — both players connect after, via join.
+    val server = LobbyHost(ownContent = content).commit(initialGameState)
 
     val printer = GameEventPrinter(System.out)
     // Replay the seeded notices before subscribing so the printer sees the whole log from the
