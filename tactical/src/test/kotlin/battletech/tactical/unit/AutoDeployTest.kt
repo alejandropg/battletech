@@ -126,6 +126,27 @@ internal class AutoDeployTest {
     }
 
     @Test
+    fun `id derivation falls back to the full variant when two variants share a chassis token`() {
+        // WVR-6R and WVR-6M share the whole token "WVR", so no prefix of it can separate them.
+        val wolverine = MechModels["WVR-6R"]
+        val twoWolverines = AssetRegistry.EMPTY.merge(
+            AssetBundle(maps = listOf(map), mechs = listOf(wolverine, wolverine.copy(variant = "WVR-6M"), MechModels["AS7-D"])),
+        ).registry
+        val plan = MatchPlan(mapName = DEFAULT_MAP_NAME)
+            .withCount(PlayerId.PLAYER_1, "WVR-6R", 1)
+            .withCount(PlayerId.PLAYER_1, "WVR-6M", 1)
+            .withCount(PlayerId.PLAYER_2, "AS7-D", 1)
+
+        val state = AutoDeploy.deploy(plan, twoWolverines)
+
+        // The two Wolverines fall back to their full variant; AS7-D's token is unambiguous, so it
+        // keeps the token itself (no shorter prefix can be proven distinct on this path).
+        val ids = state.units.all.map { it.id.value }
+        assertThat(ids).containsExactlyInAnyOrder("WVR-6R1", "WVR-6M1", "AS71")
+        assertThat(ids).doesNotHaveDuplicates()
+    }
+
+    @Test
     fun `id derivation keeps a single-letter prefix when there is no collision`() {
         val plan = MatchPlan(mapName = DEFAULT_MAP_NAME).withCount(PlayerId.PLAYER_1, "AS7-D", 2).withCount(
             PlayerId.PLAYER_2,

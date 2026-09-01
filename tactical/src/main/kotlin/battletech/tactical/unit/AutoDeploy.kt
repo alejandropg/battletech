@@ -92,9 +92,17 @@ public object AutoDeploy {
     }
 
     /**
-     * A short, unique-per-variant id prefix for every entry in [variants]: the shortest common
-     * length, taken from each variant's token (the part before its first `-`), at which every
-     * variant's prefix is distinct from every other's.
+     * A unique-per-variant id prefix for every entry in [variants]: the shortest common length,
+     * taken from each variant's token (the part before its first `-`), at which every variant's
+     * prefix is distinct from every other's.
+     *
+     * Two variants of the SAME chassis (`WVR-6R` and `WVR-6M`) share their whole token, so no
+     * prefix of it can ever separate them — the loop below finds no length that works. Those
+     * variants fall back to the full variant string, which is unique by construction because
+     * [variants] is distinct; a variant whose token is unambiguous keeps its short prefix. Without
+     * that fallback both `WVR-*` units are called `WVR1`, and since [UnitRoster] indexes by id
+     * with a last-one-wins map, one of them becomes unreachable through
+     * [UnitRoster.byId] — silent state corruption rather than a loud failure.
      */
     private fun idPrefixes(variants: List<String>): Map<String, String> {
         val tokens = variants.associateWith { it.substringBefore('-') }
@@ -103,6 +111,12 @@ public object AutoDeploy {
             val candidates = tokens.mapValues { (_, token) -> token.take(length) }
             if (candidates.values.toSet().size == candidates.size) return candidates
         }
-        return tokens
+
+        val ambiguousTokens = tokens.values.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+        val prefixes = tokens.mapValues { (variant, token) -> if (token in ambiguousTokens) variant else token }
+        check(prefixes.values.toSet().size == prefixes.size) {
+            "Deployment id prefixes are not unique across $variants: ${prefixes.values}"
+        }
+        return prefixes
     }
 }
