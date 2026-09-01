@@ -31,6 +31,75 @@ Mordant's `enterRawMode()` cannot work. Build and run the jar directly:
 ./gradlew :tui:shadowJar && java -jar tui/build/libs/tui.jar
 ```
 
+## The interactive setup screen
+
+Bare invocation (`java -jar tui/build/libs/tui.jar`, no subcommand) opens the setup screen — it
+has no `--map`/`--unit` fixture path the way the game screen does, so the tmux recipe below is
+the way to hand-check it.
+
+```bash
+tmux new-session -d -s setup -x 220 -y 50
+tmux send-keys -t setup 'java -jar tui/build/libs/tui.jar' Enter && sleep 2
+tmux capture-pane -t setup -pe   # stage 1: only the MODE panel, hot-seat checked by default
+tmux send-keys -t setup 'c' ''   # lock hot-seat in
+tmux capture-pane -t setup -pe   # stage 2: MAP / PLAYER 1 / PLAYER 2 appear, focus on MAP
+tmux send-keys -t setup ' ' ''   # space selects the map under the cursor
+tmux send-keys -t setup '3' ''   # focus PLAYER 1
+tmux send-keys -t setup ' ' ''   # count 0 -> 1 for the mech under the cursor
+tmux send-keys -t setup '4' ''   # focus PLAYER 2
+tmux send-keys -t setup ' ' ''
+tmux send-keys -t setup 'c' ''   # commit — the game screen should replace the setup screen
+tmux capture-pane -t setup -pe
+tmux kill-session -t setup
+```
+
+Checklist:
+
+- Stage 1 shows only panel `[1] MODE`; the banner (or, in a narrower terminal, the plain
+  `BATTLETECH` fallback line) and the prompt/help row render above it.
+- `c` while unlocked reveals `[2] MAP`, `[3] PLAYER 1`, `[4] PLAYER 2` in one frame and moves
+  focus to MAP — nothing else about panel 1 changes (it stays visible, inert to further editing).
+- `?` opens HELP maximized over the content area, listing the SETUP section's own chords (`1`-`4`,
+  `w/s`/arrows, `a/d`/arrows, space, Enter, `c`) above the shared GLOBAL section.
+- `c` before a map and both rosters are non-empty flashes a reason on the prompt row instead of
+  committing (try it right after locking the mode, before touching MAP/PLAYER panels).
+- A successful commit swaps the setup screen for the game screen in the same frame, no flicker —
+  this is `Main.kt`'s `withScreen` sharing one `Terminal`/`ScreenRenderer` across `SetupApp` and
+  `TuiApp` (see `docs/architecture.md`).
+
+**Host/join over two tmux sessions** (localhost, no real network needed) exercises the lobby:
+
+```bash
+tmux new-session -d -s host -x 220 -y 50
+tmux send-keys -t host 'java -jar tui/build/libs/tui.jar' Enter && sleep 2
+tmux send-keys -t host 's' ''    # panel [1] MODE starts on hot-seat -- move the checkbox to host
+tmux send-keys -t host 'c' ''    # lock it in
+tmux capture-pane -t host -pe    # panel 1 now shows Session/Port/join-command/Player 2: waiting…
+```
+
+Once locked, panel 1 shows `Session: <id>`,
+`Port: <n>`, one `join <addr>:<port> --session <id>` line per address, and `Player 2: waiting…`
+— copy that exact `join` line into a second tmux session:
+
+```bash
+tmux new-session -d -s joiner -x 220 -y 50
+tmux send-keys -t joiner 'java -jar tui/build/libs/tui.jar join <addr>:<port> --session <id>' Enter && sleep 2
+tmux capture-pane -t joiner -pe   # the joiner's mirror: same four panels, read-only
+```
+
+Checklist for the pair:
+
+- The host's panels 2-4 stay hidden until the joiner connects — `Player 2: waiting…` flips to
+  `Player 2: connected` at the same moment MAP/PLAYER 1/PLAYER 2 first appear on the HOST side.
+- The joiner sees the identical panel set the instant it connects (no separate "waiting" screen
+  of its own) — read-only: `space`/`a`/`d`/`c` do nothing there, but `1`-`4`/arrows still move its
+  own focus/scroll (a display preference, not an edit).
+- Any selection the host makes (map, a count) appears on the joiner's mirror within about a
+  second (`ServerMessage.LobbySelections`, resent on every host change).
+- Committing on the HOST session (`c`) flips both sessions into the game screen at once.
+
+Kill both sessions when done (`tmux kill-session -t host`, `tmux kill-session -t joiner`).
+
 ## tmux recipe
 
 ```bash

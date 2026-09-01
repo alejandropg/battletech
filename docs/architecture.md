@@ -26,15 +26,16 @@ Two tiers, distinguished by **how they load** — not by topic:
 ## Package layout per module
 
 - **`tactical/`** (`battletech.tactical.*`) — delivery-agnostic: every delivery (TUI, `network`, any future web UI) consumes it through the same public surface. `attack/` (incl. `physical/`, `weapon/`), `dice/`, `heat/`, `io/` (`ResourceOrFileLoader`), `model/` (core state plus `map/`, `unit/` (unit-collection content loading — the on-disk roster format, distinct from the `unit/` top-level package below, which holds the runtime domain types), `mech/`, and `content/` (`ContentCatalog`, the deep module tying map/mech/unit content together) content loading), `movement/`, `query/`, `rules/`, `session/`, and `unit/` (runtime domain types — `CombatUnit`, `UnitId`, `UnitRoster`, `MechModel`). `ContentCatalog.resolveGame` pairs a selected map with a selected unit collection and returns a complete `GameState`; launchers do not separately construct maps and rosters.
-- **`network/`** (`battletech.network.*`): `client/` (`ClientGameSession`), `server/` (`GameServer`, `SocketAcceptor`), `transport/` (`ServerConnection`/`ClientConnection` port + the `JsonLineConnection` and `InMemoryConnection` adapters), `wire/` (`Messages`, `SessionId`, `WireJson`). Reuses `tactical.session`/`tactical.query` types directly as wire DTOs (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) rather than redefining them.
+- **`network/`** (`battletech.network.*`): `client/` (`ClientGameSession`, `LobbyClient` — the joiner's half of the pre-match lobby), `server/` (`GameServer`, `LobbyHost` — the host's half of the lobby, `ConnectionSink` — the seam both share, `SocketAcceptor`), `transport/` (`ServerConnection`/`ClientConnection` port + the `JsonLineConnection` and `InMemoryConnection` adapters), `wire/` (`Messages`, `SessionId`, `WireJson`). Reuses `tactical.session`/`tactical.query` types directly as wire DTOs (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) rather than redefining them; the lobby's own DTOs (`MatchPlan`, `ContentSummary`) live in `tactical.model.content` for the same reason — visible to both `tui` and `network` with no wire-specific redefinition. See "The lobby: one commit path" below.
 - **`tenter/`** (`tenter.*`) — a standalone terminal-UI toolkit over [Mordant](https://github.com/ajalt/mordant); the one module deliberately meant to be lifted out into its own library later. `screen/` (`Canvas`/`ScreenBuffer`/`Cell`/`Insets`, `ColorRole` — the marker interface hosts implement their own roles against, with the toolkit's own `ChromeRole` enum nested in the same file — `PaletteColor` (its `parse(raw, level)` companion owns `#RRGGBB`/xterm-256/ANSI-16 value parsing) and `RolePalette`, the map-backed `MapRolePalette` implementation, the diffing `ScreenRenderer`, the memoizing `StyleTagCache`), `view/` (`View` and its implementations only — layout decorators `Padded`/`Bordered`/`Viewport`/`scrollingPanel`/`ScrollingPanel`, sibling-composition decorators `Columns`/`Stack`, the pure `ScrollGeometry` math, leaf views `HelpView`/`FlashMessage`, and `TextCursor` — the row-cursor over a `Canvas` that `widget/` paints through, including `TextCursor.draw(View)`, the measure-then-place primitive `Stack` itself is built on), `widget/` (reusable fragments painted into a `TextCursor` rather than a raw `Canvas`: `Checkbox`/`CheckState`/`Gauge`/`ValueRow`/`PipTrack` — including `PipTrack.drawAdvancing`, the cursor-advancing sibling of `PipTrack.draw`), `text/` (dependency-free text metrics shared by `screen/` and `view/`: `CellWidth`/`TextWrap`/`TextTruncation`), `panel/` (`PanelId` — now a bare marker interface, no `badge`; `PanelState`, the generic `Panel<K, I>` — takes its own `badge: Char?`, `PanelSet`, `PanelLayout`, `VerticalTitleView`), `input/` (`InputAction`/`KeyBinding`/`HintGroup`/`KeyLayer`/`KeyMap` — the declarative keybinding machinery every delivery's own keymap is built from; a binding's chord is a plain Mordant `KeyboardEvent`, matched against the event exactly as the terminal reported it — `tenter` folds nothing, because whether two spellings are the same keystroke is an application decision, not one the toolkit makes on a caller's behalf — since `tenter` adds vocabulary on top of Mordant rather than wrapping it — see "`tenter` does not hide Mordant" below; `MouseInput` — the mouse-wheel workaround only, its keyboard mappings absorbed into `KeyMap`; plus `KeyGlyph`/`KeyHint`/`KeySection`/`PanAction`/`ScrollAction`), `terminal/` (`TerminalEvent` + the raw-mode/resize `Flow` producers, `terminalEvents` taking its quit predicate as a parameter rather than importing one). No `battletech.*` imports anywhere in this module — see the invariant in `CLAUDE.md` and `tenter/src/test/kotlin/tenter/ArchitectureTest.kt`. Dependencies run one way — `text`/`input` are leaves; `screen` → `text`; `terminal` → `input`; `view` → `input`/`screen`/`text`; `widget`/`panel` → `view` (+ `screen`) — never the reverse. `tenter/src/test/kotlin/tenter/LayeringTest.kt` (Konsist) enforces the full matrix, not just the general shape.
-- **`tui/`** (`battletech.tui.*`) — the BattleTech terminal UI, built on `tenter`. Uses [Clikt](https://github.com/ajalt/clikt) for the CLI (`host`/`join`/`server` subcommands, bare invocation = hot-seat). Entry point `battletech.tui.MainKt`. `game/` (incl. `phase/` — app state, phase-specific UI logic like `AttackPhase`/`MovementPhase`/`WeaponAllocation`; each `Phase` declares a `keyContext: ContextId`, its address into `Keybindings`' `KeyMap`; `GamePanelId` — this app's `tenter.panel.PanelId`, now a bare marker enum with no badge of its own), `hex/` (hex-grid rendering/geometry — a `BoardRole`-flavored consumer of `tenter.screen`), `icon/` (`FontIcons.kt` — the app-wide NerdFont/Unicode glyph vocabulary: log-line markers, pip/ammo/infinity glyphs, dice faces, plus the hex-facing/terrain/movement icons `hex/` itself consumes; not `battletech.tui.hex` because most of its callers are outside the board — log formatting, the record sheet, weapon/pilot tracks), `input/` (`ContextId` — the nine key-layer addresses; `Keybindings` — the domain facade over `tenter.input.KeyMap`, its `DEFAULT` the one declarative table of every binding, plus `badgeFor`/`hints`/`isQuit`; `ChromeAction`/`IdleAction`/`BrowsingAction`/`FacingAction`/`AttackAction` — the per-context `InputAction` families; `BoardClick` — the one mouse-click action, produced by `RunLoop`; `BoardMouse` — the mouse-to-hex mapping), `loop/` (`RunLoop` + `UiEvent`, the headless-testable event/render loop — composes `tenter.terminal`'s flows and `tenter.panel`'s `Panel`/`PanelSet`/`PanelLayout` into the game's own frame; resolves both keyboard and mouse input into `InputAction`s via `Keybindings` before a `Phase` ever sees them), `screen/` (`BoardRole` — the terrain/movement/player color roles — plus `ThemeFile`/`ThemeLoader`/`resolveTheme`, which load the six built-in `RolePalette`s from packaged theme files under `theme/`; `Theme` here is `internal typealias Theme = tenter.screen.MapRolePalette` — the app-specific pieces are the on-disk schema (`ThemeFile`'s `chrome`/`board`/`heatScale` role tables) and the loader, not the palette type or its color-value parsing, both of which live in `tenter` now; see `docs/color-themes.md`), `view/` (the board and every side panel built on `tenter.view`'s decorators and `tenter.panel`'s `Panel<GamePanelId, PanelInputs>`/`PanelSet<GamePanelId, PanelInputs>`, aliased `GamePanel`/`GamePanelSet`; `Workspace` owns the `GamePanelSet` for one run; `view/record/` — the maximized UNIT STATUS panel's graphical record sheet).
+- **`tui/`** (`battletech.tui.*`) — the BattleTech terminal UI, built on `tenter`. Uses [Clikt](https://github.com/ajalt/clikt) for the CLI (`hot-seat`/`host`/`join`/`server` subcommands, bare invocation opens the interactive setup screen). Entry point `battletech.tui.MainKt`. `Main.kt` and `Composition.kt` are the only two files allowed to import `battletech.network` — see "The lobby: one commit path" below. `game/` (incl. `phase/` — app state, phase-specific UI logic like `AttackPhase`/`MovementPhase`/`WeaponAllocation`; each `Phase` declares a `keyContext: ContextId`, its address into `Keybindings`' `KeyMap`; `GamePanelId` — this app's `tenter.panel.PanelId`, now a bare marker enum with no badge of its own), `hex/` (hex-grid rendering/geometry — a `BoardRole`-flavored consumer of `tenter.screen`), `icon/` (`FontIcons.kt` — the app-wide NerdFont/Unicode glyph vocabulary: log-line markers, pip/ammo/infinity glyphs, dice faces, plus the hex-facing/terrain/movement icons `hex/` itself consumes; not `battletech.tui.hex` because most of its callers are outside the board — log formatting, the record sheet, weapon/pilot tracks), `input/` (`ContextId` — the key-layer addresses, `GAME_CHROME`/`SETUP` among them; `Keybindings` — the domain facade over `tenter.input.KeyMap`, its `DEFAULT` the one declarative table of every binding, plus `badgeFor`/`hints`/`isQuit`; `ChromeAction`/`IdleAction`/`BrowsingAction`/`FacingAction`/`AttackAction` — the per-context `InputAction` families; `BoardClick` — the one mouse-click action, produced by `RunLoop`; `BoardMouse` — the mouse-to-hex mapping), `loop/` (`RunLoop` + `UiEvent`, the headless-testable event/render loop — composes `tenter.terminal`'s flows and `tenter.panel`'s `Panel`/`PanelSet`/`PanelLayout` into the game's own frame; resolves both keyboard and mouse input into `InputAction`s via `Keybindings` before a `Phase` ever sees them), `screen/` (`BoardRole` — the terrain/movement/player color roles — plus `ThemeFile`/`ThemeLoader`/`resolveTheme`, which load the six built-in `RolePalette`s from packaged theme files under `theme/`; `Theme` here is `internal typealias Theme = tenter.screen.MapRolePalette` — the app-specific pieces are the on-disk schema (`ThemeFile`'s `chrome`/`board`/`heatScale` role tables) and the loader, not the palette type or its color-value parsing, both of which live in `tenter` now; see `docs/color-themes.md`), `setup/` (the interactive setup screen — see "The lobby: one commit path" below), `view/` (the board and every side panel built on `tenter.view`'s decorators and `tenter.panel`'s `Panel<GamePanelId, PanelInputs>`/`PanelSet<GamePanelId, PanelInputs>`, aliased `GamePanel`/`GamePanelSet`; `Workspace` owns the `GamePanelSet` for one run; `view/record/` — the maximized UNIT STATUS panel's graphical record sheet).
 - **`strategic/` + `bt/`** — placeholders. `strategic` holds one stub class (`calculateCampaignMovement(d) = d * 2`); `bt` (`battletech.MainKt`) is a hello-world that prints it. Ignore unless explicitly asked.
 
-The TUI CLI has explicit `hot-seat`, `host`, `join`, and `server` subcommands; bare invocation is
-the default hot-seat shortcut. Customized hot-seat options must follow `hot-seat`. `join` receives
-game, map, and mech content from its host, and `server` is headless, so command help exposes only
-the options each mode consumes.
+The TUI CLI has explicit `hot-seat`, `host`, `join`, and `server` subcommands; bare invocation
+opens the interactive setup screen instead of any of them (`Mode.Interactive`), which defines a
+match (mode, map, rosters) and starts it — see "The lobby: one commit path" below. Customized
+hot-seat options must follow `hot-seat`. `join` receives game, map, and mech content from its
+host, and `server` is headless, so command help exposes only the options each mode consumes.
 
 ## Unit, map, mech, and theme loading share one loader
 
@@ -80,8 +81,11 @@ least one real file — the four prohibition tests this replaced passed vacuousl
 filter matched zero files, so a rename could silently disable a rule.
 
 `tui/src/test/kotlin/battletech/tui/ArchitectureTest.kt` enforces the *locality-is-an-adapter*
-invariant (`CLAUDE.md`) mechanically: only `battletech/tui/Main.kt` may import
-`battletech.network.*`, and `tui` may not import `battletech.strategic.*`.
+invariant (`CLAUDE.md`) mechanically: only `battletech/tui/Main.kt` and `battletech/tui/
+Composition.kt` may import `battletech.network.*` (the two-file allowlist was widened
+deliberately when `Composition.kt` was added — see "The lobby: one commit path" below — rather
+than letting `Main.kt` grow past a screenful of wiring), and `tui` may not import
+`battletech.strategic.*`.
 `tenter/src/test/kotlin/tenter/LayeringTest.kt` enforces the internal-layering matrix named in
 `tenter/`'s package-layout entry above — `tenter/src/test/kotlin/tenter/ArchitectureTest.kt`
 enforces the module's *external* seam (no `battletech.*`, nothing outside the third-party
@@ -163,6 +167,67 @@ Supporting detail for the architecture invariants stated tersely in `CLAUDE.md`.
 **Why every player is a client**: a seat sitting at this terminal reaches the session the same way a seat across the internet does — `GameServer` cannot tell them apart, and nothing outside `main()` can either. The seam is `transport/`'s `ServerConnection`/`ClientConnection` port: remote seats get `JsonLineConnection` (newline-delimited JSON over a socket), local seats get `InMemoryConnection` (two queues passing message objects, no serialization). Hot-seat is therefore a `GameServer` with two `connectLocal()` clients and no listening socket at all; `host` is one `connectLocal()` client plus a `SocketAcceptor`; `server` is an acceptor with no local client; `join` is a lone `ClientGameSession`.
 
 The board (`GameMap`) and match mech definitions are join-time payloads, not content a client picks. One `ServerMessage.JoinAccepted` carries a complete `MatchBootstrap`: a shared `AssetRegistry` (map + mech definitions), the initial projected units and positions, turn state, and redacted log. The connection decoder installs the embedded registry's mech map before decoding compact variant references in the snapshot; later pushes keep encoding each model as only its variant and never resend immutable match content. `--map`/`--unit` (SELECTING a board/roster) therefore exist only on modes that build authoritative state (`hot-seat`/`host`/`server`), never on `join` — but `--add-map`/`--add-mech` (REGISTERING external content) are root options valid on every mode, `join` included: every seat, including `connectLocal` ones, uploads its ENTIRE registered content (`ContentCatalog.contribution`) as part of `ClientMessage.Join`, and `GameServer` merges every seat's bundle into one match-scoped `AssetRegistry`, first-registrant-wins. Colliding ids are reported once, as a shared `AssetConflict` event through the normal game log — never a client-local check — so every seat sees the identical finding; the registered definition stays authoritative regardless. The registry freezes the moment the roster first fills, so this accumulation happens only during the join phase. See `docs/wire-protocol.md` for the wire shape.
+
+**The lobby: one commit path for hot-seat and host.** A match is created through exactly one
+place regardless of how it started: `LobbyHost.commit(initial: GameState): GameServer`
+(`network/server/LobbyHost.kt`). Hot-seat constructs a `LobbyHost` with nothing ever parked
+against it and commits immediately — indistinguishable from calling `GameServer.host` directly,
+which is what `commit` does internally once nothing is parked. `host` (both the direct CLI
+subcommand and the interactive setup screen's HOST mode) accepts one join *before* the match
+exists: the peer parks, sees the merged `AssetRegistry` as a `ContentSummary`
+(`ServerMessage.LobbyJoined`) and the host's live `MatchPlan` (`ServerMessage.LobbySelections`,
+resent on every host change, no debounce), then re-sends its original `ClientMessage.Join` once
+`ServerMessage.LobbyCommitted` arrives and gets today's `JoinAccepted` — byte-identical to a join
+against an already-running match. `docs/wire-protocol.md` has the full exchange diagram.
+
+`ConnectionSink` (`network/server/ConnectionSink.kt`) is the one-method seam this lets
+`SocketAcceptor` depend on instead of `GameServer` directly, so the same acceptor serves either a
+committed match or a still-forming lobby. Both `GameServer` and `LobbyHost` are public classes,
+but `ConnectionSink`'s `attach` takes the deliberately-internal `ServerConnection` — a direct
+`: ConnectionSink` override would force that parameter public right along with it (Kotlin has no
+way to keep an interface member's own effective visibility internal once the implementing class
+is public), so each satisfies the interface through a small `asConnectionSink()` adapter instead
+of declaring the supertype directly.
+
+`LobbyHost.commit` takes an `onServerReady: (GameServer) -> Unit` callback, run *before*
+`LobbyCommitted` is sent to the parked peer. This exists because "call `connectLocal()`
+immediately afterward, same thread" — the ordering `GameServer.connectLocal`'s own KDoc relies on
+for `host`'s "local seat is always PLAYER_1" guarantee — is NOT reliable here on its own: the
+parked peer's reader thread is already alive and blocked in a socket read, ready to react to
+`LobbyCommitted` the instant it arrives, while `connectLocal()` must first spin up a fresh thread.
+An integration test against a real socket demonstrated the local seat losing that race
+consistently, not just occasionally — `onServerReady` closes the window entirely by running the
+caller's `connectLocal()` before the peer is notified at all, rather than merely favoring it.
+
+`battletech.tactical.model.content.MatchPlan`/`ContentSummary` are the lobby's own DTOs — id-only
+values (a map name, a `Map<PlayerId, Map<String, Int>>` roster) that serve three roles with one
+type: the setup screen's own state, the wire mirror (`ServerMessage.LobbySelections`/
+`LobbyJoined`), and `battletech.tactical.unit.AutoDeploy`'s input (roster synthesis: deterministic
+back-row-first placement, gunnery 4 / piloting 5, no human placement step). They live in
+`tactical.model.content` rather than `network.wire` because the setup screen (`tui`) needs them
+and cannot import `battletech.network` at all.
+
+`tui`'s own half — the interactive setup screen, `tui/setup/` — talks to none of this directly.
+`SetupLobby` (`tui/setup/SetupLobby.kt`) is a `tui`-local port (`beginHosting`/`publish`/
+`subscribe`) satisfied by `NoLobby` (hot-seat, and tests) or, in `Composition.kt`,
+`LobbyHostAdapter`/`LobbyMirrorAdapter` over `LobbyHost`/`LobbyClient` — the setup screen package
+itself stays entirely free of `battletech.network`, same as every other `tui` package.
+
+`TuiApp` and `tui/setup/SetupApp` share one `Terminal` + `tenter.screen.ScreenRenderer`, entered
+into raw mode once and left once, rather than each constructing its own: `Main.kt`'s `withScreen`
+helper builds both and hands the same pair to whichever app(s) run in sequence (`SetupApp` then
+`TuiApp` on the interactive path), so there is no flicker or double raw-mode transition at the
+hand-off between the two screens. `SetupApp`/`SetupLoop` mirror `TuiApp`/`RunLoop`'s shape
+deliberately rather than generalizing the two into one loop abstraction — same rationale as "Why
+`RunLoop` and `Workspace` stayed in `tui`" below: two mechanically-similar clients isn't yet
+evidence of one reusable shape.
+
+The setup screen's four content panels (MODE/MAP/PLAYER 1/PLAYER 2) render as equal-width
+columns rather than one derived-width `main` panel beside fixed-width sides — `tenter.panel.
+PanelLayout.computeUniform` and a second `PanelSet` constructor (`PanelSet(panels: List<Panel<K,
+I>>)`, `main = null`) add this as a second layout mode alongside the game's original `compute`/
+`(main, sides)` shape, not a replacement for it — `PanelSet.main` is nullable now, and `render`
+branches on whether it is null to pick which `PanelLayout` function to call.
 
 This is not uniformity for its own sake. When the local player had a private path (a `submitCommand` override on `GameServer`), the seat check existed twice — derived from the connection's assigned seat on the remote path, a hardcoded `PlayerId.PLAYER_1` on the local one — and the two could disagree. They did: with both seats remote, a `PLAYER_1` command passed both gates despite the class documenting that it "stays frozen". Making the local player a client deletes the second path, so the guarantee ("neither side can act as another seat's") has one place to live. The same collapse happened in the TUI, where `localPlayer: PlayerId?` pinned the viewer *and* gated input, both keyed on null-means-hot-seat; `TuiApp` now takes the seats it drives (`Map<PlayerId, GameSession>`) and hot-seat simply holds both, so the gate never fires because of what the map contains rather than because anything checked.
 
