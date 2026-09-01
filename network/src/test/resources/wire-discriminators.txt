@@ -1,4 +1,4 @@
-PROTOCOL_VERSION=9
+PROTOCOL_VERSION=10
 accepted
 actuator
 ammoBin
@@ -47,6 +47,9 @@ legDestroyed
 lifeSupport
 limbAlreadyUsed
 limbDestroyed
+lobbyCommitted
+lobbyJoined
+lobbySelections
 mapIdentified
 matchEnded
 matchOver

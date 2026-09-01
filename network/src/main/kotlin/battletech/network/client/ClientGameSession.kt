@@ -231,6 +231,11 @@ public class ClientGameSession internal constructor(
                         throw SerializationException("Host sent more than one match bootstrap")
                     is ServerMessage.JoinRejected ->
                         throw SerializationException("Host sent JoinRejected after accepting the connection")
+                    // Lobby messages only ever precede JoinAccepted on this connection — consumed
+                    // by LobbyClient's own (temporary) reader before a ClientGameSession exists at
+                    // all — so they are unreachable here. See LobbyClient's KDoc.
+                    is ServerMessage.LobbyJoined, is ServerMessage.LobbySelections, ServerMessage.LobbyCommitted ->
+                        throw SerializationException("Unexpected lobby message after the match started: $message")
                 }
             }
         } catch (e: InterruptedException) {

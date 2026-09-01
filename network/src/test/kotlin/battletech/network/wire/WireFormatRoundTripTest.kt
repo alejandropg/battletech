@@ -30,6 +30,8 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.model.content.AssetKind
 import battletech.tactical.model.content.AssetRegistry
 import battletech.tactical.model.content.ContentCatalog
+import battletech.tactical.model.content.ContentSummary
+import battletech.tactical.model.content.MatchPlan
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.query.projectFor
@@ -470,6 +472,44 @@ internal class WireFormatRoundTripTest {
                 log = listOf(LogEntry(turn = 1, event = gameEventFixtures.getValue(PhaseChanged::class))),
             ),
         )
+
+        val line = WireJson.encodeToLine(message)
+        val decoded = WireJson.decodeServerMessage(line)
+
+        assertThat(decoded).isEqualTo(message)
+    }
+
+    @Test
+    fun `ServerMessage LobbyJoined round-trips`() {
+        val message = ServerMessage.LobbyJoined(catalog = ContentSummary(maps = listOf("arena"), mechs = listOf("AS7-D", "WHM-6R")))
+
+        val line = WireJson.encodeToLine(message)
+        val decoded = WireJson.decodeServerMessage(line)
+
+        assertThat(decoded).isEqualTo(message)
+    }
+
+    @Test
+    fun `ServerMessage LobbySelections carrying an enum-keyed roster round-trips`() {
+        val message = ServerMessage.LobbySelections(
+            plan = MatchPlan(
+                mapName = "arena",
+                rosters = mapOf(
+                    PlayerId.PLAYER_1 to mapOf("WHM-6R" to 2),
+                    PlayerId.PLAYER_2 to mapOf("AS7-D" to 1),
+                ),
+            ),
+        )
+
+        val line = WireJson.encodeToLine(message)
+        val decoded = WireJson.decodeServerMessage(line)
+
+        assertThat(decoded).isEqualTo(message)
+    }
+
+    @Test
+    fun `ServerMessage LobbyCommitted round-trips`() {
+        val message: ServerMessage = ServerMessage.LobbyCommitted
 
         val line = WireJson.encodeToLine(message)
         val decoded = WireJson.decodeServerMessage(line)
