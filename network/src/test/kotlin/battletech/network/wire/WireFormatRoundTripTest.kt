@@ -27,13 +27,15 @@ import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.Terrain
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.content.AssetKind
+import battletech.tactical.model.content.AssetRegistry
 import battletech.tactical.model.content.ContentCatalog
-import battletech.tactical.model.map.LocalMapMatch
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
 import battletech.tactical.query.projectFor
 import battletech.tactical.rules.RuleRejection
 import battletech.tactical.session.AmmoExploded
+import battletech.tactical.session.AssetConflict
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttackImpulseCommand
 import battletech.tactical.session.AttacksResolved
@@ -52,7 +54,6 @@ import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.LogEntry
 import battletech.tactical.session.MapIdentified
 import battletech.tactical.session.MatchEnded
-import battletech.tactical.session.MechModelMismatch
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
@@ -393,6 +394,39 @@ internal class WireFormatRoundTripTest {
     }
 
     @Test
+    fun `ClientMessage Join carrying a non-empty content bundle round-trips`() {
+        val game = ContentCatalog.load().resolveGame()
+        val bundle = ContentCatalog.load().contribution()
+        val message = ClientMessage.Join(sessionId = "ABCDEF", protocolVersion = PROTOCOL_VERSION, content = bundle)
+
+        val line = WireJson.encodeToLine(message)
+        val decoded = WireJson.decodeClientMessage(line)
+
+        assertThat(decoded).isEqualTo(message)
+        assertThat((decoded as ClientMessage.Join).content.mechs).isNotEmpty
+        assertThat(decoded.content.maps.map { it.name }).contains(game.map.name)
+    }
+
+    /** C2's regression guard: [AssetRegistry]'s mech map must NOT collapse to compact variant strings. */
+    @Test
+    fun `MatchBootstrap carrying a registry round-trips with mech models surviving in full`() {
+        val registry = aRegistry()
+        val bootstrap = MatchBootstrap(
+            playerId = PlayerId.PLAYER_1,
+            registry = registry,
+            map = aGameMap(),
+            snapshot = aGameSnapshot(),
+            log = emptyList(),
+        )
+
+        val line = WireJson.encodeToLine(ServerMessage.JoinAccepted(bootstrap))
+        val decoded = WireJson.decodeServerMessage(line) as ServerMessage.JoinAccepted
+
+        assertThat(decoded.bootstrap.registry).isEqualTo(registry)
+        assertThat(WireJson.encodeToLine(ServerMessage.JoinAccepted(bootstrap))).contains("weapons", "armor")
+    }
+
+    @Test
     fun `ClientMessage SubmitCommand wrapping a GameCommand round-trips`() {
         val message = ClientMessage.SubmitCommand(requestId = 7L, command = gameCommandFixtures.getValue(MoveUnit::class))
 
@@ -430,7 +464,7 @@ internal class WireFormatRoundTripTest {
         val message = ServerMessage.JoinAccepted(
             MatchBootstrap(
                 playerId = PlayerId.PLAYER_2,
-                mechModels = matchModels(),
+                registry = aRegistry(),
                 map = aGameMap(),
                 snapshot = aGameSnapshot(),
                 log = listOf(LogEntry(turn = 1, event = gameEventFixtures.getValue(PhaseChanged::class))),
@@ -510,7 +544,7 @@ internal class WireFormatRoundTripTest {
         val joinAccepted = ServerMessage.JoinAccepted(
             MatchBootstrap(
                 playerId = PlayerId.PLAYER_1,
-                mechModels = matchModels(),
+                registry = aRegistry(),
                 map = session.stateFor(PlayerId.PLAYER_1).map,
                 snapshot = push.snapshot,
                 log = session.logFor(PlayerId.PLAYER_1),
@@ -518,8 +552,8 @@ internal class WireFormatRoundTripTest {
         )
 
         assertThat(WireJson.encodeToLine(push)).doesNotContain("hexes")
-        assertThat(WireJson.encodeToLine(push)).doesNotContain("mechModels")
-        assertThat(WireJson.encodeToLine(joinAccepted)).contains("hexes", "mechModels")
+        assertThat(WireJson.encodeToLine(push)).doesNotContain("registry")
+        assertThat(WireJson.encodeToLine(joinAccepted)).contains("hexes", "registry")
     }
 
     @Test
@@ -564,9 +598,7 @@ internal class WireFormatRoundTripTest {
 
         private fun aGameMap(): GameMap = ContentCatalog.load().resolveGame().map
 
-        private fun matchModels() = ContentCatalog.load().resolveGame().units
-            .map { it.model }
-            .distinctBy { it.variant }
+        private fun aRegistry(): AssetRegistry = AssetRegistry.forMatch(ContentCatalog.load().resolveGame())
 
         private fun aTurnStateFixture(): TurnState = TurnState(initiative = anInitiativeFixture())
 
@@ -686,8 +718,8 @@ internal class WireFormatRoundTripTest {
             PlayerDisconnected::class to PlayerDisconnected(player = PlayerId.PLAYER_1),
             SessionOpened::class to SessionOpened(sessionId = "ABCDEF"),
             HostConnectionLost::class to HostConnectionLost,
-            MapIdentified::class to MapIdentified(name = "default", localMatch = LocalMapMatch.MATCHES),
-            MechModelMismatch::class to MechModelMismatch(variant = "WVR-6R"),
+            MapIdentified::class to MapIdentified(name = "default"),
+            AssetConflict::class to AssetConflict(kind = AssetKind.MECH, id = "WVR-6R", player = PlayerId.PLAYER_1),
         )
 
         private val ruleRejectionFixtures: Map<KClass<out RuleRejection>, RuleRejection> = mapOf(

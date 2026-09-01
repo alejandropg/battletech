@@ -2,13 +2,10 @@ package battletech.tactical.model.content
 
 import battletech.tactical.io.CatalogEntry
 import battletech.tactical.io.NestedCatalogEntry
-import battletech.tactical.model.GameMap
 import battletech.tactical.model.GameState
 import battletech.tactical.model.map.DEFAULT_MAP_NAME
 import battletech.tactical.model.map.GameMapCatalog
-import battletech.tactical.model.map.LocalMapMatch
 import battletech.tactical.model.map.MapLoadException
-import battletech.tactical.model.map.compareWithLocalMap
 import battletech.tactical.model.mech.MechModelCatalog
 import battletech.tactical.model.unit.DEFAULT_UNITS_NAME
 import battletech.tactical.model.unit.UnitCatalog
@@ -36,6 +33,7 @@ public class ContentCatalog private constructor(
     private val maps: GameMapCatalog,
     private val mechs: MechModelCatalog,
     private val units: UnitCatalog,
+    private val bundle: AssetBundle,
 ) {
 
     /**
@@ -64,27 +62,40 @@ public class ContentCatalog private constructor(
     public fun unitListings(): List<UnitCollectionListing> = units.collectionListings()
 
     /**
-     * A client's join-time local-drift comparator, backed by this catalog's registered maps —
-     * see [compareWithLocalMap]. Exposed as a closure rather than the [GameMapCatalog] itself so
-     * a caller across module boundaries (`network`'s `ClientGameSession`) needs no dependency on
-     * this catalog's internals, only the one function shape it already expects.
+     * This launch's contribution to a shared [AssetRegistry]: every registered map and mech,
+     * assembled once by [load] rather than per call — see there for why it is built eagerly.
      */
-    public fun mapMatcher(): (GameMap) -> LocalMapMatch = { hostMap -> compareWithLocalMap(hostMap, maps) }
+    public fun contribution(): AssetBundle = bundle
 
-    /** A client's join-time local mech lookup, backed by this catalog's registered mechs. */
-    public fun mechFinder(): (String) -> MechModel? = mechs::find
+    /** The registered definition of [variant], or `null` when no registered collection contains it. */
+    public fun mech(variant: String): MechModel? = mechs.find(variant)
 
     public companion object {
 
-        /** Builds a catalog from every built-in map/mech/unit collection plus the given external files. */
+        /**
+         * Builds a catalog from every built-in map/mech/unit collection plus the given external
+         * files, including this launch's [AssetBundle] [contribution].
+         *
+         * Building the bundle here — rather than on demand — is what keeps every content error on
+         * one path: [GameMapCatalog] resolves packaged maps lazily, so a malformed one used to
+         * surface only if a game happened to select it, and assembling the bundle later would have
+         * raised it from whichever call site asked (past a launcher's own error handling, and
+         * repeatedly, since every packaged map is re-parsed per call). Externally registered
+         * content is already eager for exactly this reason.
+         */
         public fun load(
             mapPaths: List<Path> = emptyList(),
             mechPaths: List<Path> = emptyList(),
             unitPaths: List<Path> = emptyList(),
-        ): ContentCatalog = ContentCatalog(
-            GameMapCatalog.load(mapPaths),
-            MechModelCatalog.load(mechPaths),
-            UnitCatalog.load(unitPaths),
-        )
+        ): ContentCatalog {
+            val maps = GameMapCatalog.load(mapPaths)
+            val mechs = MechModelCatalog.load(mechPaths)
+            return ContentCatalog(
+                maps = maps,
+                mechs = mechs,
+                units = UnitCatalog.load(unitPaths),
+                bundle = AssetBundle(maps = maps.all().values.toList(), mechs = mechs.all().values.toList()),
+            )
+        }
     }
 }

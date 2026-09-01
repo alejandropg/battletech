@@ -12,9 +12,7 @@ import battletech.network.wire.SessionId
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.map.LocalMapMatch
-import battletech.tactical.model.map.compareWithLocalMap
-import battletech.tactical.model.mech.MechLoadException
+import battletech.tactical.model.content.AssetBundle
 import battletech.tactical.query.DefaultPlayerView
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
@@ -26,12 +24,8 @@ import battletech.tactical.session.GameLog
 import battletech.tactical.session.GameSession
 import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.LogEntry
-import battletech.tactical.session.MapIdentified
-import battletech.tactical.session.MechModelMismatch
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
-import battletech.tactical.unit.MechModel
-import battletech.tactical.unit.MechModels
 import kotlinx.serialization.SerializationException
 import java.io.BufferedReader
 import java.io.IOException
@@ -69,10 +63,11 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
  * [map] arrives once, in the [ServerMessage.JoinAccepted] that builds this session, and never
  * changes again (the board is immutable for a match — see [battletech.network.wire.GameSnapshot]'s
  * KDoc for why it isn't repeated in every [ServerMessage.StatePush]).
- * Host mech definitions are equally authoritative. At construction they are compared with any
- * same-variant packaged definitions supplied by [findLocalMech]; differences add local
- * [MechModelMismatch] events but never replace or reject the host definitions already resolved
- * into [snapshot].
+ * Host content — the map and every mech model — is authoritative. This class checks nothing of
+ * its own against it: the shared registry the host arbitrates
+ * ([battletech.network.server.GameServer]'s `assetRegistry`) is the sole source of any
+ * `AssetConflict` finding, and those arrive pre-redacted inside [initial]`.log`/later pushes like
+ * any other event.
  *
  * That projection is enough to serve this seat completely, with no round trip: [stateFor],
  * [logFor] and [viewFor] all answer locally for [playerId]. The query engine
@@ -89,8 +84,6 @@ public class JoinRejectedException(public val reason: JoinRejectionReason) : Exc
 public class ClientGameSession internal constructor(
     private val connection: ClientConnection,
     initial: MatchBootstrap,
-    mapMatch: (GameMap) -> LocalMapMatch = ::compareWithLocalMap,
-    findLocalMech: (String) -> MechModel? = MechModels::find,
 ) : GameSession, AutoCloseable {
 
     /** The seat the server assigned this connection at join time. */
@@ -116,24 +109,6 @@ public class ClientGameSession internal constructor(
 
     init {
         initial.log.forEach { log.append(it) }
-        // Recorded locally, not sent by the host: every seat (remote joiner or connectLocal's
-        // hot-seat/host seat alike) runs the same check against its own map source, so this
-        // fires uniformly rather than branching on "is this hot-seat?".
-        val mapIdentified = MapIdentified(map.name, mapMatch(map))
-        log.append(LogEntry(snapshot.turnState.turnNumber, mapIdentified))
-        initial.mechModels
-            .filter { hostModel ->
-                val localModel = try {
-                    findLocalMech(hostModel.variant)
-                } catch (e: MechLoadException) {
-                    null
-                }
-                localModel != null && localModel != hostModel
-            }
-            .sortedBy { it.variant }
-            .forEach { model ->
-                log.append(LogEntry(snapshot.turnState.turnNumber, MechModelMismatch(model.variant)))
-            }
         readerThread = thread(isDaemon = true, name = "client-session-reader") { readLoop() }
     }
 
@@ -280,14 +255,13 @@ public class ClientGameSession internal constructor(
         private const val UNSOLICITED_REQUEST_ID: Long = -1
 
         /**
-         * Opens a socket to [host]:[port], sends [ClientMessage.Join] for
-         * [sessionId], and blocks for the host's handshake response.
+         * Opens a socket to [host]:[port], sends [ClientMessage.Join] for [sessionId]
+         * contributing [content], and blocks for the host's handshake response.
          *
-         * [mapMatch]/[findLocalMech] default to built-ins-only (see [ClientGameSession]'s
-         * primary constructor); a launcher with externally registered content passes its
-         * catalog-backed equivalents (e.g. `battletech.tactical.model.content.ContentCatalog`'s
-         * `mapMatcher()`/`mechFinder()`) so this seat's local-drift check sees `--add-map`/
-         * `--add-mech` registrations too, not just packaged content.
+         * [content] defaults to empty; a launcher with registered content passes its catalog's
+         * contribution (`battletech.tactical.model.content.ContentCatalog.contribution`) so the
+         * host's shared registry sees this seat's `--add-map`/`--add-mech` registrations too, not
+         * just packaged content.
          *
          * @throws JoinRejectedException if the host refuses the join.
          */
@@ -295,14 +269,13 @@ public class ClientGameSession internal constructor(
             host: String,
             port: Int,
             sessionId: String,
-            mapMatch: (GameMap) -> LocalMapMatch = ::compareWithLocalMap,
-            findLocalMech: (String) -> MechModel? = MechModels::find,
+            content: AssetBundle = AssetBundle.EMPTY,
         ): ClientGameSession {
             val socket = Socket(host, port)
             val input = BufferedReader(InputStreamReader(socket.getInputStream()))
             val output = OutputStreamWriter(socket.getOutputStream())
             val connection = JsonLineConnection.Client(input, output)
-            return handshake(connection, sessionId, mapMatch, findLocalMech)
+            return handshake(connection, sessionId, content)
         }
 
         /**
@@ -317,17 +290,16 @@ public class ClientGameSession internal constructor(
         internal fun handshake(
             connection: ClientConnection,
             sessionId: String,
-            mapMatch: (GameMap) -> LocalMapMatch = ::compareWithLocalMap,
-            findLocalMech: (String) -> MechModel? = MechModels::find,
+            content: AssetBundle = AssetBundle.EMPTY,
         ): ClientGameSession {
             try {
-                connection.send(ClientMessage.Join(SessionId.normalize(sessionId), PROTOCOL_VERSION))
+                connection.send(ClientMessage.Join(SessionId.normalize(sessionId), PROTOCOL_VERSION, content))
 
                 val response = connection.receive()
                     ?: throw IOException("Connection closed before the host replied to Join")
                 return when (response) {
                     is ServerMessage.JoinRejected -> throw JoinRejectedException(response.reason)
-                    is ServerMessage.JoinAccepted -> ClientGameSession(connection, response.bootstrap, mapMatch, findLocalMech)
+                    is ServerMessage.JoinAccepted -> ClientGameSession(connection, response.bootstrap)
                     else -> throw IOException("Unexpected first message from host: $response")
                 }
             } catch (failure: Exception) {

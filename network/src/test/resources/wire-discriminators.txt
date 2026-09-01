@@ -1,9 +1,10 @@
-PROTOCOL_VERSION=8
+PROTOCOL_VERSION=9
 accepted
 actuator
 ammoBin
 ammoExploded.detailed
 ammoExploded.undisclosed
+assetConflict
 attackDeclarationsRecorded
 attackerProne
 attackerSubmerged
@@ -49,7 +50,6 @@ limbDestroyed
 mapIdentified
 matchEnded
 matchOver
-mechModelMismatch
 miss
 missile
 moveUnit

@@ -5,16 +5,17 @@ import battletech.network.server.GameServer
 import battletech.network.server.SocketAcceptor
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.content.AssetKind
 import battletech.tactical.model.content.ContentCatalog
-import battletech.tactical.unit.UnitRoster
+import battletech.tactical.session.AssetConflict
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.CommitAttackImpulse
 import battletech.tactical.session.CommitPhysicalAttackImpulse
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.GameSession
-import battletech.tactical.session.MechModelMismatch
 import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.TurnEnded
+import battletech.tactical.unit.UnitRoster
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -109,12 +110,13 @@ internal class LocalhostEndToEndTest {
             .first { it.variant == "CUSTOM-WVR" }
 
         assertThat(received.model).isEqualTo(custom)
-        assertThat(remote.gameLog.snapshot().map { it.event })
-            .doesNotContain(MechModelMismatch(custom.variant))
+        // A plain connect() contributes nothing (content defaults to empty), so there is no
+        // packaged definition of "CUSTOM-WVR" around to collide with in the first place.
+        assertThat(remote.gameLog.snapshot().map { it.event }.filterIsInstance<AssetConflict>()).isEmpty()
     }
 
     @Test
-    fun `joining over a real socket warns when a packaged model differs and uses the host definition`() {
+    fun `joining with the packaged catalog contributed warns when a packaged model differs and uses the host definition`() {
         val base = ContentCatalog.load().resolveGame()
         val packaged = base.units.all.first { it.owner == PlayerId.PLAYER_2 && it.id.value == "W1" }.model
         val hostModel = packaged.copy(name = "${packaged.name} (host revision)")
@@ -128,7 +130,12 @@ internal class LocalhostEndToEndTest {
         acceptor = socketAcceptor
         socketAcceptor.start()
 
-        val remote = ClientGameSession.connect("127.0.0.1", socketAcceptor.boundPort, gameServer.sessionId)
+        // A plain connect() contributes nothing (content defaults to empty) and would report no
+        // conflict — pass the full packaged catalog explicitly to reproduce the drift.
+        val remote = ClientGameSession.connect(
+            "127.0.0.1", socketAcceptor.boundPort, gameServer.sessionId,
+            content = ContentCatalog.load().contribution(),
+        )
         client = remote
 
         val received = remote.stateFor(remote.playerId).units
@@ -137,7 +144,7 @@ internal class LocalhostEndToEndTest {
 
         assertThat(received.model).isEqualTo(hostModel)
         assertThat(remote.gameLog.snapshot().map { it.event })
-            .contains(MechModelMismatch(hostModel.variant))
+            .contains(AssetConflict(AssetKind.MECH, hostModel.variant, remote.playerId))
     }
 
     @Test
@@ -317,10 +324,10 @@ internal class LocalhostEndToEndTest {
             remote2.turnState == gameServer.turnState &&
             remote1.currentPhase == gameServer.currentPhase &&
             remote2.currentPhase == gameServer.currentPhase &&
-            // See REMOTE_LOG_OFFSET's KDoc: each client's log carries one client-local entry
-            // (MapIdentified) the host's never does.
-            remote1.gameLog.snapshot().size == gameServer.gameLog.snapshot().size + REMOTE_LOG_OFFSET &&
-            remote2.gameLog.snapshot().size == gameServer.gameLog.snapshot().size + REMOTE_LOG_OFFSET
+            // A client's log is no longer one entry ahead of the host's: MapIdentified is now
+            // host-emitted once, into the shared log, rather than appended client-locally.
+            remote1.gameLog.snapshot().size == gameServer.gameLog.snapshot().size &&
+            remote2.gameLog.snapshot().size == gameServer.gameLog.snapshot().size
 
     private fun assertHeadlessConverged(gameServer: GameServer, remote1: ClientGameSession, remote2: ClientGameSession) {
         assertThat(remote1.stateFor(remote1.playerId)).isEqualTo(gameServer.stateFor(remote1.playerId))
@@ -329,8 +336,8 @@ internal class LocalhostEndToEndTest {
         assertThat(remote2.turnState).isEqualTo(gameServer.turnState)
         assertThat(remote1.currentPhase).isEqualTo(gameServer.currentPhase)
         assertThat(remote2.currentPhase).isEqualTo(gameServer.currentPhase)
-        assertThat(remote1.gameLog.snapshot()).hasSize(gameServer.gameLog.snapshot().size + REMOTE_LOG_OFFSET)
-        assertThat(remote2.gameLog.snapshot()).hasSize(gameServer.gameLog.snapshot().size + REMOTE_LOG_OFFSET)
+        assertThat(remote1.gameLog.snapshot()).hasSize(gameServer.gameLog.snapshot().size)
+        assertThat(remote2.gameLog.snapshot()).hasSize(gameServer.gameLog.snapshot().size)
     }
 
     // ---------- setup ----------
@@ -421,23 +428,12 @@ internal class LocalhostEndToEndTest {
         remote.stateFor(remote.playerId) == host.stateFor(remote.playerId) &&
             remote.turnState == host.turnState &&
             remote.currentPhase == host.currentPhase &&
-            remote.gameLog.snapshot().size == host.gameLog.snapshot().size + REMOTE_LOG_OFFSET
+            remote.gameLog.snapshot().size == host.gameLog.snapshot().size
 
     private fun assertConverged(host: GameServer, remote: ClientGameSession) {
         assertThat(remote.stateFor(remote.playerId)).isEqualTo(host.stateFor(remote.playerId))
         assertThat(remote.turnState).isEqualTo(host.turnState)
         assertThat(remote.currentPhase).isEqualTo(host.currentPhase)
-        assertThat(remote.gameLog.snapshot()).hasSize(host.gameLog.snapshot().size + REMOTE_LOG_OFFSET)
-    }
-
-    private companion object {
-        /**
-         * Every [ClientGameSession] appends exactly one client-local
-         * [battletech.tactical.session.MapIdentified] entry to its own [ClientGameSession.gameLog]
-         * at construction — never mirrored to [GameServer.gameLog], the same way
-         * [battletech.tactical.session.HostConnectionLost] is client-local (see its KDoc). A
-         * client's log is therefore always exactly one entry ahead of the host's.
-         */
-        private const val REMOTE_LOG_OFFSET = 1
+        assertThat(remote.gameLog.snapshot()).hasSize(host.gameLog.snapshot().size)
     }
 }

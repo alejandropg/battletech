@@ -21,10 +21,11 @@ import battletech.tactical.model.MechLocation
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.map.LocalMapMatch
+import battletech.tactical.model.content.AssetKind
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.projectFor
 import battletech.tactical.session.AmmoExploded
+import battletech.tactical.session.AssetConflict
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.CriticalHit
@@ -35,7 +36,6 @@ import battletech.tactical.session.Initiative
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.MapIdentified
 import battletech.tactical.session.MatchEnded
-import battletech.tactical.session.MechModelMismatch
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.PilotHit
@@ -669,41 +669,27 @@ internal class GameLogFormatterTest {
     }
 
     @Test
-    fun `MapIdentified with MATCHES renders only the map name line`() {
-        val lines = GameLogFormatter.lines(MapIdentified(name = "default", localMatch = LocalMapMatch.MATCHES), emptyState)
+    fun `MapIdentified renders only the map name line`() {
+        val lines = GameLogFormatter.lines(MapIdentified(name = "default"), emptyState)
 
         assertThat(lines).containsExactly(GameLogFormatter.LogLine(mapNoticeIcon(), "Map: default"))
     }
 
     @Test
-    fun `MapIdentified with UNAVAILABLE renders only the map name line`() {
-        val lines = GameLogFormatter.lines(MapIdentified(name = "default", localMatch = LocalMapMatch.UNAVAILABLE), emptyState)
+    fun `AssetConflict on a MAP names the player and the map id`() {
+        val lines = GameLogFormatter.lines(AssetConflict(AssetKind.MAP, "battletech-classic", PlayerId.PLAYER_2), emptyState)
 
-        assertThat(lines).containsExactly(GameLogFormatter.LogLine(mapNoticeIcon(), "Map: default"))
-    }
-
-    @Test
-    fun `MapIdentified with DIFFERS renders the name line plus a mismatch warning`() {
-        val lines = GameLogFormatter.lines(MapIdentified(name = "battletech-classic", localMatch = LocalMapMatch.DIFFERS), emptyState)
-
-        assertThat(lines).containsExactly(
-            GameLogFormatter.LogLine(mapNoticeIcon(), "Map: battletech-classic"),
-            GameLogFormatter.LogLine(
-                mapMismatchIcon(),
-                "Local map 'battletech-classic' differs from the host's — using the host's map",
-            ),
+        assertThat(lines.map { it.icon to it.text }).containsExactly(
+            mapMismatchIcon() to "P2's local map 'battletech-classic' differs from the registered one — using the registered map",
         )
     }
 
     @Test
-    fun `MechModelMismatch renders a warning that the host model is used`() {
-        val lines = GameLogFormatter.lines(MechModelMismatch("WVR-6R"), emptyState)
+    fun `AssetConflict on a MECH names the player and the variant`() {
+        val lines = GameLogFormatter.lines(AssetConflict(AssetKind.MECH, "WVR-6R", PlayerId.PLAYER_1), emptyState)
 
-        assertThat(lines).containsExactly(
-            GameLogFormatter.LogLine(
-                mechModelMismatchIcon(),
-                "Local mech model 'WVR-6R' differs from the host's — using the host's model",
-            ),
+        assertThat(lines.map { it.icon to it.text }).containsExactly(
+            mechModelMismatchIcon() to "P1's local mech model 'WVR-6R' differs from the registered one — using the registered mech model",
         )
     }
 

@@ -8,6 +8,7 @@ import battletech.network.wire.ServerMessage
 import battletech.network.wire.WireJson
 import battletech.tactical.dice.RandomDiceRoller
 import battletech.tactical.model.PlayerId
+import battletech.tactical.model.content.AssetBundle
 import battletech.tactical.model.content.ContentCatalog
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.CommandResult
@@ -66,9 +67,9 @@ internal fun GameSession.advanceMovementUntilActivePlayerIs(target: PlayerId): I
     return moves
 }
 
-/** Writes a [ClientMessage.Join] for [sessionId]. */
-internal fun PipedConnection.sendJoin(sessionId: String, protocolVersion: Int = PROTOCOL_VERSION) {
-    clientOutput.write(WireJson.encodeToLine(ClientMessage.Join(sessionId, protocolVersion)) + "\n")
+/** Writes a [ClientMessage.Join] for [sessionId], contributing [content]. */
+internal fun PipedConnection.sendJoin(sessionId: String, protocolVersion: Int = PROTOCOL_VERSION, content: AssetBundle = AssetBundle.EMPTY) {
+    clientOutput.write(WireJson.encodeToLine(ClientMessage.Join(sessionId, protocolVersion, content)) + "\n")
     clientOutput.flush()
 }
 
@@ -77,8 +78,8 @@ internal fun PipedConnection.sendJoin(sessionId: String, protocolVersion: Int = 
  * handshake-only assertions where no kickstart push is expected (rejections, or a rejoin after
  * the server's one-time kickstart has already fired).
  */
-internal fun PipedConnection.join(sessionId: String, protocolVersion: Int = PROTOCOL_VERSION): ServerMessage {
-    sendJoin(sessionId, protocolVersion)
+internal fun PipedConnection.join(sessionId: String, protocolVersion: Int = PROTOCOL_VERSION, content: AssetBundle = AssetBundle.EMPTY): ServerMessage {
+    sendJoin(sessionId, protocolVersion, content)
     return WireJson.decodeServerMessage(clientInput.readLine())
 }
 
@@ -94,8 +95,11 @@ internal fun PipedConnection.join(sessionId: String, protocolVersion: Int = PROT
  * connection attaches. For a from-scratch two-seat join dance use
  * [joinBothSeats] instead.
  */
-internal fun PipedConnection.joinAndConsumeKickstart(sessionId: String): Pair<ServerMessage.JoinAccepted, ServerMessage.StatePush> {
-    val joinAccepted = join(sessionId) as ServerMessage.JoinAccepted
+internal fun PipedConnection.joinAndConsumeKickstart(
+    sessionId: String,
+    content: AssetBundle = AssetBundle.EMPTY,
+): Pair<ServerMessage.JoinAccepted, ServerMessage.StatePush> {
+    val joinAccepted = join(sessionId, content = content) as ServerMessage.JoinAccepted
     val push = WireJson.decodeServerMessage(clientInput.readLine()) as ServerMessage.StatePush
     return joinAccepted to push
 }

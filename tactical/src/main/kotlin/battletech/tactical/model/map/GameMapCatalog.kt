@@ -36,6 +36,9 @@ public class GameMapCatalog private constructor(
     public fun entries(): List<CatalogEntry> =
         builtInNames.map { CatalogEntry(it, external = false) } + externalMaps.keys.map { CatalogEntry(it, external = true) }
 
+    /** Every registered map, keyed by name — force-resolves the (otherwise lazy) built-ins. */
+    public fun all(): Map<String, GameMap> = builtInNames.associateWith(loader::resolve) + externalMaps
+
     public companion object {
 
         /**

@@ -7,9 +7,10 @@ import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MatchOutcome
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
-import battletech.tactical.model.map.LocalMapMatch
+import battletech.tactical.model.content.AssetKind
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.session.AmmoExploded
+import battletech.tactical.session.AssetConflict
 import battletech.tactical.session.AttackDeclarationsRecorded
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.CriticalHit
@@ -19,7 +20,6 @@ import battletech.tactical.session.HostConnectionLost
 import battletech.tactical.session.InitiativeRolled
 import battletech.tactical.session.MapIdentified
 import battletech.tactical.session.MatchEnded
-import battletech.tactical.session.MechModelMismatch
 import battletech.tactical.session.PhaseChanged
 import battletech.tactical.session.PhysicalAttacksResolved
 import battletech.tactical.session.PilotHit
@@ -265,18 +265,20 @@ internal object GameLogFormatter {
         is SessionOpened -> listOf(LogLine(sessionNoticeIcon(), "Session ID: ${event.sessionId}"))
         is HostConnectionLost ->
             listOf(LogLine(sessionNoticeIcon(), "Disconnected from host — restart with 'battletech-tui join <host> --session <id>' to rejoin"))
-        is MapIdentified -> buildList {
-            add(LogLine(mapNoticeIcon(), "Map: ${event.name}"))
-            if (event.localMatch == LocalMapMatch.DIFFERS) {
-                add(LogLine(mapMismatchIcon(), "Local map '${event.name}' differs from the host's — using the host's map"))
-            }
+        is MapIdentified -> listOf(LogLine(mapNoticeIcon(), "Map: ${event.name}"))
+        is AssetConflict -> {
+            val icon = if (event.kind == AssetKind.MAP) mapMismatchIcon() else mechModelMismatchIcon()
+            val noun = if (event.kind == AssetKind.MAP) "map" else "mech model"
+            listOf(
+                LogLine(
+                    icon,
+                    styled {
+                        append(playerName(event.player))
+                        append("'s local $noun '${event.id}' differs from the registered one — using the registered $noun")
+                    },
+                ),
+            )
         }
-        is MechModelMismatch -> listOf(
-            LogLine(
-                mechModelMismatchIcon(),
-                "Local mech model '${event.variant}' differs from the host's — using the host's model",
-            ),
-        )
     }
 
     /**

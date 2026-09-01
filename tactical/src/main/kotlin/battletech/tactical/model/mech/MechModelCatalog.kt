@@ -28,6 +28,9 @@ public class MechModelCatalog private constructor(
      */
     public fun collectionEntries(): List<NestedCatalogEntry> = collections
 
+    /** Every registered mech model, keyed by variant. */
+    public fun all(): Map<String, MechModel> = registry
+
     public companion object {
         /**
          * Loads every collection named by `mech/index.json`, then every [externalPath] in order.

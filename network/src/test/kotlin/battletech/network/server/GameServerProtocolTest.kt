@@ -13,10 +13,15 @@ import battletech.network.wire.JoinRejectionReason
 import battletech.network.wire.PROTOCOL_VERSION
 import battletech.network.wire.ServerMessage
 import battletech.network.wire.WireJson
+import battletech.tactical.model.GameMap
+import battletech.tactical.model.Hex
+import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.MechLocation
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.unit.ForeignUnit
+import battletech.tactical.model.content.AssetBundle
+import battletech.tactical.model.content.AssetKind
+import battletech.tactical.session.AssetConflict
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.CriticalHit
@@ -25,6 +30,7 @@ import battletech.tactical.session.MoveUnit
 import battletech.tactical.session.PlayerConnected
 import battletech.tactical.session.PlayerDisconnected
 import battletech.tactical.unit.CriticalSlotContent
+import battletech.tactical.unit.ForeignUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -62,7 +68,7 @@ internal class GameServerProtocolTest {
         assertThat(bootstrap.snapshot.currentPhase).isEqualTo(TurnPhase.INITIATIVE)
         assertThat(bootstrap.snapshot.units).isEqualTo(server.stateFor(PlayerId.PLAYER_2).units)
         assertThat(bootstrap.map).isEqualTo(server.stateFor(PlayerId.PLAYER_2).map)
-        assertThat(bootstrap.mechModels.map { it.variant }).containsExactlyInAnyOrderElementsOf(
+        assertThat(bootstrap.registry.mechs.keys).containsExactlyInAnyOrderElementsOf(
             server.gameState.units.map { it.variant }.distinct(),
         )
 
@@ -470,5 +476,110 @@ internal class GameServerProtocolTest {
         // No second kickstart: give any wrongful push a generous window to arrive, then confirm none did.
         Thread.sleep(200)
         assertThat(rejoin.clientInput.ready()).isFalse()
+    }
+
+    // ---------- shared asset registry ----------
+
+    private fun aMap(name: String, oneHex: Boolean): GameMap =
+        GameMap(hexes = if (oneHex) mapOf(HexCoordinates(0, 0) to Hex(HexCoordinates(0, 0))) else emptyMap(), name = name)
+
+    @Test
+    fun `two seats contributing conflicting content - both seats' logs carry the same AssetConflict`() {
+        val server = twoSeatServer()
+        val arenaV1 = aMap("arena", oneHex = true)
+        val arenaV2 = aMap("arena", oneHex = false)
+        val local = server.connectLocal(AssetBundle(maps = listOf(arenaV1)))
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+
+        val (joinAccepted, _) = connection.joinAndConsumeKickstart(sessionId, content = AssetBundle(maps = listOf(arenaV2)))
+
+        val expectedConflict = AssetConflict(AssetKind.MAP, "arena", PlayerId.PLAYER_2)
+        assertThat(joinAccepted.bootstrap.log.map { it.event }).contains(expectedConflict)
+        awaitTrue { local.gameLog.snapshot().map { it.event }.contains(expectedConflict) }
+        assertThat(server.assetRegistry.map("arena")).isEqualTo(arenaV1)
+    }
+
+    @Test
+    fun `the conflict finding sits immediately after PlayerConnected(seat), before any kickstart entry`() {
+        val server = twoSeatServer()
+        val arenaV1 = aMap("arena", oneHex = true)
+        val arenaV2 = aMap("arena", oneHex = false)
+        server.connectLocal(AssetBundle(maps = listOf(arenaV1)))
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+
+        val (joinAccepted, _) = connection.joinAndConsumeKickstart(sessionId, content = AssetBundle(maps = listOf(arenaV2)))
+
+        val events = joinAccepted.bootstrap.log.map { it.event }
+        val connectIndex = events.indexOf(PlayerConnected(PlayerId.PLAYER_2))
+        assertThat(events[connectIndex + 1]).isEqualTo(AssetConflict(AssetKind.MAP, "arena", PlayerId.PLAYER_2))
+    }
+
+    @Test
+    fun `a bundle with an internal duplicate is rejected with INVALID_CONTENT`() {
+        val server = twoSeatServer()
+        server.connectLocal()
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+        val duplicated = aMap("dup", oneHex = false)
+
+        val rejection = connection.join(sessionId, content = AssetBundle(maps = listOf(duplicated, duplicated))) as ServerMessage.JoinRejected
+
+        assertThat(rejection.reason).isEqualTo(JoinRejectionReason.INVALID_CONTENT)
+    }
+
+    @Test
+    fun `rejoin after disconnect with a colliding bundle leaves the registry unchanged and logs no conflict`() {
+        val server = twoSeatServer()
+        val arenaV1 = aMap("arena", oneHex = true)
+        server.connectLocal(AssetBundle(maps = listOf(arenaV1)))
+        val firstConnection = PipedConnection()
+        server.attachInBackground(firstConnection)
+        firstConnection.joinAndConsumeKickstart(sessionId)
+        firstConnection.closeClientSide()
+        awaitTrue { server.gameLog.snapshot().map { it.event }.contains(PlayerDisconnected(PlayerId.PLAYER_2)) }
+        val registryBeforeRejoin = server.assetRegistry
+        val logSizeBeforeRejoin = server.gameLog.snapshot().size
+
+        val secondConnection = PipedConnection()
+        server.attachInBackground(secondConnection)
+        val collidingArena = aMap("arena", oneHex = false)
+        val rejoinAccepted = secondConnection.join(sessionId, content = AssetBundle(maps = listOf(collidingArena))) as ServerMessage.JoinAccepted
+
+        assertThat(server.assetRegistry).isEqualTo(registryBeforeRejoin)
+        // +1 for the rejoin's own PlayerConnected — PlayerDisconnected already happened before
+        // logSizeBeforeRejoin was captured.
+        assertThat(rejoinAccepted.bootstrap.log).hasSize(logSizeBeforeRejoin + 1)
+        assertThat(rejoinAccepted.bootstrap.log.map { it.event }).doesNotHaveAnyElementsOfTypes(AssetConflict::class.java)
+    }
+
+    @Test
+    fun `assetRegistry reflects the union of every seat's contribution`() {
+        val server = twoSeatServer()
+        val arena = aMap("arena", oneHex = false)
+        val canyon = aMap("canyon", oneHex = false)
+        server.connectLocal(AssetBundle(maps = listOf(arena)))
+        val connection = PipedConnection()
+        server.attachInBackground(connection)
+
+        connection.joinAndConsumeKickstart(sessionId, content = AssetBundle(maps = listOf(canyon)))
+
+        assertThat(server.assetRegistry.map("arena")).isEqualTo(arena)
+        assertThat(server.assetRegistry.map("canyon")).isEqualTo(canyon)
+    }
+
+    @Test
+    fun `hot-seat - the same bundle contributed by both seats produces zero conflicts`() {
+        val server = twoSeatServer()
+        val bundle = AssetBundle(maps = listOf(aMap("arena", oneHex = false)))
+        val conflicts = mutableListOf<AssetConflict>()
+        server.subscribe { event -> if (event is AssetConflict) conflicts += event }
+
+        server.connectLocal(bundle)
+        server.connectLocal(bundle)
+
+        assertThat(conflicts).isEmpty()
+        assertThat(server.assetRegistry.map("arena")).isEqualTo(bundle.maps.single())
     }
 }

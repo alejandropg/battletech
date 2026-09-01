@@ -228,10 +228,10 @@ internal fun sessionNoticeIcon(): String = NF_MD_LAN_CONNECT
 /** Marker for the "Map: <name>" line a [battletech.tactical.session.MapIdentified] event renders. */
 internal fun mapNoticeIcon(): String = NF_MD_MAP
 
-/** Marker for the warning line when [battletech.tactical.session.MapIdentified]'s local map check disagrees with the host. */
+/** Marker for a [battletech.tactical.session.AssetConflict] on a MAP: a contributed map collided with the registered one. */
 internal fun mapMismatchIcon(): String = NF_MD_ALERT
 
-/** Marker for a warning that a local mech definition disagrees with the host. */
+/** Marker for a [battletech.tactical.session.AssetConflict] on a MECH: a contributed mech model collided with the registered one. */
 internal fun mechModelMismatchIcon(): String = NF_MD_ALERT
 
 /** Marker for a unit that fell / was knocked prone. */

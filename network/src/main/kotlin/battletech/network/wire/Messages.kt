@@ -3,6 +3,7 @@ package battletech.network.wire
 import battletech.tactical.model.GameMap
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.content.AssetBundle
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.GameCommand
 import battletech.tactical.session.LogEntry
@@ -13,7 +14,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /** Wire protocol version; bumped whenever [ClientMessage]/[ServerMessage] shapes change incompatibly. */
-public const val PROTOCOL_VERSION: Int = 8
+public const val PROTOCOL_VERSION: Int = 9
 
 /**
  * A read-only replica of session state as sent to a client: everything
@@ -53,10 +54,22 @@ public data class GameSnapshot(
 @Serializable
 public sealed interface ClientMessage {
 
-    /** First message on a new connection: attempt to join [sessionId] speaking protocol [protocolVersion]. */
+    /**
+     * First message on a new connection: attempt to join [sessionId] speaking protocol
+     * [protocolVersion], contributing [content] — everything this seat has registered
+     * (built-ins and `--add-*` externals alike) — to the match's shared [AssetRegistry].
+     * [content] is defaulted (rather than required) because [protocolVersion] travels inside
+     * this same message: an old client's old-shape `Join` must still decode far enough for the
+     * server to answer [JoinRejectionReason.INCOMPATIBLE_PROTOCOL] instead of throwing in the
+     * decoder.
+     */
     @Serializable
     @SerialName("join")
-    public data class Join(public val sessionId: String, public val protocolVersion: Int) : ClientMessage
+    public data class Join(
+        public val sessionId: String,
+        public val protocolVersion: Int,
+        public val content: AssetBundle = AssetBundle.EMPTY,
+    ) : ClientMessage
 
     /** Submit [command] for processing; [requestId] correlates the eventual [ServerMessage.CommandReply]. */
     @Serializable
@@ -69,6 +82,9 @@ public enum class JoinRejectionReason {
     UNKNOWN_SESSION,
     INCOMPATIBLE_PROTOCOL,
     SEAT_TAKEN,
+
+    /** [ClientMessage.Join.content] repeats an id within one [battletech.tactical.model.content.AssetKind]. */
+    INVALID_CONTENT,
 }
 
 /**

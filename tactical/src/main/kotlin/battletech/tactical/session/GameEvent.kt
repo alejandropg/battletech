@@ -12,7 +12,6 @@ import battletech.tactical.model.MechLocation
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
-import battletech.tactical.model.map.LocalMapMatch
 import battletech.tactical.unit.AmmoType
 import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.DestructionReason
@@ -383,14 +382,11 @@ public data class SessionOpened(public val sessionId: String) : GameEvent
 public data object HostConnectionLost : GameEvent
 
 /**
- * The board this client is playing on, recorded locally at join time — the client-side
- * counterpart of [SessionOpened]. [localMatch] reports how the host's map compares to a local
- * map source named [name]; the host's map is authoritative either way, so this is purely
- * informational.
+ * The board a match is being played on — emitted once by the host, at match start, beside
+ * [SessionOpened]. Every seat sees the same [name], whether it joined before or after this fired.
  */
 @Serializable
 @SerialName("mapIdentified")
 public data class MapIdentified(
     public val name: String,
-    public val localMatch: LocalMapMatch,
 ) : GameEvent

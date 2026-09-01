@@ -2,13 +2,12 @@ package battletech.network.wire
 
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.content.AssetRegistry
 import battletech.tactical.model.content.ContentCatalog
 import battletech.tactical.query.projectFor
 import battletech.tactical.session.TurnState
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -26,7 +25,7 @@ internal class ServerMessageDecoderTest {
     )
     private val bootstrap = MatchBootstrap(
         playerId = PlayerId.PLAYER_1,
-        mechModels = game.units.map { it.model }.distinctBy { it.variant },
+        registry = AssetRegistry.forMatch(game),
         map = game.map,
         snapshot = snapshot,
         log = emptyList(),
@@ -47,18 +46,16 @@ internal class ServerMessageDecoderTest {
     }
 
     @Test
-    fun `reject repeated bootstrap variants before installing the catalog`() {
+    fun `reject a bootstrap missing its registry`() {
         val decoder = ServerMessageDecoder()
         val root = WireJson.json.parseToJsonElement(acceptedLine).jsonObject
         val bootstrapObject = root.getValue("bootstrap").jsonObject
-        val models = bootstrapObject.getValue("mechModels").jsonArray
-        val repeatedModels = JsonArray(listOf(models.first(), models.first()))
-        val repeatedBootstrap = JsonObject(bootstrapObject + ("mechModels" to repeatedModels))
-        val repeatedLine = JsonObject(root + ("bootstrap" to repeatedBootstrap)).toString()
+        val withoutRegistry = JsonObject(bootstrapObject - "registry")
+        val brokenLine = JsonObject(root + ("bootstrap" to withoutRegistry)).toString()
 
-        val error = assertThrows<SerializationException> { decoder.decode(repeatedLine) }
+        val error = assertThrows<SerializationException> { decoder.decode(brokenLine) }
 
-        assertThat(error).hasMessageContaining("repeated in match bootstrap")
+        assertThat(error).hasMessageContaining("missing registry")
         assertThat(decoder.decode(acceptedLine)).isEqualTo(accepted)
     }
 
@@ -86,16 +83,5 @@ internal class ServerMessageDecoderTest {
         val error = assertThrows<SerializationException> { decoder.decode(acceptedLine) }
 
         assertThat(error).hasMessageContaining("more than one match bootstrap")
-    }
-
-    @Test
-    fun `reject repeated variants when constructing an in-memory bootstrap`() {
-        val model = bootstrap.mechModels.first()
-
-        val error = assertThrows<IllegalArgumentException> {
-            bootstrap.copy(mechModels = listOf(model, model))
-        }
-
-        assertThat(error).hasMessageContaining("repeated in match bootstrap")
     }
 }

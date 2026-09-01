@@ -109,7 +109,7 @@ public fun GameEvent.redactFor(viewer: PlayerId?, state: GameState, revealAll: B
         is SessionOpened -> this
         is HostConnectionLost -> this
         is MapIdentified -> this
-        is MechModelMismatch -> this
+        is AssetConflict -> this
     }
 }
 

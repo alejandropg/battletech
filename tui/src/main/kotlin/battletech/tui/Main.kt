@@ -6,6 +6,7 @@ import battletech.network.server.GameServer
 import battletech.network.server.SocketAcceptor
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
+import battletech.tactical.model.content.AssetBundle
 import battletech.tactical.model.content.ContentCatalog
 import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.mech.MechLoadException
@@ -94,11 +95,13 @@ public fun main(args: Array<String>) {
     when (val mode = launch.mode) {
         is Mode.HotSeat -> {
             val content = resolveContentOrExit(launch)
-            val server = GameServer.host(resolveGameOrExit(content, mode.setup))
+            val server = GameServer.host(resolveGameOrExit(content, mode.setup), content.contribution())
             // Build the map from each returned session's OWN playerId — connectLocal() assigns
             // seats via (allSeats - clients.keys).min(), not call order, so the Nth call is not
             // guaranteed to be the Nth PlayerId. See GameServer.connectLocal's KDoc.
-            val seats = List(PlayerId.entries.size) { server.connectLocal() }.associateBy { it.playerId }
+            // The SAME bundle goes to every seat (D-Q18: re-registering an identical asset is a
+            // silent no-op) — no branch on which seat this is.
+            val seats = List(PlayerId.entries.size) { server.connectLocal(content.contribution()) }.associateBy { it.playerId }
             check(seats.keys == PlayerId.entries.toSet()) {
                 "hot-seat roster incomplete: expected ${PlayerId.entries.toSet()}, got ${seats.keys}"
             }
@@ -110,10 +113,10 @@ public fun main(args: Array<String>) {
 
         is Mode.Host -> {
             val content = resolveContentOrExit(launch)
-            val server = GameServer.host(resolveGameOrExit(content, mode.setup))
+            val server = GameServer.host(resolveGameOrExit(content, mode.setup), content.contribution())
             // connectLocal() BEFORE the acceptor starts — see GameServer.connectLocal's KDoc
             // for why that order is what makes the local seat deterministically PLAYER_1.
-            val localSession = server.connectLocal()
+            val localSession = server.connectLocal(content.contribution())
             val acceptor = SocketAcceptor(server, mode.port)
             acceptor.start()
             println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
@@ -128,12 +131,12 @@ public fun main(args: Array<String>) {
         }
 
         is Mode.Join -> {
-            // --add-map/--add-mech/--add-unit register content this seat can compare the host's
-            // supplied map/mechs against for local drift, even though join never SELECTS a map
-            // or unit collection of its own — see ContentCatalog.mapMatcher/mechFinder's KDoc.
+            // --add-map/--add-mech contribute this seat's registered content to the host's
+            // shared asset registry, even though join never SELECTS a map or unit collection of
+            // its own — see ContentCatalog.contribution's KDoc.
             val content = resolveContentOrExit(launch)
             val remote = try {
-                ClientGameSession.connect(mode.host, mode.port, mode.sessionId, content.mapMatcher(), content.mechFinder())
+                ClientGameSession.connect(mode.host, mode.port, mode.sessionId, content.contribution())
             } catch (e: JoinRejectedException) {
                 System.err.println("Join rejected: ${e.reason}")
                 kotlin.system.exitProcess(1)
@@ -150,7 +153,7 @@ public fun main(args: Array<String>) {
         // server, so launch.themeName is simply never read on this path — no branch needed.
         is Mode.Server -> {
             val content = resolveContentOrExit(launch)
-            runHeadlessServer(mode.port, resolveGameOrExit(content, mode.setup))
+            runHeadlessServer(mode.port, resolveGameOrExit(content, mode.setup), content.contribution())
         }
     }
 }
@@ -159,9 +162,11 @@ public fun main(args: Array<String>) {
  * Headless dedicated server: no [TuiApp], no Mordant terminal. Both players connect
  * remotely via the `join` subcommand. Runs until Ctrl-C (or another SIGTERM), printing every game
  * event to stdout as it happens; the process stays up after [battletech.tactical.session.MatchEnded].
+ * [content] is this launch's own registered catalog — contributed to the shared asset registry
+ * the same way any other seat's is (D-Q24).
  */
-private fun runHeadlessServer(port: Int, initialGameState: GameState) {
-    val server = GameServer.host(initialGameState)
+private fun runHeadlessServer(port: Int, initialGameState: GameState, content: AssetBundle = AssetBundle.EMPTY) {
+    val server = GameServer.host(initialGameState, content)
 
     val printer = GameEventPrinter(System.out)
     // Replay the seeded notices before subscribing so the printer sees the whole log from the

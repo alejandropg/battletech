@@ -14,8 +14,11 @@ import battletech.network.wire.SessionId
 import battletech.tactical.model.GameState
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
+import battletech.tactical.model.content.AssetBundle
+import battletech.tactical.model.content.AssetRegistry
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.query.PlayerView
+import battletech.tactical.session.AssetConflict
 import battletech.tactical.session.BattleSession
 import battletech.tactical.session.CommandRejection
 import battletech.tactical.session.CommandResult
@@ -24,6 +27,7 @@ import battletech.tactical.session.GameEvent
 import battletech.tactical.session.GameLog
 import battletech.tactical.session.GameSession
 import battletech.tactical.session.LogEntry
+import battletech.tactical.session.MapIdentified
 import battletech.tactical.session.PlayerConnected
 import battletech.tactical.session.PlayerDisconnected
 import battletech.tactical.session.SessionNotice
@@ -31,7 +35,6 @@ import battletech.tactical.session.SessionOpened
 import battletech.tactical.session.Subscription
 import battletech.tactical.session.TurnState
 import battletech.tactical.session.redactFor
-import battletech.tactical.unit.MechModel
 import battletech.tactical.unit.UnitRoster
 import battletech.tactical.unit.UnknownUnitException
 import battletech.tactical.unit.VisibleUnit
@@ -121,7 +124,16 @@ public class GameServer(
 
     private val clients: MutableMap<PlayerId, ConnectedClient> = mutableMapOf()
     private var everStarted: Boolean = false
-    private val matchModels: List<MechModel> = distinctMatchModels(session.gameState)
+
+    /**
+     * The match's shared asset registry — MAP and MECH content every seat contributes at join
+     * time (see [AssetBundle]/[AssetRegistry]). Seeded from the match's own board and roster
+     * models ([AssetRegistry.forMatch]) so the decoder resolver works and drift is detectable
+     * even before any seat has joined; [Companion.host] merges its caller's own catalog bundle
+     * on top of that seed. Immutable content, mutable reference: [merge][AssetRegistry.merge]
+     * accumulates new contributions only until [everStarted] latches, per [attach].
+     */
+    private var registry: AssetRegistry = AssetRegistry.forMatch(session.gameState)
 
     // ---------- reads of the authoritative session ----------
 
@@ -136,6 +148,9 @@ public class GameServer(
     public val currentPhase: TurnPhase get() = synchronized(lock) { session.currentPhase }
     public val activePlayer: PlayerId? get() = synchronized(lock) { session.activePlayer }
     public val gameLog: GameLog get() = synchronized(lock) { session.gameLog }
+
+    /** The match's shared asset registry as it stands right now — see [registry]'s KDoc. */
+    public val assetRegistry: AssetRegistry get() = synchronized(lock) { registry }
 
     public fun viewFor(playerId: PlayerId): PlayerView = synchronized(lock) { session.viewFor(playerId) }
 
@@ -175,12 +190,12 @@ public class GameServer(
      * whole determinism argument — it depends on call order, not on locking, because nothing
      * else could observe [clients] before the acceptor exists.
      */
-    public fun connectLocal(): ClientGameSession {
+    public fun connectLocal(content: AssetBundle = AssetBundle.EMPTY): ClientGameSession {
         val (serverHalf, clientHalf) = InMemoryConnection.pair()
         thread(isDaemon = true, name = "game-server-local") {
             attach(serverHalf)
         }
-        return ClientGameSession.handshake(clientHalf, sessionId)
+        return ClientGameSession.handshake(clientHalf, sessionId, content)
     }
 
     /** Disconnects every currently-connected seat (local and remote alike) — see [disconnect]. */
@@ -276,6 +291,10 @@ public class GameServer(
                 clients.keys.containsAll(allSeats) -> JoinRejectionReason.SEAT_TAKEN
                 !SessionId.matches(join.sessionId, sessionId) -> JoinRejectionReason.UNKNOWN_SESSION
                 join.protocolVersion != PROTOCOL_VERSION -> JoinRejectionReason.INCOMPATIBLE_PROTOCOL
+                // Only worth asking while the registry can still accept a contribution: after the
+                // freeze the bundle is ignored wholesale (see below), so refusing an otherwise
+                // legitimate rejoin over content nothing will read would strand that seat.
+                !everStarted && join.content.duplicateId() != null -> JoinRejectionReason.INVALID_CONTENT
                 else -> null
             }
         }
@@ -299,6 +318,19 @@ public class GameServer(
             session.annotate(PlayerConnected(seat))
             clients[seat] = client
             startWriterThread(client)
+
+            // The registry accumulates only up to the match's first kickstart — a rejoin's (or a
+            // late joiner's) bundle after that is ignored in silence: no merge, no findings, no
+            // mutation. Nothing about the match can change once its content is frozen.
+            if (!everStarted) {
+                val merged = registry.merge(join.content)
+                registry = merged.registry
+                // Emitted after the connect notice above, before the kickstart mark below, so the
+                // joiner reads its own findings in the bootstrap log and every already-connected
+                // seat reads them in the same delta that carries the connect notice.
+                merged.conflicts.forEach { conflict -> session.annotate(AssetConflict(conflict.kind, conflict.id, seat)) }
+            }
+
             val markBeforeKickstart = session.gameLog.snapshot().size
             // logFor(seat), not gameLog.snapshot() — the joiner's JoinAccepted message must
             // already be redacted, same as every later push (see snapshotFor's KDoc). The map
@@ -309,7 +341,7 @@ public class GameServer(
                 ServerMessage.JoinAccepted(
                     MatchBootstrap(
                         playerId = seat,
-                        mechModels = matchModels,
+                        registry = registry,
                         map = projection.map,
                         snapshot = snapshotFrom(projection.units),
                         log = session.logFor(seat),
@@ -439,26 +471,31 @@ public class GameServer(
          * miss an event to a subscriber that races a client attaching, because nothing has
          * attached yet. Callers that don't need to observe the seed notices before traffic starts
          * (a host UI reading them back out of the replayed log) can just attach immediately.
+         *
+         * [content] is this launch's own registered catalog ([AssetBundle], defaulted empty) —
+         * the host contributes it the same way any joining seat does. Seed order is the match's
+         * own content first (already the [registry] field's default via [AssetRegistry.forMatch])
+         * then [content] on top; any conflict discovered while seeding is dropped silently:
+         * there's no [PlayerId] to attribute it to here, and match content is already baked into
+         * the units, so it always wins first-registrant anyway. A malformed bundle, by contrast,
+         * is this process's own bug rather than a peer's — a joining seat's earns a
+         * [JoinRejectionReason.INVALID_CONTENT], the host's fails loudly here.
          */
-        public fun host(initialGameState: GameState): GameServer {
+        public fun host(initialGameState: GameState, content: AssetBundle = AssetBundle.EMPTY): GameServer {
+            require(content.duplicateId() == null) {
+                "Host content repeats an id: ${content.duplicateId()}"
+            }
             val session = BattleSession(initialGameState = initialGameState, initialTurnState = TurnState.NULL)
             val sessionId = SessionId.generate()
             val server = GameServer(session, sessionId)
+            server.registry = server.registry.merge(content).registry
             session.annotate(SessionOpened(sessionId))
+            // Emitted once here, beside SessionOpened — a match-level fact known at
+            // host-construction time, not a per-join client-local check. Skipped for an unnamed
+            // board, matching AssetRegistry.forMatch: there is no name to identify it by.
+            if (initialGameState.map.name.isNotBlank()) session.annotate(MapIdentified(initialGameState.map.name))
             session.annotate(SessionNotice("Waiting for players to join…"))
             return server
         }
     }
-}
-
-private fun distinctMatchModels(state: GameState): List<MechModel> {
-    val byVariant = linkedMapOf<String, MechModel>()
-    for (unit in state.units) {
-        val previous = byVariant[unit.variant]
-        check(previous == null || previous == unit.model) {
-            "Match contains conflicting definitions for mech variant '${unit.variant}'"
-        }
-        byVariant[unit.variant] = unit.model
-    }
-    return byVariant.values.toList()
 }

@@ -15,32 +15,3 @@ public const val DEFAULT_MAP_NAME: String = "battletech-classic"
  * back to a packaged resource.
  */
 public fun resolveMap(spec: String, loader: GameMapLoader = GameMapLoader()): GameMap = loader.resolve(spec)
-
-/** Outcome of [compareWithLocalMap]: how a host-supplied [GameMap] compares to a local map source of the same name. */
-public enum class LocalMapMatch { MATCHES, DIFFERS, UNAVAILABLE }
-
-/**
- * Compares [hostMap] against a local map source named [hostMap.name][GameMap.name], resolved via
- * [loader]. The host's map is authoritative regardless of the outcome — this is purely informational,
- * for a client to warn its player when its own copy of a built-in or file-based map has drifted from
- * the host's. [LocalMapMatch.UNAVAILABLE] covers the ordinary case of a remote joiner with no local
- * map of that name at all, not just a genuinely broken one.
- */
-public fun compareWithLocalMap(hostMap: GameMap, loader: GameMapLoader = GameMapLoader()): LocalMapMatch =
-    try {
-        if (loader.resolve(hostMap.name).hexes == hostMap.hexes) LocalMapMatch.MATCHES else LocalMapMatch.DIFFERS
-    } catch (e: MapLoadException) {
-        LocalMapMatch.UNAVAILABLE
-    }
-
-/**
- * As [compareWithLocalMap], but resolves the local map through a [GameMapCatalog] — the packaged
- * and externally registered maps a launcher assembled — instead of a bare [GameMapLoader]. Lets a
- * joining client's drift check see maps registered via `--add-map` and not just packaged ones.
- */
-public fun compareWithLocalMap(hostMap: GameMap, catalog: GameMapCatalog): LocalMapMatch =
-    try {
-        if (catalog.resolve(hostMap.name).hexes == hostMap.hexes) LocalMapMatch.MATCHES else LocalMapMatch.DIFFERS
-    } catch (e: MapLoadException) {
-        LocalMapMatch.UNAVAILABLE
-    }

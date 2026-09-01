@@ -45,17 +45,22 @@ This is build-enforced, not hand-maintained discipline, by two tests in
 
 A wire change that isn't purely additive should bump `PROTOCOL_VERSION` (`network/wire/Messages.kt`)
 in the same diff that updates the golden file — a mismatched client already rejects cleanly via
-`JoinRejectionReason.INCOMPATIBLE_PROTOCOL`. `PROTOCOL_VERSION` is currently 8. Version 6 moved
+`JoinRejectionReason.INCOMPATIBLE_PROTOCOL`. `PROTOCOL_VERSION` is currently 9. Version 6 moved
 `GameMap` out of every `GameSnapshot` and into the one-time `ServerMessage.JoinAccepted`. Version 7
 made match mech definitions host-authoritative. Version 8 unified those definitions, the map, and
 the player's initial projected snapshot and log into one `MatchBootstrap` carried by
 `ServerMessage.JoinAccepted`. Its `CombatUnit.model` fields and all later snapshots remain compact
 variant strings. The connection-scoped decoder stages the bootstrap: it validates and installs the
 embedded catalog before decoding the snapshot, then retains that resolver for later pushes. Adding
-a packaged variant is therefore not itself a protocol change. Neither maps nor mech files are
-supplied by `join`. After decoding, the client compares same-variant host models with its packaged
-catalog and records a local `MechModelMismatch` event for each difference. This comparison is
-informational and never changes the connection-scoped host resolver.
+a packaged variant is therefore not itself a protocol change. Version 9 replaced that per-client
+model list with one match-scoped, server-authoritative `AssetRegistry` (MAP and MECH content):
+`ClientMessage.Join` gained a `content: AssetBundle` field (defaulted, so an old-shape `Join` still
+decodes far enough to be rejected with `INCOMPATIBLE_PROTOCOL`) carrying everything a joining seat
+has registered, and `MatchBootstrap.mechModels` was replaced by `MatchBootstrap.registry`. The host
+merges every seat's bundle in join order (first-registrant wins); the decoder now stages the
+bootstrap's `registry` field (not `mechModels`) to build its resolver. A collision is reported as an
+`AssetConflict` event through the normal (shared) game log rather than a client-local check — the
+client no longer inspects host content against its own catalog at all.
 `network/src/test/kotlin/battletech/network/wire/WireFormatRoundTripTest.kt` additionally pins the
 literal JSON for one flat (`RuleRejection.NoAmmo`) and one nested (`GameEvent`'s
 `UnitStoodUp.Undisclosed`) variant, to catch a discriminator change that round-tripping alone would

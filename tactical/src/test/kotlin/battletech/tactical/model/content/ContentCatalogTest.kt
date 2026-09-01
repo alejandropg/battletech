@@ -4,7 +4,6 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.HexCoordinates
 import battletech.tactical.model.HexDirection
 import battletech.tactical.model.PlayerId
-import battletech.tactical.model.map.LocalMapMatch
 import battletech.tactical.model.map.MapLoadException
 import battletech.tactical.model.mech.MechLoadException
 import battletech.tactical.model.unit.UnitLoadException
@@ -135,15 +134,15 @@ internal class ContentCatalogTest {
     }
 
     @Test
-    fun `mapMatcher and mechFinder are backed by this catalog's registered content`() {
+    fun `contribution exposes every registered map and mech`() {
         val map = tempDir.resolve("arena.json")
         map.writeText("""{"width":10,"height":10,"hexes":[]}""")
         val catalog = ContentCatalog.load(mapPaths = listOf(map))
 
-        val hostMap = catalog.resolveGame(mapName = "arena", unitsName = "default").map
-        assertThat(catalog.mapMatcher()(hostMap)).isEqualTo(LocalMapMatch.MATCHES)
-        assertThat(catalog.mechFinder()("AS7-D")).isNotNull()
-        assertThat(catalog.mechFinder()("NOPE")).isNull()
+        val contribution = catalog.contribution()
+
+        assertThat(contribution.maps.map { it.name }).contains("arena", "battletech-classic")
+        assertThat(contribution.mechs.map { it.variant }).contains("AS7-D")
     }
 
     private fun unitsJson(

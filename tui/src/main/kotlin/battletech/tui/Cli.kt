@@ -320,7 +320,7 @@ private class BattletechTui(
     private fun exitIfListingRequested(): Unit = exitIfAnyListingRequested(
         buildList {
             if (listMaps) add(renderFlatSection("Maps", content.listing().maps))
-            if (listMechs) add(renderMechsSection(content.listing().mechs, content.mechFinder()))
+            if (listMechs) add(renderMechsSection(content.listing().mechs, content::mech))
             if (listUnits) add(renderUnitsSection(content.unitListings()))
             if (listThemes) add(renderThemesSection(themeName))
         },

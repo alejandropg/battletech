@@ -1,5 +1,6 @@
 package battletech.network.wire
 
+import battletech.tactical.model.content.AssetRegistry
 import battletech.tactical.unit.MechModel
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -34,17 +35,11 @@ internal class ServerMessageDecoder(
 
         val bootstrap = root["bootstrap"] as? JsonObject
             ?: throw SerializationException("JoinAccepted is missing bootstrap")
-        val modelsElement = bootstrap["mechModels"]
-            ?: throw SerializationException("Match bootstrap is missing mechModels")
-        val models = WireJson.json.decodeFromJsonElement<List<MechModel>>(modelsElement)
-        val modelsByVariant = linkedMapOf<String, MechModel>()
-        for (model in models) {
-            if (modelsByVariant.put(model.variant, model) != null) {
-                throw SerializationException("Mech variant is repeated in match bootstrap: ${model.variant}")
-            }
-        }
+        val registryElement = bootstrap["registry"]
+            ?: throw SerializationException("Match bootstrap is missing registry")
+        val registry = WireJson.json.decodeFromJsonElement<AssetRegistry>(registryElement)
 
-        val candidateJson = WireJson.createJson(modelsByVariant::get)
+        val candidateJson = WireJson.createJson(registry::mech)
         val message = candidateJson.decodeFromJsonElement<ServerMessage>(element)
         if (message !is ServerMessage.JoinAccepted) {
             throw SerializationException("Expected JoinAccepted while decoding match bootstrap")

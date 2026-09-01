@@ -152,27 +152,4 @@ internal class MapSourceTest {
 
         assertThat(resolveMap(file.toString()).name).isEqualTo(file.toString())
     }
-
-    // ---------- compareWithLocalMap ----------
-
-    @Test
-    fun `compareWithLocalMap reports MATCHES when the local map of the same name has identical hexes`() {
-        val hostMap = resolveMap("test")
-
-        assertThat(compareWithLocalMap(hostMap)).isEqualTo(LocalMapMatch.MATCHES)
-    }
-
-    @Test
-    fun `compareWithLocalMap reports DIFFERS when the local map of the same name has different hexes`() {
-        val hostMap = resolveMap("test").copy(name = "battletech-classic")
-
-        assertThat(compareWithLocalMap(hostMap)).isEqualTo(LocalMapMatch.DIFFERS)
-    }
-
-    @Test
-    fun `compareWithLocalMap reports UNAVAILABLE when no local map of that name exists`() {
-        val hostMap = resolveMap("test").copy(name = "not-a-packaged-map-for-test")
-
-        assertThat(compareWithLocalMap(hostMap)).isEqualTo(LocalMapMatch.UNAVAILABLE)
-    }
 }
