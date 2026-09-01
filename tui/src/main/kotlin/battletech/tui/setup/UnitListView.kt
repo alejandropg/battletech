@@ -5,6 +5,8 @@ import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.view.TextCursor
 import tenter.view.View
+import tenter.widget.CheckState
+import tenter.widget.Checkbox
 import tenter.widget.ValueRow
 
 /**
@@ -30,9 +32,17 @@ internal class UnitListView(
             val cursorGlyph = if (isCursorHere) "▶" else " "
             val color = if (isCursorHere) ChromeRole.ACCENT else ChromeRole.TEXT_PRIMARY
             val countLabel = if (count == 0) "" else count.toString()
+            // CHECKED at any positive count, never INDETERMINATE: in this codebase's checkbox
+            // vocabulary that third state means "assigned elsewhere" (see TargetsView), which
+            // would read as something quite different from "more than one of this model".
+            val state = if (count == 0) CheckState.UNCHECKED else CheckState.CHECKED
+            val checkboxColor = if (isCursorHere) ChromeRole.ACCENT else Checkbox.intrinsicColor(state)
 
+            val row = content.row
             if (isCursorHere) content.markReveal()
+            // The three spaces after the cursor glyph leave column 2 free for the checkbox.
             ValueRow.draw(content, "$cursorGlyph   $variant", countLabel, emptyList(), color)
+            Checkbox.draw(content, 2, row, state, checkboxColor)
         }
     }
 
