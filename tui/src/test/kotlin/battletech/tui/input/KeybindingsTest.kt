@@ -2,6 +2,8 @@ package battletech.tui.input
 
 import battletech.tactical.model.HexDirection
 import battletech.tui.game.GamePanelId
+import battletech.tui.setup.SetupAction
+import battletech.tui.setup.SetupPanelId
 import com.github.ajalt.mordant.input.KeyboardEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -117,11 +119,13 @@ internal class KeybindingsTest {
         for ((context, binding) in map.allBindings()) {
             val ok = when (context) {
                 ContextId.CHROME -> binding.action is ChromeAction || binding.action is PanAction
+                ContextId.GAME_CHROME -> binding.action is ChromeAction || binding.action is PanAction
                 ContextId.PANEL_SCROLL -> binding.action is ScrollAction
                 ContextId.MOVEMENT_IDLE, ContextId.WEAPON_IDLE, ContextId.PHYSICAL_IDLE -> binding.action is IdleAction
                 ContextId.BROWSING -> binding.action is BrowsingAction
                 ContextId.FACING -> binding.action is FacingAction
                 ContextId.WEAPON_DECLARING, ContextId.PHYSICAL_DECLARING -> binding.action is AttackAction
+                ContextId.SETUP -> binding.action is SetupAction || binding.action is ChromeAction
             }
             assertTrue(ok, "binding for ${binding.chord} in $context has action ${binding.action} of the wrong family")
         }
@@ -142,10 +146,10 @@ internal class KeybindingsTest {
     fun `characterisation - default chrome bindings`() {
         val keys = Keybindings.DEFAULT
 
-        assertEquals(ChromeAction.FocusPanel(GamePanelId.BOARD), keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("0")))
+        assertEquals(ChromeAction.FocusPanel(GamePanelId.BOARD), keys.resolve(listOf(ContextId.GAME_CHROME), KeyboardEvent("0")))
         assertEquals(ChromeAction.ToggleHelp, keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("?")))
-        assertEquals(PanAction.Pan(PanAction.Direction.LEFT), keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("h")))
-        assertEquals(PanAction.Recenter, keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("Home")))
+        assertEquals(PanAction.Pan(PanAction.Direction.LEFT), keys.resolve(listOf(ContextId.GAME_CHROME), KeyboardEvent("h")))
+        assertEquals(PanAction.Recenter, keys.resolve(listOf(ContextId.GAME_CHROME), KeyboardEvent("Home")))
         assertEquals(ChromeAction.Quit, keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("c", ctrl = true)))
         assertEquals(ChromeAction.CycleState(1), keys.resolve(listOf(ContextId.CHROME), KeyboardEvent("+")))
         // Posix reports "?" with shift = false, Windows with shift = true (see shiftedPunctuation's
@@ -190,6 +194,20 @@ internal class KeybindingsTest {
         assertEquals('?', keys.badgeFor(GamePanelId.HELP))
 
         val badges = GamePanelId.entries.map { keys.badgeFor(it) }
+        assertEquals(badges.size, badges.toSet().size, "duplicate badge would let one chord ambiguously resolve two panels")
+    }
+
+    @Test
+    fun `badgeFor returns the stable per-panel badge for the setup screen too`() {
+        val keys = Keybindings.DEFAULT
+
+        assertEquals('1', keys.badgeFor(SetupPanelId.MODE))
+        assertEquals('2', keys.badgeFor(SetupPanelId.MAP))
+        assertEquals('3', keys.badgeFor(SetupPanelId.PLAYER_1))
+        assertEquals('4', keys.badgeFor(SetupPanelId.PLAYER_2))
+        assertEquals('?', keys.badgeFor(SetupPanelId.HELP))
+
+        val badges = SetupPanelId.entries.map { keys.badgeFor(it) }
         assertEquals(badges.size, badges.toSet().size, "duplicate badge would let one chord ambiguously resolve two panels")
     }
 }

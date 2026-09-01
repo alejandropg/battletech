@@ -16,12 +16,12 @@ internal class PanelsTest {
 
     @Test
     fun `the board is the main panel`() {
-        assertEquals(GamePanelId.BOARD, Panels.build(Keybindings.DEFAULT).main.id)
+        assertEquals(GamePanelId.BOARD, Panels.build(Keybindings.DEFAULT).main!!.id)
     }
 
     @Test
     fun `the board declares only NORMAL`() {
-        assertEquals(listOf(PanelState.NORMAL), Panels.build(Keybindings.DEFAULT).main.states)
+        assertEquals(listOf(PanelState.NORMAL), Panels.build(Keybindings.DEFAULT).main!!.states)
     }
 
     @Test
@@ -46,7 +46,7 @@ internal class PanelsTest {
     fun `every GamePanelId appears exactly once across main and sides`() {
         val set = Panels.build(Keybindings.DEFAULT)
 
-        val allIds = (listOf(set.main.id) + set.sides.map { it.id })
+        val allIds = (listOf(set.main!!.id) + set.sides.map { it.id })
         assertEquals(GamePanelId.entries, allIds.distinct().sorted(), "every id, no duplicates")
     }
 

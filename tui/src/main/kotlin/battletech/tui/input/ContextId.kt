@@ -2,6 +2,7 @@ package battletech.tui.input
 
 internal enum class ContextId {
     CHROME,
+    GAME_CHROME,
     PANEL_SCROLL,
     MOVEMENT_IDLE,
     BROWSING,
@@ -10,4 +11,5 @@ internal enum class ContextId {
     WEAPON_DECLARING,
     PHYSICAL_IDLE,
     PHYSICAL_DECLARING,
+    SETUP,
 }

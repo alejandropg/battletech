@@ -118,10 +118,14 @@ internal suspend fun runLoop(
 
                         is ChromeAction -> {
                             when (action) {
-                                is ChromeAction.FocusPanel ->
-                                    if (action.panel == GamePanelId.BOARD || action.panel in PanelVisibility.visiblePanels(appState)) {
-                                        workspace.focus(action.panel)
+                                is ChromeAction.FocusPanel -> {
+                                    // GAME_CHROME is the only layer binding FocusPanel while a game is
+                                    // running, and it only ever names a GamePanelId.
+                                    val panel = action.panel as GamePanelId
+                                    if (panel == GamePanelId.BOARD || panel in PanelVisibility.visiblePanels(appState)) {
+                                        workspace.focus(panel)
                                     }
+                                }
                                 // ? is a different action from every other panel's Alt+<key>: it also
                                 // toggles whether HELP EXISTS this frame (an AppState fact PanelVisibility
                                 // reads), not just a focus request — see AppState.helpOpen's KDoc.
@@ -282,6 +286,7 @@ internal fun resolveInput(
 private fun activeContexts(focused: GamePanelId, appState: AppState): List<ContextId> = buildList {
     if (focused != GamePanelId.BOARD) add(ContextId.PANEL_SCROLL)
     add(ContextId.CHROME)
+    add(ContextId.GAME_CHROME)
     if (appState.matchEnded == null) add(appState.phase.keyContext)
 }
 

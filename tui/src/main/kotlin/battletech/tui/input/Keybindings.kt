@@ -2,6 +2,8 @@ package battletech.tui.input
 
 import battletech.tactical.model.HexDirection
 import battletech.tui.game.GamePanelId
+import battletech.tui.setup.SetupAction
+import battletech.tui.setup.SetupPanelId
 import com.github.ajalt.mordant.input.KeyboardEvent
 import tenter.input.HintGroup
 import tenter.input.InputAction
@@ -12,6 +14,7 @@ import tenter.input.KeyMap
 import tenter.input.KeySection
 import tenter.input.PanAction
 import tenter.input.ScrollAction
+import tenter.panel.PanelId
 
 /** The domain facade over the generic [KeyMap] — every keyboard binding in this application. */
 internal class Keybindings(private val keyMap: KeyMap<ContextId>) {
@@ -28,8 +31,12 @@ internal class Keybindings(private val keyMap: KeyMap<ContextId>) {
      * The character a panel shows in its border: the single-character key of its own focus chord,
      * so rebinding `alt+p` to LOG relabels LOG's border too. Null when nothing focuses it.
      */
-    fun badgeFor(panel: GamePanelId): Char? {
-        val action = if (panel == GamePanelId.HELP) ChromeAction.ToggleHelp else ChromeAction.FocusPanel(panel)
+    fun badgeFor(panel: PanelId): Char? {
+        val action = if (panel == GamePanelId.HELP || panel == SetupPanelId.HELP) {
+            ChromeAction.ToggleHelp
+        } else {
+            ChromeAction.FocusPanel(panel)
+        }
         return keyMap.chordsFor(action).firstOrNull()?.key?.singleOrNull()
     }
 
@@ -42,6 +49,7 @@ internal class Keybindings(private val keyMap: KeyMap<ContextId>) {
 
 private fun defaultLayers(): Map<ContextId, KeyLayer> = mapOf(
     ContextId.CHROME to chromeLayer(),
+    ContextId.GAME_CHROME to gameChromeLayer(),
     ContextId.PANEL_SCROLL to panelScrollLayer(),
     ContextId.MOVEMENT_IDLE to idleLayer(
         title = "MOVEMENT",
@@ -62,9 +70,43 @@ private fun defaultLayers(): Map<ContextId, KeyLayer> = mapOf(
         commitDescription = "commit",
     ),
     ContextId.PHYSICAL_DECLARING to declaringLayer(title = "DECLARE PHYSICAL", includeTwistTorso = false),
+    ContextId.SETUP to setupLayer(),
 )
 
+/**
+ * The chords every screen shares: help, resize the focused panel, quit. Panel focus and board pan
+ * are game-only — see [gameChromeLayer] — so this layer's own bindings never collide with SETUP's
+ * `1`-`4` panel-focus chords.
+ */
 private fun chromeLayer(): KeyLayer {
+    val bindings = shiftedPunctuation("?", ChromeAction.ToggleHelp, "toggleHelp") +
+        shiftedPunctuation("+", ChromeAction.CycleState(1), "cycleState") +
+        listOf(
+            KeyBinding(KeyboardEvent("-"), ChromeAction.CycleState(-1), "cycleState"),
+            KeyBinding(KeyboardEvent("c", ctrl = true), ChromeAction.Quit, "quit"),
+        )
+
+    val hintGroups = listOf(
+        HintGroup("focusPanel", "0-9", "focus a panel"),
+        HintGroup("toggleHelp", "?", "toggle help"),
+        HintGroup("cycleState", "+/-", "resize focused panel"),
+        HintGroup("scrollFocused", "↑↓/PgUp/PgDn", "scroll focused panel"),
+        HintGroup("wheel", "wheel", "scroll a panel", bindingless = true),
+        HintGroup("pan", "hjkl/${KeyGlyph.CTRL}←→↑↓", "pan board"),
+        HintGroup("recenter", "Home", "recenter board on cursor"),
+        HintGroup("quit", "${KeyGlyph.CTRL}c", "quit"),
+    )
+
+    return KeyLayer(title = "GLOBAL", bindings = bindings, hintGroups = hintGroups)
+}
+
+/**
+ * The game screen's own chrome: panel focus (`0`-`9`) and board pan/recenter — bindings that only
+ * make sense once a [GamePanelId] board exists, so they don't belong in [chromeLayer], which every
+ * screen (including SETUP) shares. `title = null`: these chords are documented by GLOBAL's
+ * `focusPanel`/`pan`/`recenter` rows (see [tenter.input.KeyMap]'s KDoc on section-less layers).
+ */
+private fun gameChromeLayer(): KeyLayer {
     val focusPanelBindings = listOf(
         KeyboardEvent("0") to GamePanelId.BOARD,
         KeyboardEvent("1") to GamePanelId.UNIT_STATUS,
@@ -86,27 +128,50 @@ private fun chromeLayer(): KeyLayer {
         KeyboardEvent("ArrowDown", ctrl = true) to PanAction.Direction.DOWN,
     ).map { (chord, direction) -> KeyBinding(chord, PanAction.Pan(direction), "pan") }
 
-    val bindings = focusPanelBindings +
-        shiftedPunctuation("?", ChromeAction.ToggleHelp, "toggleHelp") +
-        shiftedPunctuation("+", ChromeAction.CycleState(1), "cycleState") +
-        listOf(KeyBinding(KeyboardEvent("-"), ChromeAction.CycleState(-1), "cycleState")) +
-        panBindings + listOf(
+    val bindings = focusPanelBindings + panBindings + listOf(
         KeyBinding(KeyboardEvent("Home"), PanAction.Recenter, "recenter"),
-        KeyBinding(KeyboardEvent("c", ctrl = true), ChromeAction.Quit, "quit"),
+    )
+
+    return KeyLayer(title = null, bindings = bindings)
+}
+
+/**
+ * The interactive setup screen's own chords. `SETUP` binds `1`-`4` for panel focus (unlike the
+ * game, which uses `0`-`9` via [gameChromeLayer]) — see `docs`'s interactive-setup-screen plan for
+ * why the two never need to coexist in one active-context list.
+ */
+private fun setupLayer(): KeyLayer {
+    val focusPanelBindings = listOf(
+        KeyboardEvent("1") to SetupPanelId.MODE,
+        KeyboardEvent("2") to SetupPanelId.MAP,
+        KeyboardEvent("3") to SetupPanelId.PLAYER_1,
+        KeyboardEvent("4") to SetupPanelId.PLAYER_2,
+    ).map { (chord, panel) -> KeyBinding(chord, ChromeAction.FocusPanel(panel), "focusPanel") }
+
+    val bindings = focusPanelBindings + listOf(
+        KeyBinding(KeyboardEvent("w"), SetupAction.MoveCursor(-1), "moveCursor"),
+        KeyBinding(KeyboardEvent("ArrowUp"), SetupAction.MoveCursor(-1), "moveCursor"),
+        KeyBinding(KeyboardEvent("s"), SetupAction.MoveCursor(1), "moveCursor"),
+        KeyBinding(KeyboardEvent("ArrowDown"), SetupAction.MoveCursor(1), "moveCursor"),
+        KeyBinding(KeyboardEvent("a"), SetupAction.Adjust(-1), "adjust"),
+        KeyBinding(KeyboardEvent("ArrowLeft"), SetupAction.Adjust(-1), "adjust"),
+        KeyBinding(KeyboardEvent("d"), SetupAction.Adjust(1), "adjust"),
+        KeyBinding(KeyboardEvent("ArrowRight"), SetupAction.Adjust(1), "adjust"),
+        KeyBinding(KeyboardEvent(" "), SetupAction.Toggle, "toggle"),
+        KeyBinding(KeyboardEvent("Enter"), SetupAction.NextPanel, "nextPanel"),
+        KeyBinding(KeyboardEvent("c"), SetupAction.Commit, "commit"),
     )
 
     val hintGroups = listOf(
-        HintGroup("focusPanel", "0-9", "focus a panel"),
-        HintGroup("toggleHelp", "?", "toggle help"),
-        HintGroup("cycleState", "+/-", "resize focused panel"),
-        HintGroup("scrollFocused", "↑↓/PgUp/PgDn", "scroll focused panel"),
-        HintGroup("wheel", "wheel", "scroll a panel", bindingless = true),
-        HintGroup("pan", "hjkl/${KeyGlyph.CTRL}←→↑↓", "pan board"),
-        HintGroup("recenter", "Home", "recenter board on cursor"),
-        HintGroup("quit", "${KeyGlyph.CTRL}c", "quit"),
+        HintGroup("focusPanel", "1-4", "focus a panel"),
+        HintGroup("moveCursor", "↑↓/ws", "move cursor"),
+        HintGroup("adjust", "←→/ad", "adjust count"),
+        HintGroup("toggle", KeyGlyph.SPACE, "toggle selection"),
+        HintGroup("nextPanel", KeyGlyph.ENTER, "next panel"),
+        HintGroup("commit", "c", "commit"),
     )
 
-    return KeyLayer(title = "GLOBAL", bindings = bindings, hintGroups = hintGroups)
+    return KeyLayer(title = "SETUP", bindings = bindings, hintGroups = hintGroups, shadowing = false)
 }
 
 private fun panelScrollLayer(): KeyLayer = KeyLayer(
