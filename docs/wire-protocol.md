@@ -86,6 +86,11 @@ client                                   server
   |<-- JoinAccepted(bootstrap) ------------|
 ```
 
+A join that arrives once the host has already committed always takes the top branch, even when it
+reaches a `LobbyHost` rather than a `GameServer` — the lobby forwards it to the committed match
+untouched. An interactive host's acceptor is built over the lobby and never rebuilt, so this is
+the path every mid-match reconnect takes.
+
 `LobbyJoined.catalog` is a `battletech.tactical.model.content.ContentSummary` (id-only: which maps
 and mechs are registered, nothing else) — the merged registry as of park time, including the
 joiner's own `--add-map`/`--add-mech` contribution. `LobbySelections.plan` is a `battletech.

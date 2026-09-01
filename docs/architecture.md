@@ -126,6 +126,10 @@ a handled one produce the same frame and any assertion on output passes vacuousl
 `Phase` never sees a key or a mouse coordinate, only the resolved `InputAction`; the HELP panel's
 sections and every panel's border badge are *derived* from the same table (`Keybindings.hints`/
 `badgeFor`) rather than hand-maintained copies that could drift from what a chord actually does.
+`badgeFor` takes the *action* whose chord to label, not the panel: which action reaches a panel is
+the panel builder's own fact (`ChromeAction.FocusPanel` for most, `ChromeAction.ToggleHelp` for
+HELP, whose `?` does more than focus), and asking for a panel instead would make `Keybindings`
+carry a list of which panel ids are "the help one" on every screen that exists.
 Six `KeybindingsTest` invariants enforce the shape this depends on: `CHROME`'s chords never
 collide with a non-shadowing context's; a shadowing context never shadows `CHROME`, which every
 shadowing layer precedes; every declared `ContextId` has a layer; every binding's hint group is
@@ -180,6 +184,21 @@ resent on every host change, no debounce), then re-sends its original `ClientMes
 `ServerMessage.LobbyCommitted` arrives and gets today's `JoinAccepted` — byte-identical to a join
 against an already-running match. `docs/wire-protocol.md` has the full exchange diagram.
 
+A `LobbyHost` outlives its own lobby phase. An interactive host's `SocketAcceptor` is built over
+the lobby and never rebuilt over the `GameServer` that `commit` returns, so every later connection
+— a seat reconnecting mid-match included — still arrives at `LobbyHost.attach`. Once `commit` has
+run it therefore forwards straight to the committed server rather than parking anything (parking a
+post-commit join would strand it waiting for a `LobbyCommitted` already sent), and it un-parks the
+peer it hands over, so a stale registration cannot answer `SEAT_TAKEN` to that seat's own rejoin.
+Admission and park registration resolve in one synchronized block, so a `commit` racing an inbound
+join cannot land between the two.
+
+`LobbyHost.onChange` reports a `LobbyStatus` — the merged registry AND whether a peer is parked
+right now — rather than bare "something changed". A departure and an arrival are the same event
+otherwise, and the setup screen has to tell them apart: an opponent who drops mid-setup closes the
+commit gate again (`SetupState.commitBlocker`) while deliberately NOT hiding panels 2-4, which is
+what `SetupState.opponentEverConnected` latches for.
+
 `ConnectionSink` (`network/server/ConnectionSink.kt`) is the one-method seam this lets
 `SocketAcceptor` depend on instead of `GameServer` directly, so the same acceptor serves either a
 committed match or a still-forming lobby. Both `GameServer` and `LobbyHost` are public classes,
@@ -212,6 +231,13 @@ and cannot import `battletech.network` at all.
 `subscribe`) satisfied by `NoLobby` (hot-seat, and tests) or, in `Composition.kt`,
 `LobbyHostAdapter`/`LobbyMirrorAdapter` over `LobbyHost`/`LobbyClient` — the setup screen package
 itself stays entirely free of `battletech.network`, same as every other `tui` package.
+
+`LobbyClient` replays what a late listener missed. Its reader thread starts as soon as `connect`
+returns, but a caller cannot register an `onSelections`/`onCommitted` listener until after that —
+and on the interactive path a whole terminal, theme and renderer are built in between. The last
+selections and the committed flag are therefore held and replayed at registration; without that, a
+`LobbyCommitted` landing in the window is simply lost and the joiner's mirror waits forever for a
+match that has already started.
 
 `TuiApp` and `tui/setup/SetupApp` share one `Terminal` + `tenter.screen.ScreenRenderer`, entered
 into raw mode once and left once, rather than each constructing its own: `Main.kt`'s `withScreen`
