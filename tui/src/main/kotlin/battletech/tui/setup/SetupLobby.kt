@@ -13,6 +13,13 @@ internal sealed interface LobbyEvent {
     /** The opponent parked; [registry] is the merged registry the panels must list from. */
     data class OpponentJoined(val registry: AssetRegistry) : LobbyEvent
 
+    /**
+     * The parked opponent dropped. The panels stay (the selections made so far are still valid,
+     * and the endpoint is unchanged, so the same player can reconnect) — only the commit gate
+     * closes again. See [SetupState.opponentEverConnected].
+     */
+    data object OpponentLeft : LobbyEvent
+
     /** Mirror only: the host changed its selections. */
     data class SelectionsChanged(val plan: MatchPlan) : LobbyEvent
 

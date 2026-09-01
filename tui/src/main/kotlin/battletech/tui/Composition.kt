@@ -2,6 +2,7 @@ package battletech.tui
 
 import battletech.network.client.LobbyClient
 import battletech.network.server.LobbyHost
+import battletech.network.server.LobbyStatus
 import battletech.network.server.SocketAcceptor
 import battletech.tactical.model.content.AssetBundle
 import battletech.tactical.model.content.MatchPlan
@@ -33,9 +34,10 @@ import java.net.NetworkInterface
 internal class LobbyHostAdapter(
     private val content: AssetBundle,
     private val port: Int = DEFAULT_PORT,
-) : SetupLobby {
+) : SetupLobby, AutoCloseable {
 
     private var host: LobbyHost? = null
+    private var acceptor: SocketAcceptor? = null
     private val pendingListeners: MutableList<(LobbyEvent) -> Unit> = mutableListOf()
 
     val lobbyHost: LobbyHost? get() = host
@@ -43,15 +45,35 @@ internal class LobbyHostAdapter(
     override fun beginHosting(): HostEndpoint {
         val lobby = LobbyHost(ownContent = content)
         host = lobby
-        pendingListeners.forEach { listener -> lobby.onChange { registry -> listener(LobbyEvent.OpponentJoined(registry)) } }
+        pendingListeners.forEach { listener -> lobby.onChange { status -> listener(status.toEvent()) } }
 
-        val acceptor = try {
+        val bound = try {
             SocketAcceptor(lobby, port).also { it.start() }
         } catch (e: BindException) {
             SocketAcceptor(lobby, 0).also { it.start() }
         }
+        acceptor = bound
 
-        return HostEndpoint(addresses = addresses(), port = acceptor.boundPort, sessionId = lobby.sessionId)
+        return HostEndpoint(addresses = addresses(), port = bound.boundPort, sessionId = lobby.sessionId)
+    }
+
+    /**
+     * A [LobbyStatus] says whether a peer is parked RIGHT NOW, not merely that something changed —
+     * so a departure maps to [LobbyEvent.OpponentLeft] rather than being reported as one more
+     * arrival, which would leave the commit gate open with nobody on the other end.
+     */
+    private fun LobbyStatus.toEvent(): LobbyEvent =
+        if (opponentConnected) LobbyEvent.OpponentJoined(registry) else LobbyEvent.OpponentLeft
+
+    /**
+     * Stops listening — for the whole PROCESS, not at commit. The acceptor built here is the only
+     * one an interactive host ever has (no second one is built over the committed [LobbyHost.commit]
+     * server), so it must outlive the setup screen: it is what a dropped seat reconnects through
+     * mid-match, which [LobbyHost] forwards straight to the match. `main()` therefore closes this
+     * around [battletech.tui.TuiApp]'s run, exactly as the `host` subcommand does with its own.
+     */
+    override fun close() {
+        acceptor?.close()
     }
 
     override fun publish(plan: MatchPlan) {

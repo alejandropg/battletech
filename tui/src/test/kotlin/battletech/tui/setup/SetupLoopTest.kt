@@ -144,11 +144,38 @@ internal class SetupLoopTest {
     }
 
     @Test
+    fun `an opponent who leaves keeps the panels but closes the commit gate`() = runTest {
+        val hostState = initialState().copy(
+            mode = SetupMode.HOST,
+            modeLocked = true,
+            opponentConnected = true,
+            opponentEverConnected = true,
+            plan = MatchPlan(mapName = "arena")
+                .withCount(PlayerId.PLAYER_1, "AS7-D", 1)
+                .withCount(PlayerId.PLAYER_2, "AS7-D", 1),
+        )
+
+        val outcome = run(
+            SetupUiEvent.Lobby(LobbyEvent.OpponentLeft),
+            SetupUiEvent.Input(KeyboardEvent("c")), // would otherwise commit — the plan is complete
+            SetupUiEvent.Quit,
+            initial = hostState,
+        )
+
+        // Quit, not Commit: `c` was refused even though the plan itself is complete. (The refusal
+        // message is asserted in SetupStateTest — here it would be split across the renderer's
+        // per-cell diff output.)
+        assertThat(outcome).isEqualTo(SetupOutcome.Quit)
+        assertThat(recorder.output()).contains("PLAYER 1") // panels stayed
+    }
+
+    @Test
     fun `a read-only mirror renders its roster panels but ignores space`() = runTest {
         val mirrorState = initialState(readOnly = true).copy(
             modeLocked = true,
             mode = SetupMode.HOST,
             opponentConnected = true,
+            opponentEverConnected = true,
         )
 
         val outcome = run(

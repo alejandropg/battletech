@@ -49,17 +49,38 @@ internal class SetupStateTest {
     }
 
     @Test
-    fun `MODE locked is inert to every action`() {
+    fun `MODE locked is inert to every action but commit`() {
         val locked = baseState.copy(modeLocked = true)
 
         assertThat(handleSetup(SetupAction.Toggle, SetupPanelId.MODE, locked)).isNull()
-        assertThat(handleSetup(SetupAction.Commit, SetupPanelId.MODE, locked)).isNull()
         assertThat(handleSetup(SetupAction.MoveCursor(1), SetupPanelId.MODE, locked)).isNull()
+        // Commit is not inert here — the mode is settled, but `c` still commits the match (D8).
+        assertThat(handleSetup(SetupAction.Commit, SetupPanelId.MODE, locked)?.flash).isNotNull()
     }
 
     // ---- MAP panel ----
 
     private val stage2State = baseState.copy(modeLocked = true)
+
+    @Test
+    fun `MODE locked still commits -- c is the commit key on every panel`() {
+        val plan = MatchPlan(mapName = "tiny")
+            .withCount(PlayerId.PLAYER_1, "AS7-D", 1)
+            .withCount(PlayerId.PLAYER_2, "WHM-6R", 1)
+        val state = stage2State.copy(plan = plan)
+
+        val transition = handleSetup(SetupAction.Commit, SetupPanelId.MODE, state)
+
+        assertThat(transition?.committed).isEqualTo(plan)
+    }
+
+    @Test
+    fun `MODE locked flashes the blocker when the plan is incomplete`() {
+        val transition = handleSetup(SetupAction.Commit, SetupPanelId.MODE, stage2State)
+
+        assertThat(transition?.committed).isNull()
+        assertThat(transition?.flash?.text).isEqualTo("select a map")
+    }
 
     @Test
     fun `MAP MoveCursor clamps to the catalog's map indices`() {
@@ -232,7 +253,12 @@ internal class SetupStateTest {
         val plan = MatchPlan(mapName = "tiny")
             .withCount(PlayerId.PLAYER_1, "AS7-D", 1)
             .withCount(PlayerId.PLAYER_2, "WHM-6R", 1)
-        val state = stage2State.copy(mode = SetupMode.HOST, opponentConnected = true, plan = plan)
+        val state = stage2State.copy(
+            mode = SetupMode.HOST,
+            opponentConnected = true,
+            opponentEverConnected = true,
+            plan = plan,
+        )
 
         assertThat(state.commitBlocker()).isNull()
     }
@@ -258,7 +284,16 @@ internal class SetupStateTest {
     fun `rostersVisible waits for the opponent in host mode`() {
         val locked = stage2State.copy(mode = SetupMode.HOST)
         assertThat(locked.rostersVisible).isFalse()
-        assertThat(locked.copy(opponentConnected = true).rostersVisible).isTrue()
+        assertThat(locked.copy(opponentConnected = true, opponentEverConnected = true).rostersVisible).isTrue()
+    }
+
+    @Test
+    fun `rostersVisible survives an opponent who joined and then left`() {
+        val dropped = stage2State.copy(mode = SetupMode.HOST, opponentEverConnected = true, opponentConnected = false)
+
+        // The panels and the selections made against them stay; only the commit gate closes.
+        assertThat(dropped.rostersVisible).isTrue()
+        assertThat(dropped.commitBlocker()).isEqualTo("waiting for player 2")
     }
 
     @Test

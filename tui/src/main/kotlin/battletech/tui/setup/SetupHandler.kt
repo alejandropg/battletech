@@ -27,7 +27,10 @@ internal fun handleSetup(action: SetupAction, focused: SetupPanelId, state: Setu
 }
 
 private fun handleModePanel(action: SetupAction, state: SetupState): SetupTransition? {
-    if (state.modeLocked) return null
+    // Locked, so the mode itself is settled — but this panel stays focusable and in the Enter
+    // cycle (D5), and `c` is the commit key on every panel (D8), so it must still commit (or
+    // flash why it can't) rather than silently doing nothing here.
+    if (state.modeLocked) return if (action == SetupAction.Commit) commitOrFlash(state) else null
     return when (action) {
         SetupAction.Toggle -> SetupTransition(
             state.copy(mode = if (state.mode == SetupMode.HOT_SEAT) SetupMode.HOST else SetupMode.HOT_SEAT),

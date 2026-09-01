@@ -28,6 +28,17 @@ import battletech.tactical.model.content.summarize
  * parked is rejected [JoinRejectionReason.SEAT_TAKEN], the same answer [GameServer] gives once
  * every seat is full.
  */
+/**
+ * One [LobbyHost.onChange] notification: the merged [registry] as it now stands, and whether a
+ * peer is parked right now. Both travel together because a listener that only ever heard "the
+ * registry changed" cannot tell an arrival from a departure — the setup screen needs to, since a
+ * departure re-closes the commit gate.
+ */
+public data class LobbyStatus(
+    public val registry: AssetRegistry,
+    public val opponentConnected: Boolean,
+)
+
 public class LobbyHost(
     public val sessionId: String = SessionId.generate(),
     ownContent: AssetBundle = AssetBundle.EMPTY,
@@ -37,16 +48,28 @@ public class LobbyHost(
     private var mergedRegistry: AssetRegistry = AssetRegistry.EMPTY.merge(ownContent).registry
     private var parked: ServerConnection? = null
     private var gameServer: GameServer? = null
-    private val listeners: MutableList<(AssetRegistry) -> Unit> = mutableListOf()
+    private val listeners: MutableList<(LobbyStatus) -> Unit> = mutableListOf()
 
     /** The merged registry as it stands right now — read under the lock. */
     public val registry: AssetRegistry get() = synchronized(lock) { mergedRegistry }
 
     public val opponentConnected: Boolean get() = synchronized(lock) { parked != null }
 
-    /** Fired (with the merged registry) whenever a peer parks or the parked peer drops. */
-    public fun onChange(listener: (AssetRegistry) -> Unit) {
-        listeners += listener
+    /**
+     * Fired whenever a peer parks OR the parked peer drops — [LobbyStatus.opponentConnected] says
+     * which, so a listener cannot mistake a departure for an arrival. Listeners are held under
+     * this class's own lock and invoked outside it: they run on the parked connection's reader
+     * thread, not the registering thread.
+     */
+    public fun onChange(listener: (LobbyStatus) -> Unit) {
+        synchronized(lock) { listeners += listener }
+    }
+
+    private fun notifyChange() {
+        val (snapshot, status) = synchronized(lock) {
+            listeners.toList() to LobbyStatus(mergedRegistry, parked != null)
+        }
+        snapshot.forEach { it(status) }
     }
 
     /** Mirrors [plan] to the parked peer, if any. A no-op with nobody parked. */
@@ -91,14 +114,31 @@ public class LobbyHost(
             this@LobbyHost.attach(connection, onJoinAccepted)
     }
 
+    /** What [attach]'s one atomic decision resolved to — acted on outside the lock. */
+    private sealed interface Admission {
+        /** The match already exists: this connection is the game's, never the lobby's. */
+        data class Forward(val server: GameServer) : Admission
+        data class Reject(val reason: JoinRejectionReason) : Admission
+        data class Park(val registry: AssetRegistry) : Admission
+    }
+
     /**
-     * Runs on the acceptor's per-connection thread. Parks [connection] (sending [ServerMessage.LobbyJoined]
-     * with the merged catalog) and then blocks for whatever the peer sends next:
+     * Runs on the acceptor's per-connection thread. Either forwards [connection] straight to an
+     * already-committed match, rejects it, or parks it (sending [ServerMessage.LobbyJoined] with
+     * the merged catalog) and blocks for whatever the peer sends next:
      * - **connection closes (`null`)**: the peer dropped while parked — un-park it and fire [onChange].
      * - **another [ClientMessage.Join]**: [commit] has happened and the peer re-sent its original
      *   `Join`, exactly as `docs/wire-protocol.md` describes — hand the connection and that second
      *   `Join` to [GameServer.attach]'s two-argument overload, so this thread becomes that seat's
      *   reader thread, exactly as a fresh socket join would set up.
+     *
+     * The [Admission.Forward] arm is what keeps this sink usable for a match's whole life: an
+     * interactive host's [SocketAcceptor] is built over this lobby and is never rebuilt over the
+     * [GameServer] that [commit] returns, so every later connection — a seat rejoining after a
+     * disconnect included — still arrives here. Parking one of those would strand it waiting for a
+     * [ServerMessage.LobbyCommitted] that has already been sent. Resolving admission and the park
+     * registration in ONE synchronized block is what makes that safe against a [commit] racing an
+     * inbound join: whichever wins the lock, the loser sees the other's result.
      */
     private fun attach(connection: ServerConnection, onJoinAccepted: () -> Unit) {
         val join = connection.receive() as? ClientMessage.Join ?: run {
@@ -106,40 +146,54 @@ public class LobbyHost(
             return
         }
 
-        val rejection = synchronized(lock) {
+        val admission = synchronized(lock) {
+            val committed = gameServer
             when {
-                parked != null -> JoinRejectionReason.SEAT_TAKEN
-                !SessionId.matches(join.sessionId, sessionId) -> JoinRejectionReason.UNKNOWN_SESSION
-                join.protocolVersion != PROTOCOL_VERSION -> JoinRejectionReason.INCOMPATIBLE_PROTOCOL
-                join.content.duplicateId() != null -> JoinRejectionReason.INVALID_CONTENT
-                else -> null
+                // Validation is the committed server's own job on this path — it applies the very
+                // same session/protocol/content checks, plus the seat bookkeeping only it has.
+                committed != null -> Admission.Forward(committed)
+                parked != null -> Admission.Reject(JoinRejectionReason.SEAT_TAKEN)
+                !SessionId.matches(join.sessionId, sessionId) -> Admission.Reject(JoinRejectionReason.UNKNOWN_SESSION)
+                join.protocolVersion != PROTOCOL_VERSION -> Admission.Reject(JoinRejectionReason.INCOMPATIBLE_PROTOCOL)
+                join.content.duplicateId() != null -> Admission.Reject(JoinRejectionReason.INVALID_CONTENT)
+                else -> {
+                    mergedRegistry = mergedRegistry.merge(join.content).registry
+                    parked = connection
+                    Admission.Park(mergedRegistry)
+                }
             }
         }
-        if (rejection != null) {
-            connection.send(ServerMessage.JoinRejected(rejection))
-            connection.close()
-            return
-        }
 
-        val parkedRegistry = synchronized(lock) {
-            val merged = mergedRegistry.merge(join.content)
-            mergedRegistry = merged.registry
-            parked = connection
-            mergedRegistry
+        when (admission) {
+            is Admission.Forward -> {
+                admission.server.attach(connection, join, onJoinAccepted)
+                return
+            }
+            is Admission.Reject -> {
+                connection.send(ServerMessage.JoinRejected(admission.reason))
+                connection.close()
+                return
+            }
+            is Admission.Park -> {
+                notifyChange()
+                connection.send(ServerMessage.LobbyJoined(admission.registry.summarize()))
+                onJoinAccepted()
+            }
         }
-        listeners.forEach { it(parkedRegistry) }
-
-        connection.send(ServerMessage.LobbyJoined(parkedRegistry.summarize()))
-        onJoinAccepted()
 
         when (val second = connection.receive()) {
             null -> {
                 synchronized(lock) { if (parked === connection) parked = null }
-                listeners.forEach { it(registry) }
+                notifyChange()
             }
             is ClientMessage.Join -> {
-                val server = checkNotNull(synchronized(lock) { gameServer }) {
-                    "LobbyHost: peer re-joined before commit() built the GameServer"
+                // Un-parked BEFORE the hand-off: from here on this connection belongs to the
+                // match, and a stale `parked` would answer SEAT_TAKEN to every later join —
+                // including this same seat rejoining after a disconnect, which GameServer.attach
+                // is built to accept.
+                val server = synchronized(lock) {
+                    if (parked === connection) parked = null
+                    checkNotNull(gameServer) { "LobbyHost: peer re-joined before commit() built the GameServer" }
                 }
                 server.attach(connection, second, onJoinAccepted = {})
             }

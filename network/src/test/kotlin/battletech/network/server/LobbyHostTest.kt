@@ -109,6 +109,58 @@ internal class LobbyHostTest {
     }
 
     @Test
+    fun `a join arriving after commit is forwarded to the match instead of being parked`() {
+        // An interactive host's acceptor is built over the lobby and never rebuilt over the
+        // committed server, so every later connection still lands here. Parking one would strand
+        // it waiting for a LobbyCommitted that has already been sent.
+        val lobby = LobbyHost(sessionId)
+        val server = lobby.commit(anInitialGameState())
+        server.connectLocal()
+
+        val late = PipedConnection()
+        lobby.attachInBackground(late)
+        late.sendJoin(sessionId)
+
+        val reply = WireJson.decodeServerMessage(late.clientInput.readLine())
+        assertThat(reply).isInstanceOf(ServerMessage.JoinAccepted::class.java)
+        assertThat((reply as ServerMessage.JoinAccepted).bootstrap.playerId).isEqualTo(PlayerId.PLAYER_2)
+    }
+
+    @Test
+    fun `the parked peer is un-parked at hand-off, so its seat can be rejoined later`() {
+        val lobby = LobbyHost(sessionId)
+        val parked = PipedConnection()
+        lobby.attachInBackground(parked)
+        parked.join(sessionId)
+
+        val server = lobby.commit(anInitialGameState())
+        server.connectLocal()
+        assertThat(WireJson.decodeServerMessage(parked.clientInput.readLine())).isEqualTo(ServerMessage.LobbyCommitted)
+        parked.sendJoin(sessionId)
+        assertThat(WireJson.decodeServerMessage(parked.clientInput.readLine())).isInstanceOf(ServerMessage.JoinAccepted::class.java)
+
+        // A stale `parked` would answer SEAT_TAKEN here from the LOBBY, before the committed
+        // server ever got to decide. The seat really is taken, so SEAT_TAKEN is still the right
+        // answer — but it must come from GameServer, which is what makes a genuine rejoin (after
+        // that seat disconnects) possible at all.
+        awaitTrue { !lobby.opponentConnected }
+    }
+
+    @Test
+    fun `a drop while parked reports opponentConnected false, not another arrival`() {
+        val lobby = LobbyHost(sessionId)
+        val connection = PipedConnection()
+        lobby.attachInBackground(connection)
+        connection.join(sessionId)
+
+        val statuses = mutableListOf<LobbyStatus>()
+        lobby.onChange { statuses += it }
+        connection.clientOutput.close()
+
+        awaitTrue { statuses.any { !it.opponentConnected } }
+    }
+
+    @Test
     fun `a second joiner is rejected SEAT_TAKEN`() {
         val lobby = LobbyHost(sessionId)
         val first = PipedConnection()

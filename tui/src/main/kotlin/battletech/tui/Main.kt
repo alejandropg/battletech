@@ -194,6 +194,7 @@ public fun main(args: Array<String>) {
                         mode = SetupMode.HOST,
                         modeLocked = true,
                         opponentConnected = true,
+                        opponentEverConnected = true,
                         readOnly = true,
                     )
                     val outcome = SetupApp(terminal, renderer, Keybindings.DEFAULT, LobbyMirrorAdapter(lobbyClient), initial).run()
@@ -215,38 +216,48 @@ public fun main(args: Array<String>) {
 
         // Bare invocation (D1). Nothing is printed on this path (D3): a stray println would
         // corrupt the setup screen's first frame — the host endpoint lives in panel 1 instead.
-        Mode.Interactive -> {
-            val content = resolveContentOrExit(launch)
-            val registry = AssetRegistry.EMPTY.merge(content.contribution()).registry
-            // Always constructed, inert until the user locks HOST mode — beginHosting() is only
-            // ever called then, so hot-seat never opens a socket at all (D12).
-            val hostAdapter = LobbyHostAdapter(content.contribution())
-            withScreen(launch.themeName) { terminal, renderer ->
-                val initial = SetupState(catalog = registry.summarize(), registry = registry)
-                when (val outcome = SetupApp(terminal, renderer, Keybindings.DEFAULT, hostAdapter, initial).run()) {
-                    SetupOutcome.Quit -> Unit
-                    SetupOutcome.MatchStarted -> Unit // unreachable — hostAdapter never emits it
-                    is SetupOutcome.Commit -> {
-                        val state = AutoDeploy.deploy(outcome.plan, outcome.registry)
-                        val existingLobby = hostAdapter.lobbyHost
-                        if (existingLobby != null) {
-                            // HOST: one local seat (the parked peer re-attaches on its own,
-                            // exactly like the direct `host` subcommand above).
-                            lateinit var localSession: ClientGameSession
-                            val server = existingLobby.commit(state) { localSession = it.connectLocal(content.contribution()) }
-                            server.use { TuiApp(seats = mapOf(localSession.playerId to localSession), terminal, renderer).run() }
-                        } else {
-                            // HOT_SEAT: beginHosting() was never called — a throwaway LobbyHost
-                            // with nothing parked, exactly like the direct `hot-seat` subcommand.
-                            val server = LobbyHost(ownContent = content.contribution()).commit(state)
-                            val seats =
-                                List(PlayerId.entries.size) { server.connectLocal(content.contribution()) }.associateBy { it.playerId }
-                            check(seats.keys == PlayerId.entries.toSet()) {
-                                "interactive roster incomplete: expected ${PlayerId.entries.toSet()}, got ${seats.keys}"
-                            }
-                            awaitKickstart(server, seats)
-                            server.use { TuiApp(seats, terminal, renderer).run() }
+        Mode.Interactive -> runInteractive(launch, resolveContentOrExit(launch))
+    }
+}
+
+/**
+ * The interactive path: the setup screen defines the match, then the very same terminal runs it.
+ *
+ * The [LobbyHostAdapter] is always constructed but stays inert until the user locks HOST mode —
+ * `beginHosting()` is only ever called then, so hot-seat never opens a socket at all (D12) — and
+ * it is closed only once the match is over, because its acceptor is the one an interactive host
+ * has for the whole run (see [LobbyHostAdapter.close]).
+ */
+private fun runInteractive(launch: Launch, content: ContentCatalog) {
+    val registry = AssetRegistry.EMPTY.merge(content.contribution()).registry
+    val hostAdapter = LobbyHostAdapter(content.contribution())
+
+    hostAdapter.use {
+        withScreen(launch.themeName) { terminal, renderer ->
+            val initial = SetupState(catalog = registry.summarize(), registry = registry)
+            when (val outcome = SetupApp(terminal, renderer, Keybindings.DEFAULT, hostAdapter, initial).run()) {
+                SetupOutcome.Quit -> Unit
+                SetupOutcome.MatchStarted -> Unit // unreachable — hostAdapter never emits it
+                is SetupOutcome.Commit -> {
+                    val state = AutoDeploy.deploy(outcome.plan, outcome.registry)
+                    val existingLobby = hostAdapter.lobbyHost
+                    if (existingLobby != null) {
+                        // HOST: one local seat (the parked peer re-attaches on its own, exactly
+                        // like the direct `host` subcommand).
+                        lateinit var localSession: ClientGameSession
+                        val server = existingLobby.commit(state) { localSession = it.connectLocal(content.contribution()) }
+                        server.use { TuiApp(seats = mapOf(localSession.playerId to localSession), terminal, renderer).run() }
+                    } else {
+                        // HOT_SEAT: beginHosting() was never called — a throwaway LobbyHost with
+                        // nothing parked, exactly like the direct `hot-seat` subcommand.
+                        val server = LobbyHost(ownContent = content.contribution()).commit(state)
+                        val seats =
+                            List(PlayerId.entries.size) { server.connectLocal(content.contribution()) }.associateBy { it.playerId }
+                        check(seats.keys == PlayerId.entries.toSet()) {
+                            "interactive roster incomplete: expected ${PlayerId.entries.toSet()}, got ${seats.keys}"
                         }
+                        awaitKickstart(server, seats)
+                        server.use { TuiApp(seats, terminal, renderer).run() }
                     }
                 }
             }

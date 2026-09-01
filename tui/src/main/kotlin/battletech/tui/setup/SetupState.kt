@@ -20,17 +20,29 @@ internal data class SetupState(
     val cursors: Map<SetupPanelId, Int> = emptyMap(),
     val endpoint: HostEndpoint? = null,
     val opponentConnected: Boolean = false,
+    /**
+     * Latched on the first [LobbyEvent.OpponentJoined] and never cleared. [rostersVisible] keys
+     * off this rather than off [opponentConnected] so that an opponent who drops mid-setup takes
+     * the commit gate with them ([commitBlocker]) without taking panels 2-4 — and the selections
+     * already made — off the screen.
+     */
+    val opponentEverConnected: Boolean = false,
     /** True for the joiner's mirror: editing keys are inert. */
     val readOnly: Boolean = false,
     val helpOpen: Boolean = false,
 ) {
     /** Stage 2 has begun: panels 2-4 exist. */
     val rostersVisible: Boolean
-        get() = modeLocked && (mode == SetupMode.HOT_SEAT || opponentConnected)
+        get() = modeLocked && (mode == SetupMode.HOT_SEAT || opponentEverConnected)
 
-    /** Null when committing is legal right now; otherwise the reason to flash. */
+    /**
+     * Null when committing is legal right now; otherwise the reason to flash. Ordered so the
+     * message always names the FIRST thing standing in the way: a host still waiting for its
+     * opponent is told exactly that, rather than being asked to select a map it cannot yet see.
+     */
     fun commitBlocker(): String? {
-        if (!rostersVisible) return "lock a mode first"
+        if (!modeLocked) return "lock a mode first"
+        if (mode == SetupMode.HOST && !opponentConnected) return "waiting for player 2"
         val mapName = plan.mapName ?: return "select a map"
         if (plan.totalUnits(PlayerId.PLAYER_1) == 0) return "player 1 has no units"
         if (plan.totalUnits(PlayerId.PLAYER_2) == 0) return "player 2 has no units"
@@ -38,7 +50,6 @@ internal data class SetupState(
             val overCapacity = PlayerId.entries.any { plan.totalUnits(it) > AutoDeploy.capacity(map, it) }
             if (overCapacity) return "too many units for this map"
         }
-        if (mode == SetupMode.HOST && !opponentConnected) return "waiting for player 2"
         return null
     }
 }
