@@ -2,9 +2,9 @@ package battletech.tui.setup
 
 import battletech.tui.input.ChromeAction
 import battletech.tui.input.Keybindings
+import battletech.tui.view.helpPanel
 import tenter.panel.Panel
 import tenter.panel.PanelSet
-import tenter.view.HelpView
 
 internal typealias SetupPanel = Panel<SetupPanelId, SetupPanelInputs>
 internal typealias SetupPanelSet = PanelSet<SetupPanelId, SetupPanelInputs>
@@ -13,7 +13,7 @@ internal typealias SetupPanelSet = PanelSet<SetupPanelId, SetupPanelInputs>
  * Builds this run's [SetupPanelSet]: a fresh, uniform-layout set of instances per call — each
  * [Panel] is stateful, and must live for exactly one [SetupWorkspace]'s lifetime, never longer
  * (see [Panel]'s KDoc). Declaration order MODE, MAP, PLAYER_1, PLAYER_2, HELP is also the layout
- * order for the uniform columns.
+ * order: the first four occupy the proportional setup grid and HELP is the fixed trailing panel.
  */
 internal object SetupPanels {
     fun build(keys: Keybindings): SetupPanelSet {
@@ -46,13 +46,10 @@ internal object SetupPanels {
                 badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.PLAYER_2)),
                 normal = { it.player2View },
             ),
-            SetupPanel(
+            helpPanel(
                 id = SetupPanelId.HELP,
-                title = HelpView.TITLE,
-                normalWidth = 0,
                 badge = keys.badgeFor(ChromeAction.ToggleHelp),
-                normal = { HelpView(it.helpSections) },
-                maximized = { HelpView(it.helpSections) },
+                sections = { it.helpSections },
             ),
         )
         return PanelSet(panels)

@@ -7,7 +7,6 @@ import battletech.tui.view.record.MechRecordSheetView
 import tenter.panel.Panel
 import tenter.panel.PanelSet
 import tenter.panel.VerticalTitleView
-import tenter.view.HelpView
 import tenter.view.View
 
 /**
@@ -61,14 +60,10 @@ internal object Panels {
             sidePanel(GamePanelId.LOG, LogView.TITLE, keys) { frame ->
                 LogView(entries = frame.logEntries, state = frame.state)
             },
-            Panel(
+            helpPanel(
                 id = GamePanelId.HELP,
-                title = HelpView.TITLE,
-                normalWidth = 28,
                 badge = keys.badgeFor(ChromeAction.ToggleHelp),
-                normal = { frame -> HelpView(frame.helpSections) },
-                // No minimized state — ? dismisses HELP entirely instead (see AppState.helpOpen).
-                maximized = { frame -> HelpView(frame.helpSections) },
+                sections = { it.helpSections },
             ),
         )
 

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.view.View
 
-private enum class LayoutPanelId : PanelId { MAIN, A, B }
+private enum class LayoutPanelId : PanelId { MAIN, A, B, C, FIXED }
 
 internal class PanelLayoutTest {
 
@@ -132,6 +132,31 @@ internal class PanelLayoutTest {
         val layout = PanelLayout.computeUniform(width = 40, height = 30, reservedTop = 0, panels = panels)
 
         assertEquals(listOf(20, 20), layout.sides.map { it.width })
+    }
+
+    @Test
+    fun `computeUniform places fixed-width panels after proportional columns`() {
+        val fixed = sidePanel(LayoutPanelId.FIXED, width = 28)
+        val panels = listOf(
+            sidePanel(LayoutPanelId.A),
+            sidePanel(LayoutPanelId.B),
+            sidePanel(LayoutPanelId.C),
+            sidePanel(LayoutPanelId.A),
+            fixed,
+        )
+
+        val layout = PanelLayout.computeUniform(
+            width = 120,
+            height = 30,
+            reservedTop = 0,
+            panels = panels,
+            columnCount = 4,
+            fixedWidthPanels = setOf(LayoutPanelId.FIXED),
+        )
+
+        assertEquals(listOf(23, 23, 23, 23, 28), layout.sides.map { it.width })
+        assertEquals(listOf(0, 23, 46, 69, 92), layout.sides.map { it.x })
+        assertEquals(LayoutPanelId.FIXED, layout.sides.last().panel.id)
     }
 
     @Test

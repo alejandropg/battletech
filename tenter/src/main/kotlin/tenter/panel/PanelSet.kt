@@ -83,7 +83,9 @@ public class PanelSet<K : PanelId, I>(
     /**
      * Lays out [visible] side panels plus [main], draws every slot, and returns the layout it used.
      * [uniformColumnCount] reserves that many equal-width columns when this is a uniform set;
-     * it is ignored for a set with a main panel.
+     * it is ignored for a set with a main panel. [fixedWidthPanels] removes matching visible
+     * panels from that proportional grid and places them at the trailing edge using their
+     * declared [Panel.width]. A maximized panel still owns the whole content region.
      */
     public fun render(
         canvas: Canvas,
@@ -92,6 +94,7 @@ public class PanelSet<K : PanelId, I>(
         reservedTop: Int,
         forgetReveal: Boolean = false,
         uniformColumnCount: Int = visible.size,
+        fixedWidthPanels: Set<K> = emptySet(),
     ): PanelLayout<K, I> {
         val visibleSides = sides.filter { it.id in visible }
         val focusedIsVisible = focused == main?.id || visibleSides.any { it.id == focused }
@@ -102,7 +105,14 @@ public class PanelSet<K : PanelId, I>(
         val layout = if (main != null) {
             PanelLayout.compute(canvas.width, canvas.height, reservedTop, main, visibleSides)
         } else {
-            PanelLayout.computeUniform(canvas.width, canvas.height, reservedTop, visibleSides, uniformColumnCount)
+            PanelLayout.computeUniform(
+                canvas.width,
+                canvas.height,
+                reservedTop,
+                visibleSides,
+                uniformColumnCount,
+                fixedWidthPanels,
+            )
         }
         lastLayout = layout
 

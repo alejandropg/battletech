@@ -80,9 +80,11 @@ public class PanelLayout<K : PanelId, I> private constructor(
          * [reservedTop] rows. Leftover columns from the integer division go to the leftmost
          * panels, one each, so the row is exactly [width] wide. [columnCount] can reserve space
          * for columns whose panels are not currently visible; it defaults to the number of
-         * [panels]. A MAXIMIZED panel still wins the whole content region, exactly as in [compute].
+         * [panels]. [fixedWidthPanels] are placed after the proportional columns using each
+         * panel's declared [Panel.width], and do not consume a proportional column. A
+         * MAXIMIZED panel still wins the whole content region, exactly as in [compute].
          * `main` is null for a uniform layout — there is no derived-width panel. A panel's
-         * declared [Panel.width] is ignored here.
+         * declared [Panel.width] is ignored here unless its ID is in [fixedWidthPanels].
          */
         public fun <K : PanelId, I> computeUniform(
             width: Int,
@@ -90,22 +92,36 @@ public class PanelLayout<K : PanelId, I> private constructor(
             reservedTop: Int,
             panels: List<Panel<K, I>>,
             columnCount: Int = panels.size,
+            fixedWidthPanels: Set<K> = emptySet(),
         ): PanelLayout<K, I> {
             require(panels.isNotEmpty()) { "A uniform layout needs at least one panel to divide the width between" }
-            require(columnCount >= panels.size) { "A uniform layout needs at least one column per panel" }
+            val proportionalPanels = panels.filter { it.id !in fixedWidthPanels }
+            val fixedPanels = panels.filter { it.id in fixedWidthPanels }
+            require(columnCount >= proportionalPanels.size) {
+                "A uniform layout needs at least one column per proportional panel"
+            }
             val contentHeight = height - reservedTop
 
             val maximizedPanel = panels.firstOrNull { it.state == PanelState.MAXIMIZED }
             if (maximizedPanel != null) return maximizedLayout(width, reservedTop, contentHeight, maximizedPanel)
 
-            val columnWidth = width / columnCount
-            val remainder = width % columnCount
+            val fixedWidth = fixedPanels.sumOf { it.width }
+            val proportionalWidth = width - fixedWidth
+            val columnWidth = proportionalWidth / columnCount
+            val remainder = proportionalWidth % columnCount
             val slots = buildList {
                 var nextX = 0
-                for ((index, panel) in panels.withIndex()) {
+                for ((index, panel) in proportionalPanels.withIndex()) {
                     val slotWidth = columnWidth + if (index < remainder) 1 else 0
                     add(Slot(panel, nextX, reservedTop, slotWidth, contentHeight))
                     nextX += slotWidth
+                }
+                // Unrendered proportional columns are still reserved, so fixed panels remain
+                // anchored to the trailing edge when only part of the grid is visible.
+                nextX = proportionalWidth
+                for (panel in fixedPanels) {
+                    add(Slot(panel, nextX, reservedTop, panel.width, contentHeight))
+                    nextX += panel.width
                 }
             }
 

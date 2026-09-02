@@ -129,7 +129,6 @@ internal suspend fun setupLoop(
                                         focusBeforeHelp = workspace.focused
                                         state = state.copy(helpOpen = true)
                                         workspace.focus(SetupPanelId.HELP)
-                                        workspace.cycleFocusedState(1) // NORMAL -> MAXIMIZED
                                     }
                                 is ChromeAction.CycleState -> workspace.cycleFocusedState(action.delta)
                                 ChromeAction.Quit -> Unit // absorbed upstream — see Keybindings.isQuit

@@ -23,7 +23,8 @@ internal class SetupWorkspace(private val keys: Keybindings) {
 
     /**
      * Composes and draws one frame: the banner chrome (D19) plus every visible panel, laid out in
-     * equal-width columns (see [tenter.panel.PanelLayout.computeUniform]).
+     * equal-width columns (see [tenter.panel.PanelLayout.computeUniform]), with HELP retaining
+     * the shared fixed width used by the game workspace.
      */
     fun render(
         state: SetupState,
@@ -39,14 +40,14 @@ internal class SetupWorkspace(private val keys: Keybindings) {
         val screen = Canvas.of(buffer)
         val inputs = SetupPanelInputs(state, keys)
 
-        val uniformColumnCount = if (state.rostersVisible) visible.size else SETUP_PANEL_COUNT
         panels.render(
             screen,
             inputs,
             visible,
             reservedTop = bannerHeight,
             forgetReveal = forgetReveal,
-            uniformColumnCount = uniformColumnCount,
+            uniformColumnCount = SETUP_PANEL_COUNT,
+            fixedWidthPanels = setOf(SetupPanelId.HELP),
         )
 
         val prompt = flash?.text ?: defaultPrompt(state)

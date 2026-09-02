@@ -134,7 +134,7 @@ internal class SetupLoopTest {
     }
 
     @Test
-    fun `question mark opens HELP maximized`() = runTest {
+    fun `question mark opens HELP in normal state`() = runTest {
         run(
             SetupUiEvent.Input(KeyboardEvent("?")),
             SetupUiEvent.Quit,
