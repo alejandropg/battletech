@@ -7,10 +7,9 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.widget.CheckState
-import tenter.widget.Checkbox
 import tenter.view.TextCursor
-import tenter.widget.ValueRow
 import tenter.view.View
+import tenter.widget.SelectableRow
 
 internal class TargetsView(
     private val targets: List<TargetInfo>,
@@ -57,29 +56,30 @@ internal class TargetsView(
                     else -> CheckState.UNCHECKED
                 }
 
-                val cursor = if (isCursorHere) "▶" else " "
-                // One space placeholder at column 2 is where the checkbox glyph is overlaid below.
-                val left = "$cursor   ${weapon.weaponName}"
-
-                val color = when {
-                    isCursorHere -> ChromeRole.ACCENT
-                    isDisabled -> ChromeRole.DISABLED
-                    else -> ChromeRole.TEXT_PRIMARY
-                }
-                val checkboxColor = when {
-                    isCursorHere -> ChromeRole.ACCENT
-                    isDisabled -> ChromeRole.DISABLED
-                    else -> Checkbox.intrinsicColor(state)
-                }
-                val row = content.row
-                if (isCursorHere) content.markReveal()
+                val color = if (isDisabled) ChromeRole.DISABLED else ChromeRole.TEXT_PRIMARY
                 when (weapon) {
                     is WeaponTargetInfo.Available ->
-                        ValueRow.draw(content, left, hitChanceLabel(weapon.toHit), weapon.toHit.displayLabels(), color)
+                        SelectableRow.draw(
+                            content = content,
+                            label = weapon.weaponName,
+                            checkState = state,
+                            cursor = isCursorHere,
+                            right = hitChanceLabel(weapon.toHit),
+                            subLines = weapon.toHit.displayLabels(),
+                            textColor = color,
+                            checkboxColor = if (isDisabled) ChromeRole.DISABLED else null,
+                        )
                     is WeaponTargetInfo.Unavailable ->
-                        ValueRow.draw(content, left, "—", emptyList(), color)
+                        SelectableRow.draw(
+                            content = content,
+                            label = weapon.weaponName,
+                            checkState = state,
+                            cursor = isCursorHere,
+                            right = "—",
+                            textColor = color,
+                            checkboxColor = if (isDisabled) ChromeRole.DISABLED else null,
+                        )
                 }
-                Checkbox.draw(content, 2, row, state, checkboxColor)
             }
 
             content.newLine() // blank line between targets

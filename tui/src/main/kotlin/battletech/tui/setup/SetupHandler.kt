@@ -32,14 +32,18 @@ private fun handleModePanel(action: SetupAction, state: SetupState): SetupTransi
     // flash why it can't) rather than silently doing nothing here.
     if (state.modeLocked) return if (action == SetupAction.Commit) commitOrFlash(state) else null
     return when (action) {
-        SetupAction.Toggle -> SetupTransition(
-            state.copy(mode = if (state.mode == SetupMode.HOT_SEAT) SetupMode.HOST else SetupMode.HOT_SEAT),
-        )
+        is SetupAction.MoveCursor -> moveModeCursor(state, action.delta)
+        SetupAction.Toggle -> SetupTransition(state.copy(mode = SetupMode.entries[modeCursorOf(state)]))
         // HOST: endpoint stays null here — beginHosting() is an effect the loop performs and
         // folds back into state, not something this pure handler can do.
         SetupAction.Commit -> SetupTransition(state.copy(modeLocked = true))
         else -> null
     }
+}
+
+private fun moveModeCursor(state: SetupState, delta: Int): SetupTransition {
+    val cursor = (modeCursorOf(state) + delta).coerceIn(0, SetupMode.entries.lastIndex)
+    return SetupTransition(state.copy(cursors = state.cursors + (SetupPanelId.MODE to cursor)))
 }
 
 private fun handleMapPanel(action: SetupAction, state: SetupState): SetupTransition? {
@@ -103,6 +107,9 @@ private fun moveCursor(state: SetupState, panel: SetupPanelId, delta: Int, lastI
 }
 
 private fun cursorOf(state: SetupState, panel: SetupPanelId): Int = state.cursors[panel] ?: 0
+
+private fun modeCursorOf(state: SetupState): Int =
+    (state.cursors[SetupPanelId.MODE] ?: state.mode.ordinal).coerceIn(0, SetupMode.entries.lastIndex)
 
 private fun playerPanel(player: PlayerId): SetupPanelId = when (player) {
     PlayerId.PLAYER_1 -> SetupPanelId.PLAYER_1

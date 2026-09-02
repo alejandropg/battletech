@@ -6,7 +6,7 @@ import tenter.screen.ChromeRole
 import tenter.view.TextCursor
 import tenter.view.View
 import tenter.widget.CheckState
-import tenter.widget.Checkbox
+import tenter.widget.SelectableRow
 
 /** Panel 2: every registered map, single-select (D6/D7-style rows, but MAP has no count column). */
 internal class MapListView(
@@ -25,15 +25,12 @@ internal class MapListView(
         for ((index, name) in maps.withIndex()) {
             val isCursorHere = index == cursorIndex
             val state = if (name == selected) CheckState.CHECKED else CheckState.UNCHECKED
-            val cursorGlyph = if (isCursorHere) "▶" else " "
-            val color = if (isCursorHere) ChromeRole.ACCENT else ChromeRole.TEXT_PRIMARY
-            val checkboxColor = if (isCursorHere) ChromeRole.ACCENT else Checkbox.intrinsicColor(state)
-
-            val row = content.row
-            if (isCursorHere) content.markReveal()
-            // One space placeholder at column 2 is where the checkbox glyph is overlaid below.
-            content.writeLine("$cursorGlyph   $name", Cell.Style(color))
-            Checkbox.draw(content, 2, row, state, checkboxColor)
+            SelectableRow.draw(
+                content = content,
+                label = name,
+                checkState = state,
+                cursor = isCursorHere,
+            )
         }
     }
 

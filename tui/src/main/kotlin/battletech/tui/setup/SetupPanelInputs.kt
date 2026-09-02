@@ -18,6 +18,7 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
             modeLocked = state.modeLocked,
             endpoint = state.endpoint,
             opponentConnected = state.opponentConnected,
+            cursorIndex = state.cursors[SetupPanelId.MODE] ?: state.mode.ordinal,
         )
     }
 

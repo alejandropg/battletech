@@ -6,7 +6,7 @@ import tenter.screen.ChromeRole
 import tenter.view.TextCursor
 import tenter.view.View
 import tenter.widget.CheckState
-import tenter.widget.Checkbox
+import tenter.widget.SelectableRow
 
 /** Panel 1 (D19/D4/D5): the mode picker while unlocked, then the chosen mode plus host details. */
 internal class ModePanelView(
@@ -14,22 +14,30 @@ internal class ModePanelView(
     private val modeLocked: Boolean,
     private val endpoint: HostEndpoint?,
     private val opponentConnected: Boolean,
+    private val cursorIndex: Int,
 ) : View {
 
     override fun draw(canvas: Canvas) {
         val content = TextCursor(canvas)
 
         if (!modeLocked) {
-            for (candidate in SetupMode.entries) {
-                val state = if (candidate == mode) CheckState.CHECKED else CheckState.UNCHECKED
-                val row = content.writeLine("    ${label(candidate)}", TEXT_PRIMARY_STYLE)
-                Checkbox.draw(content, 2, row, state)
+            for ((index, candidate) in SetupMode.entries.withIndex()) {
+                SelectableRow.draw(
+                    content = content,
+                    label = label(candidate),
+                    checkState = if (candidate == mode) CheckState.CHECKED else CheckState.UNCHECKED,
+                    cursor = index == cursorIndex,
+                )
             }
             return
         }
 
-        val row = content.writeLine("    ${label(mode)}", TEXT_PRIMARY_STYLE)
-        Checkbox.draw(content, 2, row, CheckState.CHECKED)
+        SelectableRow.draw(
+            content = content,
+            label = label(mode),
+            checkState = CheckState.CHECKED,
+            cursor = false,
+        )
 
         val ep = endpoint
         if (mode == SetupMode.HOST && ep != null) {

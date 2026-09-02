@@ -26,18 +26,40 @@ internal class SetupStateTest {
     // ---- MODE panel ----
 
     @Test
-    fun `MODE unlocked Toggle flips the mode`() {
-        val result = handleSetup(SetupAction.Toggle, SetupPanelId.MODE, baseState)
+    fun `MODE unlocked MoveCursor moves the highlight without changing the mode`() {
+        val result = handleSetup(SetupAction.MoveCursor(1), SetupPanelId.MODE, baseState)
 
-        assertThat(result?.state?.mode).isEqualTo(SetupMode.HOST)
+        assertThat(result?.state?.mode).isEqualTo(SetupMode.HOT_SEAT)
+        assertThat(result?.state?.cursors?.get(SetupPanelId.MODE)).isEqualTo(1)
     }
 
     @Test
-    fun `MODE unlocked Toggle twice returns to HOT_SEAT`() {
-        val once = handleSetup(SetupAction.Toggle, SetupPanelId.MODE, baseState)!!.state
-        val twice = handleSetup(SetupAction.Toggle, SetupPanelId.MODE, once)
+    fun `MODE unlocked MoveCursor clamps to the mode entries`() {
+        val atStart = handleSetup(SetupAction.MoveCursor(-1), SetupPanelId.MODE, baseState)!!.state
+        val atEnd = handleSetup(SetupAction.MoveCursor(1), SetupPanelId.MODE, atStart)!!.state
+        val stillAtEnd = handleSetup(SetupAction.MoveCursor(1), SetupPanelId.MODE, atEnd)
 
-        assertThat(twice?.state?.mode).isEqualTo(SetupMode.HOT_SEAT)
+        assertThat(atStart.cursors[SetupPanelId.MODE]).isEqualTo(0)
+        assertThat(atEnd.cursors[SetupPanelId.MODE]).isEqualTo(1)
+        assertThat(stillAtEnd?.state?.cursors?.get(SetupPanelId.MODE)).isEqualTo(1)
+    }
+
+    @Test
+    fun `MODE unlocked Toggle selects the highlighted mode`() {
+        val moved = handleSetup(SetupAction.MoveCursor(1), SetupPanelId.MODE, baseState)!!.state
+        val result = handleSetup(SetupAction.Toggle, SetupPanelId.MODE, moved)
+
+        assertThat(result?.state?.mode).isEqualTo(SetupMode.HOST)
+        assertThat(result?.state?.cursors?.get(SetupPanelId.MODE)).isEqualTo(1)
+    }
+
+    @Test
+    fun `MODE Toggle uses the selected mode when its cursor is absent`() {
+        val host = baseState.copy(mode = SetupMode.HOST)
+
+        val result = handleSetup(SetupAction.Toggle, SetupPanelId.MODE, host)
+
+        assertThat(result?.state?.mode).isEqualTo(SetupMode.HOST)
     }
 
     @Test
