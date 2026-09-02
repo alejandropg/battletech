@@ -150,6 +150,38 @@ internal class SetupWorkspaceTest {
     }
 
     @Test
+    fun `minimized map and player panels do not overlap a remainder column`() {
+        val state = SetupState(
+            catalog = ContentSummary(
+                maps = listOf("long-map"),
+                mechs = listOf("long-mech"),
+            ),
+            registry = AssetRegistry.EMPTY,
+            modeLocked = true,
+        )
+        val panelTop = SetupBannerView.reservedHeight(101)
+
+        val mapWorkspace = SetupWorkspace(Keybindings.DEFAULT)
+        mapWorkspace.focus(SetupPanelId.MAP)
+        mapWorkspace.cycleFocusedState(-1)
+        mapWorkspace.render(state, width = 101, height = 24, flash = null)
+
+        assertEquals(SetupPanelId.MODE, mapWorkspace.panelAt(28, panelTop + 1))
+        assertEquals(SetupPanelId.MAP, mapWorkspace.panelAt(29, panelTop + 1))
+
+        val playerWorkspace = SetupWorkspace(Keybindings.DEFAULT)
+        playerWorkspace.focus(SetupPanelId.PLAYER_2)
+        playerWorkspace.cycleFocusedState(-1)
+        playerWorkspace.render(state, width = 102, height = 24, flash = null)
+        val playerPanelTop = SetupBannerView.reservedHeight(102)
+
+        assertEquals(SetupPanelId.MAP, playerWorkspace.panelAt(55, playerPanelTop + 1))
+        assertEquals(SetupPanelId.PLAYER_1, playerWorkspace.panelAt(56, playerPanelTop + 1))
+        assertEquals(SetupPanelId.PLAYER_1, playerWorkspace.panelAt(82, playerPanelTop + 1))
+        assertEquals(SetupPanelId.PLAYER_2, playerWorkspace.panelAt(83, playerPanelTop + 1))
+    }
+
+    @Test
     fun `maximized player panel splits the selectable list from the full mech card`() {
         val model = MechModels["AS7-D"]
         val registry = AssetRegistry(mechs = mapOf(model.variant to model))

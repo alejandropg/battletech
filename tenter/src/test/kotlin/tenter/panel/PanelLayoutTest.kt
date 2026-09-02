@@ -198,4 +198,25 @@ internal class PanelLayoutTest {
         assertEquals(listOf(0, 39, 51), layout.sides.map { it.x })
         assertEquals(listOf(39, 12, 39), layout.sides.map { it.width })
     }
+
+    @Test
+    fun `computeUniform places a minimized panel after remainder columns`() {
+        val a = sidePanel(LayoutPanelId.A)
+        val b = sidePanel(LayoutPanelId.B, minimizedWidth = 12)
+        val c = sidePanel(LayoutPanelId.C)
+        b.cycleState(-1)
+
+        val layout = PanelLayout.computeUniform(
+            width = 91,
+            height = 30,
+            reservedTop = 0,
+            panels = listOf(a, b, c),
+            columnCount = 2,
+            fixedWidthPanels = setOf(LayoutPanelId.B),
+            widthOf = { it.widthFor(Unit) },
+        )
+
+        assertEquals(listOf(0, 40, 52), layout.sides.map { it.x })
+        assertEquals(listOf(40, 12, 39), layout.sides.map { it.width })
+    }
 }

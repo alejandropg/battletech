@@ -122,7 +122,8 @@ public class PanelLayout<K : PanelId, I> private constructor(
                         .sumOf(widthOf)
                     if (panel.id in fixedWidthPanels) {
                         val x = if (panel.state == PanelState.MINIMIZED) {
-                            proportionalIndex * columnWidth + fixedBefore
+                            proportionalIndex * columnWidth +
+                                minOf(proportionalIndex, remainder) + fixedBefore
                         } else {
                             proportionalWidth + fixedBefore
                         }
