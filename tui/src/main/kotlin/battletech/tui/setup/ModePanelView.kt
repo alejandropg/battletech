@@ -28,6 +28,10 @@ internal class ModePanelView(
                     checkState = if (candidate == mode) CheckState.CHECKED else CheckState.UNCHECKED,
                     cursor = index == cursorIndex,
                 )
+                content.writeLine(
+                    "    ${description(candidate)}",
+                    Cell.Style(if (index == cursorIndex) ChromeRole.ACCENT else ChromeRole.TEXT_PRIMARY),
+                )
             }
             return
         }
@@ -56,6 +60,11 @@ internal class ModePanelView(
     private fun label(candidate: SetupMode): String = when (candidate) {
         SetupMode.HOT_SEAT -> "hot-seat"
         SetupMode.HOST -> "host"
+    }
+
+    private fun description(candidate: SetupMode): String = when (candidate) {
+        SetupMode.HOT_SEAT -> "Both players share this terminal"
+        SetupMode.HOST -> "Other players connect with 'join'"
     }
 
     private companion object {
