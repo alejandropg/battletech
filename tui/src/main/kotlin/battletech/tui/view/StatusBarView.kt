@@ -49,13 +49,11 @@ internal class StatusBarView(
                 append(separator, TEXT_PRIMARY_STYLE)
             }
 
-            val helpColumn = canvas.width - HELP_WIDTH
+            val helpColumn = HelpHint.column(canvas)
             val messageWidth = (helpColumn - MESSAGE_HELP_GAP - prefix.width).coerceAtLeast(0)
             TextCursor(canvas).writeLine(prefix + StyledText.of(TextTruncation.ellipsize(message, messageWidth), TEXT_PRIMARY_STYLE))
 
-            if (helpColumn >= 0) {
-                canvas.writeString(helpColumn, 0, HELP_LABEL, TEXT_PRIMARY_STYLE)
-            }
+            HelpHint.draw(canvas, 0)
         }
     }
 
@@ -67,7 +65,7 @@ internal class StatusBarView(
             CellWidth.of(PADDED_SEPARATOR) +
             CellWidth.of(message) +
             MESSAGE_HELP_GAP +
-            HELP_WIDTH
+            HelpHint.WIDTH
 
     private fun messageText(): String =
         actionUnit?.let { "${UnitLabel.of(it)}$UNIT_MESSAGE_SEPARATOR$prompt" } ?: prompt
@@ -78,13 +76,10 @@ internal class StatusBarView(
         private const val COMPACT_SEPARATOR: String = " | "
         private const val UNIT_MESSAGE_SEPARATOR: String = " ┆ "
         private const val MESSAGE_HELP_GAP: Int = 1
-        private const val HELP_LABEL: String = "? : help"
-
         private val ACCENT_STYLE = Cell.Style(ChromeRole.ACCENT)
         private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
         private val PHASE_WIDTH = TurnPhase.entries.maxOf { phaseLabel(it).length }
         private val PLAYER_WIDTH = PlayerId.entries.maxOf { it.displayName.length }
-        private val HELP_WIDTH = CellWidth.of(HELP_LABEL)
 
         /**
          * The status bar is only [Workspace.STATUS_BAR_HEIGHT] = 3 rows tall: border alone
