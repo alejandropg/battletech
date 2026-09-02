@@ -78,24 +78,28 @@ public class PanelLayout<K : PanelId, I> private constructor(
         /**
          * Lays [panels] out as equal-width columns across [width], left to right, reserving
          * [reservedTop] rows. Leftover columns from the integer division go to the leftmost
-         * panels, one each, so the row is exactly [width] wide. A MAXIMIZED panel still wins the
-         * whole content region, exactly as in [compute]. `main` is null for a uniform layout —
-         * there is no derived-width panel. A panel's declared [Panel.width] is ignored here.
+         * panels, one each, so the row is exactly [width] wide. [columnCount] can reserve space
+         * for columns whose panels are not currently visible; it defaults to the number of
+         * [panels]. A MAXIMIZED panel still wins the whole content region, exactly as in [compute].
+         * `main` is null for a uniform layout — there is no derived-width panel. A panel's
+         * declared [Panel.width] is ignored here.
          */
         public fun <K : PanelId, I> computeUniform(
             width: Int,
             height: Int,
             reservedTop: Int,
             panels: List<Panel<K, I>>,
+            columnCount: Int = panels.size,
         ): PanelLayout<K, I> {
             require(panels.isNotEmpty()) { "A uniform layout needs at least one panel to divide the width between" }
+            require(columnCount >= panels.size) { "A uniform layout needs at least one column per panel" }
             val contentHeight = height - reservedTop
 
             val maximizedPanel = panels.firstOrNull { it.state == PanelState.MAXIMIZED }
             if (maximizedPanel != null) return maximizedLayout(width, reservedTop, contentHeight, maximizedPanel)
 
-            val columnWidth = width / panels.size
-            val remainder = width % panels.size
+            val columnWidth = width / columnCount
+            val remainder = width % columnCount
             val slots = buildList {
                 var nextX = 0
                 for ((index, panel) in panels.withIndex()) {

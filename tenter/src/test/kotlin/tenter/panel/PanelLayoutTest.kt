@@ -117,6 +117,15 @@ internal class PanelLayoutTest {
     }
 
     @Test
+    fun `computeUniform can reserve columns for hidden panels`() {
+        val panels = listOf(sidePanel(LayoutPanelId.A))
+
+        val layout = PanelLayout.computeUniform(width = 80, height = 30, reservedTop = 0, panels = panels, columnCount = 4)
+
+        assertEquals(20, layout.sides.single().width)
+    }
+
+    @Test
     fun `computeUniform ignores a panel's declared normalWidth`() {
         val panels = listOf(sidePanel(LayoutPanelId.A, width = 5), sidePanel(LayoutPanelId.B, width = 99))
 

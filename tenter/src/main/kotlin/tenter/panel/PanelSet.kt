@@ -80,13 +80,18 @@ public class PanelSet<K : PanelId, I>(
         return layout.sides.firstOrNull { it.panel.id == id }
     }
 
-    /** Lays out [visible] side panels plus [main], draws every slot, and returns the layout it used. */
+    /**
+     * Lays out [visible] side panels plus [main], draws every slot, and returns the layout it used.
+     * [uniformColumnCount] reserves that many equal-width columns when this is a uniform set;
+     * it is ignored for a set with a main panel.
+     */
     public fun render(
         canvas: Canvas,
         inputs: I,
         visible: Set<K>,
         reservedTop: Int,
         forgetReveal: Boolean = false,
+        uniformColumnCount: Int = visible.size,
     ): PanelLayout<K, I> {
         val visibleSides = sides.filter { it.id in visible }
         val focusedIsVisible = focused == main?.id || visibleSides.any { it.id == focused }
@@ -97,7 +102,7 @@ public class PanelSet<K : PanelId, I>(
         val layout = if (main != null) {
             PanelLayout.compute(canvas.width, canvas.height, reservedTop, main, visibleSides)
         } else {
-            PanelLayout.computeUniform(canvas.width, canvas.height, reservedTop, visibleSides)
+            PanelLayout.computeUniform(canvas.width, canvas.height, reservedTop, visibleSides, uniformColumnCount)
         }
         lastLayout = layout
 

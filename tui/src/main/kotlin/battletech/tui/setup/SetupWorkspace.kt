@@ -39,12 +39,24 @@ internal class SetupWorkspace(private val keys: Keybindings) {
         val screen = Canvas.of(buffer)
         val inputs = SetupPanelInputs(state, keys)
 
-        panels.render(screen, inputs, visible, reservedTop = bannerHeight, forgetReveal = forgetReveal)
+        val uniformColumnCount = if (state.rostersVisible) visible.size else SETUP_PANEL_COUNT
+        panels.render(
+            screen,
+            inputs,
+            visible,
+            reservedTop = bannerHeight,
+            forgetReveal = forgetReveal,
+            uniformColumnCount = uniformColumnCount,
+        )
 
         val prompt = flash?.text ?: defaultPrompt(state)
         SetupBannerView(prompt).draw(screen.region(0, 0, width, bannerHeight))
 
         return buffer
+    }
+
+    private companion object {
+        private const val SETUP_PANEL_COUNT = 4
     }
 }
 
