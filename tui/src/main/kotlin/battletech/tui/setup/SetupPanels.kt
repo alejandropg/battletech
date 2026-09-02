@@ -50,6 +50,7 @@ internal object SetupPanels {
                 id = SetupPanelId.HELP,
                 badge = keys.badgeFor(ChromeAction.ToggleHelp),
                 sections = { it.helpSections },
+                width = 28,
             ),
         )
         return PanelSet(panels)

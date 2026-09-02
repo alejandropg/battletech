@@ -14,14 +14,13 @@ internal fun <K : PanelId, I> helpPanel(
     id: K,
     badge: Char?,
     sections: (I) -> List<KeySection>,
+    width: Int = 42,
 ): Panel<K, I> = Panel(
     id = id,
     title = HelpView.TITLE,
-    normalWidth = HELP_WIDTH,
+    normalWidth = width,
     badge = badge,
     normal = { HelpView(sections(it)) },
     // No minimized state — ? dismisses HELP instead (see AppState.helpOpen / SetupState.helpOpen).
     maximized = { HelpView(sections(it)) },
 )
-
-private const val HELP_WIDTH: Int = 28

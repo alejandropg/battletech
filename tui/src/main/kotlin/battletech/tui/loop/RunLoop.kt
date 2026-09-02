@@ -123,7 +123,11 @@ internal suspend fun runLoop(
                                     // running, and it only ever names a GamePanelId.
                                     val panel = action.panel as GamePanelId
                                     if (panel == GamePanelId.BOARD || panel in PanelVisibility.visiblePanels(appState)) {
-                                        workspace.focus(panel)
+                                        if (panel == workspace.focused) {
+                                            workspace.cycleFocusedState(1)
+                                        } else {
+                                            workspace.focus(panel)
+                                        }
                                     }
                                 }
                                 // ? is a different action from every other panel's Alt+<key>: it also

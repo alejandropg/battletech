@@ -8,10 +8,10 @@ import tenter.panel.PanelId
  * Keybindings.badgeFor`, sourced from whichever chord the `CHROME` key layer binds to
  * `FocusPanel`/`ToggleHelp` for this panel, so a rebinding relabels the border too.
  *
- * `+`/`-` cycle the focused panel's [tenter.panel.PanelState]; `tenter.panel.Panel` remembers its
- * own state and scroll, keyed by the [GamePanelId] declared here. `?` is the one chord with an
- * extra effect: it also opens HELP if closed, or closes it if it was already open and focused —
- * see `AppState.helpOpen`'s KDoc.
+ * `+`/`-` cycle the focused panel's [tenter.panel.PanelState], as does pressing a focused panel's
+ * number key; `tenter.panel.Panel` remembers its own state and scroll, keyed by the [GamePanelId]
+ * declared here. `?` is the one chord with an extra effect: it also opens HELP if closed, or
+ * closes it if it was already open and focused — see `AppState.helpOpen`'s KDoc.
  *
  * [BOARD] is the `tenter.panel.PanelSet`'s `main` panel — always visible, never in
  * [PanelVisibility]'s set, and declares only [tenter.panel.PanelState.NORMAL].

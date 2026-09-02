@@ -64,6 +64,7 @@ internal object Panels {
                 id = GamePanelId.HELP,
                 badge = keys.badgeFor(ChromeAction.ToggleHelp),
                 sections = { it.helpSections },
+                width = HELP_WIDTH,
             ),
         )
 
@@ -87,4 +88,6 @@ internal object Panels {
         minimized = { VerticalTitleView(title) },
         maximized = maximized ?: build,
     )
+
+    private const val HELP_WIDTH: Int = 42
 }

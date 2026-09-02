@@ -27,6 +27,7 @@ import battletech.tui.loop.runLoop
 import battletech.tui.screen.resolveTheme
 import battletech.tui.view.AttackResultsView
 import battletech.tui.view.LogView
+import battletech.tui.view.UnitStatusView
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.rendering.AnsiLevel
@@ -670,6 +671,47 @@ internal class TuiAppLoopTest {
         // A minimized panel draws its title one character per row, so the horizontal
         // "LOG" string no longer appears anywhere in the frame — it becomes a stub.
         assertFalse(recorder.output().contains(LogView.TITLE), "'-' should minimize the focused LOG panel to a stub")
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
+    @Test
+    fun `reselecting a panel with its number cycles through every size`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+        val loopJob = launch {
+            runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
+            )
+        }
+
+        renderer.clear()
+        recorder.clearOutput()
+        internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
+        assertTrue(recorder.output().contains(UnitStatusView.TITLE), "first press should focus UNIT STATUS at NORMAL")
+        assertFalse(recorder.output().contains("'MECH DATA"), "first press should not resize UNIT STATUS")
+
+        renderer.clear()
+        recorder.clearOutput()
+        internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
+        assertTrue(recorder.output().contains("'MECH DATA"), "second press should maximize UNIT STATUS")
+
+        renderer.clear()
+        recorder.clearOutput()
+        internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
+        assertFalse(recorder.output().contains(UnitStatusView.TITLE), "third press should minimize UNIT STATUS")
+
+        renderer.clear()
+        recorder.clearOutput()
+        internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
+        assertTrue(recorder.output().contains(UnitStatusView.TITLE), "fourth press should restore NORMAL")
+        assertFalse(recorder.output().contains("'MECH DATA"), "restored NORMAL should use the compact view")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
