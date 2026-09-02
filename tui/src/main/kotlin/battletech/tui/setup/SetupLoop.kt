@@ -121,7 +121,7 @@ internal suspend fun setupLoop(
                                     // SETUP is the only layer binding FocusPanel here, and it
                                     // only ever names a SetupPanelId.
                                     val panel = action.panel as SetupPanelId
-                                    if (panel in SetupPanelVisibility.visiblePanels(state)) workspace.focus(panel)
+                                    if (panel in SetupPanelVisibility.visiblePanels(state)) workspace.focusOrCycle(panel)
                                 }
                                 ChromeAction.ToggleHelp ->
                                     if (state.helpOpen && workspace.focused == SetupPanelId.HELP) {

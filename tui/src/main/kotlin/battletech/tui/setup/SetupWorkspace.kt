@@ -16,6 +16,7 @@ internal class SetupWorkspace(private val keys: Keybindings) {
     val focused: SetupPanelId get() = panels.focused
 
     fun focus(id: SetupPanelId) = panels.focus(id)
+    internal fun focusOrCycle(id: SetupPanelId) = panels.focusOrCycle(id)
     fun cycleFocusedState(delta: Int) = panels.cycleFocusedState(delta)
     fun scrollFocused(dx: Int, dy: Int) = panels.scrollFocused(dx, dy)
     fun pageFocused(direction: Int) = panels.pageFocused(direction)

@@ -56,6 +56,24 @@ internal class PanelSetTest {
     }
 
     @Test
+    fun `focusOrCycle focuses a different panel and cycles a reselected panel`() {
+        val a = sidePanel(SetPanelId.A)
+        val set = PanelSet(mainPanel(), listOf(a, sidePanel(SetPanelId.B)))
+
+        set.focusOrCycle(SetPanelId.A)
+        assertEquals(PanelState.NORMAL, a.state)
+
+        set.focusOrCycle(SetPanelId.A)
+        assertEquals(PanelState.MAXIMIZED, a.state)
+
+        set.focusOrCycle(SetPanelId.A)
+        assertEquals(PanelState.MINIMIZED, a.state)
+
+        set.focusOrCycle(SetPanelId.A)
+        assertEquals(PanelState.NORMAL, a.state)
+    }
+
+    @Test
     fun `focus on an unknown id is a no-op`() {
         val set = PanelSet(mainPanel(), listOf(sidePanel(SetPanelId.A)))
 

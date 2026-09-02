@@ -38,6 +38,15 @@ public class PanelSet<K : PanelId, I>(
         focused = id
     }
 
+    /** Focuses [id], or cycles it forward when it is already focused. Unknown id: no-op. */
+    public fun focusOrCycle(id: K) {
+        if (id == focused) {
+            cycleFocusedState(1)
+        } else {
+            focus(id)
+        }
+    }
+
     public fun cycleFocusedState(delta: Int) {
         panelFor(focused)?.cycleState(delta)
     }

@@ -20,6 +20,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -141,6 +143,47 @@ internal class SetupLoopTest {
         )
 
         assertThat(recorder.output()).contains(HelpView.TITLE)
+    }
+
+    @Test
+    fun `reselecting a setup panel with its number cycles through every size`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<SetupUiEvent>(Channel.UNLIMITED)
+        val loopJob = launch {
+            setupLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = initialState().copy(modeLocked = true),
+                keys = Keybindings.DEFAULT,
+                lobby = NoLobby,
+            )
+        }
+
+        renderer.clear()
+        recorder.clearOutput()
+        internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
+        assertThat(recorder.output()).contains("PLAYER 1")
+        assertThat(recorder.output()).doesNotContain("'MECH DATA")
+
+        renderer.clear()
+        recorder.clearOutput()
+        internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
+        assertThat(recorder.output()).contains("'MECH DATA")
+
+        renderer.clear()
+        recorder.clearOutput()
+        internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
+        assertThat(recorder.output()).doesNotContain("PLAYER 1")
+
+        renderer.clear()
+        recorder.clearOutput()
+        internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
+        assertThat(recorder.output()).contains("PLAYER 1")
+        assertThat(recorder.output()).doesNotContain("'MECH DATA")
+
+        internalEvents.send(SetupUiEvent.Quit)
+        loopJob.join()
     }
 
     @Test

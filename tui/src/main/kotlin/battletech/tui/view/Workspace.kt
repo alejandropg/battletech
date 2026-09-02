@@ -46,6 +46,9 @@ internal class Workspace(private val keys: Keybindings) {
     /** Focuses [id], demoting whatever side panel was maximized — see [tenter.panel.PanelSet.focus]. */
     fun focus(id: GamePanelId) = panels.focus(id)
 
+    /** Focuses [id], or cycles it forward when it is already focused. */
+    internal fun focusOrCycle(id: GamePanelId) = panels.focusOrCycle(id)
+
     /** Cycles the focused panel's state (`+`/`-`) — see [tenter.panel.PanelSet.cycleFocusedState]. */
     fun cycleFocusedState(delta: Int) = panels.cycleFocusedState(delta)
 
