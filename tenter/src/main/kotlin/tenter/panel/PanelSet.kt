@@ -81,7 +81,7 @@ public class PanelSet<K : PanelId, I>(
     }
 
     /**
-     * Lays out [visible] side panels plus [main], draws every slot, and returns the layout it used.
+     * Lays out [visible] panels, resolves widths from [inputs], draws every slot, and returns the layout used.
      * [uniformColumnCount] reserves that many equal-width columns when this is a uniform set;
      * it is ignored for a set with a main panel. [fixedWidthPanels] removes matching visible
      * panels from that proportional grid and places them at the trailing edge using their
@@ -102,8 +102,13 @@ public class PanelSet<K : PanelId, I>(
             (main?.id ?: visibleSides.firstOrNull()?.id)?.let { focus(it) }
         }
 
+        val widthOf: (Panel<K, I>) -> Int = { it.widthFor(inputs) }
+        val fixedPanels = fixedWidthPanels + visibleSides
+            .filter { it.state == PanelState.MINIMIZED }
+            .map { it.id }
+
         val layout = if (main != null) {
-            PanelLayout.compute(canvas.width, canvas.height, reservedTop, main, visibleSides)
+            PanelLayout.compute(canvas.width, canvas.height, reservedTop, main, visibleSides, widthOf)
         } else {
             PanelLayout.computeUniform(
                 canvas.width,
@@ -111,7 +116,8 @@ public class PanelSet<K : PanelId, I>(
                 reservedTop,
                 visibleSides,
                 uniformColumnCount,
-                fixedWidthPanels,
+                fixedPanels,
+                widthOf,
             )
         }
         lastLayout = layout

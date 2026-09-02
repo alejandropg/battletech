@@ -119,4 +119,20 @@ internal class PanelStateTest {
         panel.cycleState(1) // MAXIMIZED
         assertEquals(20, panel.width, "MAXIMIZED never consults width — the layout supplies that")
     }
+
+    @Test
+    fun `widthFor resolves a minimized width from current inputs`() {
+        val panel = Panel<TestPanelId, Unit>(
+            id = TestPanelId.A,
+            title = "T",
+            normalWidth = 20,
+            normal = { stubView() },
+            minimized = { stubView() },
+            minimizedWidth = { 13 },
+        )
+
+        panel.cycleState(-1)
+
+        assertEquals(13, panel.widthFor(Unit))
+    }
 }

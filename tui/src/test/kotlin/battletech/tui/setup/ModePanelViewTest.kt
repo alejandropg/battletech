@@ -1,10 +1,13 @@
 package battletech.tui.setup
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.ChromeRole
 import tenter.view.line
 import tenter.view.render
+import tenter.view.text
 import tenter.widget.CheckState
 import tenter.widget.checkboxIcon
 
@@ -32,5 +35,26 @@ internal class ModePanelViewTest {
         assertEquals(ChromeRole.ACCENT, buffer.get(4, 2).style.fg)
         assertEquals("    Both players share this terminal", buffer.line(1, width = 50))
         assertEquals("    Other players connect with 'join'", buffer.line(3, width = 50))
+    }
+
+    @Test
+    fun `compact mode view keeps only the selectable mode rows`() {
+        val buffer = render(
+            ModePanelView(
+                mode = SetupMode.HOST,
+                modeLocked = true,
+                endpoint = HostEndpoint(emptyList(), 1234, "session"),
+                opponentConnected = true,
+                cursorIndex = SetupMode.HOST.ordinal,
+                compact = true,
+            ),
+            width = 20,
+            height = 4,
+        )
+
+        assertTrue(buffer.text().contains("hot-seat"))
+        assertTrue(buffer.text().contains("host"))
+        assertFalse(buffer.text().contains("Both players"))
+        assertFalse(buffer.text().contains("Session:"))
     }
 }

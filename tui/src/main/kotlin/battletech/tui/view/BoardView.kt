@@ -11,6 +11,7 @@ import battletech.tui.hex.HexLayout
 import battletech.tui.hex.HexRenderer
 import battletech.tui.hex.UnitRenderer
 import battletech.tui.screen.BoardRole
+import battletech.tactical.unit.UnitRoster
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
@@ -150,6 +151,10 @@ internal class BoardView(
         internal const val MAP_ORIGIN_X: Int = SIDE_LABEL_WIDTH + SIDE_LABEL_GAP
         internal const val MAP_ORIGIN_Y: Int = 1
         internal const val BOTTOM_LABEL_GAP: Int = 1
+
+        /** A board-only preview with the same map content and no deployed units. */
+        internal fun preview(map: GameMap): BoardView =
+            BoardView(PlayerGameState(UnitRoster(emptyList()), map))
 
         private val COORDINATE_STYLE: Cell.Style = Cell.Style(ChromeRole.TEXT_SUBTLE)
 

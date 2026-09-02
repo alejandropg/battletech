@@ -22,12 +22,13 @@ internal class PanelLayoutTest {
         normal = { stubView() },
     )
 
-    private fun sidePanel(id: LayoutPanelId, width: Int = 20) = Panel<LayoutPanelId, Unit>(
+    private fun sidePanel(id: LayoutPanelId, width: Int = 20, minimizedWidth: Int? = null) = Panel<LayoutPanelId, Unit>(
         id = id,
         title = id.name,
         normalWidth = width,
         normal = { stubView() },
         minimized = { stubView() },
+        minimizedWidth = minimizedWidth?.let { resolvedWidth -> { resolvedWidth } },
         maximized = { stubView() },
     )
 
@@ -174,5 +175,27 @@ internal class PanelLayoutTest {
         assertEquals(4, layout.sides.single().y)
         assertEquals(80, layout.sides.single().width)
         assertEquals(26, layout.sides.single().height)
+    }
+
+    @Test
+    fun `computeUniform keeps a minimized panel in declaration order and shares the remaining width`() {
+        val a = sidePanel(LayoutPanelId.A)
+        val b = sidePanel(LayoutPanelId.B, minimizedWidth = 12)
+        val c = sidePanel(LayoutPanelId.C)
+        b.cycleState(-1)
+
+        val layout = PanelLayout.computeUniform(
+            width = 90,
+            height = 30,
+            reservedTop = 0,
+            panels = listOf(a, b, c),
+            columnCount = 2,
+            fixedWidthPanels = setOf(LayoutPanelId.B),
+            widthOf = { it.widthFor(Unit) },
+        )
+
+        assertEquals(listOf(LayoutPanelId.A, LayoutPanelId.B, LayoutPanelId.C), layout.sides.map { it.panel.id })
+        assertEquals(listOf(0, 39, 51), layout.sides.map { it.x })
+        assertEquals(listOf(39, 12, 39), layout.sides.map { it.width })
     }
 }

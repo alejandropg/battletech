@@ -28,6 +28,9 @@ public interface PanelId
  * panel cannot observe, so it is derived fresh every frame and never stored; state and scroll are
  * decided by nothing but this panel's own events, so they persist here across frames with no
  * round trip through the host's state.
+ * The normal [extent] is used in every state unless [maximizedExtent] supplies the natural content
+ * size for MAXIMIZED, allowing a maximized view to expose a second scroll axis without changing
+ * the normal panel.
  *
  * One [Panel] instance is meant to live for exactly one screen's whole lifetime, never longer —
  * a fresh registry of panels per screen, never a global singleton, so one test's panel state can
@@ -41,7 +44,9 @@ public class Panel<K : PanelId, I>(
     private val badge: Char? = null,
     private val normal: (I) -> View,
     private val minimized: ((I) -> View)? = null,
+    private val minimizedWidth: ((I) -> Int)? = null,
     private val maximized: ((I) -> View)? = null,
+    private val maximizedExtent: ((I) -> ContentExtent)? = null,
 ) {
     private var scroll = ScrollOffset.ZERO
     private var lastReveal: RevealRect? = null
@@ -58,8 +63,14 @@ public class Panel<K : PanelId, I>(
             maximized?.let { PanelState.MAXIMIZED },
         )
 
-    /** Column width for MINIMIZED/NORMAL. Never consulted for MAXIMIZED — the layout supplies that. */
+    /** Default column width when no input-aware minimized width is supplied. */
     public val width: Int get() = if (state == PanelState.MINIMIZED) MINIMIZED_WIDTH else normalWidth
+
+    /** Resolves this panel's column width for the current inputs; MAXIMIZED is sized by the layout. */
+    public fun widthFor(inputs: I): Int = when (state) {
+        PanelState.MINIMIZED -> (minimizedWidth?.invoke(inputs) ?: MINIMIZED_WIDTH).coerceAtLeast(MINIMIZED_WIDTH)
+        PanelState.NORMAL, PanelState.MAXIMIZED -> normalWidth
+    }
 
     /** The offset this panel settled on in its last render — a host mapping a screen click back onto this panel's content reads this. */
     public val offset: ScrollOffset get() = scroll
@@ -117,7 +128,11 @@ public class Panel<K : PanelId, I>(
             title = title,
             badge = badge?.toString(),
             content = content,
-            extent = extent(inputs),
+            extent = if (state == PanelState.MAXIMIZED) {
+                maximizedExtent?.invoke(inputs) ?: extent(inputs)
+            } else {
+                extent(inputs)
+            },
             offset = scroll,
             previousReveal = if (forgetReveal) null else lastReveal,
             recenter = recenter,

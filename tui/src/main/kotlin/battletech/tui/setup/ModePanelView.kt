@@ -15,12 +15,13 @@ internal class ModePanelView(
     private val endpoint: HostEndpoint?,
     private val opponentConnected: Boolean,
     private val cursorIndex: Int,
+    private val compact: Boolean = false,
 ) : View {
 
     override fun draw(canvas: Canvas) {
         val content = TextCursor(canvas)
 
-        if (!modeLocked) {
+        if (!modeLocked || compact) {
             for ((index, candidate) in SetupMode.entries.withIndex()) {
                 SelectableRow.draw(
                     content = content,
@@ -28,10 +29,12 @@ internal class ModePanelView(
                     checkState = if (candidate == mode) CheckState.CHECKED else CheckState.UNCHECKED,
                     cursor = index == cursorIndex,
                 )
-                content.writeLine(
-                    "    ${description(candidate)}",
-                    Cell.Style(if (index == cursorIndex) ChromeRole.ACCENT else ChromeRole.TEXT_PRIMARY),
-                )
+                if (!compact) {
+                    content.writeLine(
+                        "    ${description(candidate)}",
+                        Cell.Style(if (index == cursorIndex) ChromeRole.ACCENT else ChromeRole.TEXT_PRIMARY),
+                    )
+                }
             }
             return
         }
@@ -57,17 +60,17 @@ internal class ModePanelView(
         }
     }
 
-    private fun label(candidate: SetupMode): String = when (candidate) {
-        SetupMode.HOT_SEAT -> "hot-seat"
-        SetupMode.HOST -> "host"
-    }
-
     private fun description(candidate: SetupMode): String = when (candidate) {
         SetupMode.HOT_SEAT -> "Both players share this terminal"
         SetupMode.HOST -> "Other players connect with 'join'"
     }
 
-    private companion object {
-        val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
+    internal companion object {
+        internal fun label(candidate: SetupMode): String = when (candidate) {
+            SetupMode.HOT_SEAT -> "hot-seat"
+            SetupMode.HOST -> "host"
+        }
+
+        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
     }
 }

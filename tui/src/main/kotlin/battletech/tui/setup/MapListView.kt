@@ -3,6 +3,7 @@ package battletech.tui.setup
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
+import tenter.text.CellWidth
 import tenter.view.TextCursor
 import tenter.view.View
 import tenter.widget.CheckState
@@ -34,7 +35,10 @@ internal class MapListView(
         }
     }
 
-    private companion object {
-        val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
+    internal companion object {
+        internal fun contentWidth(maps: List<String>): Int =
+            4 + (maps.maxOfOrNull(CellWidth::of) ?: CellWidth.of("No maps registered"))
+
+        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
     }
 }

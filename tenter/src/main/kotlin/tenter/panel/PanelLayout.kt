@@ -47,21 +47,23 @@ public class PanelLayout<K : PanelId, I> private constructor(
             reservedTop: Int,
             main: Panel<K, I>,
             sides: List<Panel<K, I>>,
+            widthOf: (Panel<K, I>) -> Int = { it.width },
         ): PanelLayout<K, I> {
             val contentHeight = height - reservedTop
 
             val maximizedSide = sides.firstOrNull { it.state == PanelState.MAXIMIZED }
             if (maximizedSide != null) return maximizedLayout(width, reservedTop, contentHeight, maximizedSide)
 
-            val totalSideWidth = sides.sumOf { it.width }
+            val totalSideWidth = sides.sumOf(widthOf)
             val mainWidth = width - totalSideWidth
             val mainSlot = Slot(main, 0, reservedTop, mainWidth, contentHeight)
 
             val slots = buildList {
                 var nextX = mainWidth
                 for (panel in sides) {
-                    add(Slot(panel, nextX, reservedTop, panel.width, contentHeight))
-                    nextX += panel.width
+                    val panelWidth = widthOf(panel)
+                    add(Slot(panel, nextX, reservedTop, panelWidth, contentHeight))
+                    nextX += panelWidth
                 }
             }
 
@@ -80,11 +82,12 @@ public class PanelLayout<K : PanelId, I> private constructor(
          * [reservedTop] rows. Leftover columns from the integer division go to the leftmost
          * panels, one each, so the row is exactly [width] wide. [columnCount] can reserve space
          * for columns whose panels are not currently visible; it defaults to the number of
-         * [panels]. [fixedWidthPanels] are placed after the proportional columns using each
-         * panel's declared [Panel.width], and do not consume a proportional column. A
-         * MAXIMIZED panel still wins the whole content region, exactly as in [compute].
-         * `main` is null for a uniform layout — there is no derived-width panel. A panel's
-         * declared [Panel.width] is ignored here unless its ID is in [fixedWidthPanels].
+         * [panels]. [fixedWidthPanels] do not consume a proportional column. Minimized fixed
+         * panels retain declaration order, while other fixed panels occupy the trailing fixed
+         * region. [widthOf] resolves each panel's width for the current inputs. A MAXIMIZED
+         * panel still wins the whole content region, exactly as in [compute]. `main` is null for
+         * a uniform layout — there is no derived-width panel. The default [widthOf] uses a
+         * panel's declared [Panel.width].
          */
         public fun <K : PanelId, I> computeUniform(
             width: Int,
@@ -93,11 +96,12 @@ public class PanelLayout<K : PanelId, I> private constructor(
             panels: List<Panel<K, I>>,
             columnCount: Int = panels.size,
             fixedWidthPanels: Set<K> = emptySet(),
+            widthOf: (Panel<K, I>) -> Int = { it.width },
         ): PanelLayout<K, I> {
             require(panels.isNotEmpty()) { "A uniform layout needs at least one panel to divide the width between" }
             val proportionalPanels = panels.filter { it.id !in fixedWidthPanels }
             val fixedPanels = panels.filter { it.id in fixedWidthPanels }
-            require(columnCount >= proportionalPanels.size) {
+            require(columnCount >= proportionalPanels.size || proportionalPanels.isEmpty()) {
                 "A uniform layout needs at least one column per proportional panel"
             }
             val contentHeight = height - reservedTop
@@ -105,23 +109,31 @@ public class PanelLayout<K : PanelId, I> private constructor(
             val maximizedPanel = panels.firstOrNull { it.state == PanelState.MAXIMIZED }
             if (maximizedPanel != null) return maximizedLayout(width, reservedTop, contentHeight, maximizedPanel)
 
-            val fixedWidth = fixedPanels.sumOf { it.width }
+            val fixedWidth = fixedPanels.sumOf(widthOf)
             val proportionalWidth = width - fixedWidth
-            val columnWidth = proportionalWidth / columnCount
-            val remainder = proportionalWidth % columnCount
+            val columnWidth = if (columnCount == 0) 0 else proportionalWidth / columnCount
+            val remainder = if (columnCount == 0) 0 else proportionalWidth % columnCount
             val slots = buildList {
-                var nextX = 0
-                for ((index, panel) in proportionalPanels.withIndex()) {
-                    val slotWidth = columnWidth + if (index < remainder) 1 else 0
-                    add(Slot(panel, nextX, reservedTop, slotWidth, contentHeight))
-                    nextX += slotWidth
-                }
-                // Unrendered proportional columns are still reserved, so fixed panels remain
-                // anchored to the trailing edge when only part of the grid is visible.
-                nextX = proportionalWidth
-                for (panel in fixedPanels) {
-                    add(Slot(panel, nextX, reservedTop, panel.width, contentHeight))
-                    nextX += panel.width
+                var proportionalIndex = 0
+                for (panel in panels) {
+                    val fixedBefore = panels
+                        .takeWhile { it != panel }
+                        .filter { it.id in fixedWidthPanels }
+                        .sumOf(widthOf)
+                    if (panel.id in fixedWidthPanels) {
+                        val x = if (panel.state == PanelState.MINIMIZED) {
+                            proportionalIndex * columnWidth + fixedBefore
+                        } else {
+                            proportionalWidth + fixedBefore
+                        }
+                        add(Slot(panel, x, reservedTop, widthOf(panel), contentHeight))
+                    } else {
+                        val slotWidth = columnWidth + if (proportionalIndex < remainder) 1 else 0
+                        val x = proportionalIndex * columnWidth +
+                            minOf(proportionalIndex, remainder) + fixedBefore
+                        add(Slot(panel, x, reservedTop, slotWidth, contentHeight))
+                        proportionalIndex++
+                    }
                 }
             }
 

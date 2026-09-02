@@ -1,6 +1,7 @@
 package battletech.tui.setup
 
 import battletech.tui.input.Keybindings
+import tenter.panel.PanelState
 import tenter.screen.Canvas
 import tenter.screen.ScreenBuffer
 import tenter.view.FlashMessage
@@ -39,6 +40,10 @@ internal class SetupWorkspace(private val keys: Keybindings) {
         val buffer = ScreenBuffer(width, height)
         val screen = Canvas.of(buffer)
         val inputs = SetupPanelInputs(state, keys)
+        val minimizedCount = panels.sides.count { it.id in visible && it.state == PanelState.MINIMIZED }
+        val uniformColumnCount = if (minimizedCount == 0) SETUP_PANEL_COUNT else {
+            (SETUP_PANEL_COUNT - minimizedCount).coerceAtLeast(0)
+        }
 
         panels.render(
             screen,
@@ -46,7 +51,7 @@ internal class SetupWorkspace(private val keys: Keybindings) {
             visible,
             reservedTop = bannerHeight,
             forgetReveal = forgetReveal,
-            uniformColumnCount = SETUP_PANEL_COUNT,
+            uniformColumnCount = uniformColumnCount,
             fixedWidthPanels = setOf(SetupPanelId.HELP),
         )
 

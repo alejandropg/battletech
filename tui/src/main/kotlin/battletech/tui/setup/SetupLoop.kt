@@ -1,6 +1,7 @@
 package battletech.tui.setup
 
 import battletech.tactical.model.content.summarize
+import battletech.tui.hex.HexGeometry
 import battletech.tui.input.ChromeAction
 import battletech.tui.input.ContextId
 import battletech.tui.input.Keybindings
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import tenter.input.InputAction
 import tenter.input.MouseInput
+import tenter.input.PanAction
 import tenter.input.ScrollAction
 import tenter.screen.ScreenRenderer
 import tenter.view.FlashMessage
@@ -141,6 +143,20 @@ internal suspend fun setupLoop(
                             when (action) {
                                 is ScrollAction.Lines -> workspace.scrollFocused(0, action.delta)
                                 is ScrollAction.Pages -> workspace.pageFocused(action.delta)
+                            }
+                            render()
+                            return@collect
+                        }
+
+                        is PanAction -> {
+                            if (action is PanAction.Pan) {
+                                val (dx, dy) = when (action.direction) {
+                                    PanAction.Direction.LEFT -> -HexGeometry.COL_STRIDE to 0
+                                    PanAction.Direction.RIGHT -> HexGeometry.COL_STRIDE to 0
+                                    PanAction.Direction.UP -> 0 to -HexGeometry.ROW_STRIDE
+                                    PanAction.Direction.DOWN -> 0 to HexGeometry.ROW_STRIDE
+                                }
+                                workspace.scrollFocused(dx, dy)
                             }
                             render()
                             return@collect

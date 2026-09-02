@@ -116,18 +116,7 @@ private fun gameChromeLayer(): KeyLayer {
         KeyboardEvent("9") to GamePanelId.LOG,
     ).map { (chord, panel) -> KeyBinding(chord, ChromeAction.FocusPanel(panel), "focusPanel") }
 
-    val panBindings = listOf(
-        KeyboardEvent("h") to PanAction.Direction.LEFT,
-        KeyboardEvent("l") to PanAction.Direction.RIGHT,
-        KeyboardEvent("k") to PanAction.Direction.UP,
-        KeyboardEvent("j") to PanAction.Direction.DOWN,
-        KeyboardEvent("ArrowLeft", ctrl = true) to PanAction.Direction.LEFT,
-        KeyboardEvent("ArrowRight", ctrl = true) to PanAction.Direction.RIGHT,
-        KeyboardEvent("ArrowUp", ctrl = true) to PanAction.Direction.UP,
-        KeyboardEvent("ArrowDown", ctrl = true) to PanAction.Direction.DOWN,
-    ).map { (chord, direction) -> KeyBinding(chord, PanAction.Pan(direction), "pan") }
-
-    val bindings = focusPanelBindings + panBindings + listOf(
+    val bindings = focusPanelBindings + panBindings("pan") + listOf(
         KeyBinding(KeyboardEvent("Home"), PanAction.Recenter, "recenter"),
     )
 
@@ -147,7 +136,7 @@ private fun setupLayer(): KeyLayer {
         KeyboardEvent("4") to SetupPanelId.PLAYER_2,
     ).map { (chord, panel) -> KeyBinding(chord, ChromeAction.FocusPanel(panel), "focusPanel") }
 
-    val bindings = focusPanelBindings + listOf(
+    val bindings = focusPanelBindings + panBindings("panMaximizedView") + listOf(
         KeyBinding(KeyboardEvent("w"), SetupAction.MoveCursor(-1), "moveCursor"),
         KeyBinding(KeyboardEvent("ArrowUp"), SetupAction.MoveCursor(-1), "moveCursor"),
         KeyBinding(KeyboardEvent("s"), SetupAction.MoveCursor(1), "moveCursor"),
@@ -165,6 +154,7 @@ private fun setupLayer(): KeyLayer {
         HintGroup("focusPanel", "1-4", "focus a panel"),
         HintGroup("moveCursor", "↑↓/ws", "move cursor"),
         HintGroup("adjust", "←→/ad", "adjust count"),
+        HintGroup("panMaximizedView", "hjkl/${KeyGlyph.CTRL}←→↑↓", "pan maximized view"),
         HintGroup("toggle", KeyGlyph.SPACE, "toggle selection"),
         HintGroup("nextPanel", KeyGlyph.ENTER, "next panel"),
         HintGroup("commit", "c", "commit"),
@@ -172,6 +162,18 @@ private fun setupLayer(): KeyLayer {
 
     return KeyLayer(title = "SETUP", bindings = bindings, hintGroups = hintGroups, shadowing = false)
 }
+
+/** Board-style pan chords shared by the game and setup maximized views. */
+private fun panBindings(hintGroup: String): List<KeyBinding> = listOf(
+    KeyboardEvent("h") to PanAction.Direction.LEFT,
+    KeyboardEvent("l") to PanAction.Direction.RIGHT,
+    KeyboardEvent("k") to PanAction.Direction.UP,
+    KeyboardEvent("j") to PanAction.Direction.DOWN,
+    KeyboardEvent("ArrowLeft", ctrl = true) to PanAction.Direction.LEFT,
+    KeyboardEvent("ArrowRight", ctrl = true) to PanAction.Direction.RIGHT,
+    KeyboardEvent("ArrowUp", ctrl = true) to PanAction.Direction.UP,
+    KeyboardEvent("ArrowDown", ctrl = true) to PanAction.Direction.DOWN,
+).map { (chord, direction) -> KeyBinding(chord, PanAction.Pan(direction), hintGroup) }
 
 private fun panelScrollLayer(): KeyLayer = KeyLayer(
     title = null,

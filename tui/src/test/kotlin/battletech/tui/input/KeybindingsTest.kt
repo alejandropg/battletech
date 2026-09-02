@@ -126,7 +126,7 @@ internal class KeybindingsTest {
                 ContextId.BROWSING -> binding.action is BrowsingAction
                 ContextId.FACING -> binding.action is FacingAction
                 ContextId.WEAPON_DECLARING, ContextId.PHYSICAL_DECLARING -> binding.action is AttackAction
-                ContextId.SETUP -> binding.action is SetupAction || binding.action is ChromeAction
+                ContextId.SETUP -> binding.action is SetupAction || binding.action is ChromeAction || binding.action is PanAction
             }
             assertTrue(ok, "binding for ${binding.chord} in $context has action ${binding.action} of the wrong family")
         }
@@ -172,6 +172,20 @@ internal class KeybindingsTest {
         assertEquals(BrowsingAction.SelectFacing(HexDirection.SE), keys.resolve(listOf(ContextId.BROWSING), KeyboardEvent("D", shift = true)))
         assertEquals(AttackAction.ToggleWeapon, keys.resolve(listOf(ContextId.WEAPON_DECLARING), KeyboardEvent(" ")))
         assertEquals(AttackAction.ToggleWeapon, keys.resolve(listOf(ContextId.PHYSICAL_DECLARING), KeyboardEvent(" ")))
+    }
+
+    @Test
+    fun `characterisation - setup maximized-view pan bindings`() {
+        val keys = Keybindings.DEFAULT
+
+        assertEquals(PanAction.Pan(PanAction.Direction.LEFT), keys.resolve(listOf(ContextId.SETUP), KeyboardEvent("h")))
+        assertEquals(PanAction.Pan(PanAction.Direction.DOWN), keys.resolve(listOf(ContextId.SETUP), KeyboardEvent("j")))
+        assertEquals(PanAction.Pan(PanAction.Direction.UP), keys.resolve(listOf(ContextId.SETUP), KeyboardEvent("k")))
+        assertEquals(PanAction.Pan(PanAction.Direction.RIGHT), keys.resolve(listOf(ContextId.SETUP), KeyboardEvent("l")))
+        assertEquals(
+            PanAction.Pan(PanAction.Direction.RIGHT),
+            keys.resolve(listOf(ContextId.SETUP), KeyboardEvent("ArrowRight", ctrl = true)),
+        )
     }
 
     /**
