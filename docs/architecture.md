@@ -221,8 +221,8 @@ caller's `connectLocal()` before the peer is notified at all, rather than merely
 `battletech.tactical.model.content.MatchPlan` is the lobby's own DTO — an id-only value (a map
 name, a `Map<PlayerId, Map<String, Int>>` roster) that serves three roles with one type: the setup
 screen's own state, the wire mirror (`ServerMessage.LobbySelections`), and
-`battletech.tactical.unit.AutoDeploy`'s input (roster synthesis: deterministic back-row-first
-placement, gunnery 4 / piloting 5, no human placement step). `ContentSummary` (also id-only) is
+`battletech.tactical.unit.AutoDeploy`'s input (roster synthesis: random placement within the two
+rows nearest each player's home edge, gunnery 4 / piloting 5, no human placement step). `ContentSummary` (also id-only) is
 `SetupState.catalog` — what a *chooser* needs, nothing more — derived from the full `AssetRegistry`
 on both ends (`AssetRegistry.summarize()`) rather than carried over the wire itself: the mirror's
 setup screen is a renderer, not a chooser, so it needs the same complete registry the host holds,
