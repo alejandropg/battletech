@@ -5,11 +5,6 @@
   "includeGitInstructions": false,
   "permissions": {
     "deny": [
-      "Read(./.agent/**)",
-      "Grep(./.agent/**)",
-      "Bash(./.agent/**)",
-      "Edit(./.agent/**)",
-      "LSP(./.agent/**)",
       "Read(./.idea/**)",
       "Grep(./.idea/**)",
       "Bash(./.idea/**)",
