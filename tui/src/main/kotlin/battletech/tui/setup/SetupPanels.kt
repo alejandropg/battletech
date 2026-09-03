@@ -47,7 +47,7 @@ internal object SetupPanels {
                 normal = { it.player1View },
                 maximized = { it.maximizedPlayer1View },
                 maximizedExtent = { it.maximizedPlayer1Extent },
-                minimized = { it.player1View },
+                minimized = { it.minimizedPlayer1View },
                 minimizedWidth = { it.minimizedPlayerWidth(PlayerId.PLAYER_1) },
             ),
             SetupPanel(
@@ -58,7 +58,7 @@ internal object SetupPanels {
                 normal = { it.player2View },
                 maximized = { it.maximizedPlayer2View },
                 maximizedExtent = { it.maximizedPlayer2Extent },
-                minimized = { it.player2View },
+                minimized = { it.minimizedPlayer2View },
                 minimizedWidth = { it.minimizedPlayerWidth(PlayerId.PLAYER_2) },
             ),
             helpPanel(

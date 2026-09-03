@@ -58,6 +58,9 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
     val player1View: View by lazy { playerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1) }
     val player2View: View by lazy { playerView(PlayerId.PLAYER_2, SetupPanelId.PLAYER_2) }
 
+    val minimizedPlayer1View: View by lazy { minimizedPlayerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1) }
+    val minimizedPlayer2View: View by lazy { minimizedPlayerView(PlayerId.PLAYER_2, SetupPanelId.PLAYER_2) }
+
     private val maximizedPlayer1Selection: MechSelectionMaximizedView by lazy {
         maximizedPlayerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1)
     }
@@ -87,6 +90,13 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
     }
 
     private fun playerView(player: PlayerId, panel: SetupPanelId): View = UnitListView(
+        variants = state.catalog.mechs,
+        counts = { variant -> state.plan.count(player, variant) },
+        cursorIndex = state.cursors[panel] ?: 0,
+        mechFor = state.registry::mech,
+    )
+
+    private fun minimizedPlayerView(player: PlayerId, panel: SetupPanelId): View = UnitListView(
         variants = state.catalog.mechs,
         counts = { variant -> state.plan.count(player, variant) },
         cursorIndex = state.cursors[panel] ?: 0,

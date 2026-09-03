@@ -209,6 +209,20 @@ internal class SetupWorkspaceTest {
     }
 
     @Test
+    fun `normal player panel shows the mech stat header and columns`() {
+        val model = MechModels["AS7-D"]
+        val registry = AssetRegistry(mechs = mapOf(model.variant to model))
+        val state = SetupState(catalog = registry.summarize(), registry = registry, modeLocked = true)
+        val workspace = SetupWorkspace(Keybindings.DEFAULT)
+
+        val buffer = workspace.render(state, width = 220, height = 40, flash = null)
+
+        assertTrue(buffer.text().contains("TON WLK RUN JMP"))
+        val rosterLine = buffer.text().lines().first { it.contains(model.variant) }
+        assertTrue(rosterLine.contains(model.tonnage.toString()))
+    }
+
+    @Test
     fun `maximized player panel scrolls through the combined list and mech card`() {
         val model = MechModels["AS7-D"]
         val registry = AssetRegistry(mechs = mapOf(model.variant to model))
