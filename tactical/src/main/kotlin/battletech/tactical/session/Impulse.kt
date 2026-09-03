@@ -25,7 +25,10 @@ public fun calculateMovementOrder(
         for (round in 0 until loserUnitCount) {
             add(Impulse(loser, 1))
             val winnerThisRound = winnerBase + if (round < winnerExtra) 1 else 0
-            add(Impulse(winner, winnerThisRound))
+            // Omit rather than emit Impulse(winner, 0): when winner < loser, most
+            // rounds have nothing for the winner to activate, and a zero-unit
+            // impulse can never be consumed (advance only fires from an actual move).
+            if (winnerThisRound > 0) add(Impulse(winner, winnerThisRound))
         }
     }
 }

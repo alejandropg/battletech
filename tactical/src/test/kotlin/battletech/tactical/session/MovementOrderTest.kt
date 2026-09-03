@@ -107,6 +107,37 @@ internal class MovementOrderTest {
     }
 
     @Test
+    fun `winner with fewer units than loser omits empty impulses`() {
+        // Reproduces the reported freeze: loser (5 units) moves 1 per round; winner
+        // (3 units) has floor(3/5)=0 base, so most rounds have nothing for the
+        // winner to activate. Those rounds must NOT emit an Impulse(winner, 0) —
+        // such an impulse can never be consumed and stalls the phase forever.
+        val order = calculateMovementOrder(
+            loser = PlayerId.PLAYER_2, loserUnitCount = 5,
+            winner = PlayerId.PLAYER_1, winnerUnitCount = 3,
+        )
+
+        assertEquals(
+            listOf(
+                Impulse(PlayerId.PLAYER_2, 1),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 1),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 1),
+                Impulse(PlayerId.PLAYER_1, 1),
+                Impulse(PlayerId.PLAYER_2, 1),
+                Impulse(PlayerId.PLAYER_2, 1),
+            ),
+            order,
+        )
+        assertEquals(0, order.count { it.unitCount == 0 })
+        val p1Total = order.filter { it.player == PlayerId.PLAYER_1 }.sumOf { it.unitCount }
+        val p2Total = order.filter { it.player == PlayerId.PLAYER_2 }.sumOf { it.unitCount }
+        assertEquals(3, p1Total)
+        assertEquals(5, p2Total)
+    }
+
+    @Test
     fun `loser always moves first`() {
         val order = calculateMovementOrder(
             loser = PlayerId.PLAYER_2, loserUnitCount = 2,
