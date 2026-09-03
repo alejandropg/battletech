@@ -1,4 +1,4 @@
-PROTOCOL_VERSION=10
+PROTOCOL_VERSION=11
 accepted
 actuator
 ammoBin

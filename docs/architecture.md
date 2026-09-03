@@ -178,7 +178,7 @@ place regardless of how it started: `LobbyHost.commit(initial: GameState): GameS
 against it and commits immediately — indistinguishable from calling `GameServer.host` directly,
 which is what `commit` does internally once nothing is parked. `host` (both the direct CLI
 subcommand and the interactive setup screen's HOST mode) accepts one join *before* the match
-exists: the peer parks, sees the merged `AssetRegistry` as a `ContentSummary`
+exists: the peer parks, sees the merged `AssetRegistry` in full
 (`ServerMessage.LobbyJoined`) and the host's live `MatchPlan` (`ServerMessage.LobbySelections`,
 resent on every host change, no debounce), then re-sends its original `ClientMessage.Join` once
 `ServerMessage.LobbyCommitted` arrives and gets today's `JoinAccepted` — byte-identical to a join
@@ -218,13 +218,17 @@ An integration test against a real socket demonstrated the local seat losing tha
 consistently, not just occasionally — `onServerReady` closes the window entirely by running the
 caller's `connectLocal()` before the peer is notified at all, rather than merely favoring it.
 
-`battletech.tactical.model.content.MatchPlan`/`ContentSummary` are the lobby's own DTOs — id-only
-values (a map name, a `Map<PlayerId, Map<String, Int>>` roster) that serve three roles with one
-type: the setup screen's own state, the wire mirror (`ServerMessage.LobbySelections`/
-`LobbyJoined`), and `battletech.tactical.unit.AutoDeploy`'s input (roster synthesis: deterministic
-back-row-first placement, gunnery 4 / piloting 5, no human placement step). They live in
-`tactical.model.content` rather than `network.wire` because the setup screen (`tui`) needs them
-and cannot import `battletech.network` at all.
+`battletech.tactical.model.content.MatchPlan` is the lobby's own DTO — an id-only value (a map
+name, a `Map<PlayerId, Map<String, Int>>` roster) that serves three roles with one type: the setup
+screen's own state, the wire mirror (`ServerMessage.LobbySelections`), and
+`battletech.tactical.unit.AutoDeploy`'s input (roster synthesis: deterministic back-row-first
+placement, gunnery 4 / piloting 5, no human placement step). `ContentSummary` (also id-only) is
+`SetupState.catalog` — what a *chooser* needs, nothing more — derived from the full `AssetRegistry`
+on both ends (`AssetRegistry.summarize()`) rather than carried over the wire itself: the mirror's
+setup screen is a renderer, not a chooser, so it needs the same complete registry the host holds,
+which `ServerMessage.LobbyJoined` sends in full. Both DTOs live in `tactical.model.content` rather
+than `network.wire` because the setup screen (`tui`) needs them and cannot import
+`battletech.network` at all.
 
 `tui`'s own half — the interactive setup screen, `tui/setup/` — talks to none of this directly.
 `SetupLobby` (`tui/setup/SetupLobby.kt`) is a `tui`-local port (`beginHosting`/`publish`/

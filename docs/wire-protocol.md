@@ -45,7 +45,7 @@ This is build-enforced, not hand-maintained discipline, by two tests in
 
 A wire change that isn't purely additive should bump `PROTOCOL_VERSION` (`network/wire/Messages.kt`)
 in the same diff that updates the golden file — a mismatched client already rejects cleanly via
-`JoinRejectionReason.INCOMPATIBLE_PROTOCOL`. `PROTOCOL_VERSION` is currently 10. Version 6 moved
+`JoinRejectionReason.INCOMPATIBLE_PROTOCOL`. `PROTOCOL_VERSION` is currently 11. Version 6 moved
 `GameMap` out of every `GameSnapshot` and into the one-time `ServerMessage.JoinAccepted`. Version 7
 made match mech definitions host-authoritative. Version 8 unified those definitions, the map, and
 the player's initial projected snapshot and log into one `MatchBootstrap` carried by
@@ -91,9 +91,14 @@ reaches a `LobbyHost` rather than a `GameServer` — the lobby forwards it to th
 untouched. An interactive host's acceptor is built over the lobby and never rebuilt, so this is
 the path every mid-match reconnect takes.
 
-`LobbyJoined.catalog` is a `battletech.tactical.model.content.ContentSummary` (id-only: which maps
-and mechs are registered, nothing else) — the merged registry as of park time, including the
-joiner's own `--add-map`/`--add-mech` contribution. `LobbySelections.plan` is a `battletech.
+`LobbyJoined.registry` is a `battletech.tactical.model.content.AssetRegistry` — the merged registry
+as of park time (full `GameMap`/`MechModel` content, not just ids), including the joiner's own
+`--add-map`/`--add-mech` contribution, so the joiner's read-only mirror screen can render map
+previews and mech record sheets exactly as the host does rather than bare id lists. It is the same
+complete content `MatchBootstrap.registry` carries again at commit — sent twice deliberately: the
+lobby registry is a pre-commit value the mirror renders from immediately, while `MatchBootstrap`
+must stay self-contained for the join-after-commit branch above, which never sees a `LobbyJoined`
+at all. `LobbySelections.plan` is a `battletech.
 tactical.model.content.MatchPlan` (map name + per-player roster counts), sent once per host
 change with no debounce — the parked client always mirrors whatever the host's setup screen shows
 right now, never a stale intermediate. `LobbyCommitted` carries no payload; it is the signal to
@@ -108,6 +113,12 @@ every other reader in this module). A second reader on the same connection, at a
 one fatal bug `LobbyClient` is built to avoid — see its KDoc and the round-trip proof in
 `LobbyClientTest`'s "commit fires onCommitted, and the resulting session plays normally with no
 duplicate reader" test.
+
+Version 11 widened `LobbyJoined.catalog: ContentSummary` to `LobbyJoined.registry: AssetRegistry`
+— see this section's `LobbyJoined.registry` paragraph above for why the mirror needs full content,
+not just ids. `ContentSummary` is no longer a wire type at all; `LobbyClient.catalog` now derives
+it client-side via `AssetRegistry.summarize()`, the same call the host already made to build the
+old wire value.
 
 See `docs/architecture.md`'s "The lobby: one commit path for hot-seat and host" for how
 `LobbyHost`/`LobbyClient`/`ConnectionSink` fit together, and why `LobbyHost.commit` takes an

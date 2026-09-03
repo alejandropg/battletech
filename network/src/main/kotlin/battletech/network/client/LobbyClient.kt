@@ -8,6 +8,7 @@ import battletech.network.wire.PROTOCOL_VERSION
 import battletech.network.wire.ServerMessage
 import battletech.network.wire.SessionId
 import battletech.tactical.model.content.AssetBundle
+import battletech.tactical.model.content.AssetRegistry
 import battletech.tactical.model.content.ContentSummary
 import battletech.tactical.model.content.MatchPlan
 import battletech.tactical.model.content.summarize
@@ -35,9 +36,12 @@ import kotlin.concurrent.thread
 public class LobbyClient private constructor(
     private val connection: ClientConnection,
     private val originalJoin: ClientMessage.Join,
-    public val catalog: ContentSummary,
+    public val registry: AssetRegistry,
     private val immediateBootstrap: MatchBootstrap?,
 ) : AutoCloseable {
+
+    /** The id-only view of [registry] a chooser needs — the mirror's read-only setup screen renders full content instead. */
+    public val catalog: ContentSummary get() = registry.summarize()
 
     /**
      * Guards the listener lists AND the lobby state they replay from ([lastSelections],
@@ -184,8 +188,8 @@ public class LobbyClient private constructor(
                 return when (response) {
                     is ServerMessage.JoinRejected -> throw JoinRejectedException(response.reason)
                     is ServerMessage.JoinAccepted ->
-                        LobbyClient(connection, join, response.bootstrap.registry.summarize(), response.bootstrap)
-                    is ServerMessage.LobbyJoined -> LobbyClient(connection, join, response.catalog, null)
+                        LobbyClient(connection, join, response.bootstrap.registry, response.bootstrap)
+                    is ServerMessage.LobbyJoined -> LobbyClient(connection, join, response.registry, null)
                     else -> throw IOException("Unexpected first message from host: $response")
                 }
             } catch (failure: Exception) {

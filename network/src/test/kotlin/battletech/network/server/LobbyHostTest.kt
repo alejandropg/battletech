@@ -37,7 +37,7 @@ internal class LobbyHostTest {
     private fun anInitialGameState(): GameState = ContentCatalog.load().resolveGame()
 
     @Test
-    fun `a park sends LobbyJoined carrying the merged catalog, including the joiner's own content`() {
+    fun `a park sends LobbyJoined carrying the full merged registry, including the joiner's own content`() {
         val lobby = LobbyHost(sessionId)
         val connection = PipedConnection()
         lobby.attachInBackground(connection)
@@ -46,7 +46,7 @@ internal class LobbyHostTest {
         val response = connection.join(sessionId, content = AssetBundle(maps = listOf(extraMap)))
 
         val joined = response as ServerMessage.LobbyJoined
-        assertThat(joined.catalog.maps).contains("joinerMap")
+        assertThat(joined.registry.maps).containsEntry("joinerMap", extraMap)
         assertThat(lobby.registry.maps).containsKey("joinerMap")
         assertThat(lobby.opponentConnected).isTrue()
     }

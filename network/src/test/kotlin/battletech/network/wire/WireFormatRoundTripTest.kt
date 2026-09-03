@@ -30,7 +30,6 @@ import battletech.tactical.model.TurnPhase
 import battletech.tactical.model.content.AssetKind
 import battletech.tactical.model.content.AssetRegistry
 import battletech.tactical.model.content.ContentCatalog
-import battletech.tactical.model.content.ContentSummary
 import battletech.tactical.model.content.MatchPlan
 import battletech.tactical.movement.MovementStep
 import battletech.tactical.movement.ReachableHex
@@ -480,13 +479,15 @@ internal class WireFormatRoundTripTest {
     }
 
     @Test
-    fun `ServerMessage LobbyJoined round-trips`() {
-        val message = ServerMessage.LobbyJoined(catalog = ContentSummary(maps = listOf("arena"), mechs = listOf("AS7-D", "WHM-6R")))
+    fun `ServerMessage LobbyJoined round-trips with mech models surviving in full`() {
+        val registry = aRegistry()
+        val message = ServerMessage.LobbyJoined(registry = registry)
 
         val line = WireJson.encodeToLine(message)
-        val decoded = WireJson.decodeServerMessage(line)
+        val decoded = WireJson.decodeServerMessage(line) as ServerMessage.LobbyJoined
 
-        assertThat(decoded).isEqualTo(message)
+        assertThat(decoded.registry).isEqualTo(registry)
+        assertThat(line).contains("weapons", "armor")
     }
 
     @Test

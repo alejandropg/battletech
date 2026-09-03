@@ -4,7 +4,7 @@ import battletech.tactical.model.GameMap
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.model.content.AssetBundle
-import battletech.tactical.model.content.ContentSummary
+import battletech.tactical.model.content.AssetRegistry
 import battletech.tactical.model.content.MatchPlan
 import battletech.tactical.session.CommandResult
 import battletech.tactical.session.GameCommand
@@ -16,7 +16,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /** Wire protocol version; bumped whenever [ClientMessage]/[ServerMessage] shapes change incompatibly. */
-public const val PROTOCOL_VERSION: Int = 10
+public const val PROTOCOL_VERSION: Int = 11
 
 /**
  * A read-only replica of session state as sent to a client: everything
@@ -138,12 +138,14 @@ public sealed interface ServerMessage {
 
     /**
      * Sent once, right after a [ClientMessage.Join] parks (the match is not yet committed): the
-     * merged catalog the setup screen's panels list from, including this joiner's own
-     * `--add-map`/`--add-mech` contribution.
+     * merged [AssetRegistry] the setup screen's panels render from, including this joiner's own
+     * `--add-map`/`--add-mech` contribution — the same complete content [MatchBootstrap.registry]
+     * carries at commit, sent early so the joiner's (read-only) setup screen can render map
+     * previews and mech record sheets, not just names.
      */
     @Serializable
     @SerialName("lobbyJoined")
-    public data class LobbyJoined(public val catalog: ContentSummary) : ServerMessage
+    public data class LobbyJoined(public val registry: AssetRegistry) : ServerMessage
 
     /** Mirrors the host's current selections to a parked joiner — resent on every host change, no debounce. */
     @Serializable

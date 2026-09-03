@@ -11,7 +11,7 @@ internal enum class SetupMode { HOT_SEAT, HOST }
 internal data class SetupState(
     /** What the panels list. For the mirror this is all there is. */
     val catalog: ContentSummary,
-    /** The content itself, for capacity checks and the final deploy. `EMPTY` in the mirror. */
+    /** The content itself, for capacity checks and the final deploy — also populated in the mirror, so its panels can render full map previews and mech record sheets, not just names. */
     val registry: AssetRegistry,
     val mode: SetupMode = SetupMode.HOT_SEAT,
     val modeLocked: Boolean = false,

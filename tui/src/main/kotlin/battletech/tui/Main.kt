@@ -190,7 +190,7 @@ public fun main(args: Array<String>) {
                 withScreen(launch.themeName) { terminal, renderer ->
                     val initial = SetupState(
                         catalog = lobbyClient.catalog,
-                        registry = AssetRegistry.EMPTY,
+                        registry = lobbyClient.registry,
                         mode = SetupMode.HOST,
                         modeLocked = true,
                         opponentConnected = true,

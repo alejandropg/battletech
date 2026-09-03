@@ -10,7 +10,6 @@ import battletech.tactical.model.GameState
 import battletech.tactical.model.content.AssetBundle
 import battletech.tactical.model.content.AssetRegistry
 import battletech.tactical.model.content.MatchPlan
-import battletech.tactical.model.content.summarize
 
 /**
  * The pre-match half of hosting: accepts a join before a [GameState] exists, merges the joiner's
@@ -176,7 +175,7 @@ public class LobbyHost(
             }
             is Admission.Park -> {
                 notifyChange()
-                connection.send(ServerMessage.LobbyJoined(admission.registry.summarize()))
+                connection.send(ServerMessage.LobbyJoined(admission.registry))
                 onJoinAccepted()
             }
         }
