@@ -27,7 +27,11 @@ internal data class SetupState(
      * already made — off the screen.
      */
     val opponentEverConnected: Boolean = false,
-    /** True for the joiner's mirror: editing keys are inert. */
+    /**
+     * True for the joiner's mirror. Editing keys (`space`/`a`/`d`/`c`) are refused with a flash;
+     * the list cursor stays live, since it is what picks the map preview and record sheet the
+     * maximized panels render.
+     */
     val readOnly: Boolean = false,
     val helpOpen: Boolean = false,
 ) {

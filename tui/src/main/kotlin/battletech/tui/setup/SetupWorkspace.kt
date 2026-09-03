@@ -68,7 +68,7 @@ internal class SetupWorkspace(private val keys: Keybindings) {
 }
 
 private fun defaultPrompt(state: SetupState): String = when {
-    state.readOnly -> "waiting for the host to start the match…"
+    state.readOnly -> "waiting for the host…   ↑↓: browse   +: maximize"
     !state.modeLocked -> "space: toggle mode   c: lock it in"
     !state.rostersVisible -> "waiting for player 2 to connect…"
     else -> "select a map and units for each player, then press c to start"

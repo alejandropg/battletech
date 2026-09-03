@@ -5,17 +5,27 @@ import battletech.tactical.model.content.MatchPlan
 import battletech.tactical.unit.AutoDeploy
 import tenter.view.FlashMessage
 
+/** Shown when a read-only mirror presses an editing key — one message for `space`/`a`/`d`/`c`. */
+internal const val READ_ONLY_REFUSAL: String = "the host is choosing — this view is read-only"
+
 internal data class SetupTransition(
     val state: SetupState,
     val flash: FlashMessage? = null,
     val committed: MatchPlan? = null,
 )
 
-/** Pure. Returns null when [action] means nothing for [focused] right now. */
+/**
+ * Pure. Returns null when [action] means nothing for [focused] right now, or a refusal transition
+ * carrying a [READ_ONLY_REFUSAL] flash — state untouched — when a read-only mirror tries to edit.
+ */
 internal fun handleSetup(action: SetupAction, focused: SetupPanelId, state: SetupState): SetupTransition? {
-    // The mirror's editing keys are all inert, including MoveCursor — its list highlight has no
-    // visible effect there since it can never select anything (see D14).
-    if (state.readOnly) return null
+    // The mirror browses but never edits: MoveCursor falls through (it drives the maximized
+    // panels' detail pane, so the joiner can read every map and record sheet), and everything
+    // else is refused out loud rather than silently. Written as a negative guard so a future
+    // SetupAction variant is refused by default rather than silently punching a hole here.
+    if (state.readOnly && focused != SetupPanelId.HELP && action !is SetupAction.MoveCursor) {
+        return SetupTransition(state, flash = FlashMessage(READ_ONLY_REFUSAL))
+    }
 
     return when (focused) {
         SetupPanelId.MODE -> handleModePanel(action, state)

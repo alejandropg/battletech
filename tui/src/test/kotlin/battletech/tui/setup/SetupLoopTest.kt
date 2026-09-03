@@ -226,8 +226,14 @@ internal class SetupLoopTest {
         assertThat(recorder.output()).contains("PLAYER 1") // panels stayed
     }
 
+    /**
+     * Wiring only: that the keys reach the handler and the loop survives both a browse and a
+     * refusal. What each key *does* is pinned in `SetupStateTest` (the semantics) and
+     * `SetupWorkspaceTest` (the cursor driving the maximized detail pane) — this fixture has one
+     * map and one mech, so a cursor move here would clamp and prove nothing.
+     */
     @Test
-    fun `a read-only mirror renders its roster panels but ignores space`() = runTest {
+    fun `a read-only mirror keeps browsing and editing keys wired without crashing`() = runTest {
         val mirrorState = initialState(readOnly = true).copy(
             modeLocked = true,
             mode = SetupMode.HOST,
@@ -237,7 +243,8 @@ internal class SetupLoopTest {
 
         val outcome = run(
             SetupUiEvent.Input(KeyboardEvent("3")), // focus PLAYER_1 — focus stays live in a mirror
-            SetupUiEvent.Input(KeyboardEvent(" ")), // inert on a read-only mirror
+            SetupUiEvent.Input(KeyboardEvent("ArrowDown")), // browsing stays live in a mirror
+            SetupUiEvent.Input(KeyboardEvent(" ")), // refused: only the host selects
             SetupUiEvent.Quit,
             initial = mirrorState,
         )

@@ -306,6 +306,55 @@ internal class SetupWorkspaceTest {
         assertNotEquals(first.text(), scrolled.text())
     }
 
+    @Test
+    fun `maximized map panel previews the cursored map, not the first`() {
+        val first = GameMap(
+            hexes = (0 until 3).map { row -> HexCoordinates(0, row) }.associateWith { Hex(it) },
+            name = "alpha",
+        )
+        val second = GameMap(
+            hexes = (0 until 12).map { row -> HexCoordinates(0, row) }.associateWith { Hex(it) },
+            name = "beta",
+        )
+        val registry = AssetRegistry(maps = mapOf(first.name to first, second.name to second))
+        val state = SetupState(
+            catalog = registry.summarize(),
+            registry = registry,
+            modeLocked = true,
+            cursors = mapOf(SetupPanelId.MAP to 1),
+        )
+        val workspace = SetupWorkspace(Keybindings.DEFAULT)
+
+        workspace.focus(SetupPanelId.MAP)
+        workspace.cycleFocusedState(1)
+        val buffer = workspace.render(state, width = 120, height = 80, flash = null)
+
+        // "beta" has 12 rows to "alpha"'s 3: only the cursored map's board reaches row 11.
+        assertTrue(buffer.text().contains("11"))
+    }
+
+    @Test
+    fun `maximized player panel shows the cursored mech's record sheet, not the first`() {
+        val first = MechModels["AS7-D"]
+        val second = MechModels["WHM-6R"]
+        val registry = AssetRegistry(mechs = mapOf(first.variant to first, second.variant to second))
+        val state = SetupState(
+            catalog = registry.summarize(),
+            registry = registry,
+            modeLocked = true,
+            cursors = mapOf(SetupPanelId.PLAYER_1 to 1),
+        )
+        val workspace = SetupWorkspace(Keybindings.DEFAULT)
+
+        workspace.focus(SetupPanelId.PLAYER_1)
+        workspace.cycleFocusedState(1)
+        val buffer = workspace.render(state, width = 220, height = 100, flash = null)
+
+        // Both variants appear in the left-hand list; only the cursored one's tonnage reaches
+        // the record sheet on the right.
+        assertTrue(buffer.text().contains(second.tonnage.toString()))
+    }
+
     private fun assertFourBlankColumnsAroundDivider(buffer: tenter.screen.ScreenBuffer, row: Int, dividerColumn: Int) {
         for (offset in 1..4) {
             assertEquals(" ", buffer.get(dividerColumn - offset, row).char)

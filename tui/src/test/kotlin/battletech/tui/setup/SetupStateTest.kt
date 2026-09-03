@@ -226,13 +226,38 @@ internal class SetupStateTest {
     // ---- read-only mirror ----
 
     @Test
-    fun `every action is inert on a read-only mirror`() {
+    fun `a read-only mirror refuses editing actions with a flash and changes nothing`() {
         val mirror = stage2State.copy(readOnly = true)
 
-        assertThat(handleSetup(SetupAction.Toggle, SetupPanelId.MAP, mirror)).isNull()
-        assertThat(handleSetup(SetupAction.Adjust(1), SetupPanelId.PLAYER_1, mirror)).isNull()
-        assertThat(handleSetup(SetupAction.Commit, SetupPanelId.PLAYER_1, mirror)).isNull()
-        assertThat(handleSetup(SetupAction.MoveCursor(1), SetupPanelId.MAP, mirror)).isNull()
+        val refused = listOf(
+            handleSetup(SetupAction.Toggle, SetupPanelId.MAP, mirror),
+            handleSetup(SetupAction.Adjust(1), SetupPanelId.PLAYER_1, mirror),
+            handleSetup(SetupAction.Commit, SetupPanelId.PLAYER_1, mirror),
+        )
+
+        assertThat(refused).allSatisfy { result ->
+            assertThat(result?.flash?.text).isEqualTo(READ_ONLY_REFUSAL)
+            assertThat(result?.state).isEqualTo(mirror)
+            assertThat(result?.committed).isNull()
+        }
+    }
+
+    @Test
+    fun `a read-only mirror still moves its list cursor`() {
+        val mirror = stage2State.copy(readOnly = true)
+
+        val result = handleSetup(SetupAction.MoveCursor(1), SetupPanelId.PLAYER_1, mirror)
+
+        assertThat(result?.state?.cursors?.get(SetupPanelId.PLAYER_1)).isEqualTo(1)
+        assertThat(result?.flash).isNull()
+        assertThat(result?.state?.plan).isEqualTo(mirror.plan)
+    }
+
+    @Test
+    fun `a read-only mirror does not flash a refusal from the HELP panel`() {
+        val mirror = stage2State.copy(readOnly = true)
+
+        assertThat(handleSetup(SetupAction.Toggle, SetupPanelId.HELP, mirror)).isNull()
     }
 
     // ---- commitBlocker ----
