@@ -147,6 +147,7 @@ private fun setupLayer(): KeyLayer {
         KeyBinding(KeyboardEvent("ArrowRight"), SetupAction.Adjust(1), "adjust"),
         KeyBinding(KeyboardEvent(" "), SetupAction.Toggle, "toggle"),
         KeyBinding(KeyboardEvent("Enter"), SetupAction.NextPanel, "nextPanel"),
+        KeyBinding(KeyboardEvent("Tab"), SetupAction.NextPanel, "nextPanel"),
         KeyBinding(KeyboardEvent("c"), SetupAction.Commit, "commit"),
     )
 
@@ -156,7 +157,7 @@ private fun setupLayer(): KeyLayer {
         HintGroup("adjust", "←→/ad", "adjust count"),
         HintGroup("panMaximizedView", "hjkl/${KeyGlyph.CTRL}←→↑↓", "pan maximized view"),
         HintGroup("toggle", KeyGlyph.SPACE, "toggle selection"),
-        HintGroup("nextPanel", KeyGlyph.ENTER, "next panel"),
+        HintGroup("nextPanel", "${KeyGlyph.ENTER}/${KeyGlyph.TAB}", "next panel"),
         HintGroup("commit", "c", "commit"),
     )
 

@@ -99,6 +99,20 @@ internal class SetupLoopTest {
     }
 
     @Test
+    fun `Tab cycles panels exactly like Enter`() = runTest {
+        // Same cycle as the Enter test above, but with Tab — and mixing the two keys, since both
+        // bind to SetupAction.NextPanel and must be freely interchangeable mid-cycle.
+        run(
+            SetupUiEvent.Input(KeyboardEvent("c")),
+            SetupUiEvent.Input(KeyboardEvent("Tab")),
+            SetupUiEvent.Input(KeyboardEvent("Enter")),
+            SetupUiEvent.Input(KeyboardEvent("Tab")),
+            SetupUiEvent.Quit,
+        )
+        assertThat(recorder.output()).contains("MAP")
+    }
+
+    @Test
     fun `c is refused with a flash when a player has no units`() = runTest {
         run(
             SetupUiEvent.Input(KeyboardEvent("c")), // lock hot-seat

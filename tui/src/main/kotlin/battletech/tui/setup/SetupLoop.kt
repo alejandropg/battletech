@@ -25,7 +25,7 @@ import tenter.input.ScrollAction
 import tenter.screen.ScreenRenderer
 import tenter.view.FlashMessage
 
-/** Panel focus order the `Enter` cycle walks — HELP is never in it (see [nextPanel]'s KDoc). */
+/** Panel focus order the `Enter`/`Tab` cycle walks — HELP is never in it (see [nextPanel]'s KDoc). */
 private val PANEL_CYCLE_ORDER = listOf(SetupPanelId.MODE, SetupPanelId.MAP, SetupPanelId.PLAYER_1, SetupPanelId.PLAYER_2)
 
 /**
