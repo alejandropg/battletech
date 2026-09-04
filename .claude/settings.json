@@ -5,16 +5,21 @@
   "includeGitInstructions": false,
   "permissions": {
     "deny": [
+      "Read(./.idea/**)",
+      "Grep(./.idea/**)",
       "Edit(./.idea/**)",
-      "Write(./.idea/**)",
+      "Read(./.kotlin/**)",
+      "Grep(./.kotlin/**)",
       "Edit(./.kotlin/**)",
-      "Write(./.kotlin/**)",
+      "Read(./.gradle/**)",
+      "Grep(./.gradle/**)",
       "Edit(./.gradle/**)",
-      "Write(./.gradle/**)",
+      "Read(./.junie/**)",
+      "Grep(./.junie/**)",
       "Edit(./.junie/**)",
-      "Write(./.junie/**)",
-      "Edit(./.vscode/**)",
-      "Write(./.vscode/**)"
+      "Read(./.vscode/**)",
+      "Grep(./.vscode/**)",
+      "Edit(./.vscode/**)"
     ]
   },
   "enabledPlugins": {
