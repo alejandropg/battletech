@@ -1,7 +1,18 @@
 package battletech.tui.animation
 
+import tenter.animation.Animation
+import tenter.animation.AnimationSize
+import tenter.view.Bordered
+
 /** A panel's absolute top-left on screen, border included. */
 internal data class PanelPlacement(val x: Int, val y: Int)
+
+/** The outer dimensions of this animation when wrapped in a [Bordered] panel. */
+internal val AnimationSize.panelSize: AnimationSize
+    get() = AnimationSize(
+        width = width + Bordered.BORDER.left + Bordered.BORDER.right,
+        height = height + Bordered.BORDER.top + Bordered.BORDER.bottom,
+    )
 
 /**
  * Places up to 3 animation panels at FIXED offsets from the screen centre. Which
@@ -53,14 +64,14 @@ internal object AnimationLayout {
      * draws nothing for the whole volley.
      */
     fun place(
-        animations: List<WeaponAnimation>,
+        animations: List<Animation>,
         screenWidth: Int,
         screenHeight: Int,
     ): List<PanelPlacement> {
         require(animations.size in 1..OFFSETS.size) {
             "animations must contain 1..${OFFSETS.size} entries, was ${animations.size}"
         }
-        val panelSizes = animations.map(WeaponAnimation::panelSize)
+        val panelSizes = animations.map { it.size.panelSize }
         if (panelSizes.any { it.width > screenWidth || it.height > screenHeight }) return emptyList()
 
         val screenCenterX = screenWidth / 2

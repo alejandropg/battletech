@@ -1,5 +1,8 @@
 package battletech.tui.animation
 
+import tenter.animation.Animation
+import tenter.animation.AnimationSize
+import tenter.animation.GlyphGrid
 import tenter.screen.Cell
 import kotlin.math.hypot
 import kotlin.random.Random
@@ -18,14 +21,15 @@ internal class LaserBurstAnimation(
     targetY: Int = DEFAULT_TARGET_Y,
     radius: Int = DEFAULT_RADIUS,
     random: Random = Random.Default,
-) : WeaponAnimation {
+) : Animation {
     override val size: AnimationSize = AnimationSize(width = 70, height = 20)
     private val bursts: List<LaserBurst> = buildBursts(bursts, targetX, targetY, radius, size, random)
     override val frameCount: Int = sequenceFrames(this.bursts)
     override val frameDuration: Duration = ANIMATION_DURATION / frameCount
 
-    override fun frame(index: Int): Glyphs {
-        val glyphs = Glyphs(size, ::laserPriority, ::laserStyle)
+    override fun frame(index: Int): GlyphGrid {
+        require(index in 0 until frameCount) { "frame index out of range: $index" }
+        val glyphs = GlyphGrid(size, ::laserPriority, ::laserStyle)
         drawStars(glyphs, index)
         for (burst in bursts) drawBurst(glyphs, burst, index)
         return glyphs
@@ -124,7 +128,7 @@ private enum class LaserSide { RIGHT, BOTTOM }
 private fun sequenceFrames(bursts: List<LaserBurst>): Int =
     bursts.maxOf { it.delay + it.travel + 7 } + 12
 
-private fun drawStars(glyphs: Glyphs, frame: Int) {
+private fun drawStars(glyphs: GlyphGrid, frame: Int) {
     val random = Random(191)
     for (index in 0 until 38) {
         val x = random.nextInt(glyphs.width)
@@ -134,7 +138,7 @@ private fun drawStars(glyphs: Glyphs, frame: Int) {
     }
 }
 
-private fun drawOriginFlash(glyphs: Glyphs, origin: Point, age: Int) {
+private fun drawOriginFlash(glyphs: GlyphGrid, origin: Point, age: Int) {
     val x = origin.first.toInt()
     val y = origin.second.toInt()
     when (age) {
@@ -152,7 +156,7 @@ private fun drawOriginFlash(glyphs: Glyphs, origin: Point, age: Int) {
     }
 }
 
-private fun drawImpact(glyphs: Glyphs, target: Point, age: Int) {
+private fun drawImpact(glyphs: GlyphGrid, target: Point, age: Int) {
     val x = target.first.toInt()
     val y = target.second.toInt()
     when {
@@ -178,7 +182,7 @@ private fun drawImpact(glyphs: Glyphs, target: Point, age: Int) {
     }
 }
 
-private fun drawBurst(glyphs: Glyphs, burst: LaserBurst, frame: Int): Boolean {
+private fun drawBurst(glyphs: GlyphGrid, burst: LaserBurst, frame: Int): Boolean {
     val age = frame - burst.delay
     if (age < 0 || age > burst.travel + 6) return false
 

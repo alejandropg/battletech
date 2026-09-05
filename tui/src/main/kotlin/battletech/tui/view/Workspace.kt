@@ -2,14 +2,14 @@ package battletech.tui.view
 
 import battletech.tactical.model.MatchOutcome
 import battletech.tui.animation.ANIMATION_BORDER
-import battletech.tui.animation.AnimationPanel
-import battletech.tui.animation.AnimationView
+import battletech.tui.animation.PanelPlacement
 import battletech.tui.animation.panelSize
 import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
 import battletech.tui.input.Keybindings
 import tenter.input.KeyGlyph
+import tenter.animation.AnimationPlayback
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
@@ -92,7 +92,7 @@ internal class Workspace(private val keys: Keybindings) {
         height: Int,
         flash: FlashMessage?,
         forgetReveal: Boolean = false,
-        animations: List<AnimationPanel> = emptyList(),
+        animations: List<AnimationPlayback.Frame<PanelPlacement>> = emptyList(),
     ): ScreenBuffer {
         val visible = PanelVisibility.visiblePanels(appState)
 
@@ -185,8 +185,11 @@ private fun renderGameOverBanner(board: Canvas, outcome: MatchOutcome) {
  * out from under a volley already playing. Volley construction is all-or-nothing; this guard
  * protects an individual panel if a resize races a render.
  */
-private fun renderAnimationPanel(screen: Canvas, animation: AnimationPanel) {
-    val panelSize = animation.animation.panelSize
+private fun renderAnimationPanel(
+    screen: Canvas,
+    animation: AnimationPlayback.Frame<PanelPlacement>,
+) {
+    val panelSize = animation.size.panelSize
     val panelWidth = panelSize.width
     val panelHeight = panelSize.height
     if (panelWidth > screen.width || panelHeight > screen.height) return
@@ -195,11 +198,11 @@ private fun renderAnimationPanel(screen: Canvas, animation: AnimationPanel) {
     // every panel on-screen, so this clamp is the second, independent guard against a resize
     // racing a render — exactly the role the fit check above plays.
     val region = screen.region(
-        animation.x.coerceIn(0, screen.width - panelWidth),
-        animation.y.coerceIn(0, screen.height - panelHeight),
+        animation.value.x.coerceIn(0, screen.width - panelWidth),
+        animation.value.y.coerceIn(0, screen.height - panelHeight),
         panelWidth, panelHeight,
     )
-    Bordered(content = AnimationView(animation), borderColor = ANIMATION_BORDER).draw(region)
+    Bordered(content = animation.content, borderColor = ANIMATION_BORDER).draw(region)
 }
 
 /** [text] at a fixed local ([column], [row]) — the banner's win/draw line, inside [Bordered]'s border inset. */

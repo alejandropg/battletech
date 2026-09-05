@@ -1,5 +1,8 @@
 package battletech.tui.animation
 
+import tenter.animation.Animation
+import tenter.animation.AnimationSize
+import tenter.animation.GlyphGrid
 import tenter.screen.Cell
 import kotlin.math.abs
 import kotlin.math.cos
@@ -20,15 +23,16 @@ internal class MissileSalvoAnimation(
     private val originX: Double = DEFAULT_ORIGIN_X,
     private val originY: Double = DEFAULT_ORIGIN_Y,
     random: Random = Random.Default,
-) : WeaponAnimation {
+) : Animation {
     override val size: AnimationSize = AnimationSize(width = 70, height = 20)
     override val frameCount: Int = CYCLE_FRAMES
     override val frameDuration: Duration = ANIMATION_DURATION / frameCount
 
     private val missiles: List<Missile> = buildMissiles(TOTAL_BUILT, originX, originY, random).take(missileCount)
 
-    override fun frame(index: Int): Glyphs {
-        val glyphs = Glyphs(size, ::missilePriority, ::missileStyle)
+    override fun frame(index: Int): GlyphGrid {
+        require(index in 0 until frameCount) { "frame index out of range: $index" }
+        val glyphs = GlyphGrid(size, ::missilePriority, ::missileStyle)
         drawStars(glyphs, index)
         for (missile in missiles) drawMissile(glyphs, missile, index)
         drawLaunchBloom(glyphs, index, originX, originY)
@@ -151,7 +155,7 @@ private fun trailChar(oldT: Double, newT: Double, oldPos: Point, newPos: Point, 
     return '~'
 }
 
-private fun drawStars(glyphs: Glyphs, frame: Int) {
+private fun drawStars(glyphs: GlyphGrid, frame: Int) {
     val random = Random(707)
     for (index in 0 until 40) {
         val x = random.nextInt(glyphs.width)
@@ -161,7 +165,7 @@ private fun drawStars(glyphs: Glyphs, frame: Int) {
     }
 }
 
-private fun drawMissile(glyphs: Glyphs, missile: Missile, frame: Int): Boolean {
+private fun drawMissile(glyphs: GlyphGrid, missile: Missile, frame: Int): Boolean {
     val local = frame - missile.delay
     if (local < 0 || local > missile.flight + 19) return false
 
@@ -207,7 +211,7 @@ private fun drawMissile(glyphs: Glyphs, missile: Missile, frame: Int): Boolean {
     return true
 }
 
-private fun drawLaunchBloom(glyphs: Glyphs, frame: Int, originX: Double, originY: Double) {
+private fun drawLaunchBloom(glyphs: GlyphGrid, frame: Int, originX: Double, originY: Double) {
     if (frame > 28) return
     val pulse = frame % 8
     val radius = maxOf(1, min(5, frame / 4 + (if (pulse < 3) 1 else 0)))
@@ -228,7 +232,7 @@ private fun drawLaunchBloom(glyphs: Glyphs, frame: Int, originX: Double, originY
 }
 
 /** Post-cycle dissolve so the loop point (played once here, so really just the tail) reads cleanly. */
-private fun fadeOut(glyphs: Glyphs, frame: Int) {
+private fun fadeOut(glyphs: GlyphGrid, frame: Int) {
     val darkness = (frame - 78) / 10.0
     for (y in 0 until glyphs.height) {
         for (x in 0 until glyphs.width) {

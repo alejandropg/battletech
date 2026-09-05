@@ -48,7 +48,7 @@ Dependencies flow: `tui` → `tactical` + `network` + `tenter`; `network` → (`
 
 - **`tactical/`** — the engine: tactical rules (combat, to-hit, movement, heat) plus game/map/mech loading. Delivery-agnostic: no UI assumptions, no console I/O.
 - **`network/`** — client/server layer over `tactical` (`GameServer`, `LobbyHost`, `SocketAcceptor`, `ClientGameSession`, `LobbyClient`, `transport/`, wire protocol). No UI; reuses `tactical`'s types as wire DTOs rather than redefining them.
-- **`tenter/`** — BattleTech-free terminal-UI toolkit (`screen`/`view`/`widget`/`panel`/`input`/`terminal`/`text`) over Mordant; meant to be extractable as a library.
+- **`tenter/`** — BattleTech-free terminal-UI toolkit (`screen`/`view`/`animation`/`widget`/`panel`/`input`/`terminal`/`text`) over Mordant; `animation` supplies finite frame descriptions, optional glyph grids, and pure elapsed-time playback; meant to be extractable as a library.
 - **`tui/`** — the BattleTech terminal UI, built on `tenter`. Entry point `battletech.tui.MainKt`; bare invocation opens the interactive setup screen (`setup/`).
 - **`strategic/` + `bt/`** — placeholders. Ignore unless explicitly asked.
 

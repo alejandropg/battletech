@@ -3,25 +3,28 @@ package battletech.tui.animation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.animation.Animation
+import tenter.animation.AnimationSize
+import tenter.animation.GlyphGrid
 import tenter.screen.Cell
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-private class SizedAnimation(override val size: AnimationSize) : WeaponAnimation {
+private class SizedAnimation(override val size: AnimationSize) : Animation {
     override val frameCount: Int = 1
     override val frameDuration: Duration = 1.milliseconds
 
-    override fun frame(index: Int): Glyphs = Glyphs(size, { 0 }, { Cell.Style() })
+    override fun frame(index: Int): GlyphGrid = GlyphGrid(size, { 0 }, { Cell.Style() })
 }
 
 internal class AnimationLayoutTest {
 
     private val animation = LaserBurstAnimation(random = Random(1))
-    private val panelWidth = animation.panelSize.width
-    private val panelHeight = animation.panelSize.height
+    private val panelWidth = animation.size.panelSize.width
+    private val panelHeight = animation.size.panelSize.height
 
-    private fun animations(count: Int): List<WeaponAnimation> = List(count) { animation }
+    private fun animations(count: Int): List<Animation> = List(count) { animation }
 
     private fun assertOnScreen(placement: PanelPlacement, width: Int, height: Int) {
         assertTrue(placement.x >= 0 && placement.x + panelWidth <= width, "x=${placement.x} off-screen on $width wide")
@@ -141,10 +144,10 @@ internal class AnimationLayoutTest {
         val placements = AnimationLayout.place(listOf(small, large), screenWidth = 120, screenHeight = 40)
 
         assertEquals(2, placements.size)
-        assertTrue(placements[0].x + small.panelSize.width <= 120)
-        assertTrue(placements[0].y + small.panelSize.height <= 40)
-        assertTrue(placements[1].x + large.panelSize.width <= 120)
-        assertTrue(placements[1].y + large.panelSize.height <= 40)
+        assertTrue(placements[0].x + small.size.panelSize.width <= 120)
+        assertTrue(placements[0].y + small.size.panelSize.height <= 40)
+        assertTrue(placements[1].x + large.size.panelSize.width <= 120)
+        assertTrue(placements[1].y + large.size.panelSize.height <= 40)
     }
 
     @Test

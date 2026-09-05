@@ -22,6 +22,7 @@ class LayeringTest {
         "text" to emptySet(),
         "input" to emptySet(),
         "screen" to setOf("text"),
+        "animation" to setOf("screen", "text", "view"),
         "terminal" to setOf("input"),
         "view" to setOf("input", "screen", "text"),
         "widget" to setOf("screen", "text", "view"),

@@ -12,8 +12,7 @@ internal class AnimationViewTest {
     @Test
     fun `every cell renders opaque with a hardcoded FixedColorRole, never a themed ChromeRole`() {
         val animation = LaserBurstAnimation(random = Random(11))
-        val panel = AnimationPanel(animation, frameIndex = 0, x = 0, y = 0)
-        val buffer = render(AnimationView(panel), animation.size.width, animation.size.height)
+        val buffer = render(animation.frame(0), animation.size.width, animation.size.height)
 
         var sawNonSpace = false
         for (y in 0 until animation.size.height) {

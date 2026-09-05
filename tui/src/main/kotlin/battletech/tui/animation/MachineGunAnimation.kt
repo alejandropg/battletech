@@ -2,6 +2,9 @@ package battletech.tui.animation
 
 import battletech.tui.animation.LaserBurstAnimation.Companion.DEFAULT_RADIUS
 import battletech.tui.animation.LaserBurstAnimation.Companion.DEFAULT_TARGET_Y
+import tenter.animation.Animation
+import tenter.animation.AnimationSize
+import tenter.animation.GlyphGrid
 import tenter.screen.Cell
 import kotlin.math.hypot
 import kotlin.random.Random
@@ -17,14 +20,15 @@ internal class MachineGunAnimation(
     targetY: Int = DEFAULT_TARGET_Y,
     radius: Int = DEFAULT_RADIUS,
     random: Random = Random.Default,
-) : WeaponAnimation {
+) : Animation {
     override val size: AnimationSize = AnimationSize(width = 70, height = 20)
     private val shots: List<GunShot> = buildShots(bursts, targetX, targetY, radius, size, random)
     override val frameCount: Int = sequenceFrames(shots)
     override val frameDuration: Duration = ANIMATION_DURATION / frameCount
 
-    override fun frame(index: Int): Glyphs {
-        val glyphs = Glyphs(size, ::machineGunPriority, ::machineGunStyle)
+    override fun frame(index: Int): GlyphGrid {
+        require(index in 0 until frameCount) { "frame index out of range: $index" }
+        val glyphs = GlyphGrid(size, ::machineGunPriority, ::machineGunStyle)
         drawStars(glyphs, index)
         for (shot in shots) drawShot(glyphs, shot, index)
         return glyphs
@@ -117,7 +121,7 @@ private fun buildShots(
 private fun sequenceFrames(shots: List<GunShot>): Int =
     shots.maxOf { it.delay + maxOf(it.travel + 7, 19) } + 10
 
-private fun drawStars(glyphs: Glyphs, frame: Int) {
+private fun drawStars(glyphs: GlyphGrid, frame: Int) {
     val random = Random(812)
     for (index in 0 until 34) {
         val x = random.nextInt(glyphs.width)
@@ -127,7 +131,7 @@ private fun drawStars(glyphs: Glyphs, frame: Int) {
     }
 }
 
-private fun drawMuzzleFlash(glyphs: Glyphs, origin: Point, age: Int) {
+private fun drawMuzzleFlash(glyphs: GlyphGrid, origin: Point, age: Int) {
     val x = origin.first.toInt()
     val y = origin.second.toInt()
     when (age) {
@@ -147,7 +151,7 @@ private fun drawMuzzleFlash(glyphs: Glyphs, origin: Point, age: Int) {
 }
 
 /** Ejected casing, arcing right independently of the tracer. */
-private fun drawCasing(glyphs: Glyphs, shot: GunShot, age: Int) {
+private fun drawCasing(glyphs: GlyphGrid, shot: GunShot, age: Int) {
     if (age < 1 || age > 18) return
     val startX = shot.origin.first + 2
     val startY = minOf(glyphs.height - 2.0, maxOf(1.0, shot.origin.second - 1))
@@ -160,7 +164,7 @@ private fun drawCasing(glyphs: Glyphs, shot: GunShot, age: Int) {
     glyphs.put(pyRound(x), pyRound(y), char)
 }
 
-private fun drawImpact(glyphs: Glyphs, target: Point, age: Int) {
+private fun drawImpact(glyphs: GlyphGrid, target: Point, age: Int) {
     val x = target.first.toInt()
     val y = target.second.toInt()
     when {
@@ -183,7 +187,7 @@ private fun drawImpact(glyphs: Glyphs, target: Point, age: Int) {
     }
 }
 
-private fun drawShot(glyphs: Glyphs, shot: GunShot, frame: Int): Boolean {
+private fun drawShot(glyphs: GlyphGrid, shot: GunShot, frame: Int): Boolean {
     val age = frame - shot.delay
     if (age < 0 || age > maxOf(shot.travel + 6, 18)) return false
 

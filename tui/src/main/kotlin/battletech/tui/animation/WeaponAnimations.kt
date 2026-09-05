@@ -1,9 +1,14 @@
 package battletech.tui.animation
 
 import battletech.tactical.attack.AttackResult
+import tenter.animation.Animation
+import tenter.animation.AnimationPlayback
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+
+/** Every concrete weapon effect retains its existing five-second nominal duration. */
+internal val ANIMATION_DURATION: Duration = 5.seconds
 
 /**
  * Builds the animation overlay for one resolved weapon volley: one panel per distinct weapon
@@ -13,7 +18,7 @@ internal object WeaponAnimations {
     /** Gap between one panel appearing and the next. */
     val STAGGER: Duration = 1.seconds
 
-    fun animationFor(category: WeaponCategory, random: Random = Random.Default): WeaponAnimation =
+    fun animationFor(category: WeaponCategory, random: Random = Random.Default): Animation =
         when (category) {
             WeaponCategory.ENERGY -> LaserBurstAnimation(random = random)
             WeaponCategory.BALLISTIC -> MachineGunAnimation(random = random)
@@ -26,7 +31,7 @@ internal object WeaponAnimations {
      * each panel — the order they're built in has no effect on how long the volley runs, and they
      * finish in the same order they appeared: first in, first out.
      */
-    fun forVolley(results: List<AttackResult>, random: Random = Random.Default): List<WeaponAnimation> =
+    fun forVolley(results: List<AttackResult>, random: Random = Random.Default): List<Animation> =
         categoriesOf(results).map { animationFor(it, random) }
 
     /**
@@ -37,13 +42,20 @@ internal object WeaponAnimations {
         results: List<AttackResult>,
         width: Int,
         height: Int,
-        generation: Long,
         random: Random = Random.Default,
-    ): VolleyPlayback? {
+    ): AnimationPlayback<PanelPlacement>? {
         val animations = forVolley(results, random)
         if (animations.isEmpty()) return null
         val placements = AnimationLayout.place(animations, width, height)
         if (placements.isEmpty()) return null
-        return VolleyPlayback.start(animations, placements, generation)
+        return AnimationPlayback(
+            animations.mapIndexed { index, animation ->
+                AnimationPlayback.Clip(
+                    animation = animation,
+                    value = placements[index],
+                    startAfter = STAGGER * index,
+                )
+            },
+        )
     }
 }

@@ -11,10 +11,10 @@ import battletech.tui.aGameState
 import battletech.tui.aUnit
 import battletech.tui.anAppState
 import battletech.tui.animation.ANIMATION_BACKGROUND
-import battletech.tui.animation.AnimationPanel
 import battletech.tui.animation.LaserBurstAnimation
 import battletech.tui.animation.MissileSalvoAnimation
 import battletech.tui.animation.panelSize
+import battletech.tui.animation.PanelPlacement
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.input.Keybindings
@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.ChromeRole
 import tenter.screen.ScreenBuffer
+import tenter.animation.AnimationPlayback
 import tenter.view.FlashMessage
 import tenter.view.HelpView
 import tenter.view.ScrollOffset
@@ -210,15 +211,15 @@ internal class WorkspaceTest {
         val left = 11
         val top = 7
         val animation = LaserBurstAnimation(random = Random(1))
-        val panel = AnimationPanel(animation, frameIndex = 0, x = left, y = top)
+        val panel = frame(animation, x = left, y = top)
 
         val buffer = workspace.render(appState, width = 120, height = 40, flash = null, animations = listOf(panel))
 
         assertEquals('╭', buffer.get(left, top).char.single())
-        assertEquals('╮', buffer.get(left + animation.panelSize.width - 1, top).char.single())
-        assertEquals('╰', buffer.get(left, top + animation.panelSize.height - 1).char.single())
+        assertEquals('╮', buffer.get(left + animation.size.panelSize.width - 1, top).char.single())
+        assertEquals('╰', buffer.get(left, top + animation.size.panelSize.height - 1).char.single())
         // The top border carries only box-drawing dashes — no title, badge, or hint text anywhere in it.
-        val topBorder = (left + 1 until left + animation.panelSize.width - 1)
+        val topBorder = (left + 1 until left + animation.size.panelSize.width - 1)
             .joinToString("") { buffer.get(it, top).char }
         assertEquals("─".repeat(animation.size.width), topBorder)
     }
@@ -227,8 +228,8 @@ internal class WorkspaceTest {
     fun `a later panel paints over an earlier one where they overlap`() {
         val workspace = Workspace(Keybindings.DEFAULT)
         // Two panels one row apart: the second covers the first's entire top border.
-        val under = AnimationPanel(LaserBurstAnimation(random = Random(1)), frameIndex = 0, x = 10, y = 5)
-        val over = AnimationPanel(MissileSalvoAnimation(random = Random(2)), frameIndex = 0, x = 10, y = 6)
+        val under = frame(LaserBurstAnimation(random = Random(1)), x = 10, y = 5)
+        val over = frame(MissileSalvoAnimation(random = Random(2)), x = 10, y = 6)
 
         val buffer = workspace.render(
             appState, width = 120, height = 40, flash = null, animations = listOf(under, over),
@@ -243,14 +244,14 @@ internal class WorkspaceTest {
     fun `no animation panel is drawn on a screen smaller than 72x22 in either dimension`() {
         val workspace = Workspace(Keybindings.DEFAULT)
         val animation = LaserBurstAnimation(random = Random(1))
-        val panel = AnimationPanel(animation, frameIndex = 0, x = 0, y = 0)
+        val panel = frame(animation, x = 0, y = 0)
 
         val tooNarrow = workspace.render(
-            appState, width = animation.panelSize.width - 1, height = animation.panelSize.height + 5,
+            appState, width = animation.size.panelSize.width - 1, height = animation.size.panelSize.height + 5,
             flash = null, animations = listOf(panel),
         )
         val tooShort = workspace.render(
-            appState, width = animation.panelSize.width + 5, height = animation.panelSize.height - 1,
+            appState, width = animation.size.panelSize.width + 5, height = animation.size.panelSize.height - 1,
             flash = null, animations = listOf(panel),
         )
 
@@ -268,6 +269,13 @@ internal class WorkspaceTest {
         }
         return false
     }
+
+    private fun frame(animation: tenter.animation.Animation, x: Int, y: Int, index: Int = 0): AnimationPlayback.Frame<PanelPlacement> =
+        AnimationPlayback.Frame(
+            value = PanelPlacement(x, y),
+            size = animation.size,
+            content = animation.frame(index),
+        )
 
     private fun statusRow(buffer: ScreenBuffer): String =
         (0 until buffer.width).joinToString("") { buffer.get(it, 1).char }

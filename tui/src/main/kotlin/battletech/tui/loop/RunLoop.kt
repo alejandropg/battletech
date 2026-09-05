@@ -4,8 +4,8 @@ import battletech.tactical.attack.AttackResult
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.session.AttacksResolved
 import battletech.tactical.session.MatchEnded
-import battletech.tui.animation.VolleyPlayback
 import battletech.tui.animation.WeaponAnimations
+import battletech.tui.animation.PanelPlacement
 import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
@@ -32,20 +32,24 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
+import tenter.animation.AnimationPlayback
 import tenter.input.InputAction
 import tenter.input.MouseInput
 import tenter.input.PanAction
 import tenter.input.ScrollAction
 import tenter.view.FlashMessage
 import tenter.screen.ScreenRenderer
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.nanoseconds
 
 /**
  * Headless-testable event loop. Collects [events] until [UiEvent.Quit] is seen.
  *
  * Flash jobs are launched in the enclosing [coroutineScope]; they post [UiEvent.FlashExpired]
  * back through [internalEvents]. The active flash job is cancelled after the collect loop
- * returns so no coroutine outlives the loop. The weapon-fire animation overlay ([UiEvent.AnimationTick])
- * follows the exact same generation-stamped timer-job shape — see the `volley*` locals below.
+ * returns so no coroutine outlives the loop. The weapon-fire animation overlay uses one
+ * elapsed-time wake-up at a time; stale wake-ups are rejected by a token.
  *
  * [buildVolley] turns a resolved volley's results into the overlay that plays for it — one panel
  * per distinct weapon category fired, already placed on a screen of the given size. Defaults to
@@ -58,16 +62,21 @@ internal suspend fun runLoop(
     renderer: ScreenRenderer,
     initialState: AppState,
     keys: Keybindings,
-    buildVolley: (List<AttackResult>, Int, Int, Long) -> VolleyPlayback? =
-        { results, width, height, generation -> WeaponAnimations.volleyFor(results, width, height, generation) },
+    buildVolley: (List<AttackResult>, Int, Int) -> AnimationPlayback<PanelPlacement>? =
+        { results, width, height -> WeaponAnimations.volleyFor(results, width, height) },
+    nowNanos: () -> Long = System::nanoTime,
 ): Unit = coroutineScope {
     var appState = initialState
     var activeFlash: FlashMessage? = null
     var flashGeneration = 0L
     var flashJob: Job? = null
-    var volley: VolleyPlayback? = null
-    var volleyGeneration = 0L
-    var panelJobs: Map<Int, Job> = emptyMap()
+    data class ActiveAnimation(
+        val playback: AnimationPlayback<PanelPlacement>,
+        val startedAtNanos: Long,
+    )
+    var activeAnimation: ActiveAnimation? = null
+    var animationTimer: Job? = null
+    var animationToken = 0L
     var size = currentSize(terminal)
 
     // One Workspace for this whole run: every panel remembers its own state (minimized/normal/
@@ -75,6 +84,27 @@ internal suspend fun runLoop(
     // nothing but the board's scroll offset round-trips back through appState (see
     // AppState.boardScroll's KDoc).
     val workspace = Workspace(keys)
+
+    fun invalidateAnimationTimer() {
+        animationToken++
+        animationTimer?.cancel()
+        animationTimer = null
+    }
+
+    fun stopVolley() {
+        activeAnimation = null
+        invalidateAnimationTimer()
+    }
+
+    fun elapsedSince(startedAtNanos: Long): Duration =
+        (nowNanos() - startedAtNanos).coerceAtLeast(0L).nanoseconds
+
+    fun scheduleAnimationWake(token: Long, delayDuration: Duration) {
+        animationTimer = launch {
+            delay(delayDuration)
+            internalEvents.send(UiEvent.AnimationTick(token))
+        }
+    }
 
     /**
      * Every render goes through here so the board's settled scroll offset is folded back into
@@ -87,49 +117,59 @@ internal suspend fun runLoop(
      * cursor off-screen.
      */
     fun render(forgetReveal: Boolean = false) {
-        val panels = volley?.visible().orEmpty()
-        val buffer = workspace.render(appState, size.width, size.height, activeFlash, forgetReveal, panels)
-        renderer.render(buffer)
-        appState = appState.copy(boardScroll = workspace.boardOffset)
-    }
-
-    fun stopVolley() {
-        volley = null
-        panelJobs.values.forEach(Job::cancel)
-        panelJobs = emptyMap()
-    }
-
-    /**
-     * Starts the overlay for one resolved volley: bumps [volleyGeneration] (so any tick still in
-     * flight for a previous volley is recognized as stale — see the [UiEvent.AnimationTick] arm
-     * below) and launches ONE JOB PER PANEL. Each panel has its own frame rate, so a single shared
-     * ticker would need per-panel accumulators; a job apiece keeps each one a plain
-     * `delay(frameDuration)` loop, mirroring the flash job's shape above.
-     *
-     * Slot 0 is already playing frame 0 when [VolleyPlayback.start] returns, so the first panel
-     * lands in the same render as the event that triggered it. Every later slot starts pending and
-     * is put on screen by its own first tick, [WeaponAnimations.STAGGER] per slot later.
-     *
-     * Callers only ever reach this with `volley == null` (see the [UiEvent.Session] arm below), so
-     * this never has an existing volley or job set to replace.
-     */
-    fun startVolley(results: List<AttackResult>) {
-        volleyGeneration++
-        val gen = volleyGeneration
-        val started = buildVolley(results, size.width, size.height, gen) ?: return
-        volley = started
-        panelJobs = started.panels.mapValues { (slot, panel) ->
-            launch {
-                if (slot > 0) {
-                    delay(WeaponAnimations.STAGGER * slot)
-                    internalEvents.send(UiEvent.AnimationTick(gen, slot))
-                }
-                while (true) {
-                    delay(panel.animation.frameDuration)
-                    internalEvents.send(UiEvent.AnimationTick(gen, slot))
-                }
+        val active = activeAnimation
+        val sampleElapsed = if (active == null) {
+            null
+        } else {
+            elapsedSince(active.startedAtNanos)
+        }
+        val sample = if (active == null) {
+            null
+        } else {
+            try {
+                active.playback.sample(checkNotNull(sampleElapsed))
+            } catch (t: Throwable) {
+                stopVolley()
+                throw t
             }
         }
+        if (active != null && sample?.nextChangeIn == null) {
+            stopVolley()
+        }
+        try {
+            val buffer = workspace.render(
+                appState,
+                size.width,
+                size.height,
+                activeFlash,
+                forgetReveal,
+                sample?.frames.orEmpty(),
+            )
+            renderer.render(buffer)
+            appState = appState.copy(boardScroll = workspace.boardOffset)
+
+            if (active != null && activeAnimation === active) {
+                val nextChange = sample?.nextChangeIn
+                if (nextChange != null) {
+                    val elapsedAfterRender = elapsedSince(active.startedAtNanos)
+                    val deadline = checkNotNull(sampleElapsed) + nextChange
+                    val remaining = deadline - elapsedAfterRender
+                    invalidateAnimationTimer()
+                    val token = animationToken
+                    scheduleAnimationWake(token, if (remaining > Duration.ZERO) remaining else 1.milliseconds)
+                }
+            }
+        } catch (t: Throwable) {
+            if (activeAnimation != null) stopVolley()
+            throw t
+        }
+    }
+
+    /** Starts one elapsed-time playback and lets the triggering render show frame zero. */
+    fun startVolley(results: List<AttackResult>) {
+        val started = buildVolley(results, size.width, size.height) ?: return
+        invalidateAnimationTimer()
+        activeAnimation = ActiveAnimation(started, nowNanos())
     }
 
     // Render the initial frame before collecting any events. forgetReveal = true so every panel
@@ -152,7 +192,7 @@ internal suspend fun runLoop(
                     // than reaching the phase underneath opaque panels the user can't see through.
                     // "Playing" starts the instant the volley does, including while later panels
                     // are still waiting out their stagger.
-                    if (volley != null) {
+                    if (activeAnimation != null) {
                         if (event is KeyboardEvent && event == KeyboardEvent("Escape")) {
                             stopVolley()
                             render()
@@ -266,7 +306,7 @@ internal suspend fun runLoop(
                     // Panels were placed against the OLD size, so any resize invalidates the whole
                     // layout — not just one that no longer fits. Cancelling is honest and cheap;
                     // re-solving placements mid-flight would make panels jump around instead.
-                    if (volley != null) stopVolley()
+                    if (activeAnimation != null) stopVolley()
                     // Content-space reveal doesn't change on resize, so without forgetting it a
                     // shrink could leave the cursor stranded outside the new viewport.
                     render(forgetReveal = true)
@@ -281,24 +321,10 @@ internal suspend fun runLoop(
                 }
 
                 is UiEvent.AnimationTick -> {
-                    val current = volley
-                    if (current != null && ui.generation == current.generation) {
-                        val advanced = current.advance(ui.slot)
-                        if (advanced == null) {
-                            stopVolley() // every panel has finished
-                        } else {
-                            // A panel that just vanished must have its ticker cancelled too, or it
-                            // keeps posting no-op ticks until the whole volley ends.
-                            if (ui.slot !in advanced.panels) {
-                                panelJobs[ui.slot]?.cancel()
-                                panelJobs = panelJobs - ui.slot
-                            }
-                            volley = advanced
-                        }
+                    if (activeAnimation != null && ui.token == animationToken) {
                         render()
                     }
-                    // Stale tick (a previous volley's job hadn't yet noticed its cancellation, or
-                    // Esc/resize already cleared it this frame): ignore.
+                    // Stale tick or cancelled playback: ignore.
                 }
 
                 // Re-render only: the renderer re-reads state through the session.
@@ -320,12 +346,12 @@ internal suspend fun runLoop(
                         },
                     )
                     // Celebrate a resolved volley with the weapon-fire overlay — guarded on
-                    // `volley == null` so hot-seat's double delivery (both seats share one
+                    // `activeAnimation == null` so hot-seat's double delivery (both seats share one
                     // session, so every event arrives once per seat subscription — see
                     // TuiApp.run's KDoc) starts exactly one volley, not two. Volley construction
                     // owns the per-animation fit check, after it knows the concrete animations.
                     val resolved = ui.event
-                    if (resolved is AttacksResolved && volley == null) {
+                    if (resolved is AttacksResolved && activeAnimation == null) {
                         startVolley(resolved.results)
                     }
                     render()
@@ -345,7 +371,7 @@ internal suspend fun runLoop(
 
     // Cancel any pending flash/animation job so the coroutineScope can complete cleanly.
     flashJob?.cancel()
-    panelJobs.values.forEach(Job::cancel)
+    stopVolley()
 }
 
 /**
