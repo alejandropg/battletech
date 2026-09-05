@@ -154,4 +154,24 @@ public object WeaponModels {
 
     /** Every stable identifier accepted by mech collection files. */
     public val ids: Set<String> get() = registry.keys
+
+    private val byDisplayName: Map<String, WeaponModel> = registry.values.associateBy { it.name }
+
+    init {
+        // [findByName] is only unambiguous while display names stay distinct, and this object is
+        // the only place that can know. A duplicate would otherwise silently shadow one model.
+        require(byDisplayName.size == registry.size) {
+            "WeaponModel display names must be unique across the registry"
+        }
+    }
+
+    /**
+     * Finds a weapon definition by its DISPLAY name — the only weapon identity a resolved attack
+     * carries. [battletech.tactical.attack.AttackResult] exposes just `weaponName`, which
+     * `AttackResolution` sets from `Weapon.name` (i.e. [WeaponModel.name]); it has no kind, mount
+     * id, or model reference. The per-unit route to a weapon's kind is not a substitute: a foreign
+     * attacker projects to `PublicWeapon`, which drops [WeaponModel.kind] entirely, so an observer
+     * of someone else's volley can only get here by name.
+     */
+    public fun findByName(name: String): WeaponModel? = byDisplayName[name]
 }

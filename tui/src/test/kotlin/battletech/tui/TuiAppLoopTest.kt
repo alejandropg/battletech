@@ -20,6 +20,13 @@ import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.BOARD_ORIGIN_X
 import battletech.tui.game.phase.BOARD_ORIGIN_Y
 import battletech.tui.game.phase.MovementPhase
+import battletech.tui.animation.AnimationColor
+import battletech.tui.animation.AnimationLayout
+import battletech.tui.animation.AnimationSize
+import battletech.tui.animation.Glyphs
+import battletech.tui.animation.VolleyPlayback
+import battletech.tui.animation.WeaponAnimation
+import battletech.tui.animation.WeaponAnimations
 import battletech.tui.icon.sessionNoticeIcon
 import battletech.tui.input.Keybindings
 import battletech.tui.loop.UiEvent
@@ -43,11 +50,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.screen.Cell
+import tenter.screen.PaletteColor
 import tenter.screen.ScreenRenderer
 import tenter.view.HelpView
+import kotlin.random.Random
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -881,16 +893,387 @@ internal class TuiAppLoopTest {
             loopJob.join()
         }
 
+    // -------------------------------------------------------------------------
+    // Weapon-fire animation overlay: AttacksResolved starts it, ticks advance it,
+    // Esc cancels it, a too-small terminal never starts it, and hot-seat's double
+    // Session delivery starts exactly one playback — see RunLoop's animation* locals.
+    // -------------------------------------------------------------------------
+
+    private val animationTopBorder = "╭" + "─".repeat(70) + "╮"
+
+    /**
+     * A `buildVolley` seam playing exactly [animations], laid out via [AnimationLayout]'s fixed
+     * positions (deterministic — no seed needed). The results are ignored, so these tests don't
+     * depend on the weapon-name -> category lookup (which `WeaponCategoryTest` covers on its own).
+     */
+    private fun testVolley(
+        vararg animations: WeaponAnimation,
+    ): (List<AttackResult>, Int, Int, Long) -> VolleyPlayback? = { _, width, height, generation ->
+        VolleyPlayback.start(
+            animations.toList(),
+            AnimationLayout.place(animations.toList(), width, height),
+            generation,
+        )
+    }
+
+    @Test
+    fun `AttacksResolved starts the animation panel`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+        val loopJob = launch {
+            runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
+                buildVolley = testVolley(TestAnimation()),
+            )
+        }
+
+        internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+
+        assertTrue(
+            recorder.output().contains(animationTopBorder),
+            "Expected the animation panel's border after AttacksResolved",
+        )
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
+    @Test
+    fun `the panel disappears on its own once every frame has played`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+        val loopJob = launch {
+            runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = terminal,
+                renderer = renderer,
+                initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
+                buildVolley = testVolley(TestAnimation(frameCount = 3, frameDuration = 10.milliseconds)),
+            )
+        }
+
+        internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+        assertTrue(recorder.output().contains(animationTopBorder), "Panel should have appeared")
+
+        recorder.clearOutput()
+        // 3 frames * 10ms, plus margin — enough for every AnimationTick to fire and the last one
+        // to see AnimationPlayback.next() return null and stop the playback.
+        advanceTimeBy(35.milliseconds)
+
+        val out = recorder.output()
+        assertTrue(out.isNotEmpty(), "Expected a recovery render once the panel is removed")
+        assertFalse(out.contains(animationTopBorder), "Panel border must be gone once playback finishes")
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
+    @Test
+    fun `Esc cancels the animation immediately and swallows every other key while it plays`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    terminal = terminal,
+                    renderer = renderer,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                    buildVolley = testVolley(TestAnimation()),
+                )
+            }
+
+            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+            assertTrue(recorder.output().contains(animationTopBorder), "Panel should have appeared")
+
+            // A non-Esc key is swallowed before it even reaches resolveInput/the phase — RunLoop
+            // never calls render() for it at all, so a swallowed key produces literally no output.
+            recorder.clearOutput()
+            internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
+            assertTrue(recorder.output().isEmpty(), "A non-Esc key during playback must not trigger any render")
+
+            recorder.clearOutput()
+            internalEvents.send(UiEvent.Input(KeyboardEvent("Escape")))
+            val out = recorder.output()
+            assertTrue(out.isNotEmpty(), "Esc should trigger a recovery render")
+            assertFalse(out.contains(animationTopBorder), "Esc must remove the panel immediately")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+
+    @Test
+    fun `hot-seat's duplicate AttacksResolved delivery starts exactly one playback`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    terminal = terminal,
+                    renderer = renderer,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                    buildVolley = testVolley(TestAnimation(frameCount = 3, frameDuration = 10.milliseconds)),
+                )
+            }
+
+            // Both seats' subscriptions deliver the same event in hot-seat (TuiApp.run's KDoc) —
+            // simulated here by sending it twice back to back, before any tick is processed.
+            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+
+            recorder.clearOutput()
+            // Exactly one playback's worth of time. If the second Session event had wrongly
+            // restarted the animation (resetting it to frame 0), the panel would still be showing.
+            advanceTimeBy(35.milliseconds)
+
+            assertFalse(
+                recorder.output().contains(animationTopBorder),
+                "A single playback should have finished and been removed by now",
+            )
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+
+    @Test
+    fun `a terminal smaller than the panel never starts the animation`() = runTest(UnconfinedTestDispatcher()) {
+        val smallRecorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = 70, height = 20)
+        val smallTerminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = smallRecorder)
+        val smallRenderer = ScreenRenderer(smallTerminal, resolveTheme("dark"))
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+        val loopJob = launch {
+            runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                terminal = smallTerminal,
+                renderer = smallRenderer,
+                initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
+                buildVolley = testVolley(TestAnimation()),
+            )
+        }
+
+        smallRecorder.clearOutput()
+        internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+
+        assertFalse(
+            smallRecorder.output().contains(animationTopBorder),
+            "A 70x20 terminal has no room for the 72x22 panel — it must never draw",
+        )
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
+    }
+
+    private fun panelsDrawn(output: String): Int =
+        Regex(Regex.escape(animationTopBorder)).findAll(output).count()
+
+    @Test
+    fun `a second weapon category's panel appears only after the stagger elapses`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            // Long animations so neither finishes while the stagger is under test.
+            val long = { TestAnimation(frameCount = 500, frameDuration = 10.milliseconds) }
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    terminal = terminal,
+                    renderer = renderer,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                    buildVolley = testVolley(long(), long()),
+                )
+            }
+
+            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+            assertEquals(
+                1,
+                panelsDrawn(recorder.output()),
+                "only the first category's panel should be on screen immediately",
+            )
+
+            recorder.clearOutput()
+            advanceTimeBy(WeaponAnimations.STAGGER + 20.milliseconds)
+            assertTrue(
+                panelsDrawn(recorder.output()) >= 1,
+                "the second category's panel should have appeared after the stagger",
+            )
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+
+    @Test
+    fun `a short panel vanishes on its own while a longer one keeps playing`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    terminal = terminal,
+                    renderer = renderer,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                    buildVolley = testVolley(
+                        TestAnimation(frameCount = 500, frameDuration = 10.milliseconds), // outlives the test
+                        TestAnimation(frameCount = 1, frameDuration = 10.milliseconds),   // one frame, then gone
+                    ),
+                )
+            }
+
+            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+            // Let slot 1 appear and then immediately run out of frames.
+            advanceTimeBy(WeaponAnimations.STAGGER + 40.milliseconds)
+
+            // Slot 0 is still ticking, so its border keeps being redrawn; the volley is alive.
+            recorder.clearOutput()
+            advanceTimeBy(60.milliseconds)
+            assertTrue(
+                recorder.output().isNotEmpty(),
+                "the surviving panel should still be animating after the short one vanished",
+            )
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+
+    @Test
+    fun `Esc cancels every panel of a multi-category volley, not just the first`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            val long = { TestAnimation(frameCount = 500, frameDuration = 10.milliseconds) }
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    terminal = terminal,
+                    renderer = renderer,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                    buildVolley = testVolley(long(), long(), long()),
+                )
+            }
+
+            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+            advanceTimeBy(WeaponAnimations.STAGGER * 2 + 40.milliseconds) // all three on screen
+            internalEvents.send(UiEvent.Input(KeyboardEvent("Escape")))
+
+            // If any panel's ticker had survived Esc it would keep repainting its border.
+            recorder.clearOutput()
+            advanceTimeBy(500.milliseconds)
+            assertEquals(0, panelsDrawn(recorder.output()), "no panel may keep animating after Esc")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+
+    @Test
+    fun `the real category lookup drives the overlay — an unknown weapon name plays nothing`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            // No buildVolley override: this exercises WeaponModels.findByName for real.
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    terminal = terminal,
+                    renderer = renderer,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            recorder.clearOutput()
+            internalEvents.send(UiEvent.Session(AttacksResolved(listOf(aResult()))))
+            assertEquals(
+                0,
+                panelsDrawn(recorder.output()),
+                "aResult()'s \"Med Laser\" is not a real model name, so no category resolves",
+            )
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+
+    @Test
+    fun `the real category lookup draws one panel for a recognised weapon`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    terminal = terminal,
+                    renderer = renderer,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            recorder.clearOutput()
+            internalEvents.send(UiEvent.Session(AttacksResolved(listOf(aResult(weaponName = "Medium Laser")))))
+            assertEquals(
+                1,
+                panelsDrawn(recorder.output()),
+                "one energy weapon should raise exactly one panel",
+            )
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+
+    /**
+     * A minimal deterministic [WeaponAnimation] test double — fast frames, one visible glyph.
+     *
+     * The glyph MOVES with [index]. Frames that render identically would diff to nothing in
+     * [ScreenRenderer], so a still test double makes "is it still animating?" indistinguishable
+     * from "did it stop?" — which is exactly what several tests below assert on.
+     */
+    private class TestAnimation(
+        override val frameCount: Int = 3,
+        override val frameDuration: Duration = 10.milliseconds,
+    ) : WeaponAnimation {
+        override val size: AnimationSize = AnimationSize(width = 70, height = 20)
+
+        override fun frame(index: Int): Glyphs {
+            val glyphs = Glyphs(
+                size = size,
+                priority = { if (it == 'A') 1 else 0 },
+                style = { Cell.Style(fg = AnimationColor(PaletteColor.Ansi16(97))) },
+            )
+            glyphs.put(index % size.width, index % size.height, 'A')
+            return glyphs
+        }
+    }
+
     // ---- helpers ----
 
     // attackerId defaults to "ally" (buildAppState()'s PLAYER_1 unit) since AttackResultsView
     // now looks the attacker up in the rendered gameState's unitOwners via getValue (fails loud
     // on an unknown id, rather than silently rendering white as the old nullable playerColor did).
-    private fun aResult(attackerId: UnitId = UnitId("ally")) = AttackResult.Miss(
+    //
+    // weaponName is deliberately "Med Laser", which is NOT a real WeaponModel display name (that
+    // would be "Medium Laser"). WeaponModels.findByName therefore misses, no weapon category is
+    // recognised, and no animation overlay starts — so the tests below can assert on panels this
+    // result drives without an overlay painting over them.
+    private fun aResult(
+        attackerId: UnitId = UnitId("ally"),
+        weaponName: String = "Med Laser",
+    ) = AttackResult.Miss(
         attempt = ToHitAttempt(
             attackerId = attackerId,
             targetId = UnitId("b"),
-            weaponName = "Med Laser",
+            weaponName = weaponName,
             toHitRoll = DiceRoll(2, 3),
             toHit = ToHitBreakdown(ToHitBase.GUNNERY, skill = 4, modifiers = emptyList()),
         ),

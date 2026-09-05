@@ -31,6 +31,17 @@ public interface ColorRole
  * choice, not a reason to merge roles here: they are semantically distinct call sites that a
  * palette can later choose to diverge without touching any of them.
  */
+/**
+ * A [ColorRole] that carries its own [PaletteColor] rather than being resolved through a
+ * [RolePalette] — for content whose colors are deliberately fixed rather than themeable (e.g. a
+ * hardcoded ANSI-art effect that must render identically regardless of which theme is loaded).
+ * [MapRolePalette.foreground] resolves any [FixedColorRole] to [color] directly, ahead of its
+ * normal role-map lookup, so a [FixedColorRole] needs no entry in any theme file.
+ */
+public interface FixedColorRole : ColorRole {
+    public val color: PaletteColor
+}
+
 public enum class ChromeRole : ColorRole {
     /** The surface's default — the only role whose foreground and background differ. */
     DEFAULT,

@@ -10,6 +10,11 @@ import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit
 import battletech.tui.anAppState
+import battletech.tui.animation.ANIMATION_BACKGROUND
+import battletech.tui.animation.AnimationPanel
+import battletech.tui.animation.LaserBurstAnimation
+import battletech.tui.animation.MissileSalvoAnimation
+import battletech.tui.animation.panelSize
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.input.Keybindings
@@ -24,6 +29,7 @@ import tenter.view.FlashMessage
 import tenter.view.HelpView
 import tenter.view.ScrollOffset
 import tenter.view.text
+import kotlin.random.Random
 
 /**
  * [Workspace] composes the board, every visible side panel, the status bar, and the game-over
@@ -196,6 +202,71 @@ internal class WorkspaceTest {
 
         assertTrue(buffer.text().contains("MATCH OVER"))
         assertTrue(buffer.text().contains("P1 wins!"))
+    }
+
+    @Test
+    fun `an animation panel renders at its own placement with a plain border, no title or hint text`() {
+        val workspace = Workspace(Keybindings.DEFAULT)
+        val left = 11
+        val top = 7
+        val animation = LaserBurstAnimation(random = Random(1))
+        val panel = AnimationPanel(animation, frameIndex = 0, x = left, y = top)
+
+        val buffer = workspace.render(appState, width = 120, height = 40, flash = null, animations = listOf(panel))
+
+        assertEquals('╭', buffer.get(left, top).char.single())
+        assertEquals('╮', buffer.get(left + animation.panelSize.width - 1, top).char.single())
+        assertEquals('╰', buffer.get(left, top + animation.panelSize.height - 1).char.single())
+        // The top border carries only box-drawing dashes — no title, badge, or hint text anywhere in it.
+        val topBorder = (left + 1 until left + animation.panelSize.width - 1)
+            .joinToString("") { buffer.get(it, top).char }
+        assertEquals("─".repeat(animation.size.width), topBorder)
+    }
+
+    @Test
+    fun `a later panel paints over an earlier one where they overlap`() {
+        val workspace = Workspace(Keybindings.DEFAULT)
+        // Two panels one row apart: the second covers the first's entire top border.
+        val under = AnimationPanel(LaserBurstAnimation(random = Random(1)), frameIndex = 0, x = 10, y = 5)
+        val over = AnimationPanel(MissileSalvoAnimation(random = Random(2)), frameIndex = 0, x = 10, y = 6)
+
+        val buffer = workspace.render(
+            appState, width = 120, height = 40, flash = null, animations = listOf(under, over),
+        )
+
+        // Row 6 is the OVER panel's top border, drawn after the under panel's interior row.
+        assertEquals('╭', buffer.get(10, 6).char.single(), "the later panel's border must win")
+        assertEquals('╭', buffer.get(10, 5).char.single(), "the earlier panel's own top border survives above it")
+    }
+
+    @Test
+    fun `no animation panel is drawn on a screen smaller than 72x22 in either dimension`() {
+        val workspace = Workspace(Keybindings.DEFAULT)
+        val animation = LaserBurstAnimation(random = Random(1))
+        val panel = AnimationPanel(animation, frameIndex = 0, x = 0, y = 0)
+
+        val tooNarrow = workspace.render(
+            appState, width = animation.panelSize.width - 1, height = animation.panelSize.height + 5,
+            flash = null, animations = listOf(panel),
+        )
+        val tooShort = workspace.render(
+            appState, width = animation.panelSize.width + 5, height = animation.panelSize.height - 1,
+            flash = null, animations = listOf(panel),
+        )
+
+        // Every animation cell (including its border) carries the fixed ANIMATION_BACKGROUND —
+        // no other view in the game ever draws with it — so its absence proves nothing drew.
+        assertFalse(hasFixedAnimationBackground(tooNarrow), "no panel should draw when it doesn't fit width-wise")
+        assertFalse(hasFixedAnimationBackground(tooShort), "no panel should draw when it doesn't fit height-wise")
+    }
+
+    private fun hasFixedAnimationBackground(buffer: ScreenBuffer): Boolean {
+        for (y in 0 until buffer.height) {
+            for (x in 0 until buffer.width) {
+                if (buffer.get(x, y).style.bg == ANIMATION_BACKGROUND) return true
+            }
+        }
+        return false
     }
 
     private fun statusRow(buffer: ScreenBuffer): String =

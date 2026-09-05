@@ -21,8 +21,10 @@ public class MapRolePalette(
     private val colors: Map<ColorRole, PaletteColor>,
 ) : RolePalette {
 
-    override fun foreground(role: ColorRole): PaletteColor =
-        colors[role] ?: error("Unknown color role: $role")
+    override fun foreground(role: ColorRole): PaletteColor = when (role) {
+        is FixedColorRole -> role.color
+        else -> colors[role] ?: error("Unknown color role: $role")
+    }
 
     /** [name] — the palette's source name (a built-in stem, or a custom file path), for readable test/log output. */
     override fun toString(): String = name

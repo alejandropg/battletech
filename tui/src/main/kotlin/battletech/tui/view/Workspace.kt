@@ -1,6 +1,10 @@
 package battletech.tui.view
 
 import battletech.tactical.model.MatchOutcome
+import battletech.tui.animation.ANIMATION_BORDER
+import battletech.tui.animation.AnimationPanel
+import battletech.tui.animation.AnimationView
+import battletech.tui.animation.panelSize
 import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
@@ -88,6 +92,7 @@ internal class Workspace(private val keys: Keybindings) {
         height: Int,
         flash: FlashMessage?,
         forgetReveal: Boolean = false,
+        animations: List<AnimationPanel> = emptyList(),
     ): ScreenBuffer {
         val visible = PanelVisibility.visiblePanels(appState)
 
@@ -124,6 +129,12 @@ internal class Workspace(private val keys: Keybindings) {
             renderGameOverBanner(overlayRegion, matchEnded.outcome)
         }
 
+        // Drawn last, over everything (including the game-over banner) and against the WHOLE
+        // screen rather than layout.main — unlike the banner, a maximized side panel must not
+        // shift or shrink where these sit. The list is bottom-first, so where a small screen forced
+        // panels to overlap, a later (more recently appeared) one covers an earlier one.
+        animations.forEach { renderAnimationPanel(screen, it) }
+
         return buffer
     }
 
@@ -157,6 +168,38 @@ private fun renderGameOverBanner(board: Canvas, outcome: MatchOutcome) {
         titleColor = ChromeRole.ACCENT,
         content = BannerLine(winnerLine, column = mx - 1, row = 2),
     ).draw(banner)
+}
+
+/**
+ * Renders one bordered overlay box at [animation]'s own placement, playing its current frame — a
+ * plain border ([ANIMATION_BORDER], not the themed [tenter.screen.ChromeRole.PANEL_BORDER]
+ * [Bordered] would otherwise default to) with no title, badge, or hint text anywhere in it (unlike
+ * [renderGameOverBanner]), so the animation itself is the only thing drawn inside. The border's
+ * BACKGROUND is the one cell in this whole panel still themed — [Bordered] always paints its frame
+ * with [tenter.screen.ChromeRole.DEFAULT] and takes no background override; making even that
+ * hardcoded would mean not using [Bordered] at all, which isn't worth it for one ring of cells.
+ *
+ * No-ops if this animation's bordered size doesn't fit [screen] —
+ * the caller (`battletech.tui.loop.runLoop`) is expected to have already refused to start a volley
+ * that wouldn't fit, so this is a second, independent guard against a resize shrinking the screen
+ * out from under a volley already playing. Volley construction is all-or-nothing; this guard
+ * protects an individual panel if a resize races a render.
+ */
+private fun renderAnimationPanel(screen: Canvas, animation: AnimationPanel) {
+    val panelSize = animation.animation.panelSize
+    val panelWidth = panelSize.width
+    val panelHeight = panelSize.height
+    if (panelWidth > screen.width || panelHeight > screen.height) return
+    // [Canvas.region] SHRINKS rather than clips: an origin past the right/bottom edge yields a
+    // narrow canvas and a squashed border, not a cropped panel. AnimationLayout already places
+    // every panel on-screen, so this clamp is the second, independent guard against a resize
+    // racing a render — exactly the role the fit check above plays.
+    val region = screen.region(
+        animation.x.coerceIn(0, screen.width - panelWidth),
+        animation.y.coerceIn(0, screen.height - panelHeight),
+        panelWidth, panelHeight,
+    )
+    Bordered(content = AnimationView(animation), borderColor = ANIMATION_BORDER).draw(region)
 }
 
 /** [text] at a fixed local ([column], [row]) — the banner's win/draw line, inside [Bordered]'s border inset. */
