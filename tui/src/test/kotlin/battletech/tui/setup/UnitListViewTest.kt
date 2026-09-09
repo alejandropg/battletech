@@ -10,6 +10,7 @@ import tenter.view.render
 import tenter.view.text
 import tenter.widget.CheckState
 import tenter.widget.checkboxIcon
+import battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 internal class UnitListViewTest {
 
@@ -154,6 +155,6 @@ internal class UnitListViewTest {
         )
 
         assertEquals("▶", buffer.get(0, 1).char)
-        assertEquals(checkboxIcon(CheckState.CHECKED), buffer.get(2, 1).char)
+        assertEquals(checkboxIcon(CheckState.CHECKED, TUI_CHECKBOX_GLYPHS), buffer.get(2, 1).char)
     }
 }

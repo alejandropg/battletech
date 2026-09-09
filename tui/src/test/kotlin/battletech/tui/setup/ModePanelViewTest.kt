@@ -10,6 +10,7 @@ import tenter.view.render
 import tenter.view.text
 import tenter.widget.CheckState
 import tenter.widget.checkboxIcon
+import battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 internal class ModePanelViewTest {
 
@@ -29,8 +30,8 @@ internal class ModePanelViewTest {
 
         assertEquals(" ", buffer.get(0, 0).char)
         assertEquals("▶", buffer.get(0, 2).char)
-        assertEquals(checkboxIcon(CheckState.CHECKED), buffer.get(2, 0).char)
-        assertEquals(checkboxIcon(CheckState.UNCHECKED), buffer.get(2, 2).char)
+        assertEquals(checkboxIcon(CheckState.CHECKED, TUI_CHECKBOX_GLYPHS), buffer.get(2, 0).char)
+        assertEquals(checkboxIcon(CheckState.UNCHECKED, TUI_CHECKBOX_GLYPHS), buffer.get(2, 2).char)
         assertEquals(ChromeRole.TEXT_PRIMARY, buffer.get(4, 0).style.fg)
         assertEquals(ChromeRole.ACCENT, buffer.get(4, 2).style.fg)
         assertEquals("    Both players share this terminal", buffer.line(1, width = 50))

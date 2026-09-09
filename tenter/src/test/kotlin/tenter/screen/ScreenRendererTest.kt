@@ -6,6 +6,7 @@ import com.github.ajalt.mordant.terminal.TerminalRecorder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.screen.PaletteColor.TrueColor
 
 /**
  * A minimal, fully-authored [RolePalette] for exercising [ScreenRenderer]'s own mechanics —
@@ -52,6 +53,36 @@ internal class ScreenRendererTest {
     private val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR)
     private val terminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
     private val renderer = ScreenRenderer(terminal, FixturePalette)
+
+    @Test
+    fun `fixed colors render through a custom palette in both channels`() {
+        val customPalette = object : RolePalette {
+            override val defaultBackground: PaletteColor = TrueColor(0, 0, 0)
+
+            override fun foreground(role: ColorRole): PaletteColor = when (role) {
+                is ChromeRole -> TrueColor(255, 255, 255)
+                else -> error("semantic role unexpectedly resolved: $role")
+            }
+
+            override fun background(role: ColorRole): PaletteColor = when (role) {
+                ChromeRole.DEFAULT -> defaultBackground
+                is ChromeRole -> TrueColor(0, 0, 0)
+                else -> error("semantic role unexpectedly resolved: $role")
+            }
+        }
+        val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR)
+        val customTerminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
+        val fixed = object : FixedColorRole {
+            override val color: PaletteColor = TrueColor(255, 0, 0)
+        }
+        val buffer = ScreenBuffer(1, 1)
+        buffer.set(0, 0, Cell("X", Cell.Style(fg = fixed, bg = fixed)))
+
+        ScreenRenderer(customTerminal, customPalette).render(buffer)
+
+        assertTrue(recorder.output().contains("38;2;255;0;0"))
+        assertTrue(recorder.output().contains("48;2;255;0;0"))
+    }
 
     @Test
     fun `output starts with cursor home sequence`() {

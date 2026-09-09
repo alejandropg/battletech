@@ -2,14 +2,16 @@ package tenter.widget
 
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
+import tenter.screen.ColorRole
 import tenter.text.CellWidth
 import tenter.view.TextCursor
 
-/** A proportional `[███░░░]value` bar, colored by how full it is (info/warning/danger tiers). */
+/** A proportional `[███░░░]value` bar with caller-selectable styling for its current value. */
 public class Gauge(
     private val barWidth: Int,
     private val maxValue: Int,
     private val suffix: String = maxValue.toString(),
+    private val colorFor: (value: Int) -> ColorRole = { value -> defaultColor(value, maxValue) },
 ) {
     init {
         require(barWidth >= 0) { "barWidth must not be negative, was $barWidth" }
@@ -21,7 +23,9 @@ public class Gauge(
         // maxValue <= 0 guard prevents division by zero. When maxValue == 0 the bar is all empty.
         // The bar is proportionally scaled: a fixed barWidth-cell bar spans the whole 0–maxValue
         // range (each block ≈ maxValue/barWidth units). The max sits inline after "]".
-        val filled = if (maxValue <= 0) 0 else (value * barWidth / maxValue).coerceIn(0, barWidth)
+        val filled = if (maxValue <= 0) 0 else {
+            (value.toLong() * barWidth / maxValue).toInt().coerceIn(0, barWidth)
+        }
         val bar = "█".repeat(filled) + "░".repeat(barWidth - filled)
         val color = colorFor(value)
         content.write(x, "[$bar]$suffix", Cell.Style(color))
@@ -34,9 +38,11 @@ public class Gauge(
         content.newLine()
     }
 
-    private fun colorFor(value: Int): ChromeRole = when {
-        value >= maxValue * 0.7 -> ChromeRole.DANGER
-        value >= maxValue * 0.3 -> ChromeRole.WARNING
-        else -> ChromeRole.INFO
+    private companion object {
+        fun defaultColor(value: Int, maxValue: Int): ChromeRole = when {
+            value.toDouble() >= maxValue * 0.7 -> ChromeRole.DANGER
+            value.toDouble() >= maxValue * 0.3 -> ChromeRole.WARNING
+            else -> ChromeRole.INFO
+        }
     }
 }

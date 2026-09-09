@@ -1,10 +1,11 @@
 package tenterexample
 
-import tenter.screen.Cell
-import tenter.screen.ChromeRole
 import tenter.view.ContentLayout
 import tenter.view.ContentView
 import tenter.view.contentView
+import tenter.widget.CheckState
+import tenter.widget.CheckboxGlyphs
+import tenter.widget.SelectableRow
 
 internal class ExampleListView(
     private val rowCount: Int,
@@ -16,7 +17,13 @@ internal class ExampleListView(
                 1 -> "row $index — 中 rendered as a wide glyph"
                 else -> "row $index — decomposed e\u0301 accent"
             }
-            cursor.writeLine(label, if (index == 0) Cell.Style(fg = ChromeRole.ACCENT) else Cell.Style.DEFAULT)
+            SelectableRow.draw(
+                content = cursor,
+                label = label,
+                checkState = CheckState.UNCHECKED,
+                cursor = index == 0,
+                glyphs = CheckboxGlyphs.ASCII,
+            )
         }
     }.layout(availableWidth)
 }

@@ -6,6 +6,7 @@ import tenter.view.TextCursor
 import battletech.tui.view.PreparedTextView
 import tenter.widget.CheckState
 import tenter.widget.SelectableRow
+import battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 /** Panel 1 (D19/D4/D5): the mode picker while unlocked, then the chosen mode plus host details. */
 internal class ModePanelView(
@@ -25,6 +26,7 @@ internal class ModePanelView(
                     label = label(candidate),
                     checkState = if (candidate == mode) CheckState.CHECKED else CheckState.UNCHECKED,
                     cursor = index == cursorIndex,
+                    glyphs = TUI_CHECKBOX_GLYPHS,
                 )
                 if (!compact) {
                     content.writeLine(
@@ -41,6 +43,7 @@ internal class ModePanelView(
             label = label(mode),
             checkState = CheckState.CHECKED,
             cursor = false,
+            glyphs = TUI_CHECKBOX_GLYPHS,
         )
 
         val ep = endpoint

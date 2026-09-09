@@ -6,9 +6,8 @@ import tenter.screen.PaletteColor
 /**
  * A [FixedColorRole] wrapping one ANSI-16 code — the weapon-fire animations' entire color
  * vocabulary. These are hardcoded, not themed: every animation must render with the same palette
- * regardless of which [tenter.screen.RolePalette] the host app loaded, so
- * [tenter.screen.MapRolePalette] resolves a [FixedColorRole] straight to [color] without ever
- * consulting the loaded theme.
+ * regardless of which [tenter.screen.RolePalette] the host app loaded. The Tenter renderer
+ * resolves a [FixedColorRole] straight to [color] without ever consulting the loaded theme.
  *
  * Values use fixed ANSI-16 escapes — for example, `"\033[31;1m"` (bright red) maps to
  * [ANIMATION_DANGER]. [tenter.screen.Cell.Style] has no bold attribute, so a `;1` (bold) escape

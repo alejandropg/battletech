@@ -9,6 +9,13 @@ themselves. `battletech.tui.screen.TuiPaletteTest` enforces every contrast/disti
 guarantee described below against the actual packaged files — if this doc and that test ever
 disagree, the test is authoritative.
 
+Independent Tenter consumers do not need these BattleTech assets. `tenter.screen.DefaultRolePalette`
+is a ready-to-use ANSI-16 palette for toolkit chrome; terminal-defined ANSI colors determine its
+appearance. Consumers can call `RolePalette.withOverrides` to copy the chrome defaults, replace
+selected roles, and add their own domain roles. Palettes are stable for a renderer's lifetime;
+construct a new renderer/screen scope to change one. The TUI continues to select its existing JSON
+themes, whose values and snapshots are intentionally unchanged.
+
 ## File format
 
 One file per theme, one color space per file — there is no conversion between tiers (see

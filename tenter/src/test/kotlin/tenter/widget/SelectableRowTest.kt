@@ -50,6 +50,21 @@ internal class SelectableRowTest {
         assertEquals(2, content.row)
     }
 
+    @Test
+    fun `uses the requested checkbox glyph set`() {
+        val (content, buffer) = content()
+
+        SelectableRow.draw(
+            content = content,
+            label = "ascii",
+            checkState = CheckState.CHECKED,
+            cursor = false,
+            glyphs = CheckboxGlyphs.ASCII,
+        )
+
+        assertEquals("x", buffer.get(2, 0).char)
+    }
+
     private fun content(width: Int = 32, height: Int = 5): Pair<TextCursor, ScreenBuffer> {
         val buffer = ScreenBuffer(width, height)
         return TextCursor(Canvas.of(buffer)) to buffer

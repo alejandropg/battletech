@@ -55,10 +55,15 @@ internal class StyleTagCache(private val palette: RolePalette, private val ansiL
     }
 
     private fun buildStyle(style: Cell.Style): TextStyle = TextStyle(
-        color = foregroundCache.getOrPut(style.fg) { palette.foreground(style.fg).toColormathColor() },
-        bgColor = backgroundCache.getOrPut(style.bg) { palette.background(style.bg).toColormathColor() },
+        color = foregroundCache.getOrPut(style.fg) { resolve(style.fg, background = false).toColormathColor() },
+        bgColor = backgroundCache.getOrPut(style.bg) { resolve(style.bg, background = true).toColormathColor() },
         strikethrough = style.strikethrough,
     )
+
+    private fun resolve(role: ColorRole, background: Boolean): PaletteColor = when (role) {
+        is FixedColorRole -> role.color
+        else -> if (background) palette.background(role) else palette.foreground(role)
+    }
 
     /** [PaletteColor] -> its colormath equivalent, matching the color space it was authored in. */
     private fun PaletteColor.toColormathColor(): ColorValue = when (this) {

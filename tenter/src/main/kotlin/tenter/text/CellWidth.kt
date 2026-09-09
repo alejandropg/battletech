@@ -20,6 +20,12 @@ public object CellWidth {
         return textClusters(text.substring(startIndex, endIndex)).sumOf(TextCluster::width)
     }
 
+    /** Whether [text] is exactly one drawable grapheme occupying one terminal cell. */
+    public fun isSingleCellGlyph(text: String): Boolean {
+        val clusters = textClusters(text).toList()
+        return clusters.size == 1 && clusters.single().width == 1 && clusters.single().drawableText.isNotEmpty()
+    }
+
     private fun isZeroWidth(cp: Int): Boolean =
         when (Character.getType(cp).toByte()) {
             Character.NON_SPACING_MARK,

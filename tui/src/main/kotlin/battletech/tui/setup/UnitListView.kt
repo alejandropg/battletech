@@ -8,6 +8,7 @@ import battletech.tui.view.PreparedTextView
 import tenter.widget.CheckState
 import tenter.widget.SelectableRow
 import tenter.widget.ValueRow
+import battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 /**
  * Panels 3/4's roster list: every registered mech, multi-select with a per-model count (D7),
@@ -60,6 +61,7 @@ internal class UnitListView(
                 checkState = state,
                 cursor = isCursorHere,
                 right = right,
+                glyphs = TUI_CHECKBOX_GLYPHS,
             )
         }
     }

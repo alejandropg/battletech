@@ -1,6 +1,6 @@
 # Tenter library readiness: implementation plan
 
-Date: 2026-09-09. Status: stage 09 complete; stage 10 is next.
+Date: 2026-09-09. Status: stage 10 complete; stage 11 is next.
 
 ## Objective and authorization
 
@@ -99,7 +99,7 @@ The final deliverable includes a user-facing Tenter README, supported text/threa
 | 07 | Complete | Consistent geometry, settled-frame hit-testing, and application-local mouse policy; handoff below. |
 | 08 | Complete | Reusable keymap validation; handoff below. |
 | 09 | Complete | Scoped terminal lifecycle and flow contracts; handoff below. |
-| 10 | Pending | — |
+| 10 | Complete | Default palette and configurable widget glyphs; handoff below. |
 | 11 | Pending | — |
 
 ### Stage 00 handoff — minimal external consumer
@@ -212,3 +212,13 @@ Keep handoffs compact. The source and stage documents own the detailed contracts
 - Temporary bridges: none introduced and no stage-03–05 bridges remain. `ScreenRenderer.clear()` is intentionally retained as the paint/invalidation operation; its removal verification is that direct renderer calls emit no `1049` lifecycle sequence and all application/external lifecycle calls use `Terminal.withScreen`. The TUI's stage-07 `legacyPanelScrollDelta` remains application-local and unrelated.
 - Decision clarified from source evidence: raw mode is owned by collection of the cold input flow, not by renderer clearing or the alternate-screen scope. The scope is deliberately synchronous so existing `runBlocking` application bodies fit inside one callback without ambiguous synchronous/suspending overloads. Mordant's `Terminal.rawPrint` already delegates to `TerminalInterface.completePrintRequest`, so explicit `System.out.flush()` calls were removed rather than adding a parallel terminal abstraction.
 - Next exact task: stage 10, default palette and configurable widget glyphs. Start with `10-palettes-and-glyphs.md`, this handoff, `tenter/screen/{ColorRole,RolePalette,MapRolePalette,PaletteColor}.kt`, widget glyph definitions/defaults, theme resolution, and the example/TUI palette tests. Preserve `Terminal.withScreen` and the documented flow/lifecycle contracts while making a new consumer independent of BattleTech theme files and Nerd Fonts.
+
+### Stage 10 handoff — default palette and configurable widget glyphs
+
+- Completed stage 10. Added public `DefaultRolePalette`, `RolePalette.withOverrides`, and construction-validated/copying `MapRolePalette`; every toolkit `ChromeRole` is required, all colors/default backgrounds must match the declared `AnsiLevel`, and source-map mutation cannot alter a live palette. Fixed colors are now resolved by the renderer for both foreground and background, so custom palettes work without a `MapRolePalette` special case. Added immutable public `CheckboxGlyphs` with `DEFAULT`, `ASCII`, and `NERD_FONT` sets, validation through the shared grapheme/width contract, glyph threading through `checkboxIcon`, `Checkbox.draw`, and `SelectableRow.draw`, and an injectable `Gauge` color function with overflow-safe scaling.
+- Migrated the TUI's selectable rows through the centralized `tui/icon/FontIcons.kt` Nerd Font preference, while the external example now uses `DefaultRolePalette` and ASCII checkbox glyphs; deleted the example-local palette. Existing theme JSON files and TUI theme behavior remain unchanged. The animation audit remains clean: the stage-00 consumer compiled and rendered the finite animation before and after this stage, with no application coupling or missing public declaration.
+- Files/layer edges: changed Tenter screen/text/widget implementations and tests, TUI selectable-row callers/tests plus the fixed-color KDoc, the example, `docs/architecture.md`, and `docs/color-themes.md`; added no module edge. `tenter` remains BattleTech-free. The existing intentional `terminal → screen` edge and application-local `legacyPanelScrollDelta` adapter remain unchanged.
+- Validation passed: `./gradlew :tenter:test :tui:test :tenter-example:build :tenter-example:packagedSmoke --rerun-tasks`; the packaged isolated consumer reported `SmokeResult(renderedRows=40, helpContainsMovement=true, animationCompleted=true)`; `git diff --check` passed. Tests cover default palette widget rendering and NONE-compatible renderer behavior, role overrides/domain roles, missing chrome roles, declared-level mismatch, source-map mutation, fixed colors through custom palettes in both channels, all checkbox glyph sets and invalid glyphs, explicit gauge styling, and large-value gauge arithmetic. No real-TTY/manual check was needed; the packaged headless path remains the relevant consumer check for this stage.
+- Temporary bridges and remaining migration adapters: none introduced and no stage-03–05 bridges remain. The TUI Nerd Font selection is an intentional application preference, not a toolkit compatibility bridge; `legacyPanelScrollDelta` remains the stage-07 application adapter. The public defaults for stage 11 are `DefaultRolePalette`, `RolePalette.withOverrides`, and `CheckboxGlyphs.{DEFAULT,ASCII,NERD_FONT}`.
+- Decision clarified from source evidence: palette completeness is enforced at the map seam for toolkit roles, while domain-role completeness stays with a domain loader because only it knows the domain set. Fixed-color resolution belongs in the renderer's shared style-resolution seam, preserving direct palette semantic-role behavior. ANSI-16 remains the conservative default because terminal-defined ANSI colors are intentionally not downsampled or detected.
+- Next exact task: stage 11, grow the existing `tenter-example` into the full independent demo and complete the public compatibility/documentation baseline. Start with this handoff and stages 00–10 handoffs, then inspect `tenter-example/{build.gradle.kts,src/main/kotlin/tenterexample,src/test/kotlin/tenterexample}`, `settings.gradle.kts`, the convention plugins/version catalog, and the final public declarations under `tenter/src/main/kotlin`. Confirm stage-00 findings are addressed, retain the packaged isolated consumer, and do not start extraction or publication.

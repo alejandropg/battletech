@@ -10,22 +10,43 @@ import com.github.ajalt.mordant.rendering.AnsiLevel
  * [AnsiLevel] tier [colors] were authored for; every value in [colors] is a [PaletteColor] of the
  * matching subtype (never converted between tiers — see [PaletteColor]'s KDoc).
  *
- * Completeness (every role a host's [RolePalette] must cover present in [colors]) is the loader's
- * job, not this constructor's — a role missing here fails at first [foreground] call rather than
- * at load time.
+ * Every [ChromeRole] is required at construction. Domain-role completeness remains with the
+ * application's loader, which knows the application's role set. The source map is copied, so
+ * later mutation by a loader or caller cannot change a palette after a renderer has cached it.
  */
 public class MapRolePalette(
     private val name: String,
     public val level: AnsiLevel,
     override val defaultBackground: PaletteColor,
-    private val colors: Map<ColorRole, PaletteColor>,
+    colors: Map<ColorRole, PaletteColor>,
 ) : RolePalette {
 
+    private val colors: Map<ColorRole, PaletteColor> = colors.toMap()
+
+    init {
+        val missingChromeRoles = ChromeRole.entries.filterNot(colors.keys::contains)
+        require(missingChromeRoles.isEmpty()) {
+            "Palette $name is missing chrome roles: ${missingChromeRoles.joinToString(", ")}"
+        }
+        require(isCorrectTier(defaultBackground)) {
+            "Palette $name default background must use $level colors, got $defaultBackground"
+        }
+        require(colors.values.all(::isCorrectTier)) {
+            "Palette $name contains a color that does not use $level"
+        }
+    }
+
     override fun foreground(role: ColorRole): PaletteColor = when (role) {
-        is FixedColorRole -> role.color
         else -> colors[role] ?: error("Unknown color role: $role")
     }
 
     /** [name] — the palette's source name (a built-in stem, or a custom file path), for readable test/log output. */
     override fun toString(): String = name
+
+    private fun isCorrectTier(color: PaletteColor): Boolean = when (level) {
+        AnsiLevel.TRUECOLOR -> color is PaletteColor.TrueColor
+        AnsiLevel.ANSI256 -> color is PaletteColor.Xterm256
+        AnsiLevel.ANSI16 -> color is PaletteColor.Ansi16
+        AnsiLevel.NONE -> false
+    }
 }

@@ -122,4 +122,25 @@ internal class GaugeTest {
         assertThrows(IllegalArgumentException::class.java) { Gauge(-1, 20) }
         assertThrows(IllegalArgumentException::class.java) { Gauge(10, -1) }
     }
+
+    @Test
+    fun `accepts an explicit color policy`() {
+        val widget = Gauge(10, 20, colorFor = { ChromeRole.SUCCESS })
+        val (content, buffer) = content()
+
+        widget.draw(content, 2, 20)
+
+        assertEquals(ChromeRole.SUCCESS, buffer.get(2, 0).style.fg)
+    }
+
+    @Test
+    fun `uses wide arithmetic when scaling a large value`() {
+        val widget = Gauge(100, Int.MAX_VALUE)
+        val (content, buffer) = content(width = 110)
+
+        widget.draw(content, 2, Int.MAX_VALUE)
+
+        assertEquals(ChromeRole.DANGER, buffer.get(2, 0).style.fg)
+        assertEquals("█", buffer.get(101, 0).char)
+    }
 }

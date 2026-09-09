@@ -5,6 +5,7 @@ import com.github.ajalt.mordant.terminal.Terminal
 import tenter.panel.Panel
 import tenter.panel.PanelSet
 import tenter.screen.Canvas
+import tenter.screen.DefaultRolePalette
 import tenter.screen.ScreenBuffer
 import tenter.screen.ScreenRenderer
 import tenter.terminal.withScreen
@@ -64,7 +65,7 @@ public fun main(args: Array<String>) {
     }
 
     val terminal = Terminal()
-    terminal.withScreen(ExamplePalette) { renderer ->
+    terminal.withScreen(DefaultRolePalette) { renderer ->
         val size = terminal.updateSize()
         renderer.render(renderFrame(size))
     }

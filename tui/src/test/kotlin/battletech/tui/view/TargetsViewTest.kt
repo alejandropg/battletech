@@ -16,6 +16,7 @@ import tenter.view.render
 import tenter.view.text
 import tenter.widget.CheckState
 import tenter.widget.checkboxIcon
+import battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 internal class TargetsViewTest {
 
@@ -152,7 +153,7 @@ internal class TargetsViewTest {
 
         val output = renderToString(view)
 
-        assertTrue(output.contains(checkboxIcon(CheckState.CHECKED)))
+        assertTrue(output.contains(checkboxIcon(CheckState.CHECKED, TUI_CHECKBOX_GLYPHS)))
     }
 
     @Test

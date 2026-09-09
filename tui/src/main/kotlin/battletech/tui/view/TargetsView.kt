@@ -8,6 +8,7 @@ import tenter.screen.ChromeRole
 import tenter.widget.CheckState
 import tenter.view.TextCursor
 import tenter.widget.SelectableRow
+import battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 internal class TargetsView(
     private val targets: List<TargetInfo>,
@@ -64,6 +65,7 @@ internal class TargetsView(
                             subLines = weapon.toHit.displayLabels(),
                             textColor = color,
                             checkboxColor = if (isDisabled) ChromeRole.DISABLED else null,
+                            glyphs = TUI_CHECKBOX_GLYPHS,
                         )
                     is WeaponTargetInfo.Unavailable ->
                         SelectableRow.draw(
@@ -74,6 +76,7 @@ internal class TargetsView(
                             right = "—",
                             textColor = color,
                             checkboxColor = if (isDisabled) ChromeRole.DISABLED else null,
+                            glyphs = TUI_CHECKBOX_GLYPHS,
                         )
                 }
             }

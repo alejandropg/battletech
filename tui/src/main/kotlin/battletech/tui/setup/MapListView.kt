@@ -7,6 +7,7 @@ import tenter.view.TextCursor
 import battletech.tui.view.PreparedTextView
 import tenter.widget.CheckState
 import tenter.widget.SelectableRow
+import battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 /** Panel 2: every registered map, single-select (D6/D7-style rows, but MAP has no count column). */
 internal class MapListView(
@@ -29,6 +30,7 @@ internal class MapListView(
                 label = name,
                 checkState = state,
                 cursor = isCursorHere,
+                glyphs = TUI_CHECKBOX_GLYPHS,
             )
         }
     }

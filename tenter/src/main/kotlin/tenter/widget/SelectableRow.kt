@@ -12,6 +12,7 @@ public object SelectableRow {
      * Draws [label] with the standard cursor marker, highlight color, checkbox, and reveal
      * behavior. When [right] is non-null, the row uses [ValueRow] and renders [subLines] below it.
      * [checkboxColor] overrides the intrinsic checkbox color when the row is not highlighted.
+     * [glyphs] selects the immutable checkbox glyph set without changing row colors.
      */
     public fun draw(
         content: TextCursor,
@@ -22,6 +23,7 @@ public object SelectableRow {
         subLines: List<String> = emptyList(),
         textColor: ColorRole = ChromeRole.TEXT_PRIMARY,
         checkboxColor: ColorRole? = null,
+        glyphs: CheckboxGlyphs = CheckboxGlyphs.DEFAULT,
     ) {
         val row = content.row
         if (cursor) content.markReveal()
@@ -40,7 +42,7 @@ public object SelectableRow {
             checkboxColor != null -> checkboxColor
             else -> Checkbox.intrinsicColor(checkState)
         }
-        Checkbox.draw(content, CHECKBOX_COLUMN, row, checkState, resolvedCheckboxColor)
+        Checkbox.draw(content, CHECKBOX_COLUMN, row, checkState, resolvedCheckboxColor, glyphs)
     }
 
     private const val CHECKBOX_COLUMN = 2
