@@ -4,6 +4,10 @@ import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.terminal.Terminal
 import com.github.ajalt.mordant.terminal.TerminalRecorder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -12,6 +16,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -49,6 +55,51 @@ internal class TerminalEventTest {
 
             assertEquals(listOf(TerminalEvent.Quit), events)
         }
+
+        @Test
+        fun `the supplied predicate chooses the quit key`() = runTest {
+            val events = terminalEvents(flowOf(ctrlC, otherKey), isQuit = { it == otherKey }).toList()
+
+            assertEquals(listOf(TerminalEvent.Input(ctrlC), TerminalEvent.Quit), events)
+        }
+
+        @Test
+        fun `upstream failure propagates without appending Quit`() = runTest {
+            val failure = IllegalStateException("input failed")
+            val seen = mutableListOf<TerminalEvent>()
+
+            val thrown = assertThrows<IllegalStateException> {
+                terminalEvents(
+                    flow {
+                        emit(someKey)
+                        throw failure
+                    },
+                    isQuit,
+                ).collect { seen += it }
+            }
+
+            assertEquals(failure, thrown)
+            assertEquals(listOf(TerminalEvent.Input(someKey)), seen)
+        }
+
+        @Test
+        fun `downstream cancellation does not become Quit`() = runTest {
+            val seen = mutableListOf<TerminalEvent>()
+            val job = launch {
+                terminalEvents(
+                    flow {
+                        emit(someKey)
+                        awaitCancellation()
+                    },
+                    isQuit,
+                ).collect { seen += it }
+            }
+
+            advanceTimeBy(1)
+            job.cancelAndJoin()
+
+            assertEquals(listOf(TerminalEvent.Input(someKey)), seen)
+        }
     }
 
     @Nested
@@ -74,6 +125,15 @@ internal class TerminalEventTest {
             val only = seen.single() as TerminalEvent.Resized
             assertEquals(80, only.size.width)
             assertEquals(20, only.size.height)
+        }
+
+        @Test
+        fun `resize polling rejects nonpositive and infinite periods`() {
+            val terminal = Terminal(terminalInterface = TerminalRecorder(width = 80, height = 20))
+
+            assertThrows<IllegalArgumentException> { terminal.resizeEvents(Duration.ZERO) }
+            assertThrows<IllegalArgumentException> { terminal.resizeEvents((-1).milliseconds) }
+            assertThrows<IllegalArgumentException> { terminal.resizeEvents(Duration.INFINITE) }
         }
     }
 }

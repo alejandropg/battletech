@@ -1,6 +1,6 @@
 # Tenter library readiness: implementation plan
 
-Date: 2026-09-09. Status: stage 08 complete; stage 09 is next.
+Date: 2026-09-09. Status: stage 09 complete; stage 10 is next.
 
 ## Objective and authorization
 
@@ -98,7 +98,7 @@ The final deliverable includes a user-facing Tenter README, supported text/threa
 | 06 | Complete | Stateful panel ownership, grouped presentations, and exclusive set attachment; handoff below. |
 | 07 | Complete | Consistent geometry, settled-frame hit-testing, and application-local mouse policy; handoff below. |
 | 08 | Complete | Reusable keymap validation; handoff below. |
-| 09 | Pending | — |
+| 09 | Complete | Scoped terminal lifecycle and flow contracts; handoff below. |
 | 10 | Pending | — |
 | 11 | Pending | — |
 
@@ -201,3 +201,14 @@ Keep handoffs compact. The source and stage documents own the detailed contracts
 - Temporary bridges: none introduced and no stage-03–05 bridges remain. The TUI `legacyPanelScrollDelta` remains the intentional stage-07 application adapter and is unrelated to this stage. No compatibility or serialization promise was added; keymap data remains caller-provided and action/chord values are retained, not copied.
 - Decision clarified from source evidence: repeated ids remain valid across titled layers only for local references. The existing `GAME_CHROME` sectionless layer's `focusPanel` reference was ambiguous against `SETUP`, so the game/global group received the unambiguous internal id `gameFocusPanel`; resolving by a global id set would have violated the fixed contract.
 - Next exact task: stage 09, scoped terminal lifecycle and flow/thread contracts. Start with this handoff and `09-terminal-lifecycle.md`, then inspect `tenter/screen/ScreenRenderer.kt`, `tenter/terminal/TerminalEvent.kt`, terminal/renderer tests, `tui/Main.kt`'s `withScreen`, and `TuiApp`/`SetupApp`. Revisit the stage-00 manual lifecycle finding; do not begin stage 09 in this session.
+
+### Stage 09 handoff — scoped terminal lifecycle and flow contracts
+
+- Completed stage 09. Added the public synchronous `Terminal.withScreen(palette, block)` extension. It selects no palette and owns no event loop/input collector; it creates and clears one `ScreenRenderer`, enters the alternate screen/hides the cursor only for interactive terminals, and restores cursor/alternate screen in an idempotent `finally` path. Entry partial failures are unwound, cleanup failures are suppressed on the original failure, and noninteractive destinations receive no lifecycle escapes. `ScreenRenderer.clear()` now only clears/invalidates paint state and `ScreenRenderer.cleanup()` is removed; renderer output no longer unconditionally flushes `System.out`, leaving the injected Mordant `TerminalInterface` as the sink owner.
+- `terminalEvents` now appends `Quit` only after successful completion, including source exhaustion or the supplied quit predicate; upstream failure and downstream cancellation propagate without a synthetic quit. `resizeEvents` rejects nonpositive/infinite periods and retains first-size plus dimension-change suppression. KDocs document cold input/resize flows, raw-mode acquisition/release on collection/cancellation, one active input collection per terminal, bounded polling cancellation, and caller-owned execution-context confinement.
+- Migrated `tui/Main.kt` and the external example's interactive path to the scoped operation. One alternate-screen/cursor scope spans setup followed by game; each app's input flow still acquires/releases raw mode when collected. The headless example remains free of input collection and interactive escapes. Added the intentional `terminal → screen` edge to `LayeringTest` and corrected architecture/application lifecycle documentation.
+- Files/layer edges: added `tenter/terminal/TerminalScreen.kt` and its recorder/fault tests; changed `ScreenRenderer`, `TerminalEvent`, terminal/renderer tests, `LayeringTest`, `tui/Main.kt`, `TuiApp`, `SetupApp`, loop lifecycle comments, `tenter-example/ExampleMain.kt`, `docs/architecture.md`, and `docs/tui-testing.md`. No dependency or module edge changed; Tenter remains BattleTech-free. The new package edge is only `terminal → screen`; `screen` remains independent.
+- Validation passed: focused terminal/renderer tests; `./gradlew :tenter:test :tui:test :tenter-example:build --rerun-tasks`; `./gradlew :tenter-example:packagedSmoke --rerun-tasks` with `SmokeResult(renderedRows=40, helpContainsMovement=true, animationCompleted=true)`; `./gradlew :tui:shadowJar --rerun-tasks`; and `git diff --check`. The required real-TTY OS-restoration path was not exercised; recorder/fault-adapter tests verify lifecycle output and failure ordering, while Mordant remains responsible for actual terminal restoration. The session exposed no LSP surface, so targeted source/reference inspection plus compiler/test feedback was used.
+- Temporary bridges: none introduced and no stage-03–05 bridges remain. `ScreenRenderer.clear()` is intentionally retained as the paint/invalidation operation; its removal verification is that direct renderer calls emit no `1049` lifecycle sequence and all application/external lifecycle calls use `Terminal.withScreen`. The TUI's stage-07 `legacyPanelScrollDelta` remains application-local and unrelated.
+- Decision clarified from source evidence: raw mode is owned by collection of the cold input flow, not by renderer clearing or the alternate-screen scope. The scope is deliberately synchronous so existing `runBlocking` application bodies fit inside one callback without ambiguous synchronous/suspending overloads. Mordant's `Terminal.rawPrint` already delegates to `TerminalInterface.completePrintRequest`, so explicit `System.out.flush()` calls were removed rather than adding a parallel terminal abstraction.
+- Next exact task: stage 10, default palette and configurable widget glyphs. Start with `10-palettes-and-glyphs.md`, this handoff, `tenter/screen/{ColorRole,RolePalette,MapRolePalette,PaletteColor}.kt`, widget glyph definitions/defaults, theme resolution, and the example/TUI palette tests. Preserve `Terminal.withScreen` and the documented flow/lifecycle contracts while making a new consumer independent of BattleTech theme files and Nerd Fonts.

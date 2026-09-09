@@ -31,6 +31,12 @@ Two tiers, distinguished by **how they load** — not by topic:
 - **`tui/`** (`battletech.tui.*`) — the BattleTech terminal UI, built on `tenter`. Uses [Clikt](https://github.com/ajalt/clikt) for the CLI (`hot-seat`/`host`/`join`/`server` subcommands, bare invocation opens the interactive setup screen). Entry point `battletech.tui.MainKt`. `Main.kt` and `Composition.kt` are the only two files allowed to import `battletech.network` — see "The lobby: one commit path" below. `game/` (incl. `phase/` — app state, phase-specific UI logic like `AttackPhase`/`MovementPhase`/`WeaponAllocation`; each `Phase` declares a `keyContext: ContextId`, its address into `Keybindings`' `KeyMap`; `GamePanelId` — this app's `tenter.panel.PanelId`, now a bare marker enum with no badge of its own), `hex/` (hex-grid rendering/geometry — a `BoardRole`-flavored consumer of `tenter.screen`), `icon/` (`FontIcons.kt` — the app-wide NerdFont/Unicode glyph vocabulary: log-line markers, pip/ammo/infinity glyphs, dice faces, plus the hex-facing/terrain/movement icons `hex/` itself consumes; not `battletech.tui.hex` because most of its callers are outside the board — log formatting, the record sheet, weapon/pilot tracks), `input/` (`ContextId` — the key-layer addresses, `GAME_CHROME`/`SETUP` among them; `Keybindings` — the domain facade over `tenter.input.KeyMap`, its `DEFAULT` the one declarative table of every binding, plus `badgeFor`/`hints`/`isQuit`; `ChromeAction`/`IdleAction`/`BrowsingAction`/`FacingAction`/`AttackAction` — the per-context `InputAction` families; `BoardClick` — the one mouse-click action, produced by `RunLoop`; `BoardMouse` — the mouse-to-hex mapping), `loop/` (`RunLoop` + `UiEvent`, the headless-testable event/render loop — composes `tenter.terminal`'s flows and `tenter.panel`'s `Panel`/`PanelSet`/`PanelLayout` into the game's own frame; resolves both keyboard and mouse input into `InputAction`s via `Keybindings` before a `Phase` ever sees them), `screen/` (`BoardRole` — the terrain/movement/player color roles — plus `ThemeFile`/`ThemeLoader`/`resolveTheme`, which load the six built-in `RolePalette`s from packaged theme files under `theme/`; `Theme` here is `internal typealias Theme = tenter.screen.MapRolePalette` — the app-specific pieces are the on-disk schema (`ThemeFile`'s `chrome`/`board`/`heatScale` role tables) and the loader, not the palette type or its color-value parsing, both of which live in `tenter` now; see `docs/color-themes.md`), `setup/` (the interactive setup screen — see "The lobby: one commit path" below), `view/` (the board and every side panel built on `tenter.view`'s decorators and `tenter.panel`'s `Panel<GamePanelId, PanelInputs>`/`PanelSet<GamePanelId, PanelInputs>`, aliased `GamePanel`/`GamePanelSet`; `Workspace` owns the `GamePanelSet` for one run; `view/record/` — the maximized UNIT STATUS panel's graphical record sheet).
 - **`strategic/` + `bt/`** — placeholders. `strategic` holds one stub class (`calculateCampaignMovement(d) = d * 2`); `bt` (`battletech.MainKt`) is a hello-world that prints it. Ignore unless explicitly asked.
 
+The compact package inventory above abbreviates the lifecycle edge; the enforced matrix is
+`screen` → `text` and `terminal` → `input`/`screen`. `screen` remains independent of
+`terminal`: only the terminal scope imports the renderer to coordinate screen lifecycle. Input
+flows are cold: collecting `inputEvents` acquires raw mode and normal completion or cancellation
+releases it, while `Terminal.withScreen` owns only the alternate screen and cursor.
+
 The TUI CLI has explicit `hot-seat`, `host`, `join`, and `server` subcommands; bare invocation
 opens the interactive setup screen instead of any of them (`Mode.Interactive`), which defines a
 match (mode, map, rosters) and starts it — see "The lobby: one commit path" below. Customized
@@ -258,11 +264,13 @@ selections and the committed flag are therefore held and replayed at registratio
 `LobbyCommitted` landing in the window is simply lost and the joiner's mirror waits forever for a
 match that has already started.
 
-`TuiApp` and `tui/setup/SetupApp` share one `Terminal` + `tenter.screen.ScreenRenderer`, entered
-into raw mode once and left once, rather than each constructing its own: `Main.kt`'s `withScreen`
-helper builds both and hands the same pair to whichever app(s) run in sequence (`SetupApp` then
-`TuiApp` on the interactive path), so there is no flicker or double raw-mode transition at the
-hand-off between the two screens. `SetupApp`/`SetupLoop` mirror `TuiApp`/`RunLoop`'s shape
+`TuiApp` and `tui/setup/SetupApp` share one `Terminal` + `tenter.screen.ScreenRenderer`, scoped
+through `tenter.terminal.Terminal.withScreen` rather than each constructing their own:
+`Main.kt`'s `withScreen` helper selects the palette, opens one alternate-screen/cursor scope, and
+hands the same pair to whichever app(s) run in sequence (`SetupApp` then `TuiApp` on the
+interactive path), so there is no flicker or double screen transition at the hand-off between the
+two screens. Each app's cold `inputEvents` flow acquires and releases raw mode when collected;
+the two collectors may therefore run sequentially inside the one screen scope. `SetupApp`/`SetupLoop` mirror `TuiApp`/`RunLoop`'s shape
 deliberately rather than generalizing the two into one loop abstraction — same rationale as "Why
 `RunLoop` and `Workspace` stayed in `tui`" below: two mechanically-similar clients isn't yet
 evidence of one reusable shape.

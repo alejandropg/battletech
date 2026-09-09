@@ -167,8 +167,9 @@ internal suspend fun runLoop(
 
     events.takeWhile { it != UiEvent.Quit }.collect { ui ->
         // A single bad event must not propagate out of collect: that would cancel this
-        // coroutineScope and, with it, the terminal input producer running on Dispatchers.IO —
-        // exactly the external-cancellation hazard documented on Terminal.terminalInputEvents.
+        // coroutineScope and, with it, the terminal input producer running on Dispatchers.IO.
+        // Polling makes that cancellation clean, but it would still stop the application's event
+        // loop instead of allowing it to report the bad event and continue.
         // This applies equally to an Exception or an Error (e.g. NoClassDefFoundError/LinkageError
         // from a jar rewritten under a live JVM), so we catch Throwable rather than Exception.
         try {

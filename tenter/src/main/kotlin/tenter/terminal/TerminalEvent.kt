@@ -31,27 +31,32 @@ public sealed interface TerminalEvent {
  * Transforms a raw [InputEvent] flow into a [TerminalEvent] flow, filtering out the quit
  * keypress.
  *
- * The upstream is consumed with [takeWhile] stopping at ctrl+c. After the upstream completes
- * (either because ctrl+c was pressed or the upstream was exhausted), [onCompletion] appends
- * a single [TerminalEvent.Quit] so callers always receive an explicit quit signal.
+ * The upstream is consumed with [takeWhile] stopping when [isQuit] matches a keyboard event. A
+ * successful upstream completion (either because the predicate matched or the source was
+ * exhausted) appends one [TerminalEvent.Quit] so callers always receive an explicit quit signal.
+ * Failures and cancellation propagate without appending a successful quit event.
  *
- * The ctrl+c event itself is not forwarded as [TerminalEvent.Input] — it is absorbed by
- * [takeWhile].
+ * The matching event itself is not forwarded as [TerminalEvent.Input] — it is absorbed by
+ * [takeWhile]. The predicate is supplied by the application; this function does not define a
+ * particular quit chord.
  *
  * This function is pure and unit-testable: it does not reference the terminal or any I/O.
  */
 public fun terminalEvents(raw: Flow<InputEvent>, isQuit: (KeyboardEvent) -> Boolean): Flow<TerminalEvent> =
     raw.takeWhile { !(it is KeyboardEvent && isQuit(it)) }
         .map<InputEvent, TerminalEvent> { TerminalEvent.Input(it) }
-        .onCompletion { emit(TerminalEvent.Quit) }
+        .onCompletion { cause -> if (cause == null) emit(TerminalEvent.Quit) }
 
 /**
- * Produces a [TerminalEvent] flow by reading terminal input events with Mordant's coroutine
- * support.
+ * Produces a cold [TerminalEvent] flow by reading terminal input events with Mordant's coroutine
+ * support. Collecting it acquires raw mode; normal completion or cancellation releases raw mode.
+ * Only one input collection should be active for a terminal at a time. Compose this flow once in
+ * the application's event loop rather than collecting it separately for each consumer.
  *
- * The normal quit path is ctrl+c: [terminalEvents] uses [takeWhile] so that when the user presses
- * it, the producer observes the predicate returning `false` immediately at that event's own emit
- * and stops, letting [enterRawMode]'s `use` block restore raw mode at that exact point.
+ * The normal quit path is the application's predicate: [terminalEvents] uses [takeWhile] so that
+ * when the user presses the matching key, the producer observes the predicate returning `false`
+ * immediately at that event's own emit and stops, letting [enterRawMode]'s `use` block restore raw
+ * mode at that exact point.
  *
  * That path alone isn't sufficient, though: Mordant has no raw-mode shutdown hook for *external*
  * cancellation (e.g. an unrelated exception elsewhere cancelling the collecting coroutineScope).
@@ -60,6 +65,11 @@ public fun terminalEvents(raw: Flow<InputEvent>, isQuit: (KeyboardEvent) -> Bool
  * terminal stuck in raw mode and the JVM unable to exit. [rawModePollingFlow] polls with a short
  * timeout and checks [isActive] between polls so any cancellation, from any cause, is noticed
  * within [pollTimeout] instead of depending on the next keystroke.
+ *
+ * Terminal rendering, mutable panel/viewport state, and terminal-size observation should be
+ * confined to one application execution context. The input reader may run on [Dispatchers.IO]
+ * as this implementation does; callers own the dispatcher and confinement policy and should not
+ * infer that a merged flow runs on one physical OS thread.
  */
 public fun Terminal.inputEvents(mouseTracking: MouseTracking, isQuit: (KeyboardEvent) -> Boolean): Flow<TerminalEvent> =
     terminalEvents(rawModePollingFlow(mouseTracking), isQuit).flowOn(Dispatchers.IO)
@@ -82,7 +92,8 @@ private fun Terminal.rawModePollingFlow(
 }
 
 /**
- * Produces a [TerminalEvent.Resized] flow by polling [Terminal.updateSize] at [period] intervals.
+ * Produces a cold [TerminalEvent.Resized] flow by polling [Terminal.updateSize] at [period]
+ * intervals. [period] must be finite and strictly positive.
  *
  * The first emission fires once at startup (resulting in a harmless extra render); subsequent
  * emissions only occur when the terminal size actually changes.
@@ -96,11 +107,16 @@ private fun Terminal.rawModePollingFlow(
  * would fire on a timer and stomp the user's manual scroll. Dedupe on the dimensions instead,
  * which do compare by value, then rebuild the [Size] for the event.
  *
- * This flow intentionally has **no** [flowOn] — it must run on the collector's (main) thread
- * so that size reads and redraws are co-located and no cross-thread synchronisation is needed.
+ * This flow intentionally has **no** [flowOn] — it runs in the collector's context so that size
+ * reads can be co-located with rendering without cross-thread synchronisation. The caller owns
+ * that context; a merged flow does not promise one physical OS thread.
  */
-public fun Terminal.resizeEvents(period: Duration = 200.milliseconds): Flow<TerminalEvent> =
-    flow { while (true) { emit(updateSize()); delay(period) } }
+public fun Terminal.resizeEvents(period: Duration = 200.milliseconds): Flow<TerminalEvent> {
+    require(period.isFinite() && period > Duration.ZERO) {
+        "resize polling period must be finite and positive: $period"
+    }
+    return flow { while (true) { emit(updateSize()); delay(period) } }
         .map { it.width to it.height }
         .distinctUntilChanged()
         .map { (width, height) -> TerminalEvent.Resized(Size(width, height)) }
+}

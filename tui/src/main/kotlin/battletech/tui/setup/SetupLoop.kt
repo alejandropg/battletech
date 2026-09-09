@@ -89,9 +89,9 @@ internal suspend fun setupLoop(
 
     events.takeWhile { it != SetupUiEvent.Quit }.collect { ui ->
         if (done) return@collect // an outcome is settled; drain until the Quit sentinel lands
-        // See runLoop's identical guard: a throw out of collect would cancel this
-        // coroutineScope (and the terminal input producer with it), stranding the terminal in
-        // raw mode — so nothing, including a finished outcome, leaves this block by throwing.
+        // See runLoop's identical guard: a throw out of collect would cancel this coroutineScope
+        // and the terminal input producer with it. The producer's polling cleanup is safe, but
+        // this loop must drain to its sentinel so a settled outcome is returned normally.
         try {
             when (ui) {
                 is SetupUiEvent.Input -> {

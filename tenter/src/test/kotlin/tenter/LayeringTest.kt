@@ -6,7 +6,8 @@ import org.junit.jupiter.api.Test
 
 /**
  * Enforces the internal layering `docs/architecture.md` describes for this module —
- * `text -> screen -> view -> widget/panel`, never the reverse — as an allowed-dependency matrix
+ * `text -> screen -> view -> widget/panel`, with terminal consuming input and screen for scoped
+ * lifecycle, never the reverse — as an allowed-dependency matrix
  * between `tenter`'s direct child packages. [ArchitectureTest] enforces the module's *external*
  * seam (no `battletech.*` import, nothing outside an approved third-party allowlist); this
  * enforces the seams *between* its own packages, which nothing previously checked — a
@@ -23,7 +24,7 @@ class LayeringTest {
         "input" to emptySet(),
         "screen" to setOf("text"),
         "animation" to setOf("screen", "text", "view"),
-        "terminal" to setOf("input"),
+        "terminal" to setOf("input", "screen"),
         "view" to setOf("input", "screen", "text"),
         "widget" to setOf("screen", "text", "view"),
         "panel" to setOf("screen", "view"),

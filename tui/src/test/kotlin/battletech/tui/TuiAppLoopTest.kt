@@ -310,9 +310,9 @@ internal class TuiAppLoopTest {
     //
     // This guards the Ctrl+C-freeze fix: if event handling ever throws (e.g. a
     // rendering bug), the exception used to propagate out of collect{} and cancel
-    // the whole coroutineScope — including the terminal input producer, which could
-    // leave it stuck mid-blocking-read in raw mode. The loop must instead log and
-    // keep collecting, so a subsequent Quit (e.g. ctrl+c) is still honored.
+    // the whole coroutineScope — including the terminal input producer. Polling now
+    // releases raw mode on that cancellation, but the loop must still log and keep
+    // collecting so a subsequent Quit (e.g. ctrl+c) is honored.
     //
     // The per-event guard in TuiApp.runLoop catches `Throwable`, not just `Exception`,
     // because a jar rewritten under a live JVM (e.g. redeploy-while-running) can surface

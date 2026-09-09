@@ -2,12 +2,6 @@ package tenter.screen
 
 import com.github.ajalt.mordant.terminal.Terminal
 
-// The alternate screen buffer (DECSET 1049) has no Mordant API — CursorMovements offers no such
-// method, and Mordant's own CSI constant is internal — so these are raw escapes, gated below on
-// terminalInfo.interactive the same way Mordant gates terminal.cursor itself.
-private const val ENTER_ALT_SCREEN = "[?1049h"
-private const val EXIT_ALT_SCREEN = "[?1049l"
-
 /**
  * Prints a [ScreenBuffer] to [terminal].
  *
@@ -37,7 +31,8 @@ public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette
      * Sends [buffer] to the terminal, writing only what changed since the previous call.
      *
      * The renderer snapshots the submitted frame after output succeeds, so the caller may mutate
-     * and reuse [buffer] for the next frame.
+     * and reuse [buffer] for the next frame. The terminal and cursor lifecycle belongs to
+     * [tenter.terminal.withScreen]; this renderer only paints and invalidates frames.
      */
     public fun render(buffer: ScreenBuffer) {
         val prev = previous
@@ -50,32 +45,17 @@ public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette
     }
 
     /**
-     * Switches to the terminal's alternate screen buffer and clears it, so the application
-     * doesn't wipe the user's scrollback. [cleanup] switches back, restoring exactly what was on
-     * screen before [clear] ran.
+     * Clears the current drawing destination and invalidates the diff snapshot. The scoped
+     * [tenter.terminal.withScreen] operation owns alternate-screen and cursor lifecycle; calling
+     * this method directly never starts or ends an alternate-screen session.
      *
      * The default style's SGR tag is emitted before `clearScreen()` (which erases using whatever
-     * SGR is currently active) so the freshly cleared screen paints [palette]'s background
-     * immediately — otherwise the terminal's OWN default background shows through for the instant
-     * between entering the alternate screen and the first [render], which flashes the wrong color
-     * whenever the palette and the terminal's own background disagree (e.g. a light palette on a
-     * dark-background terminal).
+     * SGR is currently active) so the cleared screen uses [palette]'s background immediately.
      */
     public fun clear() {
-        // cursor.hide() (not a raw escape) so its JVM shutdown hook stays registered: if the
-        // process dies without reaching cleanup(), the cursor is still restored on exit.
-        terminal.cursor.hide()
-        val altScreen = if (terminal.terminalInfo.interactive) ENTER_ALT_SCREEN else ""
         val defaultStyle = styleTagCache.tagsFor(Cell.Style.DEFAULT)?.open.orEmpty()
-        terminal.rawPrint(altScreen + defaultStyle + terminal.cursor.getMoves { clearScreen(); setPosition(0, 0) })
-        System.out.flush()
+        terminal.rawPrint(defaultStyle + terminal.cursor.getMoves { clearScreen(); setPosition(0, 0) })
         previous = null
-    }
-
-    public fun cleanup() {
-        terminal.cursor.show()
-        if (terminal.terminalInfo.interactive) terminal.rawPrint(EXIT_ALT_SCREEN)
-        System.out.flush()
     }
 
     private fun renderFull(buffer: ScreenBuffer, clearStale: Boolean) {
@@ -89,7 +69,6 @@ public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette
             if (y < buffer.height - 1) sb.append("\r\n")
         }
         terminal.rawPrint(sb)
-        System.out.flush()
     }
 
     /**
@@ -119,7 +98,6 @@ public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette
         }
         if (sb.isEmpty()) return
         terminal.rawPrint(sb)
-        System.out.flush()
     }
 
     /**

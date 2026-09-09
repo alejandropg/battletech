@@ -32,9 +32,10 @@ import tenter.terminal.resizeEvents
  * a session or calls `advance()` itself.
  *
  * [terminal]/[renderer] are accepted, not constructed (D17): `Main.kt` builds one [Terminal] +
- * [ScreenRenderer] for the whole process and hands the same pair to both the setup screen
- * ([battletech.tui.setup.SetupApp]) and this class, so raw mode is entered once and left once,
- * with no flicker at the hand-off between the two screens.
+ * [ScreenRenderer] inside one [tenter.terminal.withScreen] scope for the whole process and hands
+ * the same pair to both the setup screen ([battletech.tui.setup.SetupApp]) and this class. The
+ * scope owns alternate-screen/cursor cleanup; this app's cold input flow acquires and releases
+ * raw mode while it is collected, with no flicker at the hand-off between the two screens.
  */
 public class TuiApp(
     private val seats: Map<PlayerId, GameSession>,
@@ -59,7 +60,7 @@ public class TuiApp(
      * Dispatchers.IO — that is handled internally by [tenter.terminal.inputEvents].
      *
      * ### Quit is not flow cancellation
-     * Quit is detected inside [tenter.terminal.inputEvents] (ctrl+c) which emits a
+     * Quit is detected inside [tenter.terminal.inputEvents] using the keymap's predicate, which emits a
      * [TerminalEvent.Quit], mapped below to [UiEvent.Quit], and then naturally completes its
      * flow. We never cancel the flow externally as a quit mechanism — doing so would leave the
      * terminal in raw mode.

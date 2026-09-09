@@ -7,6 +7,7 @@ import tenter.panel.PanelSet
 import tenter.screen.Canvas
 import tenter.screen.ScreenBuffer
 import tenter.screen.ScreenRenderer
+import tenter.terminal.withScreen
 import tenter.view.HelpView
 import tenter.view.View
 
@@ -52,9 +53,9 @@ public fun runHeadlessSmoke(): SmokeResult {
 }
 
 /**
- * The interactive entry point uses the same direct ScreenRenderer lifecycle as the application
- * currently does: clear once, render a frame, and always restore the terminal in `finally`.
- * The headless mode used by tests and packaged checks never enters this path or reads raw input.
+ * The interactive entry point uses the toolkit's scoped screen lifecycle: it renders one frame
+ * and always restores the terminal in `finally`. The headless mode used by tests and packaged
+ * checks never enters this path or reads raw input.
  */
 public fun main(args: Array<String>) {
     if ("--headless" in args) {
@@ -63,13 +64,9 @@ public fun main(args: Array<String>) {
     }
 
     val terminal = Terminal()
-    val renderer = ScreenRenderer(terminal, ExamplePalette)
-    renderer.clear()
-    try {
+    terminal.withScreen(ExamplePalette) { renderer ->
         val size = terminal.updateSize()
         renderer.render(renderFrame(size))
-    } finally {
-        renderer.cleanup()
     }
 }
 

@@ -26,8 +26,9 @@ internal sealed interface SetupOutcome {
 
 /**
  * Runs the interactive setup screen to completion. Mirrors `battletech.tui.TuiApp` but *accepts*
- * its terminal/renderer rather than constructing them (D17), so `Main.kt` can enter raw mode once
- * and hand the same [Terminal]/[ScreenRenderer] to whichever app runs next.
+ * its terminal/renderer rather than constructing them (D17), so `Main.kt` can keep one
+ * [tenter.terminal.withScreen] scope across whichever app runs next. That scope owns the
+ * alternate screen and cursor; this app's collected input flow owns its own raw-mode lifetime.
  */
 internal class SetupApp(
     private val terminal: Terminal,

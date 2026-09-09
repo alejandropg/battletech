@@ -379,53 +379,24 @@ internal class ScreenRendererTest {
         assertTrue(recorder.output().contains("Z"), "Expected the smaller frame to be painted: ${recorder.output().repr()}")
     }
 
-    // ---- alternate screen buffer ----
+    // ---- clear and frame invalidation ----
 
     @Test
-    fun `clear enters the alternate screen and cleanup leaves it`() {
+    fun `clear invalidates the frame without entering or leaving the alternate screen`() {
         renderer.clear()
         assertTrue(
-            recorder.output().contains("\u001B[?1049h"),
-            "clear() must enter the alternate screen: ${recorder.output().repr()}",
-        )
-
-        recorder.clearOutput()
-        renderer.cleanup()
-        assertTrue(
-            recorder.output().contains("\u001B[?1049l"),
-            "cleanup() must leave the alternate screen: ${recorder.output().repr()}",
+            !recorder.output().contains("1049"),
+            "clear() must not own alternate-screen lifecycle: ${recorder.output().repr()}",
         )
     }
 
     @Test
-    fun `alt-screen sequences always carry their ESC prefix`() {
-        // Regression guard for a real bug: a raw ESC byte in the source is easy to drop in an
-        // edit, and the sequence then lands on the user's shell as the literal text "[?1049l"
-        // after quitting. Counting bare vs ESC-prefixed occurrences catches exactly that.
-        renderer.clear()
-        renderer.cleanup()
-        val out = recorder.output()
-
-        assertEquals(
-            out.countOccurrences("[?1049h"),
-            out.countOccurrences("\u001B[?1049h"),
-            "Every [?1049h must be ESC-prefixed, got a bare one in: ${out.repr()}",
-        )
-        assertEquals(
-            out.countOccurrences("[?1049l"),
-            out.countOccurrences("\u001B[?1049l"),
-            "Every [?1049l must be ESC-prefixed, got a bare one in: ${out.repr()}",
-        )
-    }
-
-    @Test
-    fun `a non-interactive terminal gets no alt-screen escapes at all`() {
+    fun `a non-interactive renderer clear gets no alt-screen escapes`() {
         val plainRecorder = TerminalRecorder(ansiLevel = AnsiLevel.NONE)
         val plainTerminal = Terminal(ansiLevel = AnsiLevel.NONE, terminalInterface = plainRecorder)
         val plainRenderer = ScreenRenderer(plainTerminal, FixturePalette)
 
         plainRenderer.clear()
-        plainRenderer.cleanup()
 
         assertTrue(
             !plainRecorder.output().contains("1049"),

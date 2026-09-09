@@ -33,6 +33,7 @@ import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import kotlin.io.path.Path
 import tenter.screen.ScreenRenderer
+import tenter.terminal.withScreen
 
 /** Builds the [ContentCatalog] for one launch: every built-in plus [launch]'s `--add-*` registrations. */
 private fun resolveContentOrExit(launch: Launch): ContentCatalog = try {
@@ -99,20 +100,18 @@ private fun awaitKickstart(server: GameServer, seats: Map<PlayerId, ClientGameSe
 }
 
 /**
- * Enters raw mode once and leaves it once (D17): constructs the one [Terminal] + [ScreenRenderer]
- * this process uses for its whole run — whether that means only [TuiApp], or [SetupApp] followed
- * by [TuiApp] on the interactive path — and hands both to [block]. [themeName] null auto-selects
- * from the terminal's detected color support, exactly as [TuiApp] used to do internally.
+ * Owns the one alternate-screen/cursor scope for this process (D17): constructs the one
+ * [Terminal] + [ScreenRenderer] it uses for its whole run — whether that means only [TuiApp], or
+ * [SetupApp] followed by [TuiApp] on the interactive path — and hands both to [block]. The input
+ * flows collected by each application acquire and release raw mode independently. [themeName]
+ * null auto-selects from the terminal's detected color support, exactly as [TuiApp] used to do
+ * internally.
  */
 private fun withScreen(themeName: String?, block: (Terminal, ScreenRenderer) -> Unit) {
     val terminal = Terminal()
     val theme = resolveThemeOrExit(themeName) ?: resolveTheme(defaultThemeName(terminal.terminalInfo.ansiLevel))
-    val renderer = ScreenRenderer(terminal, theme)
-    renderer.clear()
-    try {
+    terminal.withScreen(theme) { renderer ->
         block(terminal, renderer)
-    } finally {
-        renderer.cleanup()
     }
 }
 
