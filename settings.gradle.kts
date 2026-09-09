@@ -6,5 +6,6 @@ include(
     "network",
     "bt",
     "tenter",
+    "tenter-example",
     "tui"
 )
