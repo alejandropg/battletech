@@ -80,6 +80,8 @@ public class Panel<K : PanelId, I>(
 
     internal fun settledOffset() = viewportState.settled?.offset
 
+    internal fun settledOffsetObservation() = viewportState.settled
+
     internal fun claimAttachment() {
         require(!attached) { "Panel $id is already attached to a PanelSet" }
         attached = true
@@ -98,17 +100,19 @@ public class Panel<K : PanelId, I>(
         presentation: Presentation,
         focused: Boolean,
         recenter: Boolean = false,
-    ) {
+    ): tenter.view.ScrollState? {
         if (recenter) viewportState.requestRecenter()
         val role = if (focused) ChromeRole.PANEL_BORDER_FOCUSED else ChromeRole.PANEL_BORDER
-        scrollingPanel(
+        val scrollingPanel = scrollingPanel(
             title = title,
             badge = badge,
             content = presentation.content,
             state = viewportState,
             borderColor = role,
             titleColor = role,
-        ).draw(canvas)
+        )
+        scrollingPanel.draw(canvas)
+        return scrollingPanel.settled
     }
 
     public companion object {

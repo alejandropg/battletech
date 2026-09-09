@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import tenter.input.InputAction
-import tenter.input.MouseInput
+import battletech.tui.input.legacyPanelScrollDelta
 import tenter.input.PanAction
 import tenter.input.ScrollAction
 import tenter.screen.ScreenRenderer
@@ -99,7 +99,7 @@ internal suspend fun setupLoop(
 
                     if (event is MouseEvent) {
                         val panelId = workspace.panelAt(event.x, event.y)
-                        val delta = MouseInput.scrollDelta(event, overPanel = panelId != null)
+                        val delta = legacyPanelScrollDelta(event, sidePanel = panelId != null)
                         if (delta != null) {
                             panelId?.let { workspace.scrollPanel(it, delta) }
                             render()

@@ -90,6 +90,8 @@ public class Viewport(
     private val state: ViewportState = ViewportState(),
 ) : View {
 
+    internal val settled: ScrollState? get() = state.settled
+
     /** The completed frame observation, or [ScrollState.NONE] before a drawable frame. */
     public val scroll: ScrollState
         get() = state.settled ?: ScrollState.NONE

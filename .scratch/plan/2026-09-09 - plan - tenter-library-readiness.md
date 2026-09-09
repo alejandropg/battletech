@@ -1,6 +1,6 @@
 # Tenter library readiness: implementation plan
 
-Date: 2026-09-09. Status: stage 06 complete; stage 07 is next.
+Date: 2026-09-09. Status: stage 07 complete; stage 08 is next.
 
 ## Objective and authorization
 
@@ -96,7 +96,7 @@ The final deliverable includes a user-facing Tenter README, supported text/threa
 | 04 | Complete | Prepared composition and stateful viewport path added; handoff below. |
 | 05 | Complete | Consumer migration and measurement-bridge removal; handoff below. |
 | 06 | Complete | Stateful panel ownership, grouped presentations, and exclusive set attachment; handoff below. |
-| 07 | Pending | — |
+| 07 | Complete | Consistent geometry, settled-frame hit-testing, and application-local mouse policy; handoff below. |
 | 08 | Pending | — |
 | 09 | Pending | — |
 | 10 | Pending | — |
@@ -180,3 +180,14 @@ Keep handoffs compact. The source and stage documents own the detailed contracts
 - Temporary bridges: none introduced. Stage 06 intentionally leaves `PanelLayout.Slot` carrying `Panel<K, I>` and `PanelSet.pageFocused` using `Bordered.VIEWPORT_INSET`; stage 07 owns replacement with immutable placement observations, geometry-consistent hit-testing, overflow handling, and mouse policy. `PanelSet.main`/`sides` still expose immutable lists of panel metadata/identity, but state mutation is only through set operations in supported Kotlin/JVM callers.
 - Decision clarified from source evidence: the main-and-sides factory rejects any main offering MINIMIZED or MAXIMIZED; uniform sets may contain zero visible panels at render time and then expose `focused == null`. A failed construction validates all panels before claiming any, so no partial attachment or reparenting protocol is needed. Presentation widths may be zero for derived/proportional slots; minimized setup widths remain application-provided in the grouped presentation.
 - Next exact task: stage 07, geometry/overflow/hit-testing and mouse policy. Start with `07-geometry-and-mouse.md`, this handoff, `tenter/panel/{PanelSet,PanelLayout}.kt`, the layout tests, `tui/view/Workspace.kt`, `tui/setup/SetupWorkspace.kt`, and click/mouse tests. Replace panel-reference placement observations only within stage 07, preserve the set-owned viewport/settled-offset contract, and add the normal-click-does-not-scroll regression.
+
+### Stage 07 handoff — consistent geometry, settled hit-testing, and mouse policy
+
+- Completed stage 07. `PanelLayout<K>` now returns identity-only `Slot` observations with on-canvas `outer` and viewport `content` rectangles plus settled `ScrollState`; the old `Panel<K, I>` reference and layout input generic are gone. Added public `screen.Rect`, `screen.Point`, and `PanelHit`; `PanelSet.panelAt` includes the main panel and `hitTest` translates only completed-frame content hits through the settled offset and reclaimable top spacer. `PanelSet.pageFocused` uses the published viewport geometry.
+- Small-screen layout validates dimensions/reserved rows, clamps reserved rows, prevents negative/out-of-bounds slots, clips oversized side/fixed panels in declaration order, preserves missing uniform columns before trailing fixed panels, and keeps minimized panels in declaration order. `PanelSet.render` publishes its layout only after panel rendering has settled viewport observations. `AppState.boardScroll` and production board-origin constants were removed; the TUI maps board clicks from `Workspace.hitTest` content coordinates, with only board-owned label/hex conversion remaining.
+- `MouseInput.scrollDelta(event, step)` now validates a positive step and recognizes explicit wheel flags only. The Mordant left/right fallback moved to the TUI-only `legacyPanelScrollDelta` and applies only to side panels; board buttons remain click candidates. Toolkit and TUI regressions cover ordinary-button behavior, wheel behavior, main/side hits, spacer/border hits, pending-scroll stability, tiny screens, oversized allocations, fixed-column reservation, and board click composition.
+- Files/layer edges: added `tenter.screen.{Point,Rect}`, `tenter.panel.PanelHit`, and the TUI-local mouse adapter/test; changed panel/layout/viewport observations, TUI workspaces/loops/board mouse, focused tests, and `docs/architecture.md`. No dependency or package-layer edge changed; `tenter` remains BattleTech-free and `screen` remains below `panel`.
+- Validation passed: `./gradlew :tenter:test :tui:test :tenter-example:build --rerun`; `./gradlew :tenter-example:packagedSmoke --rerun`; and `git diff --check`. The cross-module gate was green with the stage-specific tests and the separate packaged consumer still reported `SmokeResult(renderedRows=40, helpContainsMovement=true, animationCompleted=true)`. No manual TTY check was needed for this stage.
+- Temporary bridges: none introduced and no stage-03–05 bridges remain. `Workspace.boardOffset` remains a read-only test/application observation of the panel set; it is not copied into `AppState` or used for click conversion. The TUI's `legacyPanelScrollDelta` is an intentional application compatibility adapter for the installed Mordant behavior, not a toolkit bridge; stage 08 should leave it untouched.
+- Decision clarified from source evidence: a panel's border/stub can identify the panel while the optional content point is null; content points are accepted only inside the settled viewport and unpadded prepared-content dimensions. Queued scroll does not affect hit-testing until the next render. This preserves the last displayed frame and avoids a second scroll owner or caller-side border arithmetic.
+- Next exact task: stage 08, reusable keymap validation. Start with this handoff and `08-keymap-validation.md`, then inspect `tenter/input/{KeyBinding,KeyMap,KeyHints}.kt`, `tui/input/{Keybindings,ContextId}.kt`, and both keymap/keybinding test suites. Keep exact Mordant chord equality, preserve the TUI-only coexistence/shadowing policy, and retain the packaged example while moving structural validation into `KeyMap`.

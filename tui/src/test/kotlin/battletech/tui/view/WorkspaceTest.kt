@@ -106,11 +106,11 @@ internal class WorkspaceTest {
     }
 
     @Test
-    fun `panelAt returns null over the board and the status bar`() {
+    fun `panelAt returns the board and excludes the status bar`() {
         val workspace = Workspace(Keybindings.DEFAULT)
         workspace.render(appState, width = 120, height = 40, flash = null)
 
-        assertNull(workspace.panelAt(x = 5, y = 10), "board area")
+        assertEquals(GamePanelId.BOARD, workspace.panelAt(x = 5, y = 10), "board area")
         assertNull(workspace.panelAt(x = 118, y = 1), "status bar row")
     }
 

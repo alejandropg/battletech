@@ -6,14 +6,14 @@ import battletech.tactical.query.projectFor
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit
-import battletech.tui.game.phase.BOARD_ORIGIN_X
-import battletech.tui.game.phase.BOARD_ORIGIN_Y
 import battletech.tui.input.BoardMouse
 import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
+import tenter.screen.Point
 import tenter.screen.ScreenBuffer
+import tenter.view.Bordered
 import tenter.view.ViewportState
 import tenter.view.fixedContent
 import tenter.view.scrollingPanel
@@ -23,12 +23,12 @@ import tenter.view.scrollingPanel
  * exactly as `RunLoop.renderFrame` composes it (status bar, board region at
  * [Workspace.STATUS_BAR_HEIGHT], [scrollingPanel] chrome, [BoardView] content), its glyph is
  * located by scanning the resulting screen buffer, and that screen position is fed back through
- * [BoardMouse.mapMouseToHex].
+ * [BoardMouse.mapContentToHex].
  *
  * Deliberately *finds* the glyph rather than computing where it ought to be: a test that derived
  * the expected position from the same constants as the production mapping would agree with it
- * while both were wrong, which is exactly how the status-bar offset went unnoticed — every click
- * resolved one hex row low because [BOARD_ORIGIN_Y] ignored the status bar.
+ * while both were wrong. The conversion below follows the settled viewport observation used by
+ * the real panel set.
  */
 internal class BoardClickMappingTest {
 
@@ -71,10 +71,15 @@ internal class BoardClickMappingTest {
         val buffer = renderFrame(state)
         val (x, y) = findMarker(buffer) ?: error("marker glyph not rendered for $hex")
 
-        val clicked = BoardMouse.mapMouseToHex(
+        val boardOriginX = Bordered.VIEWPORT_INSET.left
+        val boardOriginY = Workspace.STATUS_BAR_HEIGHT + Bordered.VIEWPORT_INSET.top
+        val contentPoint = Point(
+            x - boardOriginX,
+            y - boardOriginY - Bordered.PADDING.vertical().top,
+        )
+        val clicked = BoardMouse.mapContentToHex(
             MouseEvent(x = x, y = y, left = true),
-            boardX = BOARD_ORIGIN_X,
-            boardY = BOARD_ORIGIN_Y,
+            contentPoint,
         )
 
         assertEquals(hex, clicked, "click at screen ($x,$y) — where the unit is actually drawn")

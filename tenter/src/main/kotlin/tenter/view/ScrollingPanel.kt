@@ -19,6 +19,8 @@ public class ScrollingPanel internal constructor(
     /** What this panel's content actually settled on this render — see [ScrollState]. */
     public val scroll: ScrollState get() = viewport.scroll
 
+    internal val settled: ScrollState? get() = viewport.settled
+
     override fun draw(canvas: Canvas) {
         bordered.draw(canvas)
         bordered.drawThumbs(canvas, viewport.scroll)

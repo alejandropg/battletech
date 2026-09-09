@@ -11,9 +11,8 @@ import battletech.tui.aTurnState
 import battletech.tui.aUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
-import battletech.tui.game.phase.BOARD_ORIGIN_X
-import battletech.tui.game.phase.BOARD_ORIGIN_Y
 import battletech.tui.game.phase.MovementPhase
+import battletech.tui.view.BoardView
 import battletech.tui.input.BoardClick
 import battletech.tui.input.ChromeAction
 import battletech.tui.input.IdleAction
@@ -24,6 +23,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import tenter.input.ScrollAction
+import tenter.panel.PanelHit
+import tenter.screen.Point
 
 /**
  * [resolveInput] is where "what input is live this frame" is decided, and the only place the
@@ -51,7 +52,8 @@ internal class RunLoopInputResolutionTest {
         appState().copy(matchEnded = MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1)))
 
     /** A left click on the board's hex (0,0) at zero scroll. */
-    private val boardClickEvent = MouseEvent(x = BOARD_ORIGIN_X, y = BOARD_ORIGIN_Y, left = true)
+    private val boardClickEvent = MouseEvent(x = 0, y = 0, left = true)
+    private val boardHit = PanelHit(GamePanelId.BOARD, Point(BoardView.MAP_ORIGIN_X, BoardView.MAP_ORIGIN_Y))
 
     @Test
     fun `a phase chord resolves while the match is live`() {
@@ -70,7 +72,7 @@ internal class RunLoopInputResolutionTest {
     fun `a board click resolves while the match is live`() {
         assertEquals(
             BoardClick(HexCoordinates(0, 0)),
-            resolveInput(boardClickEvent, keys, GamePanelId.BOARD, appState()),
+            resolveInput(boardClickEvent, keys, GamePanelId.BOARD, appState(), boardHit),
         )
     }
 
@@ -80,7 +82,7 @@ internal class RunLoopInputResolutionTest {
      */
     @Test
     fun `a board click resolves to nothing once the match has ended`() {
-        assertNull(resolveInput(boardClickEvent, keys, GamePanelId.BOARD, ended()))
+        assertNull(resolveInput(boardClickEvent, keys, GamePanelId.BOARD, ended(), boardHit))
     }
 
     @Test

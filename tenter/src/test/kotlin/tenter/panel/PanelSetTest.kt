@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.screen.ScreenBuffer
@@ -42,7 +43,7 @@ internal class PanelSetTest {
         visible: Set<SetPanelId>,
         width: Int = 80,
         height: Int = 24,
-    ): PanelLayout<SetPanelId, Unit> = set.render(
+    ): PanelLayout<SetPanelId> = set.render(
         Canvas.of(ScreenBuffer(width, height)),
         Unit,
         visible,
@@ -208,6 +209,45 @@ internal class PanelSetTest {
         val layout = render(set, emptySet())
 
         assertNull(layout.main)
-        assertEquals(emptyList<PanelLayout.Slot<SetPanelId, Unit>>(), layout.sides)
+        assertEquals(emptyList<PanelLayout.Slot<SetPanelId>>(), layout.sides)
+    }
+
+    @Test
+    fun `hit testing uses settled content geometry and ignores pending scroll`() {
+        val panel = sidePanel(SetPanelId.A)
+        val set = PanelSet.uniform(listOf(panel))
+
+        val first = render(set, setOf(SetPanelId.A), width = 40, height = 12)
+        val slot = first.sides.single()
+        assertNull(set.hitTest(slot.content.x, slot.content.y)?.contentPoint)
+        assertEquals(
+            tenter.screen.Point(0, 0),
+            set.hitTest(slot.content.x, slot.content.y + 1)?.contentPoint,
+        )
+
+        set.scroll(SetPanelId.A, 0, 3)
+        assertEquals(
+            tenter.screen.Point(0, 0),
+            set.hitTest(slot.content.x, slot.content.y + 1)?.contentPoint,
+            "queued scroll must not change the displayed frame's mapping",
+        )
+
+        val scrolled = render(set, setOf(SetPanelId.A), width = 40, height = 12).sides.single()
+        assertEquals(
+            tenter.screen.Point(0, 3),
+            set.hitTest(scrolled.content.x, scrolled.content.y + 1)?.contentPoint,
+        )
+        assertTrue(set.hitTest(scrolled.outer.x - 1, scrolled.outer.y) == null)
+    }
+
+    @Test
+    fun `hit testing identifies border and main panel without content point`() {
+        val set = PanelSet.mainAndSides(mainPanel(), listOf(sidePanel(SetPanelId.A)))
+        val layout = set.render(Canvas.of(ScreenBuffer(60, 12)), Unit, setOf(SetPanelId.A), reservedTop = 2)
+        val main = checkNotNull(layout.main)
+
+        assertEquals(SetPanelId.MAIN, set.hitTest(main.outer.x, main.outer.y)?.id)
+        assertNull(set.hitTest(main.outer.x, main.outer.y)?.contentPoint)
+        assertEquals(SetPanelId.A, set.panelAt(layout.sides.single().outer.x, layout.sides.single().outer.y))
     }
 }

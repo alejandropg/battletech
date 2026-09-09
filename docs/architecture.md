@@ -272,10 +272,19 @@ it — `PanelSet.main` is nullable now, and `render` branches on whether it is n
 maximized restore state are mutated only through a `PanelSet`; `PanelSet` retains immutable
 settled-offset observations after rendering and exclusively attaches each panel instance at
 construction. A state's `Panel.Presentation` groups the prepared content with its width, so a
-per-frame builder runs once and the same result drives layout and painting. `focused` and
-`offsetOf` are nullable observations when no managed frame exists, while `stateOf` reports state
-without exposing a mutable owner. Stage 07 will replace `PanelLayout.Slot`'s panel reference with
-immutable placement observations when it completes the geometry and hit-testing seam.
+per-frame builder runs once and the same result drives layout and painting. `PanelLayout.Slot`
+contains only the panel identity, on-canvas outer/content rectangles, and the settled viewport
+observation. `PanelSet.panelAt`/`hitTest` read that completed frame, so callers never reproduce
+border, padding, or scroll arithmetic; a border or spacer hit identifies the panel without
+inventing a content point. Small screens clip slots in declaration order, keep missing uniform
+columns reserved, and never publish negative or out-of-canvas geometry.
+
+`tenter.input.MouseInput.scrollDelta` recognizes only Mordant's explicit wheel flags and validates
+the caller's positive step. Ordinary left/right buttons are not toolkit scroll signals. The TUI's
+`legacyPanelScrollDelta` keeps its Mordant-version compatibility fallback as an application-local
+policy for side panels, while board clicks use `PanelSet.hitTest`'s settled content point and
+then apply only the board's own label/hex geometry. Independent consumers do not inherit that
+workaround.
 
 This is not uniformity for its own sake. When the local player had a private path (a `submitCommand` override on `GameServer`), the seat check existed twice — derived from the connection's assigned seat on the remote path, a hardcoded `PlayerId.PLAYER_1` on the local one — and the two could disagree. They did: with both seats remote, a `PLAYER_1` command passed both gates despite the class documenting that it "stays frozen". Making the local player a client deletes the second path, so the guarantee ("neither side can act as another seat's") has one place to live. The same collapse happened in the TUI, where `localPlayer: PlayerId?` pinned the viewer *and* gated input, both keyed on null-means-hot-seat; `TuiApp` now takes the seats it drives (`Map<PlayerId, GameSession>`) and hot-seat simply holds both, so the gate never fires because of what the map contains rather than because anything checked.
 

@@ -11,32 +11,6 @@ import battletech.tui.game.moveCursor
 import battletech.tui.input.BoardClick
 import battletech.tui.input.IdleAction
 import tenter.input.InputAction
-import tenter.view.Bordered
-import battletech.tui.view.BoardView
-import battletech.tui.view.Workspace
-
-/**
- * Where the board's hex (0,0)'s top-left corner at zero scroll — after the coordinate-label
- * margins — sits in ABSOLUTE screen coordinates, which is what a [com.github.ajalt.mordant.input.MouseEvent] carries. Used by
- * all idle-selecting states to turn a click into a hex.
- *
- * Every term is derived rather than hardcoded so these cannot drift from the code that actually
- * places the board:
- * - [Workspace.STATUS_BAR_HEIGHT] — the board region starts below the status bar
- *   (`screen.region(0, layout.boardY, …)` in `Workspace.render`, which fixes `boardY` to exactly
- *   this). Omitting it shifts click coordinates upward by the full status-bar height and can
- *   resolve a different hex than the one under the pointer.
- * - [Bordered.VIEWPORT_INSET] — the border and horizontal gutters around the viewport.
- * - [Bordered.PADDING]`.vertical().top` — the spacer row that lives at the top of the
- *   scrollable content stream (reclaimed once the board scrolls, same as any scrollable panel).
- * - [BoardView.MAP_ORIGIN_X]/[BoardView.MAP_ORIGIN_Y] — the margins reserved for the board's
- *   1-based coordinate labels.
- *
- * The board region itself starts at x = 0, so no horizontal counterpart to the status bar exists.
- */
-internal val BOARD_ORIGIN_X: Int = Bordered.VIEWPORT_INSET.left + BoardView.MAP_ORIGIN_X
-internal val BOARD_ORIGIN_Y: Int =
-    Workspace.STATUS_BAR_HEIGHT + Bordered.VIEWPORT_INSET.top + Bordered.PADDING.vertical().top + BoardView.MAP_ORIGIN_Y
 
 /**
  * A short flash for a rejected command, or null if [result] was accepted.
@@ -72,17 +46,8 @@ internal fun handleCursorMove(app: AppState, action: IdleAction.MoveCursor): Tra
  * Hot-seat never flashes — not because anything here special-cases hot-seat, but because
  * [AppState.seats] holds both players there, so [activePlayer] is always a member.
  *
- * [activePlayer] is now evaluated unconditionally (there is no nullable "local player" left to
- * gate it on). Every `handle()` that reaches this guard must therefore already know its own
- * turn-state field is seeded before calling in — see [MovementPhase.SelectingUnit]'s
- * `turnState.movement.isComplete` guard and [AttackPhase.SelectingAttacker]'s /
- * [PhysicalAttackPhase.SelectingAttacker]'s `turnState.attack.isComplete` guard, both of which
- * short-circuit to cursor-only handling — never reaching this function, let alone [activePlayer]
- * — while the impulse sequence is unseeded (e.g. fresh [TurnState.NULL]).
- *
- * This is the single source of truth for the seat check: [selectOwnUnit] calls it for the
- * Enter/click select path, and [handleUnitSelection] calls it directly (before [selectOwnUnit]
- * would otherwise run) for Tab and commit, which never reach [selectOwnUnit].
+ * [activePlayer] is evaluated only when an acting action reaches this guard. Cursor movement can
+ * therefore remain safe while a phase has not seeded its turn-state field.
  */
 private fun localTurnGuard(app: AppState, activePlayer: () -> PlayerId): Transition? =
     if (activePlayer() in app.seats) null else Transition(app, FlashMessage("Waiting for opponent"))
@@ -91,17 +56,13 @@ private fun localTurnGuard(app: AppState, activePlayer: () -> PlayerId): Transit
  * Try to select the unit at the cursor as the active player's unit.
  *
  * - No unit at cursor → `Transition(app)` (no-op).
- * - [activePlayer] is not a seat this process drives (remote play, not this
- *   client's turn) → `Transition(app, FlashMessage("Waiting for opponent"))`
- *   (see [localTurnGuard]; kept here too as defense in depth for any direct
- *   caller of this function, though [handleUnitSelection] now also checks
- *   this before calling in).
- * - Unit owned by someone other than [activePlayer] → `Transition(app, FlashMessage("Not your unit"))`.
- * - [extraGuard] returns a non-null [FlashMessage] → `Transition(app, that message)`.
- * - Otherwise → `onSelect(unit)`.
+ * - [activePlayer] is not a seat this process drives → a waiting flash.
+ * - Unit owned by someone other than [activePlayer] → a not-your-unit flash.
+ * - [extraGuard] returns a non-null [FlashMessage] → that message.
+ * - Otherwise → [onSelect].
  *
- * The [extraGuard] is evaluated only after the ownership check passes, so
- * ownership always takes priority over phase-specific guards.
+ * The [extraGuard] is evaluated only after the ownership check passes, so ownership always takes
+ * priority over phase-specific guards.
  */
 internal fun selectOwnUnit(
     app: AppState,
@@ -118,25 +79,9 @@ internal fun selectOwnUnit(
 }
 
 /**
- * Shared input handler for every "select a unit" idle state
- * ([MovementPhase.SelectingUnit], [AttackPhase.SelectingAttacker], and
- * [PhysicalAttackPhase.SelectingAttacker]). All three share the same
- * interaction vocabulary:
- *
- * - arrow/wasd/qe → move the cursor (never seat-guarded — always legal),
- * - Enter / click → select the unit under the cursor (subject to the seat
- *   guard, ownership, and [selectGuard]) and enter the phase's sub-mode via
- *   [enterFor],
- * - Tab → cycle to the next unit in [selectableUnits] and *also* enter the
- *   sub-mode for it, so Tab and Enter land in the same place,
- * - 'c' → run [onCommit] (a no-op by default, as in movement).
- *
- * Click, Enter, Tab, and 'c' are all acting moves, so each is gated by
- * [localTurnGuard] first — it's not enough to guard the Enter/click path via
- * [selectOwnUnit], since Tab ([cycleAndEnter]) and 'c' ([onCommit]) never go
- * through it and would otherwise let a remote client act as the opponent.
- *
- * Returns null when [action] is not one this shared handler understands.
+ * Shared input handler for every "select a unit" idle state. All three selection phases share
+ * the same interaction vocabulary: cursor moves are always legal; Enter/click, Tab, and commit
+ * are acting moves and pass through [localTurnGuard].
  */
 internal fun handleUnitSelection(
     action: InputAction,
@@ -148,14 +93,7 @@ internal fun handleUnitSelection(
     enterFor: (CombatUnit, AppState) -> Transition,
 ): Transition? = when (action) {
     // [activePlayer] and [selectableUnits] are evaluated lazily: cursor moves must not touch
-    // turn-state fields that may be absent (e.g. TurnState.NULL) when no unit selection is
-    // actually happening. Every other branch is an acting move and calls [activePlayer]
-    // unconditionally (via [localTurnGuard], and again directly for Click/Enter) — so this
-    // function must only ever be entered once the caller's own turn-state field is already known
-    // to be seeded. See [MovementPhase.SelectingUnit]'s `turnState.movement.isComplete` guard and
-    // [AttackPhase.SelectingAttacker]'s / [PhysicalAttackPhase.SelectingAttacker]'s
-    // `turnState.attack.isComplete` guard, each of which short-circuits to cursor-only handling
-    // (never calling this function) while its sequence is unseeded.
+    // turn-state fields that may be absent when no unit selection is actually happening.
     is BoardClick ->
         localTurnGuard(app, activePlayer) ?: selectUnitAt(app.copy(cursor = action.coords), activePlayer(), selectGuard, enterFor)
     is IdleAction -> when (action) {
@@ -169,11 +107,8 @@ internal fun handleUnitSelection(
 }
 
 /**
- * The [VisibleUnit] under the cursor in an idle selecting state.
- * [AppState.state] has already decided
- * [battletech.tactical.unit.CombatUnit] vs [battletech.tactical.unit.ForeignUnit]
- * for [AppState.viewer], which is always a concrete seat (see [AppState.viewer]'s
- * KDoc). There is nothing left to redact here — the projection already did it.
+ * The [VisibleUnit] under the current cursor. [AppState.state] has already applied the viewer's
+ * projection, so this helper does not repeat redaction checks.
  */
 internal fun cursorUnitStatus(app: AppState): VisibleUnit? = app.state.units.at(app.cursor)
 
@@ -185,18 +120,9 @@ private fun selectUnitAt(
 ): Transition = selectOwnUnit(app, activePlayer, selectGuard) { unit -> enterFor(unit, app) }
 
 /**
- * Advance the cursor to the next unit in [selectableUnits] and enter the
- * phase's sub-mode for it via [enterFor].
- *
- * - Empty list → `Transition(app)` (no-op).
- * - Cursor not on any listed unit → enters the first unit.
- * - Otherwise → enters `selectableUnits[(idx + 1) % size]`.
- *
- * The current unit is identified by the unit under the cursor, which is always
- * correct in an idle selecting state. The in-sub-mode cyclers
- * ([cycleToNextUnit], `AttackPhase.Declaring.nextAttacker`) stay separate:
- * there the cursor may sit on a destination/target hex rather than the active
- * unit, and they also carry per-unit draft state.
+ * Advance the cursor to the next unit in [selectableUnits] and enter its sub-mode via [enterFor].
+ * An empty list is a no-op; a cursor outside the list enters the first unit and otherwise cycles
+ * forward.
  */
 private fun cycleAndEnter(
     app: AppState,

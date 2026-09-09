@@ -14,6 +14,7 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.screen.ScreenBuffer
+import tenter.panel.PanelHit
 import tenter.text.CellWidth
 import tenter.view.Bordered
 import tenter.view.FlashMessage
@@ -39,13 +40,7 @@ internal class Workspace(private val keys: Keybindings) {
     /** The panel currently receiving keyboard focus — border/title/thumb render green for it. */
     val focused: GamePanelId get() = panels.focused ?: GamePanelId.BOARD
 
-    /**
-     * The board panel's settled scroll offset. The one piece of panel state a non-rendering reader
-     * also needs — [battletech.tui.loop.runLoop]'s click-to-hex mapping — so callers
-     * mirror it into [AppState.boardScroll] after every [render]. That mirror is one-way: the board
-     * [tenter.panel.Panel] owns this offset exactly as a side panel owns its own, and nothing ever
-     * writes it back through [AppState] — see [AppState.boardScroll]'s KDoc.
-     */
+    /** The board panel's settled scroll offset, retained as an immutable observation for tests. */
     val boardOffset: ScrollOffset get() = panels.offsetOf(GamePanelId.BOARD) ?: ScrollOffset.ZERO
 
     /** Focuses [id], demoting whatever side panel was maximized — see [tenter.panel.PanelSet.focus]. */
@@ -66,8 +61,11 @@ internal class Workspace(private val keys: Keybindings) {
     /** Mouse path: scrolls panel [id] by [delta] vertical rows, regardless of focus. */
     fun scrollPanel(id: GamePanelId, delta: Int) = panels.scroll(id, 0, delta)
 
-    /** The [GamePanelId] of the SIDE panel at screen ([x], [y]), or `null` — board or status bar. */
-    fun panelAt(x: Int, y: Int): GamePanelId? = panels.panelIdAt(x, y)
+    /** The [GamePanelId] of the panel at ([x], [y]), including the board, or null. */
+    fun panelAt(x: Int, y: Int): GamePanelId? = panels.panelAt(x, y)
+
+    /** Resolves a completed-frame hit without reproducing border, padding, or scroll arithmetic. */
+    fun hitTest(x: Int, y: Int): PanelHit<GamePanelId>? = panels.hitTest(x, y)
 
     /** Manual board pan — `hjkl`/ctrl+arrows, bound globally regardless of focus. */
     fun panBoard(dx: Int, dy: Int) = panels.scroll(GamePanelId.BOARD, dx, dy)
@@ -80,7 +78,7 @@ internal class Workspace(private val keys: Keybindings) {
      * side panel, the status bar, and — once the match has ended — a game-over banner over
      * whichever panel currently occupies the content region. Every panel absorbs its own settled
      * scroll and reveal for the next call — see [tenter.panel.Panel.render] — so nothing
-     * round-trips back through [AppState] except [boardOffset].
+     * round-trips back through [AppState].
      *
      */
     fun render(

@@ -10,14 +10,13 @@ import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
 import battletech.tui.game.mapToTuiPhase
-import battletech.tui.game.phase.BOARD_ORIGIN_X
-import battletech.tui.game.phase.BOARD_ORIGIN_Y
 import battletech.tui.hex.HexGeometry
 import battletech.tui.input.BoardClick
 import battletech.tui.input.BoardMouse
 import battletech.tui.input.ChromeAction
 import battletech.tui.input.ContextId
 import battletech.tui.input.Keybindings
+import battletech.tui.input.legacyPanelScrollDelta
 import battletech.tui.view.Workspace
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -34,11 +33,11 @@ import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import tenter.animation.AnimationPlayback
 import tenter.input.InputAction
-import tenter.input.MouseInput
 import tenter.input.PanAction
 import tenter.input.ScrollAction
 import tenter.view.FlashMessage
 import tenter.screen.ScreenRenderer
+import tenter.panel.PanelHit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.nanoseconds
@@ -80,9 +79,7 @@ internal suspend fun runLoop(
     var size = currentSize(terminal)
 
     // One Workspace for this whole run: every panel remembers its own state (minimized/normal/
-    // maximized), scroll offset, and auto-follow reveal across frames (see Panel's KDoc) —
-    // nothing but the board's scroll offset round-trips back through appState (see
-    // AppState.boardScroll's KDoc).
+    // maximized), scroll offset, and auto-follow reveal across frames (see Panel's KDoc).
     val workspace = Workspace(keys)
 
     fun invalidateAnimationTimer() {
@@ -141,8 +138,6 @@ internal suspend fun runLoop(
                 sample?.frames.orEmpty(),
             )
             renderer.render(buffer)
-            appState = appState.copy(boardScroll = workspace.boardOffset)
-
             if (active != null && activeAnimation === active) {
                 val nextChange = sample?.nextChangeIn
                 if (nextChange != null) {
@@ -195,12 +190,15 @@ internal suspend fun runLoop(
                     }
 
                     // Handle scroll events before any other input dispatch.
-                    // The panel is looked up first so overPanel can be passed to scrollDelta,
-                    // which applies the Mordant posix wheel-parsing workaround (left/right
-                    // press over a panel treated as wheel-up/down; see MouseInput.scrollDelta).
+                    // The app-local fallback preserves the known Mordant workaround only for
+                    // side panels; the toolkit itself treats ordinary buttons as clicks.
                     if (event is MouseEvent) {
-                        val panelId = workspace.panelAt(event.x, event.y)
-                        val delta = MouseInput.scrollDelta(event, overPanel = panelId != null)
+                        val hit = workspace.hitTest(event.x, event.y)
+                        val panelId = hit?.id
+                        val delta = legacyPanelScrollDelta(
+                            event,
+                            sidePanel = panelId != null && panelId != GamePanelId.BOARD,
+                        )
                         if (delta != null) {
                             panelId?.let { workspace.scrollPanel(it, delta) }
                             render()
@@ -208,7 +206,8 @@ internal suspend fun runLoop(
                         }
                     }
 
-                    val action = resolveInput(event, keys, workspace.focused, appState)
+                    val contentHit = (event as? MouseEvent)?.let { workspace.hitTest(it.x, it.y) }
+                    val action = resolveInput(event, keys, workspace.focused, appState, contentHit)
 
                     when (action) {
                         null -> {
@@ -384,15 +383,16 @@ internal fun resolveInput(
     keys: Keybindings,
     focused: GamePanelId,
     appState: AppState,
+    boardHit: PanelHit<GamePanelId>? = null,
 ): InputAction? = when (event) {
     is KeyboardEvent -> keys.resolve(activeContexts(focused, appState), event)
     is MouseEvent ->
         if (appState.matchEnded != null) {
             null
         } else {
-            BoardMouse.mapMouseToHex(
-                event, boardX = BOARD_ORIGIN_X, boardY = BOARD_ORIGIN_Y,
-                scrollX = appState.boardScroll.x, scrollY = appState.boardScroll.y,
+            BoardMouse.mapContentToHex(
+                event,
+                boardHit?.takeIf { it.id == GamePanelId.BOARD }?.contentPoint,
             )?.let(::BoardClick)
         }
 }

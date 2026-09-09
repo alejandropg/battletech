@@ -18,7 +18,7 @@ public class PanelSet<K : PanelId, I> private constructor(
     public val sides: List<Panel<K, I>>,
 ) {
     private var pendingRecenter: K? = null
-    private var lastLayout: PanelLayout<K, I>? = null
+    private var lastLayout: PanelLayout<K>? = null
     private var focusedId: K? = main?.id ?: sides.firstOrNull()?.id
 
     /** The focused panel, or null when a uniform set's last frame had no visible panels. */
@@ -60,12 +60,7 @@ public class PanelSet<K : PanelId, I> private constructor(
     public fun pageFocused(direction: Int) {
         val id = focusedId ?: return
         val panel = panelFor(id) ?: return
-        val slotHeight = slotFor(id)?.height
-        val page = if (slotHeight != null) {
-            (slotHeight - Bordered.VIEWPORT_INSET.top - Bordered.VIEWPORT_INSET.bottom).coerceAtLeast(1)
-        } else {
-            1
-        }
+        val page = slotFor(id)?.content?.height?.coerceAtLeast(1) ?: 1
         panel.scrollBy(0, page * direction)
     }
 
@@ -79,8 +74,27 @@ public class PanelSet<K : PanelId, I> private constructor(
         if (panelFor(id) != null) pendingRecenter = id
     }
 
-    /** The SIDE panel at screen ([x], [y]), or null — the main panel is never returned. */
-    public fun panelIdAt(x: Int, y: Int): K? = lastLayout?.sideAt(x, y)?.panel?.id
+    /** The panel at ([x], [y]) in the last completed frame, including the main panel. */
+    public fun panelAt(x: Int, y: Int): K? = lastLayout?.panelAt(x, y)?.id
+
+    /**
+     * Resolves ([x], [y]) against the last completed frame. Border and padding hits identify the
+     * panel but have no content point; a content point is translated through the settled offset
+     * and the scrolling panel's reclaimable top spacer.
+     */
+    public fun hitTest(x: Int, y: Int): PanelHit<K>? {
+        val slot = lastLayout?.panelAt(x, y) ?: return null
+        val scroll = slot.scroll ?: return PanelHit(slot.id, null)
+        if (!slot.content.contains(x, y)) return PanelHit(slot.id, null)
+
+        val contentX = x - slot.content.x + scroll.offset.x
+        val contentY = y - slot.content.y + scroll.offset.y - Bordered.PADDING.vertical().top
+        val contentHeight = scroll.contentHeight - Bordered.PADDING.vertical().top
+        if (contentX !in 0 until scroll.contentWidth || contentY !in 0 until contentHeight) {
+            return PanelHit(slot.id, null)
+        }
+        return PanelHit(slot.id, tenter.screen.Point(contentX, contentY))
+    }
 
     /**
      * Returns the state observed for [id], or null for an unknown panel. This is an immutable
@@ -91,10 +105,10 @@ public class PanelSet<K : PanelId, I> private constructor(
     /** Returns the settled offset from the last drawable frame, or null if none exists/unknown. */
     public fun offsetOf(id: K): ScrollOffset? = panelFor(id)?.settledOffset()
 
-    private fun slotFor(id: K): PanelLayout.Slot<K, I>? {
+    private fun slotFor(id: K): PanelLayout.Slot<K>? {
         val layout = lastLayout ?: return null
-        if (layout.main?.panel?.id == id) return layout.main
-        return layout.sides.firstOrNull { it.panel.id == id }
+        if (layout.main?.id == id) return layout.main
+        return layout.sides.firstOrNull { it.id == id }
     }
 
     /**
@@ -109,7 +123,7 @@ public class PanelSet<K : PanelId, I> private constructor(
         reservedTop: Int,
         uniformColumnCount: Int = visible.size,
         fixedWidthPanels: Set<K> = emptySet(),
-    ): PanelLayout<K, I> {
+    ): PanelLayout<K> {
         val visibleSides = sides.filter { it.id in visible }
         normalizeFocus(visibleSides)
 
@@ -143,25 +157,29 @@ public class PanelSet<K : PanelId, I> private constructor(
         }
         lastLayout = layout
 
-        layout.main?.let { slot ->
-            slot.panel.render(
-                canvas.region(slot.x, slot.y, slot.width, slot.height),
-                presentations.getValue(slot.panel.id),
-                focused = slot.panel.id == focusedId,
-                recenter = pendingRecenter == slot.panel.id,
-            )
-        }
+        layout.main?.let { slot -> renderSlot(canvas, slot, presentations) }
         for (slot in layout.sides) {
-            slot.panel.render(
-                canvas.region(slot.x, slot.y, slot.width, slot.height),
-                presentations.getValue(slot.panel.id),
-                focused = slot.panel.id == focusedId,
-                recenter = pendingRecenter == slot.panel.id,
-            )
+            renderSlot(canvas, slot, presentations)
         }
         pendingRecenter = null
 
-        return layout
+        val settledLayout = layout.withSettledScroll { id -> panelFor(id)?.settledOffsetObservation() }
+        lastLayout = settledLayout
+        return settledLayout
+    }
+
+    private fun renderSlot(
+        canvas: Canvas,
+        slot: PanelLayout.Slot<K>,
+        presentations: Map<K, Panel.Presentation>,
+    ) {
+        val panel = panelFor(slot.id) ?: return
+        panel.render(
+            canvas.region(slot.x, slot.y, slot.width, slot.height),
+            presentations.getValue(slot.id),
+            focused = slot.id == focusedId,
+            recenter = pendingRecenter == slot.id,
+        )
     }
 
     private fun normalizeFocus(visibleSides: List<Panel<K, I>>) {

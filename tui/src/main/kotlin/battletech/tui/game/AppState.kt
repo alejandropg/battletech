@@ -20,7 +20,6 @@ import battletech.tui.game.phase.AttackPhase
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.game.phase.Phase
 import battletech.tui.game.phase.PhysicalAttackPhase
-import tenter.view.ScrollOffset
 
 /**
  * The TUI's UI-shell state. [seats] is the set of seats this process drives, each mapped to the
@@ -50,13 +49,6 @@ internal data class AppState(
     val helpOpen: Boolean = false,
     val lastAttackResults: List<AttackResult>? = null,
     val matchEnded: MatchEnded? = null,
-    // A read-only mirror of the board panel's settled offset, written after every render solely
-    // so the phases' click-to-hex mapping (SelectingCommon) can stay a pure `(event, state) ->
-    // Transition` function without reaching into Workspace. Nothing writes it except RunLoop's
-    // post-render sync — unlike a side panel's scroll, which only rendering ever reads and so
-    // lives on the Panel itself (see tenter.panel.Panel's KDoc), this is the one piece of panel
-    // state both readers (rendering and input mapping) need to see.
-    val boardScroll: ScrollOffset = ScrollOffset.ZERO,
 ) {
     /**
      * Any seat's session — safe ONLY for fields every replica agrees on ([turnState],

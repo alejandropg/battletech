@@ -17,8 +17,8 @@ import battletech.tactical.session.TurnEnded
 import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.phase.AttackPhase
-import battletech.tui.game.phase.BOARD_ORIGIN_X
-import battletech.tui.game.phase.BOARD_ORIGIN_Y
+import battletech.tui.view.BoardView
+import battletech.tui.view.Workspace
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.animation.AnimationColor
 import battletech.tui.animation.AnimationLayout
@@ -38,6 +38,7 @@ import battletech.tui.view.LogView
 import battletech.tui.view.UnitStatusView
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
+import tenter.view.Bordered
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
@@ -446,7 +447,16 @@ internal class TuiAppLoopTest {
         // Deliberately no clearOutput(): the diffing renderer rewrites only changed cells, and a
         // style run can split the flash text with escape sequences mid-string, so this matches on
         // the same "Not your" prefix the Enter-flash test above uses.
-        internalEvents.send(UiEvent.Input(MouseEvent(x = BOARD_ORIGIN_X, y = BOARD_ORIGIN_Y, left = true)))
+        internalEvents.send(
+            UiEvent.Input(
+                MouseEvent(
+                    x = Bordered.VIEWPORT_INSET.left + BoardView.MAP_ORIGIN_X,
+                    y = Workspace.STATUS_BAR_HEIGHT + Bordered.VIEWPORT_INSET.top +
+                        Bordered.PADDING.vertical().top + BoardView.MAP_ORIGIN_Y,
+                    left = true,
+                ),
+            ),
+        )
 
         assertTrue(
             recorder.output().contains("Not your"),

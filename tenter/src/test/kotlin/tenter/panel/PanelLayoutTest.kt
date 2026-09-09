@@ -3,6 +3,7 @@ package tenter.panel
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.view.contentView
 
@@ -68,13 +69,13 @@ internal class PanelLayoutTest {
         )
 
         assertNull(layout.main)
-        assertSame(a, layout.sides.single().panel)
+        assertEquals(LayoutPanelId.A, layout.sides.single().id)
         assertEquals(100, layout.sides.single().width)
         assertEquals(26, layout.sides.single().height)
     }
 
     @Test
-    fun `side hit testing excludes the main region`() {
+    fun `panel hit testing includes the main region`() {
         val a = panel(LayoutPanelId.A)
         val layout = PanelLayout.compute(
             width = 100,
@@ -85,9 +86,9 @@ internal class PanelLayoutTest {
             widthOf = widthOf(mapOf(LayoutPanelId.A to 20)),
         )
 
-        assertNull(layout.sideAt(0, 10))
-        assertSame(a, layout.sideAt(85, 10)?.panel)
-        assertNull(layout.sideAt(85, 2))
+        assertEquals(LayoutPanelId.MAIN, layout.panelAt(0, 10)?.id)
+        assertEquals(LayoutPanelId.A, layout.panelAt(85, 10)?.id)
+        assertNull(layout.panelAt(85, 2))
     }
 
     @Test
@@ -138,7 +139,73 @@ internal class PanelLayoutTest {
         )
 
         assertNull(layout.main)
-        assertEquals(emptyList<PanelLayout.Slot<LayoutPanelId, Unit>>(), layout.sides)
+        assertEquals(emptyList<PanelLayout.Slot<LayoutPanelId>>(), layout.sides)
         assertEquals(21, layout.contentHeight)
+    }
+
+    @Test
+    fun `oversized side panels are clipped in declaration order`() {
+        val a = panel(LayoutPanelId.A, width = 80)
+        val b = panel(LayoutPanelId.B, width = 80)
+
+        val layout = PanelLayout.compute(
+            width = 10,
+            height = 4,
+            reservedTop = 10,
+            main = main(),
+            sides = listOf(a, b),
+            widthOf = widthOf(mapOf(LayoutPanelId.A to 80, LayoutPanelId.B to 80)),
+        )
+
+        assertEquals(0, layout.main!!.width)
+        assertEquals(listOf(10, 0), layout.sides.map { it.width })
+        layout.sides.forEach { slot ->
+            assertTrue(slot.x >= 0)
+            assertTrue(slot.x + slot.width <= 10)
+            assertEquals(0, slot.height)
+        }
+        assertEquals(4, layout.content.y)
+        assertEquals(0, layout.content.height)
+    }
+
+    @Test
+    fun `uniform allocation reserves missing columns before trailing fixed panels`() {
+        val proportional = panel(LayoutPanelId.A, width = 20)
+        val fixed = panel(LayoutPanelId.FIXED, width = 12)
+
+        val layout = PanelLayout.computeUniform(
+            width = 50,
+            height = 10,
+            reservedTop = 2,
+            panels = listOf(proportional, fixed),
+            columnCount = 3,
+            fixedWidthPanels = setOf(LayoutPanelId.FIXED),
+            widthOf = widthOf(mapOf(LayoutPanelId.A to 20, LayoutPanelId.FIXED to 12)),
+        )
+
+        assertEquals(0, layout.sides[0].x)
+        assertEquals(38, layout.sides[1].x)
+        assertEquals(12, layout.sides[1].width)
+        assertTrue(layout.sides[1].x + layout.sides[1].width <= 50)
+    }
+
+    @Test
+    fun `a trailing fixed declaration stays after proportional panels`() {
+        val fixed = panel(LayoutPanelId.FIXED, width = 12)
+        val proportional = panel(LayoutPanelId.A, width = 20)
+
+        val layout = PanelLayout.computeUniform(
+            width = 50,
+            height = 10,
+            reservedTop = 0,
+            panels = listOf(fixed, proportional),
+            columnCount = 1,
+            fixedWidthPanels = setOf(LayoutPanelId.FIXED),
+            widthOf = widthOf(mapOf(LayoutPanelId.A to 20, LayoutPanelId.FIXED to 12)),
+        )
+
+        assertEquals(LayoutPanelId.A, layout.sides[0].id)
+        assertEquals(LayoutPanelId.FIXED, layout.sides[1].id)
+        assertEquals(38, layout.sides[1].x)
     }
 }

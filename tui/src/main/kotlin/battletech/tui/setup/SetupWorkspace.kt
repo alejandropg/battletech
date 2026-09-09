@@ -21,7 +21,7 @@ internal class SetupWorkspace(private val keys: Keybindings) {
     fun scrollFocused(dx: Int, dy: Int) = panels.scrollFocused(dx, dy)
     fun pageFocused(direction: Int) = panels.pageFocused(direction)
     fun scrollPanel(id: SetupPanelId, delta: Int) = panels.scroll(id, 0, delta)
-    fun panelAt(x: Int, y: Int): SetupPanelId? = panels.panelIdAt(x, y)
+    fun panelAt(x: Int, y: Int): SetupPanelId? = panels.panelAt(x, y)
 
     /**
      * Composes and draws one frame: the banner chrome (D19) plus every visible panel, laid out in

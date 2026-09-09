@@ -11,8 +11,8 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ForeignUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.mapToTuiPhase
-import battletech.tui.game.phase.BOARD_ORIGIN_X
-import battletech.tui.game.phase.BOARD_ORIGIN_Y
+import battletech.tui.view.BoardView
+import battletech.tui.view.Workspace
 import battletech.tui.hex.HexLayout
 import battletech.tui.input.Keybindings
 import battletech.tui.loop.UiEvent
@@ -21,6 +21,7 @@ import battletech.tui.screen.resolveTheme
 import tenter.screen.ScreenRenderer
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
+import tenter.view.Bordered
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
@@ -187,7 +188,14 @@ internal class HotSeatCompositionTest {
                 internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
                 // Click the destination hex -> sets hoveredDestination.
                 internalEvents.send(
-                    UiEvent.Input(MouseEvent(x = BOARD_ORIGIN_X + screenX, y = BOARD_ORIGIN_Y + screenY, left = true)),
+                    UiEvent.Input(
+                        MouseEvent(
+                            x = Bordered.VIEWPORT_INSET.left + BoardView.MAP_ORIGIN_X + screenX,
+                            y = Workspace.STATUS_BAR_HEIGHT + Bordered.VIEWPORT_INSET.top +
+                                Bordered.PADDING.vertical().top + BoardView.MAP_ORIGIN_Y + screenY,
+                            left = true,
+                        ),
+                    ),
                 )
                 // Confirm the path -> submits MoveUnit through moverSeat's REAL ClientGameSession.
                 internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))

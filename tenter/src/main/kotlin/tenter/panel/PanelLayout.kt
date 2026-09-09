@@ -1,45 +1,62 @@
 package tenter.panel
 
+import tenter.screen.Rect
+import tenter.view.Bordered
+import tenter.view.ScrollState
+
 /**
- * The main content rect and every placed [Panel]'s rect in one frame — recomputed by [compute]
- * each call. Ordinarily [main] takes the space left of the side panels, laid out left-to-right
- * along the right edge; when a side panel is [PanelState.MAXIMIZED] it becomes the sole slot,
- * covering the whole content region, and [main] is `null`.
+ * The content rect and every placed panel's immutable geometry from one completed frame.
+ * Coordinates are local to the canvas supplied to [PanelSet.render].
  */
-public class PanelLayout<K : PanelId, I> private constructor(
+public class PanelLayout<K : PanelId> private constructor(
     /** The whole region below the reserved top rows — where a maximized panel goes. */
-    public val contentX: Int,
-    public val contentY: Int,
-    public val contentWidth: Int,
-    public val contentHeight: Int,
-    /** The main panel's rect, or null when a side panel is maximized and owns the whole region. */
-    public val main: Slot<K, I>?,
-    public val sides: List<Slot<K, I>>,
+    public val content: Rect,
+    /** The main panel's slot, or null for a uniform layout. */
+    public val main: Slot<K>?,
+    /** Uniform-layout slots in declaration order. */
+    public val sides: List<Slot<K>>,
 ) {
-    /** One panel's placement this frame. */
-    public data class Slot<K : PanelId, I>(
-        public val panel: Panel<K, I>,
-        public val x: Int,
-        public val y: Int,
-        public val width: Int,
-        public val height: Int,
+    /** The whole region below the reserved top rows. */
+    public val contentX: Int get() = content.x
+    public val contentY: Int get() = content.y
+    public val contentWidth: Int get() = content.width
+    public val contentHeight: Int get() = content.height
+
+    /** One panel's identity and settled placement from this frame. */
+    public data class Slot<K : PanelId>(
+        public val id: K,
+        /** The complete panel rectangle, including its border. */
+        public val outer: Rect,
+        /** The rectangle painted by the scrolling viewport inside the border and gutters. */
+        public val content: Rect,
+        /** The settled viewport observation, or null when this slot had no drawable frame. */
+        public val scroll: ScrollState?,
+    ) {
+        public val x: Int get() = outer.x
+        public val y: Int get() = outer.y
+        public val width: Int get() = outer.width
+        public val height: Int get() = outer.height
+    }
+
+    /** The panel whose painted outer rectangle contains ([x], [y]), or null. */
+    public fun panelAt(x: Int, y: Int): Slot<K>? = buildList {
+        main?.let(::add)
+        addAll(sides)
+    }.firstOrNull { it.outer.contains(x, y) }
+
+    internal fun withSettledScroll(scrollOf: (K) -> ScrollState?): PanelLayout<K> = PanelLayout(
+        content = content,
+        main = main?.withScroll(scrollOf(main.id)),
+        sides = sides.map { it.withScroll(scrollOf(it.id)) },
     )
 
-    /**
-     * The SIDE [Slot] at screen column [x], row [y], or `null` if none matches. The main slot is
-     * deliberately never returned — see the mouse rules that rely on this.
-     *
-     * A [PanelState.MINIMIZED] stub IS returned, unlike the collapsed panels this replaced: it is
-     * a legitimate (if inert) scroll target, and returning it keeps a click on the stub from
-     * falling through to whatever hit-tests the region behind it.
-     */
-    public fun sideAt(x: Int, y: Int): Slot<K, I>? =
-        sides.firstOrNull { slot -> x >= slot.x && x < slot.x + slot.width && y >= slot.y && y < slot.y + slot.height }
+    private fun Slot<K>.withScroll(scroll: ScrollState?): Slot<K> = copy(scroll = scroll)
 
     public companion object {
         /**
-         * Lays out [sides] and [main] over a [width]x[height] screen, reserving [reservedTop] rows
-         * at the top (e.g. for a status bar) above the content area.
+         * Lays out [sides] and [main] over a [width]x[height] canvas, reserving [reservedTop]
+         * rows above the content area. Side widths are reserved first; if they do not fit, the
+         * main slot becomes zero-width and sides are clipped in declaration order.
          */
         public fun <K : PanelId, I> compute(
             width: Int,
@@ -48,46 +65,41 @@ public class PanelLayout<K : PanelId, I> private constructor(
             main: Panel<K, I>,
             sides: List<Panel<K, I>>,
             widthOf: (Panel<K, I>) -> Int,
-        ): PanelLayout<K, I> {
-            val contentHeight = height - reservedTop
-
-            val maximizedSide = sides.firstOrNull { it.state == PanelState.MAXIMIZED }
-            if (maximizedSide != null) return maximizedLayout(width, reservedTop, contentHeight, maximizedSide)
-
-            val totalSideWidth = sides.sumOf(widthOf)
-            val mainWidth = width - totalSideWidth
-            val mainSlot = Slot(main, 0, reservedTop, mainWidth, contentHeight)
-
+        ): PanelLayout<K> {
+            validateCanvas(width, height, reservedTop)
+            val content = contentRect(width, height, reservedTop)
+            sides.firstOrNull { it.state == PanelState.MAXIMIZED }?.let { maximized ->
+                return PanelLayout(
+                    content = content,
+                    main = null,
+                    sides = listOf(slot(maximized.id, content.x, content.y, content.width, content.height, width)),
+                )
+            }
+            val sideWidths = sides.map { panel -> checkedWidth(widthOf(panel), panel.id) }
+            val totalSideWidth = sides.indices.sumOf { sideWidths[it].toLong() }
+                .coerceAtMost(Int.MAX_VALUE.toLong())
+                .toInt()
+            val mainWidth = (width - totalSideWidth).coerceAtLeast(0)
             val slots = buildList {
-                var nextX = mainWidth
-                for (panel in sides) {
-                    val panelWidth = widthOf(panel)
-                    add(Slot(panel, nextX, reservedTop, panelWidth, contentHeight))
-                    nextX += panelWidth
+                var nextX = if (totalSideWidth <= width) mainWidth else 0
+                for ((index, panel) in sides.withIndex()) {
+                    val available = (width - nextX).coerceAtLeast(0)
+                    val slotWidth = sideWidths[index].coerceAtMost(available)
+                    add(slot(panel.id, nextX, content.y, slotWidth, content.height, width))
+                    nextX += slotWidth
                 }
             }
-
             return PanelLayout(
-                contentX = 0,
-                contentY = reservedTop,
-                contentWidth = width,
-                contentHeight = contentHeight,
-                main = mainSlot,
+                content = content,
+                main = slot(main.id, 0, content.y, mainWidth, content.height, width),
                 sides = slots,
             )
         }
 
         /**
-         * Lays [panels] out as equal-width columns across [width], left to right, reserving
-         * [reservedTop] rows. Leftover columns from the integer division go to the leftmost
-         * panels, one each, so the row is exactly [width] wide. [columnCount] can reserve space
-         * for columns whose panels are not currently visible; it defaults to the number of
-         * [panels]. [fixedWidthPanels] do not consume a proportional column. Minimized fixed
-         * panels retain declaration order, while other fixed panels occupy the trailing fixed
-         * region. [widthOf] resolves each panel's width for the current inputs. A MAXIMIZED
-         * panel still wins the whole content region, exactly as in [compute]. `main` is null for
-         * a uniform layout — there is no derived-width panel. The default [widthOf] uses a
-         * panel's selected presentation width.
+         * Lays [panels] out as proportional columns with an optional trailing fixed group.
+         * Minimized panels are fixed-width, but remain at their declaration positions among the
+         * proportional panels. Other fixed panels form a trailing group in declaration order.
          */
         public fun <K : PanelId, I> computeUniform(
             width: Int,
@@ -97,78 +109,105 @@ public class PanelLayout<K : PanelId, I> private constructor(
             columnCount: Int = panels.size,
             fixedWidthPanels: Set<K> = emptySet(),
             widthOf: (Panel<K, I>) -> Int,
-        ): PanelLayout<K, I> {
-            if (panels.isEmpty()) {
+        ): PanelLayout<K> {
+            validateCanvas(width, height, reservedTop)
+            require(columnCount >= 0) { "uniform column count must not be negative: $columnCount" }
+            val content = contentRect(width, height, reservedTop)
+            if (panels.isEmpty()) return PanelLayout(content, null, emptyList())
+
+            panels.firstOrNull { it.state == PanelState.MAXIMIZED }?.let { maximized ->
                 return PanelLayout(
-                    contentX = 0,
-                    contentY = reservedTop,
-                    contentWidth = width,
-                    contentHeight = height - reservedTop,
+                    content = content,
                     main = null,
-                    sides = emptyList(),
+                    sides = listOf(slot(maximized.id, content.x, content.y, content.width, content.height, width)),
                 )
             }
-            val proportionalPanels = panels.filter { it.id !in fixedWidthPanels }
-            val fixedPanels = panels.filter { it.id in fixedWidthPanels }
-            require(columnCount >= proportionalPanels.size || proportionalPanels.isEmpty()) {
+
+            val fixed = panels.filter { it.id in fixedWidthPanels || it.state == PanelState.MINIMIZED }
+            val proportional = panels.filter { it !in fixed }
+            require(columnCount >= proportional.size || proportional.isEmpty()) {
                 "A uniform layout needs at least one column per proportional panel"
             }
-            val contentHeight = height - reservedTop
+            val widths = panels.associate { it.id to checkedWidth(widthOf(it), it.id) }
+            val fixedWidth = fixed.sumOf { widths.getValue(it.id).toLong() }
+            val proportionalWidth = (width.toLong() - fixedWidth)
+                .coerceAtLeast(0)
+                .coerceAtMost(Int.MAX_VALUE.toLong())
+                .toInt()
+            val columnWidths = proportionalWidths(proportionalWidth, columnCount, proportional.size)
+            val minimizedWidth = fixed
+                .filter { it.state == PanelState.MINIMIZED }
+                .sumOf { widths.getValue(it.id).toLong() }
+                .coerceAtMost(Int.MAX_VALUE.toLong())
+                .toInt()
 
-            val maximizedPanel = panels.firstOrNull { it.state == PanelState.MAXIMIZED }
-            if (maximizedPanel != null) return maximizedLayout(width, reservedTop, contentHeight, maximizedPanel)
-
-            val fixedWidth = fixedPanels.sumOf(widthOf)
-            val proportionalWidth = width - fixedWidth
-            val columnWidth = if (columnCount == 0) 0 else proportionalWidth / columnCount
-            val remainder = if (columnCount == 0) 0 else proportionalWidth % columnCount
             val slots = buildList {
                 var proportionalIndex = 0
+                var x = 0
                 for (panel in panels) {
-                    val fixedBefore = panels
-                        .takeWhile { it != panel }
-                        .filter { it.id in fixedWidthPanels }
-                        .sumOf(widthOf)
-                    if (panel.id in fixedWidthPanels) {
-                        val x = if (panel.state == PanelState.MINIMIZED) {
-                            proportionalIndex * columnWidth +
-                                minOf(proportionalIndex, remainder) + fixedBefore
-                        } else {
-                            proportionalWidth + fixedBefore
-                        }
-                        add(Slot(panel, x, reservedTop, widthOf(panel), contentHeight))
-                    } else {
-                        val slotWidth = columnWidth + if (proportionalIndex < remainder) 1 else 0
-                        val x = proportionalIndex * columnWidth +
-                            minOf(proportionalIndex, remainder) + fixedBefore
-                        add(Slot(panel, x, reservedTop, slotWidth, contentHeight))
+                    if (panel in proportional) {
+                        val panelWidth = columnWidths[proportionalIndex]
+                        add(slot(panel.id, x, content.y, panelWidth, content.height, width))
+                        x += panelWidth
                         proportionalIndex++
+                    } else if (panel.state == PanelState.MINIMIZED) {
+                        val panelWidth = widths.getValue(panel.id).coerceAtMost((width - x).coerceAtLeast(0))
+                        add(slot(panel.id, x, content.y, panelWidth, content.height, width))
+                        x += panelWidth
+                    }
+                }
+                x = proportionalWidth + minimizedWidth
+                for (panel in fixed) {
+                    if (panel.state != PanelState.MINIMIZED) {
+                        val panelWidth = widths.getValue(panel.id).coerceAtMost((width - x).coerceAtLeast(0))
+                        add(slot(panel.id, x, content.y, panelWidth, content.height, width))
+                        x += panelWidth
                     }
                 }
             }
+            return PanelLayout(content, null, slots)
+        }
 
-            return PanelLayout(
-                contentX = 0,
-                contentY = reservedTop,
-                contentWidth = width,
-                contentHeight = contentHeight,
-                main = null,
-                sides = slots,
+        private fun <K : PanelId> slot(
+            id: K,
+            x: Int,
+            y: Int,
+            width: Int,
+            height: Int,
+            canvasWidth: Int,
+        ): Slot<K> {
+            val outer = Rect(x.coerceIn(0, canvasWidth), y, width, height)
+            return Slot(
+                id = id,
+                outer = outer,
+                content = outer.inset(Bordered.VIEWPORT_INSET),
+                scroll = null,
             )
         }
 
-        private fun <K : PanelId, I> maximizedLayout(
-            width: Int,
-            reservedTop: Int,
-            contentHeight: Int,
-            panel: Panel<K, I>,
-        ): PanelLayout<K, I> = PanelLayout(
-            contentX = 0,
-            contentY = reservedTop,
-            contentWidth = width,
-            contentHeight = contentHeight,
-            main = null,
-            sides = listOf(Slot(panel, 0, reservedTop, width, contentHeight)),
+        private fun proportionalWidths(width: Int, columnCount: Int, panelCount: Int): List<Int> {
+            if (panelCount == 0) return emptyList()
+            val base = if (columnCount == 0) 0 else width / columnCount
+            val remainder = if (columnCount == 0) 0 else width % columnCount
+            return List(panelCount) { index -> base + if (index < remainder) 1 else 0 }
+        }
+
+        private fun contentRect(width: Int, height: Int, reservedTop: Int): Rect = Rect(
+            x = 0,
+            y = reservedTop.coerceAtMost(height),
+            width = width,
+            height = height - reservedTop.coerceAtMost(height),
         )
+
+        private fun validateCanvas(width: Int, height: Int, reservedTop: Int) {
+            require(width >= 0) { "canvas width must not be negative: $width" }
+            require(height >= 0) { "canvas height must not be negative: $height" }
+            require(reservedTop >= 0) { "reserved top rows must not be negative: $reservedTop" }
+        }
+
+        private fun checkedWidth(width: Int, id: PanelId): Int {
+            require(width >= 0) { "Panel $id width must not be negative: $width" }
+            return width
+        }
     }
 }
