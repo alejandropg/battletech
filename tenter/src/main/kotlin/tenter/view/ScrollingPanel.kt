@@ -9,8 +9,8 @@ import tenter.screen.RevealRect
  * A bordered, scrolling panel — [Bordered] for the box and [Viewport] for the scroll math, wired
  * together by [scrollingPanel]. Exists as its own type (rather than callers just getting a
  * [Bordered] back) so the settled [scroll] state has somewhere to live that isn't the border
- * decorator: a border knows nothing about scrolling in general, only how to draw thumbs for
- * whichever [Viewport] it was told about — see [Bordered.thumbsFrom].
+ * decorator: a border knows nothing about scrolling in general, only how to draw thumbs from the
+ * settled [ScrollState] supplied by this panel after its viewport paints.
  */
 public class ScrollingPanel internal constructor(
     private val bordered: Bordered,
@@ -22,6 +22,7 @@ public class ScrollingPanel internal constructor(
 
     override fun draw(canvas: Canvas) {
         bordered.draw(canvas)
+        bordered.drawThumbs(canvas, viewport.scroll)
     }
 }
 
@@ -60,7 +61,31 @@ public fun scrollingPanel(
         gutters = Bordered.PADDING.horizontal(),
         borderColor = borderColor,
         titleColor = titleColor,
-        thumbsFrom = viewport,
+    )
+    return ScrollingPanel(bordered, viewport)
+}
+
+/**
+ * Prepared-content scrolling panel. The viewport prepares the content once at the actual inner
+ * width, while [ViewportState] retains scroll intent and the last completed observation.
+ */
+public fun scrollingPanel(
+    title: String,
+    badge: String?,
+    content: ContentView,
+    state: ViewportState = ViewportState(),
+    borderColor: ColorRole = ChromeRole.PANEL_BORDER,
+    titleColor: ColorRole = ChromeRole.ACCENT,
+): ScrollingPanel {
+    val paddedContent = Padded(Bordered.PADDING.vertical(), content)
+    val viewport = Viewport(paddedContent, state)
+    val bordered = Bordered(
+        content = viewport,
+        title = title,
+        badge = badge,
+        gutters = Bordered.PADDING.horizontal(),
+        borderColor = borderColor,
+        titleColor = titleColor,
     )
     return ScrollingPanel(bordered, viewport)
 }

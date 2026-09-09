@@ -3,16 +3,39 @@ package tenter.view
 import tenter.screen.Canvas
 
 /**
- * Draws [children] one below another, top to bottom, [gutter] blank rows apart — each measured
- * by its own content height (the same measure-then-place approach [Columns] uses horizontally),
- * so a caller can compose an unknown-height view atop another without knowing either's row count
- * up front. A child that would start at or past the bottom of the canvas is skipped rather than
- * drawn off-canvas; a child that doesn't fully fit in what's left is clipped, never stretched.
+ * Stacks prepared [ContentView] children without painting them to discover their sizes. The
+ * intrinsic layout includes each child's logical height and gutters between children only.
+ * [draw] remains the legacy raw-view adapter until application callers migrate to [ContentView].
  */
 public class Stack(
     private val children: List<View>,
     private val gutter: Int = 1,
-) : View {
+) : ContentView {
+
+    init {
+        require(gutter >= 0) { "gutter must not be negative: $gutter" }
+    }
+
+    override fun layout(availableWidth: Int): ContentLayout {
+        require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
+        val prepared = children.map { child ->
+            (child as? ContentView)?.layout(availableWidth)
+                ?: legacyContentLayout(availableWidth, child)
+        }
+        val width = prepared.maxOfOrNull { it.width } ?: 0
+        val height = prepared.foldIndexed(0) { index, total, child ->
+            val withChild = checkedAdd(total, child.height, "stack height")
+            if (index < prepared.lastIndex) checkedAdd(withChild, gutter, "stack height") else withChild
+        }
+        return contentLayout(width, height) {
+            var row = 0
+            prepared.forEachIndexed { index, child ->
+                place(0, row, child)
+                row = checkedAdd(row, child.height, "stack placement")
+                if (index < prepared.lastIndex) row = checkedAdd(row, gutter, "stack placement")
+            }
+        }
+    }
 
     override fun draw(canvas: Canvas) {
         val content = TextCursor(canvas)
@@ -22,4 +45,11 @@ public class Stack(
             repeat(gutter) { content.newLine() }
         }
     }
+
+    private fun checkedAdd(left: Int, right: Int, description: String): Int =
+        try {
+            Math.addExact(left, right)
+        } catch (_: ArithmeticException) {
+            error("$description overflowed")
+        }
 }

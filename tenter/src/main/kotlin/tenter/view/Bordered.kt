@@ -8,8 +8,9 @@ import tenter.screen.Insets
 import tenter.text.CellWidth
 
 /**
- * Decorates [content] with a box border, an optional title/badge in the top border, and — when
- * [thumbsFrom] is given — scrollbar thumbs synchronized to that [Viewport]'s settled position.
+ * Decorates [content] with a box border and an optional title/badge in the top border. Scrollbar
+ * thumbs are a scrolling-panel concern and are painted by [ScrollingPanel] from its settled
+ * [ScrollState], so a reusable border has no scrolling knowledge.
  * [gutters] is extra inset consumed between the border and [content], beyond the 1-cell border
  * itself (e.g. the horizontal breathing room a scrolling panel's viewport wants); pass
  * [Insets.NONE] for a border with nothing but the border between it and content.
@@ -23,13 +24,28 @@ public class Bordered(
     private val gutters: Insets = Insets.NONE,
     private val borderColor: ColorRole = ChromeRole.PANEL_BORDER,
     private val titleColor: ColorRole = ChromeRole.ACCENT,
-    private val thumbsFrom: Viewport? = null,
-) : View {
+): ContentView {
+
+    init {
+        require(gutters.left >= 0 && gutters.top >= 0 && gutters.right >= 0 && gutters.bottom >= 0) {
+            "border gutters must not be negative: $gutters"
+        }
+    }
+
+    override fun layout(availableWidth: Int): ContentLayout {
+        require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
+        val outer = BORDER + gutters
+        val innerWidth = (availableWidth - outer.left - outer.right).coerceAtLeast(0)
+        val child = (content as? ContentView)?.layout(innerWidth)
+            ?: legacyContentLayout(innerWidth, content)
+        val width = checkedAdd(checkedAdd(child.width, outer.left, "bordered width"), outer.right, "bordered width")
+        val height = checkedAdd(checkedAdd(child.height, outer.top, "bordered height"), outer.bottom, "bordered height")
+        return ContentLayout.raw(width, height, PreparedBorder(child, outer))
+    }
 
     override fun draw(canvas: Canvas) {
         drawBorder(canvas)
         content.draw(canvas.inset(BORDER + gutters))
-        thumbsFrom?.let { drawThumbs(canvas, it) }
     }
 
     /** No-op below 2x2. */
@@ -77,14 +93,13 @@ public class Bordered(
 
     /**
      * Draws a scrollbar thumb on the right border ([ScrollState.maxOffset]`.y > 0`) and/or bottom
-     * border (`.x > 0`), at the ranges [ScrollGeometry.thumb] computes from [viewport]'s settled
-     * state and this box's own viewport size — the same region [content] was just rendered into.
+     * border (`.x > 0`), at the ranges [ScrollGeometry.thumb] computes from [scroll]'s settled
+     * values and this box's own viewport size — the same region [content] was just rendered into.
      */
-    private fun drawThumbs(canvas: Canvas, viewport: Viewport) {
+    internal fun drawThumbs(canvas: Canvas, scroll: ScrollState) {
         val inset = BORDER + gutters
         val viewportWidth = canvas.width - inset.left - inset.right
         val viewportHeight = canvas.height - inset.top - inset.bottom
-        val scroll = viewport.scroll
 
         val thumbStyle = Cell.Style(borderColor)
 
@@ -127,4 +142,21 @@ public class Bordered(
          */
         public val VIEWPORT_INSET: Insets = BORDER + PADDING.horizontal()
     }
+
+    private inner class PreparedBorder(
+        private val child: ContentLayout,
+        private val inset: Insets,
+    ) : View {
+        override fun draw(canvas: Canvas) {
+            drawBorder(canvas)
+            child.draw(canvas.inset(inset))
+        }
+    }
+
+    private fun checkedAdd(left: Int, right: Int, description: String): Int =
+        try {
+            Math.addExact(left, right)
+        } catch (_: ArithmeticException) {
+            error("$description overflowed")
+        }
 }

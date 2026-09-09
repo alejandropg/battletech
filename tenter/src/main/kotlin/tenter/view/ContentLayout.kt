@@ -114,18 +114,18 @@ public class ContentLayout internal constructor(
     }
 
     internal sealed interface Instruction {
-        internal data class Text(
+        data class Text(
             val x: Int,
             val y: Int,
             val text: String,
             val style: Cell.Style,
         ) : Instruction
 
-        internal data class Reveal(val rect: RevealRect) : Instruction
+        data class Reveal(val rect: RevealRect) : Instruction
 
-        internal data class Child(val x: Int, val y: Int, val content: ContentLayout) : Instruction
+        data class Child(val x: Int, val y: Int, val content: ContentLayout) : Instruction
 
-        internal data class Raw(val view: View) : Instruction
+        data class Raw(val view: View) : Instruction
     }
 
     private fun clip(rect: RevealRect, boundWidth: Int, boundHeight: Int): RevealRect? {
