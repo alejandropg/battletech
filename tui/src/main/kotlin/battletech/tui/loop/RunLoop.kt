@@ -398,12 +398,15 @@ internal fun resolveInput(
 }
 
 /**
- * Which key layers are live this frame, in resolution-precedence order. Game input
- * (the active phase's own context) is omitted once the match has ended — chrome (focus, resize,
- * pan, quit) stays live regardless.
+ * The application layers intentionally placed before lower-precedence phase layers. They are
+ * included first by [activeContexts], whose phase layer is omitted once the match has ended while
+ * chrome (focus, resize, pan, quit) stays live regardless.
  */
+internal val SHADOWING_CONTEXTS: Set<ContextId> = setOf(ContextId.PANEL_SCROLL)
+
+/** Which key layers are live this frame, in resolution-precedence order. */
 private fun activeContexts(focused: GamePanelId, appState: AppState): List<ContextId> = buildList {
-    if (focused != GamePanelId.BOARD) add(ContextId.PANEL_SCROLL)
+    if (focused != GamePanelId.BOARD) addAll(SHADOWING_CONTEXTS)
     add(ContextId.CHROME)
     add(ContextId.GAME_CHROME)
     if (appState.matchEnded == null) add(appState.phase.keyContext)

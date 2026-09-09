@@ -1,6 +1,6 @@
 # Tenter library readiness: implementation plan
 
-Date: 2026-09-09. Status: stage 07 complete; stage 08 is next.
+Date: 2026-09-09. Status: stage 08 complete; stage 09 is next.
 
 ## Objective and authorization
 
@@ -97,7 +97,7 @@ The final deliverable includes a user-facing Tenter README, supported text/threa
 | 05 | Complete | Consumer migration and measurement-bridge removal; handoff below. |
 | 06 | Complete | Stateful panel ownership, grouped presentations, and exclusive set attachment; handoff below. |
 | 07 | Complete | Consistent geometry, settled-frame hit-testing, and application-local mouse policy; handoff below. |
-| 08 | Pending | — |
+| 08 | Complete | Reusable keymap validation; handoff below. |
 | 09 | Pending | — |
 | 10 | Pending | — |
 | 11 | Pending | — |
@@ -191,3 +191,13 @@ Keep handoffs compact. The source and stage documents own the detailed contracts
 - Temporary bridges: none introduced and no stage-03–05 bridges remain. `Workspace.boardOffset` remains a read-only test/application observation of the panel set; it is not copied into `AppState` or used for click conversion. The TUI's `legacyPanelScrollDelta` is an intentional application compatibility adapter for the installed Mordant behavior, not a toolkit bridge; stage 08 should leave it untouched.
 - Decision clarified from source evidence: a panel's border/stub can identify the panel while the optional content point is null; content points are accepted only inside the settled viewport and unpadded prepared-content dimensions. Queued scroll does not affect hit-testing until the next render. This preserves the last displayed frame and avoids a second scroll owner or caller-side border arithmetic.
 - Next exact task: stage 08, reusable keymap validation. Start with this handoff and `08-keymap-validation.md`, then inspect `tenter/input/{KeyBinding,KeyMap,KeyHints}.kt`, `tui/input/{Keybindings,ContextId}.kt`, and both keymap/keybinding test suites. Keep exact Mordant chord equality, preserve the TUI-only coexistence/shadowing policy, and retain the packaged example while moving structural validation into `KeyMap`.
+
+### Stage 08 handoff — reusable keymap validation
+
+- Completed stage 08. `KeyMap` now snapshots the supplied context map, binding lists, and hint-group lists behind immutable observations; validates duplicate exact chords, nonblank/unique group ids, nonblank references, local titled references, unambiguous sectionless credits, and credited-or-`bindingless` groups at construction; and reports unknown contexts/sectionless help requests as `IllegalArgumentException`. Removed public `KeyMap.allBindings()` and `allHintGroups()` implementation-coupled helpers and removed `KeyLayer.shadowing`; `contexts`, `layer`, `resolve`, `hints`, and `chordsFor` remain the meaningful consumer surface. The action equality/id stability requirement is documented on `KeyMap`.
+- Migrated the TUI to the validated constructor, moved its coexistence policy to internal `SHADOWING_CONTEXTS` beside `RunLoop`'s context-precedence declaration, and kept protected-CHROME checks and default behavior tests. To satisfy the new sectionless-owner rule without flattening local ids, renamed only the internal game/global hint id `focusPanel` to `gameFocusPanel`; visible help labels/descriptions and all chords are unchanged. The external example required no source migration and continues to construct/help-render through the validated `KeyMap`.
+- Files changed: `tenter/input/KeyBinding.kt`, `KeyMap.kt`, and `KeyMapTest.kt`; `tui/input/Keybindings.kt`, `tui/loop/RunLoop.kt`, and `tui/input/KeybindingsTest.kt`; and the keybinding section of `docs/architecture.md`. No module/dependency edge changed; `tenter` remains BattleTech-free. Tests now cover empty maps, unknown contexts, all malformed structural cases, local duplicate ids, valid sectionless credits, bindingless rows, source/observation immutability, exact chord behavior, and retained TUI policies.
+- Validation passed: forced `./gradlew :tenter:test :tui:test :tenter-example:build --rerun-tasks`; focused `KeyMapTest`/`KeybindingsTest`; forced `./gradlew :tenter-example:packagedSmoke --rerun-tasks`; and `git diff --check`. The packaged consumer remains independent of repository sources and retains its prior successful smoke result (`SmokeResult(renderedRows=40, helpContainsMovement=true, animationCompleted=true)`).
+- Temporary bridges: none introduced and no stage-03–05 bridges remain. The TUI `legacyPanelScrollDelta` remains the intentional stage-07 application adapter and is unrelated to this stage. No compatibility or serialization promise was added; keymap data remains caller-provided and action/chord values are retained, not copied.
+- Decision clarified from source evidence: repeated ids remain valid across titled layers only for local references. The existing `GAME_CHROME` sectionless layer's `focusPanel` reference was ambiguous against `SETUP`, so the game/global group received the unambiguous internal id `gameFocusPanel`; resolving by a global id set would have violated the fixed contract.
+- Next exact task: stage 09, scoped terminal lifecycle and flow/thread contracts. Start with this handoff and `09-terminal-lifecycle.md`, then inspect `tenter/screen/ScreenRenderer.kt`, `tenter/terminal/TerminalEvent.kt`, terminal/renderer tests, `tui/Main.kt`'s `withScreen`, and `TuiApp`/`SetupApp`. Revisit the stage-00 manual lifecycle finding; do not begin stage 09 in this session.

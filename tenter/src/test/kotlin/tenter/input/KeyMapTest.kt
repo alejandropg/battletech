@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 
 internal class KeyMapTest {
 
-    private enum class Ctx { FIRST, SECOND }
+    private enum class Ctx { FIRST, SECOND, THIRD }
 
     private data class TestAction(override val id: String) : InputAction
 
@@ -24,8 +24,8 @@ internal class KeyMapTest {
             val chord = KeyboardEvent("x")
             val map = KeyMap(
                 mapOf(
-                    Ctx.FIRST to KeyLayer(title = "FIRST", bindings = listOf(KeyBinding(chord, actionA, "group"))),
-                    Ctx.SECOND to KeyLayer(title = "SECOND", bindings = listOf(KeyBinding(chord, actionB, "group"))),
+                    Ctx.FIRST to titledLayer("FIRST", listOf(KeyBinding(chord, actionA, "group"))),
+                    Ctx.SECOND to titledLayer("SECOND", listOf(KeyBinding(chord, actionB, "group"))),
                 ),
             )
 
@@ -37,8 +37,8 @@ internal class KeyMapTest {
             val chord = KeyboardEvent("x")
             val map = KeyMap(
                 mapOf(
-                    Ctx.FIRST to KeyLayer(title = "FIRST", bindings = listOf(KeyBinding(chord, actionA, "group"))),
-                    Ctx.SECOND to KeyLayer(title = "SECOND", bindings = listOf(KeyBinding(chord, actionB, "group"))),
+                    Ctx.FIRST to titledLayer("FIRST", listOf(KeyBinding(chord, actionA, "group"))),
+                    Ctx.SECOND to titledLayer("SECOND", listOf(KeyBinding(chord, actionB, "group"))),
                 ),
             )
 
@@ -51,7 +51,7 @@ internal class KeyMapTest {
             val map = KeyMap(
                 mapOf(
                     Ctx.FIRST to KeyLayer(title = "FIRST", bindings = emptyList()),
-                    Ctx.SECOND to KeyLayer(title = "SECOND", bindings = listOf(KeyBinding(KeyboardEvent("x"), actionB, "group"))),
+                    Ctx.SECOND to titledLayer("SECOND", listOf(KeyBinding(KeyboardEvent("x"), actionB, "group"))),
                 ),
             )
 
@@ -88,8 +88,8 @@ internal class KeyMapTest {
         fun `finds every chord bound to an action across every layer`() {
             val map = KeyMap(
                 mapOf(
-                    Ctx.FIRST to KeyLayer(title = "FIRST", bindings = listOf(KeyBinding(KeyboardEvent("x"), actionA, "group"))),
-                    Ctx.SECOND to KeyLayer(title = "SECOND", bindings = listOf(KeyBinding(KeyboardEvent("y"), actionA, "group"))),
+                    Ctx.FIRST to titledLayer("FIRST", listOf(KeyBinding(KeyboardEvent("x"), actionA, "group"))),
+                    Ctx.SECOND to titledLayer("SECOND", listOf(KeyBinding(KeyboardEvent("y"), actionA, "group"))),
                 ),
             )
 
@@ -105,7 +105,18 @@ internal class KeyMapTest {
                 HintGroup("first", "F", "first thing"),
                 HintGroup("second", "S", "second thing"),
             )
-            val map = KeyMap(mapOf(Ctx.FIRST to KeyLayer(title = "TITLE", bindings = emptyList(), hintGroups = groups)))
+            val map = KeyMap(
+                mapOf(
+                    Ctx.FIRST to KeyLayer(
+                        title = "TITLE",
+                        bindings = listOf(
+                            KeyBinding(KeyboardEvent("f"), actionA, "first"),
+                            KeyBinding(KeyboardEvent("s"), actionB, "second"),
+                        ),
+                        hintGroups = groups,
+                    ),
+                ),
+            )
 
             val section = map.hints(Ctx.FIRST)
 
@@ -117,7 +128,193 @@ internal class KeyMapTest {
         fun `a null-titled layer throws when asked for hints`() {
             val map = KeyMap(mapOf(Ctx.FIRST to KeyLayer(title = null, bindings = emptyList())))
 
-            assertThrows(IllegalStateException::class.java) { map.hints(Ctx.FIRST) }
+            assertThrows(IllegalArgumentException::class.java) { map.hints(Ctx.FIRST) }
+        }
+    }
+
+    @Nested
+    inner class ConstructionValidationTest {
+        @Test
+        fun `rejects duplicate exact chords even when they name the same action`() {
+            assertInvalid("duplicate exact chord") {
+                KeyMap(
+                    mapOf(
+                        Ctx.FIRST to titledLayer(
+                            "FIRST",
+                            listOf(
+                                KeyBinding(KeyboardEvent("x"), actionA, "group"),
+                                KeyBinding(KeyboardEvent("x"), actionA, "group"),
+                            ),
+                        ),
+                    ),
+                )
+            }
+        }
+
+        @Test
+        fun `rejects blank binding references and hint ids`() {
+            assertInvalid("blank hint group reference") {
+                KeyMap(
+                    mapOf(
+                        Ctx.FIRST to KeyLayer(
+                            title = "FIRST",
+                            bindings = listOf(KeyBinding(KeyboardEvent("x"), actionA, " ")),
+                        ),
+                    ),
+                )
+            }
+
+            assertInvalid("blank id") {
+                KeyMap(
+                    mapOf(
+                        Ctx.FIRST to KeyLayer(
+                            title = "FIRST",
+                            bindings = emptyList(),
+                            hintGroups = listOf(HintGroup(" ", "x", "blank")),
+                        ),
+                    ),
+                )
+            }
+        }
+
+        @Test
+        fun `rejects duplicate hint group ids within one layer`() {
+            assertInvalid("duplicate hint group id") {
+                KeyMap(
+                    mapOf(
+                        Ctx.FIRST to KeyLayer(
+                            title = "FIRST",
+                            bindings = emptyList(),
+                            hintGroups = listOf(
+                                HintGroup("same", "a", "first", bindingless = true),
+                                HintGroup("same", "b", "second", bindingless = true),
+                            ),
+                        ),
+                    ),
+                )
+            }
+        }
+
+        @Test
+        fun `rejects a titled binding that references an absent group`() {
+            assertInvalid("not declared by that titled layer") {
+                KeyMap(
+                    mapOf(
+                        Ctx.FIRST to KeyLayer(
+                            title = "FIRST",
+                            bindings = listOf(KeyBinding(KeyboardEvent("x"), actionA, "missing")),
+                        ),
+                    ),
+                )
+            }
+        }
+
+        @Test
+        fun `rejects an orphan group unless it is explicitly bindingless`() {
+            assertInvalid("orphaned") {
+                KeyMap(
+                    mapOf(
+                        Ctx.FIRST to KeyLayer(
+                            title = "FIRST",
+                            bindings = emptyList(),
+                            hintGroups = listOf(HintGroup("orphan", "o", "orphan")),
+                        ),
+                    ),
+                )
+            }
+
+            KeyMap(
+                mapOf(
+                    Ctx.FIRST to KeyLayer(
+                        title = "FIRST",
+                        bindings = emptyList(),
+                        hintGroups = listOf(HintGroup("wheel", "wheel", "scroll", bindingless = true)),
+                    ),
+                ),
+            )
+        }
+
+        @Test
+        fun `allows repeated group ids on separate titled layers when references are local`() {
+            val map = KeyMap(
+                mapOf(
+                    Ctx.FIRST to titledLayer("FIRST", listOf(KeyBinding(KeyboardEvent("x"), actionA, "group"))),
+                    Ctx.SECOND to titledLayer("SECOND", listOf(KeyBinding(KeyboardEvent("y"), actionB, "group"))),
+                ),
+            )
+
+            assertEquals(actionA, map.resolve(listOf(Ctx.FIRST), KeyboardEvent("x")))
+            assertEquals(actionB, map.resolve(listOf(Ctx.SECOND), KeyboardEvent("y")))
+        }
+
+        @Test
+        fun `requires a sectionless binding to resolve to exactly one titled owner`() {
+            val owner = titledLayer(
+                "OWNER",
+                emptyList(),
+                hintGroups = listOf(HintGroup("shared", "s", "shared")),
+            )
+            val sectionless = KeyLayer(
+                title = null,
+                bindings = listOf(KeyBinding(KeyboardEvent("x"), actionA, "shared")),
+            )
+            val map = KeyMap(mapOf(Ctx.FIRST to owner, Ctx.SECOND to sectionless))
+            assertEquals(actionA, map.resolve(listOf(Ctx.SECOND), KeyboardEvent("x")))
+
+            assertInvalid("no titled layer") {
+                KeyMap(mapOf(Ctx.SECOND to sectionless))
+            }
+            assertInvalid("titled layers") {
+                KeyMap(
+                    mapOf(
+                        Ctx.FIRST to owner,
+                        Ctx.SECOND to titledLayer(
+                            "SECOND",
+                            emptyList(),
+                            hintGroups = listOf(HintGroup("shared", "s", "shared")),
+                        ),
+                        Ctx.THIRD to sectionless,
+                    ),
+                )
+            }
+        }
+
+        @Test
+        fun `copies source maps and lists and does not expose mutable captured collections`() {
+            val sourceBindings = mutableListOf(KeyBinding(KeyboardEvent("x"), actionA, "group"))
+            val sourceHints = mutableListOf(HintGroup("group", "x", "action"))
+            val source = linkedMapOf<Ctx, KeyLayer>(
+                Ctx.FIRST to KeyLayer("FIRST", sourceBindings, sourceHints),
+            )
+            val map = KeyMap(source)
+
+            source.clear()
+            sourceBindings.clear()
+            sourceHints.clear()
+
+            assertEquals(setOf(Ctx.FIRST), map.contexts)
+            assertEquals(actionA, map.resolve(listOf(Ctx.FIRST), KeyboardEvent("x")))
+            assertEquals(listOf(KeyHint("x", "action")), map.hints(Ctx.FIRST).hints)
+            assertThrows(UnsupportedOperationException::class.java) {
+                (map.layer(Ctx.FIRST).bindings as MutableList).clear()
+            }
+            assertThrows(UnsupportedOperationException::class.java) {
+                (map.contexts as MutableSet).clear()
+            }
+        }
+
+        @Test
+        fun `allows an empty keymap and rejects unknown contexts as argument errors`() {
+            val map = KeyMap<Ctx>(emptyMap())
+
+            assertTrue(map.contexts.isEmpty())
+            assertNull(map.resolve(emptyList(), KeyboardEvent("x")))
+            assertThrows(IllegalArgumentException::class.java) {
+                map.resolve(listOf(Ctx.FIRST), KeyboardEvent("x"))
+            }
+            assertThrows(IllegalArgumentException::class.java) {
+                map.layer(Ctx.FIRST)
+            }
         }
     }
 
@@ -139,5 +336,16 @@ internal class KeyMapTest {
                 KeyBinding(KeyboardEvent(""), actionA, "group")
             }
         }
+    }
+
+    private fun titledLayer(
+        title: String,
+        bindings: List<KeyBinding>,
+        hintGroups: List<HintGroup> = listOf(HintGroup("group", "x", "test")),
+    ): KeyLayer = KeyLayer(title = title, bindings = bindings, hintGroups = hintGroups)
+
+    private fun assertInvalid(message: String, block: () -> Unit): Unit {
+        val error = assertThrows(IllegalArgumentException::class.java, block)
+        assertTrue(error.message.orEmpty().contains(message), "Expected '$message' in '${error.message}'")
     }
 }

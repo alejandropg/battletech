@@ -86,7 +86,7 @@ private fun chromeLayer(): KeyLayer {
         )
 
     val hintGroups = listOf(
-        HintGroup("focusPanel", "0-9", "focus/resize a panel"),
+        HintGroup("gameFocusPanel", "0-9", "focus/resize a panel"),
         HintGroup("toggleHelp", "?", "toggle help"),
         HintGroup("cycleState", "+/-", "resize focused panel"),
         HintGroup("scrollFocused", "↑↓/PgUp/PgDn", "scroll focused panel"),
@@ -103,7 +103,7 @@ private fun chromeLayer(): KeyLayer {
  * The game screen's own chrome: panel focus (`0`-`9`) and board pan/recenter — bindings that only
  * make sense once a [GamePanelId] board exists, so they don't belong in [chromeLayer], which every
  * screen (including SETUP) shares. `title = null`: these chords are documented by GLOBAL's
- * `focusPanel`/`pan`/`recenter` rows (see [tenter.input.KeyMap]'s KDoc on section-less layers).
+ * `gameFocusPanel`/`pan`/`recenter` rows (see [tenter.input.KeyMap]'s KDoc on section-less layers).
  */
 private fun gameChromeLayer(): KeyLayer {
     val focusPanelBindings = listOf(
@@ -114,7 +114,7 @@ private fun gameChromeLayer(): KeyLayer {
         KeyboardEvent("4") to GamePanelId.TARGET_STATUS,
         KeyboardEvent("5") to GamePanelId.ATTACK_RESULTS,
         KeyboardEvent("9") to GamePanelId.LOG,
-    ).map { (chord, panel) -> KeyBinding(chord, ChromeAction.FocusPanel(panel), "focusPanel") }
+    ).map { (chord, panel) -> KeyBinding(chord, ChromeAction.FocusPanel(panel), "gameFocusPanel") }
 
     val bindings = focusPanelBindings + panBindings("pan") + listOf(
         KeyBinding(KeyboardEvent("Home"), PanAction.Recenter, "recenter"),
@@ -161,7 +161,7 @@ private fun setupLayer(): KeyLayer {
         HintGroup("commit", "c", "commit"),
     )
 
-    return KeyLayer(title = "SETUP", bindings = bindings, hintGroups = hintGroups, shadowing = false)
+    return KeyLayer(title = "SETUP", bindings = bindings, hintGroups = hintGroups)
 }
 
 /** Board-style pan chords shared by the game and setup maximized views. */
@@ -178,7 +178,6 @@ private fun panBindings(hintGroup: String): List<KeyBinding> = listOf(
 
 private fun panelScrollLayer(): KeyLayer = KeyLayer(
     title = null,
-    shadowing = true,
     bindings = listOf(
         KeyBinding(KeyboardEvent("ArrowUp"), ScrollAction.Lines(-1), "scrollFocused"),
         KeyBinding(KeyboardEvent("ArrowDown"), ScrollAction.Lines(1), "scrollFocused"),

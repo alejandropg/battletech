@@ -113,9 +113,15 @@ is permitted anywhere in the module, unlike every other third-party dependency.)
 **Keybindings are data, not `when` branches**: every keyboard binding in `tui` is a chord-to-action
 value in one `KeyMap<ContextId>` (`Keybindings.DEFAULT`, built in `tui/src/main/kotlin/battletech/
 tui/input/Keybindings.kt`), not a statement scattered across `RunLoop` and each `Phase.handle`.
+`KeyMap` copies its context/layer/group collections and validates structural invariants at
+construction: exact chords are unique within a layer, group ids and binding references are valid,
+titled references are local, sectionless references resolve to exactly one titled owner, and every
+group is credited or explicitly `bindingless`. Repeated group ids on different titled layers are
+therefore safe when references are local; a sectionless reference must use an unambiguous id. The
+caller keeps the identity/equality and `InputAction.id` of action values stable after construction.
 Resolution precedence is an ordered list of active contexts — `CHROME` and, when a side panel is
-focused, the shadowing `PANEL_SCROLL` layer, always first; the active phase's own context, last,
-and omitted entirely once the match has ended — computed fresh every frame in `RunLoop.
+focused, the TUI-owned `PANEL_SCROLL` policy layer, always first; the active phase's own context,
+last, and omitted entirely once the match has ended — computed fresh every frame in `RunLoop.
 activeContexts`, not encoded as `if`/`when` order the way it was before this table existed. A
 board click is the one input that does *not* go through the table (the mouse is deliberately not
 bindable), so it carries the match-ended gate by hand; both halves live together in
@@ -130,12 +136,12 @@ sections and every panel's border badge are *derived* from the same table (`Keyb
 the panel builder's own fact (`ChromeAction.FocusPanel` for most, `ChromeAction.ToggleHelp` for
 HELP, whose `?` does more than focus), and asking for a panel instead would make `Keybindings`
 carry a list of which panel ids are "the help one" on every screen that exists.
-Six `KeybindingsTest` invariants enforce the shape this depends on: `CHROME`'s chords never
-collide with a non-shadowing context's; a shadowing context never shadows `CHROME`, which every
-shadowing layer precedes; every declared `ContextId` has a layer; every binding's hint group is
-declared by its own layer and every declared group is credited by a binding (or marked
-`bindingless`); every hint label is exactly one cell per codepoint, so a help panel's key column
-stays aligned; and every binding's action matches its context's declared action family — the
+`KeyMapTest` exercises those construction failures and snapshots through the reusable interface.
+The TUI's `KeybindingsTest` retains the application policies that cannot belong in the toolkit:
+`CHROME`'s chords never collide with a non-shadowing context's; a shadowing context never shadows
+`CHROME`, which every shadowing layer precedes; every declared `ContextId` has a layer; every hint
+label is exactly one cell per codepoint, so a help panel's key column stays aligned; and every
+binding's action matches its context's declared action family — the
 property that makes narrowing an `InputAction` back down to (say) `BrowsingAction` inside a
 `Phase.handle` safe by construction rather than a runtime hope. Two further tests pin behaviour
 rather than shape: a characterisation of the default chords, and `badgeFor`'s per-panel badge,

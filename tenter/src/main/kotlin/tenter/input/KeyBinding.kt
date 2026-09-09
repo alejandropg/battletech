@@ -4,7 +4,7 @@ import com.github.ajalt.mordant.input.KeyboardEvent
 
 /**
  * Something a key can do. The [id] is a stable, human-readable name — it exists so the HELP panel
- * and a future config file can refer to an action without depending on its type. Implementations
+ * and a caller's configuration can refer to an action without depending on its type. Implementations
  * live wherever the thing they act on lives: [PanAction]/[ScrollAction] here, everything that names
  * an application object (a panel, a game unit) in the application.
  */
@@ -57,14 +57,10 @@ public data class HintGroup(
  * [title] is the help panel's section heading, or null for a layer that never renders a section of
  * its own (its bindings are credited to a [HintGroup] declared on another layer — see
  * `Keybindings.DEFAULT`'s `PANEL_SCROLL`).
- *
- * [shadowing] marks a layer that deliberately binds chords a lower-precedence layer also binds —
- * `PANEL_SCROLL`'s bare arrows over the phases' cursor arrows. It is what separates a designed
- * override from an accidental collision, and it is the only exemption from the collision invariant.
+ * Structural validity, including sectionless credits, is owned by [KeyMap] at construction.
  */
 public data class KeyLayer(
-    val title: String?,
-    val bindings: List<KeyBinding>,
-    val hintGroups: List<HintGroup> = emptyList(),
-    val shadowing: Boolean = false,
+    public val title: String?,
+    public val bindings: List<KeyBinding>,
+    public val hintGroups: List<HintGroup> = emptyList(),
 )
