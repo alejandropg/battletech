@@ -121,6 +121,11 @@ public class Canvas private constructor(
         return RevealRect(reveal.x - originX, reveal.y - originY, reveal.width, reveal.height)
     }
 
+    /** Clears the reveal request in this canvas's backing frame. Used by prepared frame scopes. */
+    internal fun clearReveal() {
+        buffer.reveal = null
+    }
+
     /**
      * Copies a [width]x[height] block from [src] at ([srcX], [srcY]) to this canvas at
      * ([destX], [destY]). Clipping is computed entirely in LOCAL coordinates against both

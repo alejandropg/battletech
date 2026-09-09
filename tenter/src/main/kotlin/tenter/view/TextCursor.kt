@@ -8,11 +8,22 @@ import tenter.text.CellWidth
 import tenter.text.TextTruncation
 import tenter.text.textClusters
 
-public class TextCursor(private val canvas: Canvas) {
-    public val width: Int get() = canvas.width
+public class TextCursor private constructor(
+    private val sink: TextSink,
+) {
+    public constructor(canvas: Canvas) : this(CanvasTextSink(canvas))
+
+    internal constructor(width: Int, sink: TextSink) : this(sink) {
+        require(width == sink.width) { "cursor width must match its sink" }
+    }
+
+    public val width: Int get() = sink.width
 
     /** The row the next [writeLine]/[writeRow] lands on. */
     public var row: Int = 0
+        private set
+
+    internal var occupiedHeight: Int = 0
         private set
 
     public fun writeHeader(label: String) {
@@ -28,14 +39,19 @@ public class TextCursor(private val canvas: Canvas) {
      * band. Returns the number of rows [view] used.
      */
     public fun draw(view: View): Int {
-        val remaining = canvas.region(0, row, canvas.width, canvas.height - row)
-        if (remaining.width <= 0 || remaining.height <= 0) return 0
-        val stream = Canvas.offscreen(remaining.width, remaining.height)
-        view.draw(stream)
-        val used = stream.contentHeight()
-        canvas.blit(stream, 0, 0, 0, row, remaining.width, used)
+        val immediate = sink as? CanvasTextSink
+            ?: error("raw View insertion requires fixedContent in prepared content")
+        val used = immediate.drawLegacy(view, row)
         repeat(used) { newLine() }
         return used
+    }
+
+    /** Prepares [content] once, places its logical layout at the current row, and advances past it. */
+    public fun draw(content: ContentView): Int {
+        val layout = content.layout(width)
+        sink.place(layout, 0, row)
+        repeat(layout.height) { newLine() }
+        return layout.height
     }
 
     private fun sectionHeader(label: String): String {
@@ -47,8 +63,9 @@ public class TextCursor(private val canvas: Canvas) {
     /** Writes [text] on the current row and advances. Returns the row it was written to. */
     public fun writeLine(text: String, style: Cell.Style = Cell.Style.DEFAULT): Int {
         val written = row
-        canvas.writeString(0, written, TextTruncation.ellipsize(text, width), style)
+        sink.write(0, written, TextTruncation.ellipsize(text, width), style)
         row += 1
+        occupy(row)
         return written
     }
 
@@ -61,16 +78,18 @@ public class TextCursor(private val canvas: Canvas) {
         val written = row
         var column = 0
         for (span in text.ellipsize(width).spans) {
-            canvas.writeString(column, written, span.text, span.style)
+            sink.write(column, written, span.text, span.style)
             column += CellWidth.of(span.text)
         }
         row += 1
+        occupy(row)
         return written
     }
 
     /** Writes [text] at [column] on the current row, without advancing. */
     public fun write(column: Int, text: String, style: Cell.Style = Cell.Style.DEFAULT) {
-        canvas.writeString(column, row, text, style)
+        sink.write(column, row, text, style)
+        occupy(row + 1)
     }
 
     /** Which edge of a [width]-wide field [write] anchors [text] against. */
@@ -91,7 +110,8 @@ public class TextCursor(private val canvas: Canvas) {
         val fitted = TextTruncation.ellipsize(text, width)
         val fittedWidth = CellWidth.of(fitted)
         val startColumn = if (align == Align.LEFT) column else column + width - fittedWidth
-        canvas.writeString(startColumn, row, fitted, style)
+        sink.write(startColumn, row, fitted, style)
+        occupy(row + 1)
     }
 
     /**
@@ -104,29 +124,36 @@ public class TextCursor(private val canvas: Canvas) {
         val rightWidth = CellWidth.of(visibleRight)
         val maxLeft = (width - rightWidth - 1).coerceAtLeast(0)
         val written = row
-        canvas.writeString(0, written, TextTruncation.ellipsize(left, maxLeft), leftStyle)
-        canvas.writeString(width - rightWidth, written, visibleRight, rightStyle)
+        sink.write(0, written, TextTruncation.ellipsize(left, maxLeft), leftStyle)
+        sink.write(width - rightWidth, written, visibleRight, rightStyle)
         row += 1
+        occupy(row)
         return written
     }
 
     public fun newLine() {
         row += 1
+        occupy(row)
     }
 
     /** Marks the current row (full width) as the content the enclosing scrollable view should keep visible. */
     public fun markReveal(height: Int = 1) {
-        canvas.markReveal(0, row, width, height)
+        sink.reveal(0, row, width, height)
     }
 
     /** Marks [atRow] (full width), rather than the current row, as the content to keep visible. */
     public fun markRevealAt(atRow: Int, height: Int = 1) {
-        canvas.markReveal(0, atRow, width, height)
+        sink.reveal(0, atRow, width, height)
     }
 
     /** Overlays [text] onto an already-written [atRow] at [column] — for repainting part of a finished row. */
     public fun writeAt(column: Int, atRow: Int, text: String, style: Cell.Style = Cell.Style.DEFAULT) {
-        canvas.writeString(column, atRow, text, style)
+        sink.write(column, atRow, text, style)
+        occupy(atRow + 1)
+    }
+
+    private fun occupy(height: Int) {
+        if (height > occupiedHeight) occupiedHeight = height
     }
 
     private companion object {

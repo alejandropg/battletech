@@ -1,6 +1,6 @@
 # Tenter library readiness: implementation plan
 
-Date: 2026-09-09. Status: stage 02 complete; stage 03 is next.
+Date: 2026-09-09. Status: stage 03 complete; stage 04 is next.
 
 ## Objective and authorization
 
@@ -92,7 +92,7 @@ The final deliverable includes a user-facing Tenter README, supported text/threa
 | 00 | Complete | Minimal packaged external consumer added; findings and validation below. |
 | 01 | Complete | Shared grapheme segmentation/display-width contract implemented; handoff below. |
 | 02 | Complete | Canvas glyph integrity and renderer-owned frames implemented; handoff below. |
-| 03 | Pending | — |
+| 03 | Complete | Prepared content seam added; handoff below. |
 | 04 | Pending | — |
 | 05 | Pending | — |
 | 06 | Pending | — |
@@ -140,3 +140,13 @@ Keep handoffs compact. The source and stage documents own the detailed contracts
 - Validation passed: `./gradlew :tenter:test :tui:test :tenter-example:build --rerun` (Tenter 292 tests and TUI green); `./gradlew :tenter-example:packagedSmoke --rerun` passed against only `tenter.jar` and its resolved runtime closure with `SmokeResult(renderedRows=40, helpContainsMovement=true, animationCompleted=true)`; `git diff --check`. The stage-specific screen regressions cover wide glyph clipping/replacement/style output through `TerminalRecorder`, invalid cells, grapheme writes, region/reveal intersection, overlap blits, reusable buffers, and resize cleanup.
 - Decision clarified from source evidence: every current `Canvas.region` consumer either supplies a non-negative bounded slot, uses a guarded overlay, or deliberately benefits from intersection at a small/partial canvas; no consumer required the old negative-origin shrink behavior. The existing public continuation observation is preserved for compatibility, but it is no longer a valid stored write. No temporary stage-02 bridge remains; `ContentExtent.Measured` and immediate measurement/composition paths remain assigned to stages 03–05.
 - Next exact task: stage 03, prepared content with exact occupied size. Start with `03-prepared-content.md`, `tenter/view/Viewport.kt`, `ContentExtent`/`View`/`TextCursor`, the current composition decorators and their tests; introduce `ContentView`/`ContentLayout` beside the immediate path without migrating every consumer yet. Preserve the stage-02 glyph storage, clipping, and renderer snapshot contracts.
+
+### Stage 03 handoff — prepared content with exact occupied size
+
+- Completed stage 03. Added public `ContentView : View` with `layout(availableWidth: Int): ContentLayout`, immutable `ContentLayout(width, height)`, `RevealPreference.FIRST/LAST`, `ContentLayout.Builder.place(x, y, content)` and `.reveal(x, y, width, height)`, plus `contentView`, `contentLayout`, and `fixedContent` factories. Added `TextCursor.draw(ContentView)`; its recording adapter prepares a child once, stores placement, and advances by logical height. `Canvas.clearReveal` and the internal text-sink adapters provide the reveal/frame seam without widening the public screen abstraction.
+- Flowing content records text/style operations and cursor reservations, so trailing blank rows, blank-only content, overlays, and 1,000-row content retain exact occupied height without painting to measure. Fixed content records a declared-size raw view and paints it once per layout paint; preparation never calls it. Layout painting snapshots child placement, preserves paint order, translates/clips child and raw reveal requests, resolves nested preferences within the child, and publishes only the settled final request. Built layouts are unaffected by later builder/captured-value mutation.
+- Files changed: `tenter/view/{ContentLayout,ContentView,ContentFactories,RevealPreference,TextCursor,TextSink,CanvasTextSink,RecordingTextSink}.kt`, `tenter/screen/Canvas.kt`, and `tenter/view/ContentLayoutTest.kt`. No new production dependency or package-layer edge; `view` uses its existing `view → screen` seam. TUI and the external example remain on the legacy path by design; no application migration was assigned to this stage.
+- Validation passed: `./gradlew :tenter:test :tui:test :tenter-example:build --rerun` (303 Tenter tests, TUI tests, and example build green); `./gradlew :tenter-example:packagedSmoke --rerun` passed in the separate packaged consumer (`SmokeResult(renderedRows=40, helpContainsMovement=true, animationCompleted=true)`); `git diff --check` passed for tracked changes. The staged/untracked source diff was inspected separately; no unrelated worktree changes were present.
+- Temporary bridges remain assigned to stage 05: `ContentExtent.Measured` (including its 512-row ceiling), legacy `TextCursor.draw(View)`, and render-to-scan composition in `Viewport`, `Stack`, and `Columns`. Their removal verification is stage 05's long-content, migrated-consumer, and no-measurement-paint checks. Stage 03 introduced no compatibility bridge beyond keeping those pre-existing declarations buildable.
+- Decision clarified from source evidence: raw fixed views remain caller-owned snapshots and are intentionally not deep-copied; `fixedContent` requires their dimensions up front. The prepared path resolves reveal requests in one paint from explicit, prepared, and raw-fixed instructions, so no caller feedback loop or public provisional target is needed. No departure from the fixed stage contract was required. As recorded by earlier handoffs, LSP was unavailable in this session; targeted source inspection, compiler feedback, and tests covered the changed seam.
+- Next exact task: stage 04, intrinsic prepared `Stack`/`Columns`, prepared padding/border composition, and reusable `ViewportState`. Start with `04-composition-and-scroll.md`, the stage 03 declarations above, and `tenter/view/{Stack,Columns,Padded,Bordered,Viewport,ScrollingPanel,ScrollGeometry,HelpView}.kt` plus their tests. Keep the legacy `ContentExtent`/offset/reveal callers buildable through stage 05, and preserve the packaged example while adding prepared composition.
