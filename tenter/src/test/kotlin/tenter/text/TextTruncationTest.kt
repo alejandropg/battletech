@@ -26,4 +26,14 @@ internal class TextTruncationTest {
         assertEquals("", TextTruncation.ellipsize("hello", 0))
         assertEquals("…", TextTruncation.ellipsize("hello", 1))
     }
+
+    @Test
+    fun `never cuts a grapheme cluster`() {
+        val decomposed = "e\u0301x"
+        val emoji = "👩‍💻"
+
+        assertEquals("e\u0301…", TextTruncation.ellipsize(decomposed + "y", 2))
+        assertEquals(emoji, TextTruncation.ellipsize(emoji, 2))
+        assertEquals("…", TextTruncation.ellipsize(emoji, 1))
+    }
 }

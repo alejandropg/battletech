@@ -131,6 +131,13 @@ internal class PipTrackTest {
     }
 
     @Test
+    fun `rejects negative spacing`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            PipTrack(filled = "F", empty = "E", perRow = 1, spacing = -1)
+        }
+    }
+
+    @Test
     fun `drawAdvancing draws at the cursor's row and moves it past the rows used`() {
         val track = PipTrack(filled = "F", empty = "E", perRow = 3)
         val (content, buffer) = content()

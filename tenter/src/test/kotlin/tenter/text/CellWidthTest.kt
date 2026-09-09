@@ -58,4 +58,25 @@ internal class CellWidthTest {
         // "P1 " = 3, two dice = 2, " 9" = 2 → 7
         assertEquals(7, CellWidth.of(text))
     }
+
+    @Test
+    fun `grapheme clusters are measured atomically`() {
+        assertEquals(2, CellWidth.of("👩‍💻"))
+        assertEquals(1, CellWidth.of("🇪🇸"))
+        assertEquals(1, CellWidth.of("1️⃣"))
+        assertEquals(1, CellWidth.of("❤️"))
+        assertEquals(1, CellWidth.of("e\u0301"))
+    }
+
+    @Test
+    fun `standalone combining marks and terminal controls have no display width`() {
+        assertEquals(0, CellWidth.of("\u0301\u20DD"))
+        assertEquals(2, CellWidth.of("a\t\u001Bb"))
+    }
+
+    @Test
+    fun `isolated surrogates use replacement character width`() {
+        assertEquals(1, CellWidth.of("\uD800"))
+        assertEquals(1, CellWidth.of(0xD800))
+    }
 }

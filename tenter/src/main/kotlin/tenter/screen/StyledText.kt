@@ -3,6 +3,7 @@ package tenter.screen
 import tenter.text.CellWidth
 import tenter.text.TextTruncation
 import tenter.text.TextWrap
+import tenter.text.textClusters
 
 /**
  * Text whose styling varies along its length: a sequence of same-styled [Span]s that measures,
@@ -18,9 +19,8 @@ import tenter.text.TextWrap
  * instances that paint identically are [equals] — which is what makes them usable in
  * assertions.
  *
- * Indices used internally are code-unit indices into [plain]; slices never split a surrogate
- * pair because every boundary comes from [TextWrap] or [TextTruncation], both of which advance
- * by codepoint.
+ * Indices used internally are code-unit indices into [plain]; slices never split a grapheme
+ * cluster because every boundary comes from [TextWrap] or [TextTruncation].
  */
 public class StyledText private constructor(public val spans: List<Span>) {
 
@@ -106,16 +106,42 @@ public class StyledText private constructor(public val spans: List<Span>) {
 
         public fun append(other: StyledText): Unit = other.spans.forEach { append(it.text, it.style) }
 
-        internal fun build(): StyledText = StyledText(spans.toList())
+        internal fun build(): StyledText = StyledText(normalizeSpans(spans))
     }
 
     public companion object {
         public val EMPTY: StyledText = StyledText(emptyList())
 
         public fun of(text: String, style: Cell.Style = Cell.Style.DEFAULT): StyledText =
-            if (text.isEmpty()) EMPTY else StyledText(listOf(Span(text, style)))
+            if (text.isEmpty()) EMPTY else styled { append(text, style) }
 
         public fun of(text: String, fg: ColorRole): StyledText = of(text, Cell.Style(fg = fg))
+
+        private fun normalizeSpans(spans: List<Span>): List<Span> {
+            if (spans.isEmpty()) return emptyList()
+            val plain = spans.joinToString("") { it.text }
+            val normalized = mutableListOf<Span>()
+            for (cluster in textClusters(plain)) {
+                val index = cluster.firstSpacingBaseIndex ?: cluster.startIndex
+                val style = styleAt(spans, index)
+                val last = normalized.lastOrNull()
+                if (last != null && last.style == style) {
+                    normalized[normalized.lastIndex] = last.copy(text = last.text + cluster.sourceText)
+                } else {
+                    normalized += Span(cluster.sourceText, style)
+                }
+            }
+            return normalized
+        }
+
+        private fun styleAt(spans: List<Span>, index: Int): Cell.Style {
+            var offset = 0
+            for (span in spans) {
+                offset += span.text.length
+                if (index < offset) return span.style
+            }
+            return spans.last().style
+        }
     }
 }
 

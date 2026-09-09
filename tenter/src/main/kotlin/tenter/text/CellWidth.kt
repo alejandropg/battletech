@@ -3,6 +3,7 @@ package tenter.text
 public object CellWidth {
 
     public fun of(codePoint: Int): Int = when {
+        codePoint in 0xD800..0xDFFF -> of(0xFFFD)
         codePoint < 0x20 -> 0
         codePoint in 0x7F..0x9F -> 0
         isZeroWidth(codePoint) -> 0
@@ -10,23 +11,19 @@ public object CellWidth {
         else -> 1
     }
 
-    public fun of(text: String): Int = of(text, 0, text.length)
+    public fun of(text: String): Int = textClusters(text).sumOf(TextCluster::width)
 
     /** Display width of the `[startIndex, endIndex)` code-unit slice of [text]. */
     public fun of(text: String, startIndex: Int, endIndex: Int): Int {
-        var total = 0
-        var i = startIndex
-        while (i < endIndex) {
-            val cp = text.codePointAt(i)
-            total += of(cp)
-            i += Character.charCount(cp)
-        }
-        return total
+        require(startIndex in 0..text.length) { "startIndex must be within text" }
+        require(endIndex in startIndex..text.length) { "endIndex must be within text after startIndex" }
+        return textClusters(text.substring(startIndex, endIndex)).sumOf(TextCluster::width)
     }
 
     private fun isZeroWidth(cp: Int): Boolean =
         when (Character.getType(cp).toByte()) {
             Character.NON_SPACING_MARK,
+            Character.COMBINING_SPACING_MARK,
             Character.ENCLOSING_MARK,
             Character.FORMAT -> true
 

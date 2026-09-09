@@ -5,6 +5,7 @@ import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.screen.ColorRole
 import tenter.screen.Insets
+import tenter.text.CellWidth
 
 /**
  * Decorates [content] with a box border, an optional title/badge in the top border, and — when
@@ -52,20 +53,23 @@ public class Bordered(
             canvas.set(width - 1, i, Cell("│", Cell.Style(borderColor)))
         }
 
+        val titleWidth = CellWidth.of(title)
+        val badgeWidth = badge?.let(CellWidth::of) ?: 0
+        val badgeRunWidth = badge?.let { CellWidth.of("[$it]") } ?: 0
         if (title.isNotEmpty()) {
-            if (badge != null && width > title.length + badge.length + 7) {
+            if (badge != null && width > titleWidth + badgeWidth + 7) {
                 canvas.writeString(2, 0, "[$badge] $title", Cell.Style(titleColor))
-                canvas.set(5 + badge.length + title.length, 0, Cell(style = Cell.Style(borderColor)))
-            } else if (badge == null && width > title.length + 6) {
+                canvas.set(5 + badgeWidth + titleWidth, 0, Cell(style = Cell.Style(borderColor)))
+            } else if (badge == null && width > titleWidth + 6) {
                 canvas.set(3, 0, Cell(style = Cell.Style(borderColor)))
                 canvas.writeString(4, 0, title, Cell.Style(titleColor))
-                canvas.set(4 + title.length, 0, Cell(style = Cell.Style(borderColor)))
-            } else if (badge != null && width >= 6) {
+                canvas.set(4 + titleWidth, 0, Cell(style = Cell.Style(borderColor)))
+            } else if (badge != null && width > 2 + badgeRunWidth) {
                 // The full "[badge] title" run doesn't fit — e.g. a minimized stub too narrow for
                 // its full title. The badge alone is still worth showing.
                 canvas.writeString(2, 0, "[$badge]", Cell.Style(titleColor))
             }
-        } else if (badge != null && width >= 6) {
+        } else if (badge != null && width > 2 + badgeRunWidth) {
             // No title to anchor a "[badge] title" run to. The badge alone is still worth showing.
             canvas.writeString(2, 0, "[$badge]", Cell.Style(titleColor))
         }

@@ -67,4 +67,25 @@ internal class TextCursorTest {
         assertEquals(0, written)
         assertEquals(1, cursor.row)
     }
+
+    @Test
+    fun `fixed width write clips before aligning`() {
+        val canvas = Canvas.offscreen(12, 1)
+        val cursor = TextCursor(canvas)
+
+        cursor.write(column = 2, width = 4, text = "abcdef")
+
+        assertEquals("  abc…      ", (0 until 12).joinToString("") { canvas.get(it, 0).char })
+    }
+
+    @Test
+    fun `fixed width write leaves zero width and adjacent fields harmless`() {
+        val canvas = Canvas.offscreen(12, 1)
+        val cursor = TextCursor(canvas)
+
+        cursor.write(column = 2, width = 0, text = "ignored")
+        cursor.write(column = 6, width = 4, text = "right", align = TextCursor.Align.RIGHT)
+
+        assertEquals("      rig…  ", (0 until 12).joinToString("") { canvas.get(it, 0).char })
+    }
 }

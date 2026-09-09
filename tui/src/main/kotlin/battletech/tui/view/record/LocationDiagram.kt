@@ -7,6 +7,7 @@ import battletech.tui.icon.emptyCircleIcon
 import battletech.tui.icon.filledCircleIcon
 import tenter.screen.Canvas
 import tenter.screen.Cell
+import tenter.text.CellWidth
 import tenter.view.TextCursor
 import tenter.view.View
 import tenter.widget.PipTrack
@@ -174,7 +175,7 @@ internal class LocationDiagram private constructor(
         y: Int,
     ) {
         canvas.writeString(
-            geometry.headX - HEAD_SIDE_LABEL_GAP - LEFT_SIDE_LABEL.length,
+            geometry.headX - HEAD_SIDE_LABEL_GAP - CellWidth.of(LEFT_SIDE_LABEL),
             y,
             LEFT_SIDE_LABEL,
             locationStyle(body.leftTorso),
@@ -311,7 +312,7 @@ internal class LocationDiagram private constructor(
     }
 
     private fun centeredRearSeparator(width: Int): String {
-        val fill = width - REAR_LABEL.length
+        val fill = width - CellWidth.of(REAR_LABEL)
         require(fill >= 0) { "center rear torso width must fit $REAR_LABEL" }
         val leftFill = fill / 2
         return "╌".repeat(leftFill) + REAR_LABEL + "╌".repeat(fill - leftFill)
@@ -394,8 +395,8 @@ internal class LocationDiagram private constructor(
         val style = locationStyle(location)
         when (side) {
             BodySide.LEFT -> {
-                canvas.writeString(x - label.length - 1, y, label, style)
-                canvas.writeString(x - value(location).length - 1, y + 1, value(location), style)
+                canvas.writeString(x - CellWidth.of(label) - 1, y, label, style)
+                canvas.writeString(x - CellWidth.of(value(location)) - 1, y + 1, value(location), style)
             }
             BodySide.RIGHT -> {
                 canvas.writeString(x + width + 3, y, label, style)
@@ -465,7 +466,7 @@ internal class LocationDiagram private constructor(
         text: String,
         style: Cell.Style,
     ) {
-        canvas.writeString(x + (width - text.length) / 2, y, text, style)
+        canvas.writeString(x + (width - CellWidth.of(text)) / 2, y, text, style)
     }
 
     private fun drawRightAligned(
@@ -477,7 +478,7 @@ internal class LocationDiagram private constructor(
         style: Cell.Style,
         rightPadding: Int = 0,
     ) {
-        canvas.writeString(x + width - text.length - rightPadding, y, text, style)
+        canvas.writeString(x + width - CellWidth.of(text) - rightPadding, y, text, style)
     }
 
     private fun rowsFor(capacity: Int, width: Int): Int =

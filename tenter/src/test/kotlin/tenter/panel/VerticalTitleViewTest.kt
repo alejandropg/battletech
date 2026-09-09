@@ -62,4 +62,13 @@ internal class VerticalTitleViewTest {
         assertEquals("B", buffer.get(cx, 1).char)
         assertEquals("C", buffer.get(cx, 2).char)
     }
+
+    @Test
+    fun `uses one row per grapheme cluster`() {
+        val buffer = render(VerticalTitleView("e\u0301👩‍💻X"), 7, 4)
+
+        assertEquals("e\u0301", buffer.get(3, 0).char)
+        assertEquals("👩‍💻", buffer.get(3, 1).char)
+        assertEquals("X", buffer.get(3, 2).char)
+    }
 }

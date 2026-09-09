@@ -78,8 +78,8 @@ internal class StatusBarView(
         private const val MESSAGE_HELP_GAP: Int = 1
         private val ACCENT_STYLE = Cell.Style(ChromeRole.ACCENT)
         private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
-        private val PHASE_WIDTH = TurnPhase.entries.maxOf { phaseLabel(it).length }
-        private val PLAYER_WIDTH = PlayerId.entries.maxOf { it.displayName.length }
+        private val PHASE_WIDTH = TurnPhase.entries.maxOf { CellWidth.of(phaseLabel(it)) }
+        private val PLAYER_WIDTH = PlayerId.entries.maxOf { CellWidth.of(it.displayName) }
 
         /**
          * The status bar is only [Workspace.STATUS_BAR_HEIGHT] = 3 rows tall: border alone
@@ -91,7 +91,7 @@ internal class StatusBarView(
 
         private fun centeredPhaseLabel(phase: TurnPhase): String {
             val label = phaseLabel(phase)
-            val padding = PHASE_WIDTH - label.length
+            val padding = PHASE_WIDTH - CellWidth.of(label)
             val leftPadding = padding / 2
             return " ".repeat(leftPadding) + label + " ".repeat(padding - leftPadding)
         }

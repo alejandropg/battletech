@@ -51,4 +51,11 @@ internal class TextWrapTest {
         val out = TextWrap.wrap("ab", 0)
         assertEquals(listOf("a", "b"), out)
     }
+
+    @Test
+    fun `hard wrapping preserves complete clusters`() {
+        assertEquals(listOf("e\u0301", "x"), TextWrap.wrap("e\u0301x", 1))
+        assertEquals(listOf("👩‍💻"), TextWrap.wrap("👩‍💻", 1))
+        assertEquals(listOf("🇪🇸", "x"), TextWrap.wrap("🇪🇸x", 1))
+    }
 }

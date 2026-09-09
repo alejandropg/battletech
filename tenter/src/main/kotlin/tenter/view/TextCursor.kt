@@ -6,6 +6,7 @@ import tenter.screen.ChromeRole
 import tenter.screen.StyledText
 import tenter.text.CellWidth
 import tenter.text.TextTruncation
+import tenter.text.textClusters
 
 public class TextCursor(private val canvas: Canvas) {
     public val width: Int get() = canvas.width
@@ -39,7 +40,7 @@ public class TextCursor(private val canvas: Canvas) {
 
     private fun sectionHeader(label: String): String {
         val prefix = "── $label "
-        val fill = (width - prefix.length).coerceAtLeast(0)
+        val fill = (width - CellWidth.of(prefix)).coerceAtLeast(0)
         return prefix + "─".repeat(fill)
     }
 
@@ -86,8 +87,11 @@ public class TextCursor(private val canvas: Canvas) {
      * itself.
      */
     public fun write(column: Int, width: Int, text: String, style: Cell.Style = Cell.Style.DEFAULT, align: Align = Align.LEFT) {
-        val startColumn = if (align == Align.LEFT) column else column + width - CellWidth.of(text)
-        canvas.writeString(startColumn, row, text, style)
+        if (width <= 0) return
+        val fitted = TextTruncation.ellipsize(text, width)
+        val fittedWidth = CellWidth.of(fitted)
+        val startColumn = if (align == Align.LEFT) column else column + width - fittedWidth
+        canvas.writeString(startColumn, row, fitted, style)
     }
 
     /**
@@ -96,11 +100,12 @@ public class TextCursor(private val canvas: Canvas) {
      * defaults to [leftStyle] for a single-color row. Returns the row written.
      */
     public fun writeRow(left: String, right: String, leftStyle: Cell.Style = Cell.Style.DEFAULT, rightStyle: Cell.Style = leftStyle): Int {
-        val rightWidth = CellWidth.of(right)
+        val visibleRight = TextTruncation.ellipsize(right, width)
+        val rightWidth = CellWidth.of(visibleRight)
         val maxLeft = (width - rightWidth - 1).coerceAtLeast(0)
         val written = row
         canvas.writeString(0, written, TextTruncation.ellipsize(left, maxLeft), leftStyle)
-        canvas.writeString(width - rightWidth, written, right, rightStyle)
+        canvas.writeString(width - rightWidth, written, visibleRight, rightStyle)
         row += 1
         return written
     }
@@ -126,5 +131,19 @@ public class TextCursor(private val canvas: Canvas) {
 
     private companion object {
         private val INFO_STYLE = Cell.Style(fg = ChromeRole.INFO)
+    }
+}
+
+internal fun drawVerticalText(canvas: Canvas, text: String, style: Cell.Style) {
+    val centerX = canvas.width / 2
+    var row = 0
+    for (cluster in textClusters(text)) {
+        if (row >= canvas.height) break
+        if (cluster.width == 0) continue
+        canvas.set(centerX, row, Cell(cluster.drawableText, style))
+        if (cluster.width == 2 && centerX + 1 < canvas.width) {
+            canvas.set(centerX + 1, row, Cell("", style))
+        }
+        row++
     }
 }

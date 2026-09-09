@@ -120,6 +120,17 @@ internal class CanvasTest {
     }
 
     @Test
+    fun `writeString replaces isolated surrogates and skips terminal controls`() {
+        val canvas = Canvas.offscreen(5, 1)
+
+        canvas.writeString(0, 0, "\uD800\u001BA")
+
+        assertEquals("�", canvas.get(0, 0).char)
+        assertEquals("A", canvas.get(1, 0).char)
+        assertEquals(" ", canvas.get(2, 0).char)
+    }
+
+    @Test
     fun `width and height are accessible`() {
         val canvas = Canvas.offscreen(10, 20)
 

@@ -206,4 +206,32 @@ internal class StyledTextTest {
             sum.spans,
         )
     }
+
+    @Test
+    fun `builder gives a cluster spanning spans the first base style`() {
+        val text = styled {
+            append("e", ChromeRole.DANGER)
+            append("\u0301", ChromeRole.SUCCESS)
+            append("x", ChromeRole.ACCENT)
+        }
+
+        assertEquals("e\u0301x", text.plain)
+        assertEquals(
+            listOf(
+                StyledText.Span("e\u0301", Cell.Style(ChromeRole.DANGER)),
+                StyledText.Span("x", Cell.Style(ChromeRole.ACCENT)),
+            ),
+            text.spans,
+        )
+    }
+
+    @Test
+    fun `builder keeps presentation clusters together`() {
+        val text = styled {
+            append("👩", ChromeRole.DANGER)
+            append("‍💻", ChromeRole.SUCCESS)
+        }
+
+        assertEquals(listOf(StyledText.Span("👩‍💻", Cell.Style(ChromeRole.DANGER))), text.spans)
+    }
 }

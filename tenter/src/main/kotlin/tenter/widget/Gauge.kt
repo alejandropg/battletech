@@ -2,6 +2,7 @@ package tenter.widget
 
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
+import tenter.text.CellWidth
 import tenter.view.TextCursor
 
 /** A proportional `[███░░░]value` bar, colored by how full it is (info/warning/danger tiers). */
@@ -10,6 +11,11 @@ public class Gauge(
     private val maxValue: Int,
     private val suffix: String = maxValue.toString(),
 ) {
+    init {
+        require(barWidth >= 0) { "barWidth must not be negative, was $barWidth" }
+        require(maxValue >= 0) { "maxValue must not be negative, was $maxValue" }
+    }
+
     /** Bar on the current row, right-aligned value on the next; advances two rows. */
     public fun draw(content: TextCursor, x: Int, value: Int) {
         // maxValue <= 0 guard prevents division by zero. When maxValue == 0 the bar is all empty.
@@ -24,7 +30,7 @@ public class Gauge(
         // First bar cell is at x + 1 (the "[" prefix). Anchor on the last filled cell,
         // or the first cell when empty, then right-align the number to it.
         val anchorCol = x + filled.coerceAtLeast(1)
-        content.write(anchorCol - valueStr.length + 1, valueStr, Cell.Style(color))
+        content.write(anchorCol - CellWidth.of(valueStr) + 1, valueStr, Cell.Style(color))
         content.newLine()
     }
 

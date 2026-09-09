@@ -3,6 +3,7 @@ package tenter.panel
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
+import tenter.view.drawVerticalText
 import tenter.view.View
 
 /**
@@ -12,11 +13,7 @@ import tenter.view.View
  */
 public class VerticalTitleView(private val title: String) : View {
     override fun draw(canvas: Canvas) {
-        val centerX = canvas.width / 2
-        for ((row, ch) in title.withIndex()) {
-            if (row >= canvas.height) break
-            if (ch != ' ') canvas.writeString(centerX, row, ch.toString(), TEXT_PRIMARY_STYLE)
-        }
+        drawVerticalText(canvas, title, TEXT_PRIMARY_STYLE)
     }
 
     private companion object {

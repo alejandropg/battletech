@@ -14,6 +14,7 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.screen.ScreenBuffer
+import tenter.text.CellWidth
 import tenter.view.Bordered
 import tenter.view.FlashMessage
 import tenter.view.ScrollOffset
@@ -154,14 +155,14 @@ private fun renderGameOverBanner(board: Canvas, outcome: MatchOutcome) {
         is MatchOutcome.Draw -> "Draw"
         is MatchOutcome.Victory -> "${playerLabel(outcome.winner)} wins!"
     }
-    val bannerWidth = maxOf(winnerLine.length + 8, 24)
+    val bannerWidth = maxOf(CellWidth.of(winnerLine) + 8, 24)
     val bannerHeight = 7
     if (bannerWidth > board.width || bannerHeight > board.height) return
     val banner = board.region(
         (board.width - bannerWidth) / 2, (board.height - bannerHeight) / 2,
         bannerWidth, bannerHeight,
     )
-    val mx = (bannerWidth - winnerLine.length) / 2
+    val mx = (bannerWidth - CellWidth.of(winnerLine)) / 2
     Bordered(
         title = "MATCH OVER",
         borderColor = ChromeRole.ACCENT,

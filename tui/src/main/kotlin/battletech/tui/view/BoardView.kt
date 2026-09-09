@@ -15,6 +15,7 @@ import battletech.tactical.unit.UnitRoster
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
+import tenter.text.CellWidth
 import tenter.view.Bordered
 import tenter.view.View
 import tenter.view.Viewport
@@ -124,7 +125,7 @@ internal class BoardView(
         for (col in 0..maxCol) {
             val label = coordinateLabel(col + 1)
             val centerX = MAP_ORIGIN_X + col * HexGeometry.COL_STRIDE + HexGeometry.HEX_WIDTH / 2
-            val labelX = centerX - label.length / 2
+            val labelX = centerX - CellWidth.of(label) / 2
             canvas.writeString(labelX, 0, label, COORDINATE_STYLE)
             canvas.writeString(
                 labelX,

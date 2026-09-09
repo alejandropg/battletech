@@ -247,4 +247,27 @@ internal class BorderedTest {
             assertEquals("│", buffer.get(29, row).char, "expected plain border, no thumb without a Viewport")
         }
     }
+
+    @Test
+    fun `title placement uses display width rather than UTF-16 length`() {
+        val view = Bordered(blank, title = "中")
+
+        val buffer = render(view, 12, 3)
+
+        assertEquals("中", buffer.get(4, 0).char)
+        assertEquals(" ", buffer.get(6, 0).char)
+    }
+
+    @Test
+    fun `wide badge leaves the right border intact when shown alone`() {
+        val view = Bordered(blank, badge = "中")
+
+        val buffer = render(view, 7, 3)
+
+        assertEquals("[", buffer.get(2, 0).char)
+        assertEquals("中", buffer.get(3, 0).char)
+        assertEquals("", buffer.get(4, 0).char)
+        assertEquals("]", buffer.get(5, 0).char)
+        assertEquals("╮", buffer.get(6, 0).char)
+    }
 }

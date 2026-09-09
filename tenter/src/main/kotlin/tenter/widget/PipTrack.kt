@@ -25,6 +25,7 @@ public class PipTrack(
 ) {
     init {
         require(perRow > 0) { "perRow must be positive, was $perRow" }
+        require(spacing >= 0) { "spacing must not be negative, was $spacing" }
     }
 
     /** The number of rows [capacity] pips will occupy, without drawing anything. */

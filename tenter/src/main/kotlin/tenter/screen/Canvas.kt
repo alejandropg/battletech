@@ -74,18 +74,19 @@ public class Canvas private constructor(
         var cx = x
         var i = 0
         while (i < text.length && cx < width) {
-            val cp = text.codePointAt(i)
-            val charCount = Character.charCount(cp)
-            val w = CellWidth.of(cp)
-            if (w == 0) {
+            val codePoint = text.codePointAt(i)
+            val charCount = Character.charCount(codePoint)
+            val drawableCodePoint = if (codePoint in 0xD800..0xDFFF) 0xFFFD else codePoint
+            val codePointWidth = CellWidth.of(drawableCodePoint)
+            if (codePointWidth == 0) {
                 i += charCount
                 continue
             }
-            set(cx, y, Cell(text.substring(i, i + charCount), style))
-            if (w == 2 && cx + 1 < width) {
+            set(cx, y, Cell(String(Character.toChars(drawableCodePoint)), style))
+            if (codePointWidth == 2 && cx + 1 < width) {
                 set(cx + 1, y, Cell("", style))
             }
-            cx += w
+            cx += codePointWidth
             i += charCount
         }
     }

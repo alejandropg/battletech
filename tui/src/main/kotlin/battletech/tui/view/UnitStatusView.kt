@@ -17,6 +17,7 @@ import battletech.tui.screen.BoardRole
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
+import tenter.text.CellWidth
 import tenter.view.TextCursor
 import tenter.view.View
 
@@ -60,7 +61,7 @@ internal class UnitStatusView(
             content.write(0, hitsLabel, TEXT_PRIMARY_STYLE)
             PilotHitsTrack.draw(
                 content,
-                column = hitsLabel.length,
+                column = CellWidth.of(hitsLabel),
                 stride = 1,
                 hits = unit.pilotHits,
                 filledStyle = DANGER_STYLE,
@@ -174,9 +175,9 @@ internal class UnitStatusView(
         val label = MechLabels.component(status.component)
         val capacity = status.capacity
         val destroyedCount = status.hits.coerceIn(0, capacity)
-        val label6 = label.padEnd(7)
+        val label6 = label + " ".repeat((7 - CellWidth.of(label)).coerceAtLeast(0))
         content.write(2, "$label6: ", TEXT_PRIMARY_STYLE)
-        val dotsStart = 2 + "$label6: ".length
+        val dotsStart = 2 + CellWidth.of("$label6: ")
         var col = dotsStart
         repeat(destroyedCount) {
             content.write(col, filledCircleIcon(), DANGER_STYLE)

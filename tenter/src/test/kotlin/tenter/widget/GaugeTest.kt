@@ -1,6 +1,7 @@
 package tenter.widget
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
@@ -114,5 +115,11 @@ internal class GaugeTest {
         val row0 = (2 until 28).joinToString("") { buffer.get(it, 0).char }
         assertTrue(row0.contains("░".repeat(10)))
         assertEquals(ChromeRole.DANGER, buffer.get(2, 0).style.fg)
+    }
+
+    @Test
+    fun `rejects negative sizing parameters`() {
+        assertThrows(IllegalArgumentException::class.java) { Gauge(-1, 20) }
+        assertThrows(IllegalArgumentException::class.java) { Gauge(10, -1) }
     }
 }

@@ -8,8 +8,8 @@ public object TextWrap {
      * chose, instead of re-implementing the break rules. Each element of the result is one
      * output row, given as the inclusive index ranges of the words it holds, in order;
      * consecutive words on a row were separated by exactly one space in [text], so a renderer
-     * joins them with one space. A word wider than the row capacity is hard-split by codepoint,
-     * so a range never ends inside a surrogate pair.
+     * joins them with one space. A word wider than the row capacity is hard-split by grapheme
+     * cluster, so a range never ends inside a cluster.
      */
     public fun <T> wrapBy(
         text: String,
@@ -47,23 +47,29 @@ public object TextWrap {
                     current += start until end
                     currentWidth = wordWidth
                 } else {
-                    var i = start
                     var chunkStart = start
                     var chunkWidth = 0
-                    while (i < end) {
-                        val cp = text.codePointAt(i)
-                        val cpLen = Character.charCount(cp)
-                        val w = CellWidth.of(cp)
-                        if (chunkWidth + w > capacity) {
-                            rows += row(listOf(chunkStart until i))
-                            chunkStart = i
+                    for (cluster in textClusters(text)) {
+                        if (cluster.startIndex < start) continue
+                        if (cluster.startIndex >= end) break
+                        if (cluster.width > capacity) {
+                            if (chunkStart < cluster.startIndex) rows += row(listOf(chunkStart until cluster.startIndex))
+                            rows += row(listOf(cluster.startIndex until cluster.endIndex))
+                            chunkStart = cluster.endIndex
                             chunkWidth = 0
+                        } else {
+                            if (chunkWidth > 0 && chunkWidth + cluster.width > capacity) {
+                                rows += row(listOf(chunkStart until cluster.startIndex))
+                                chunkStart = cluster.startIndex
+                                chunkWidth = 0
+                            }
+                            chunkWidth += cluster.width
                         }
-                        chunkWidth += w
-                        i += cpLen
                     }
-                    current += chunkStart until end
-                    currentWidth = chunkWidth
+                    if (chunkStart < end) {
+                        current += chunkStart until end
+                        currentWidth = chunkWidth
+                    }
                 }
             }
         }
