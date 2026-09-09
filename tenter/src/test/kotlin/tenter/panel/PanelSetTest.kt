@@ -5,17 +5,16 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.screen.ScreenBuffer
+import tenter.view.ContentView
 import tenter.view.ScrollOffset
-import tenter.view.View
+import tenter.view.contentView
 
 private enum class SetPanelId : PanelId { MAIN, A, B }
 
 internal class PanelSetTest {
 
-    private fun stubView(lines: Int = 40): View = object : View {
-        override fun draw(canvas: Canvas) {
-            for (i in 0 until lines) canvas.writeString(0, i, "row$i")
-        }
+    private fun stubView(lines: Int = 40): ContentView = contentView { cursor ->
+        repeat(lines) { row -> cursor.writeLine("row$row") }
     }
 
     private fun mainPanel() = Panel<SetPanelId, Unit>(
@@ -154,6 +153,8 @@ internal class PanelSetTest {
         set.focus(SetPanelId.A)
 
         set.scrollFocused(0, 3)
+
+        render(set, visible = setOf(SetPanelId.A, SetPanelId.B))
 
         assertEquals(ScrollOffset(y = 3), a.offset)
         assertEquals(ScrollOffset.ZERO, b.offset)

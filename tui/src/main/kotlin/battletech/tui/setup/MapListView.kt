@@ -1,11 +1,10 @@
 package battletech.tui.setup
 
-import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.text.CellWidth
 import tenter.view.TextCursor
-import tenter.view.View
+import battletech.tui.view.PreparedTextView
 import tenter.widget.CheckState
 import tenter.widget.SelectableRow
 
@@ -14,10 +13,9 @@ internal class MapListView(
     private val maps: List<String>,
     private val selected: String?,
     private val cursorIndex: Int,
-) : View {
+) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
+    override fun render(content: TextCursor) {
         if (maps.isEmpty()) {
             content.writeLine("No maps registered", TEXT_PRIMARY_STYLE)
             return

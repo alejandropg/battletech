@@ -13,18 +13,15 @@ import tenter.screen.Canvas
  */
 internal class ScrollingPanelTest {
 
-    private fun stubContent(lines: Int): View = object : View {
-        override fun draw(canvas: Canvas) {
-            for (i in 0 until lines) canvas.writeString(0, i, "line$i")
-        }
+    private fun stubContent(lines: Int): ContentView = contentView { cursor ->
+        repeat(lines) { row -> cursor.writeLine("line$row") }
     }
 
-    private fun panel(content: View, scrollOffset: Int? = 0) = scrollingPanel(
+    private fun panel(content: ContentView, scrollOffset: Int? = 0) = scrollingPanel(
         title = "T",
         badge = "0",
         content = content,
-        extent = ContentExtent.Measured(),
-        offset = scrollOffset?.let { ScrollOffset(y = it) } ?: ScrollOffset.ZERO,
+        state = ViewportState(scrollOffset?.let { ScrollOffset(y = it) } ?: ScrollOffset.ZERO),
     )
 
     @Test

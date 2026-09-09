@@ -111,12 +111,8 @@ internal suspend fun runLoop(
      * [appState] before the next event is handled — otherwise a click or wheel tick right after a
      * pan/follow would hit-test or scroll from a stale offset.
      *
-     * [forgetReveal] tells every panel (and the board) to treat their content's reveal as freshly
-     * arrived rather than compared against what was last settled: used on resize, where the
-     * viewport changes but content-space reveal does not, and a shrink could otherwise strand the
-     * cursor off-screen.
      */
-    fun render(forgetReveal: Boolean = false) {
+    fun render() {
         val active = activeAnimation
         val sampleElapsed = if (active == null) {
             null
@@ -142,7 +138,6 @@ internal suspend fun runLoop(
                 size.width,
                 size.height,
                 activeFlash,
-                forgetReveal,
                 sample?.frames.orEmpty(),
             )
             renderer.render(buffer)
@@ -172,9 +167,8 @@ internal suspend fun runLoop(
         activeAnimation = ActiveAnimation(started, nowNanos())
     }
 
-    // Render the initial frame before collecting any events. forgetReveal = true so every panel
-    // (and the board) follows its reveal target into view for the first time, exactly as a resize does.
-    render(forgetReveal = true)
+    // Render the initial frame before collecting any events.
+    render()
 
     events.takeWhile { it != UiEvent.Quit }.collect { ui ->
         // A single bad event must not propagate out of collect: that would cancel this
@@ -307,9 +301,7 @@ internal suspend fun runLoop(
                     // layout — not just one that no longer fits. Cancelling is honest and cheap;
                     // re-solving placements mid-flight would make panels jump around instead.
                     if (activeAnimation != null) stopVolley()
-                    // Content-space reveal doesn't change on resize, so without forgetting it a
-                    // shrink could leave the cursor stranded outside the new viewport.
-                    render(forgetReveal = true)
+                    render()
                 }
 
                 is UiEvent.FlashExpired -> {

@@ -6,7 +6,7 @@ import battletech.tui.input.Keybindings
 import tenter.input.KeySection
 import tenter.panel.Panel
 import tenter.text.CellWidth
-import tenter.view.View
+import tenter.view.ContentView
 
 /**
  * The per-frame view-model for the setup screen, mirroring `battletech.tui.view.PanelInputs`:
@@ -14,7 +14,7 @@ import tenter.view.View
  */
 internal class SetupPanelInputs(private val state: SetupState, private val keys: Keybindings) {
 
-    val modeView: View by lazy {
+    val modeView: ContentView by lazy {
         ModePanelView(
             mode = state.mode,
             modeLocked = state.modeLocked,
@@ -24,7 +24,7 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
         )
     }
 
-    val minimizedModeView: View by lazy {
+    val minimizedModeView: ContentView by lazy {
         ModePanelView(
             mode = state.mode,
             modeLocked = state.modeLocked,
@@ -35,7 +35,7 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
         )
     }
 
-    val mapView: View by lazy {
+    val mapView: ContentView by lazy {
         MapListView(
             maps = state.catalog.maps,
             selected = state.plan.mapName,
@@ -52,14 +52,13 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
         )
     }
 
-    val maximizedMapView: View get() = maximizedMapSelection
-    val maximizedMapExtent get() = maximizedMapSelection.contentExtent
+    val maximizedMapView: ContentView get() = maximizedMapSelection
 
-    val player1View: View by lazy { playerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1) }
-    val player2View: View by lazy { playerView(PlayerId.PLAYER_2, SetupPanelId.PLAYER_2) }
+    val player1View: ContentView by lazy { playerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1) }
+    val player2View: ContentView by lazy { playerView(PlayerId.PLAYER_2, SetupPanelId.PLAYER_2) }
 
-    val minimizedPlayer1View: View by lazy { minimizedPlayerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1) }
-    val minimizedPlayer2View: View by lazy { minimizedPlayerView(PlayerId.PLAYER_2, SetupPanelId.PLAYER_2) }
+    val minimizedPlayer1View: ContentView by lazy { minimizedPlayerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1) }
+    val minimizedPlayer2View: ContentView by lazy { minimizedPlayerView(PlayerId.PLAYER_2, SetupPanelId.PLAYER_2) }
 
     private val maximizedPlayer1Selection: MechSelectionMaximizedView by lazy {
         maximizedPlayerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1)
@@ -68,10 +67,8 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
         maximizedPlayerView(PlayerId.PLAYER_2, SetupPanelId.PLAYER_2)
     }
 
-    val maximizedPlayer1View: View get() = maximizedPlayer1Selection
-    val maximizedPlayer1Extent get() = maximizedPlayer1Selection.contentExtent
-    val maximizedPlayer2View: View get() = maximizedPlayer2Selection
-    val maximizedPlayer2Extent get() = maximizedPlayer2Selection.contentExtent
+    val maximizedPlayer1View: ContentView get() = maximizedPlayer1Selection
+    val maximizedPlayer2View: ContentView get() = maximizedPlayer2Selection
 
     val minimizedModeWidth: Int
         get() = compactListPanelWidth(SetupMode.entries.map(ModePanelView::label))
@@ -89,14 +86,14 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
         listOf(keys.hints(ContextId.SETUP), keys.hints(ContextId.CHROME))
     }
 
-    private fun playerView(player: PlayerId, panel: SetupPanelId): View = UnitListView(
+    private fun playerView(player: PlayerId, panel: SetupPanelId): ContentView = UnitListView(
         variants = state.catalog.mechs,
         counts = { variant -> state.plan.count(player, variant) },
         cursorIndex = state.cursors[panel] ?: 0,
         mechFor = state.registry::mech,
     )
 
-    private fun minimizedPlayerView(player: PlayerId, panel: SetupPanelId): View = UnitListView(
+    private fun minimizedPlayerView(player: PlayerId, panel: SetupPanelId): ContentView = UnitListView(
         variants = state.catalog.mechs,
         counts = { variant -> state.plan.count(player, variant) },
         cursorIndex = state.cursors[panel] ?: 0,

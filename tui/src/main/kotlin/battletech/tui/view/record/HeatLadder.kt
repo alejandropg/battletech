@@ -8,9 +8,8 @@ import battletech.tactical.unit.HeatSource
 import battletech.tui.screen.HeatScaleRole
 import battletech.tui.view.HeatGauges
 import battletech.tui.view.HeatPenalties
-import tenter.screen.Canvas
 import tenter.view.TextCursor
-import tenter.view.View
+import battletech.tui.view.PreparedTextView
 
 /**
  * The HEAT card: [HeatGauges] — the same current/dissipation/projected gauges
@@ -29,10 +28,9 @@ internal class HeatLadder(
     private val unit: CombatUnit,
     private val map: GameMap,
     private val pendingHeat: List<HeatSource>,
-) : View {
+) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
+    override fun render(content: TextCursor) {
         content.writeHeader("HEAT")
         content.draw(HeatGauges(unit, map, pendingHeat))
         content.newLine()
@@ -57,7 +55,7 @@ internal class HeatLadder(
             }
             val background = heatBackground(heat, unit.currentHeat, projection.projected)
             val style = background?.let { foregroundStyle.copy(bg = it) } ?: foregroundStyle
-            if (background != null) canvas.writeString(0, content.row, " ".repeat(canvas.width), style)
+            if (background != null) content.write(0, " ".repeat(content.width), style)
             content.writeRow("$marker %2d".format(heat), changed.joinToString(", "), style)
         }
     }

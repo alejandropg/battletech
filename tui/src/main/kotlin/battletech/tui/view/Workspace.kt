@@ -82,17 +82,12 @@ internal class Workspace(private val keys: Keybindings) {
      * scroll and reveal for the next call — see [tenter.panel.Panel.render] — so nothing
      * round-trips back through [AppState] except [boardOffset].
      *
-     * [forgetReveal] is a one-shot override for the resize case: the viewport just changed size, so
-     * this render should treat every content reveal as freshly arrived (auto-follow into view)
-     * rather than compare it against what was last settled — see [tenter.panel.Panel.render]'s
-     * KDoc. The settled reveal this render still becomes the baseline for the next call.
      */
     fun render(
         appState: AppState,
         width: Int,
         height: Int,
         flash: FlashMessage?,
-        forgetReveal: Boolean = false,
         animations: List<AnimationPlayback.Frame<PanelPlacement>> = emptyList(),
     ): ScreenBuffer {
         val visible = PanelVisibility.visiblePanels(appState)
@@ -101,7 +96,7 @@ internal class Workspace(private val keys: Keybindings) {
         val screen = Canvas.of(buffer)
         val inputs = PanelInputs(appState, keys)
 
-        val layout = panels.render(screen, inputs, visible, reservedTop = STATUS_BAR_HEIGHT, forgetReveal = forgetReveal)
+        val layout = panels.render(screen, inputs, visible, reservedTop = STATUS_BAR_HEIGHT)
 
         val matchEnded = appState.matchEnded
         val statusBarView = if (matchEnded != null) {

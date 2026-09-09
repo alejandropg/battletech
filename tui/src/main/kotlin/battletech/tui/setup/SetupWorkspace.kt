@@ -33,7 +33,6 @@ internal class SetupWorkspace(private val keys: Keybindings) {
         width: Int,
         height: Int,
         flash: FlashMessage?,
-        forgetReveal: Boolean = false,
     ): ScreenBuffer {
         val visible = SetupPanelVisibility.visiblePanels(state)
         val bannerHeight = SetupBannerView.reservedHeight(width)
@@ -51,7 +50,6 @@ internal class SetupWorkspace(private val keys: Keybindings) {
             inputs,
             visible,
             reservedTop = bannerHeight,
-            forgetReveal = forgetReveal,
             uniformColumnCount = uniformColumnCount,
             fixedWidthPanels = setOf(SetupPanelId.HELP),
         )

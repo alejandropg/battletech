@@ -5,17 +5,14 @@ import battletech.tactical.attack.HitLocation
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.icon.attackOutcomeIcon
 import battletech.tui.icon.targetIcon
-import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.view.TextCursor
 import tenter.widget.ValueRow
-import tenter.view.View
 
-internal class AttackResultsView(private val data: AttackResultsRender) : View {
+internal class AttackResultsView(private val data: AttackResultsRender) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
+    override fun render(content: TextCursor) {
 
         val byAttacker = data.results.groupBy { it.attackerId }
 

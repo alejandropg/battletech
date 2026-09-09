@@ -9,7 +9,8 @@ import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.input.ContextId
 import battletech.tui.input.Keybindings
 import tenter.input.KeySection
-import tenter.view.ContentExtent
+import tenter.view.ContentView
+import tenter.view.fixedContent
 import tenter.view.View
 
 /**
@@ -28,8 +29,8 @@ internal class PanelInputs(private val appState: AppState, private val keys: Key
     private val renderData by lazy { appState.phase.board(appState) }
 
     /** The tactical board's view — see [Panels.build]'s board [tenter.panel.Panel]. */
-    val boardView: View by lazy {
-        BoardView(
+    val boardView: ContentView by lazy {
+        val board = BoardView(
             appState.state,
             cursorPosition = appState.cursor,
             hexHighlights = renderData.hexHighlights,
@@ -41,12 +42,8 @@ internal class PanelInputs(private val appState: AppState, private val keys: Key
             validTargetPositions = renderData.validTargetPositions,
             selectedTargetPosition = renderData.selectedTargetPosition,
         )
-    }
-
-    /** The board's fixed content extent — the map's own size, not measured from its content. */
-    val boardExtent: ContentExtent by lazy {
         val (width, height) = BoardView.contentSize(appState.state.map)
-        ContentExtent.Fixed(width, height)
+        fixedContent(width, height, board)
     }
 
     /**

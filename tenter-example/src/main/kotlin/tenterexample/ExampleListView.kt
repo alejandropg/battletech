@@ -1,16 +1,15 @@
 package tenterexample
 
-import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
-import tenter.view.TextCursor
-import tenter.view.View
+import tenter.view.ContentLayout
+import tenter.view.ContentView
+import tenter.view.contentView
 
 internal class ExampleListView(
     private val rowCount: Int,
-) : View {
-    override fun draw(canvas: Canvas) {
-        val cursor = TextCursor(canvas)
+) : ContentView {
+    override fun layout(availableWidth: Int): ContentLayout = contentView { cursor ->
         repeat(rowCount) { index ->
             val label = when (index % 3) {
                 0 -> "row $index — ordinary text"
@@ -19,5 +18,5 @@ internal class ExampleListView(
             }
             cursor.writeLine(label, if (index == 0) Cell.Style(fg = ChromeRole.ACCENT) else Cell.Style.DEFAULT)
         }
-    }
+    }.layout(availableWidth)
 }

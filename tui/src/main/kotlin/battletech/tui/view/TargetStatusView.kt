@@ -1,14 +1,12 @@
 package battletech.tui.view
 
 import battletech.tactical.unit.ForeignUnit
-import tenter.screen.Canvas
 import tenter.view.TextCursor
-import tenter.view.View
 
-internal class TargetStatusView(private val unit: ForeignUnit) : View {
+internal class TargetStatusView(private val unit: ForeignUnit) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        ForeignUnitPanel.render(TextCursor(canvas), unit)
+    override fun render(content: TextCursor) {
+        ForeignUnitPanel.render(content, unit)
     }
 
     internal companion object {

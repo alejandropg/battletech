@@ -6,11 +6,10 @@ import battletech.tactical.unit.remainingShots
 import battletech.tui.icon.ammoIcon
 import battletech.tui.icon.infinityIcon
 import battletech.tui.view.MechLabels
-import tenter.screen.Canvas
 import tenter.view.TextCursor
 import tenter.view.TextCursor.Align.LEFT
 import tenter.view.TextCursor.Align.RIGHT
-import tenter.view.View
+import battletech.tui.view.PreparedTextView
 
 /**
  * The WEAPONS & EQUIPMENT INVENTORY card: the record sheet's Qty/Type/Loc/Ht/Dmg/Min/Sht/Med/Lng
@@ -19,7 +18,7 @@ import tenter.view.View
  * labels are always left-aligned at each column's start (matching the printed sheet), even for
  * the numeric columns whose values are right-aligned within their field.
  */
-internal class WeaponInventoryTable(private val unit: CombatUnit) : View {
+internal class WeaponInventoryTable(private val unit: CombatUnit) : PreparedTextView() {
 
     private data class Row(val weapon: Weapon, val qty: Int)
 
@@ -44,8 +43,7 @@ internal class WeaponInventoryTable(private val unit: CombatUnit) : View {
         Column("Ammo", 54, 4, RIGHT) { ammoLabel(it.weapon) },
     )
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
+    override fun render(content: TextCursor) {
         content.writeHeader("WEAPONS & EQUIPMENT INVENTORY")
 
         for (column in columns) content.write(column.x, column.label, SheetStyles.TEXT_MUTED)

@@ -2,17 +2,15 @@ package tenter.panel
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import tenter.screen.Canvas
-import tenter.view.View
+import tenter.view.ContentView
+import tenter.view.contentView
 
 private enum class TestPanelId : PanelId { A }
 
 /** [Panel]'s [PanelState] cycling, restore-on-demote, and per-state width — see [Panel.cycleState]'s KDoc. */
 internal class PanelStateTest {
 
-    private fun stubView(): View = object : View {
-        override fun draw(canvas: Canvas) = Unit
-    }
+    private fun stubView(): ContentView = contentView { }
 
     private fun fullPanel(): Panel<TestPanelId, Unit> = Panel(
         id = TestPanelId.A,

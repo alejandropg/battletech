@@ -1,71 +1,55 @@
 package battletech.tui.setup
 
-import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
-import tenter.screen.RevealRect
-import tenter.view.View
+import tenter.view.ContentLayout
+import tenter.view.ContentView
+import tenter.view.RevealPreference
+import tenter.view.contentLayout
+import tenter.view.contentView
 
-/**
- * Composes the two content views used by a maximized setup panel. The result remains one content
- * stream, which lets the enclosing [tenter.panel.Panel] scroll the list, divider, and detail view
- * together and preserves selection auto-follow from the left-hand view.
- */
+/** Prepared composition for a maximized setup panel. */
 internal class SplitMaximizedView(
     private val leftWidth: Int,
-    private val left: View,
-    private val detail: View,
-) : View {
+    private val left: ContentView,
+    private val detail: ContentView?,
+) : ContentView {
 
-    override fun draw(canvas: Canvas) {
-        if (canvas.width <= 0 || canvas.height <= 0) return
+    override fun layout(availableWidth: Int): ContentLayout {
+        require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
+        val leftLayout = left.layout(leftWidth)
+        val detailAvailableWidth = (
+            availableWidth - leftWidth - SIDE_GUTTER - DIVIDER_WIDTH - SIDE_GUTTER
+        ).coerceAtLeast(0)
+        val detailLayout = detail?.layout(detailAvailableWidth)
+        val height = maxOf(leftLayout.height, detailLayout?.height ?: 0)
+        val detailX = leftWidth + SIDE_GUTTER + if (detailLayout == null) 0 else DIVIDER_WIDTH + SIDE_GUTTER
+        val naturalWidth = totalWidth(leftWidth, detailLayout?.width ?: 0)
+        val divider = if (detailLayout == null) null else divider(height)
 
-        val actualLeftWidth = leftWidth.coerceAtMost(canvas.width).coerceAtLeast(1)
-        val remainingWidth = canvas.width - actualLeftWidth
-        val leftGutter = minOf(SIDE_GUTTER, (remainingWidth - DIVIDER_WIDTH).coerceAtLeast(0))
-        val dividerWidth = if (remainingWidth > leftGutter) DIVIDER_WIDTH else 0
-        val detailX = actualLeftWidth + leftGutter + dividerWidth +
-            minOf(SIDE_GUTTER, (remainingWidth - leftGutter - dividerWidth).coerceAtLeast(0))
-        val detailWidth = canvas.width - detailX
-
-        val leftCanvas = Canvas.offscreen(actualLeftWidth, canvas.height)
-        left.draw(leftCanvas)
-
-        val detailCanvas = if (detailWidth > 0) Canvas.offscreen(detailWidth, canvas.height) else null
-        detailCanvas?.let(detail::draw)
-
-        val contentHeight = maxOf(leftCanvas.contentHeight(), detailCanvas?.contentHeight() ?: 0)
-        canvas.blit(leftCanvas, 0, 0, 0, 0, actualLeftWidth, contentHeight)
-        detailCanvas?.let { canvas.blit(it, 0, 0, detailX, 0, detailWidth, contentHeight) }
-
-        if (dividerWidth == 1) {
-            val dividerStyle = Cell.Style(ChromeRole.PANEL_BORDER)
-            for (row in 0 until contentHeight) canvas.set(actualLeftWidth + leftGutter, row, Cell("│", dividerStyle))
+        return contentLayout(
+            width = naturalWidth,
+            height = height,
+            revealPreference = RevealPreference.FIRST,
+        ) {
+            place(0, 0, leftLayout)
+            divider?.let { place(leftWidth + SIDE_GUTTER, 0, it) }
+            detailLayout?.let { place(detailX, 0, it) }
         }
-
-        // A selection in the left view is the usual reveal target. Keep the adapter general by
-        // also translating a reveal from the detail side when there is no left-side target.
-        val reveal = leftCanvas.revealRect() ?: detailCanvas?.revealRect()?.translateX(detailX)
-        reveal?.let { canvas.markReveal(it.x, it.y, it.width, it.height) }
     }
 
-    private fun RevealRect.translateX(delta: Int): RevealRect = copy(x = x + delta)
+    private fun divider(height: Int): ContentLayout = contentView { cursor ->
+        repeat(height) {
+            cursor.write(0, "│", Cell.Style(ChromeRole.PANEL_BORDER))
+            cursor.newLine()
+        }
+    }.layout(1)
 
     internal companion object {
-        /** Four blank columns frame each side of the divider in maximized setup views. */
         const val SIDE_GUTTER: Int = 4
         const val DIVIDER_WIDTH: Int = 1
 
         internal fun totalWidth(leftWidth: Int, detailWidth: Int): Int =
-            leftWidth + SIDE_GUTTER + DIVIDER_WIDTH + SIDE_GUTTER + detailWidth
-
-        /** Measures a detail view at its natural width for a fixed maximized viewport extent. */
-        internal fun contentHeight(view: View, width: Int): Int {
-            val canvas = Canvas.offscreen(width, MEASURE_HEIGHT)
-            view.draw(canvas)
-            return canvas.contentHeight()
-        }
-
-        private const val MEASURE_HEIGHT: Int = 512
+            leftWidth + SIDE_GUTTER + if (detailWidth > 0) DIVIDER_WIDTH + SIDE_GUTTER + detailWidth else 0
     }
 }

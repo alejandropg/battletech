@@ -1,11 +1,10 @@
 package battletech.tui.setup
 
 import battletech.tactical.unit.MechModel
-import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.view.TextCursor
-import tenter.view.View
+import battletech.tui.view.PreparedTextView
 import tenter.widget.CheckState
 import tenter.widget.SelectableRow
 import tenter.widget.ValueRow
@@ -35,10 +34,9 @@ internal class UnitListView(
     private val counts: (String) -> Int,
     private val cursorIndex: Int,
     private val mechFor: ((String) -> MechModel?)? = null,
-) : View {
+) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
+    override fun render(content: TextCursor) {
         if (variants.isEmpty()) {
             content.writeLine("No mechs registered", TEXT_PRIMARY_STYLE)
             return

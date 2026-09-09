@@ -8,11 +8,11 @@ import tenter.screen.ScreenBuffer
 internal class ColumnsTest {
 
     /** A [width]x[height] block of [rows] rows, each filled with [char] repeated. */
-    private fun block(width: Int, height: Int, char: String): View = object : View {
+    private fun block(width: Int, height: Int, char: String): ContentView = fixedContent(width, height, object : View {
         override fun draw(canvas: Canvas) {
             for (row in 0 until height) canvas.writeString(0, row, char.repeat(width))
         }
-    }
+    })
 
     private fun render(columns: Columns, width: Int, height: Int = 10): ScreenBuffer {
         val buffer = ScreenBuffer(width, height)

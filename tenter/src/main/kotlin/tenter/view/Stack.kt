@@ -5,7 +5,8 @@ import tenter.screen.Canvas
 /**
  * Stacks prepared [ContentView] children without painting them to discover their sizes. The
  * intrinsic layout includes each child's logical height and gutters between children only.
- * [draw] remains the legacy raw-view adapter until application callers migrate to [ContentView].
+ * [draw] remains available for raw views when the caller already owns an allocated destination;
+ * intrinsic layout requires every child to be prepared.
  */
 public class Stack(
     private val children: List<View>,
@@ -19,8 +20,9 @@ public class Stack(
     override fun layout(availableWidth: Int): ContentLayout {
         require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
         val prepared = children.map { child ->
-            (child as? ContentView)?.layout(availableWidth)
-                ?: legacyContentLayout(availableWidth, child)
+            requireNotNull(child as? ContentView) {
+                "Stack intrinsic layout requires ContentView children; use fixedContent for a raw view"
+            }.layout(availableWidth)
         }
         val width = prepared.maxOfOrNull { it.width } ?: 0
         val height = prepared.foldIndexed(0) { index, total, child ->
@@ -34,15 +36,6 @@ public class Stack(
                 row = checkedAdd(row, child.height, "stack placement")
                 if (index < prepared.lastIndex) row = checkedAdd(row, gutter, "stack placement")
             }
-        }
-    }
-
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
-        for (child in children) {
-            if (content.row >= canvas.height) break
-            content.draw(child)
-            repeat(gutter) { content.newLine() }
         }
     }
 

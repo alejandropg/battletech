@@ -5,11 +5,9 @@ import battletech.tactical.heat.projectHeat
 import battletech.tactical.model.GameMap
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
-import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.view.TextCursor
-import tenter.view.View
 import tenter.widget.Gauge
 
 /**
@@ -23,10 +21,9 @@ internal class HeatGauges(
     private val unit: CombatUnit,
     private val map: GameMap,
     private val pendingHeat: List<HeatSource>,
-) : View {
+) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
+    override fun render(content: TextCursor) {
         val projection = projectHeat(unit, map, pendingHeat)
         val heatBar = Gauge(barWidth = 20, maxValue = HeatScale.MAX_HEAT)
 

@@ -7,7 +7,7 @@ import battletech.tui.view.record.MechRecordSheetView
 import tenter.panel.Panel
 import tenter.panel.PanelSet
 import tenter.panel.VerticalTitleView
-import tenter.view.View
+import tenter.view.ContentView
 
 /**
  * Builds this run's [PanelSet]: the tactical board as the `main` panel plus every side panel, in
@@ -24,7 +24,6 @@ internal object Panels {
             // Never consulted for the main slot — PanelLayout derives the board's width from
             // whatever the side panels leave over.
             normalWidth = 0,
-            extent = { it.boardExtent },
             badge = keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.BOARD)),
             normal = { it.boardView },
         )
@@ -77,8 +76,8 @@ internal object Panels {
         title: String,
         keys: Keybindings,
         width: Int = 28,
-        maximized: ((PanelInputs) -> View)? = null,
-        build: (PanelInputs) -> View,
+        maximized: ((PanelInputs) -> ContentView)? = null,
+        build: (PanelInputs) -> ContentView,
     ): GamePanel = Panel(
         id = id,
         title = title,

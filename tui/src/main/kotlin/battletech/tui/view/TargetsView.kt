@@ -3,12 +3,10 @@ package battletech.tui.view
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.unit.UnitId
-import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.widget.CheckState
 import tenter.view.TextCursor
-import tenter.view.View
 import tenter.widget.SelectableRow
 
 internal class TargetsView(
@@ -17,11 +15,9 @@ internal class TargetsView(
     private val primaryTargetId: UnitId?,
     private val cursorTargetIndex: Int,
     private val cursorWeaponIndex: Int = 0,
-) : View {
+) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
-
+    override fun render(content: TextCursor) {
         if (targets.isEmpty()) {
             content.writeLine("No targets", TEXT_PRIMARY_STYLE)
             return

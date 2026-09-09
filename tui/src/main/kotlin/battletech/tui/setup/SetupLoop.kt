@@ -55,8 +55,8 @@ internal suspend fun setupLoop(
 
     val workspace = SetupWorkspace(keys)
 
-    fun render(forgetReveal: Boolean = false) {
-        val buffer = workspace.render(state, size.width, size.height, activeFlash, forgetReveal)
+    fun render() {
+        val buffer = workspace.render(state, size.width, size.height, activeFlash)
         renderer.render(buffer)
     }
 
@@ -85,7 +85,7 @@ internal suspend fun setupLoop(
         }
     }
 
-    render(forgetReveal = true)
+    render()
 
     events.takeWhile { it != SetupUiEvent.Quit }.collect { ui ->
         if (done) return@collect // an outcome is settled; drain until the Quit sentinel lands
@@ -207,7 +207,7 @@ internal suspend fun setupLoop(
 
                 is SetupUiEvent.Resized -> {
                     size = ui.size
-                    render(forgetReveal = true)
+                    render()
                 }
 
                 is SetupUiEvent.FlashExpired -> {
@@ -229,7 +229,7 @@ internal suspend fun setupLoop(
                         // Only steal focus on the reveal itself — a reconnect mid-setup must
                         // not yank the user out of the panel they were editing.
                         if (revealing) workspace.focus(SetupPanelId.MAP)
-                        render(forgetReveal = true)
+                        render()
                     }
                     LobbyEvent.OpponentLeft -> {
                         // Panels and selections stay (opponentEverConnected is latched); only

@@ -2,9 +2,9 @@ package battletech.tui.setup
 
 import battletech.tactical.model.GameMap
 import battletech.tui.view.BoardView
-import tenter.screen.Canvas
-import tenter.view.ContentExtent
-import tenter.view.View
+import tenter.view.ContentLayout
+import tenter.view.ContentView
+import tenter.view.fixedContent
 
 /**
  * The maximized MAP panel: the normal map selector at left and the highlighted map rendered with
@@ -15,24 +15,19 @@ internal class MapSelectionMaximizedView(
     private val selected: String?,
     private val cursorIndex: Int,
     private val mapFor: (String) -> GameMap?,
-) : View {
+) : ContentView {
 
-    internal val contentExtent: ContentExtent
-        get() = cursorMap()?.let { map ->
-            val (boardWidth, boardHeight) = BoardView.contentSize(map)
-            ContentExtent.Fixed(
-                width = SplitMaximizedView.totalWidth(MapListView.contentWidth(maps), boardWidth),
-                height = maxOf(maps.size, boardHeight),
-            )
-        } ?: ContentExtent.Measured()
-
-    override fun draw(canvas: Canvas) {
+    override fun layout(availableWidth: Int): ContentLayout {
         val cursorMap = cursorMap()
-        SplitMaximizedView(
+        val detail = cursorMap?.let { map ->
+            val (boardWidth, boardHeight) = BoardView.contentSize(map)
+            fixedContent(boardWidth, boardHeight, BoardView.preview(map))
+        }
+        return SplitMaximizedView(
             leftWidth = MapListView.contentWidth(maps),
             left = MapListView(maps, selected, cursorIndex),
-            detail = cursorMap?.let(BoardView::preview) ?: View.None,
-        ).draw(canvas)
+            detail = detail,
+        ).layout(availableWidth)
     }
 
     private fun cursorMap(): GameMap? =

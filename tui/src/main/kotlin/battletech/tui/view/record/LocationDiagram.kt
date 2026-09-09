@@ -8,8 +8,10 @@ import battletech.tui.icon.filledCircleIcon
 import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.text.CellWidth
+import tenter.view.ContentLayout
+import tenter.view.ContentView
+import tenter.view.fixedContent
 import tenter.view.TextCursor
-import tenter.view.View
 import tenter.widget.PipTrack
 
 /**
@@ -25,7 +27,10 @@ import tenter.widget.PipTrack
 internal class LocationDiagram private constructor(
     private val title: String,
     private val body: Body,
-) : View {
+) : ContentView {
+
+    override fun layout(availableWidth: Int): ContentLayout =
+        fixedContent(availableWidth, naturalHeight(), this).layout(availableWidth)
 
     /** One body section: armor/structure [remaining] out of [max], and destruction state. */
     internal data class Location(
@@ -166,6 +171,55 @@ internal class LocationDiagram private constructor(
         val leftLegX = geometry.leftLegInnerEdgeX - leftLegWidth - 1
         drawLeg(canvas, body.leftLeg, BodySide.LEFT, leftLegX, legTop, leftLegWidth)
         drawLeg(canvas, body.rightLeg, BodySide.RIGHT, geometry.rightLegInnerEdgeX, legTop, rightLegWidth)
+    }
+
+    /** Computes the occupied rows from the same geometry inputs used by [drawRobot]. */
+    private fun naturalHeight(): Int {
+        val sizes = body.sizes
+        val headBottom = 2 + rowsFor(body.head.max, sizes.head) + 1
+        val torsoTop = headBottom + 3
+        val rear = body as? Body.FrontAndRear
+        fun rearRows(location: Location, width: Int): Int = rowsFor(location.max, width)
+        fun torsoBottom(front: Location, rearLocation: Location?, width: Int, rearWidth: Int): Int =
+            if (rearLocation == null) {
+                torsoTop + rowsFor(front.max, width) + 1
+            } else {
+                torsoTop + rowsFor(front.max, width) + rearRows(rearLocation, rearWidth) + 3
+            }
+
+        val leftRear = rear?.let { it.leftTorsoRear to it.rearSideTorsoWidth }
+        val rightRear = rear?.let { it.rightTorsoRear to it.rearSideTorsoWidth }
+        val centerRearRows = rear?.let {
+            maxOf(
+                rowsFor(it.centerTorsoRear.max, sizes.centerTorso),
+                leftRear?.let { (location, width) -> rowsFor(location.max, width) } ?: 0,
+                rightRear?.let { (location, width) -> rowsFor(location.max, width) } ?: 0,
+            )
+        }
+        val torsoBottom = maxOf(
+            torsoBottom(body.leftTorso, leftRear?.first, sizes.sideTorso, leftRear?.second ?: 0),
+            torsoBottom(
+                body.centerTorso,
+                rear?.centerTorsoRear,
+                sizes.centerTorso,
+                centerRearRows ?: 0,
+            ),
+            torsoBottom(body.rightTorso, rightRear?.first, sizes.sideTorso, rightRear?.second ?: 0),
+        )
+        val armTop = torsoTop + 2
+        val armEnd = maxOf(
+            armTop + rowsFor(body.leftArm.max, sizes.arm) + 4,
+            armTop + rowsFor(body.rightArm.max, sizes.arm) + 4,
+        )
+        val legTop = torsoBottom + 2
+        fun legEnd(location: Location): Int {
+            val width = legWidth(location.max, sizes)
+            val rows = rowsFor(location.max, width)
+            return maxOf(legTop + rows + 3, legTop + maxOf(2, rows / 2) + 2)
+        }
+        // The diagram intentionally leaves the two rows consumed by the following sheet gutter
+        // to the parent Stack; keeping them out of this child preserves the printed sheet grid.
+        return (maxOf(armEnd, legEnd(body.leftLeg), legEnd(body.rightLeg)) - 2).coerceAtLeast(0)
     }
 
     private fun drawSideLabels(

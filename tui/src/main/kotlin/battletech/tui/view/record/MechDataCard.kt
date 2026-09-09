@@ -3,9 +3,8 @@ package battletech.tui.view.record
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.view.SpecialUnitStatusList
 import battletech.tui.view.UnitLabel
-import tenter.screen.Canvas
 import tenter.view.TextCursor
-import tenter.view.View
+import battletech.tui.view.PreparedTextView
 
 /**
  * The 'MECH DATA card: identity, tonnage, movement points, and public special statuses —
@@ -14,10 +13,9 @@ import tenter.view.View
  * [battletech.tactical.unit.CombatUnit]-typed so the same card serves both
  * [battletech.tui.view.record.MechRecordSheetView] and [ForeignRecordSheetView].
  */
-internal class MechDataCard(private val unit: VisibleUnit) : View {
+internal class MechDataCard(private val unit: VisibleUnit) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
+    override fun render(content: TextCursor) {
         content.writeHeader("'MECH DATA")
         content.writeLine(UnitLabel.of(unit), SheetStyles.ACCENT)
         content.writeLine("Tonnage : ${unit.tonnage}", SheetStyles.TEXT_PRIMARY)

@@ -30,22 +30,6 @@ public class TextCursor private constructor(
         writeLine(sectionHeader(label), INFO_STYLE)
     }
 
-    /**
-     * Draws [view] as a self-contained band at the cursor's current row, using all of the
-     * canvas's width — measuring the view's own height into an offscreen stream, then blitting
-     * it in and advancing past it. This is the composition primitive a multi-card layout needs
-     * so cards can be stacked by height without knowing each other's row count up front;
-     * [Columns] uses the same measure-then-place trick one level down, for the cards *within* a
-     * band. Returns the number of rows [view] used.
-     */
-    public fun draw(view: View): Int {
-        val immediate = sink as? CanvasTextSink
-            ?: error("raw View insertion requires fixedContent in prepared content")
-        val used = immediate.drawLegacy(view, row)
-        repeat(used) { newLine() }
-        return used
-    }
-
     /** Prepares [content] once, places its logical layout at the current row, and advances past it. */
     public fun draw(content: ContentView): Int {
         val layout = content.layout(width)

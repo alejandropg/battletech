@@ -25,16 +25,4 @@ internal class CanvasTextSink(private val canvas: Canvas) : TextSink {
         }
     }
 
-    internal fun drawLegacy(view: View, row: Int): Int {
-        val remaining = canvas.region(0, row, canvas.width, canvas.height - row)
-        if (remaining.width <= 0 || remaining.height <= 0) return 0
-        val stream = Canvas.offscreen(remaining.width, remaining.height)
-        view.draw(stream)
-        val used = stream.contentHeight()
-        canvas.blit(stream, 0, 0, 0, row, remaining.width, used)
-        stream.revealRect()?.let { reveal ->
-            canvas.markReveal(reveal.x, row + reveal.y, reveal.width, reveal.height)
-        }
-        return used
-    }
 }

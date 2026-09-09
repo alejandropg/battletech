@@ -12,10 +12,10 @@ import org.junit.jupiter.api.Test
 import tenter.panel.Panel
 import tenter.panel.PanelState
 import tenter.panel.VerticalTitleView
-import tenter.screen.Canvas
 import tenter.screen.ChromeRole
 import tenter.screen.ScreenBuffer
-import tenter.view.View
+import tenter.view.ContentView
+import tenter.view.contentView
 import tenter.view.text
 
 /**
@@ -33,10 +33,8 @@ internal class PanelTest {
         Keybindings.DEFAULT,
     )
 
-    private fun stubContent(lines: Int): View = object : View {
-        override fun draw(canvas: Canvas) {
-            for (i in 0 until lines) canvas.writeString(0, i, "row$i")
-        }
+    private fun stubContent(lines: Int): ContentView = contentView { cursor ->
+        repeat(lines) { row -> cursor.writeLine("row$row") }
     }
 
     private fun renderPanel(
@@ -44,10 +42,9 @@ internal class PanelTest {
         width: Int = 30,
         height: Int = 10,
         focused: Boolean = false,
-        forgetReveal: Boolean = false,
     ): ScreenBuffer {
         val buffer = ScreenBuffer(width, height)
-        panel.render(Canvas.of(buffer), inputs, focused = focused, forgetReveal = forgetReveal)
+        panel.render(tenter.screen.Canvas.of(buffer), inputs, focused = focused)
         return buffer
     }
 
@@ -87,24 +84,22 @@ internal class PanelTest {
     }
 
     @Test
-    fun `forgetReveal re-follows even though the marked reveal target has not moved`() {
-        val revealing: View = object : View {
-            override fun draw(canvas: Canvas) {
-                for (i in 0 until 20) canvas.writeString(0, i, "row$i")
-                canvas.markReveal(0, 15, canvas.width, 1)
-            }
+    fun `resize re-follows a settled reveal without caller reset plumbing`() {
+        val revealing: ContentView = contentView { cursor ->
+            repeat(20) { row -> cursor.writeLine("row$row") }
+            cursor.markRevealAt(15)
         }
         val panel: GamePanel = Panel(GamePanelId.LOG, "T", normalWidth = 30, normal = { revealing })
 
         renderPanel(panel) // first render follows the reveal target into view
         panel.scrollBy(0, -100) // manual scroll away; clamped to 0 on the next render
 
-        // Without forgetReveal, the reveal target hasn't moved since last render, so the manual scroll sticks.
+        // The unchanged reveal target does not undo a manual scroll at the same size.
         val stayedAway = renderPanel(panel)
-        // forgetReveal is a one-shot override: treat this render's reveal target as freshly arrived.
-        val forced = renderPanel(panel, forgetReveal = true)
+        // A size change is detected by the owned viewport state and re-follows automatically.
+        val forced = renderPanel(panel, height = 8)
 
-        assertNotEquals(stayedAway.text(), forced.text(), "forgetReveal should re-follow even though the reveal target itself didn't move")
+        assertNotEquals(stayedAway.text(), forced.text(), "a height change should re-follow even though the reveal target itself didn't move")
     }
 
     @Test
@@ -168,8 +163,6 @@ internal class PanelTest {
         private const val LOG_TITLE = "LOG"
 
         /** A valid view that paints nothing — the closest thing to the old "build declined" case. */
-        private val EMPTY_VIEW = object : View {
-            override fun draw(canvas: Canvas) = Unit
-        }
+        private val EMPTY_VIEW: ContentView = contentView { }
     }
 }

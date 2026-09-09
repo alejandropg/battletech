@@ -2,10 +2,9 @@ package tenter.panel
 
 import tenter.screen.Canvas
 import tenter.screen.ChromeRole
-import tenter.screen.RevealRect
-import tenter.view.ContentExtent
+import tenter.view.ContentView
 import tenter.view.ScrollOffset
-import tenter.view.View
+import tenter.view.ViewportState
 import tenter.view.scrollingPanel
 
 /** Stable identity for a [Panel] — a bare marker interface for the [Panel]'s [K] type parameter. */
@@ -28,9 +27,9 @@ public interface PanelId
  * panel cannot observe, so it is derived fresh every frame and never stored; state and scroll are
  * decided by nothing but this panel's own events, so they persist here across frames with no
  * round trip through the host's state.
- * The normal [extent] is used in every state unless [maximizedExtent] supplies the natural content
- * size for MAXIMIZED, allowing a maximized view to expose a second scroll axis without changing
- * the normal panel.
+ * Each state supplies prepared content. Fixed-size raw views are wrapped with
+ * [tenter.view.fixedContent] at the application seam, while flowing views use
+ * [tenter.view.contentView]. The panel owns one [ViewportState] for its entire lifetime.
  *
  * One [Panel] instance is meant to live for exactly one screen's whole lifetime, never longer —
  * a fresh registry of panels per screen, never a global singleton, so one test's panel state can
@@ -40,16 +39,13 @@ public class Panel<K : PanelId, I>(
     public val id: K,
     public val title: String,
     private val normalWidth: Int,
-    private val extent: (I) -> ContentExtent = { ContentExtent.Measured() },
     private val badge: Char? = null,
-    private val normal: (I) -> View,
-    private val minimized: ((I) -> View)? = null,
+    private val normal: (I) -> ContentView,
+    private val minimized: ((I) -> ContentView)? = null,
     private val minimizedWidth: ((I) -> Int)? = null,
-    private val maximized: ((I) -> View)? = null,
-    private val maximizedExtent: ((I) -> ContentExtent)? = null,
+    private val maximized: ((I) -> ContentView)? = null,
 ) {
-    private var scroll = ScrollOffset.ZERO
-    private var lastReveal: RevealRect? = null
+    private val viewportState: ViewportState = ViewportState()
     private var restoreState: PanelState = PanelState.NORMAL
 
     public var state: PanelState = PanelState.NORMAL
@@ -73,7 +69,7 @@ public class Panel<K : PanelId, I>(
     }
 
     /** The offset this panel settled on in its last render — a host mapping a screen click back onto this panel's content reads this. */
-    public val offset: ScrollOffset get() = scroll
+    public val offset: ScrollOffset get() = viewportState.settled?.offset ?: ScrollOffset.ZERO
 
     /** Steps [delta] through [states] (+1 forward, -1 backward), wrapping. A no-op for a single-state panel. */
     public fun cycleState(delta: Int) {
@@ -89,7 +85,7 @@ public class Panel<K : PanelId, I>(
     }
 
     public fun scrollBy(dx: Int, dy: Int) {
-        scroll = ScrollOffset(scroll.x + dx, scroll.y + dy)
+        viewportState.scrollBy(dx, dy)
     }
 
     /**
@@ -102,11 +98,6 @@ public class Panel<K : PanelId, I>(
      * [tenter.screen.ChromeRole.PANEL_BORDER_FOCUSED]) instead of the neutral
      * [tenter.screen.ChromeRole.PANEL_BORDER].
      *
-     * [forgetReveal] is a one-shot override for the resize case: the viewport just changed size, so
-     * this render should treat any content reveal as freshly arrived (auto-follow into view) rather
-     * than compare it against [lastReveal] from before the resize. The settled reveal this render
-     * still becomes [lastReveal] for the next call — it is not a permanent reset.
-     *
      * [recenter] is a one-shot request (see [PanelSet.requestRecenter]) to recenter on this
      * panel's reveal target regardless of whether it moved.
      */
@@ -114,7 +105,6 @@ public class Panel<K : PanelId, I>(
         canvas: Canvas,
         inputs: I,
         focused: Boolean,
-        forgetReveal: Boolean = false,
         recenter: Boolean = false,
     ) {
         val builder = when (state) {
@@ -123,25 +113,17 @@ public class Panel<K : PanelId, I>(
             PanelState.MAXIMIZED -> maximized ?: error("Panel $id is in MAXIMIZED state but declares no maximized view")
         }
         val content = builder(inputs)
+        if (recenter) viewportState.requestRecenter()
         val role = if (focused) ChromeRole.PANEL_BORDER_FOCUSED else ChromeRole.PANEL_BORDER
         val panel = scrollingPanel(
             title = title,
             badge = badge?.toString(),
             content = content,
-            extent = if (state == PanelState.MAXIMIZED) {
-                maximizedExtent?.invoke(inputs) ?: extent(inputs)
-            } else {
-                extent(inputs)
-            },
-            offset = scroll,
-            previousReveal = if (forgetReveal) null else lastReveal,
-            recenter = recenter,
+            state = viewportState,
             borderColor = role,
             titleColor = role,
         )
         panel.draw(canvas)
-        scroll = panel.scroll.offset
-        lastReveal = panel.scroll.revealed
     }
 
     public companion object {

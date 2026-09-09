@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.screen.ScreenBuffer
-import tenter.view.ContentExtent
-import tenter.view.ScrollOffset
+import tenter.view.ViewportState
+import tenter.view.fixedContent
 import tenter.view.scrollingPanel
 
 /**
@@ -49,9 +49,8 @@ internal class BoardClickMappingTest {
         val board = scrollingPanel(
             title = "TACTICAL MAP",
             badge = null,
-            content = BoardView(state),
-            extent = ContentExtent.Fixed(mapWidth, mapHeight),
-            offset = ScrollOffset.ZERO,
+            content = fixedContent(mapWidth, mapHeight, BoardView(state)),
+            state = ViewportState(),
         )
         board.draw(screen.region(0, Workspace.STATUS_BAR_HEIGHT, width, boardHeight))
         return buffer

@@ -1,7 +1,5 @@
 package tenter.view
 
-import tenter.screen.Canvas
-
 /** Builds a fixed-size prepared composition from private placement instructions. */
 public fun contentLayout(
     width: Int,
@@ -41,12 +39,3 @@ public fun fixedContent(width: Int, height: Int, view: View): ContentView {
         override fun layout(availableWidth: Int): ContentLayout = ContentLayout.raw(width, height, view)
     }
 }
-
-/** Temporary compatibility measurement for raw children of a prepared decorator. */
-internal fun legacyContentLayout(width: Int, view: View): ContentLayout {
-    val stream = Canvas.offscreen(width, LEGACY_MEASUREMENT_HEIGHT)
-    view.draw(stream)
-    return ContentLayout.raw(width, stream.contentHeight(), view)
-}
-
-private const val LEGACY_MEASUREMENT_HEIGHT: Int = 512

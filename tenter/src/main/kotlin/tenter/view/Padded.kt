@@ -8,8 +8,9 @@ public class Padded(private val insets: Insets, private val content: View) : Con
     override fun layout(availableWidth: Int): ContentLayout {
         require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
         val innerWidth = (availableWidth - insets.left - insets.right).coerceAtLeast(0)
-        val child = (content as? ContentView)?.layout(innerWidth)
-            ?: legacyContentLayout(innerWidth, content)
+        val child = requireNotNull(content as? ContentView) {
+            "Padded intrinsic layout requires a ContentView child; use fixedContent for a raw view"
+        }.layout(innerWidth)
         val width = checkedAdd(checkedAdd(child.width, insets.left, "padded width"), insets.right, "padded width")
         val height = checkedAdd(checkedAdd(child.height, insets.top, "padded height"), insets.bottom, "padded height")
         return contentLayout(width, height) {

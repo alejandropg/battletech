@@ -23,8 +23,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.ChromeRole
 import tenter.screen.ScreenBuffer
-import tenter.view.ContentExtent
-import tenter.view.ScrollOffset
+import tenter.view.ViewportState
 import tenter.view.line
 import tenter.view.render
 import tenter.view.renderInPanel
@@ -199,14 +198,15 @@ internal class LogViewTest {
         val view = LogView(entries, state = emptyState)
 
         // First render: no previousReveal, so it follows to the bottom — establishes the reveal.
+        val viewportState = ViewportState()
         val first = scrollingPanel(
             title = LogView.TITLE,
             badge = "9",
             content = view,
-            extent = ContentExtent.Measured(),
+            state = viewportState,
         )
         render(first, 28, 6)
-        val revealed = first.scroll.revealed!!
+        viewportState.scrollBy(0, -100)
 
         // Second render: the user has wheeled back to the top; the log hasn't changed, so the
         // reveal row is identical — the manual offset must be respected, not re-followed.
@@ -214,9 +214,7 @@ internal class LogViewTest {
             title = LogView.TITLE,
             badge = "9",
             content = view,
-            extent = ContentExtent.Measured(),
-            offset = ScrollOffset(),
-            previousReveal = revealed,
+            state = viewportState,
         )
         val buffer = render(second, 28, 6)
 
@@ -233,21 +231,20 @@ internal class LogViewTest {
         // growing log always chases its newest line, the same as it would chase a moving cursor
         // row — there is no bespoke "let the reader linger on history" carve-out anymore.
         val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
+        val viewportState = ViewportState()
         val scrolledAway = scrollingPanel(
             title = LogView.TITLE,
             badge = "9",
             content = LogView(tenEntries, state = emptyState),
-            extent = ContentExtent.Measured(),
+            state = viewportState,
         )
         render(scrolledAway, 28, 6)
-        val revealedAtTen = scrolledAway.scroll.revealed!!
+        viewportState.scrollBy(0, -100)
         val manuallyScrolledUp = scrollingPanel(
             title = LogView.TITLE,
             badge = "9",
             content = LogView(tenEntries, state = emptyState),
-            extent = ContentExtent.Measured(),
-            offset = ScrollOffset(),
-            previousReveal = revealedAtTen,
+            state = viewportState,
         )
         render(manuallyScrolledUp, 28, 6)
         assertEquals(0, manuallyScrolledUp.scroll.offset.y, "sanity check: scrolled away from the bottom")
@@ -258,9 +255,7 @@ internal class LogViewTest {
             title = LogView.TITLE,
             badge = "9",
             content = LogView(elevenEntries, state = emptyState),
-            extent = ContentExtent.Measured(),
-            offset = manuallyScrolledUp.scroll.offset,
-            previousReveal = manuallyScrolledUp.scroll.revealed,
+            state = viewportState,
         )
         val buffer = render(newEntryArrives, 28, 6)
 

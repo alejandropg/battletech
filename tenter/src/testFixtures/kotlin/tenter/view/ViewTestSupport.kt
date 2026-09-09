@@ -12,7 +12,7 @@ public fun render(view: View, width: Int, height: Int): ScreenBuffer {
 
 /** Renders [content] inside the real [scrollingPanel] chrome — the pixel-parity regression guard. */
 public fun renderInPanel(
-    content: View,
+    content: ContentView,
     badge: Char = '0',
     title: String = "T",
     width: Int = 28,
@@ -23,8 +23,7 @@ public fun renderInPanel(
         title = title,
         badge = badge.toString(),
         content = content,
-        extent = ContentExtent.Measured(),
-        offset = scrollOffset?.let { ScrollOffset(y = it) } ?: ScrollOffset.ZERO,
+        state = ViewportState(scrollOffset?.let { ScrollOffset(y = it) } ?: ScrollOffset.ZERO),
     ),
     width,
     height,

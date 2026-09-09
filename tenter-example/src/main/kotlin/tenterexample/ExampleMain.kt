@@ -7,7 +7,6 @@ import tenter.panel.PanelSet
 import tenter.screen.Canvas
 import tenter.screen.ScreenBuffer
 import tenter.screen.ScreenRenderer
-import tenter.view.ContentExtent
 import tenter.view.HelpView
 import tenter.view.View
 
@@ -79,7 +78,6 @@ private fun panelSet(): PanelSet<ExamplePanelId, Unit> {
         id = ExamplePanelId.ROWS,
         title = "ROWS",
         normalWidth = 0,
-        extent = { ContentExtent.Measured() },
         badge = 'R',
         normal = { ExampleListView(ROW_COUNT) },
     )

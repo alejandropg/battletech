@@ -180,15 +180,13 @@ internal class BorderedTest {
 
     // ── scrollbar thumbs, synchronized with a Viewport ─────────────────────────────────────────
 
-    private fun stubContent(lines: Int): View = object : View {
-        override fun draw(canvas: Canvas) {
-            for (i in 0 until lines) canvas.writeString(0, i, "line$i")
-        }
+    private fun stubContent(lines: Int): ContentView = contentView { cursor ->
+        repeat(lines) { row -> cursor.writeLine("line$row") }
     }
 
     @Test
     fun `scrollbar block cells appear on right border only when content overflows`() {
-        val view = scrollingPanel(title = "T", badge = "0", content = stubContent(20), extent = ContentExtent.Measured())
+        val view = scrollingPanel(title = "T", badge = "0", content = stubContent(20))
 
         val buffer = render(view, 30, 10)
 
@@ -211,7 +209,7 @@ internal class BorderedTest {
         val viewportHeight = 8
         // The stream includes one extra row for the reclaimable top padding, so
         // `viewportHeight - 1` content lines exactly fill it with no overflow.
-        val view = scrollingPanel(title = "T", badge = "0", content = stubContent(viewportHeight - 1), extent = ContentExtent.Measured())
+        val view = scrollingPanel(title = "T", badge = "0", content = stubContent(viewportHeight - 1))
 
         val buffer = render(view, 30, 10)
 
@@ -226,7 +224,6 @@ internal class BorderedTest {
             title = "T",
             badge = "0",
             content = stubContent(20),
-            extent = ContentExtent.Measured(),
             borderColor = ChromeRole.PANEL_BORDER_FOCUSED,
         )
 

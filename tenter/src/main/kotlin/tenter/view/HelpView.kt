@@ -1,7 +1,6 @@
 package tenter.view
 
 import tenter.input.KeySection
-import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.text.CellWidth
@@ -12,10 +11,9 @@ import tenter.text.TextWrap
  * [TextCursor.writeHeader]) holding one sub-section per entry in [sections] — each rendered
  * lazygit-style as an indented label followed by its `key  description` rows.
  */
-public class HelpView(private val sections: List<KeySection>) : View {
+public class HelpView(private val sections: List<KeySection>) : ContentView {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
+    override fun layout(availableWidth: Int): ContentLayout = contentView { content ->
         content.writeHeader("KEYS")
 
         // One key column shared across every section (not per-hint) so descriptions line up in a
@@ -38,7 +36,7 @@ public class HelpView(private val sections: List<KeySection>) : View {
             }
             if (index < sections.size - 1) content.newLine()
         }
-    }
+    }.layout(availableWidth)
 
     public companion object {
         public const val TITLE: String = "HELP"

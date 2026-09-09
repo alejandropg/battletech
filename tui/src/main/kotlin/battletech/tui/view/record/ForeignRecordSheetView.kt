@@ -2,11 +2,12 @@ package battletech.tui.view.record
 
 import battletech.tactical.unit.ForeignUnit
 import battletech.tui.view.ForeignWeaponList
-import tenter.screen.Canvas
 import tenter.view.Columns
 import tenter.view.Stack
 import tenter.view.TextCursor
-import tenter.view.View
+import tenter.view.ContentView
+import tenter.view.contentView
+import battletech.tui.view.PreparedTextView
 
 /**
  * The maximized record sheet for a unit the viewer does NOT own: 'Mech data, weapon names, and
@@ -17,14 +18,13 @@ import tenter.view.View
  * private data. [MechDataCard] already prints [unit]'s name/id, so nothing repeats it above the
  * grid.
  */
-internal class ForeignRecordSheetView(private val unit: ForeignUnit) : View {
+internal class ForeignRecordSheetView(private val unit: ForeignUnit) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
+    override fun render(content: TextCursor) {
         val upperSections = Columns(
             listOf(
                 Columns.Child(SheetLayout.MECH_DATA_WIDTH, MechDataCard(unit)),
-                Columns.Child(SheetLayout.WARRIOR_DATA_WIDTH, View.None),
+                Columns.Child(SheetLayout.WARRIOR_DATA_WIDTH, contentView { }),
                 Columns.Child(SheetLayout.WEAPON_INVENTORY_WIDTH, ForeignWeaponInventory(unit)),
             ),
         )
@@ -36,9 +36,8 @@ internal class ForeignRecordSheetView(private val unit: ForeignUnit) : View {
         content.draw(Stack(listOf(upperSections, diagrams), gutter = 2))
     }
 
-    private class ForeignWeaponInventory(private val unit: ForeignUnit) : View {
-        override fun draw(canvas: Canvas) {
-            val content = TextCursor(canvas)
+    private class ForeignWeaponInventory(private val unit: ForeignUnit) : PreparedTextView() {
+        override fun render(content: TextCursor) {
             content.writeHeader("WEAPONS & EQUIPMENT INVENTORY")
             content.draw(ForeignWeaponList(unit))
         }

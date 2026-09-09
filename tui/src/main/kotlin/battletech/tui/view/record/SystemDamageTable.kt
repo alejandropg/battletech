@@ -7,16 +7,14 @@ import battletech.tui.icon.emptyCircleIcon
 import battletech.tui.icon.filledCircleIcon
 import battletech.tui.view.MechLabels
 import battletech.tui.view.formatCritEffect
-import tenter.screen.Canvas
 import tenter.view.TextCursor
-import tenter.view.View
+import battletech.tui.view.PreparedTextView
 import tenter.widget.PipTrack
 
 /** The SYSTEM DAMAGE card: hit tracks and penalties for the 'Mech's shared components. */
-internal class SystemDamageTable(private val unit: CombatUnit) : View {
+internal class SystemDamageTable(private val unit: CombatUnit) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
+    override fun render(content: TextCursor) {
         content.writeHeader("SYSTEM DAMAGE")
         val track = PipTrack(filledCircleIcon(), emptyCircleIcon(), perRow = 12)
         for (status in unit.criticalDamageStatus()) {

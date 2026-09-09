@@ -5,9 +5,9 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.VisibleUnit
-import tenter.screen.Canvas
-import tenter.view.TextCursor
-import tenter.view.View
+import tenter.view.ContentLayout
+import tenter.view.ContentView
+import tenter.view.contentView
 import kotlin.math.min
 
 /**
@@ -26,15 +26,17 @@ internal class MechRecordSheetView(
     private val subject: VisibleUnit?,
     private val map: GameMap,
     private val pendingHeat: List<HeatSource> = emptyList(),
-) : View {
+) : ContentView {
 
-    override fun draw(canvas: Canvas) {
-        val sheet = canvas.region(0, 0, min(canvas.width, SheetLayout.SHEET_WIDTH), canvas.height)
-
-        when (val unit = subject) {
-            null -> TextCursor(sheet).writeLine("No unit selected", SheetStyles.TEXT_PRIMARY)
-            is ForeignUnit -> ForeignRecordSheetView(unit).draw(sheet)
-            is CombatUnit -> OwnRecordSheetView(unit, map, pendingHeat).draw(sheet)
+    override fun layout(availableWidth: Int): ContentLayout {
+        val sheetWidth = min(availableWidth, SheetLayout.SHEET_WIDTH)
+        val content = when (val unit = subject) {
+            null -> contentView { it.writeLine("No unit selected", SheetStyles.TEXT_PRIMARY) }
+            is ForeignUnit -> ForeignRecordSheetView(unit)
+            is CombatUnit -> OwnRecordSheetView(unit, map, pendingHeat)
+        }.layout(sheetWidth)
+        return tenter.view.contentLayout(sheetWidth, content.height) {
+            place(0, 0, content)
         }
     }
 }

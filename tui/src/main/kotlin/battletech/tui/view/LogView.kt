@@ -2,12 +2,10 @@ package battletech.tui.view
 
 import battletech.tactical.query.PlayerGameState
 import battletech.tactical.session.LogEntry
-import tenter.screen.Canvas
 import tenter.screen.styled
 import tenter.text.CellWidth
 import tenter.view.TextCursor
 import tenter.view.Viewport
-import tenter.view.View
 
 /**
  * Marks its last written row for reveal, so the enclosing [Viewport] follows new entries to
@@ -18,10 +16,9 @@ import tenter.view.View
 internal class LogView(
     private val entries: List<LogEntry>,
     private val state: PlayerGameState,
-) : View {
+) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
+    override fun render(content: TextCursor) {
         var lastTurn: Int? = null
 
         for (entry in entries) {

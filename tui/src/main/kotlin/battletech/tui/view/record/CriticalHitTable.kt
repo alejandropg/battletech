@@ -6,12 +6,11 @@ import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.SLOT_COUNTS
 import battletech.tactical.unit.isSlotDestroyed
 import battletech.tui.view.MechLabels
-import tenter.screen.Canvas
 import tenter.screen.Insets
 import tenter.view.Columns
 import tenter.view.Padded
 import tenter.view.TextCursor
-import tenter.view.View
+import battletech.tui.view.PreparedTextView
 
 /**
  * The CRITICAL HIT TABLE card: five 30-column lanes spanning the full record sheet, with the head
@@ -19,10 +18,9 @@ import tenter.view.View
  * below the left arm. [Columns] keeps each complete lane together when a narrower terminal forces
  * the table to wrap.
  */
-internal class CriticalHitTable(private val unit: CombatUnit) : View {
+internal class CriticalHitTable(private val unit: CombatUnit) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
+    override fun render(content: TextCursor) {
         content.writeHeader("CRITICAL HIT TABLE")
 
         val columns = Columns(
@@ -51,10 +49,9 @@ internal class CriticalHitTable(private val unit: CombatUnit) : View {
         private val unit: CombatUnit,
         private val locations: List<MechLocation>,
         private val includesSystemDamage: Boolean,
-    ) : View {
+    ) : PreparedTextView() {
 
-        override fun draw(canvas: Canvas) {
-            val content = TextCursor(canvas)
+        override fun render(content: TextCursor) {
             locations.forEachIndexed { index, location ->
                 if (index > 0) content.newLine()
                 writeLocation(content, location)

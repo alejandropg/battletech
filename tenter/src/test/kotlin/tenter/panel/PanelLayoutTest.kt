@@ -4,16 +4,14 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
-import tenter.screen.Canvas
-import tenter.view.View
+import tenter.view.ContentView
+import tenter.view.contentView
 
 private enum class LayoutPanelId : PanelId { MAIN, A, B, C, FIXED }
 
 internal class PanelLayoutTest {
 
-    private fun stubView(): View = object : View {
-        override fun draw(canvas: Canvas) = Unit
-    }
+    private fun stubView(): ContentView = contentView { }
 
     private fun mainPanel() = Panel<LayoutPanelId, Unit>(
         id = LayoutPanelId.MAIN,

@@ -3,18 +3,14 @@ package battletech.tui.view
 import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.game.phase.DeclaredWeaponEntry
 import battletech.tui.icon.targetIcon
-import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.view.TextCursor
 import tenter.widget.ValueRow
-import tenter.view.View
 
-internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : View {
+internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
-
+    override fun render(content: TextCursor) {
         if (data.entries.isEmpty()) {
             content.writeLine("No declarations", TEXT_PRIMARY_STYLE)
             return

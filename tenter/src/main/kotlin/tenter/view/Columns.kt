@@ -6,7 +6,8 @@ import tenter.screen.Canvas
  * Packs prepared children left-to-right, wrapping at [availableWidth]. Each [Child.width] is the
  * declared column width; band height comes from the children's logical layout heights. A child
  * wider than the available space retains that declared width and is clipped only when painted.
- * [draw] remains the legacy raw-view adapter until application callers migrate to [ContentView].
+ * [draw] remains available for raw views when the caller already owns an allocated destination;
+ * intrinsic layout requires every child to be prepared.
  */
 public class Columns(
     private val children: List<Child>,
@@ -26,8 +27,9 @@ public class Columns(
     override fun layout(availableWidth: Int): ContentLayout {
         require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
         val prepared = children.map { child ->
-            child to ((child.view as? ContentView)?.layout(child.width)
-                ?: legacyContentLayout(child.width, child.view))
+            child to requireNotNull(child.view as? ContentView) {
+                "Columns intrinsic layout requires ContentView children; use fixedContent for a raw view"
+            }.layout(child.width)
         }
 
         var x = 0
@@ -59,30 +61,6 @@ public class Columns(
 
         return contentLayout(totalWidth, bandTop) {
             placements.forEach { place(it.x, it.y, it.layout) }
-        }
-    }
-
-    override fun draw(canvas: Canvas) {
-        var x = 0
-        var bandTop = 0
-        var bandHeight = 0
-
-        for (child in children) {
-            val gutterBefore = if (x == 0) 0 else gutter
-            if (x != 0 && x + gutterBefore + child.width > canvas.width) {
-                bandTop += bandHeight + 1
-                bandHeight = 0
-                x = 0
-            }
-            val childX = if (x == 0) 0 else x + gutter
-
-            val stream = Canvas.offscreen(child.width, canvas.height)
-            child.view.draw(stream)
-            val height = stream.contentHeight()
-            canvas.blit(stream, 0, 0, childX, bandTop, child.width, height)
-
-            bandHeight = maxOf(bandHeight, height)
-            x = childX + child.width
         }
     }
 

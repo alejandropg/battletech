@@ -36,8 +36,9 @@ public class Bordered(
         require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
         val outer = BORDER + gutters
         val innerWidth = (availableWidth - outer.left - outer.right).coerceAtLeast(0)
-        val child = (content as? ContentView)?.layout(innerWidth)
-            ?: legacyContentLayout(innerWidth, content)
+        val child = requireNotNull(content as? ContentView) {
+            "Bordered intrinsic layout requires a ContentView child; use fixedContent for a raw view"
+        }.layout(innerWidth)
         val width = checkedAdd(checkedAdd(child.width, outer.left, "bordered width"), outer.right, "bordered width")
         val height = checkedAdd(checkedAdd(child.height, outer.top, "bordered height"), outer.bottom, "bordered height")
         return ContentLayout.raw(width, height, PreparedBorder(child, outer))

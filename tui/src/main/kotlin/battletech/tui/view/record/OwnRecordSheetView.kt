@@ -3,11 +3,10 @@ package battletech.tui.view.record
 import battletech.tactical.model.GameMap
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
-import tenter.screen.Canvas
 import tenter.view.Columns
 import tenter.view.Stack
 import tenter.view.TextCursor
-import tenter.view.View
+import battletech.tui.view.PreparedTextView
 
 /**
  * The maximized record sheet for a unit the viewer owns: every private card — warrior data, the
@@ -19,9 +18,9 @@ internal class OwnRecordSheetView(
     private val unit: CombatUnit,
     private val map: GameMap,
     private val pendingHeat: List<HeatSource>,
-) : View {
+) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
+    override fun render(content: TextCursor) {
         val upperSections = Columns(
             listOf(
                 Columns.Child(SheetLayout.MECH_DATA_WIDTH, MechDataCard(unit)),
@@ -55,6 +54,6 @@ internal class OwnRecordSheetView(
             ),
         )
 
-        TextCursor(canvas).draw(Stack(listOf(upperBand, CriticalHitTable(unit)), gutter = 2))
+        content.draw(Stack(listOf(upperBand, CriticalHitTable(unit)), gutter = 2))
     }
 }

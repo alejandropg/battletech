@@ -14,22 +14,18 @@ import battletech.tui.icon.emptyCircleIcon
 import battletech.tui.icon.filledCircleIcon
 import battletech.tui.icon.infinityIcon
 import battletech.tui.screen.BoardRole
-import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.text.CellWidth
 import tenter.view.TextCursor
-import tenter.view.View
 
 internal class UnitStatusView(
     private val subject: VisibleUnit?,
     private val map: GameMap,
     private val pendingHeat: List<HeatSource> = emptyList(),
-) : View {
+) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
-
+    override fun render(content: TextCursor) {
         when (subject) {
             null -> {
                 content.writeLine("No unit selected", TEXT_PRIMARY_STYLE)

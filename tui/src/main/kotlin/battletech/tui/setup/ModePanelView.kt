@@ -1,10 +1,9 @@
 package battletech.tui.setup
 
-import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.view.TextCursor
-import tenter.view.View
+import battletech.tui.view.PreparedTextView
 import tenter.widget.CheckState
 import tenter.widget.SelectableRow
 
@@ -16,11 +15,9 @@ internal class ModePanelView(
     private val opponentConnected: Boolean,
     private val cursorIndex: Int,
     private val compact: Boolean = false,
-) : View {
+) : PreparedTextView() {
 
-    override fun draw(canvas: Canvas) {
-        val content = TextCursor(canvas)
-
+    override fun render(content: TextCursor) {
         if (!modeLocked || compact) {
             for ((index, candidate) in SetupMode.entries.withIndex()) {
                 SelectableRow.draw(

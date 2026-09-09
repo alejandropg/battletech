@@ -101,7 +101,6 @@ public class PanelSet<K : PanelId, I>(
         inputs: I,
         visible: Set<K>,
         reservedTop: Int,
-        forgetReveal: Boolean = false,
         uniformColumnCount: Int = visible.size,
         fixedWidthPanels: Set<K> = emptySet(),
     ): PanelLayout<K, I> {
@@ -136,7 +135,6 @@ public class PanelSet<K : PanelId, I>(
                 canvas.region(slot.x, slot.y, slot.width, slot.height),
                 inputs,
                 focused = slot.panel.id == focused,
-                forgetReveal = forgetReveal,
                 recenter = pendingRecenter == slot.panel.id,
             )
         }
@@ -145,7 +143,6 @@ public class PanelSet<K : PanelId, I>(
                 canvas.region(slot.x, slot.y, slot.width, slot.height),
                 inputs,
                 focused = slot.panel.id == focused,
-                forgetReveal = forgetReveal,
                 recenter = pendingRecenter == slot.panel.id,
             )
         }
