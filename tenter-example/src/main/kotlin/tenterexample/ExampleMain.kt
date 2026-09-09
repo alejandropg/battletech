@@ -77,18 +77,16 @@ private fun panelSet(): PanelSet<ExamplePanelId, Unit> {
     val rows = Panel<ExamplePanelId, Unit>(
         id = ExamplePanelId.ROWS,
         title = "ROWS",
-        normalWidth = 0,
-        badge = 'R',
-        normal = { ExampleListView(ROW_COUNT) },
+        badge = "R",
+        normal = { Panel.Presentation(ExampleListView(ROW_COUNT), width = 0) },
     )
     val help = Panel<ExamplePanelId, Unit>(
         id = ExamplePanelId.HELP,
         title = "HELP",
-        normalWidth = 28,
-        badge = 'H',
-        normal = { HelpView(listOf(ExampleKeyMap.map.hints(ExampleContext.LIST))) },
+        badge = "H",
+        normal = { Panel.Presentation(HelpView(listOf(ExampleKeyMap.map.hints(ExampleContext.LIST))), width = 28) },
     )
-    return PanelSet(main = rows, sides = listOf(help))
+    return PanelSet.mainAndSides(rows, listOf(help))
 }
 
 private fun renderFrame(size: Size): ScreenBuffer {

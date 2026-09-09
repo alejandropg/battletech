@@ -45,4 +45,18 @@ class ArchitectureTest {
             )
         }
     }
+
+    @Test
+    fun `managed panel mutations stay behind the panel set seam`() {
+        val panel = Konsist.scopeFromProject()
+            .classes(includeNested = false, includeLocal = false)
+            .single { it.name == "Panel" && it.path.contains("/tenter/src/main/") }
+        val managedMutations = panel.functions(includeNested = false, includeLocal = false)
+            .filter { it.name in setOf("cycleState", "demoteFromMaximized", "scrollBy", "requestRecenter", "render") }
+
+        assertTrue(
+            managedMutations.isNotEmpty() && managedMutations.all { it.hasInternalModifier },
+            "Panel runtime mutations must be internal; PanelSet is the public mutation seam",
+        )
+    }
 }

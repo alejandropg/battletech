@@ -13,7 +13,7 @@ import tenter.view.FlashMessage
 internal class SetupWorkspace(private val keys: Keybindings) {
     private val panels: SetupPanelSet = SetupPanels.build(keys)
 
-    val focused: SetupPanelId get() = panels.focused
+    val focused: SetupPanelId get() = panels.focused ?: SetupPanelId.MODE
 
     fun focus(id: SetupPanelId) = panels.focus(id)
     internal fun focusOrCycle(id: SetupPanelId) = panels.focusOrCycle(id)
@@ -40,7 +40,9 @@ internal class SetupWorkspace(private val keys: Keybindings) {
         val buffer = ScreenBuffer(width, height)
         val screen = Canvas.of(buffer)
         val inputs = SetupPanelInputs(state, keys)
-        val minimizedCount = panels.sides.count { it.id in visible && it.state == PanelState.MINIMIZED }
+        val minimizedCount = panels.sides.count {
+            it.id in visible && panels.stateOf(it.id) == PanelState.MINIMIZED
+        }
         val uniformColumnCount = if (minimizedCount == 0) SETUP_PANEL_COUNT else {
             (SETUP_PANEL_COUNT - minimizedCount).coerceAtLeast(0)
         }

@@ -1,6 +1,6 @@
 # Tenter library readiness: implementation plan
 
-Date: 2026-09-09. Status: stage 05 complete; stage 06 is next.
+Date: 2026-09-09. Status: stage 06 complete; stage 07 is next.
 
 ## Objective and authorization
 
@@ -95,7 +95,7 @@ The final deliverable includes a user-facing Tenter README, supported text/threa
 | 03 | Complete | Prepared content seam added; handoff below. |
 | 04 | Complete | Prepared composition and stateful viewport path added; handoff below. |
 | 05 | Complete | Consumer migration and measurement-bridge removal; handoff below. |
-| 06 | Pending | — |
+| 06 | Complete | Stateful panel ownership, grouped presentations, and exclusive set attachment; handoff below. |
 | 07 | Pending | — |
 | 08 | Pending | — |
 | 09 | Pending | — |
@@ -171,3 +171,12 @@ Keep handoffs compact. The source and stage documents own the detailed contracts
 - Decision clarified from source evidence: `ViewportState` still re-follows a changed reveal and vertical viewport height, while horizontal panel-slot changes (such as opening/closing Help) preserve a manual board pan; otherwise a visibility/layout transition would follow before the cursor moved and break the existing board interaction contract. This keeps the tested resize behavior and the existing panel-width behavior without restoring caller reset flags. No game rules, projections, input chords, animation timing, or ordinary-size layout policy was intentionally changed.
 - Temporary bridges: none remain from stages 03–05. `ContentExtent`, `legacyContentLayout`, `forgetReveal`, `previousReveal` caller plumbing, `MEASURE_HEIGHT`, and production render-to-scan layout are absent. `Canvas.contentHeight()` is retained only for low-level tests as noted above.
 - Next exact task: stage 06, panel ownership/presentation grouping and exclusive set attachment. Start with `06-panel-ownership.md`, this handoff, `tenter/panel/{Panel,PanelSet,PanelLayout,PanelState}.kt`, and their tests. Do not reopen the completed consumer migration or add a second scroll owner; preserve the private `Panel` `ViewportState` and prepared builder contract.
+
+### Stage 06 handoff — stateful panel ownership and presentation grouping
+
+- Completed stage 06. `Panel.Presentation(content, width)` now groups each state’s prepared content and width; normal/minimized/maximized builders run once per rendered panel and the same presentation drives layout and painting. `Panel` keeps private state, restore state, attachment, and `ViewportState`; cycling, demotion, scroll/recenter, and rendering are internal. `PanelSet` is the public mutation seam with `uniform` and `mainAndSides` factories, copied declarations, unique-id/capability/identity validation, atomic exclusive attachment, nullable `focused`, `stateOf`, and settled `offsetOf` observations. Full-cycle maximized transitions preserve their restore state, and empty uniform frames clear focus without losing hidden panel state.
+- Migrated both TUI panel builders/workspaces, shared help builder, the external example, and focused tests to `Panel.Presentation` and named factories. `PanelLayout.Slot` remains unchanged for stage 07; direct layout helpers now receive the selected presentation-width function, while empty uniform layouts are representable. No module/dependency edge changed; Tenter remains BattleTech-free.
+- Validation passed: `./gradlew :tenter:test --rerun`; `./gradlew :tui:test --rerun`; `./gradlew :tenter-example:build --rerun`; `./gradlew :tenter-example:packagedSmoke --rerun` (separate consumer, `SmokeResult(renderedRows=40, helpContainsMovement=true, animationCompleted=true)`); and `git diff --check`. The focused Konsist architecture test verifies managed `Panel` mutations remain internal. The first full TUI run found and then fixed minimized setup panels no longer being classified as fixed-width; the two setup regressions and final full suite are green.
+- Temporary bridges: none introduced. Stage 06 intentionally leaves `PanelLayout.Slot` carrying `Panel<K, I>` and `PanelSet.pageFocused` using `Bordered.VIEWPORT_INSET`; stage 07 owns replacement with immutable placement observations, geometry-consistent hit-testing, overflow handling, and mouse policy. `PanelSet.main`/`sides` still expose immutable lists of panel metadata/identity, but state mutation is only through set operations in supported Kotlin/JVM callers.
+- Decision clarified from source evidence: the main-and-sides factory rejects any main offering MINIMIZED or MAXIMIZED; uniform sets may contain zero visible panels at render time and then expose `focused == null`. A failed construction validates all panels before claiming any, so no partial attachment or reparenting protocol is needed. Presentation widths may be zero for derived/proportional slots; minimized setup widths remain application-provided in the grouped presentation.
+- Next exact task: stage 07, geometry/overflow/hit-testing and mouse policy. Start with `07-geometry-and-mouse.md`, this handoff, `tenter/panel/{PanelSet,PanelLayout}.kt`, the layout tests, `tui/view/Workspace.kt`, `tui/setup/SetupWorkspace.kt`, and click/mouse tests. Replace panel-reference placement observations only within stage 07, preserve the set-owned viewport/settled-offset contract, and add the normal-click-does-not-scroll regression.

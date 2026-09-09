@@ -37,7 +37,7 @@ internal class Workspace(private val keys: Keybindings) {
     private val panels: GamePanelSet = Panels.build(keys)
 
     /** The panel currently receiving keyboard focus — border/title/thumb render green for it. */
-    val focused: GamePanelId get() = panels.focused
+    val focused: GamePanelId get() = panels.focused ?: GamePanelId.BOARD
 
     /**
      * The board panel's settled scroll offset. The one piece of panel state a non-rendering reader
@@ -46,7 +46,7 @@ internal class Workspace(private val keys: Keybindings) {
      * [tenter.panel.Panel] owns this offset exactly as a side panel owns its own, and nothing ever
      * writes it back through [AppState] — see [AppState.boardScroll]'s KDoc.
      */
-    val boardOffset: ScrollOffset get() = panels.offsetOf(GamePanelId.BOARD)
+    val boardOffset: ScrollOffset get() = panels.offsetOf(GamePanelId.BOARD) ?: ScrollOffset.ZERO
 
     /** Focuses [id], demoting whatever side panel was maximized — see [tenter.panel.PanelSet.focus]. */
     fun focus(id: GamePanelId) = panels.focus(id)

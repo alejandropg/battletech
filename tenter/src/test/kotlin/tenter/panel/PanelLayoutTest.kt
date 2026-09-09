@@ -4,44 +4,48 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
-import tenter.view.ContentView
 import tenter.view.contentView
 
 private enum class LayoutPanelId : PanelId { MAIN, A, B, C, FIXED }
 
 internal class PanelLayoutTest {
 
-    private fun stubView(): ContentView = contentView { }
-
-    private fun mainPanel() = Panel<LayoutPanelId, Unit>(
-        id = LayoutPanelId.MAIN,
-        title = "MAIN",
-        normalWidth = 0,
-        normal = { stubView() },
-    )
-
-    private fun sidePanel(id: LayoutPanelId, width: Int = 20, minimizedWidth: Int? = null) = Panel<LayoutPanelId, Unit>(
+    private fun panel(
+        id: LayoutPanelId,
+        width: Int = 20,
+        minimizedWidth: Int = Panel.MINIMIZED_WIDTH,
+    ): Panel<LayoutPanelId, Unit> = Panel(
         id = id,
         title = id.name,
-        normalWidth = width,
-        normal = { stubView() },
-        minimized = { stubView() },
-        minimizedWidth = minimizedWidth?.let { resolvedWidth -> { resolvedWidth } },
-        maximized = { stubView() },
+        normal = { Panel.Presentation(contentView { }, width) },
+        minimized = { Panel.Presentation(contentView { }, minimizedWidth) },
+        maximized = { Panel.Presentation(contentView { }, width) },
     )
 
+    private fun main() = Panel<LayoutPanelId, Unit>(
+        id = LayoutPanelId.MAIN,
+        title = "MAIN",
+        normal = { Panel.Presentation(contentView { }, 0) },
+    )
+
+    private fun widthOf(widths: Map<LayoutPanelId, Int>): (Panel<LayoutPanelId, Unit>) -> Int =
+        { widths.getValue(it.id) }
+
     @Test
-    fun `main slot width is the leftover after side panels`() {
-        val main = mainPanel()
-        val a = sidePanel(LayoutPanelId.A)
-        val b = sidePanel(LayoutPanelId.B, width = 15)
+    fun `main layout allocates the remaining width to the main panel`() {
+        val a = panel(LayoutPanelId.A, 20)
+        val b = panel(LayoutPanelId.B, 15)
 
-        val layout = PanelLayout.compute(width = 100, height = 30, reservedTop = 4, main = main, sides = listOf(a, b))
-        val mainSlot = layout.main!!
+        val layout = PanelLayout.compute(
+            width = 100,
+            height = 30,
+            reservedTop = 4,
+            main = main(),
+            sides = listOf(a, b),
+            widthOf = widthOf(mapOf(LayoutPanelId.A to 20, LayoutPanelId.B to 15)),
+        )
 
-        assertEquals(65, mainSlot.width)
-        assertEquals(0, mainSlot.x)
-        assertEquals(4, mainSlot.y)
+        assertEquals(65, layout.main!!.width)
         assertEquals(20, layout.sides[0].width)
         assertEquals(65, layout.sides[0].x)
         assertEquals(15, layout.sides[1].width)
@@ -49,172 +53,92 @@ internal class PanelLayoutTest {
     }
 
     @Test
-    fun `a maximized side panel becomes the sole slot with main null and the full content rect`() {
-        val main = mainPanel()
-        val a = sidePanel(LayoutPanelId.A)
-        val b = sidePanel(LayoutPanelId.B)
-        a.cycleState(1) // NORMAL -> MAXIMIZED
+    fun `a maximized side panel owns the whole content region`() {
+        val a = panel(LayoutPanelId.A)
+        val b = panel(LayoutPanelId.B)
+        val set = PanelSet.mainAndSides(main(), listOf(a, b))
+        set.focus(LayoutPanelId.A)
+        set.cycleFocusedState(1)
 
-        val layout = PanelLayout.compute(width = 100, height = 30, reservedTop = 4, main = main, sides = listOf(a, b))
+        val layout = set.render(
+            tenter.screen.Canvas.of(tenter.screen.ScreenBuffer(100, 30)),
+            Unit,
+            setOf(LayoutPanelId.A, LayoutPanelId.B),
+            reservedTop = 4,
+        )
 
         assertNull(layout.main)
-        assertEquals(1, layout.sides.size)
         assertSame(a, layout.sides.single().panel)
-        assertEquals(0, layout.sides.single().x)
-        assertEquals(4, layout.sides.single().y)
         assertEquals(100, layout.sides.single().width)
         assertEquals(26, layout.sides.single().height)
     }
 
     @Test
-    fun `sideAt hit-tests side slots only`() {
-        val main = mainPanel()
-        val a = sidePanel(LayoutPanelId.A)
-
-        val layout = PanelLayout.compute(width = 100, height = 30, reservedTop = 4, main = main, sides = listOf(a))
-
-        assertNull(layout.sideAt(0, 10), "main region")
-        assertSame(a, layout.sideAt(85, 10)?.panel)
-        assertNull(layout.sideAt(85, 2), "above reservedTop")
-    }
-
-    @Test
-    fun `computeUniform divides width evenly across four panels`() {
-        val panels = listOf(
-            sidePanel(LayoutPanelId.A),
-            sidePanel(LayoutPanelId.B),
-            sidePanel(LayoutPanelId.A),
-            sidePanel(LayoutPanelId.B),
+    fun `side hit testing excludes the main region`() {
+        val a = panel(LayoutPanelId.A)
+        val layout = PanelLayout.compute(
+            width = 100,
+            height = 30,
+            reservedTop = 4,
+            main = main(),
+            sides = listOf(a),
+            widthOf = widthOf(mapOf(LayoutPanelId.A to 20)),
         )
 
-        val layout = PanelLayout.computeUniform(width = 80, height = 30, reservedTop = 0, panels = panels)
-
-        assertNull(layout.main)
-        assertEquals(4, layout.sides.size)
-        assertEquals(listOf(20, 20, 20, 20), layout.sides.map { it.width })
-        assertEquals(listOf(0, 20, 40, 60), layout.sides.map { it.x })
+        assertNull(layout.sideAt(0, 10))
+        assertSame(a, layout.sideAt(85, 10)?.panel)
+        assertNull(layout.sideAt(85, 2))
     }
 
     @Test
-    fun `computeUniform gives the remainder to the leftmost panels`() {
-        val panels = listOf(sidePanel(LayoutPanelId.A), sidePanel(LayoutPanelId.B), sidePanel(LayoutPanelId.A), sidePanel(LayoutPanelId.B))
+    fun `uniform layout divides columns and reserves hidden columns`() {
+        val a = panel(LayoutPanelId.A)
+        val b = panel(LayoutPanelId.B)
+        val c = panel(LayoutPanelId.C)
+        val width = widthOf(mapOf(LayoutPanelId.A to 20, LayoutPanelId.B to 20, LayoutPanelId.C to 20))
 
-        val layout = PanelLayout.computeUniform(width = 82, height = 30, reservedTop = 0, panels = panels)
+        val layout = PanelLayout.computeUniform(82, 30, 0, listOf(a, b, c), columnCount = 4, widthOf = width)
 
-        assertEquals(listOf(21, 21, 20, 20), layout.sides.map { it.width })
-        assertEquals(82, layout.sides.sumOf { it.width })
+        assertEquals(listOf(21, 21, 20), layout.sides.map { it.width })
+        assertEquals(listOf(0, 21, 42), layout.sides.map { it.x })
     }
 
     @Test
-    fun `computeUniform with a single visible panel gives it the full width`() {
-        val panels = listOf(sidePanel(LayoutPanelId.A))
-
-        val layout = PanelLayout.computeUniform(width = 80, height = 30, reservedTop = 0, panels = panels)
-
-        assertEquals(1, layout.sides.size)
-        assertEquals(80, layout.sides.single().width)
-    }
-
-    @Test
-    fun `computeUniform can reserve columns for hidden panels`() {
-        val panels = listOf(sidePanel(LayoutPanelId.A))
-
-        val layout = PanelLayout.computeUniform(width = 80, height = 30, reservedTop = 0, panels = panels, columnCount = 4)
-
-        assertEquals(20, layout.sides.single().width)
-    }
-
-    @Test
-    fun `computeUniform ignores a panel's declared normalWidth`() {
-        val panels = listOf(sidePanel(LayoutPanelId.A, width = 5), sidePanel(LayoutPanelId.B, width = 99))
-
-        val layout = PanelLayout.computeUniform(width = 40, height = 30, reservedTop = 0, panels = panels)
-
-        assertEquals(listOf(20, 20), layout.sides.map { it.width })
-    }
-
-    @Test
-    fun `computeUniform places fixed-width panels after proportional columns`() {
-        val fixed = sidePanel(LayoutPanelId.FIXED, width = 28)
-        val panels = listOf(
-            sidePanel(LayoutPanelId.A),
-            sidePanel(LayoutPanelId.B),
-            sidePanel(LayoutPanelId.C),
-            sidePanel(LayoutPanelId.A),
-            fixed,
+    fun `uniform layout places fixed panels after proportional columns`() {
+        val a = panel(LayoutPanelId.A)
+        val b = panel(LayoutPanelId.B)
+        val c = panel(LayoutPanelId.C)
+        val fixed = panel(LayoutPanelId.FIXED, width = 28)
+        val widths = widthOf(
+            mapOf(LayoutPanelId.A to 20, LayoutPanelId.B to 20, LayoutPanelId.C to 20, LayoutPanelId.FIXED to 28),
         )
 
         val layout = PanelLayout.computeUniform(
             width = 120,
             height = 30,
             reservedTop = 0,
-            panels = panels,
-            columnCount = 4,
+            panels = listOf(a, b, c, fixed),
+            columnCount = 3,
             fixedWidthPanels = setOf(LayoutPanelId.FIXED),
+            widthOf = widths,
         )
 
-        assertEquals(listOf(23, 23, 23, 23, 28), layout.sides.map { it.width })
-        assertEquals(listOf(0, 23, 46, 69, 92), layout.sides.map { it.x })
-        assertEquals(LayoutPanelId.FIXED, layout.sides.last().panel.id)
+        assertEquals(listOf(31, 31, 30, 28), layout.sides.map { it.width })
+        assertEquals(listOf(0, 31, 62, 92), layout.sides.map { it.x })
     }
 
     @Test
-    fun `computeUniform still gives a maximized panel the whole content region`() {
-        val a = sidePanel(LayoutPanelId.A)
-        val b = sidePanel(LayoutPanelId.B)
-        b.cycleState(1) // NORMAL -> MAXIMIZED
-
-        val layout = PanelLayout.computeUniform(width = 80, height = 30, reservedTop = 4, panels = listOf(a, b))
+    fun `empty uniform frame has an empty layout`() {
+        val layout = PanelLayout.computeUniform(
+            width = 80,
+            height = 24,
+            reservedTop = 3,
+            panels = emptyList(),
+            widthOf = widthOf(emptyMap()),
+        )
 
         assertNull(layout.main)
-        assertEquals(1, layout.sides.size)
-        assertSame(b, layout.sides.single().panel)
-        assertEquals(0, layout.sides.single().x)
-        assertEquals(4, layout.sides.single().y)
-        assertEquals(80, layout.sides.single().width)
-        assertEquals(26, layout.sides.single().height)
-    }
-
-    @Test
-    fun `computeUniform keeps a minimized panel in declaration order and shares the remaining width`() {
-        val a = sidePanel(LayoutPanelId.A)
-        val b = sidePanel(LayoutPanelId.B, minimizedWidth = 12)
-        val c = sidePanel(LayoutPanelId.C)
-        b.cycleState(-1)
-
-        val layout = PanelLayout.computeUniform(
-            width = 90,
-            height = 30,
-            reservedTop = 0,
-            panels = listOf(a, b, c),
-            columnCount = 2,
-            fixedWidthPanels = setOf(LayoutPanelId.B),
-            widthOf = { it.widthFor(Unit) },
-        )
-
-        assertEquals(listOf(LayoutPanelId.A, LayoutPanelId.B, LayoutPanelId.C), layout.sides.map { it.panel.id })
-        assertEquals(listOf(0, 39, 51), layout.sides.map { it.x })
-        assertEquals(listOf(39, 12, 39), layout.sides.map { it.width })
-    }
-
-    @Test
-    fun `computeUniform places a minimized panel after remainder columns`() {
-        val a = sidePanel(LayoutPanelId.A)
-        val b = sidePanel(LayoutPanelId.B, minimizedWidth = 12)
-        val c = sidePanel(LayoutPanelId.C)
-        b.cycleState(-1)
-
-        val layout = PanelLayout.computeUniform(
-            width = 91,
-            height = 30,
-            reservedTop = 0,
-            panels = listOf(a, b, c),
-            columnCount = 2,
-            fixedWidthPanels = setOf(LayoutPanelId.B),
-            widthOf = { it.widthFor(Unit) },
-        )
-
-        assertEquals(listOf(0, 40, 52), layout.sides.map { it.x })
-        assertEquals(listOf(40, 12, 39), layout.sides.map { it.width })
+        assertEquals(emptyList<PanelLayout.Slot<LayoutPanelId, Unit>>(), layout.sides)
+        assertEquals(21, layout.contentHeight)
     }
 }

@@ -1,7 +1,10 @@
 package tenter.panel
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.screen.ScreenBuffer
@@ -20,172 +23,191 @@ internal class PanelSetTest {
     private fun mainPanel() = Panel<SetPanelId, Unit>(
         id = SetPanelId.MAIN,
         title = "MAIN",
-        normalWidth = 0,
-        normal = { stubView() },
+        normal = { Panel.Presentation(stubView(), 0) },
     )
 
-    private fun sidePanel(id: SetPanelId) = Panel<SetPanelId, Unit>(
+    private fun sidePanel(id: SetPanelId, builds: (() -> Unit)? = null) = Panel<SetPanelId, Unit>(
         id = id,
         title = id.name,
-        normalWidth = 20,
-        normal = { stubView() },
-        minimized = { stubView(1) },
-        maximized = { stubView() },
+        normal = {
+            builds?.invoke()
+            Panel.Presentation(stubView(), 20)
+        },
+        minimized = { Panel.Presentation(stubView(1), Panel.MINIMIZED_WIDTH) },
+        maximized = { Panel.Presentation(stubView(), 20) },
     )
 
-    private fun render(set: PanelSet<SetPanelId, Unit>, visible: Set<SetPanelId>, width: Int = 80, height: Int = 24) {
-        val canvas = Canvas.of(ScreenBuffer(width, height))
-        set.render(canvas, Unit, visible, reservedTop = 0)
-    }
+    private fun render(
+        set: PanelSet<SetPanelId, Unit>,
+        visible: Set<SetPanelId>,
+        width: Int = 80,
+        height: Int = 24,
+    ): PanelLayout<SetPanelId, Unit> = set.render(
+        Canvas.of(ScreenBuffer(width, height)),
+        Unit,
+        visible,
+        reservedTop = 0,
+    )
 
     @Test
-    fun `initial focus is main`() {
-        val set = PanelSet(mainPanel(), listOf(sidePanel(SetPanelId.A), sidePanel(SetPanelId.B)))
+    fun `initial focus is main and named operations own state changes`() {
+        val set = PanelSet.mainAndSides(mainPanel(), listOf(sidePanel(SetPanelId.A)))
 
         assertEquals(SetPanelId.MAIN, set.focused)
-    }
-
-    @Test
-    fun `focus moves focus to a known panel`() {
-        val set = PanelSet(mainPanel(), listOf(sidePanel(SetPanelId.A), sidePanel(SetPanelId.B)))
-
-        set.focus(SetPanelId.A)
+        set.focusOrCycle(SetPanelId.A)
+        set.focusOrCycle(SetPanelId.A)
 
         assertEquals(SetPanelId.A, set.focused)
+        assertEquals(PanelState.MAXIMIZED, set.stateOf(SetPanelId.A))
     }
 
     @Test
-    fun `focusOrCycle focuses a different panel and cycles a reselected panel`() {
-        val a = sidePanel(SetPanelId.A)
-        val set = PanelSet(mainPanel(), listOf(a, sidePanel(SetPanelId.B)))
+    fun `unknown commands and queries are no-ops and null observations`() {
+        val set = PanelSet.mainAndSides(mainPanel(), listOf(sidePanel(SetPanelId.A)))
 
-        set.focusOrCycle(SetPanelId.A)
-        assertEquals(PanelState.NORMAL, a.state)
-
-        set.focusOrCycle(SetPanelId.A)
-        assertEquals(PanelState.MAXIMIZED, a.state)
-
-        set.focusOrCycle(SetPanelId.A)
-        assertEquals(PanelState.MINIMIZED, a.state)
-
-        set.focusOrCycle(SetPanelId.A)
-        assertEquals(PanelState.NORMAL, a.state)
-    }
-
-    @Test
-    fun `focus on an unknown id is a no-op`() {
-        val set = PanelSet(mainPanel(), listOf(sidePanel(SetPanelId.A)))
-
-        set.focus(SetPanelId.B) // B isn't in this set
+        set.focus(SetPanelId.B)
+        set.scroll(SetPanelId.B, 0, 2)
+        set.requestRecenter(SetPanelId.B)
 
         assertEquals(SetPanelId.MAIN, set.focused)
+        assertNull(set.stateOf(SetPanelId.B))
+        assertNull(set.offsetOf(SetPanelId.B))
     }
 
     @Test
-    fun `focusing another panel demotes the maximized one to its recorded state`() {
+    fun `focusing another panel demotes a maximized panel to its recorded state`() {
         val a = sidePanel(SetPanelId.A)
-        val set = PanelSet(mainPanel(), listOf(a, sidePanel(SetPanelId.B)))
+        val set = PanelSet.mainAndSides(mainPanel(), listOf(a, sidePanel(SetPanelId.B)))
         set.focus(SetPanelId.A)
-        a.cycleState(-1) // NORMAL -> MINIMIZED
-        a.cycleState(-1) // MINIMIZED -> MAXIMIZED (wrap), recording MINIMIZED as the restore state
+        set.cycleFocusedState(-1)
+        set.cycleFocusedState(-1)
 
         set.focus(SetPanelId.B)
 
-        assertEquals(PanelState.MINIMIZED, a.state, "A must fall back to MINIMIZED, not NORMAL")
+        assertEquals(PanelState.MINIMIZED, set.stateOf(SetPanelId.A))
     }
 
     @Test
-    fun `at most one panel is MAXIMIZED after any sequence of focus and cycle calls`() {
+    fun `a full cycle while maximized does not replace the restore state`() {
         val a = sidePanel(SetPanelId.A)
-        val b = sidePanel(SetPanelId.B)
-        val set = PanelSet(mainPanel(), listOf(a, b))
-
+        val set = PanelSet.uniform(listOf(a, sidePanel(SetPanelId.B)))
         set.focus(SetPanelId.A)
-        set.cycleFocusedState(1) // A -> MAXIMIZED
+        set.cycleFocusedState(-1)
+        set.cycleFocusedState(-1)
+        set.cycleFocusedState(3)
         set.focus(SetPanelId.B)
-        set.cycleFocusedState(1) // B -> MAXIMIZED
 
-        assertEquals(PanelState.NORMAL, a.state, "A must have been demoted when B was focused")
-        assertEquals(PanelState.MAXIMIZED, b.state)
+        assertEquals(PanelState.MINIMIZED, set.stateOf(SetPanelId.A))
     }
 
     @Test
-    fun `a focused side panel dropping out of visible at render time demotes and returns focus to main`() {
+    fun `at most one panel is maximized after focus and cycle transitions`() {
         val a = sidePanel(SetPanelId.A)
         val b = sidePanel(SetPanelId.B)
-        val set = PanelSet(mainPanel(), listOf(a, b))
+        val set = PanelSet.uniform(listOf(a, b))
+
         set.focus(SetPanelId.A)
-        a.cycleState(1) // NORMAL -> MAXIMIZED
+        set.cycleFocusedState(1)
+        set.focus(SetPanelId.B)
+        set.cycleFocusedState(1)
 
-        render(set, visible = setOf(SetPanelId.B)) // A is no longer visible this frame
-
-        assertEquals(SetPanelId.MAIN, set.focused)
-        assertEquals(PanelState.NORMAL, a.state, "A must be demoted out of MAXIMIZED even though hidden")
+        assertEquals(PanelState.NORMAL, set.stateOf(SetPanelId.A))
+        assertEquals(PanelState.MAXIMIZED, set.stateOf(SetPanelId.B))
     }
 
     @Test
-    fun `panelIdAt never returns main`() {
-        val set = PanelSet(mainPanel(), listOf(sidePanel(SetPanelId.A)))
-        render(set, visible = setOf(SetPanelId.A), width = 40, height = 10)
-
-        // The main panel occupies the left region; the side panel occupies the right 20 columns.
-        assertNull(set.panelIdAt(0, 0), "main slot must never be returned")
-        assertEquals(SetPanelId.A, set.panelIdAt(39, 0))
-    }
-
-    @Test
-    fun `offsetOf reflects the settled offset`() {
+    fun `hidden panels retain state and empty uniform visibility clears focus`() {
         val a = sidePanel(SetPanelId.A)
-        val set = PanelSet(mainPanel(), listOf(a))
-        set.focus(SetPanelId.A)
-        set.scrollFocused(0, 2)
+        val set = PanelSet.uniform(listOf(a))
+        set.cycleFocusedState(1)
 
-        render(set, visible = setOf(SetPanelId.A))
+        render(set, emptySet())
 
-        assertEquals(ScrollOffset(y = 2), set.offsetOf(SetPanelId.A))
+        assertNull(set.focused)
+        assertEquals(PanelState.MAXIMIZED, set.stateOf(SetPanelId.A))
+        render(set, setOf(SetPanelId.A))
+        assertEquals(SetPanelId.A, set.focused)
+        assertEquals(PanelState.MAXIMIZED, set.stateOf(SetPanelId.A))
     }
 
     @Test
-    fun `scrollFocused moves only the focused panel`() {
-        val a = sidePanel(SetPanelId.A)
-        val b = sidePanel(SetPanelId.B)
-        val set = PanelSet(mainPanel(), listOf(a, b))
-        set.focus(SetPanelId.A)
+    fun `offset is null before a frame and pending scroll does not change the settled snapshot`() {
+        val set = PanelSet.uniform(listOf(sidePanel(SetPanelId.A)))
+        assertNull(set.offsetOf(SetPanelId.A))
 
+        render(set, setOf(SetPanelId.A))
+        assertEquals(ScrollOffset.ZERO, set.offsetOf(SetPanelId.A))
         set.scrollFocused(0, 3)
 
-        render(set, visible = setOf(SetPanelId.A, SetPanelId.B))
-
-        assertEquals(ScrollOffset(y = 3), a.offset)
-        assertEquals(ScrollOffset.ZERO, b.offset)
+        assertEquals(ScrollOffset.ZERO, set.offsetOf(SetPanelId.A))
+        render(set, setOf(SetPanelId.A))
+        assertEquals(ScrollOffset(y = 3), set.offsetOf(SetPanelId.A))
     }
 
     @Test
-    fun `uniform constructor has no main and focuses the first panel`() {
-        val set = PanelSet(listOf(sidePanel(SetPanelId.MAIN), sidePanel(SetPanelId.A)))
+    fun `each rendered presentation builder runs once`() {
+        var builds = 0
+        val panel = sidePanel(SetPanelId.A) { builds++ }
+        val set = PanelSet.uniform(listOf(panel))
 
-        assertNull(set.main)
-        assertEquals(SetPanelId.MAIN, set.focused)
+        render(set, setOf(SetPanelId.A))
+
+        assertEquals(1, builds)
     }
 
     @Test
-    fun `uniform set with one visible panel gives it the full width`() {
-        val set = PanelSet(listOf(sidePanel(SetPanelId.MAIN), sidePanel(SetPanelId.A)))
+    fun `uniform and main-and-sides factories copy inputs and validate capabilities`() {
+        val panel = sidePanel(SetPanelId.A)
+        val input = mutableListOf(panel)
+        val set = PanelSet.uniform(input)
+        input.clear()
 
-        val layout = set.render(Canvas.of(ScreenBuffer(80, 24)), Unit, visible = setOf(SetPanelId.MAIN), reservedTop = 0)
+        assertEquals(listOf(panel), set.sides)
+
+        val invalidMain = sidePanel(SetPanelId.B)
+        assertThrows(IllegalArgumentException::class.java) {
+            PanelSet.mainAndSides(invalidMain, emptyList())
+        }
+        assertFalse(invalidMain.states == listOf(PanelState.NORMAL))
+    }
+
+    @Test
+    fun `duplicate ids and instances fail before attachment`() {
+        val duplicateIdA = sidePanel(SetPanelId.A)
+        val duplicateIdB = sidePanel(SetPanelId.A)
+        assertThrows(IllegalArgumentException::class.java) {
+            PanelSet.uniform(listOf(duplicateIdA, duplicateIdB))
+        }
+
+        assertThrows(IllegalArgumentException::class.java) {
+            PanelSet.uniform(listOf(duplicateIdA, duplicateIdA))
+        }
+        val fresh = sidePanel(SetPanelId.B)
+        assertThrows(IllegalArgumentException::class.java) {
+            PanelSet.uniform(listOf(fresh, sidePanel(SetPanelId.B)))
+        }
+        assertSame(fresh, PanelSet.uniform(listOf(fresh)).sides.single())
+    }
+
+    @Test
+    fun `a panel cannot be attached to two sets`() {
+        val panel = sidePanel(SetPanelId.A)
+        PanelSet.uniform(listOf(panel))
+
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            PanelSet.uniform(listOf(panel))
+        }
+
+        assertEquals("Panel A is already attached to a PanelSet", error.message)
+    }
+
+    @Test
+    fun `uniform layout can render with no visible panels`() {
+        val set = PanelSet.uniform(listOf(sidePanel(SetPanelId.A)))
+
+        val layout = render(set, emptySet())
 
         assertNull(layout.main)
-        assertEquals(1, layout.sides.size)
-        assertEquals(80, layout.sides.single().width)
-    }
-
-    @Test
-    fun `uniform set falls back focus to the first visible panel when the focused one is hidden`() {
-        val set = PanelSet(listOf(sidePanel(SetPanelId.MAIN), sidePanel(SetPanelId.A)))
-        set.focus(SetPanelId.A)
-
-        set.render(Canvas.of(ScreenBuffer(80, 24)), Unit, visible = setOf(SetPanelId.MAIN), reservedTop = 0)
-
-        assertEquals(SetPanelId.MAIN, set.focused)
+        assertEquals(emptyList<PanelLayout.Slot<SetPanelId, Unit>>(), layout.sides)
     }
 }

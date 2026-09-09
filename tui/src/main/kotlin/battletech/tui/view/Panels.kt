@@ -7,7 +7,6 @@ import battletech.tui.view.record.MechRecordSheetView
 import tenter.panel.Panel
 import tenter.panel.PanelSet
 import tenter.panel.VerticalTitleView
-import tenter.view.ContentView
 
 /**
  * Builds this run's [PanelSet]: the tactical board as the `main` panel plus every side panel, in
@@ -21,11 +20,8 @@ internal object Panels {
         val board: GamePanel = Panel(
             id = GamePanelId.BOARD,
             title = "TACTICAL MAP",
-            // Never consulted for the main slot — PanelLayout derives the board's width from
-            // whatever the side panels leave over.
-            normalWidth = 0,
-            badge = keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.BOARD)),
-            normal = { it.boardView },
+            badge = keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.BOARD)).toString(),
+            normal = { Panel.Presentation(it.boardView, width = 0) },
         )
 
         val sides = listOf(
@@ -52,7 +48,12 @@ internal object Panels {
                 GamePanelId.UNIT_STATUS,
                 UnitStatusView.TITLE,
                 keys,
-                maximized = { frame -> MechRecordSheetView(frame.unitStatus.subject, frame.state.map, frame.unitStatus.pendingHeat) },
+                maximized = { frame ->
+                    Panel.Presentation(
+                        MechRecordSheetView(frame.unitStatus.subject, frame.state.map, frame.unitStatus.pendingHeat),
+                        width = 0,
+                    )
+                },
             ) { frame ->
                 UnitStatusView(frame.unitStatus.subject, frame.state.map, frame.unitStatus.pendingHeat)
             },
@@ -67,7 +68,7 @@ internal object Panels {
             ),
         )
 
-        return PanelSet(board, sides)
+        return PanelSet.mainAndSides(board, sides)
     }
 
     /** A private helper keeping the minimized/maximized declaration DRY across every side panel. */
@@ -76,16 +77,15 @@ internal object Panels {
         title: String,
         keys: Keybindings,
         width: Int = 28,
-        maximized: ((PanelInputs) -> ContentView)? = null,
-        build: (PanelInputs) -> ContentView,
+        maximized: ((PanelInputs) -> Panel.Presentation)? = null,
+        build: (PanelInputs) -> tenter.view.ContentView,
     ): GamePanel = Panel(
         id = id,
         title = title,
-        normalWidth = width,
-        badge = keys.badgeFor(ChromeAction.FocusPanel(id)),
-        normal = build,
-        minimized = { VerticalTitleView(title) },
-        maximized = maximized ?: build,
+        badge = keys.badgeFor(ChromeAction.FocusPanel(id)).toString(),
+        normal = { Panel.Presentation(build(it), width) },
+        minimized = { Panel.Presentation(VerticalTitleView(title), Panel.MINIMIZED_WIDTH) },
+        maximized = maximized ?: { Panel.Presentation(build(it), width) },
     )
 
     private const val HELP_WIDTH: Int = 42

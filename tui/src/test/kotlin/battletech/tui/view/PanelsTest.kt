@@ -59,7 +59,7 @@ internal class PanelsTest {
         val second = Panels.build(Keybindings.DEFAULT)
 
         val log = second.sides.first { it.id == GamePanelId.LOG }
-        assertEquals(PanelState.NORMAL, log.state, "a later Panels.build(Keybindings.DEFAULT) must not see an earlier call's state")
+        assertEquals(PanelState.NORMAL, second.stateOf(GamePanelId.LOG), "a later Panels.build(Keybindings.DEFAULT) must not see an earlier call's state")
         assertEquals(GamePanelId.BOARD, second.focused, "nor an earlier call's focus")
     }
 }

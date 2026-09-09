@@ -47,7 +47,7 @@ public class PanelLayout<K : PanelId, I> private constructor(
             reservedTop: Int,
             main: Panel<K, I>,
             sides: List<Panel<K, I>>,
-            widthOf: (Panel<K, I>) -> Int = { it.width },
+            widthOf: (Panel<K, I>) -> Int,
         ): PanelLayout<K, I> {
             val contentHeight = height - reservedTop
 
@@ -87,7 +87,7 @@ public class PanelLayout<K : PanelId, I> private constructor(
          * region. [widthOf] resolves each panel's width for the current inputs. A MAXIMIZED
          * panel still wins the whole content region, exactly as in [compute]. `main` is null for
          * a uniform layout — there is no derived-width panel. The default [widthOf] uses a
-         * panel's declared [Panel.width].
+         * panel's selected presentation width.
          */
         public fun <K : PanelId, I> computeUniform(
             width: Int,
@@ -96,9 +96,18 @@ public class PanelLayout<K : PanelId, I> private constructor(
             panels: List<Panel<K, I>>,
             columnCount: Int = panels.size,
             fixedWidthPanels: Set<K> = emptySet(),
-            widthOf: (Panel<K, I>) -> Int = { it.width },
+            widthOf: (Panel<K, I>) -> Int,
         ): PanelLayout<K, I> {
-            require(panels.isNotEmpty()) { "A uniform layout needs at least one panel to divide the width between" }
+            if (panels.isEmpty()) {
+                return PanelLayout(
+                    contentX = 0,
+                    contentY = reservedTop,
+                    contentWidth = width,
+                    contentHeight = height - reservedTop,
+                    main = null,
+                    sides = emptyList(),
+                )
+            }
             val proportionalPanels = panels.filter { it.id !in fixedWidthPanels }
             val fixedPanels = panels.filter { it.id in fixedWidthPanels }
             require(columnCount >= proportionalPanels.size || proportionalPanels.isEmpty()) {

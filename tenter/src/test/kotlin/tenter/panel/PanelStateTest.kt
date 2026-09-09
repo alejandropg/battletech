@@ -2,135 +2,69 @@ package tenter.panel
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import tenter.view.ContentView
 import tenter.view.contentView
 
-private enum class TestPanelId : PanelId { A }
+private enum class TestPanelId : PanelId { A, B }
 
-/** [Panel]'s [PanelState] cycling, restore-on-demote, and per-state width — see [Panel.cycleState]'s KDoc. */
 internal class PanelStateTest {
 
-    private fun stubView(): ContentView = contentView { }
-
-    private fun fullPanel(): Panel<TestPanelId, Unit> = Panel(
+    private fun panel(
+        minimized: Boolean = true,
+        maximized: Boolean = true,
+    ): Panel<TestPanelId, Unit> = Panel(
         id = TestPanelId.A,
         title = "T",
-        normalWidth = 20,
-        normal = { stubView() },
-        minimized = { stubView() },
-        maximized = { stubView() },
-    )
-
-    private fun normalOnlyPanel(): Panel<TestPanelId, Unit> = Panel(
-        id = TestPanelId.A,
-        title = "T",
-        normalWidth = 20,
-        normal = { stubView() },
+        normal = { Panel.Presentation(contentView { }, 20) },
+        minimized = if (minimized) ({ Panel.Presentation(contentView { }, Panel.MINIMIZED_WIDTH) }) else null,
+        maximized = if (maximized) ({ Panel.Presentation(contentView { }, 20) }) else null,
     )
 
     @Test
-    fun `states lists exactly the declared states, smallest first`() {
-        assertEquals(listOf(PanelState.MINIMIZED, PanelState.NORMAL, PanelState.MAXIMIZED), fullPanel().states)
-        assertEquals(listOf(PanelState.NORMAL), normalOnlyPanel().states)
-    }
-
-    @Test
-    fun `cycleState steps forward through declared states and wraps`() {
-        val panel = fullPanel()
-        assertEquals(PanelState.NORMAL, panel.state)
-
-        panel.cycleState(1)
-        assertEquals(PanelState.MAXIMIZED, panel.state)
-
-        panel.cycleState(1)
-        assertEquals(PanelState.MINIMIZED, panel.state, "wraps past MAXIMIZED back to MINIMIZED")
-    }
-
-    @Test
-    fun `cycleState steps backward through declared states and wraps`() {
-        val panel = fullPanel()
-
-        panel.cycleState(-1)
-        assertEquals(PanelState.MINIMIZED, panel.state)
-
-        panel.cycleState(-1)
-        assertEquals(PanelState.MAXIMIZED, panel.state, "wraps past MINIMIZED back to MAXIMIZED")
-    }
-
-    @Test
-    fun `cycling skips undeclared states`() {
-        val minimizedAndNormal = Panel<TestPanelId, Unit>(
-            id = TestPanelId.A,
-            title = "T",
-            normalWidth = 20,
-            normal = { stubView() },
-            minimized = { stubView() },
+    fun `states list exactly the declared states in cycle order`() {
+        assertEquals(
+            listOf(PanelState.MINIMIZED, PanelState.NORMAL, PanelState.MAXIMIZED),
+            panel().states,
         )
-        assertEquals(listOf(PanelState.MINIMIZED, PanelState.NORMAL), minimizedAndNormal.states)
-
-        minimizedAndNormal.cycleState(1) // NORMAL -> wraps straight to MINIMIZED, no MAXIMIZED declared
-        assertEquals(PanelState.MINIMIZED, minimizedAndNormal.state)
+        assertEquals(listOf(PanelState.NORMAL), panel(false, false).states)
+        assertEquals(listOf(PanelState.MINIMIZED, PanelState.NORMAL), panel(true, false).states)
     }
 
     @Test
-    fun `a NORMAL-only panel is inert to cycling`() {
-        val panel = normalOnlyPanel()
+    fun `set operations cycle forward and backward and skip undeclared states`() {
+        val set = PanelSet.uniform(listOf(panel()))
 
-        panel.cycleState(1)
-        assertEquals(PanelState.NORMAL, panel.state)
+        set.cycleFocusedState(1)
+        assertEquals(PanelState.MAXIMIZED, set.stateOf(TestPanelId.A))
+        set.cycleFocusedState(1)
+        assertEquals(PanelState.MINIMIZED, set.stateOf(TestPanelId.A))
+        set.cycleFocusedState(-1)
+        assertEquals(PanelState.MAXIMIZED, set.stateOf(TestPanelId.A))
 
-        panel.cycleState(-1)
-        assertEquals(PanelState.NORMAL, panel.state)
+        val minimizedAndNormal = PanelSet.uniform(listOf(panel(minimized = true, maximized = false)))
+        minimizedAndNormal.cycleFocusedState(1)
+        assertEquals(PanelState.MINIMIZED, minimizedAndNormal.stateOf(TestPanelId.A))
     }
 
     @Test
-    fun `entering MAXIMIZED from MINIMIZED then demoting returns to MINIMIZED, not NORMAL`() {
-        val panel = fullPanel()
-        panel.cycleState(-1) // NORMAL -> MINIMIZED
-        assertEquals(PanelState.MINIMIZED, panel.state)
-
-        panel.cycleState(-1) // MINIMIZED -> MAXIMIZED (wrap), recording MINIMIZED as the restore state
-        assertEquals(PanelState.MAXIMIZED, panel.state)
-
-        panel.demoteFromMaximized()
-        assertEquals(PanelState.MINIMIZED, panel.state)
-    }
-
-    @Test
-    fun `demoteFromMaximized on a non-maximized panel is a no-op`() {
-        val panel = fullPanel()
-        assertEquals(PanelState.NORMAL, panel.state)
-
-        panel.demoteFromMaximized()
-        assertEquals(PanelState.NORMAL, panel.state)
-    }
-
-    @Test
-    fun `width is normalWidth for NORMAL and MAXIMIZED, MINIMIZED_WIDTH for MINIMIZED`() {
-        val panel = fullPanel()
-        assertEquals(20, panel.width)
-
-        panel.cycleState(-1) // MINIMIZED
-        assertEquals(Panel.MINIMIZED_WIDTH, panel.width)
-
-        panel.cycleState(1) // NORMAL
-        panel.cycleState(1) // MAXIMIZED
-        assertEquals(20, panel.width, "MAXIMIZED never consults width — the layout supplies that")
-    }
-
-    @Test
-    fun `widthFor resolves a minimized width from current inputs`() {
-        val panel = Panel<TestPanelId, Unit>(
-            id = TestPanelId.A,
-            title = "T",
-            normalWidth = 20,
-            normal = { stubView() },
-            minimized = { stubView() },
-            minimizedWidth = { 13 },
+    fun `maximized state restores to the state from which it was entered`() {
+        val a = panel()
+        val b = Panel<TestPanelId, Unit>(
+            id = TestPanelId.B,
+            title = "B",
+            normal = { Panel.Presentation(contentView { }, 20) },
         )
+        val set = PanelSet.uniform(listOf(a, b))
+        set.cycleFocusedState(-1)
+        set.cycleFocusedState(-1)
+        assertEquals(PanelState.MAXIMIZED, set.stateOf(TestPanelId.A))
+        set.focus(TestPanelId.B)
+        assertEquals(PanelState.MINIMIZED, set.stateOf(TestPanelId.A))
+    }
 
-        panel.cycleState(-1)
-
-        assertEquals(13, panel.widthFor(Unit))
+    @Test
+    fun `presentation rejects negative widths`() {
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException::class.java) {
+            Panel.Presentation(contentView { }, -1)
+        }
     }
 }
