@@ -275,9 +275,15 @@ deliberately rather than generalizing the two into one loop abstraction — same
 `RunLoop` and `Workspace` stayed in `tui`" below: two mechanically-similar clients isn't yet
 evidence of one reusable shape.
 
+The independent `tenter-example` module is the extraction rehearsal and the final consumer
+regression: it depends only on `tenter`, contains no BattleTech resources or types, and is tested
+both as a normal Gradle module and from an isolated packaged-jar build. Its catalog demo exercises
+the public prepared-content, panel, hit-test, keymap, palette, lifecycle, and animation seams; the
+application-owned loop remains deliberately outside `tenter`.
+
 The setup screen's four content panels (MODE/MAP/PLAYER 1/PLAYER 2) render as equal-width
-columns rather than one derived-width `main` panel beside fixed-width sides — `tenter.panel.
-PanelLayout.computeUniform` and the named `PanelSet.uniform` factory add this as a second layout
+columns rather than one derived-width `main` panel beside fixed-width sides — the internal layout
+math behind the named `PanelSet.uniform` factory adds this as a second layout
 mode alongside the game's original `compute`/`PanelSet.mainAndSides` shape, not a replacement for
 it — `PanelSet.main` is nullable now, and `render` branches on whether it is null to pick which
 `PanelLayout` function to call.

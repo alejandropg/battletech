@@ -1,6 +1,6 @@
 # Tenter library readiness: implementation plan
 
-Date: 2026-09-09. Status: stage 10 complete; stage 11 is next.
+Date: 2026-09-09. Status: all stages 00–11 complete; extraction/publication planning is next.
 
 ## Objective and authorization
 
@@ -100,7 +100,7 @@ The final deliverable includes a user-facing Tenter README, supported text/threa
 | 08 | Complete | Reusable keymap validation; handoff below. |
 | 09 | Complete | Scoped terminal lifecycle and flow contracts; handoff below. |
 | 10 | Complete | Default palette and configurable widget glyphs; handoff below. |
-| 11 | Pending | — |
+| 11 | Complete | Independent full demo, documentation, public-surface audit, and compatibility baseline; handoff below. |
 
 ### Stage 00 handoff — minimal external consumer
 
@@ -222,3 +222,13 @@ Keep handoffs compact. The source and stage documents own the detailed contracts
 - Temporary bridges and remaining migration adapters: none introduced and no stage-03–05 bridges remain. The TUI Nerd Font selection is an intentional application preference, not a toolkit compatibility bridge; `legacyPanelScrollDelta` remains the stage-07 application adapter. The public defaults for stage 11 are `DefaultRolePalette`, `RolePalette.withOverrides`, and `CheckboxGlyphs.{DEFAULT,ASCII,NERD_FONT}`.
 - Decision clarified from source evidence: palette completeness is enforced at the map seam for toolkit roles, while domain-role completeness stays with a domain loader because only it knows the domain set. Fixed-color resolution belongs in the renderer's shared style-resolution seam, preserving direct palette semantic-role behavior. ANSI-16 remains the conservative default because terminal-defined ANSI colors are intentionally not downsampled or detected.
 - Next exact task: stage 11, grow the existing `tenter-example` into the full independent demo and complete the public compatibility/documentation baseline. Start with this handoff and stages 00–10 handoffs, then inspect `tenter-example/{build.gradle.kts,src/main/kotlin/tenterexample,src/test/kotlin/tenterexample}`, `settings.gradle.kts`, the convention plugins/version catalog, and the final public declarations under `tenter/src/main/kotlin`. Confirm stage-00 findings are addressed, retain the packaged isolated consumer, and do not start extraction or publication.
+
+### Stage 11 handoff — independent consumer, documentation, and compatibility gate
+
+- Completed stage 11. Expanded `tenter-example` into a 600-row independent catalog demo using prepared `ContentView`, nested `Stack`/`Columns`, CJK and decomposed text, ASCII `CheckboxGlyphs`, `HelpView`, validated `KeyMap`, settled `PanelSet.hitTest`, wheel/click input, resize, reveal-following selection, panel focus/cycle/minimize/maximize, `mainAndSides` and `uniform` layouts, `Terminal.withScreen`, merged input/resize flows, and the finite animation probe. Added `ExampleApp` and `ExampleState`; the outer `run` task is now a real-TTY interactive launch, while the packaged smoke entry point remains explicitly headless.
+- Public surface audit removed the implementation-coupled `Canvas.contentHeight()` and its two tests, and made `PanelLayout.compute`/`computeUniform` internal. `Bordered.VIEWPORT_INSET` remains public because the existing TUI integration tests consume it; production callers use `PanelSet.hitTest` for geometry. Added the built-in Kotlin 2.4.10 ABI validation reference dump at `tenter/api/tenter.api`; `:tenter:checkKotlinAbi` is the compatibility gate and `:tenter:updateKotlinAbi` is the reviewed regeneration task. No stage-03–05 bridge remains.
+- Files and layer edges: changed the example build/source/tests, Tenter ABI/build and public-surface files, TUI setup documentation/test migration, and `docs/architecture.md`/`docs/build.md`; added `tenter/README.md`. The only production module edge remains `tenter-example → tenter`; the example uses no BattleTech resource, type, or test fixture. The intentional `terminal → screen` edge and all earlier package layering remain unchanged.
+- Validation passed: forced `./gradlew :tenter:test :tui:test :tenter-example:build --rerun-tasks`; isolated `./gradlew :tenter-example:packagedSmoke --rerun-tasks` with `SmokeResult(renderedRows=600, helpContainsMovement=true, animationCompleted=true)`; `./gradlew :tenter:updateKotlinAbi --rerun-tasks`; `./gradlew :tenter:checkKotlinAbi --rerun-tasks`; forced `./gradlew :tenter:checkKotlinAbi :tenter-example:packagedSmoke :tui:shadowJar build --rerun-tasks`; and `git diff --check`. Warnings were limited to the pre-existing TextClusters conversion and JDK/Kotlin compiler deprecations. No LSP surface was available, so targeted source/reference inspection plus compiler/test feedback was used. A real interactive TTY run was not exercised; lifecycle and input behavior are covered by the packaged/headless path and existing recorder tests.
+- Remaining intentional adapters: `tui`'s `legacyPanelScrollDelta` remains the stage-07 application adapter for installed Mordant mouse behavior, and the TUI Nerd Font selection remains an application preference. These are not Tenter compatibility bridges. No new temporary bridge or extraction/publication artifact was introduced.
+- Decision clarified from the independent consumer: fresh panel instances are required for each independent `PanelSet`; the example constructs separate instances for its two layout modes and tests exclusive attachment. The public defaults are `DefaultRolePalette`, `RolePalette.withOverrides`, and `CheckboxGlyphs.{DEFAULT,ASCII,NERD_FONT}`. The README documents content/layout, ownership/geometry/hit-testing/scroll, Unicode/glyphs, palettes, input/lifecycle/flows, animation, runtime/dependency, and test-fixture contracts.
+- Next exact task: plan the later Tenter extraction/publication work from this completed baseline. Do not begin it as part of this readiness plan; preserve the packaged consumer and ABI dump as regression gates.

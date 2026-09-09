@@ -197,17 +197,6 @@ public class Canvas private constructor(
         return left.toInt() to right.toInt()
     }
 
-    /** Rows from the top up to and including the last row holding a glyph or a background tint. */
-    public fun contentHeight(): Int {
-        for (row in height - 1 downTo 0) {
-            for (col in 0 until width) {
-                val cell = get(col, row)
-                if (cell.char != " " || cell.style.bg != ChromeRole.DEFAULT) return row + 1
-            }
-        }
-        return 0
-    }
-
     public companion object {
         /** A canvas over the whole of [buffer]. */
         public fun of(buffer: ScreenBuffer): Canvas = Canvas(buffer, 0, 0, buffer.width, buffer.height)

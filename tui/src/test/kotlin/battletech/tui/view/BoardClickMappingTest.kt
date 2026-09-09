@@ -6,17 +6,16 @@ import battletech.tactical.query.projectFor
 import battletech.tui.aGameMap
 import battletech.tui.aGameState
 import battletech.tui.aUnit
+import battletech.tui.game.GamePanelId
 import battletech.tui.input.BoardMouse
 import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import tenter.panel.Panel
+import tenter.panel.PanelSet
 import tenter.screen.Canvas
-import tenter.screen.Point
 import tenter.screen.ScreenBuffer
-import tenter.view.Bordered
-import tenter.view.ViewportState
 import tenter.view.fixedContent
-import tenter.view.scrollingPanel
 
 /**
  * Round-trips a click through the REAL frame composition: a unit is rendered onto the board
@@ -41,19 +40,29 @@ internal class BoardClickMappingTest {
         ).projectFor(viewer = null, revealAll = true)
 
     /** Renders a whole frame the way `renderFrame` does and returns the screen buffer. */
-    private fun renderFrame(state: PlayerGameState, width: Int = 100, height: Int = 30): ScreenBuffer {
+    private data class Frame(
+        val buffer: ScreenBuffer,
+        val panels: PanelSet<GamePanelId, Unit>,
+    )
+
+    private fun renderFrame(state: PlayerGameState, width: Int = 100, height: Int = 30): Frame {
         val buffer = ScreenBuffer(width, height)
-        val screen = Canvas.of(buffer)
-        val boardHeight = height - Workspace.STATUS_BAR_HEIGHT
         val (mapWidth, mapHeight) = BoardView.contentSize(state.map)
-        val board = scrollingPanel(
-            title = "TACTICAL MAP",
-            badge = null,
-            content = fixedContent(mapWidth, mapHeight, BoardView(state)),
-            state = ViewportState(),
+        val panels = PanelSet.mainAndSides(
+            main = Panel<GamePanelId, Unit>(
+                id = GamePanelId.BOARD,
+                title = "TACTICAL MAP",
+                normal = { Panel.Presentation(fixedContent(mapWidth, mapHeight, BoardView(state)), width = 0) },
+            ),
+            sides = emptyList<Panel<GamePanelId, Unit>>(),
         )
-        board.draw(screen.region(0, Workspace.STATUS_BAR_HEIGHT, width, boardHeight))
-        return buffer
+        panels.render(
+            canvas = Canvas.of(buffer),
+            inputs = Unit,
+            visible = emptySet(),
+            reservedTop = Workspace.STATUS_BAR_HEIGHT,
+        )
+        return Frame(buffer, panels)
     }
 
     /** The screen cell holding the first character of the [marker] glyph, or null. */
@@ -68,15 +77,11 @@ internal class BoardClickMappingTest {
 
     private fun clickResolvesTo(hex: HexCoordinates) {
         val state = stateWithUnitAt(hex)
-        val buffer = renderFrame(state)
+        val frame = renderFrame(state)
+        val buffer = frame.buffer
         val (x, y) = findMarker(buffer) ?: error("marker glyph not rendered for $hex")
 
-        val boardOriginX = Bordered.VIEWPORT_INSET.left
-        val boardOriginY = Workspace.STATUS_BAR_HEIGHT + Bordered.VIEWPORT_INSET.top
-        val contentPoint = Point(
-            x - boardOriginX,
-            y - boardOriginY - Bordered.PADDING.vertical().top,
-        )
+        val contentPoint = checkNotNull(frame.panels.hitTest(x, y)?.contentPoint)
         val clicked = BoardMouse.mapContentToHex(
             MouseEvent(x = x, y = y, left = true),
             contentPoint,

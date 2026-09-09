@@ -1,6 +1,14 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+
 plugins {
     id("battletech.kotlin-library")
     `java-test-fixtures`
+}
+
+kotlin {
+    abiValidation {
+        referenceDumpDir.set(layout.projectDirectory.dir("api"))
+    }
 }
 
 dependencies {

@@ -1,44 +1,64 @@
 package tenterexample
 
-import com.github.ajalt.mordant.rendering.Size
+import com.github.ajalt.mordant.input.MouseTracking
+import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.terminal.Terminal
-import tenter.panel.Panel
-import tenter.panel.PanelSet
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.takeWhile
+import tenter.panel.PanelState
 import tenter.screen.Canvas
 import tenter.screen.DefaultRolePalette
 import tenter.screen.ScreenBuffer
 import tenter.screen.ScreenRenderer
+import tenter.terminal.TerminalEvent
+import tenter.terminal.inputEvents
+import tenter.terminal.resizeEvents
 import tenter.terminal.withScreen
-import tenter.view.HelpView
-import tenter.view.View
 
-private const val ROW_COUNT: Int = 40
-
+/**
+ * Runs the separate-consumer smoke scenario without raw input or terminal lifecycle escapes.
+ * It exercises long prepared content, composition, settled hit-testing, both layout factories,
+ * widget glyphs, keymap dispatch, scrolling, reveal following, panel states, and animation.
+ */
 public fun runHeadlessSmoke(): SmokeResult {
-    val set = panelSet()
-    val initialBuffer = ScreenBuffer(width = 80, height = 24)
-    set.render(
-        canvas = Canvas.of(initialBuffer),
-        inputs = Unit,
-        visible = setOf(ExamplePanelId.ROWS, ExamplePanelId.HELP),
-        reservedTop = 0,
-    )
-
-    val initialText = bufferText(initialBuffer)
+    val app = ExampleApp(ExampleLayoutMode.MAIN_AND_SIDES)
+    var buffer = app.render(width = 80, height = 12)
+    val initialText = bufferText(buffer)
     check("row 0" in initialText) { "the rendered list did not contain its first generated row" }
-    set.scrollFocused(dx = 0, dy = ROW_COUNT)
+    check("PgUp/PgDn" in initialText) { "the rendered help did not contain the keymap hints" }
 
-    val scrolledBuffer = ScreenBuffer(width = 80, height = 24)
-    set.render(
-        canvas = Canvas.of(scrolledBuffer),
-        inputs = Unit,
-        visible = setOf(ExamplePanelId.ROWS, ExamplePanelId.HELP),
-        reservedTop = 0,
-    )
+    val initialLayout = checkNotNull(app.lastLayout)
+    val wheelTarget = checkNotNull(initialLayout.main).content
+    repeat(EXAMPLE_ROW_COUNT) {
+        app.handle(MouseEvent(x = wheelTarget.x + 1, y = wheelTarget.y + 1, wheelDown = true))
+    }
+    buffer = app.render(width = 80, height = 12)
+    val scrolledText = bufferText(buffer)
+    check("row 599" in scrolledText) { "wheel scrolling did not reach the final generated row" }
 
-    val screenText = bufferText(scrolledBuffer)
-    check("row 39" in screenText) { "the rendered list did not reach its final generated row after scrolling" }
-    check("j/k" in screenText) { "the rendered help did not contain the keymap hints" }
+    val scrolledLayout = checkNotNull(app.lastLayout)
+    val clickTarget = checkNotNull(scrolledLayout.main).content
+    val clickX = clickTarget.x + 1
+    val clickY = clickTarget.y + 1
+    val hit = checkNotNull(app.panels.hitTest(clickX, clickY))
+    val clickedRow = checkNotNull(hit.contentPoint).y
+    app.handle(MouseEvent(x = clickX, y = clickY, left = true))
+    buffer = app.render(width = 44, height = 8)
+    check(app.state.selectedRow == clickedRow) { "the click selected the wrong generated row" }
+    check(app.state.selectedRow in app.state.checkedRows) { "the click did not toggle the selected row" }
+    check(buffer.width == 44 && buffer.height == 8) { "the resized frame did not use the new dimensions" }
+
+    check(app.cycleHelp() == PanelState.MAXIMIZED) { "the help panel did not maximize" }
+    check(app.cycleHelp() == PanelState.MINIMIZED) { "the help panel did not minimize" }
+    check(app.cycleHelp() == PanelState.NORMAL) { "the help panel did not restore its normal state" }
+
+    val uniform = ExampleApp(ExampleLayoutMode.UNIFORM)
+    uniform.render(width = 100, height = 12)
+    val uniformLayout = checkNotNull(uniform.lastLayout)
+    check(uniformLayout.main == null && uniformLayout.sides.size == 2) {
+        "the uniform layout did not place both fresh panel instances"
+    }
 
     val animation = animationProbe()
     val firstFrame = renderAnimationFrame(animation.firstFrame)
@@ -47,17 +67,13 @@ public fun runHeadlessSmoke(): SmokeResult {
     check(secondFrame.get(1, 0).char == "B") { "the second animation frame painted the wrong glyph" }
 
     return SmokeResult(
-        renderedRows = ROW_COUNT,
-        helpContainsMovement = "j/k" in screenText,
+        renderedRows = EXAMPLE_ROW_COUNT,
+        helpContainsMovement = "PgUp/PgDn" in initialText,
         animationCompleted = animation.completedFrameCount == 0,
     )
 }
 
-/**
- * The interactive entry point uses the toolkit's scoped screen lifecycle: it renders one frame
- * and always restores the terminal in `finally`. The headless mode used by tests and packaged
- * checks never enters this path or reads raw input.
- */
+/** The interactive entry point; launch it from a real TTY with `./gradlew :tenter-example:run`. */
 public fun main(args: Array<String>) {
     if ("--headless" in args) {
         println(runHeadlessSmoke())
@@ -66,39 +82,33 @@ public fun main(args: Array<String>) {
 
     val terminal = Terminal()
     terminal.withScreen(DefaultRolePalette) { renderer ->
-        val size = terminal.updateSize()
-        renderer.render(renderFrame(size))
+        runInteractive(terminal, renderer)
     }
 }
 
-private fun panelSet(): PanelSet<ExamplePanelId, Unit> {
-    val rows = Panel<ExamplePanelId, Unit>(
-        id = ExamplePanelId.ROWS,
-        title = "ROWS",
-        badge = "R",
-        normal = { Panel.Presentation(ExampleListView(ROW_COUNT), width = 0) },
-    )
-    val help = Panel<ExamplePanelId, Unit>(
-        id = ExamplePanelId.HELP,
-        title = "HELP",
-        badge = "H",
-        normal = { Panel.Presentation(HelpView(listOf(ExampleKeyMap.map.hints(ExampleContext.LIST))), width = 28) },
-    )
-    return PanelSet.mainAndSides(rows, listOf(help))
+private fun runInteractive(terminal: Terminal, renderer: ScreenRenderer) {
+    val app = ExampleApp(ExampleLayoutMode.MAIN_AND_SIDES)
+    var size = terminal.updateSize()
+    renderer.render(app.render(size.width, size.height))
+
+    runBlocking {
+        merge(
+            terminal.inputEvents(MouseTracking.Normal) { event ->
+                ExampleKeyMap.map.resolve(listOf(ExampleContext.LIST), event) == ExampleAction.QUIT
+            },
+            terminal.resizeEvents(),
+        ).takeWhile { it !is TerminalEvent.Quit }.collect { event ->
+            when (event) {
+                is TerminalEvent.Input -> app.handle(event.event)
+                is TerminalEvent.Resized -> size = event.size
+                TerminalEvent.Quit -> Unit
+            }
+            if (app.running) renderer.render(app.render(size.width, size.height))
+        }
+    }
 }
 
-private fun renderFrame(size: Size): ScreenBuffer {
-    val buffer = ScreenBuffer(size.width.coerceAtLeast(40), size.height.coerceAtLeast(10))
-    panelSet().render(
-        canvas = Canvas.of(buffer),
-        inputs = Unit,
-        visible = setOf(ExamplePanelId.ROWS, ExamplePanelId.HELP),
-        reservedTop = 0,
-    )
-    return buffer
-}
-
-private fun renderAnimationFrame(view: View): ScreenBuffer {
+private fun renderAnimationFrame(view: tenter.view.View): ScreenBuffer {
     val buffer = ScreenBuffer(3, 1)
     view.draw(Canvas.of(buffer))
     return buffer

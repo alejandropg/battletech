@@ -1,4 +1,3 @@
-import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.bundling.Jar
@@ -14,10 +13,6 @@ application {
 
 dependencies {
     implementation(project(":tenter"))
-}
-
-tasks.named<JavaExec>("run") {
-    args("--headless")
 }
 
 val tenterJar = project(":tenter").tasks.named<Jar>("jar")

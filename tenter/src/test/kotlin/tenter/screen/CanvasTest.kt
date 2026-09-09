@@ -1,7 +1,6 @@
 package tenter.screen
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
@@ -341,19 +340,4 @@ internal class CanvasTest {
         assertEquals("DEF", (0 until 3).joinToString("") { vertical.get(it, 2).char })
     }
 
-    @Test
-    fun `contentHeight measures the last row holding a glyph or background tint`() {
-        val canvas = Canvas.offscreen(5, 10)
-        canvas.writeString(0, 3, "hi")
-
-        assertEquals(4, canvas.contentHeight())
-    }
-
-    @Test
-    fun `contentHeight is zero for a blank canvas`() {
-        val canvas = Canvas.offscreen(5, 10)
-
-        assertEquals(0, canvas.contentHeight())
-        assertFalse(canvas.get(0, 0).char != " ")
-    }
 }

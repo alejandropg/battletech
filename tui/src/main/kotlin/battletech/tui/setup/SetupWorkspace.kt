@@ -25,7 +25,7 @@ internal class SetupWorkspace(private val keys: Keybindings) {
 
     /**
      * Composes and draws one frame: the banner chrome (D19) plus every visible panel, laid out in
-     * equal-width columns (see [tenter.panel.PanelLayout.computeUniform]), with HELP retaining
+     * equal-width columns (through [tenter.panel.PanelSet.uniform]), with HELP retaining
      * the shared fixed width used by the game workspace.
      */
     fun render(

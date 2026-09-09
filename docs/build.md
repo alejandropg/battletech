@@ -10,16 +10,28 @@ Applied via `id("battletech.<name>")`:
 
 - **`battletech.kotlin-common`** — base for every module: applies `kotlin("jvm")`, sets the JVM toolchain (JVM 21 when `CLAUDE_CODE` env var is set — Claude Cloud constraint — otherwise the catalog version), enables `explicitApi()`, configures JUnit Platform + test logging, wires standard test deps (JUnit BOM/bundle, MockK, AssertJ).
 - **`battletech.kotlin-library`** — applies `kotlin-common`; used by `strategic`, `tactical`, `network`, `tenter`.
-- **`battletech.kotlin-application`** — applies `kotlin-common` + the `application` plugin; used by `bt`, `tui`.
+- **`battletech.kotlin-application`** — applies `kotlin-common` + the `application` plugin; used by `bt`, `tui`, and the independent `tenter-example` consumer.
 - **`battletech.kotlin-serialization`** — applies the Kotlin serialization plugin; used by `tactical` and `network` (both need kotlinx-serialization for `GameState`/wire types).
 
-`tenter/build.gradle.kts` additionally applies the stock `java-test-fixtures` plugin (not a `battletech.*` convention plugin) to publish `ViewTestSupport.kt`'s `render`/`renderInPanel`/buffer helpers as `testFixtures(project(":tenter"))`, consumed by `tui`'s own tests — a fixture used across module boundaries belongs in `testFixtures`, not duplicated per consumer.
+`tenter/build.gradle.kts` additionally applies the stock `java-test-fixtures` plugin (not a `battletech.*` convention plugin) for the repository-only `ViewTestSupport.kt` helpers consumed by `tui`'s tests. The fixture is intentionally not an independently supported or published consumer artifact; production visibility is decided by the public Tenter surface.
+
+The same build also enables Kotlin 2.4.10's built-in experimental JVM ABI validation for Tenter.
+`tenter/api/tenter.api` is the machine-generated reference dump; `:tenter:checkKotlinAbi` compares
+the current public binary surface with it, and `:tenter:updateKotlinAbi` regenerates it after an
+intentional reviewed change. The dump is a compatibility aid, not a promise of semantic
+compatibility: additions to sealed hierarchies/enums, Kotlin named/default arguments, and behavior
+contracts still require review.
 
 ## Module dependency edges
 
 - `network → tactical`: `api(project(":tactical"))` in `network/build.gradle.kts` — deliberately transitive (not `implementation`). `network` re-exports `tactical` types (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) directly as wire DTOs instead of redefining them, so consumers of `network` need `tactical`'s types on their compile classpath too.
 - `bt → strategic`, `bt → tactical`: both `implementation(project(...))` in `bt/build.gradle.kts`.
 - `tui → tactical`, `tui → network`, `tui → tenter`: all `implementation(project(...))` in `tui/build.gradle.kts`; `tui` additionally takes `testImplementation(testFixtures(project(":tenter")))` for shared rendering test helpers.
+- `tenter-example → tenter`: the example's only production module dependency. It uses no BattleTech
+  project artifact, repository resource, or test fixture. `./gradlew :tenter-example:run` is the
+  documented interactive launch from a real TTY; `:tenter-example:packagedSmoke` copies the
+  example's source into a disposable standalone Gradle build and compiles/runs it against only the
+  packaged Tenter jar and its resolved runtime closure.
 - `strategic`, `tactical`, and `tenter` declare no `project(...)` dependencies on other modules (`strategic/build.gradle.kts`, `tactical/build.gradle.kts`, `tenter/build.gradle.kts`). `tenter` depends only on `mordant` and `kotlinx-coroutines-core` (both `api`, since `Terminal`/`InputEvent`/`Flow` types appear in its own public surface) — no BattleTech module may appear on its classpath, enforced per the invariant in `CLAUDE.md`.
 
 ## TUI packaging

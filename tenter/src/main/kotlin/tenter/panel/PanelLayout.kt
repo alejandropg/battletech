@@ -58,7 +58,7 @@ public class PanelLayout<K : PanelId> private constructor(
          * rows above the content area. Side widths are reserved first; if they do not fit, the
          * main slot becomes zero-width and sides are clipped in declaration order.
          */
-        public fun <K : PanelId, I> compute(
+        internal fun <K : PanelId, I> compute(
             width: Int,
             height: Int,
             reservedTop: Int,
@@ -101,7 +101,7 @@ public class PanelLayout<K : PanelId> private constructor(
          * Minimized panels are fixed-width, but remain at their declaration positions among the
          * proportional panels. Other fixed panels form a trailing group in declaration order.
          */
-        public fun <K : PanelId, I> computeUniform(
+        internal fun <K : PanelId, I> computeUniform(
             width: Int,
             height: Int,
             reservedTop: Int,

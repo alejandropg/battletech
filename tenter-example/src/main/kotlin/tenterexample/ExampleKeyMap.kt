@@ -5,6 +5,7 @@ import tenter.input.HintGroup
 import tenter.input.KeyBinding
 import tenter.input.KeyLayer
 import tenter.input.KeyMap
+import tenter.input.ScrollAction
 
 internal object ExampleKeyMap {
     internal val map: KeyMap<ExampleContext> = KeyMap(
@@ -12,12 +13,20 @@ internal object ExampleKeyMap {
             ExampleContext.LIST to KeyLayer(
                 title = "LIST",
                 bindings = listOf(
-                    KeyBinding(KeyboardEvent("k"), ExampleAction.MOVE_UP, "movement"),
-                    KeyBinding(KeyboardEvent("j"), ExampleAction.MOVE_DOWN, "movement"),
+                    KeyBinding(KeyboardEvent("ArrowUp"), ExampleAction.MOVE_UP, "movement"),
+                    KeyBinding(KeyboardEvent("ArrowDown"), ExampleAction.MOVE_DOWN, "movement"),
+                    KeyBinding(KeyboardEvent(" "), ExampleAction.TOGGLE, "toggle"),
+                    KeyBinding(KeyboardEvent("h"), ExampleAction.FOCUS_HELP, "panels"),
+                    KeyBinding(KeyboardEvent("m"), ExampleAction.CYCLE_PANEL, "panels"),
+                    KeyBinding(KeyboardEvent("PageUp"), ScrollAction.Pages(-1), "scroll"),
+                    KeyBinding(KeyboardEvent("PageDown"), ScrollAction.Pages(1), "scroll"),
                     KeyBinding(KeyboardEvent("q"), ExampleAction.QUIT, "quit"),
                 ),
                 hintGroups = listOf(
-                    HintGroup("movement", "j/k", "move through the generated rows"),
+                    HintGroup("movement", "↑/↓", "move through the generated rows"),
+                    HintGroup("toggle", "space", "toggle the selected row"),
+                    HintGroup("panels", "h/m", "focus help or cycle its size"),
+                    HintGroup("scroll", "PgUp/PgDn", "manually scroll the focused panel"),
                     HintGroup("quit", "q", "quit the example"),
                 ),
             ),
