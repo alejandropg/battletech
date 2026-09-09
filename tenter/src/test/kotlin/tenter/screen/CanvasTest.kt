@@ -108,13 +108,13 @@ internal class CanvasTest {
     }
 
     @Test
-    fun `writeString skips zero-width combining marks`() {
+    fun `writeString preserves zero-width combining marks in their cluster`() {
         val canvas = Canvas.offscreen(5, 1)
 
         // 'e' + combining acute (U+0301) + 'x'
         canvas.writeString(0, 0, "e\u0301x")
 
-        assertEquals("e", canvas.get(0, 0).char)
+        assertEquals("e\u0301", canvas.get(0, 0).char)
         assertEquals("x", canvas.get(1, 0).char)
         assertEquals(" ", canvas.get(2, 0).char)
     }
@@ -156,6 +156,27 @@ internal class CanvasTest {
 
         assertEquals(2, child.width)
         assertEquals(2, child.height)
+    }
+
+    @Test
+    fun `region intersects a rectangle that starts outside the parent`() {
+        val buffer = ScreenBuffer(10, 1)
+        val child = Canvas.of(buffer).region(-2, 0, 5, 1)
+
+        assertEquals(3, child.width)
+        child.set(2, 0, Cell("X"))
+
+        assertEquals(Cell("X"), buffer.get(2, 0))
+        assertEquals(Cell(), buffer.get(3, 0))
+    }
+
+    @Test
+    fun `reveal intersection does not retain hidden columns`() {
+        val canvas = Canvas.offscreen(10, 1)
+
+        canvas.markReveal(-2, 0, 5, 1)
+
+        assertEquals(RevealRect(0, 0, 3, 1), canvas.revealRect())
     }
 
     @Test
@@ -208,6 +229,39 @@ internal class CanvasTest {
     }
 
     @Test
+    fun `a wide glyph at the child edge paints a blank instead of a half glyph`() {
+        val buffer = ScreenBuffer(4, 1)
+        val child = Canvas.of(buffer).region(1, 0, 1, 1)
+
+        child.writeString(0, 0, "中", Cell.Style(fg = ChromeRole.ACCENT))
+
+        assertEquals(Cell(" ", Cell.Style(fg = ChromeRole.ACCENT)), buffer.get(1, 0))
+        assertEquals(Cell(), buffer.get(2, 0))
+    }
+
+    @Test
+    fun `a wide glyph clipped on the left paints only a blank surviving slot`() {
+        val canvas = Canvas.offscreen(3, 1)
+
+        canvas.writeString(-1, 0, "中", Cell.Style(fg = ChromeRole.ACCENT))
+
+        assertEquals(Cell(" ", Cell.Style(fg = ChromeRole.ACCENT)), canvas.get(0, 0))
+        assertEquals(Cell(), canvas.get(1, 0))
+    }
+
+    @Test
+    fun `replacing either half of a wide glyph removes the complete glyph`() {
+        val canvas = Canvas.offscreen(4, 1)
+        canvas.writeString(0, 0, "中A")
+
+        canvas.set(1, 0, Cell("X"))
+
+        assertEquals(Cell(), canvas.get(0, 0))
+        assertEquals(Cell("X"), canvas.get(1, 0))
+        assertEquals(Cell("A"), canvas.get(2, 0))
+    }
+
+    @Test
     fun `blit copies cell char fg and bg from source to destination`() {
         val src = Canvas.offscreen(5, 5)
         src.set(1, 2, Cell("X", Cell.Style(ChromeRole.DANGER, ChromeRole.INFO)))
@@ -257,6 +311,34 @@ internal class CanvasTest {
         dest.blit(src, 0, 0, 0, 0, 3, 1)
 
         assertEquals(Cell(), buffer.get(2, 0), "must not leak past the 2-wide dest canvas")
+    }
+
+    @Test
+    fun `blit never copies only half of a wide glyph`() {
+        val source = Canvas.offscreen(3, 1)
+        source.writeString(0, 0, "中")
+        val destination = Canvas.offscreen(3, 1)
+
+        destination.blit(source, 0, 0, 0, 0, 1, 1)
+
+        assertEquals(Cell(), destination.get(0, 0))
+        assertEquals(Cell(), destination.get(1, 0))
+    }
+
+    @Test
+    fun `overlapping horizontal and vertical blits use their original source`() {
+        val horizontal = Canvas.offscreen(4, 1)
+        horizontal.writeString(0, 0, "ABCD")
+        horizontal.blit(horizontal, 0, 0, 1, 0, 3, 1)
+
+        val vertical = Canvas.offscreen(3, 3)
+        vertical.writeString(0, 0, "ABC")
+        vertical.writeString(0, 1, "DEF")
+        vertical.blit(vertical, 0, 0, 0, 1, 3, 2)
+
+        assertEquals("AABC", (0 until 4).joinToString("") { horizontal.get(it, 0).char })
+        assertEquals("ABC", (0 until 3).joinToString("") { vertical.get(it, 1).char })
+        assertEquals("DEF", (0 until 3).joinToString("") { vertical.get(it, 2).char })
     }
 
     @Test

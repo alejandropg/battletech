@@ -29,26 +29,24 @@ public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette
 
     private val styleTagCache = StyleTagCache(palette, terminal.terminalInfo.ansiLevel)
 
-    // The last buffer actually sent to the terminal, or null if nothing has been sent yet (or
-    // [clear] just ran) — either way, the next render() has nothing to diff against.
+    // A private snapshot of the last buffer actually sent to the terminal, or null if nothing
+    // has been sent yet (or [clear] just ran). Caller-owned buffers may be safely reused.
     private var previous: ScreenBuffer? = null
 
     /**
      * Sends [buffer] to the terminal, writing only what changed since the previous call.
      *
-     * **Ownership**: this keeps a reference to [buffer] to diff the *next* frame against, so the
-     * caller must not mutate it after handing it over — a later edit would be read as if it had
-     * already been drawn, and those cells would silently never be repainted. Callers should build
-     * a fresh [ScreenBuffer] per frame, which satisfies this.
+     * The renderer snapshots the submitted frame after output succeeds, so the caller may mutate
+     * and reuse [buffer] for the next frame.
      */
     public fun render(buffer: ScreenBuffer) {
         val prev = previous
         if (prev == null || prev.width != buffer.width || prev.height != buffer.height) {
-            renderFull(buffer)
+            renderFull(buffer, clearStale = prev != null && (buffer.width < prev.width || buffer.height < prev.height))
         } else {
             renderDiff(buffer, prev)
         }
-        previous = buffer
+        previous = buffer.snapshot()
     }
 
     /**
@@ -80,9 +78,12 @@ public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette
         System.out.flush()
     }
 
-    private fun renderFull(buffer: ScreenBuffer) {
+    private fun renderFull(buffer: ScreenBuffer, clearStale: Boolean) {
         val sb = StringBuilder()
-        sb.append(terminal.cursor.getMoves { setPosition(0, 0) })
+        sb.append(terminal.cursor.getMoves {
+            if (clearStale) clearScreen()
+            setPosition(0, 0)
+        })
         for (y in 0 until buffer.height) {
             renderSpan(sb, buffer, y, 0, buffer.width)
             if (y < buffer.height - 1) sb.append("\r\n")
@@ -99,24 +100,21 @@ public class ScreenRenderer(private val terminal: Terminal, palette: RolePalette
     private fun renderDiff(buffer: ScreenBuffer, prev: ScreenBuffer) {
         val sb = StringBuilder()
         for (y in 0 until buffer.height) {
-            var x = 0
-            while (x < buffer.width) {
-                if (buffer.get(x, y) == prev.get(x, y)) {
-                    x++
-                    continue
+            val dirty = mutableListOf<IntRange>()
+            for (x in 0 until buffer.width) {
+                if (buffer.get(x, y) == prev.get(x, y)) continue
+                val start = minOf(buffer.glyphStart(x, y), prev.glyphStart(x, y))
+                val end = maxOf(buffer.glyphEndExclusive(x, y), prev.glyphEndExclusive(x, y))
+                val last = dirty.lastOrNull()
+                if (last != null && start <= last.last + 1) {
+                    dirty[dirty.lastIndex] = last.first..maxOf(last.last, end - 1)
+                } else {
+                    dirty += start..(end - 1)
                 }
-                // A wide character's continuation cell (empty char, second half of a 2-column
-                // glyph) can't be printed alone — pull in the lead column at x-1 so the glyph is
-                // resent as a whole. `end` still starts past the ORIGINAL x (not `start`) so a
-                // clean lead never stalls progress: the loop always covers at least cell x.
-                var start = x
-                if (buffer.get(start, y).char.isEmpty() && start > 0) start--
-                var end = x + 1
-                while (end < buffer.width && buffer.get(end, y) != prev.get(end, y)) end++
-
-                sb.append(terminal.cursor.getMoves { setPosition(start, y) })
-                renderSpan(sb, buffer, y, start, end)
-                x = end
+            }
+            for (span in dirty) {
+                sb.append(terminal.cursor.getMoves { setPosition(span.first, y) })
+                renderSpan(sb, buffer, y, span.first, span.last + 1)
             }
         }
         if (sb.isEmpty()) return

@@ -57,4 +57,33 @@ internal class ScreenBufferTest {
         assertEquals(10, buffer.width)
         assertEquals(20, buffer.height)
     }
+
+    @Test
+    fun `negative dimensions are rejected while zero dimensions are valid`() {
+        assertThrows<IllegalArgumentException> { ScreenBuffer(-1, 0) }
+        assertThrows<IllegalArgumentException> { ScreenBuffer(0, -1) }
+
+        val empty = ScreenBuffer(0, 0)
+        assertEquals(0, empty.width)
+        assertEquals(0, empty.height)
+    }
+
+    @Test
+    fun `set rejects a multi-grapheme or control cell`() {
+        val buffer = ScreenBuffer(2, 1)
+
+        assertThrows<IllegalArgumentException> { buffer.set(0, 0, Cell("AB")) }
+        assertThrows<IllegalArgumentException> { buffer.set(0, 0, Cell("\u001B")) }
+    }
+
+    @Test
+    fun `an observed continuation cannot create an orphan when written back`() {
+        val buffer = ScreenBuffer(3, 1)
+        Canvas.of(buffer).writeString(0, 0, "中")
+
+        buffer.set(1, 0, buffer.get(1, 0))
+
+        assertEquals(Cell(), buffer.get(0, 0))
+        assertEquals(Cell(), buffer.get(1, 0))
+    }
 }

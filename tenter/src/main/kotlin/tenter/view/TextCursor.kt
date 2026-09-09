@@ -141,9 +141,6 @@ internal fun drawVerticalText(canvas: Canvas, text: String, style: Cell.Style) {
         if (row >= canvas.height) break
         if (cluster.width == 0) continue
         canvas.set(centerX, row, Cell(cluster.drawableText, style))
-        if (cluster.width == 2 && centerX + 1 < canvas.width) {
-            canvas.set(centerX + 1, row, Cell("", style))
-        }
         row++
     }
 }

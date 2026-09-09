@@ -194,10 +194,9 @@ private fun renderAnimationPanel(
     val panelWidth = panelSize.width
     val panelHeight = panelSize.height
     if (panelWidth > screen.width || panelHeight > screen.height) return
-    // [Canvas.region] SHRINKS rather than clips: an origin past the right/bottom edge yields a
-    // narrow canvas and a squashed border, not a cropped panel. AnimationLayout already places
-    // every panel on-screen, so this clamp is the second, independent guard against a resize
-    // racing a render — exactly the role the fit check above plays.
+    // AnimationLayout already places every panel on-screen, so this clamp is a second,
+    // independent guard against a resize racing a render — exactly the role the fit check above
+    // plays. Canvas.region intersects the requested rectangle if a resize still races this path.
     val region = screen.region(
         animation.value.x.coerceIn(0, screen.width - panelWidth),
         animation.value.y.coerceIn(0, screen.height - panelHeight),

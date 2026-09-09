@@ -288,6 +288,65 @@ internal class ScreenRendererTest {
     }
 
     @Test
+    fun `replacing a wide glyph with narrow text repaints its full old footprint`() {
+        val first = ScreenBuffer(3, 1)
+        Canvas.of(first).writeString(0, 0, "中A")
+        renderer.render(first)
+
+        val second = ScreenBuffer(3, 1)
+        Canvas.of(second).writeString(0, 0, "XA")
+        recorder.clearOutput()
+        renderer.render(second)
+
+        val out = recorder.output()
+        assertTrue(out.contains("XA"), "Expected both columns of the old wide footprint to be repainted: ${out.repr()}")
+        assertTrue(!out.contains("中"), "Expected the old wide glyph to be absent: ${out.repr()}")
+    }
+
+    @Test
+    fun `replacing a wide continuation emits the replacement and clears its lead`() {
+        val buffer = ScreenBuffer(3, 1)
+        Canvas.of(buffer).writeString(0, 0, "中A")
+        renderer.render(buffer)
+
+        buffer.set(1, 0, Cell("X"))
+        recorder.clearOutput()
+        renderer.render(buffer)
+
+        val out = recorder.output()
+        assertTrue(out.contains(" X"), "Expected the lead to be erased before the replacement: ${out.repr()}")
+        assertTrue(!out.contains("中"), "Expected the old wide glyph to be absent: ${out.repr()}")
+    }
+
+    @Test
+    fun `changing a wide glyph style repaints its complete terminal footprint`() {
+        val buffer = ScreenBuffer(3, 1)
+        Canvas.of(buffer).writeString(0, 0, "中", Cell.Style(fg = ChromeRole.DANGER))
+        renderer.render(buffer)
+
+        Canvas.of(buffer).setFg(0, 0, "中", ChromeRole.SUCCESS)
+        recorder.clearOutput()
+        renderer.render(buffer)
+
+        val out = recorder.output()
+        assertTrue(out.contains("中"), "Expected the styled wide glyph to be repainted: ${out.repr()}")
+        assertTrue(out.contains("38;2;139;209;124"), "Expected the replacement style: ${out.repr()}")
+    }
+
+    @Test
+    fun `mutating a submitted buffer is visible on the next render`() {
+        val buffer = ScreenBuffer(1, 1)
+        Canvas.of(buffer).writeString(0, 0, "A")
+        renderer.render(buffer)
+
+        buffer.set(0, 0, Cell("B"))
+        recorder.clearOutput()
+        renderer.render(buffer)
+
+        assertTrue(recorder.output().contains("B"), "Expected the reused buffer's new cell: ${recorder.output().repr()}")
+    }
+
+    @Test
     fun `a terminal size change forces a full repaint even though content is unchanged`() {
         val first = ScreenBuffer(3, 1)
         Canvas.of(first).writeString(0, 0, "abc")
@@ -303,6 +362,21 @@ internal class ScreenRendererTest {
             recorder.output().startsWith("[1;1H"),
             "Expected a full repaint (cursor-home) after a size change, got: ${recorder.output().take(20).repr()}",
         )
+    }
+
+    @Test
+    fun `shrinking the buffer clears stale content before repainting`() {
+        val first = ScreenBuffer(4, 1)
+        Canvas.of(first).writeString(0, 0, "ABCD")
+        renderer.render(first)
+
+        val smaller = ScreenBuffer(1, 1)
+        Canvas.of(smaller).writeString(0, 0, "Z")
+        recorder.clearOutput()
+        renderer.render(smaller)
+
+        assertTrue(recorder.output().contains("[2J"), "Expected stale terminal content to be erased: ${recorder.output().repr()}")
+        assertTrue(recorder.output().contains("Z"), "Expected the smaller frame to be painted: ${recorder.output().repr()}")
     }
 
     // ---- alternate screen buffer ----

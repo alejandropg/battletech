@@ -34,7 +34,7 @@ internal class AnimationPlaybackTest {
 
         public override fun frame(index: Int): View {
             calls += index
-            return LetterView((firstLetter.code + index).toChar())
+            return LetterView((firstLetter.code + index % 26).toChar())
         }
     }
 
@@ -181,7 +181,7 @@ internal class AnimationPlaybackTest {
 
         val sample = playback.sample(875.milliseconds)
 
-        assertEquals('A' + 87, sample.frames.single().letter())
+        assertEquals('A' + 87 % 26, sample.frames.single().letter())
         assertEquals(listOf(87), calls)
     }
 

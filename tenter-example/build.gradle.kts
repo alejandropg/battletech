@@ -46,6 +46,7 @@ tasks.register<Exec>("packagedSmoke") {
         rootProject.file("gradlew").absolutePath,
         "--no-daemon",
         "--no-configuration-cache",
+        "--rerun-tasks",
         "--project-dir",
         packagedSmokeDirectory.get().asFile.absolutePath,
         "run",
