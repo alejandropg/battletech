@@ -1,6 +1,7 @@
 package tenter.view
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 
@@ -17,12 +18,12 @@ internal class ScrollingPanelTest {
         repeat(lines) { row -> cursor.writeLine("line$row") }
     }
 
-    private fun panel(content: ContentView, scrollOffset: Int? = 0) = scrollingPanel(
-        title = "T",
-        badge = "0",
-        content = content,
-        state = ViewportState(scrollOffset?.let { ScrollOffset(y = it) } ?: ScrollOffset.ZERO),
-    )
+    private fun panel(content: ContentView, scrollOffset: Int? = 0, state: ViewportState = ViewportState(
+        scrollOffset?.let { ScrollOffset(y = it) } ?: ScrollOffset.ZERO,
+    )) = scrollingPanel(title = "T", badge = "0", content = content, state = state)
+
+    /** The settled frame the panel published to the state its caller supplied. */
+    private fun ViewportState.frame(): ScrollState = checkNotNull(settled) { "no drawable frame" }
 
     @Test
     fun `content at offset 0 starts at row y+2 col x+2`() {
@@ -70,33 +71,36 @@ internal class ScrollingPanelTest {
 
     @Test
     fun `maxOffset accounts for the reclaimable top-padding row`() {
-        val view = panel(stubContent(20))
+        val state = ViewportState()
+        val view = panel(stubContent(20), state = state)
 
         render(view, 30, 10)
 
         val viewportHeight = 8
         val streamHeight = 20 + 1 // the reclaimable top-padding row is prepended to the stream
-        assertEquals(streamHeight - viewportHeight, view.scroll.maxOffset.y)
+        assertEquals(streamHeight - viewportHeight, state.frame().maxOffset.y)
     }
 
     @Test
     fun `degenerate height 2 draws only box and never throws`() {
-        val view = panel(stubContent(5))
+        val state = ViewportState()
+        val view = panel(stubContent(5), state = state)
 
         val buffer = render(view, 30, 2)
 
         assertEquals("╭", buffer.get(0, 0).char)
         assertEquals("╰", buffer.get(0, 1).char)
-        assertEquals(0, view.scroll.maxOffset.y)
+        assertNull(state.settled, "a destination this small has no drawable viewport")
     }
 
     @Test
     fun `degenerate width 4 draws only box and never throws`() {
-        val view = panel(stubContent(5))
+        val state = ViewportState()
+        val view = panel(stubContent(5), state = state)
 
         val buffer = render(view, 4, 10)
 
         assertEquals("╭", buffer.get(0, 0).char)
-        assertEquals(0, view.scroll.maxOffset.y)
+        assertNull(state.settled, "a destination this narrow has no drawable viewport")
     }
 }

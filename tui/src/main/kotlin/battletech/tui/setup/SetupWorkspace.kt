@@ -12,7 +12,7 @@ import tenter.view.FlashMessage
 internal class SetupWorkspace(private val keys: Keybindings) {
     private val panels: SetupPanelSet = SetupPanels.build(keys)
 
-    val focused: SetupPanelId get() = panels.focused ?: SetupPanelId.MODE
+    val focused: SetupPanelId get() = panels.focused
 
     fun focus(id: SetupPanelId) = panels.focus(id)
     internal fun focusOrCycle(id: SetupPanelId) = panels.focusOrCycle(id)

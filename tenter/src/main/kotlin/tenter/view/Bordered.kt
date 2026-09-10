@@ -122,13 +122,15 @@ public class Bordered(
                 val outer = BORDER + gutters
                 val innerWidth = (availableWidth.toLong() - outer.left - outer.right).coerceAtLeast(0).toInt()
                 val child = content.layout(innerWidth)
-                val width = Math.addExact(Math.addExact(child.width, outer.left), outer.right)
-                val height = Math.addExact(Math.addExact(child.height, outer.top), outer.bottom)
+                val width = checkedAdd(checkedAdd(child.width, outer.left, BORDERED), outer.right, BORDERED)
+                val height = checkedAdd(checkedAdd(child.height, outer.top, BORDERED), outer.bottom, BORDERED)
                 return ContentLayout.raw(
                     width, height, Bordered(child, title, badge, gutters, borderColor, titleColor),
                 )
             }
         }
+
+        private const val BORDERED: String = "bordered size"
 
         /** One cell on each side, consumed by every [Bordered] box. */
         public val BORDER: Insets = Insets.all(1)
@@ -147,9 +149,9 @@ public class Bordered(
 
         /**
          * A scrolling panel's viewport: border plus the horizontal gutters, at full inner height.
-         * Public because callers that need to translate a click into content-stream coordinates
-         * (e.g. mapping a screen click onto scrolled content) need to know this inset too — not
-         * just an implementation detail of [scrollingPanel].
+         * Deliberately not public: a caller translating a screen click into content-stream
+         * coordinates asks [tenter.panel.PanelSet.hitTest], which reads the completed frame's own
+         * geometry, rather than re-deriving it from this constant and a scroll offset.
          */
         internal val VIEWPORT_INSET: Insets = BORDER + PADDING.horizontal()
     }

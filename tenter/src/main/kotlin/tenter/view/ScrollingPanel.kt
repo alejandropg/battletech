@@ -7,23 +7,18 @@ import tenter.screen.ColorRole
 /**
  * A bordered, scrolling panel — [Bordered] for the box and [Viewport] for the scroll math, wired
  * together by [scrollingPanel]. Exists as its own type (rather than callers just getting a
- * [Bordered] back) so the settled [scroll] state has somewhere to live that isn't the border
- * decorator: a border knows nothing about scrolling in general, only how to draw thumbs from the
- * settled [ScrollState] supplied by this panel after its viewport paints.
+ * [Bordered] back) because painting the scrollbar thumbs has to happen *after* the viewport has
+ * settled, and a border decorator knows nothing about scrolling. Read the settled result from the
+ * [ViewportState] you supplied, not from this view.
  */
 public class ScrollingPanel internal constructor(
     private val bordered: Bordered,
     private val viewport: Viewport,
 ) : View {
 
-    /** What this panel's content actually settled on this render — see [ScrollState]. */
-    public val scroll: ScrollState get() = viewport.scroll
-
-    internal val settled: ScrollState? get() = viewport.settled
-
     override fun draw(canvas: Canvas) {
         bordered.draw(canvas)
-        bordered.drawThumbs(canvas, viewport.scroll)
+        viewport.settled?.let { bordered.drawThumbs(canvas, it) }
     }
 }
 

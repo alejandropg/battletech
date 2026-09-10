@@ -3,10 +3,10 @@ package tenterexample
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import tenter.panel.Panel
 import tenter.panel.PanelSet
 
 internal class ExampleSmokeTest {
@@ -45,13 +45,23 @@ internal class ExampleSmokeTest {
 
     @Test
     fun `each layout mode receives fresh panel instances and attachment remains exclusive`() {
+        // Both apps coexist and render only because each one builds its own panel instances.
         val mainAndSides = ExampleApp(ExampleLayoutMode.MAIN_AND_SIDES)
         val uniform = ExampleApp(ExampleLayoutMode.UNIFORM)
+        mainAndSides.render(width = 80, height = 12)
+        uniform.render(width = 80, height = 12)
 
-        assertNotSame(mainAndSides.panels.main, uniform.panels.sides.first())
-        assertNotSame(mainAndSides.panels.sides.single(), uniform.panels.sides.last())
+        assertEquals(ExamplePanelId.ROWS, mainAndSides.panels.focused)
+        assertEquals(ExamplePanelId.ROWS, uniform.panels.focused)
 
-        val attached = checkNotNull(mainAndSides.panels.main)
-        assertThrows<IllegalArgumentException> { PanelSet.uniform(listOf(attached)) }
+        // Sharing one instance across sets is what fails, and it fails at construction.
+        val shared = Panel<ExamplePanelId, ExampleState>(
+            id = ExamplePanelId.ROWS,
+            title = "CATALOG",
+            normal = { input -> Panel.Presentation.allocated(ExampleListView(1, input)) },
+        )
+        PanelSet.uniform(listOf(shared))
+
+        assertThrows<IllegalArgumentException> { PanelSet.uniform(listOf(shared)) }
     }
 }

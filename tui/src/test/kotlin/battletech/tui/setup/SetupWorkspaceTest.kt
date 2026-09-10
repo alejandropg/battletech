@@ -16,7 +16,9 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import tenter.panel.PanelState
 import tenter.view.HelpView
+import tenter.panel.declaredCycle
 import tenter.view.line
 import tenter.view.text
 
@@ -101,24 +103,14 @@ internal class SetupWorkspaceTest {
     }
 
     @Test
-    fun `setup panels declare compact minimized and player maximized states`() {
-        val panels = SetupPanels.build(Keybindings.DEFAULT).sides
+    fun `setup panels cycle a compact MODE and maximizable map and player panels`() {
+        val minimizeOnly = listOf(PanelState.MINIMIZED, PanelState.NORMAL, PanelState.MINIMIZED, PanelState.NORMAL)
+        val allThree = listOf(PanelState.MAXIMIZED, PanelState.MINIMIZED, PanelState.NORMAL, PanelState.MAXIMIZED)
 
-        assertEquals(
-            listOf(SetupPanelId.MODE),
-            panels.filter { it.id != SetupPanelId.HELP && it.states == listOf(tenter.panel.PanelState.MINIMIZED, tenter.panel.PanelState.NORMAL) }
-                .map { it.id },
-        )
-        assertEquals(
-            listOf(SetupPanelId.MAP),
-            panels.filter { it.id == SetupPanelId.MAP && it.states == listOf(tenter.panel.PanelState.MINIMIZED, tenter.panel.PanelState.NORMAL, tenter.panel.PanelState.MAXIMIZED) }
-                .map { it.id },
-        )
-        assertEquals(
-            listOf(SetupPanelId.PLAYER_1, SetupPanelId.PLAYER_2),
-            panels.filter { it.id in setOf(SetupPanelId.PLAYER_1, SetupPanelId.PLAYER_2) && it.states == listOf(tenter.panel.PanelState.MINIMIZED, tenter.panel.PanelState.NORMAL, tenter.panel.PanelState.MAXIMIZED) }
-                .map { it.id },
-        )
+        assertEquals(minimizeOnly, SetupPanels.build(Keybindings.DEFAULT).declaredCycle(SetupPanelId.MODE))
+        assertEquals(allThree, SetupPanels.build(Keybindings.DEFAULT).declaredCycle(SetupPanelId.MAP))
+        assertEquals(allThree, SetupPanels.build(Keybindings.DEFAULT).declaredCycle(SetupPanelId.PLAYER_1))
+        assertEquals(allThree, SetupPanels.build(Keybindings.DEFAULT).declaredCycle(SetupPanelId.PLAYER_2))
     }
 
     @Test

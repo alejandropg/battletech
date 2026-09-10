@@ -15,10 +15,10 @@ public object TextTruncation {
 
     /**
      * The exclusive code-unit index of the longest prefix of [text] fitting in [maxWidth]
-     * display cells — never inside a grapheme cluster. Public so a decorated-text caller
-     * (`tenter.screen.StyledText`) cuts where this cuts rather than re-deriving the rule.
+     * display cells — never inside a grapheme cluster. Shared internally with
+     * `tenter.screen.StyledText` so it does not re-derive the rule.
      */
-    public fun prefixLengthWithin(text: String, maxWidth: Int): Int {
+    internal fun prefixLengthWithin(text: String, maxWidth: Int): Int {
         var displayWidth = 0
         var index = 0
         for (cluster in textClusters(text)) {

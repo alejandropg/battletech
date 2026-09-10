@@ -70,6 +70,19 @@ internal class ColumnsTest {
     }
 
     @Test
+    fun `wrapped bands keep one blank row even with no column gutter`() {
+        val layout = Columns(
+            listOf(
+                Columns.Child(4, block(4, 2, "A")),
+                Columns.Child(4, block(4, 1, "B")),
+            ),
+            gutter = 0,
+        ).layout(availableWidth = 4)
+
+        assertEquals(4, layout.height)
+    }
+
+    @Test
     fun `a child wider than the canvas is clipped, not widened`() {
         val columns = Columns(listOf(Columns.Child(20, block(20, 1, "A"))))
 

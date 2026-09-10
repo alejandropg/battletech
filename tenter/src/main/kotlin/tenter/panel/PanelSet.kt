@@ -1,10 +1,7 @@
 package tenter.panel
 
-import java.util.Collections
-import java.util.IdentityHashMap
 import tenter.screen.Canvas
 import tenter.view.Bordered
-import tenter.view.ScrollOffset
 import tenter.view.ViewportState
 
 /**
@@ -14,31 +11,42 @@ import tenter.view.ViewportState
  */
 public class PanelSet<K : PanelId, I> private constructor(
     /** The always-included derived-width panel, or null for a uniform set. */
-    public val main: Panel<K, I>?,
-    sides: List<Panel<K, I>>,
+    private val main: Panel<K, I>?,
+    /** Panel declarations in layout order; already copied by the factory that built this set. */
+    private val sides: List<Panel<K, I>>,
     private val reservedColumns: Int?,
     fixedWidthPanels: Set<K>,
 ) {
-    /** Immutable panel declarations in layout order. */
-    public val sides: List<Panel<K, I>> = Collections.unmodifiableList(ArrayList(sides))
-    private val fixedWidthPanels: Set<K> = Collections.unmodifiableSet(HashSet(fixedWidthPanels))
-    private var pendingRecenter: K? = null
+    private val fixedWidthPanels: Set<K> = HashSet(fixedWidthPanels)
     private var lastLayout: PanelLayout<K>? = null
-    private var focusedId: K? = main?.id ?: sides.firstOrNull()?.id
+    private var focusedId: K = main?.id ?: sides.first().id
 
-    /** The focused panel, or null when a uniform set's last frame had no visible panels. */
-    public val focused: K? get() = focusedId
+    /**
+     * The panel that receives focused input. Never absent: a set always owns at least one panel,
+     * and a frame with nothing visible retains the focus it had rather than dropping it, so focus
+     * returns where the user left it once panels become visible again.
+     */
+    public val focused: K get() = focusedId
 
-    private fun panelFor(id: K): Panel<K, I>? = if (id == main?.id) main else sides.firstOrNull { it.id == id }
+    /**
+     * The declared panel named by [id].
+     *
+     * @throws IllegalArgumentException if [id] does not name a panel in this set. Every id-addressed
+     * operation validates this way: the panel list is fixed at construction, so an id from outside
+     * it is a caller mistake, never a state to observe.
+     */
+    private fun panelFor(id: K): Panel<K, I> =
+        (if (id == main?.id) main else sides.firstOrNull { it.id == id })
+            ?: throw IllegalArgumentException("Panel $id is not declared in this PanelSet")
 
-    /** Focuses [id] if it names a panel in this set, demoting any other maximized panel. */
+    /** Focuses [id], demoting any other maximized panel. */
     public fun focus(id: K) {
-        val panel = panelFor(id) ?: return
+        val panel = panelFor(id)
         allPanels().forEach { if (it !== panel) it.demoteFromMaximized() }
         focusedId = id
     }
 
-    /** Focuses [id], or cycles it forward when it is already focused. Unknown id: no-op. */
+    /** Focuses [id], or cycles it forward when it is already focused. */
     public fun focusOrCycle(id: K) {
         if (id == focusedId) {
             cycleFocusedState(1)
@@ -49,7 +57,7 @@ public class PanelSet<K : PanelId, I> private constructor(
 
     /** Cycles the focused panel's declared state. */
     public fun cycleFocusedState(delta: Int) {
-        val panel = focusedId?.let(::panelFor) ?: return
+        val panel = panelFor(focusedId)
         val oldState = panel.state
         panel.cycleState(delta)
         if (panel.state == PanelState.MAXIMIZED && oldState != PanelState.MAXIMIZED) {
@@ -58,25 +66,23 @@ public class PanelSet<K : PanelId, I> private constructor(
     }
 
     public fun scrollFocused(dx: Int, dy: Int) {
-        focusedId?.let(::panelFor)?.scrollBy(dx, dy)
+        panelFor(focusedId).scrollBy(dx, dy)
     }
 
     /** Scrolls the focused panel by one viewport height; [direction] is -1 or +1. */
     public fun pageFocused(direction: Int) {
-        val id = focusedId ?: return
-        val panel = panelFor(id) ?: return
-        val page = slotFor(id)?.content?.height?.coerceAtLeast(1) ?: 1
-        panel.scrollBy(0, page * direction)
+        val page = slotFor(focusedId)?.content?.height?.coerceAtLeast(1) ?: 1
+        panelFor(focusedId).scrollBy(0, page * direction)
     }
 
     /** Mouse path: scrolls a specific panel regardless of focus. */
     public fun scroll(id: K, dx: Int, dy: Int) {
-        panelFor(id)?.scrollBy(dx, dy)
+        panelFor(id).scrollBy(dx, dy)
     }
 
-    /** One-shot: the named panel recenters on its reveal target at the next render. */
+    /** Queues recentering for this panel's next drawable frame, including while hidden. */
     public fun requestRecenter(id: K) {
-        if (panelFor(id) != null) pendingRecenter = id
+        panelFor(id).requestRecenter()
     }
 
     /** The panel at ([x], [y]) in the last completed frame, including the main panel. */
@@ -102,13 +108,10 @@ public class PanelSet<K : PanelId, I> private constructor(
     }
 
     /**
-     * Returns the state observed for [id], or null for an unknown panel. This is an immutable
-     * observation of managed state; callers cannot mutate a panel through it.
+     * The state observed for [id] — an immutable observation of managed state; callers cannot
+     * mutate a panel through it.
      */
-    public fun stateOf(id: K): PanelState? = panelFor(id)?.state
-
-    /** Returns the settled offset from the last drawable frame, or null if none exists/unknown. */
-    public fun offsetOf(id: K): ScrollOffset? = panelFor(id)?.settledOffset()
+    public fun stateOf(id: K): PanelState = panelFor(id).state
 
     private fun slotFor(id: K): PanelLayout.Slot<K>? {
         val layout = lastLayout ?: return null
@@ -167,9 +170,8 @@ public class PanelSet<K : PanelId, I> private constructor(
                 put(slot.id, renderSlot(canvas, slot, presentations))
             }
         }
-        val settledLayout = layout.withSettledScroll { id -> candidates[id]?.settled }
-        candidates.forEach { (id, candidate) -> panelFor(id)?.settle(candidate) }
-        pendingRecenter = null
+        val settledLayout = layout.withSettledScroll { id -> candidates.getValue(id).settled }
+        candidates.forEach { (id, candidate) -> panelFor(id).settle(candidate) }
         lastLayout = settledLayout
         return settledLayout
     }
@@ -179,15 +181,18 @@ public class PanelSet<K : PanelId, I> private constructor(
         slot: PanelLayout.Slot<K>,
         presentations: Map<K, Panel.Presentation>,
     ): ViewportState {
-        val panel = requireNotNull(panelFor(slot.id))
-        return panel.render(
-            canvas.region(slot.x, slot.y, slot.width, slot.height),
+        return panelFor(slot.id).render(
+            canvas.region(slot.outer),
             presentations.getValue(slot.id),
             focused = slot.id == focusedId,
-            recenter = pendingRecenter == slot.id,
         )
     }
 
+    /**
+     * Moves focus onto a visible panel when the focused one is hidden. A uniform frame with
+     * nothing visible keeps its current focus: there is no better panel to move to, and dropping
+     * it would silently relocate the user's focus to the first panel when visibility returns.
+     */
     private fun normalizeFocus(visibleSides: List<Panel<K, I>>) {
         if (main != null) {
             val visible = focusedId == main.id || visibleSides.any { it.id == focusedId }
@@ -195,8 +200,8 @@ public class PanelSet<K : PanelId, I> private constructor(
             return
         }
 
-        if (focusedId !in visibleSides.map { it.id }) {
-            visibleSides.firstOrNull()?.let { focus(it.id) } ?: run { focusedId = null }
+        if (visibleSides.none { it.id == focusedId }) {
+            visibleSides.firstOrNull()?.let { focus(it.id) }
         }
     }
 
@@ -240,6 +245,7 @@ public class PanelSet<K : PanelId, I> private constructor(
             reservedColumns: Int? = null,
             fixedWidthPanels: Set<K> = emptySet(),
         ): PanelSet<K, I> {
+            require(main != null || sides.isNotEmpty()) { "A PanelSet needs at least one panel" }
             if (main != null) {
                 require(main.states == listOf(PanelState.NORMAL)) {
                     "Main panel ${main.id} must declare NORMAL only"
@@ -252,10 +258,8 @@ public class PanelSet<K : PanelId, I> private constructor(
                 addAll(copiedSides)
             }
             val ids = HashSet<K>()
-            val identities = Collections.newSetFromMap(IdentityHashMap<Panel<K, I>, Boolean>())
             all.forEach { panel ->
                 require(ids.add(panel.id)) { "Panel id ${panel.id} appears more than once in this PanelSet" }
-                require(identities.add(panel)) { "Panel ${panel.id} appears more than once in this PanelSet" }
                 panel.requireUnattached()
             }
 

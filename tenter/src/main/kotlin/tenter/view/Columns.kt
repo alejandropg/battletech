@@ -5,6 +5,7 @@ package tenter.view
  * declared column width; band height comes from the children's logical layout heights. A child
  * wider than the available space retains that declared width and is clipped only when painted.
  * Wrap raw painting in [fixedContent] before inserting it into a column.
+ * [gutter] separates columns within a band; wrapped bands are separated by one blank row.
  */
 public class Columns(
     private val children: List<Child>,
@@ -37,7 +38,11 @@ public class Columns(
         for ((child, layout) in prepared) {
             val gutterBefore = if (x == 0) 0 else gutter
             if (x != 0 && x.toLong() + gutterBefore + child.width > availableWidth.toLong()) {
-                bandTop = checkedAdd(checkedAdd(bandTop, bandHeight, "columns height"), 1, "columns height")
+                bandTop = checkedAdd(
+                    checkedAdd(bandTop, bandHeight, "columns height"),
+                    1,
+                    "columns height",
+                )
                 totalWidth = maxOf(totalWidth, bandWidth)
                 x = 0
                 bandHeight = 0
@@ -60,11 +65,4 @@ public class Columns(
     }
 
     private data class Placement(val x: Int, val y: Int, val layout: ContentLayout)
-
-    private fun checkedAdd(left: Int, right: Int, description: String): Int =
-        try {
-            Math.addExact(left, right)
-        } catch (_: ArithmeticException) {
-            error("$description overflowed")
-        }
 }

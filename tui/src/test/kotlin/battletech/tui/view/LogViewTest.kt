@@ -218,7 +218,7 @@ internal class LogViewTest {
         )
         val buffer = render(second, 28, 6)
 
-        assertEquals(0, second.scroll.offset.y, "a manual scroll to the top must not snap back to the bottom")
+        assertEquals(0, viewportState.settled?.offset?.y, "a manual scroll to the top must not snap back to the bottom")
         val firstLine = buffer.line(2, 2, 24)
         assert(firstLine.startsWith("── TURN 1 ")) { "Expected header at row 2: '$firstLine'" }
         val secondLine = buffer.line(3, 2, 24)
@@ -247,7 +247,7 @@ internal class LogViewTest {
             state = viewportState,
         )
         render(manuallyScrolledUp, 28, 6)
-        assertEquals(0, manuallyScrolledUp.scroll.offset.y, "sanity check: scrolled away from the bottom")
+        assertEquals(0, viewportState.settled?.offset?.y, "sanity check: scrolled away from the bottom")
 
         // An eleventh entry arrives; the reveal row moves, so the view follows it to the bottom.
         val elevenEntries = tenEntries + LogEntry(turn = 11, event = stoodUp())

@@ -74,14 +74,16 @@ Capture stable frame data in raw views when repeatable output is required.
 `Stack` and `Columns.Child` require `ContentView` children. Use `Padded.prepared(insets, content)`
 and `Bordered.prepared(content, ...)` for intrinsic padding and borders. The `Padded` and
 `Bordered` constructors accept raw `View` painting into an already allocated canvas; those raw
-decorators do not promise intrinsic dimensions.
+decorators do not promise intrinsic dimensions. `Columns.gutter` separates columns within a band;
+wrapped bands keep one blank row between them.
 
 `ContentLayout` carries reveal requests through nested decorators. A content view requests
 visibility; the owning viewport resolves it during the one actual paint and publishes the settled
 `ScrollState`. Callers do not copy a provisional reveal or feed an offset back into the next frame.
 
 For scrolling without panels, keep one `ViewportState` and draw `Viewport(content, state)` each
-frame. Send scroll commands to the state; read `state.settled` only as an observation. To handle
+frame. Send scroll commands to the state, and read `state.settled` — the one place a settled frame
+is published — as an observation; the views themselves expose no second read path. To handle
 resize, merge `terminal.resizeEvents()` into your input flow, update the size, and repaint from the
 same application execution context. The full demo shows this progression.
 
@@ -96,6 +98,14 @@ settled offsets, and optional content coordinates. Border, padding, and scroll o
 caller arithmetic. Normal clicks are interpreted by the host application from `hitTest`; wheel
 events can scroll the hit panel through `MouseInput.scrollDelta`.
 
+A set's panel list is fixed at construction, so every id-addressed operation — `focus`,
+`focusOrCycle`, `scroll`, `requestRecenter`, `stateOf` — rejects an id the set does not
+declare with `IllegalArgumentException` rather than failing silently. Their observations are total:
+`focused` always names a panel. Read offsets from `PanelLayout.Slot.scroll` in the returned frame,
+not through a second query on the set. `panelAt` and `hitTest` still return null, because a
+*coordinate* can genuinely land on nothing; `PanelLayout.Slot.scroll` is null for a slot that
+produced no drawable frame, even if its panel drew an earlier frame successfully.
+
 Configure uniform layout once with `PanelSet.uniform(panels, reservedColumns, fixedWidthPanels)`.
 By default, visible proportional panels share remaining space. A nonnull `reservedColumns` keeps
 slots for hidden proportional panels; visible minimized proportional panels reclaim their slot.
@@ -104,8 +114,14 @@ Use `Panel.Presentation.allocated(content)` for main, proportional, and maximize
 use `Panel.Presentation.fixedWidth(content, width)` for side, minimized, and configured fixed
 states. Fixed widths must be positive and include chrome. Their preference is ignored when a
 declaration is reused in an allocated slot; allocated presentations in fixed slots fail clearly.
-Empty visibility is a valid uniform frame; focus is then `null` while hidden state is retained.
-Exposed panel and layout lists are unmodifiable. Managed viewport state and hit geometry publish
+Empty visibility is a valid uniform frame; hidden panels retain their state, and the set keeps the
+focus it had so it returns where the user left it once panels become visible again.
+Focused commands still target that hidden panel; without a displayed viewport, paging queues one
+row per direction. Recenter requests are queued independently per panel until its next drawable
+frame, surviving hidden and zero-sized frames as well as failed paints.
+A set does not publish its own panel declarations back — a panel is addressed by id, and every
+frame observation is a rectangle, not a `Panel`. Published layout lists are unmodifiable.
+Managed viewport state and hit geometry publish
 together after all panels paint successfully. Failure retains previous offsets and geometry plus
 queued scrolling/recenter intent for retry. Canvas writes and callback side effects are not rolled
 back: discard a failed frame's canvas. A change to either viewport dimension
@@ -129,9 +145,11 @@ Tenter does not require Nerd Fonts.
 a map palette. Overrides compose: untouched domain roles and custom foreground/background
 resolution delegate to the previous stable palette; override maps are copied. Every toolkit role
 and override is validated eagerly, and delegated domain colors when resolved. Palette colors
-must match the terminal's declared `AnsiLevel`. Fixed colors are
-resolved by the renderer in both foreground and background channels. At `AnsiLevel.NONE`, all SGR
-output is suppressed while glyphs and layout remain usable.
+must match the palette's declared `AnsiLevel`, which is an authoring tier: `AnsiLevel.NONE` is not
+one and `MapRolePalette` rejects it. Fixed colors are
+resolved by the renderer in both foreground and background channels. When the *terminal* reports
+`AnsiLevel.NONE`, the renderer suppresses all SGR output on its own, whatever the palette, while
+glyphs and layout remain usable.
 
 ## Input, lifecycle, and animation
 

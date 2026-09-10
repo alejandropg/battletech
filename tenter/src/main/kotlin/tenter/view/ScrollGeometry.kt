@@ -5,7 +5,7 @@ package tenter.view
  * place "keep this visible", "center on this", and "where does the thumb sit" are computed, so
  * no view reimplements any of them.
  */
-public object ScrollGeometry {
+internal object ScrollGeometry {
 
     /**
      * The minimal offset that brings `[revealStart, revealEnd)` into `[offset, offset + viewportSize)`,

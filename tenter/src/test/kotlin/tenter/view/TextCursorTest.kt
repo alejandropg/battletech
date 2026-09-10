@@ -13,8 +13,8 @@ internal class TextCursorTest {
     @Test
     fun `immediate and prepared child insertion retain the last nonempty visible reveal`() {
         val cases = listOf(
-            fixedContent(4, 1, View.None) to RevealRect(0, 0, 4, 1),
-            fixedContent(0, 0, View.None) to RevealRect(0, 0, 4, 1),
+            fixedContent(4, 1, EmptyView) to RevealRect(0, 0, 4, 1),
+            fixedContent(0, 0, EmptyView) to RevealRect(0, 0, 4, 1),
             contentView { it.writeLine("child"); it.markRevealAt(0) } to RevealRect(0, 1, 4, 1),
             fixedContent(4, 1, object : View {
                 override fun draw(canvas: Canvas) { canvas.markReveal(-2, 0, 3, 1) }

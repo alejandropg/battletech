@@ -35,6 +35,12 @@ public class Canvas private constructor(
         )
     }
 
+    /**
+     * The intersection of [rect] with this canvas — for the rectangles a completed frame
+     * publishes (see [tenter.panel.PanelLayout]), so a caller never unpacks one into four ints.
+     */
+    public fun region(rect: Rect): Canvas = region(rect.x, rect.y, rect.width, rect.height)
+
     /** The region left after removing [insets] from each edge, clamped to never go negative. */
     public fun inset(insets: Insets): Canvas = region(
         insets.left,
@@ -141,7 +147,11 @@ public class Canvas private constructor(
         val endRow = minOf(height.toLong(), src.height.toLong() - srcY, this.height.toLong() - destY)
         if (startCol >= endCol || startRow >= endRow) return
 
-        val source = src.buffer.snapshotCells()
+        // Reading through a snapshot is what makes an overlapping blit within ONE buffer copy
+        // original source data rather than cells this same loop already overwrote. Two distinct
+        // buffers cannot overlap, and every prepared-content blit streams from its own offscreen
+        // buffer — so the copy would otherwise cost a full duplicate of the content on every frame.
+        val source = if (src.buffer === buffer) src.buffer.snapshotCells() else src.buffer.cellRows()
         val clipLeft = originX + destX + startCol.toInt()
         val clipTop = originY + destY + startRow.toInt()
         val clipRight = originX + destX + endCol.toInt()

@@ -73,6 +73,20 @@ internal class MapRolePaletteTest {
     }
 
     @Test
+    fun `a map palette rejects NONE, which names a terminal rather than an authoring tier`() {
+        val exception = assertThrows<IllegalArgumentException> {
+            MapRolePalette(
+                name = "test",
+                level = AnsiLevel.NONE,
+                defaultBackground = PaletteColor.Ansi16(30),
+                colors = chromeColors(PaletteColor.Ansi16(97)),
+            )
+        }
+
+        assertEquals(true, exception.message?.contains("AnsiLevel.NONE"))
+    }
+
+    @Test
     fun `a map palette copies source colors and resolves semantic roles`() {
         val accent = PaletteColor.TrueColor(255, 0, 0)
         val source = chromeColors(PaletteColor.TrueColor(255, 255, 255)).toMutableMap()

@@ -46,11 +46,11 @@ internal class PanelLayoutTest {
             widthOf = widthOf(mapOf(LayoutPanelId.A to 20, LayoutPanelId.B to 15)),
         )
 
-        assertEquals(65, layout.main!!.width)
-        assertEquals(20, layout.sides[0].width)
-        assertEquals(65, layout.sides[0].x)
-        assertEquals(15, layout.sides[1].width)
-        assertEquals(85, layout.sides[1].x)
+        assertEquals(65, layout.main!!.outer.width)
+        assertEquals(20, layout.sides[0].outer.width)
+        assertEquals(65, layout.sides[0].outer.x)
+        assertEquals(15, layout.sides[1].outer.width)
+        assertEquals(85, layout.sides[1].outer.x)
     }
 
     @Test
@@ -70,8 +70,8 @@ internal class PanelLayoutTest {
 
         assertNull(layout.main)
         assertEquals(LayoutPanelId.A, layout.sides.single().id)
-        assertEquals(100, layout.sides.single().width)
-        assertEquals(26, layout.sides.single().height)
+        assertEquals(100, layout.sides.single().outer.width)
+        assertEquals(26, layout.sides.single().outer.height)
     }
 
     @Test
@@ -100,8 +100,8 @@ internal class PanelLayoutTest {
 
         val layout = PanelLayout.computeUniform(82, 30, 0, listOf(a, b, c), columnCount = 4, widthOf = width)
 
-        assertEquals(listOf(21, 21, 20), layout.sides.map { it.width })
-        assertEquals(listOf(0, 21, 42), layout.sides.map { it.x })
+        assertEquals(listOf(21, 21, 20), layout.sides.map { it.outer.width })
+        assertEquals(listOf(0, 21, 42), layout.sides.map { it.outer.x })
     }
 
     @Test
@@ -124,8 +124,8 @@ internal class PanelLayoutTest {
             widthOf = widths,
         )
 
-        assertEquals(listOf(31, 31, 30, 28), layout.sides.map { it.width })
-        assertEquals(listOf(0, 31, 62, 92), layout.sides.map { it.x })
+        assertEquals(listOf(31, 31, 30, 28), layout.sides.map { it.outer.width })
+        assertEquals(listOf(0, 31, 62, 92), layout.sides.map { it.outer.x })
     }
 
     @Test
@@ -140,7 +140,7 @@ internal class PanelLayoutTest {
 
         assertNull(layout.main)
         assertEquals(emptyList<PanelLayout.Slot<LayoutPanelId>>(), layout.sides)
-        assertEquals(21, layout.contentHeight)
+        assertEquals(21, layout.content.height)
     }
 
     @Test
@@ -157,12 +157,12 @@ internal class PanelLayoutTest {
             widthOf = widthOf(mapOf(LayoutPanelId.A to 80, LayoutPanelId.B to 80)),
         )
 
-        assertEquals(0, layout.main!!.width)
-        assertEquals(listOf(10, 0), layout.sides.map { it.width })
+        assertEquals(0, layout.main!!.outer.width)
+        assertEquals(listOf(10, 0), layout.sides.map { it.outer.width })
         layout.sides.forEach { slot ->
-            assertTrue(slot.x >= 0)
-            assertTrue(slot.x + slot.width <= 10)
-            assertEquals(0, slot.height)
+            assertTrue(slot.outer.x >= 0)
+            assertTrue(slot.outer.x + slot.outer.width <= 10)
+            assertEquals(0, slot.outer.height)
         }
         assertEquals(4, layout.content.y)
         assertEquals(0, layout.content.height)
@@ -183,10 +183,10 @@ internal class PanelLayoutTest {
             widthOf = widthOf(mapOf(LayoutPanelId.A to 20, LayoutPanelId.FIXED to 12)),
         )
 
-        assertEquals(0, layout.sides[0].x)
-        assertEquals(38, layout.sides[1].x)
-        assertEquals(12, layout.sides[1].width)
-        assertTrue(layout.sides[1].x + layout.sides[1].width <= 50)
+        assertEquals(0, layout.sides[0].outer.x)
+        assertEquals(38, layout.sides[1].outer.x)
+        assertEquals(12, layout.sides[1].outer.width)
+        assertTrue(layout.sides[1].outer.x + layout.sides[1].outer.width <= 50)
     }
 
     @Test
@@ -206,6 +206,6 @@ internal class PanelLayoutTest {
 
         assertEquals(LayoutPanelId.A, layout.sides[0].id)
         assertEquals(LayoutPanelId.FIXED, layout.sides[1].id)
-        assertEquals(38, layout.sides[1].x)
+        assertEquals(38, layout.sides[1].outer.x)
     }
 }

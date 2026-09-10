@@ -340,4 +340,16 @@ internal class CanvasTest {
         assertEquals("DEF", (0 until 3).joinToString("") { vertical.get(it, 2).char })
     }
 
+    @Test
+    fun `two regions over one buffer overlap, so their blit still reads original source`() {
+        // Distinct Canvas objects, one backing buffer: the shifted copy would read cells this same
+        // blit has already overwritten unless overlap is detected by buffer, not by canvas identity.
+        val canvas = Canvas.offscreen(6, 1)
+        canvas.writeString(0, 0, "ABCDEF")
+
+        canvas.region(1, 0, 5, 1).blit(canvas.region(0, 0, 5, 1), 0, 0, 0, 0, 5, 1)
+
+        assertEquals("AABCDE", (0 until 6).joinToString("") { canvas.get(it, 0).char })
+    }
+
 }

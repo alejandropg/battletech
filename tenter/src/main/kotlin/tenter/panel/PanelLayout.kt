@@ -19,12 +19,6 @@ public class PanelLayout<K : PanelId> private constructor(
 ) {
     public val sides: List<Slot<K>> = Collections.unmodifiableList(ArrayList(sides))
 
-    /** The whole region below the reserved top rows. */
-    public val contentX: Int get() = content.x
-    public val contentY: Int get() = content.y
-    public val contentWidth: Int get() = content.width
-    public val contentHeight: Int get() = content.height
-
     /** One panel's identity and settled placement from this frame. */
     public data class Slot<K : PanelId>(
         public val id: K,
@@ -34,12 +28,7 @@ public class PanelLayout<K : PanelId> private constructor(
         public val content: Rect,
         /** The settled viewport observation, or null when this slot had no drawable frame. */
         public val scroll: ScrollState?,
-    ) {
-        public val x: Int get() = outer.x
-        public val y: Int get() = outer.y
-        public val width: Int get() = outer.width
-        public val height: Int get() = outer.height
-    }
+    )
 
     /** The panel whose painted outer rectangle contains ([x], [y]), or null. */
     public fun panelAt(x: Int, y: Int): Slot<K>? = buildList {
@@ -53,7 +42,9 @@ public class PanelLayout<K : PanelId> private constructor(
         sides = sides.map { it.withScroll(scrollOf(it.id)) },
     )
 
-    private fun Slot<K>.withScroll(scroll: ScrollState?): Slot<K> = copy(scroll = scroll)
+    private fun Slot<K>.withScroll(scroll: ScrollState?): Slot<K> = copy(
+        scroll = if (content.width > 0 && content.height > 0) scroll else null,
+    )
 
     public companion object {
         /**

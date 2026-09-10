@@ -24,11 +24,11 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.ChromeRole
+import tenter.screen.Point
 import tenter.screen.ScreenBuffer
 import tenter.animation.AnimationPlayback
 import tenter.view.FlashMessage
 import tenter.view.HelpView
-import tenter.view.ScrollOffset
 import tenter.view.text
 import kotlin.random.Random
 
@@ -119,10 +119,11 @@ internal class WorkspaceTest {
         val workspace = Workspace(Keybindings.DEFAULT)
         workspace.render(appState, width = 120, height = 40, flash = null)
 
+        val before = workspace.boardOrigin(120, 40)
         workspace.scrollPanel(GamePanelId.UNIT_STATUS, delta = 3)
         workspace.render(appState, width = 120, height = 40, flash = null)
 
-        assertEquals(ScrollOffset.ZERO, workspace.boardOffset, "scrolling a panel must not touch the board")
+        assertEquals(before, workspace.boardOrigin(120, 40), "scrolling a panel must not touch the board")
     }
 
     @Test
@@ -137,17 +138,32 @@ internal class WorkspaceTest {
     }
 
     @Test
-    fun `boardOffset reflects a manual pan once the cursor isn't driving auto-follow`() {
+    fun `the board's visible origin reflects a manual pan once the cursor isn't driving auto-follow`() {
         val wideMap = anAppState(MovementPhase.SelectingUnit, gameState = aGameState(map = aGameMap(cols = 60, rows = 20)))
         val workspace = Workspace(Keybindings.DEFAULT)
 
         // First render follows the cursor into view. The cursor doesn't move afterward, so a
         // manual pan on top of that settled offset must survive the next render untouched.
         workspace.render(wideMap, width = 80, height = 30, flash = null)
+        val before = workspace.boardOrigin(80, 30)
         workspace.panBoard(5, 0)
         workspace.render(wideMap, width = 80, height = 30, flash = null)
 
-        assertEquals(5, workspace.boardOffset.x)
+        assertEquals(before.x + 5, workspace.boardOrigin(80, 30).x)
+    }
+
+    /**
+     * The board content coordinate showing in the board's top-left cell — the scroll offset as
+     * production actually consumes it, through the completed frame's own hit geometry.
+     */
+    private fun Workspace.boardOrigin(width: Int, height: Int): Point {
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val hit = hitTest(x, y) ?: continue
+                if (hit.id == GamePanelId.BOARD) hit.contentPoint?.let { return it }
+            }
+        }
+        error("board content is not visible")
     }
 
     @Test

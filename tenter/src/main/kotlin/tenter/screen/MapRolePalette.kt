@@ -13,6 +13,10 @@ import com.github.ajalt.mordant.rendering.AnsiLevel
  * Every [ChromeRole] is required at construction. Domain-role completeness remains with the
  * application's loader, which knows the application's role set. The source map is copied, so
  * later mutation by a loader or caller cannot change a palette after a renderer has cached it.
+ *
+ * [AnsiLevel.NONE] is not an authoring tier and is rejected: it names a terminal that cannot show
+ * color, not a set of color values. Author for the tier the colors use; [ScreenRenderer] drops
+ * every SGR tag on its own when the terminal reports NONE.
  */
 public class MapRolePalette(
     private val name: String,
@@ -24,6 +28,11 @@ public class MapRolePalette(
     private val colors: Map<ColorRole, PaletteColor> = colors.toMap()
 
     init {
+        require(level != AnsiLevel.NONE) {
+            "Palette $name cannot be authored for AnsiLevel.NONE, which has no color values of " +
+                "its own. Author it for the tier the palette's colors use; ScreenRenderer " +
+                "suppresses every SGR tag when the terminal itself reports NONE."
+        }
         val missingChromeRoles = ChromeRole.entries.filterNot(colors.keys::contains)
         require(missingChromeRoles.isEmpty()) {
             "Palette $name is missing chrome roles: ${missingChromeRoles.joinToString(", ")}"
@@ -36,9 +45,8 @@ public class MapRolePalette(
         }
     }
 
-    override fun foreground(role: ColorRole): PaletteColor = when (role) {
-        else -> colors[role] ?: error("Unknown color role: $role")
-    }
+    override fun foreground(role: ColorRole): PaletteColor =
+        colors[role] ?: error("Unknown color role: $role")
 
     /** [name] — the palette's source name (a built-in stem, or a custom file path), for readable test/log output. */
     override fun toString(): String = name

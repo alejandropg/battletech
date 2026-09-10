@@ -15,8 +15,13 @@ val runtimeClasspath = (property("runtimeClasspath") as String)
     .filter(String::isNotEmpty)
     .map(::file)
 
-check(runtimeClasspath.none { it.absolutePath.contains("/battletech/") }) {
-    "The packaged consumer runtime classpath must not contain another repository module"
+// The consumer must resolve everything but tenter.jar from the dependency cache. Comparing against
+// the repository root the outer build passed in keeps this true wherever the repository is cloned;
+// matching a hardcoded directory name would silently pass under any other checkout path.
+val repositoryRoot = file(property("repositoryRoot") as String).canonicalFile.toPath()
+val leaked = runtimeClasspath.filter { it.canonicalFile.toPath().startsWith(repositoryRoot) }
+check(leaked.isEmpty()) {
+    "The packaged consumer runtime classpath must not contain repository outputs: $leaked"
 }
 
 dependencies {

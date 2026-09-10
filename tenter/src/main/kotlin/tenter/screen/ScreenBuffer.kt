@@ -71,7 +71,11 @@ public class ScreenBuffer(
         return copy
     }
 
+    /** A defensive copy, for a reader that writes back into this same buffer while iterating. */
     internal fun snapshotCells(): Array<Array<StoredCell>> = Array(height) { y -> cells[y].copyOf() }
+
+    /** Direct read access for a reader whose writes land in a different buffer. */
+    internal fun cellRows(): Array<Array<StoredCell>> = cells
 
     internal fun glyphStart(x: Int, y: Int): Int = if (cells[y][x].continuation) x - 1 else x
 
@@ -90,11 +94,20 @@ public class ScreenBuffer(
         clipBottom: Int,
     ): Boolean {
         if (y !in clipTop until clipBottom) return false
-        val leads = (x until targetEnd).map { glyphStart(it, y) }.distinct()
-        return leads.all { lead ->
-            val stored = cells[y][lead]
-            lead >= clipLeft && lead + stored.width <= clipRight && lead + stored.width <= width
+        // `targetEnd - x` is 1 or 2, and the two columns of a wide glyph share one lead, so this
+        // walks at most two distinct leads — worth doing without allocating a list per cell write.
+        var column = x
+        var previousLead = -1
+        while (column < targetEnd) {
+            val lead = glyphStart(column, y)
+            if (lead != previousLead) {
+                val stored = cells[y][lead]
+                if (lead < clipLeft || lead + stored.width > clipRight || lead + stored.width > width) return false
+                previousLead = lead
+            }
+            column++
         }
+        return true
     }
 
     private fun clearGlyphAt(x: Int, y: Int) {
@@ -122,6 +135,13 @@ public class ScreenBuffer(
 
     private fun Cell.toStoredGlyph(): StoredCell {
         if (char.isEmpty()) return StoredCell(Cell(" ", style), width = 1, continuation = false)
+        // Every cell of every blit and every cluster of every writeString reaches this method, and
+        // full grapheme segmentation allocates a matcher, a sequence and a builder per call. A
+        // lone printable ASCII character is unambiguously one cluster one cell wide, which is what
+        // the vast majority of painted cells are.
+        if (char.length == 1 && char[0].code in 0x20..0x7E) {
+            return StoredCell(this, width = 1, continuation = false)
+        }
         val clusters = textClusters(char).toList()
         require(clusters.size == 1 && clusters.single().width > 0) {
             "Cell must contain exactly one drawable grapheme cluster: ${char.toDebugString()}"

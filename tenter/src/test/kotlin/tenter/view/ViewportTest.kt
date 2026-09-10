@@ -18,15 +18,8 @@ internal class ViewportTest {
         }
     }
 
-    private fun render(
-        view: ContentView,
-        state: ViewportState = ViewportState(),
-        width: Int = viewportWidth,
-        height: Int = viewportHeight,
-    ): Viewport {
-        Viewport(view, state).draw(Canvas.offscreen(width, height))
-        return Viewport(view, state)
-    }
+    /** The settled frame a viewport publishes to its own state — the caller's only read path. */
+    private fun ViewportState.frame(): ScrollState = checkNotNull(settled) { "no drawable frame" }
 
     @Test
     fun `prepared content renders flush at viewport origin`() {
@@ -45,7 +38,7 @@ internal class ViewportTest {
         viewport.draw(Canvas.of(buffer))
 
         assertEquals("line3", buffer.line(0, width = 10))
-        assertEquals(12, viewport.scroll.maxOffset.y)
+        assertEquals(12, state.frame().maxOffset.y)
     }
 
     @Test
@@ -54,26 +47,25 @@ internal class ViewportTest {
         val viewport = Viewport(content(600), state)
         viewport.draw(Canvas.offscreen(viewportWidth, viewportHeight))
 
-        assertEquals(592, viewport.scroll.maxOffset.y)
-        assertEquals(592, viewport.scroll.offset.y)
+        assertEquals(592, state.frame().maxOffset.y)
+        assertEquals(592, state.frame().offset.y)
     }
 
     @Test
     fun `fixed content preserves horizontal and vertical dimensions`() {
-        val raw = fixedContent(50, 40, View.None)
-        val viewport = Viewport(raw)
-        viewport.draw(Canvas.offscreen(viewportWidth, viewportHeight))
+        val state = ViewportState()
+        Viewport(fixedContent(50, 40, EmptyView), state).draw(Canvas.offscreen(viewportWidth, viewportHeight))
 
-        assertEquals(24, viewport.scroll.maxOffset.x)
-        assertEquals(32, viewport.scroll.maxOffset.y)
+        assertEquals(24, state.frame().maxOffset.x)
+        assertEquals(32, state.frame().maxOffset.y)
     }
 
     @Test
     fun `first render follows a reveal target below the window`() {
-        val viewport = Viewport(content(20, revealRow = 15))
-        viewport.draw(Canvas.offscreen(viewportWidth, viewportHeight))
+        val state = ViewportState()
+        Viewport(content(20, revealRow = 15), state).draw(Canvas.offscreen(viewportWidth, viewportHeight))
 
-        assertTrue(15 in viewport.scroll.offset.y until viewport.scroll.offset.y + viewportHeight)
+        assertTrue(15 in state.frame().offset.y until state.frame().offset.y + viewportHeight)
     }
 
     @Test
@@ -84,7 +76,7 @@ internal class ViewportTest {
         state.scrollBy(0, -5)
         viewport.draw(Canvas.offscreen(viewportWidth, viewportHeight))
 
-        assertEquals(3, viewport.scroll.offset.y)
+        assertEquals(3, state.frame().offset.y)
     }
 
     @Test
@@ -100,7 +92,7 @@ internal class ViewportTest {
         revealRow = 20
         viewport.draw(Canvas.offscreen(viewportWidth, viewportHeight))
 
-        assertTrue(20 in viewport.scroll.offset.y until viewport.scroll.offset.y + viewportHeight)
+        assertTrue(20 in state.frame().offset.y until state.frame().offset.y + viewportHeight)
     }
 
     @Test
@@ -111,7 +103,7 @@ internal class ViewportTest {
         state.requestRecenter()
         viewport.draw(Canvas.offscreen(viewportWidth, viewportHeight))
 
-        assertEquals((20 - (viewportHeight - 1) / 2).coerceIn(0, viewport.scroll.maxOffset.y), viewport.scroll.offset.y)
+        assertEquals((20 - (viewportHeight - 1) / 2).coerceIn(0, state.frame().maxOffset.y), state.frame().offset.y)
     }
 
     @Test

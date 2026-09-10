@@ -1,6 +1,5 @@
 package tenter.panel
 
-import java.util.Collections
 import tenter.screen.Canvas
 import tenter.screen.ChromeRole
 import tenter.view.ContentView
@@ -20,9 +19,9 @@ public interface PanelId
  * presentation, while a host chooses which panels to include in a [PanelSet.render] call.
  */
 public class Panel<K : PanelId, I>(
-    public val id: K,
-    public val title: String,
-    public val badge: String? = null,
+    internal val id: K,
+    private val title: String,
+    private val badge: String? = null,
     private val normal: (I) -> Presentation,
     private val minimized: ((I) -> Presentation)? = null,
     private val maximized: ((I) -> Presentation)? = null,
@@ -60,14 +59,11 @@ public class Panel<K : PanelId, I>(
         private set
 
     /** The declared states, smallest first — what the owning set cycles. */
-    public val states: List<PanelState> =
-        Collections.unmodifiableList(
-            listOfNotNull(
-                minimized?.let { PanelState.MINIMIZED },
-                PanelState.NORMAL,
-                maximized?.let { PanelState.MAXIMIZED },
-            ),
-        )
+    internal val states: List<PanelState> = listOfNotNull(
+        minimized?.let { PanelState.MINIMIZED },
+        PanelState.NORMAL,
+        maximized?.let { PanelState.MAXIMIZED },
+    )
 
     /** Steps [delta] through declared states, wrapping while preserving the restore state. */
     internal fun cycleState(delta: Int) {
@@ -86,13 +82,15 @@ public class Panel<K : PanelId, I>(
         viewportState.scrollBy(dx, dy)
     }
 
+    internal fun requestRecenter() {
+        viewportState.requestRecenter()
+    }
+
     internal fun presentation(inputs: I): Presentation = when (state) {
         PanelState.MINIMIZED -> minimized ?: error("Panel $id is in MINIMIZED state but declares no minimized presentation")
         PanelState.NORMAL -> normal
         PanelState.MAXIMIZED -> maximized ?: error("Panel $id is in MAXIMIZED state but declares no maximized presentation")
     }.invoke(inputs)
-
-    internal fun settledOffset() = viewportState.settled?.offset
 
     internal fun claimAttachment() {
         require(!attached) { "Panel $id is already attached to a PanelSet" }
@@ -111,10 +109,8 @@ public class Panel<K : PanelId, I>(
         canvas: Canvas,
         presentation: Presentation,
         focused: Boolean,
-        recenter: Boolean = false,
     ): ViewportState {
         val candidate = viewportState.fork()
-        if (recenter) candidate.requestRecenter()
         val role = if (focused) ChromeRole.PANEL_BORDER_FOCUSED else ChromeRole.PANEL_BORDER
         val scrollingPanel = scrollingPanel(
             title = title,

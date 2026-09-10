@@ -60,7 +60,7 @@ internal class PanelTest {
 
     private fun render(set: GamePanelSet, width: Int = 30, height: Int = 10): ScreenBuffer {
         val buffer = ScreenBuffer(width, height)
-        set.render(Canvas.of(buffer), inputs, visible = set.sides.map { it.id }.toSet(), reservedTop = 0)
+        set.render(Canvas.of(buffer), inputs, visible = setOf(GamePanelId.LOG), reservedTop = 0)
         return buffer
     }
 
@@ -70,7 +70,7 @@ internal class PanelTest {
         val set = PanelSet.uniform(listOf(panel))
 
         assertEquals(PanelState.NORMAL, set.stateOf(GamePanelId.LOG))
-        assertEquals(30, set.render(Canvas.of(ScreenBuffer(30, 10)), inputs, setOf(GamePanelId.LOG), 0).sides.single().width)
+        assertEquals(30, set.render(Canvas.of(ScreenBuffer(30, 10)), inputs, setOf(GamePanelId.LOG), 0).sides.single().outer.width)
     }
 
     @Test

@@ -33,11 +33,4 @@ public class Stack(
             }
         }
     }
-
-    private fun checkedAdd(left: Int, right: Int, description: String): Int =
-        try {
-            Math.addExact(left, right)
-        } catch (_: ArithmeticException) {
-            error("$description overflowed")
-        }
 }

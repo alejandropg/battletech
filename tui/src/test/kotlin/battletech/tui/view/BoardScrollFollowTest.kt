@@ -34,7 +34,7 @@ internal class BoardScrollFollowTest {
             state = state,
         )
         render(view, 80, 24)
-        return view.scroll
+        return checkNotNull(state.settled) { "no drawable frame" }
     }
 
     @Test

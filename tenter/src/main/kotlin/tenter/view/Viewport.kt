@@ -8,8 +8,6 @@ public data class ScrollOffset(
     public val x: Int = 0,
     public val y: Int = 0,
 ) {
-    public operator fun plus(other: ScrollOffset): ScrollOffset = ScrollOffset(x + other.x, y + other.y)
-
     public companion object {
         public val ZERO: ScrollOffset = ScrollOffset()
     }
@@ -28,11 +26,7 @@ public data class ScrollState(
     public val viewportHeight: Int = 0,
     public val contentWidth: Int = 0,
     public val contentHeight: Int = 0,
-) {
-    public companion object {
-        public val NONE: ScrollState = ScrollState(ScrollOffset.ZERO, ScrollOffset.ZERO)
-    }
-}
+)
 
 /**
  * Mutable scrolling intent and the last immutable frame observation for one viewport. Commands
@@ -40,58 +34,62 @@ public data class ScrollState(
  * viewport and is confined to the application's rendering context.
  */
 public class ViewportState(initialOffset: ScrollOffset = ScrollOffset.ZERO) {
-    private var requestedOffset: ScrollOffset = initialOffset
-    private var pendingRecenter: Boolean = false
-    private var previousReveal: RevealRect? = null
-    private var previousViewportHeight: Int? = null
-    private var previousViewportWidth: Int? = null
-    private var settledSnapshot: ScrollState? = null
+
+    /**
+     * Every value a frame carries forward, in one immutable record. [fork] and [adopt] copy this
+     * single reference rather than field-by-field, so a value added here cannot be forgotten by
+     * one of them and go stale across a managed frame.
+     */
+    private data class Carried(
+        public val requestedOffset: ScrollOffset,
+        public val pendingRecenter: Boolean = false,
+        public val settled: ScrollState? = null,
+    )
+
+    private var carried: Carried = Carried(initialOffset)
 
     /** The last completed drawable frame, or `null` before the first such frame. */
-    public val settled: ScrollState? get() = settledSnapshot
+    public val settled: ScrollState? get() = carried.settled
 
     /** Stages a managed frame without consuming the owner's queued intent. */
-    internal fun fork(): ViewportState = ViewportState().also { it.adopt(this) }
+    internal fun fork(): ViewportState = ViewportState().also { it.carried = carried }
 
     internal fun adopt(candidate: ViewportState) {
-        requestedOffset = candidate.requestedOffset
-        pendingRecenter = candidate.pendingRecenter
-        previousReveal = candidate.previousReveal
-        previousViewportHeight = candidate.previousViewportHeight
-        previousViewportWidth = candidate.previousViewportWidth
-        settledSnapshot = candidate.settledSnapshot
+        carried = candidate.carried
     }
 
     /** Queues a relative scroll request for the next drawable frame. */
     public fun scrollBy(dx: Int, dy: Int) {
-        requestedOffset = ScrollOffset(
-            saturatingAdd(requestedOffset.x, dx),
-            saturatingAdd(requestedOffset.y, dy),
+        carried = carried.copy(
+            requestedOffset = ScrollOffset(
+                saturatingAdd(carried.requestedOffset.x, dx),
+                saturatingAdd(carried.requestedOffset.y, dy),
+            ),
         )
     }
 
     /** Queues a one-shot request to center the current reveal target on the next frame. */
     public fun requestRecenter() {
-        pendingRecenter = true
+        carried = carried.copy(pendingRecenter = true)
     }
 
-    internal fun requestedOffset(): ScrollOffset = requestedOffset
+    internal fun requestedOffset(): ScrollOffset = carried.requestedOffset
 
-    internal fun shouldFollow(reveal: RevealRect?, viewportWidth: Int, viewportHeight: Int): Boolean = reveal != null && (
-        reveal != previousReveal ||
-            previousViewportHeight == null ||
-            previousViewportHeight != viewportHeight || previousViewportWidth != viewportWidth
-        )
+    internal fun shouldFollow(reveal: RevealRect?, viewportWidth: Int, viewportHeight: Int): Boolean {
+        if (reveal == null) return false
+        val previous = carried.settled ?: return true
+        return reveal != previous.revealed ||
+            viewportHeight != previous.viewportHeight || viewportWidth != previous.viewportWidth
+    }
 
-    internal fun recenterRequested(): Boolean = pendingRecenter
+    internal fun recenterRequested(): Boolean = carried.pendingRecenter
 
     internal fun settle(snapshot: ScrollState) {
-        requestedOffset = snapshot.offset
-        previousReveal = snapshot.revealed
-        previousViewportHeight = snapshot.viewportHeight
-        previousViewportWidth = snapshot.viewportWidth
-        pendingRecenter = false
-        settledSnapshot = snapshot
+        carried = Carried(
+            requestedOffset = snapshot.offset,
+            pendingRecenter = false,
+            settled = snapshot,
+        )
     }
 
     private fun saturatingAdd(left: Int, right: Int): Int =
@@ -104,11 +102,11 @@ public class Viewport(
     private val state: ViewportState = ViewportState(),
 ) : View {
 
+    /**
+     * The completed frame, for the chrome this viewport is composed into. Callers observe their
+     * own [ViewportState.settled] rather than a second read path through the view.
+     */
     internal val settled: ScrollState? get() = state.settled
-
-    /** The completed frame observation, or [ScrollState.NONE] before a drawable frame. */
-    public val scroll: ScrollState
-        get() = state.settled ?: ScrollState.NONE
 
     override fun draw(canvas: Canvas) {
         drawPrepared(canvas, state)

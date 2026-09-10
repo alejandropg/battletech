@@ -56,6 +56,7 @@ tasks.register<Exec>("packagedSmoke") {
         "-PruntimeClasspath=${packagedDependencies.get().joinToString(File.pathSeparator) { it.absolutePath }}",
         "-PexampleSources=${file("src/main/kotlin").absolutePath}",
         "-PjvmVersion=${libs.versions.jvm.get()}",
+        "-PrepositoryRoot=${rootProject.projectDir.absolutePath}",
     )
 }
 
@@ -78,6 +79,7 @@ val rejectRawComposition = tasks.register<Exec>("rejectRawComposition") {
         "-PruntimeClasspath=${packagedDependencies.get().joinToString(File.pathSeparator) { it.absolutePath }}",
         "-PexampleSources=${file("compile-fail").absolutePath}",
         "-PjvmVersion=${libs.versions.jvm.get()}",
+        "-PrepositoryRoot=${rootProject.projectDir.absolutePath}",
     )
     isIgnoreExitValue = true
     doFirst {

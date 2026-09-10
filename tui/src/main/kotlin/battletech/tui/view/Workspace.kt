@@ -38,10 +38,7 @@ internal class Workspace(private val keys: Keybindings) {
     private val panels: GamePanelSet = Panels.build(keys)
 
     /** The panel currently receiving keyboard focus — border/title/thumb render green for it. */
-    val focused: GamePanelId get() = panels.focused ?: GamePanelId.BOARD
-
-    /** The board panel's settled scroll offset, retained as an immutable observation for tests. */
-    val boardOffset: ScrollOffset get() = panels.offsetOf(GamePanelId.BOARD) ?: ScrollOffset.ZERO
+    val focused: GamePanelId get() = panels.focused
 
     /** Focuses [id], demoting whatever side panel was maximized — see [tenter.panel.PanelSet.focus]. */
     fun focus(id: GamePanelId) = panels.focus(id)
@@ -118,9 +115,7 @@ internal class Workspace(private val keys: Keybindings) {
         statusBarView.draw(screen.region(0, 0, width, STATUS_BAR_HEIGHT))
 
         if (matchEnded != null) {
-            val overlayRegion = layout.main?.let { screen.region(it.x, it.y, it.width, it.height) }
-                ?: screen.region(layout.contentX, layout.contentY, layout.contentWidth, layout.contentHeight)
-            renderGameOverBanner(overlayRegion, matchEnded.outcome)
+            renderGameOverBanner(screen.region(layout.main?.outer ?: layout.content), matchEnded.outcome)
         }
 
         // Drawn last, over everything (including the game-over banner) and against the WHOLE

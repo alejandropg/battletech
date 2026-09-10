@@ -70,7 +70,7 @@ internal class ContentLayoutTest {
     @Test
     fun `zero available width remains valid and fixed content keeps its declared width`() {
         val flowing = contentView { cursor -> cursor.writeLine("ignored") }
-        val fixed = fixedContent(width = 20, height = 4, view = View.None)
+        val fixed = fixedContent(width = 20, height = 4, view = EmptyView)
 
         assertEquals(0, flowing.layout(0).width)
         assertEquals(1, flowing.layout(0).height)

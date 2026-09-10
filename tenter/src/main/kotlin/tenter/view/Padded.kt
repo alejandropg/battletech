@@ -19,12 +19,14 @@ public class Padded(
                 require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
                 val innerWidth = (availableWidth.toLong() - insets.left - insets.right).coerceAtLeast(0).toInt()
                 val child = content.layout(innerWidth)
-                val width = Math.addExact(Math.addExact(child.width, insets.left), insets.right)
-                val height = Math.addExact(Math.addExact(child.height, insets.top), insets.bottom)
+                val width = checkedAdd(checkedAdd(child.width, insets.left, PADDED), insets.right, PADDED)
+                val height = checkedAdd(checkedAdd(child.height, insets.top, PADDED), insets.bottom, PADDED)
                 return contentLayout(width, height) {
                     place(insets.left, insets.top, child)
                 }
             }
         }
+
+        private const val PADDED: String = "padded size"
     }
 }

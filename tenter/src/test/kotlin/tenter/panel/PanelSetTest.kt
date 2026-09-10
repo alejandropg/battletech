@@ -1,9 +1,7 @@
 package tenter.panel
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -18,6 +16,76 @@ import tenter.view.View
 private enum class SetPanelId : PanelId { MAIN, A, B }
 
 internal class PanelSetTest {
+
+    @Test
+    fun `multiple hidden panels retain independent recenter requests until drawable`() {
+        val ids = setOf(SetPanelId.A, SetPanelId.B)
+        val set = PanelSet.uniform(ids.map { id ->
+            Panel<SetPanelId, Unit>(id, id.name, normal = {
+                Panel.Presentation.allocated(contentView { cursor ->
+                    repeat(100) { cursor.writeLine("row$it") }
+                    cursor.markRevealAt(40)
+                })
+            })
+        })
+        render(set, ids)
+        ids.forEach { set.scroll(it, 0, -10) }
+        val panned = render(set, ids)
+        ids.forEach { assertEquals(10, panned.offsetOf(it).y) }
+        ids.forEach(set::requestRecenter)
+
+        assertTrue(render(set, emptySet()).sides.isEmpty())
+        assertTrue(render(set, ids, width = 4).sides.all { it.scroll == null })
+        val recentered = render(set, ids)
+
+        ids.forEach { assertEquals(31, recentered.offsetOf(it).y) }
+        ids.forEach { set.scroll(it, 0, -3) }
+        val next = render(set, ids)
+        ids.forEach { assertEquals(28, next.offsetOf(it).y) }
+    }
+
+    @Test
+    fun `nondrawable slots publish no stale snapshot but retain pending scroll for recovery`() {
+        for ((width, height) in listOf(4 to 12, 40 to 2, 0 to 0)) {
+            val set = PanelSet.uniform(listOf(sidePanel(SetPanelId.A)))
+            val visible = setOf(SetPanelId.A)
+            render(set, visible, width = 40, height = 12)
+            set.scrollFocused(0, 3)
+            val previous = render(set, visible, width = 40, height = 12)
+            set.scrollFocused(0, 2)
+
+            val tiny = render(set, visible, width, height)
+
+            assertNull(tiny.sides.single().scroll)
+            assertNull(set.hitTest(2, 2)?.contentPoint)
+            assertEquals(3, previous.offsetOf(SetPanelId.A).y)
+            val restored = render(set, visible, width = 40, height = 12)
+            assertEquals(5, restored.offsetOf(SetPanelId.A).y)
+            assertEquals(36, checkNotNull(restored.sides.single().scroll).viewportWidth)
+        }
+    }
+
+    @Test
+    fun `focused commands affect the retained hidden panel and become visible on return`() {
+        val set = PanelSet.uniform(listOf(sidePanel(SetPanelId.A), sidePanel(SetPanelId.B)))
+        val visible = setOf(SetPanelId.A, SetPanelId.B)
+        set.focus(SetPanelId.B)
+        render(set, visible)
+        render(set, emptySet())
+
+        set.scrollFocused(0, 3)
+        set.pageFocused(1)
+        set.cycleFocusedState(1)
+
+        assertEquals(SetPanelId.B, set.focused)
+        assertEquals(PanelState.NORMAL, set.stateOf(SetPanelId.A))
+        assertEquals(PanelState.MAXIMIZED, set.stateOf(SetPanelId.B))
+        assertNull(set.hitTest(2, 2))
+        val returned = render(set, visible)
+        assertEquals(SetPanelId.B, returned.sides.single().id)
+        // With no displayed viewport, a page request retains the existing one-row fallback.
+        assertEquals(4, returned.offsetOf(SetPanelId.B).y)
+    }
 
     @Test
     fun `failed later paint retains all offsets and queued scrolling and recenter until retry`() {
@@ -37,27 +105,28 @@ internal class PanelSetTest {
         val visible = setOf(SetPanelId.A, SetPanelId.B)
         render(set, visible)
         set.scroll(SetPanelId.A, 0, -10)
-        render(set, visible)
-        val oldOffset = set.offsetOf(SetPanelId.A)
+        val previous = render(set, visible)
+        val oldOffset = previous.offsetOf(SetPanelId.A)
         val oldHit = set.hitTest(2, 2)
+        val oldBHit = set.hitTest(42, 2)
         set.requestRecenter(SetPanelId.A)
         set.scroll(SetPanelId.B, 0, 5)
         fail = true
 
         assertThrows(IllegalStateException::class.java) { render(set, visible) }
 
-        assertEquals(oldOffset, set.offsetOf(SetPanelId.A))
-        assertEquals(ScrollOffset.ZERO, set.offsetOf(SetPanelId.B))
+        assertEquals(oldOffset, previous.offsetOf(SetPanelId.A))
+        assertEquals(oldBHit, set.hitTest(42, 2))
         assertEquals(oldHit, set.hitTest(2, 2))
         fail = false
-        render(set, visible)
-        val centered = set.offsetOf(SetPanelId.A)
+        val retried = render(set, visible)
+        val centered = retried.offsetOf(SetPanelId.A)
         assertTrue(centered != oldOffset)
-        assertEquals(5, set.offsetOf(SetPanelId.B)?.y)
+        assertEquals(5, retried.offsetOf(SetPanelId.B).y)
         set.scroll(SetPanelId.A, 0, -3)
-        render(set, visible)
-        assertEquals(checkNotNull(centered).y - 3, set.offsetOf(SetPanelId.A)?.y)
-        assertEquals(5, set.offsetOf(SetPanelId.B)?.y)
+        val scrolled = render(set, visible)
+        assertEquals(centered.y - 3, scrolled.offsetOf(SetPanelId.A).y)
+        assertEquals(5, scrolled.offsetOf(SetPanelId.B).y)
     }
 
     @Test
@@ -68,25 +137,18 @@ internal class PanelSetTest {
         val set = PanelSet.mainAndSides(mainPanel(), listOf(side))
 
         assertThrows(IllegalArgumentException::class.java) { render(set, setOf(SetPanelId.A)) }
-        assertNull(set.offsetOf(SetPanelId.MAIN))
+        assertNull(set.hitTest(2, 2))
     }
 
     @Test
-    fun `public collections cannot alter capabilities ownership or displayed hits`() {
-        val main = mainPanel()
+    fun `a published layout cannot be altered and does not change the set's own hits`() {
         val a = sidePanel(SetPanelId.A)
-        val set = PanelSet.mainAndSides(main, listOf(a, sidePanel(SetPanelId.B)))
+        val set = PanelSet.mainAndSides(mainPanel(), listOf(a, sidePanel(SetPanelId.B)))
         val layout = render(set, setOf(SetPanelId.A, SetPanelId.B))
         val hit = set.hitTest(42, 2)
 
-        assertThrows(UnsupportedOperationException::class.java) {
-            (main.states as MutableList).add(PanelState.MAXIMIZED)
-        }
-        assertThrows(UnsupportedOperationException::class.java) { (set.sides as MutableList).clear() }
         assertThrows(UnsupportedOperationException::class.java) { (layout.sides as MutableList).clear() }
 
-        assertEquals(listOf(PanelState.NORMAL), main.states)
-        assertEquals(2, set.sides.size)
         assertEquals(hit, set.hitTest(42, 2))
         assertEquals(SetPanelId.A, hit?.id)
         assertThrows(IllegalArgumentException::class.java) { PanelSet.uniform(listOf(a)) }
@@ -116,11 +178,9 @@ internal class PanelSetTest {
             assertThrows(IllegalStateException::class.java) { render(set, visible, width = 40, height = 10) }
 
             assertEquals(oldHit, set.hitTest(2, 2))
-            assertEquals(ScrollOffset.ZERO, set.offsetOf(SetPanelId.A))
             set.pageFocused(1)
             fail = false
-            render(set, visible)
-            assertEquals(27, set.offsetOf(SetPanelId.A)?.y)
+            assertEquals(27, render(set, visible).offsetOf(SetPanelId.A).y)
         }
     }
 
@@ -147,11 +207,11 @@ internal class PanelSetTest {
     fun `uniform defaults share only visible proportional slots`() {
         val set = PanelSet.uniform(listOf(sidePanel(SetPanelId.A), sidePanel(SetPanelId.B)))
 
-        assertEquals(80, render(set, setOf(SetPanelId.A)).sides.single().width)
+        assertEquals(80, render(set, setOf(SetPanelId.A)).sides.single().outer.width)
         set.cycleFocusedState(-1)
         val layout = render(set, setOf(SetPanelId.A, SetPanelId.B))
 
-        assertEquals(listOf(7, 73), layout.sides.map { it.width })
+        assertEquals(listOf(7, 73), layout.sides.map { it.outer.width })
     }
 
     @Test
@@ -165,13 +225,13 @@ internal class PanelSetTest {
         fixed.clear()
 
         val layout = render(set, setOf(SetPanelId.A, SetPanelId.B))
-        assertEquals(listOf(20, 20), layout.sides.map { it.width })
-        assertEquals(listOf(0, 60), layout.sides.map { it.x })
+        assertEquals(listOf(20, 20), layout.sides.map { it.outer.width })
+        assertEquals(listOf(0, 60), layout.sides.map { it.outer.x })
         set.cycleFocusedState(-1)
         val minimized = render(set, setOf(SetPanelId.A, SetPanelId.B))
 
-        assertEquals(listOf(7, 20), minimized.sides.map { it.width })
-        assertEquals(60, minimized.sides.last().x)
+        assertEquals(listOf(7, 20), minimized.sides.map { it.outer.width })
+        assertEquals(60, minimized.sides.last().outer.x)
     }
 
     @Test
@@ -184,7 +244,7 @@ internal class PanelSetTest {
             PanelSet.uniform(panels, fixedWidthPanels = setOf(SetPanelId.MAIN))
         }
 
-        assertEquals(panels, PanelSet.uniform(panels).sides)
+        PanelSet.uniform(panels)
     }
 
     private fun stubView(lines: Int = 40): ContentView = contentView { cursor ->
@@ -233,16 +293,16 @@ internal class PanelSetTest {
     }
 
     @Test
-    fun `unknown commands and queries are no-ops and null observations`() {
+    fun `every id-addressed operation rejects a panel the set does not declare`() {
         val set = PanelSet.mainAndSides(mainPanel(), listOf(sidePanel(SetPanelId.A)))
 
-        set.focus(SetPanelId.B)
-        set.scroll(SetPanelId.B, 0, 2)
-        set.requestRecenter(SetPanelId.B)
+        assertThrows(IllegalArgumentException::class.java) { set.focus(SetPanelId.B) }
+        assertThrows(IllegalArgumentException::class.java) { set.focusOrCycle(SetPanelId.B) }
+        assertThrows(IllegalArgumentException::class.java) { set.scroll(SetPanelId.B, 0, 2) }
+        assertThrows(IllegalArgumentException::class.java) { set.requestRecenter(SetPanelId.B) }
+        assertThrows(IllegalArgumentException::class.java) { set.stateOf(SetPanelId.B) }
 
         assertEquals(SetPanelId.MAIN, set.focused)
-        assertNull(set.stateOf(SetPanelId.B))
-        assertNull(set.offsetOf(SetPanelId.B))
     }
 
     @Test
@@ -287,33 +347,49 @@ internal class PanelSetTest {
     }
 
     @Test
-    fun `hidden panels retain state and empty uniform visibility clears focus`() {
+    fun `an empty uniform frame retains both hidden panel state and its focus`() {
         val a = sidePanel(SetPanelId.A)
-        val set = PanelSet.uniform(listOf(a))
+        val set = PanelSet.uniform(listOf(a, sidePanel(SetPanelId.B)))
+        set.focus(SetPanelId.B)
         set.cycleFocusedState(1)
 
         render(set, emptySet())
 
-        assertNull(set.focused)
-        assertEquals(PanelState.MAXIMIZED, set.stateOf(SetPanelId.A))
-        render(set, setOf(SetPanelId.A))
-        assertEquals(SetPanelId.A, set.focused)
-        assertEquals(PanelState.MAXIMIZED, set.stateOf(SetPanelId.A))
+        assertEquals(SetPanelId.B, set.focused)
+        assertEquals(PanelState.MAXIMIZED, set.stateOf(SetPanelId.B))
+        render(set, setOf(SetPanelId.A, SetPanelId.B))
+        assertEquals(SetPanelId.B, set.focused)
+        assertEquals(PanelState.MAXIMIZED, set.stateOf(SetPanelId.B))
     }
 
     @Test
-    fun `offset is null before a frame and pending scroll does not change the settled snapshot`() {
-        val set = PanelSet.uniform(listOf(sidePanel(SetPanelId.A)))
-        assertNull(set.offsetOf(SetPanelId.A))
+    fun `a hidden focused panel yields to a visible one`() {
+        val set = PanelSet.uniform(listOf(sidePanel(SetPanelId.A), sidePanel(SetPanelId.B)))
+        set.focus(SetPanelId.B)
 
         render(set, setOf(SetPanelId.A))
-        assertEquals(ScrollOffset.ZERO, set.offsetOf(SetPanelId.A))
+
+        assertEquals(SetPanelId.A, set.focused)
+    }
+
+    @Test
+    fun `pending scroll does not change completed frame observations`() {
+        val set = PanelSet.uniform(listOf(sidePanel(SetPanelId.A)))
+        assertNull(set.hitTest(2, 2))
+
+        val previous = render(set, setOf(SetPanelId.A))
+        val hit = set.hitTest(2, 2)
+        assertEquals(ScrollOffset.ZERO, previous.offsetOf(SetPanelId.A))
         set.scrollFocused(0, 3)
 
-        assertEquals(ScrollOffset.ZERO, set.offsetOf(SetPanelId.A))
-        render(set, setOf(SetPanelId.A))
-        assertEquals(ScrollOffset(y = 3), set.offsetOf(SetPanelId.A))
+        assertEquals(ScrollOffset.ZERO, previous.offsetOf(SetPanelId.A))
+        assertEquals(hit, set.hitTest(2, 2))
+        val scrolled = render(set, setOf(SetPanelId.A))
+        assertEquals(ScrollOffset(y = 3), scrolled.offsetOf(SetPanelId.A))
     }
+
+    private fun PanelLayout<SetPanelId>.offsetOf(id: SetPanelId): ScrollOffset =
+        checkNotNull((listOfNotNull(main) + sides).single { it.id == id }.scroll).offset
 
     @Test
     fun `each rendered presentation builder runs once`() {
@@ -333,13 +409,13 @@ internal class PanelSetTest {
         val set = PanelSet.uniform(input)
         input.clear()
 
-        assertEquals(listOf(panel), set.sides)
+        // Emptying the caller's list must not empty the set: the declaration was copied.
+        assertEquals(SetPanelId.A, render(set, setOf(SetPanelId.A)).sides.single().id)
 
         val invalidMain = sidePanel(SetPanelId.B)
         assertThrows(IllegalArgumentException::class.java) {
             PanelSet.mainAndSides(invalidMain, emptyList())
         }
-        assertFalse(invalidMain.states == listOf(PanelState.NORMAL))
     }
 
     @Test
@@ -357,7 +433,8 @@ internal class PanelSetTest {
         assertThrows(IllegalArgumentException::class.java) {
             PanelSet.uniform(listOf(fresh, sidePanel(SetPanelId.B)))
         }
-        assertSame(fresh, PanelSet.uniform(listOf(fresh)).sides.single())
+        PanelSet.uniform(listOf(fresh))
+        assertThrows(IllegalArgumentException::class.java) { PanelSet.uniform(listOf(fresh)) }
     }
 
     @Test
