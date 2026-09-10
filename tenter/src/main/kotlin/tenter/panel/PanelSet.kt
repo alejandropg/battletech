@@ -5,6 +5,7 @@ import java.util.IdentityHashMap
 import tenter.screen.Canvas
 import tenter.view.Bordered
 import tenter.view.ScrollOffset
+import tenter.view.ViewportState
 
 /**
  * The coordinator for one screen's stateful panels. It owns focus and cross-panel transitions;
@@ -14,9 +15,13 @@ import tenter.view.ScrollOffset
 public class PanelSet<K : PanelId, I> private constructor(
     /** The always-included derived-width panel, or null for a uniform set. */
     public val main: Panel<K, I>?,
-    /** Panel declarations in layout order. The list is copied at construction. */
-    public val sides: List<Panel<K, I>>,
+    sides: List<Panel<K, I>>,
+    private val reservedColumns: Int?,
+    fixedWidthPanels: Set<K>,
 ) {
+    /** Immutable panel declarations in layout order. */
+    public val sides: List<Panel<K, I>> = Collections.unmodifiableList(ArrayList(sides))
+    private val fixedWidthPanels: Set<K> = Collections.unmodifiableSet(HashSet(fixedWidthPanels))
     private var pendingRecenter: K? = null
     private var lastLayout: PanelLayout<K>? = null
     private var focusedId: K? = main?.id ?: sides.firstOrNull()?.id
@@ -115,14 +120,15 @@ public class PanelSet<K : PanelId, I> private constructor(
      * Lays out [visible] panels, selecting each rendered presentation exactly once, then draws
      * every slot and returns the layout used. Width comes from that same selected presentation;
      * it is never recomputed by asking an application builder again.
+     * Managed offsets and hit geometry publish together only after every slot paints successfully.
+     * A failed frame retains queued scrolling intent; application callbacks and canvas writes
+     * are not rolled back, so discard the failed frame's canvas.
      */
     public fun render(
         canvas: Canvas,
         inputs: I,
         visible: Set<K>,
         reservedTop: Int,
-        uniformColumnCount: Int = visible.size,
-        fixedWidthPanels: Set<K> = emptySet(),
     ): PanelLayout<K> {
         val visibleSides = sides.filter { it.id in visible }
         normalizeFocus(visibleSides)
@@ -137,7 +143,7 @@ public class PanelSet<K : PanelId, I> private constructor(
             }
         }
         val presentations = renderedPanels.associateBy({ it.id }, { it.presentation(inputs) })
-        val widthOf: (Panel<K, I>) -> Int = { panel -> presentations.getValue(panel.id).width }
+        val widthOf: (Panel<K, I>) -> Int = { panel -> presentations.getValue(panel.id).requiredWidth() }
         val fixedPanels = fixedWidthPanels + visibleSides
             .filter { it.state == PanelState.MINIMIZED }
             .map { it.id }
@@ -150,20 +156,20 @@ public class PanelSet<K : PanelId, I> private constructor(
                 canvas.height,
                 reservedTop,
                 visibleSides,
-                uniformColumnCount,
+                (reservedColumns ?: visibleSides.count { it.id !in fixedWidthPanels }) -
+                    visibleSides.count { it.id !in fixedWidthPanels && it.state == PanelState.MINIMIZED },
                 fixedPanels,
                 widthOf,
             )
         }
-        lastLayout = layout
-
-        layout.main?.let { slot -> renderSlot(canvas, slot, presentations) }
-        for (slot in layout.sides) {
-            renderSlot(canvas, slot, presentations)
+        val candidates = buildMap {
+            for (slot in listOfNotNull(layout.main) + layout.sides) {
+                put(slot.id, renderSlot(canvas, slot, presentations))
+            }
         }
+        val settledLayout = layout.withSettledScroll { id -> candidates[id]?.settled }
+        candidates.forEach { (id, candidate) -> panelFor(id)?.settle(candidate) }
         pendingRecenter = null
-
-        val settledLayout = layout.withSettledScroll { id -> panelFor(id)?.settledOffsetObservation() }
         lastLayout = settledLayout
         return settledLayout
     }
@@ -172,9 +178,9 @@ public class PanelSet<K : PanelId, I> private constructor(
         canvas: Canvas,
         slot: PanelLayout.Slot<K>,
         presentations: Map<K, Panel.Presentation>,
-    ) {
-        val panel = panelFor(slot.id) ?: return
-        panel.render(
+    ): ViewportState {
+        val panel = requireNotNull(panelFor(slot.id))
+        return panel.render(
             canvas.region(slot.x, slot.y, slot.width, slot.height),
             presentations.getValue(slot.id),
             focused = slot.id == focusedId,
@@ -200,24 +206,40 @@ public class PanelSet<K : PanelId, I> private constructor(
     }
 
     public companion object {
-        /** Builds a uniform set with at least one panel and copied declarations. */
-        public fun <K : PanelId, I> uniform(panels: List<Panel<K, I>>): PanelSet<K, I> {
+        /**
+         * Builds a uniform set. By default, visible proportional panels share the remaining width.
+         * [reservedColumns] reserves proportional slots even for hidden panels; visible minimized
+         * proportional panels reclaim their slot. [fixedWidthPanels] occupy a trailing fixed group.
+         * Configuration is copied and validated before any panel is attached.
+         */
+        public fun <K : PanelId, I> uniform(
+            panels: List<Panel<K, I>>,
+            reservedColumns: Int? = null,
+            fixedWidthPanels: Set<K> = emptySet(),
+        ): PanelSet<K, I> {
             require(panels.isNotEmpty()) { "A uniform PanelSet needs at least one panel" }
-            return create(main = null, sides = panels, uniform = true)
+            require(reservedColumns == null || reservedColumns >= 0) { "Reserved columns must not be negative" }
+            require(fixedWidthPanels.all { id -> panels.any { it.id == id } }) {
+                "Fixed-width panels must be declared in the set"
+            }
+            require(reservedColumns == null || reservedColumns >= panels.count { it.id !in fixedWidthPanels }) {
+                "Reserve at least one column per proportional panel"
+            }
+            return create(null, panels, reservedColumns, fixedWidthPanels)
         }
 
         /** Builds a derived-main set. The main panel may only declare NORMAL. */
         public fun <K : PanelId, I> mainAndSides(
             main: Panel<K, I>,
             sides: List<Panel<K, I>>,
-        ): PanelSet<K, I> = create(main, sides, uniform = false)
+        ): PanelSet<K, I> = create(main, sides)
 
         private fun <K : PanelId, I> create(
             main: Panel<K, I>?,
             sides: List<Panel<K, I>>,
-            uniform: Boolean,
+            reservedColumns: Int? = null,
+            fixedWidthPanels: Set<K> = emptySet(),
         ): PanelSet<K, I> {
-            if (!uniform) require(main != null)
             if (main != null) {
                 require(main.states == listOf(PanelState.NORMAL)) {
                     "Main panel ${main.id} must declare NORMAL only"
@@ -238,7 +260,7 @@ public class PanelSet<K : PanelId, I> private constructor(
             }
 
             all.forEach { it.claimAttachment() }
-            return PanelSet(main, copiedSides)
+            return PanelSet(main, copiedSides, reservedColumns, fixedWidthPanels)
         }
     }
 }

@@ -20,7 +20,8 @@ public interface RolePalette {
 
     /**
      * [role]'s semantic foreground. For [ChromeRole.DEFAULT] this is the default foreground — the
-     * only role where [foreground] and [background] differ. [FixedColorRole] is resolved by the
+     * default role where [foreground] and [background] differ. Implementations may specialize other
+     * backgrounds too. [FixedColorRole] is resolved by the
      * renderer before this function is called, not by a palette implementation.
      */
     public fun foreground(role: ColorRole): PaletteColor
@@ -31,27 +32,14 @@ public interface RolePalette {
 }
 
 /**
- * Returns a copied palette containing every chrome role from this palette and [overrides].
- * Overrides may replace chrome roles or add application-specific roles. The returned palette
- * validates its complete chrome set and color tier before it can be rendered; roles not present
- * in either the chrome set or [overrides] still fail clearly when resolved.
+ * Layers a copied override map over this stable palette, preserving all untouched foregrounds,
+ * backgrounds, and application roles, including previous overrides. An override replaces both
+ * colors of its role, except DEFAULT's background which uses [defaultBackground].
+ * Chrome colors and overrides are validated eagerly; delegated application colors are validated
+ * when resolved. The base palette must remain stable for the renderer's lifetime.
  */
 public fun RolePalette.withOverrides(
     name: String = "overrides",
     overrides: Map<ColorRole, PaletteColor> = emptyMap(),
     defaultBackground: PaletteColor = this.defaultBackground,
-): MapRolePalette {
-    val colors = ChromeRole.entries.associateWith { role -> foreground(role) } + overrides
-    return MapRolePalette(
-        name = name,
-        level = levelOf(defaultBackground),
-        defaultBackground = defaultBackground,
-        colors = colors,
-    )
-}
-
-private fun levelOf(color: PaletteColor): com.github.ajalt.mordant.rendering.AnsiLevel = when (color) {
-    is PaletteColor.TrueColor -> com.github.ajalt.mordant.rendering.AnsiLevel.TRUECOLOR
-    is PaletteColor.Xterm256 -> com.github.ajalt.mordant.rendering.AnsiLevel.ANSI256
-    is PaletteColor.Ansi16 -> com.github.ajalt.mordant.rendering.AnsiLevel.ANSI16
-}
+): RolePalette = OverrideRolePalette(name, this, overrides, defaultBackground)

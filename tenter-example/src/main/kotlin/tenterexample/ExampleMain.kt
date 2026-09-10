@@ -11,6 +11,10 @@ import tenter.screen.Canvas
 import tenter.screen.DefaultRolePalette
 import tenter.screen.ScreenBuffer
 import tenter.screen.ScreenRenderer
+import tenter.screen.Insets
+import tenter.view.Bordered
+import tenter.view.Padded
+import tenter.view.contentView
 import tenter.terminal.TerminalEvent
 import tenter.terminal.inputEvents
 import tenter.terminal.resizeEvents
@@ -22,6 +26,15 @@ import tenter.terminal.withScreen
  * widget glyphs, keymap dispatch, scrolling, reveal following, panel states, and animation.
  */
 public fun runHeadlessSmoke(): SmokeResult {
+    val framed = Bordered.prepared(Padded.prepared(Insets.all(1), contentView { cursor ->
+        cursor.writeLine("OK")
+        cursor.markRevealAt(0)
+    })).layout(8)
+    val framedCanvas = Canvas.offscreen(framed.width, framed.height)
+    framed.draw(framedCanvas)
+    check(framed.height == 5 && framedCanvas.get(2, 2).char == "O")
+    check(framedCanvas.revealRect()?.y == 2) { "prepared decorators lost the child's reveal" }
+
     val app = ExampleApp(ExampleLayoutMode.MAIN_AND_SIDES)
     var buffer = app.render(width = 80, height = 12)
     val initialText = bufferText(buffer)
@@ -73,8 +86,12 @@ public fun runHeadlessSmoke(): SmokeResult {
     )
 }
 
-/** The interactive entry point; launch it from a real TTY with `./gradlew :tenter-example:run`. */
+/** Interactive entry point; run the installed distribution's launcher from a real terminal. */
 public fun main(args: Array<String>) {
+    if ("--hello" in args) {
+        tenterexample.hello.main()
+        return
+    }
     if ("--headless" in args) {
         println(runHeadlessSmoke())
         return

@@ -5,8 +5,11 @@ import tenter.screen.Cell
 import tenter.screen.RevealRect
 
 /**
- * A prepared, immutable view for one frame. Its dimensions are logical content dimensions, not
- * the number of nonblank pixels painted into a canvas.
+ * Recorded dimensions, text, and placements for one frame. Dimensions describe logical content,
+ * not the number of nonblank pixels painted into a canvas. The instruction list is immutable,
+ * but referenced roles and raw views are not deep-copied. In particular, [fixedContent] retains
+ * its original [View] and invokes it on each paint. Capture stable application data when preparing
+ * a frame; repeated paints are allowed and should not change application state.
  */
 public class ContentLayout internal constructor(
     public val width: Int,

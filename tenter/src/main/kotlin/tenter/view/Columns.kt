@@ -1,13 +1,10 @@
 package tenter.view
 
-import tenter.screen.Canvas
-
 /**
  * Packs prepared children left-to-right, wrapping at [availableWidth]. Each [Child.width] is the
  * declared column width; band height comes from the children's logical layout heights. A child
  * wider than the available space retains that declared width and is clipped only when painted.
- * [draw] remains available for raw views when the caller already owns an allocated destination;
- * intrinsic layout requires every child to be prepared.
+ * Wrap raw painting in [fixedContent] before inserting it into a column.
  */
 public class Columns(
     private val children: List<Child>,
@@ -21,15 +18,13 @@ public class Columns(
 
     public data class Child(
         public val width: Int,
-        public val view: View,
+        public val view: ContentView,
     )
 
-    override fun layout(availableWidth: Int): ContentLayout {
+    public override fun layout(availableWidth: Int): ContentLayout {
         require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
         val prepared = children.map { child ->
-            child to requireNotNull(child.view as? ContentView) {
-                "Columns intrinsic layout requires ContentView children; use fixedContent for a raw view"
-            }.layout(child.width)
+            child to child.view.layout(child.width)
         }
 
         var x = 0

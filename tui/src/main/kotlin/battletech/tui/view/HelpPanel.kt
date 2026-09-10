@@ -19,7 +19,7 @@ internal fun <K : PanelId, I> helpPanel(
     id = id,
     title = HelpView.TITLE,
     badge = badge?.toString(),
-    normal = { Panel.Presentation(HelpView(sections(it)), width) },
+    normal = { Panel.Presentation.fixedWidth(HelpView(sections(it)), width) },
     // No minimized state — ? dismisses HELP instead (see AppState.helpOpen / SetupState.helpOpen).
-    maximized = { Panel.Presentation(HelpView(sections(it)), width) },
+    maximized = { Panel.Presentation.allocated(HelpView(sections(it))) },
 )

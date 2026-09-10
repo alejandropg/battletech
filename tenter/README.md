@@ -4,43 +4,58 @@ Tenter is a JVM terminal-UI toolkit built on Mordant. Callers describe prepared 
 input intent, and inspect completed-frame observations; Tenter owns glyph integrity, layout size,
 scroll following, panel geometry, and terminal-scope cleanup.
 
-## Small example
+## First run
+
+This complete entry point paints a greeting and waits for `q`. It is the compiled
+[HelloMain.kt](../tenter-example/src/main/kotlin/tenterexample/hello/HelloMain.kt) example.
 
 ```kotlin
+import com.github.ajalt.mordant.input.MouseTracking
 import com.github.ajalt.mordant.terminal.Terminal
-import tenter.panel.Panel
-import tenter.panel.PanelId
-import tenter.panel.PanelSet
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.runBlocking
 import tenter.screen.Canvas
 import tenter.screen.DefaultRolePalette
 import tenter.screen.ScreenBuffer
-import tenter.view.contentView
+import tenter.terminal.TerminalEvent
+import tenter.terminal.inputEvents
 import tenter.terminal.withScreen
+import tenter.view.contentView
 
-enum class Id : PanelId { MAIN }
+public fun main() {
+    val terminal = Terminal()
+    runHello(terminal, terminal.inputEvents(MouseTracking.Normal) { it.key == "q" })
+}
 
-val panel = Panel<Id, Unit>(
-    id = Id.MAIN,
-    title = "ITEMS",
-    normal = {
-        Panel.Presentation(
-            content = contentView { cursor -> cursor.writeLine("Hello from Tenter") },
-            width = 0,
-        )
-    },
-)
-val panels = PanelSet.uniform(listOf(panel))
-val buffer = ScreenBuffer(40, 8)
-panels.render(Canvas.of(buffer), Unit, setOf(Id.MAIN), reservedTop = 0)
-
-Terminal().withScreen(DefaultRolePalette) { renderer ->
-    renderer.render(buffer)
+/** The application owns the loop; tests can supply input without acquiring a real terminal. */
+public fun runHello(terminal: Terminal, events: Flow<TerminalEvent>) {
+    val greeting = contentView { cursor -> cursor.writeLine("Hello from Tenter — press q to quit") }
+    terminal.withScreen(DefaultRolePalette) { renderer ->
+        val size = terminal.updateSize()
+        val buffer = ScreenBuffer(size.width, size.height)
+        greeting.draw(Canvas.of(buffer))
+        renderer.render(buffer)
+        runBlocking {
+            events.takeWhile { it !is TerminalEvent.Quit }.collect { }
+        }
+    }
 }
 ```
 
-The [independent consumer demo](../tenter-example) is runnable with
-`./gradlew :tenter-example:run` from a real TTY. Its headless packaged check is
-`./gradlew :tenter-example:packagedSmoke`.
+Build and launch the [independent consumer demo](../tenter-example) from a real terminal:
+
+```sh
+./gradlew :tenter-example:installDist
+tenter-example/build/install/tenter-example/bin/tenter-example
+# Minimal greeting instead of the full demo:
+tenter-example/build/install/tenter-example/bin/tenter-example --hello
+```
+
+Gradle's `run` task does not supply an interactive terminal. The headless packaged check is
+`./gradlew :tenter-example:packagedSmoke`. For a terminal smoke check, use arrows to move, space
+to toggle, `m` to cycle HELP's size, resize the terminal, and press `q` to quit; the original
+screen and cursor should be restored.
 
 ## Content and layout
 
@@ -52,9 +67,25 @@ exact occupied dimensions without being painted into a guessed measurement canva
 retain their full logical content for scrolling, so very long content has a proportional memory
 cost; there is no hidden row ceiling.
 
+Recorded text and placements are snapshots, but raw views and role objects are retained, not
+deep-copied. `fixedContent` never paints to measure; it invokes its original view on each paint.
+Capture stable frame data in raw views when repeatable output is required.
+
+`Stack` and `Columns.Child` require `ContentView` children. Use `Padded.prepared(insets, content)`
+and `Bordered.prepared(content, ...)` for intrinsic padding and borders. The `Padded` and
+`Bordered` constructors accept raw `View` painting into an already allocated canvas; those raw
+decorators do not promise intrinsic dimensions.
+
 `ContentLayout` carries reveal requests through nested decorators. A content view requests
 visibility; the owning viewport resolves it during the one actual paint and publishes the settled
 `ScrollState`. Callers do not copy a provisional reveal or feed an offset back into the next frame.
+
+For scrolling without panels, keep one `ViewportState` and draw `Viewport(content, state)` each
+frame. Send scroll commands to the state; read `state.settled` only as an observation. To handle
+resize, merge `terminal.resizeEvents()` into your input flow, update the size, and repaint from the
+same application execution context. The full demo shows this progression.
+
+## Stateful panels
 
 `Panel` owns one private viewport and its panel state for one screen lifetime. `PanelSet.uniform`
 and `PanelSet.mainAndSides` attach each panel exclusively; a panel instance cannot be reused in a
@@ -65,9 +96,20 @@ settled offsets, and optional content coordinates. Border, padding, and scroll o
 caller arithmetic. Normal clicks are interpreted by the host application from `hitTest`; wheel
 events can scroll the hit panel through `MouseInput.scrollDelta`.
 
-Uniform layouts may have proportional and fixed columns, and small screens clip allocations in
-declaration order without publishing negative geometry. Empty visibility is a valid uniform frame;
-focus is then `null` while hidden panel state is retained.
+Configure uniform layout once with `PanelSet.uniform(panels, reservedColumns, fixedWidthPanels)`.
+By default, visible proportional panels share remaining space. A nonnull `reservedColumns` keeps
+slots for hidden proportional panels; visible minimized proportional panels reclaim their slot.
+Fixed panels form a trailing group. Small screens clip allocations without negative geometry.
+Use `Panel.Presentation.allocated(content)` for main, proportional, and maximized states;
+use `Panel.Presentation.fixedWidth(content, width)` for side, minimized, and configured fixed
+states. Fixed widths must be positive and include chrome. Their preference is ignored when a
+declaration is reused in an allocated slot; allocated presentations in fixed slots fail clearly.
+Empty visibility is a valid uniform frame; focus is then `null` while hidden state is retained.
+Exposed panel and layout lists are unmodifiable. Managed viewport state and hit geometry publish
+together after all panels paint successfully. Failure retains previous offsets and geometry plus
+queued scrolling/recenter intent for retry. Canvas writes and callback side effects are not rolled
+back: discard a failed frame's canvas. A change to either viewport dimension
+re-engages reveal following; unchanged dimensions and targets preserve manual scrolling.
 
 ## Text and widgets
 
@@ -84,7 +126,10 @@ Tenter does not require Nerd Fonts.
 
 `DefaultRolePalette` works without a domain theme file. `RolePalette.withOverrides` and
 `MapRolePalette` support validated custom palettes. Every toolkit `ChromeRole` must be supplied by
-a map palette, and palette colors must match the terminal's declared `AnsiLevel`. Fixed colors are
+a map palette. Overrides compose: untouched domain roles and custom foreground/background
+resolution delegate to the previous stable palette; override maps are copied. Every toolkit role
+and override is validated eagerly, and delegated domain colors when resolved. Palette colors
+must match the terminal's declared `AnsiLevel`. Fixed colors are
 resolved by the renderer in both foreground and background channels. At `AnsiLevel.NONE`, all SGR
 output is suppressed while glyphs and layout remain usable.
 
@@ -114,3 +159,10 @@ Tenter targets JVM 25 with Kotlin 2.4.10. Its public surface exposes Mordant 3.0
 multiplatform. Tests should exercise public views, buffers, `PanelSet` observations, and
 Mordant's `TerminalRecorder`. `ViewTestSupport` is repository-only test support used by the TUI;
 it is not an independently supported or published fixture artifact.
+
+The supported contract is the public API tracked in `api/tenter.api`: content/painting, managed
+panels and observations, text/widgets, palettes, input, terminal scopes, and finite animations.
+Internal chrome spacing is deliberately not public; use completed-frame hit tests and rectangles.
+No public transaction manager, application event loop, theme hot-swap, or deep-copy mechanism is
+promised. This is a pre-1.0 API; downstream consumers should pin the version and review API changes
+when upgrading.

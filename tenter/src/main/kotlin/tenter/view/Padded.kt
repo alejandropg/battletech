@@ -3,29 +3,28 @@ package tenter.view
 import tenter.screen.Canvas
 import tenter.screen.Insets
 
-/** Decorates [content] with logical space on every requested edge. */
-public class Padded(private val insets: Insets, private val content: View) : ContentView {
-    override fun layout(availableWidth: Int): ContentLayout {
-        require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
-        val innerWidth = (availableWidth - insets.left - insets.right).coerceAtLeast(0)
-        val child = requireNotNull(content as? ContentView) {
-            "Padded intrinsic layout requires a ContentView child; use fixedContent for a raw view"
-        }.layout(innerWidth)
-        val width = checkedAdd(checkedAdd(child.width, insets.left, "padded width"), insets.right, "padded width")
-        val height = checkedAdd(checkedAdd(child.height, insets.top, "padded height"), insets.bottom, "padded height")
-        return contentLayout(width, height) {
-            place(insets.left, insets.top, child)
-        }
-    }
-
-    override fun draw(canvas: Canvas) {
+/** Insets raw painting within its allocated canvas. Use [prepared] for intrinsic composition. */
+public class Padded(
+    private val insets: Insets,
+    private val content: View,
+) : View {
+    public override fun draw(canvas: Canvas) {
         content.draw(canvas.inset(insets))
     }
 
-    private fun checkedAdd(left: Int, right: Int, description: String): Int =
-        try {
-            Math.addExact(left, right)
-        } catch (_: ArithmeticException) {
-            error("$description overflowed")
+    public companion object {
+        /** Adds logical padding to prepared content, including otherwise blank space. */
+        public fun prepared(insets: Insets, content: ContentView): ContentView = object : ContentView {
+            public override fun layout(availableWidth: Int): ContentLayout {
+                require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
+                val innerWidth = (availableWidth.toLong() - insets.left - insets.right).coerceAtLeast(0).toInt()
+                val child = content.layout(innerWidth)
+                val width = Math.addExact(Math.addExact(child.width, insets.left), insets.right)
+                val height = Math.addExact(Math.addExact(child.height, insets.top), insets.bottom)
+                return contentLayout(width, height) {
+                    place(insets.left, insets.top, child)
+                }
+            }
         }
+    }
 }

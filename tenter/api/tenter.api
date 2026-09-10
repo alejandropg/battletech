@@ -259,16 +259,13 @@ public final class tenter/panel/Panel$Companion {
 }
 
 public final class tenter/panel/Panel$Presentation {
-	public fun <init> (Ltenter/view/ContentView;I)V
-	public final fun component1 ()Ltenter/view/ContentView;
-	public final fun component2 ()I
-	public final fun copy (Ltenter/view/ContentView;I)Ltenter/panel/Panel$Presentation;
-	public static synthetic fun copy$default (Ltenter/panel/Panel$Presentation;Ltenter/view/ContentView;IILjava/lang/Object;)Ltenter/panel/Panel$Presentation;
-	public fun equals (Ljava/lang/Object;)Z
+	public static final field Companion Ltenter/panel/Panel$Presentation$Companion;
 	public final fun getContent ()Ltenter/view/ContentView;
-	public final fun getWidth ()I
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class tenter/panel/Panel$Presentation$Companion {
+	public final fun allocated (Ltenter/view/ContentView;)Ltenter/panel/Panel$Presentation;
+	public final fun fixedWidth (Ltenter/view/ContentView;I)Ltenter/panel/Panel$Presentation;
 }
 
 public final class tenter/panel/PanelHit {
@@ -335,8 +332,7 @@ public final class tenter/panel/PanelSet {
 	public final fun offsetOf (Ltenter/panel/PanelId;)Ltenter/view/ScrollOffset;
 	public final fun pageFocused (I)V
 	public final fun panelAt (II)Ltenter/panel/PanelId;
-	public final fun render (Ltenter/screen/Canvas;Ljava/lang/Object;Ljava/util/Set;IILjava/util/Set;)Ltenter/panel/PanelLayout;
-	public static synthetic fun render$default (Ltenter/panel/PanelSet;Ltenter/screen/Canvas;Ljava/lang/Object;Ljava/util/Set;IILjava/util/Set;ILjava/lang/Object;)Ltenter/panel/PanelLayout;
+	public final fun render (Ltenter/screen/Canvas;Ljava/lang/Object;Ljava/util/Set;I)Ltenter/panel/PanelLayout;
 	public final fun requestRecenter (Ltenter/panel/PanelId;)V
 	public final fun scroll (Ltenter/panel/PanelId;II)V
 	public final fun scrollFocused (II)V
@@ -345,7 +341,8 @@ public final class tenter/panel/PanelSet {
 
 public final class tenter/panel/PanelSet$Companion {
 	public final fun mainAndSides (Ltenter/panel/Panel;Ljava/util/List;)Ltenter/panel/PanelSet;
-	public final fun uniform (Ljava/util/List;)Ltenter/panel/PanelSet;
+	public final fun uniform (Ljava/util/List;Ljava/lang/Integer;Ljava/util/Set;)Ltenter/panel/PanelSet;
+	public static synthetic fun uniform$default (Ltenter/panel/PanelSet$Companion;Ljava/util/List;Ljava/lang/Integer;Ljava/util/Set;ILjava/lang/Object;)Ltenter/panel/PanelSet;
 }
 
 public final class tenter/panel/PanelState : java/lang/Enum {
@@ -601,8 +598,8 @@ public final class tenter/screen/RolePalette$DefaultImpls {
 }
 
 public final class tenter/screen/RolePaletteKt {
-	public static final fun withOverrides (Ltenter/screen/RolePalette;Ljava/lang/String;Ljava/util/Map;Ltenter/screen/PaletteColor;)Ltenter/screen/MapRolePalette;
-	public static synthetic fun withOverrides$default (Ltenter/screen/RolePalette;Ljava/lang/String;Ljava/util/Map;Ltenter/screen/PaletteColor;ILjava/lang/Object;)Ltenter/screen/MapRolePalette;
+	public static final fun withOverrides (Ltenter/screen/RolePalette;Ljava/lang/String;Ljava/util/Map;Ltenter/screen/PaletteColor;)Ltenter/screen/RolePalette;
+	public static synthetic fun withOverrides$default (Ltenter/screen/RolePalette;Ljava/lang/String;Ljava/util/Map;Ltenter/screen/PaletteColor;ILjava/lang/Object;)Ltenter/screen/RolePalette;
 }
 
 public final class tenter/screen/ScreenBuffer {
@@ -730,18 +727,17 @@ public final class tenter/text/TextWrap {
 	public static synthetic fun wrapBy$default (Ltenter/text/TextWrap;Ljava/lang/String;IILkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/util/List;
 }
 
-public final class tenter/view/Bordered : tenter/view/ContentView {
+public final class tenter/view/Bordered : tenter/view/View {
 	public static final field Companion Ltenter/view/Bordered$Companion;
 	public fun <init> (Ltenter/view/View;Ljava/lang/String;Ljava/lang/String;Ltenter/screen/Insets;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;)V
 	public synthetic fun <init> (Ltenter/view/View;Ljava/lang/String;Ljava/lang/String;Ltenter/screen/Insets;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun draw (Ltenter/screen/Canvas;)V
-	public fun layout (I)Ltenter/view/ContentLayout;
 }
 
 public final class tenter/view/Bordered$Companion {
 	public final fun getBORDER ()Ltenter/screen/Insets;
-	public final fun getPADDING ()Ltenter/screen/Insets;
-	public final fun getVIEWPORT_INSET ()Ltenter/screen/Insets;
+	public final fun prepared (Ltenter/view/ContentView;Ljava/lang/String;Ljava/lang/String;Ltenter/screen/Insets;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;)Ltenter/view/ContentView;
+	public static synthetic fun prepared$default (Ltenter/view/Bordered$Companion;Ltenter/view/ContentView;Ljava/lang/String;Ljava/lang/String;Ltenter/screen/Insets;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;ILjava/lang/Object;)Ltenter/view/ContentView;
 }
 
 public final class tenter/view/Columns : tenter/view/ContentView {
@@ -752,13 +748,13 @@ public final class tenter/view/Columns : tenter/view/ContentView {
 }
 
 public final class tenter/view/Columns$Child {
-	public fun <init> (ILtenter/view/View;)V
+	public fun <init> (ILtenter/view/ContentView;)V
 	public final fun component1 ()I
-	public final fun component2 ()Ltenter/view/View;
-	public final fun copy (ILtenter/view/View;)Ltenter/view/Columns$Child;
-	public static synthetic fun copy$default (Ltenter/view/Columns$Child;ILtenter/view/View;ILjava/lang/Object;)Ltenter/view/Columns$Child;
+	public final fun component2 ()Ltenter/view/ContentView;
+	public final fun copy (ILtenter/view/ContentView;)Ltenter/view/Columns$Child;
+	public static synthetic fun copy$default (Ltenter/view/Columns$Child;ILtenter/view/ContentView;ILjava/lang/Object;)Ltenter/view/Columns$Child;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getView ()Ltenter/view/View;
+	public final fun getView ()Ltenter/view/ContentView;
 	public final fun getWidth ()I
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -816,10 +812,14 @@ public final class tenter/view/HelpView : tenter/view/ContentView {
 public final class tenter/view/HelpView$Companion {
 }
 
-public final class tenter/view/Padded : tenter/view/ContentView {
+public final class tenter/view/Padded : tenter/view/View {
+	public static final field Companion Ltenter/view/Padded$Companion;
 	public fun <init> (Ltenter/screen/Insets;Ltenter/view/View;)V
 	public fun draw (Ltenter/screen/Canvas;)V
-	public fun layout (I)Ltenter/view/ContentLayout;
+}
+
+public final class tenter/view/Padded$Companion {
+	public final fun prepared (Ltenter/screen/Insets;Ltenter/view/ContentView;)Ltenter/view/ContentView;
 }
 
 public final class tenter/view/RevealPreference : java/lang/Enum {
@@ -1029,3 +1029,4 @@ public final class tenter/widget/ValueRow {
 	public static final field INSTANCE Ltenter/widget/ValueRow;
 	public final fun draw (Ltenter/view/TextCursor;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ltenter/screen/ColorRole;)V
 }
+

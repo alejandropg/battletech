@@ -1,7 +1,6 @@
 package battletech.tui.setup
 
 import battletech.tui.input.Keybindings
-import tenter.panel.PanelState
 import tenter.screen.Canvas
 import tenter.screen.ScreenBuffer
 import tenter.view.FlashMessage
@@ -40,20 +39,11 @@ internal class SetupWorkspace(private val keys: Keybindings) {
         val buffer = ScreenBuffer(width, height)
         val screen = Canvas.of(buffer)
         val inputs = SetupPanelInputs(state, keys)
-        val minimizedCount = panels.sides.count {
-            it.id in visible && panels.stateOf(it.id) == PanelState.MINIMIZED
-        }
-        val uniformColumnCount = if (minimizedCount == 0) SETUP_PANEL_COUNT else {
-            (SETUP_PANEL_COUNT - minimizedCount).coerceAtLeast(0)
-        }
-
         panels.render(
             screen,
             inputs,
             visible,
             reservedTop = bannerHeight,
-            uniformColumnCount = uniformColumnCount,
-            fixedWidthPanels = setOf(SetupPanelId.HELP),
         )
 
         val prompt = flash?.text ?: defaultPrompt(state)
@@ -62,9 +52,6 @@ internal class SetupWorkspace(private val keys: Keybindings) {
         return buffer
     }
 
-    private companion object {
-        private const val SETUP_PANEL_COUNT = 4
-    }
 }
 
 private fun defaultPrompt(state: SetupState): String = when {

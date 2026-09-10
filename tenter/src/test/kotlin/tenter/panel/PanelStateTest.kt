@@ -14,9 +14,9 @@ internal class PanelStateTest {
     ): Panel<TestPanelId, Unit> = Panel(
         id = TestPanelId.A,
         title = "T",
-        normal = { Panel.Presentation(contentView { }, 20) },
-        minimized = if (minimized) ({ Panel.Presentation(contentView { }, Panel.MINIMIZED_WIDTH) }) else null,
-        maximized = if (maximized) ({ Panel.Presentation(contentView { }, 20) }) else null,
+        normal = { Panel.Presentation.fixedWidth(contentView { }, 20) },
+        minimized = if (minimized) ({ Panel.Presentation.fixedWidth(contentView { }, Panel.MINIMIZED_WIDTH) }) else null,
+        maximized = if (maximized) ({ Panel.Presentation.allocated(contentView { }) }) else null,
     )
 
     @Test
@@ -51,7 +51,7 @@ internal class PanelStateTest {
         val b = Panel<TestPanelId, Unit>(
             id = TestPanelId.B,
             title = "B",
-            normal = { Panel.Presentation(contentView { }, 20) },
+            normal = { Panel.Presentation.fixedWidth(contentView { }, 20) },
         )
         val set = PanelSet.uniform(listOf(a, b))
         set.cycleFocusedState(-1)
@@ -62,9 +62,11 @@ internal class PanelStateTest {
     }
 
     @Test
-    fun `presentation rejects negative widths`() {
-        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException::class.java) {
-            Panel.Presentation(contentView { }, -1)
+    fun `fixed presentation rejects nonpositive widths`() {
+        for (width in listOf(-1, 0)) {
+            org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException::class.java) {
+                Panel.Presentation.fixedWidth(contentView { }, width)
+            }
         }
     }
 }

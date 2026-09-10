@@ -40,9 +40,9 @@ internal class PanelTest {
         id = GamePanelId.LOG,
         title = "T",
         badge = "9",
-        normal = { Panel.Presentation(normal(it), 28) },
-        minimized = minimized?.let { build -> { Panel.Presentation(build(it), Panel.MINIMIZED_WIDTH) } },
-        maximized = maximized?.let { build -> { Panel.Presentation(build(it), 28) } },
+        normal = { Panel.Presentation.fixedWidth(normal(it), 28) },
+        minimized = minimized?.let { build -> { Panel.Presentation.fixedWidth(build(it), Panel.MINIMIZED_WIDTH) } },
+        maximized = maximized?.let { build -> { Panel.Presentation.allocated(build(it)) } },
     )
 
     private fun renderPanel(
@@ -125,7 +125,7 @@ internal class PanelTest {
         val unfocusedSet = PanelSet.uniform(listOf(unfocusedPanel, Panel(
             id = GamePanelId.BOARD,
             title = "B",
-            normal = { Panel.Presentation(contentView { }, 0) },
+            normal = { Panel.Presentation.allocated(contentView { }) },
         )))
         unfocusedSet.focus(GamePanelId.BOARD)
         val buffer = ScreenBuffer(30, 10)

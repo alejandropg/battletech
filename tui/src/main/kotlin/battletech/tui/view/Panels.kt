@@ -21,7 +21,7 @@ internal object Panels {
             id = GamePanelId.BOARD,
             title = "TACTICAL MAP",
             badge = keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.BOARD)).toString(),
-            normal = { Panel.Presentation(it.boardView, width = 0) },
+            normal = { Panel.Presentation.allocated(it.boardView) },
         )
 
         val sides = listOf(
@@ -49,9 +49,8 @@ internal object Panels {
                 UnitStatusView.TITLE,
                 keys,
                 maximized = { frame ->
-                    Panel.Presentation(
+                    Panel.Presentation.allocated(
                         MechRecordSheetView(frame.unitStatus.subject, frame.state.map, frame.unitStatus.pendingHeat),
-                        width = 0,
                     )
                 },
             ) { frame ->
@@ -83,9 +82,9 @@ internal object Panels {
         id = id,
         title = title,
         badge = keys.badgeFor(ChromeAction.FocusPanel(id)).toString(),
-        normal = { Panel.Presentation(build(it), width) },
-        minimized = { Panel.Presentation(VerticalTitleView(title), Panel.MINIMIZED_WIDTH) },
-        maximized = maximized ?: { Panel.Presentation(build(it), width) },
+        normal = { Panel.Presentation.fixedWidth(build(it), width) },
+        minimized = { Panel.Presentation.fixedWidth(VerticalTitleView(title), Panel.MINIMIZED_WIDTH) },
+        maximized = maximized ?: { Panel.Presentation.allocated(build(it)) },
     )
 
     private const val HELP_WIDTH: Int = 42

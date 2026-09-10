@@ -1,5 +1,6 @@
 package tenter.panel
 
+import java.util.Collections
 import tenter.screen.Canvas
 import tenter.screen.ChromeRole
 import tenter.view.ContentView
@@ -26,13 +27,28 @@ public class Panel<K : PanelId, I>(
     private val minimized: ((I) -> Presentation)? = null,
     private val maximized: ((I) -> Presentation)? = null,
 ) {
-    /** Prepared content and its associated width for one rendered state. */
-    public data class Presentation(
+    /** Prepared content and its sizing preference for one rendered state. */
+    public class Presentation private constructor(
         public val content: ContentView,
-        public val width: Int,
+        private val preferredWidth: Int?,
     ) {
-        init {
-            require(width >= 0) { "Panel presentation width must not be negative: $width" }
+        internal fun requiredWidth(): Int = requireNotNull(preferredWidth) {
+            "A side, minimized, or configured fixed-width panel requires Presentation.fixedWidth"
+        }
+
+        public companion object {
+            /** Uses the space assigned to a main, proportional, or maximized panel. */
+            public fun allocated(content: ContentView): Presentation = Presentation(content, null)
+
+            /**
+             * Preferred outer width for a side, minimized, or configured fixed-width panel.
+             * Clipped to available space. Main, proportional, and maximized slots always use
+             * their allocated width, allowing a declaration to be reused across layout modes.
+             */
+            public fun fixedWidth(content: ContentView, width: Int): Presentation {
+                require(width > 0) { "Panel presentation width must be positive: $width" }
+                return Presentation(content, width)
+            }
         }
     }
 
@@ -45,10 +61,12 @@ public class Panel<K : PanelId, I>(
 
     /** The declared states, smallest first — what the owning set cycles. */
     public val states: List<PanelState> =
-        listOfNotNull(
-            minimized?.let { PanelState.MINIMIZED },
-            PanelState.NORMAL,
-            maximized?.let { PanelState.MAXIMIZED },
+        Collections.unmodifiableList(
+            listOfNotNull(
+                minimized?.let { PanelState.MINIMIZED },
+                PanelState.NORMAL,
+                maximized?.let { PanelState.MAXIMIZED },
+            ),
         )
 
     /** Steps [delta] through declared states, wrapping while preserving the restore state. */
@@ -68,10 +86,6 @@ public class Panel<K : PanelId, I>(
         viewportState.scrollBy(dx, dy)
     }
 
-    internal fun requestRecenter() {
-        viewportState.requestRecenter()
-    }
-
     internal fun presentation(inputs: I): Presentation = when (state) {
         PanelState.MINIMIZED -> minimized ?: error("Panel $id is in MINIMIZED state but declares no minimized presentation")
         PanelState.NORMAL -> normal
@@ -79,8 +93,6 @@ public class Panel<K : PanelId, I>(
     }.invoke(inputs)
 
     internal fun settledOffset() = viewportState.settled?.offset
-
-    internal fun settledOffsetObservation() = viewportState.settled
 
     internal fun claimAttachment() {
         require(!attached) { "Panel $id is already attached to a PanelSet" }
@@ -100,19 +112,24 @@ public class Panel<K : PanelId, I>(
         presentation: Presentation,
         focused: Boolean,
         recenter: Boolean = false,
-    ): tenter.view.ScrollState? {
-        if (recenter) viewportState.requestRecenter()
+    ): ViewportState {
+        val candidate = viewportState.fork()
+        if (recenter) candidate.requestRecenter()
         val role = if (focused) ChromeRole.PANEL_BORDER_FOCUSED else ChromeRole.PANEL_BORDER
         val scrollingPanel = scrollingPanel(
             title = title,
             badge = badge,
             content = presentation.content,
-            state = viewportState,
+            state = candidate,
             borderColor = role,
             titleColor = role,
         )
         scrollingPanel.draw(canvas)
-        return scrollingPanel.settled
+        return candidate
+    }
+
+    internal fun settle(candidate: ViewportState) {
+        viewportState.adopt(candidate)
     }
 
     public companion object {

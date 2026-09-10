@@ -11,8 +11,10 @@ disagree, the test is authoritative.
 
 Independent Tenter consumers do not need these BattleTech assets. `tenter.screen.DefaultRolePalette`
 is a ready-to-use ANSI-16 palette for toolkit chrome; terminal-defined ANSI colors determine its
-appearance. Consumers can call `RolePalette.withOverrides` to copy the chrome defaults, replace
-selected roles, and add their own domain roles. Palettes are stable for a renderer's lifetime;
+appearance. Consumers can call `RolePalette.withOverrides` to layer copied overrides over a stable
+base, replace selected roles, and add domain roles. Chaining preserves untouched domain roles and
+custom backgrounds; chrome and override colors validate eagerly, delegated domain colors on use.
+Palettes are stable for a renderer's lifetime;
 construct a new renderer/screen scope to change one. The TUI continues to select its existing JSON
 themes, whose values and snapshots are intentionally unchanged.
 

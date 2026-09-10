@@ -44,10 +44,23 @@ public class ViewportState(initialOffset: ScrollOffset = ScrollOffset.ZERO) {
     private var pendingRecenter: Boolean = false
     private var previousReveal: RevealRect? = null
     private var previousViewportHeight: Int? = null
+    private var previousViewportWidth: Int? = null
     private var settledSnapshot: ScrollState? = null
 
     /** The last completed drawable frame, or `null` before the first such frame. */
     public val settled: ScrollState? get() = settledSnapshot
+
+    /** Stages a managed frame without consuming the owner's queued intent. */
+    internal fun fork(): ViewportState = ViewportState().also { it.adopt(this) }
+
+    internal fun adopt(candidate: ViewportState) {
+        requestedOffset = candidate.requestedOffset
+        pendingRecenter = candidate.pendingRecenter
+        previousReveal = candidate.previousReveal
+        previousViewportHeight = candidate.previousViewportHeight
+        previousViewportWidth = candidate.previousViewportWidth
+        settledSnapshot = candidate.settledSnapshot
+    }
 
     /** Queues a relative scroll request for the next drawable frame. */
     public fun scrollBy(dx: Int, dy: Int) {
@@ -64,10 +77,10 @@ public class ViewportState(initialOffset: ScrollOffset = ScrollOffset.ZERO) {
 
     internal fun requestedOffset(): ScrollOffset = requestedOffset
 
-    internal fun shouldFollow(reveal: RevealRect?, viewportHeight: Int): Boolean = reveal != null && (
+    internal fun shouldFollow(reveal: RevealRect?, viewportWidth: Int, viewportHeight: Int): Boolean = reveal != null && (
         reveal != previousReveal ||
             previousViewportHeight == null ||
-            previousViewportHeight != viewportHeight
+            previousViewportHeight != viewportHeight || previousViewportWidth != viewportWidth
         )
 
     internal fun recenterRequested(): Boolean = pendingRecenter
@@ -76,6 +89,7 @@ public class ViewportState(initialOffset: ScrollOffset = ScrollOffset.ZERO) {
         requestedOffset = snapshot.offset
         previousReveal = snapshot.revealed
         previousViewportHeight = snapshot.viewportHeight
+        previousViewportWidth = snapshot.viewportWidth
         pendingRecenter = false
         settledSnapshot = snapshot
     }
@@ -110,7 +124,7 @@ public class Viewport(
         val maxOffsetX = (layout.width - canvas.width).coerceAtLeast(0)
         val maxOffsetY = (layout.height - canvas.height).coerceAtLeast(0)
         val reveal = stream.revealRect()
-        val follow = viewportState.shouldFollow(reveal, canvas.height)
+        val follow = viewportState.shouldFollow(reveal, canvas.width, canvas.height)
         val base = viewportState.requestedOffset()
         val recenter = viewportState.recenterRequested()
         val offsetX = resolveAxis(

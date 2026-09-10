@@ -24,7 +24,7 @@ public class Bordered(
     private val gutters: Insets = Insets.NONE,
     private val borderColor: ColorRole = ChromeRole.PANEL_BORDER,
     private val titleColor: ColorRole = ChromeRole.ACCENT,
-): ContentView {
+) : View {
 
     init {
         require(gutters.left >= 0 && gutters.top >= 0 && gutters.right >= 0 && gutters.bottom >= 0) {
@@ -32,19 +32,7 @@ public class Bordered(
         }
     }
 
-    override fun layout(availableWidth: Int): ContentLayout {
-        require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
-        val outer = BORDER + gutters
-        val innerWidth = (availableWidth - outer.left - outer.right).coerceAtLeast(0)
-        val child = requireNotNull(content as? ContentView) {
-            "Bordered intrinsic layout requires a ContentView child; use fixedContent for a raw view"
-        }.layout(innerWidth)
-        val width = checkedAdd(checkedAdd(child.width, outer.left, "bordered width"), outer.right, "bordered width")
-        val height = checkedAdd(checkedAdd(child.height, outer.top, "bordered height"), outer.bottom, "bordered height")
-        return ContentLayout.raw(width, height, PreparedBorder(child, outer))
-    }
-
-    override fun draw(canvas: Canvas) {
+    public override fun draw(canvas: Canvas) {
         drawBorder(canvas)
         content.draw(canvas.inset(BORDER + gutters))
     }
@@ -120,6 +108,28 @@ public class Bordered(
     }
 
     public companion object {
+        /** Composes an intrinsic border around prepared content; raw constructors paint allocated canvases. */
+        public fun prepared(
+            content: ContentView,
+            title: String = "",
+            badge: String? = null,
+            gutters: Insets = Insets.NONE,
+            borderColor: ColorRole = ChromeRole.PANEL_BORDER,
+            titleColor: ColorRole = ChromeRole.ACCENT,
+        ): ContentView = object : ContentView {
+            public override fun layout(availableWidth: Int): ContentLayout {
+                require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
+                val outer = BORDER + gutters
+                val innerWidth = (availableWidth.toLong() - outer.left - outer.right).coerceAtLeast(0).toInt()
+                val child = content.layout(innerWidth)
+                val width = Math.addExact(Math.addExact(child.width, outer.left), outer.right)
+                val height = Math.addExact(Math.addExact(child.height, outer.top), outer.bottom)
+                return ContentLayout.raw(
+                    width, height, Bordered(child, title, badge, gutters, borderColor, titleColor),
+                )
+            }
+        }
+
         /** One cell on each side, consumed by every [Bordered] box. */
         public val BORDER: Insets = Insets.all(1)
 
@@ -133,7 +143,7 @@ public class Bordered(
          * into the viewport, so it is visible at rest and the content reclaims its row the moment
          * the user scrolls.
          */
-        public val PADDING: Insets = Insets(left = 1, top = 1, right = 1)
+        internal val PADDING: Insets = Insets(left = 1, top = 1, right = 1)
 
         /**
          * A scrolling panel's viewport: border plus the horizontal gutters, at full inner height.
@@ -141,23 +151,6 @@ public class Bordered(
          * (e.g. mapping a screen click onto scrolled content) need to know this inset too — not
          * just an implementation detail of [scrollingPanel].
          */
-        public val VIEWPORT_INSET: Insets = BORDER + PADDING.horizontal()
+        internal val VIEWPORT_INSET: Insets = BORDER + PADDING.horizontal()
     }
-
-    private inner class PreparedBorder(
-        private val child: ContentLayout,
-        private val inset: Insets,
-    ) : View {
-        override fun draw(canvas: Canvas) {
-            drawBorder(canvas)
-            child.draw(canvas.inset(inset))
-        }
-    }
-
-    private fun checkedAdd(left: Int, right: Int, description: String): Int =
-        try {
-            Math.addExact(left, right)
-        } catch (_: ArithmeticException) {
-            error("$description overflowed")
-        }
 }

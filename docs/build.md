@@ -21,6 +21,8 @@ the current public binary surface with it, and `:tenter:updateKotlinAbi` regener
 intentional reviewed change. The dump is a compatibility aid, not a promise of semantic
 compatibility: additions to sealed hierarchies/enums, Kotlin named/default arguments, and behavior
 contracts still require review.
+Preserve the generator's trailing blank line: the ABI checker compares it exactly. The scoped
+`.gitattributes` whitespace rule allows that generated EOF without disabling other whitespace checks.
 
 ## Module dependency edges
 
@@ -28,10 +30,14 @@ contracts still require review.
 - `bt → strategic`, `bt → tactical`: both `implementation(project(...))` in `bt/build.gradle.kts`.
 - `tui → tactical`, `tui → network`, `tui → tenter`: all `implementation(project(...))` in `tui/build.gradle.kts`; `tui` additionally takes `testImplementation(testFixtures(project(":tenter")))` for shared rendering test helpers.
 - `tenter-example → tenter`: the example's only production module dependency. It uses no BattleTech
-  project artifact, repository resource, or test fixture. `./gradlew :tenter-example:run` is the
-  documented interactive launch from a real TTY; `:tenter-example:packagedSmoke` copies the
-  example's source into a disposable standalone Gradle build and compiles/runs it against only the
+  project artifact, repository resource, or test fixture. Build with `./gradlew :tenter-example:installDist`
+  and run `tenter-example/build/install/tenter-example/bin/tenter-example` from a real terminal.
+  Gradle's `run` task cannot supply a TTY and reports this launch procedure.
+  `:tenter-example:packagedSmoke` compiles the example's source in a disposable standalone Gradle build against only the
   packaged Tenter jar and its resolved runtime closure.
+  `:tenter-example:rejectRawComposition`, included in `check`, compiles deliberately invalid
+  external fixtures and requires specific type errors for raw `Stack` and `Columns` children.
+  Its build directory is separate from the positive packaged consumer.
 - `strategic`, `tactical`, and `tenter` declare no `project(...)` dependencies on other modules (`strategic/build.gradle.kts`, `tactical/build.gradle.kts`, `tenter/build.gradle.kts`). `tenter` depends only on `mordant` and `kotlinx-coroutines-core` (both `api`, since `Terminal`/`InputEvent`/`Flow` types appear in its own public surface) — no BattleTech module may appear on its classpath, enforced per the invariant in `CLAUDE.md`.
 
 ## TUI packaging

@@ -288,16 +288,33 @@ mode alongside the game's original `compute`/`PanelSet.mainAndSides` shape, not 
 it — `PanelSet.main` is nullable now, and `render` branches on whether it is null to pick which
 `PanelLayout` function to call.
 
+Uniform-only configuration belongs to `PanelSet.uniform`: `fixedWidthPanels` is copied and
+`reservedColumns` optionally reserves proportional slots for hidden panels. The toolkit subtracts
+visible minimized proportional panels from this reservation; the setup declares four slots and
+fixed HELP once, without per-frame column bookkeeping. With no reservation, visible proportional
+panels divide the available width. The common `render` operation has no mode-specific options.
+
+Prepared composition accepts `ContentView` children at construction. `Padded.prepared` and
+`Bordered.prepared` produce intrinsic content, while their raw constructors remain allocated-canvas
+`View` decorators. Immediate and recording text cursors preserve the same last-nonempty reveal
+semantics. Viewports re-engage following on a change to either destination dimension.
+
 `Panel` is a stateful module for one screen lifetime. Its private viewport, current state, and
 maximized restore state are mutated only through a `PanelSet`; `PanelSet` retains immutable
 settled-offset observations after rendering and exclusively attaches each panel instance at
-construction. A state's `Panel.Presentation` groups the prepared content with its width, so a
+construction. A state's `Panel.Presentation` groups prepared content with an explicit allocated
+or fixed-width preference (`allocated`/`fixedWidth` factories), so a
 per-frame builder runs once and the same result drives layout and painting. `PanelLayout.Slot`
 contains only the panel identity, on-canvas outer/content rectangles, and the settled viewport
 observation. `PanelSet.panelAt`/`hitTest` read that completed frame, so callers never reproduce
 border, padding, or scroll arithmetic; a border or spacer hit identifies the panel without
 inventing a content point. Small screens clip slots in declaration order, keep missing uniform
 columns reserved, and never publish negative or out-of-canvas geometry.
+Public panel metadata and layout lists are unmodifiable copies. The set publishes its next
+geometry and privately staged viewport state only after all panels paint successfully, preserving
+previous offsets, hit-testing/paging geometry, and queued scroll/recenter intent if a draw throws.
+Canvas writes and application callback side effects are not rolled back. Chrome padding constants
+are internal; consumers use frame observations, including in integration tests.
 
 `tenter.input.MouseInput.scrollDelta` recognizes only Mordant's explicit wheel flags and validates
 the caller's positive step. Ordinary left/right buttons are not toolkit scroll signals. The TUI's

@@ -12,7 +12,6 @@ import battletech.tactical.unit.ForeignUnit
 import battletech.tui.game.AppState
 import battletech.tui.game.mapToTuiPhase
 import battletech.tui.view.BoardView
-import battletech.tui.view.Workspace
 import battletech.tui.hex.HexLayout
 import battletech.tui.input.Keybindings
 import battletech.tui.loop.UiEvent
@@ -21,7 +20,6 @@ import battletech.tui.screen.resolveTheme
 import tenter.screen.ScreenRenderer
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
-import tenter.view.Bordered
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
@@ -187,12 +185,16 @@ internal class HotSeatCompositionTest {
                 // Select the mover's unit under the cursor -> enters Browsing.
                 internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
                 // Click the destination hex -> sets hoveredDestination.
+                val destinationPoint = boardScreenPoint(
+                    initialState,
+                    BoardView.MAP_ORIGIN_X + screenX,
+                    BoardView.MAP_ORIGIN_Y + screenY,
+                )
                 internalEvents.send(
                     UiEvent.Input(
                         MouseEvent(
-                            x = Bordered.VIEWPORT_INSET.left + BoardView.MAP_ORIGIN_X + screenX,
-                            y = Workspace.STATUS_BAR_HEIGHT + Bordered.VIEWPORT_INSET.top +
-                                Bordered.PADDING.vertical().top + BoardView.MAP_ORIGIN_Y + screenY,
+                            x = destinationPoint.x,
+                            y = destinationPoint.y,
                             left = true,
                         ),
                     ),

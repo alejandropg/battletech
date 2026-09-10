@@ -52,7 +52,7 @@ internal class BoardClickMappingTest {
             main = Panel<GamePanelId, Unit>(
                 id = GamePanelId.BOARD,
                 title = "TACTICAL MAP",
-                normal = { Panel.Presentation(fixedContent(mapWidth, mapHeight, BoardView(state)), width = 0) },
+                normal = { Panel.Presentation.allocated(fixedContent(mapWidth, mapHeight, BoardView(state))) },
             ),
             sides = emptyList<Panel<GamePanelId, Unit>>(),
         )

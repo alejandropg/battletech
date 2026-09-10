@@ -6,8 +6,51 @@ import tenter.screen.Canvas
 import tenter.screen.Cell
 import tenter.screen.ChromeRole
 import tenter.screen.styled
+import tenter.screen.RevealRect
 
 internal class TextCursorTest {
+
+    @Test
+    fun `immediate and prepared child insertion retain the last nonempty visible reveal`() {
+        val cases = listOf(
+            fixedContent(4, 1, View.None) to RevealRect(0, 0, 4, 1),
+            fixedContent(0, 0, View.None) to RevealRect(0, 0, 4, 1),
+            contentView { it.writeLine("child"); it.markRevealAt(0) } to RevealRect(0, 1, 4, 1),
+            fixedContent(4, 1, object : View {
+                override fun draw(canvas: Canvas) { canvas.markReveal(-2, 0, 3, 1) }
+            }) to RevealRect(0, 1, 1, 1),
+            fixedContent(4, 1, object : View {
+                override fun draw(canvas: Canvas) { canvas.markReveal(8, 0, 1, 1) }
+            }) to RevealRect(0, 0, 4, 1),
+        )
+        for ((child, expected) in cases) {
+            val instructions: (TextCursor) -> Unit = { cursor ->
+                cursor.writeLine("parent")
+                cursor.markRevealAt(0)
+                cursor.draw(child)
+            }
+            val immediate = Canvas.offscreen(4, 3)
+            val prepared = Canvas.offscreen(4, 3)
+
+            instructions(TextCursor(immediate))
+            contentView(instructions).draw(prepared)
+
+            assertEquals(expected, immediate.revealRect())
+            assertEquals(expected, prepared.revealRect())
+        }
+    }
+
+    @Test
+    fun `a child beyond the allocated canvas does not clear its existing reveal`() {
+        val canvas = Canvas.offscreen(4, 1)
+        val cursor = TextCursor(canvas)
+        cursor.writeLine("parent")
+        cursor.markRevealAt(0)
+
+        cursor.draw(contentView { it.writeLine("child"); it.markRevealAt(0) })
+
+        assertEquals(RevealRect(0, 0, 4, 1), canvas.revealRect())
+    }
 
     @Test
     fun `writeLine paints each span in its own style at the right column`() {

@@ -11,6 +11,20 @@ import tenter.view.TextCursor
 
 internal class GaugeTest {
 
+    @Test
+    fun `clamps out-of-range values before narrowing the scaled fill`() {
+        val widget = Gauge(2, 1)
+        val (cursor, buffer) = content()
+
+        widget.draw(cursor, 0, Int.MAX_VALUE)
+        widget.draw(cursor, 0, Int.MIN_VALUE)
+
+        assertEquals("█", buffer.get(1, 0).char)
+        assertEquals("█", buffer.get(2, 0).char)
+        assertEquals("░", buffer.get(1, 2).char)
+        assertEquals("░", buffer.get(2, 2).char)
+    }
+
     private fun content(width: Int = 28, height: Int = 5): Pair<TextCursor, ScreenBuffer> {
         val buffer = ScreenBuffer(width, height)
         return TextCursor(Canvas.of(buffer)) to buffer

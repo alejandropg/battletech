@@ -12,10 +12,180 @@ import tenter.screen.ScreenBuffer
 import tenter.view.ContentView
 import tenter.view.ScrollOffset
 import tenter.view.contentView
+import tenter.view.fixedContent
+import tenter.view.View
 
 private enum class SetPanelId : PanelId { MAIN, A, B }
 
 internal class PanelSetTest {
+
+    @Test
+    fun `failed later paint retains all offsets and queued scrolling and recenter until retry`() {
+        var fail = false
+        val a = Panel<SetPanelId, Unit>(SetPanelId.A, "A", normal = {
+            Panel.Presentation.allocated(contentView { cursor ->
+                repeat(100) { cursor.writeLine("row$it") }
+                cursor.markRevealAt(40)
+            })
+        })
+        val b = Panel<SetPanelId, Unit>(SetPanelId.B, "B", normal = {
+            Panel.Presentation.allocated(fixedContent(20, 100, object : View {
+                public override fun draw(canvas: Canvas) { check(!fail) }
+            }))
+        })
+        val set = PanelSet.uniform(listOf(a, b))
+        val visible = setOf(SetPanelId.A, SetPanelId.B)
+        render(set, visible)
+        set.scroll(SetPanelId.A, 0, -10)
+        render(set, visible)
+        val oldOffset = set.offsetOf(SetPanelId.A)
+        val oldHit = set.hitTest(2, 2)
+        set.requestRecenter(SetPanelId.A)
+        set.scroll(SetPanelId.B, 0, 5)
+        fail = true
+
+        assertThrows(IllegalStateException::class.java) { render(set, visible) }
+
+        assertEquals(oldOffset, set.offsetOf(SetPanelId.A))
+        assertEquals(ScrollOffset.ZERO, set.offsetOf(SetPanelId.B))
+        assertEquals(oldHit, set.hitTest(2, 2))
+        fail = false
+        render(set, visible)
+        val centered = set.offsetOf(SetPanelId.A)
+        assertTrue(centered != oldOffset)
+        assertEquals(5, set.offsetOf(SetPanelId.B)?.y)
+        set.scroll(SetPanelId.A, 0, -3)
+        render(set, visible)
+        assertEquals(checkNotNull(centered).y - 3, set.offsetOf(SetPanelId.A)?.y)
+        assertEquals(5, set.offsetOf(SetPanelId.B)?.y)
+    }
+
+    @Test
+    fun `allocated presentation cannot silently collapse a fixed side`() {
+        val side = Panel<SetPanelId, Unit>(SetPanelId.A, "A", normal = {
+            Panel.Presentation.allocated(stubView())
+        })
+        val set = PanelSet.mainAndSides(mainPanel(), listOf(side))
+
+        assertThrows(IllegalArgumentException::class.java) { render(set, setOf(SetPanelId.A)) }
+        assertNull(set.offsetOf(SetPanelId.MAIN))
+    }
+
+    @Test
+    fun `public collections cannot alter capabilities ownership or displayed hits`() {
+        val main = mainPanel()
+        val a = sidePanel(SetPanelId.A)
+        val set = PanelSet.mainAndSides(main, listOf(a, sidePanel(SetPanelId.B)))
+        val layout = render(set, setOf(SetPanelId.A, SetPanelId.B))
+        val hit = set.hitTest(42, 2)
+
+        assertThrows(UnsupportedOperationException::class.java) {
+            (main.states as MutableList).add(PanelState.MAXIMIZED)
+        }
+        assertThrows(UnsupportedOperationException::class.java) { (set.sides as MutableList).clear() }
+        assertThrows(UnsupportedOperationException::class.java) { (layout.sides as MutableList).clear() }
+
+        assertEquals(listOf(PanelState.NORMAL), main.states)
+        assertEquals(2, set.sides.size)
+        assertEquals(hit, set.hitTest(42, 2))
+        assertEquals(SetPanelId.A, hit?.id)
+        assertThrows(IllegalArgumentException::class.java) { PanelSet.uniform(listOf(a)) }
+    }
+
+    @Test
+    fun `failed first or later panel paints preserve completed hits and paging geometry`() {
+        for (failedId in listOf(SetPanelId.A, SetPanelId.B)) {
+            var fail = false
+            val panels = listOf(SetPanelId.A, SetPanelId.B).map { id ->
+                Panel<SetPanelId, Unit>(id, id.name, normal = {
+                    Panel.Presentation.allocated(fixedContent(30, 100, object : View {
+                        override fun draw(canvas: Canvas) {
+                            if (fail && id == failedId) error("paint failed")
+                            canvas.writeString(0, 0, "content")
+                        }
+                    }))
+                })
+            }
+            val set = PanelSet.uniform(panels)
+            val visible = setOf(SetPanelId.A, SetPanelId.B)
+            render(set, visible)
+            val oldHit = set.hitTest(2, 2)
+            set.scroll(SetPanelId.A, 0, 5)
+            fail = true
+
+            assertThrows(IllegalStateException::class.java) { render(set, visible, width = 40, height = 10) }
+
+            assertEquals(oldHit, set.hitTest(2, 2))
+            assertEquals(ScrollOffset.ZERO, set.offsetOf(SetPanelId.A))
+            set.pageFocused(1)
+            fail = false
+            render(set, visible)
+            assertEquals(27, set.offsetOf(SetPanelId.A)?.y)
+        }
+    }
+
+    @Test
+    fun `a failed initial paint publishes no geometry and can be retried`() {
+        var fail = true
+        val panel = Panel<SetPanelId, Unit>(SetPanelId.A, "A", normal = {
+            Panel.Presentation.allocated(fixedContent(10, 10, object : View {
+                override fun draw(canvas: Canvas) { check(!fail) }
+            }))
+        })
+        val set = PanelSet.uniform(listOf(panel))
+
+        assertThrows(IllegalStateException::class.java) { render(set, setOf(SetPanelId.A)) }
+        assertNull(set.panelAt(2, 2))
+        assertNull(set.hitTest(2, 2))
+        fail = false
+        render(set, setOf(SetPanelId.A))
+
+        assertEquals(SetPanelId.A, set.hitTest(2, 2)?.id)
+    }
+
+    @Test
+    fun `uniform defaults share only visible proportional slots`() {
+        val set = PanelSet.uniform(listOf(sidePanel(SetPanelId.A), sidePanel(SetPanelId.B)))
+
+        assertEquals(80, render(set, setOf(SetPanelId.A)).sides.single().width)
+        set.cycleFocusedState(-1)
+        val layout = render(set, setOf(SetPanelId.A, SetPanelId.B))
+
+        assertEquals(listOf(7, 73), layout.sides.map { it.width })
+    }
+
+    @Test
+    fun `uniform construction owns reserved columns and copied fixed configuration`() {
+        val fixed = mutableSetOf(SetPanelId.B)
+        val set = PanelSet.uniform(
+            listOf(sidePanel(SetPanelId.A), sidePanel(SetPanelId.B)),
+            reservedColumns = 3,
+            fixedWidthPanels = fixed,
+        )
+        fixed.clear()
+
+        val layout = render(set, setOf(SetPanelId.A, SetPanelId.B))
+        assertEquals(listOf(20, 20), layout.sides.map { it.width })
+        assertEquals(listOf(0, 60), layout.sides.map { it.x })
+        set.cycleFocusedState(-1)
+        val minimized = render(set, setOf(SetPanelId.A, SetPanelId.B))
+
+        assertEquals(listOf(7, 20), minimized.sides.map { it.width })
+        assertEquals(60, minimized.sides.last().x)
+    }
+
+    @Test
+    fun `invalid uniform options fail before claiming panels`() {
+        val panels = listOf(sidePanel(SetPanelId.A), sidePanel(SetPanelId.B))
+
+        assertThrows(IllegalArgumentException::class.java) { PanelSet.uniform(panels, reservedColumns = -1) }
+        assertThrows(IllegalArgumentException::class.java) { PanelSet.uniform(panels, reservedColumns = 1) }
+        assertThrows(IllegalArgumentException::class.java) {
+            PanelSet.uniform(panels, fixedWidthPanels = setOf(SetPanelId.MAIN))
+        }
+
+        assertEquals(panels, PanelSet.uniform(panels).sides)
+    }
 
     private fun stubView(lines: Int = 40): ContentView = contentView { cursor ->
         repeat(lines) { row -> cursor.writeLine("row$row") }
@@ -24,7 +194,7 @@ internal class PanelSetTest {
     private fun mainPanel() = Panel<SetPanelId, Unit>(
         id = SetPanelId.MAIN,
         title = "MAIN",
-        normal = { Panel.Presentation(stubView(), 0) },
+        normal = { Panel.Presentation.allocated(stubView()) },
     )
 
     private fun sidePanel(id: SetPanelId, builds: (() -> Unit)? = null) = Panel<SetPanelId, Unit>(
@@ -32,10 +202,10 @@ internal class PanelSetTest {
         title = id.name,
         normal = {
             builds?.invoke()
-            Panel.Presentation(stubView(), 20)
+            Panel.Presentation.fixedWidth(stubView(), 20)
         },
-        minimized = { Panel.Presentation(stubView(1), Panel.MINIMIZED_WIDTH) },
-        maximized = { Panel.Presentation(stubView(), 20) },
+        minimized = { Panel.Presentation.fixedWidth(stubView(1), Panel.MINIMIZED_WIDTH) },
+        maximized = { Panel.Presentation.allocated(stubView()) },
     )
 
     private fun render(

@@ -40,8 +40,6 @@ internal class ExampleApp(
             inputs = state,
             visible = VISIBLE,
             reservedTop = 0,
-            uniformColumnCount = 2,
-            fixedWidthPanels = setOf(ExamplePanelId.HELP),
         )
         return buffer
     }
@@ -109,19 +107,21 @@ internal class ExampleApp(
             id = ExamplePanelId.ROWS,
             title = "CATALOG",
             badge = "R",
-            normal = { input -> Panel.Presentation(ExampleListView(EXAMPLE_ROW_COUNT, input), width = 0) },
+            normal = { input -> Panel.Presentation.allocated(ExampleListView(EXAMPLE_ROW_COUNT, input)) },
         )
         val help = Panel<ExamplePanelId, ExampleState>(
             id = ExamplePanelId.HELP,
             title = "HELP",
             badge = "H",
-            normal = { input -> Panel.Presentation(helpContent(input), width = HELP_WIDTH) },
-            minimized = { input -> Panel.Presentation(helpContent(input), width = Panel.MINIMIZED_WIDTH) },
-            maximized = { input -> Panel.Presentation(helpContent(input), width = 0) },
+            normal = { input -> Panel.Presentation.fixedWidth(helpContent(input), width = HELP_WIDTH) },
+            minimized = { input -> Panel.Presentation.fixedWidth(helpContent(input), width = Panel.MINIMIZED_WIDTH) },
+            maximized = { input -> Panel.Presentation.allocated(helpContent(input)) },
         )
         return when (mode) {
             ExampleLayoutMode.MAIN_AND_SIDES -> PanelSet.mainAndSides(rows, listOf(help))
-            ExampleLayoutMode.UNIFORM -> PanelSet.uniform(listOf(rows, help))
+            ExampleLayoutMode.UNIFORM -> PanelSet.uniform(
+                listOf(rows, help), reservedColumns = 2, fixedWidthPanels = setOf(ExamplePanelId.HELP),
+            )
         }
     }
 

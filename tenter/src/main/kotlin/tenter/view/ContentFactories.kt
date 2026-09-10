@@ -31,7 +31,11 @@ public fun contentView(block: (TextCursor) -> Unit): ContentView = object : Cont
     }
 }
 
-/** Wraps a raw view whose complete content dimensions are known without measuring it. */
+/**
+ * Wraps a raw view whose complete dimensions are known without measuring it. Retains [view],
+ * without painting or copying it during layout; each subsequent paint invokes it once.
+ * The caller must capture stable frame data in the view if repeatable painting is required.
+ */
 public fun fixedContent(width: Int, height: Int, view: View): ContentView {
     require(width >= 0) { "content width must not be negative: $width" }
     require(height >= 0) { "content height must not be negative: $height" }

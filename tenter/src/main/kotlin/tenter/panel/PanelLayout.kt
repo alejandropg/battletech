@@ -1,5 +1,6 @@
 package tenter.panel
 
+import java.util.Collections
 import tenter.screen.Rect
 import tenter.view.Bordered
 import tenter.view.ScrollState
@@ -14,8 +15,10 @@ public class PanelLayout<K : PanelId> private constructor(
     /** The main panel's slot, or null for a uniform layout. */
     public val main: Slot<K>?,
     /** Uniform-layout slots in declaration order. */
-    public val sides: List<Slot<K>>,
+    sides: List<Slot<K>>,
 ) {
+    public val sides: List<Slot<K>> = Collections.unmodifiableList(ArrayList(sides))
+
     /** The whole region below the reserved top rows. */
     public val contentX: Int get() = content.x
     public val contentY: Int get() = content.y
@@ -128,7 +131,7 @@ public class PanelLayout<K : PanelId> private constructor(
             require(columnCount >= proportional.size || proportional.isEmpty()) {
                 "A uniform layout needs at least one column per proportional panel"
             }
-            val widths = panels.associate { it.id to checkedWidth(widthOf(it), it.id) }
+            val widths = fixed.associate { it.id to checkedWidth(widthOf(it), it.id) }
             val fixedWidth = fixed.sumOf { widths.getValue(it.id).toLong() }
             val proportionalWidth = (width.toLong() - fixedWidth)
                 .coerceAtLeast(0)

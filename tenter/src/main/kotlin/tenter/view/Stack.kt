@@ -1,15 +1,12 @@
 package tenter.view
 
-import tenter.screen.Canvas
-
 /**
  * Stacks prepared [ContentView] children without painting them to discover their sizes. The
  * intrinsic layout includes each child's logical height and gutters between children only.
- * [draw] remains available for raw views when the caller already owns an allocated destination;
- * intrinsic layout requires every child to be prepared.
+ * Wrap raw painting in [fixedContent] before inserting it into a stack.
  */
 public class Stack(
-    private val children: List<View>,
+    private val children: List<ContentView>,
     private val gutter: Int = 1,
 ) : ContentView {
 
@@ -17,12 +14,10 @@ public class Stack(
         require(gutter >= 0) { "gutter must not be negative: $gutter" }
     }
 
-    override fun layout(availableWidth: Int): ContentLayout {
+    public override fun layout(availableWidth: Int): ContentLayout {
         require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
         val prepared = children.map { child ->
-            requireNotNull(child as? ContentView) {
-                "Stack intrinsic layout requires ContentView children; use fixedContent for a raw view"
-            }.layout(availableWidth)
+            child.layout(availableWidth)
         }
         val width = prepared.maxOfOrNull { it.width } ?: 0
         val height = prepared.foldIndexed(0) { index, total, child ->

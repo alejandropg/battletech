@@ -60,7 +60,7 @@ internal class CriticalHitTable(private val unit: CombatUnit) : PreparedTextView
             if (includesSystemDamage) {
                 repeat(SYSTEM_DAMAGE_GAP) { content.newLine() }
                 val margin = SheetLayout.CRIT_COLUMN_WIDTH - SheetLayout.SYSTEM_DAMAGE_WIDTH
-                content.draw(Padded(Insets(right = margin), SystemDamageTable(unit)))
+                content.draw(Padded.prepared(Insets(right = margin), SystemDamageTable(unit)))
             }
         }
 

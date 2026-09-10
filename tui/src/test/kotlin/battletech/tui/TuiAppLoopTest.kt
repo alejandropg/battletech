@@ -18,7 +18,6 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.game.AppState
 import battletech.tui.game.phase.AttackPhase
 import battletech.tui.view.BoardView
-import battletech.tui.view.Workspace
 import battletech.tui.game.phase.MovementPhase
 import battletech.tui.animation.AnimationColor
 import battletech.tui.animation.AnimationLayout
@@ -38,7 +37,6 @@ import battletech.tui.view.LogView
 import battletech.tui.view.UnitStatusView
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
-import tenter.view.Bordered
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.Size
 import com.github.ajalt.mordant.terminal.Terminal
@@ -447,12 +445,12 @@ internal class TuiAppLoopTest {
         // Deliberately no clearOutput(): the diffing renderer rewrites only changed cells, and a
         // style run can split the flash text with escape sequences mid-string, so this matches on
         // the same "Not your" prefix the Enter-flash test above uses.
+        val enemyPoint = boardScreenPoint(buildAppState(), BoardView.MAP_ORIGIN_X, BoardView.MAP_ORIGIN_Y)
         internalEvents.send(
             UiEvent.Input(
                 MouseEvent(
-                    x = Bordered.VIEWPORT_INSET.left + BoardView.MAP_ORIGIN_X,
-                    y = Workspace.STATUS_BAR_HEIGHT + Bordered.VIEWPORT_INSET.top +
-                        Bordered.PADDING.vertical().top + BoardView.MAP_ORIGIN_Y,
+                    x = enemyPoint.x,
+                    y = enemyPoint.y,
                     left = true,
                 ),
             ),
@@ -833,20 +831,15 @@ internal class TuiAppLoopTest {
                 "panning right should scroll the marker unit out of view",
             )
 
-            // An unrelated event re-renders. If auto-follow ran unconditionally it would drag the
-            // board back to the cursor and redraw the unit — the diffing renderer emits exactly
+            // An unbound key re-renders without resizing the viewport. Unconditional auto-follow
+            // would drag the board back and redraw the unit — the diffing renderer emits exactly
             // the cells that changed, so its reappearance would show up here.
             recorder.clearOutput()
-            internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
+            internalEvents.send(UiEvent.Input(KeyboardEvent("F12")))
             assertFalse(
                 recorder.output().contains("QQ"),
                 "an unrelated re-render must not snap the board back to the cursor",
             )
-
-            // ? opened AND focused HELP — while it's focused, arrow keys scroll HELP rather
-            // than reaching the phase (see RunLoop's dispatch order). Close it again so focus
-            // returns to the board and ArrowDown reaches the phase's cursor movement below.
-            internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
 
             // Moving the cursor is a reveal-target change, so follow re-engages and brings it back.
             recorder.clearOutput()

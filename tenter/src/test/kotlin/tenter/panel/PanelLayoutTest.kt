@@ -18,15 +18,15 @@ internal class PanelLayoutTest {
     ): Panel<LayoutPanelId, Unit> = Panel(
         id = id,
         title = id.name,
-        normal = { Panel.Presentation(contentView { }, width) },
-        minimized = { Panel.Presentation(contentView { }, minimizedWidth) },
-        maximized = { Panel.Presentation(contentView { }, width) },
+        normal = { Panel.Presentation.fixedWidth(contentView { }, width) },
+        minimized = { Panel.Presentation.fixedWidth(contentView { }, minimizedWidth) },
+        maximized = { Panel.Presentation.allocated(contentView { }) },
     )
 
     private fun main() = Panel<LayoutPanelId, Unit>(
         id = LayoutPanelId.MAIN,
         title = "MAIN",
-        normal = { Panel.Presentation(contentView { }, 0) },
+        normal = { Panel.Presentation.allocated(contentView { }) },
     )
 
     private fun widthOf(widths: Map<LayoutPanelId, Int>): (Panel<LayoutPanelId, Unit>) -> Int =

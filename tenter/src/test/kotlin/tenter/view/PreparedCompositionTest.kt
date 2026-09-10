@@ -12,6 +12,24 @@ import tenter.screen.ScreenBuffer
 internal class PreparedCompositionTest {
 
     @Test
+    fun `width-only resize follows a fixed reveal and unchanged dimensions retain manual scroll`() {
+        val state = ViewportState()
+        val viewport = Viewport(fixedContent(30, 1, object : View {
+            override fun draw(canvas: Canvas) { canvas.markReveal(15, 0, 1, 1) }
+        }), state)
+        viewport.draw(Canvas.offscreen(20, 2))
+
+        viewport.draw(Canvas.offscreen(10, 2))
+        assertEquals(6, state.settled?.offset?.x)
+        state.scrollBy(-100, 0)
+        viewport.draw(Canvas.offscreen(10, 2))
+        assertEquals(0, state.settled?.offset?.x)
+        viewport.draw(Canvas.offscreen(12, 2))
+
+        assertEquals(4, state.settled?.offset?.x)
+    }
+
+    @Test
     fun `stack uses logical child heights and no trailing gutter`() {
         val stack = Stack(
             listOf(
@@ -50,8 +68,8 @@ internal class PreparedCompositionTest {
 
     @Test
     fun `prepared padding and border contribute blank and chrome extents`() {
-        val content = Bordered(
-            Padded(
+        val content = Bordered.prepared(
+            Padded.prepared(
                 insets = tenter.screen.Insets(left = 1, top = 2, right = 1, bottom = 1),
                 content = contentView { it.writeLine("X") },
             ),
@@ -239,7 +257,7 @@ internal class PreparedCompositionTest {
             }
         }
         val state = ViewportState()
-        val viewport = Viewport(Padded(tenter.screen.Insets(top = 1), content), state)
+        val viewport = Viewport(Padded.prepared(tenter.screen.Insets(top = 1), content), state)
 
         viewport.draw(Canvas.offscreen(10, 5))
 

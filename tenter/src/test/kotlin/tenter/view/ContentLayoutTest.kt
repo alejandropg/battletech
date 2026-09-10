@@ -13,6 +13,28 @@ import tenter.screen.ScreenBuffer
 internal class ContentLayoutTest {
 
     @Test
+    fun `raw layouts retain the view while captured frame data stays repeatable`() {
+        var label = "before"
+        val captured = label
+        val snapshot = fixedContent(8, 1, object : View {
+            public override fun draw(canvas: Canvas) { canvas.writeString(0, 0, captured) }
+        }).layout(8)
+        val live = fixedContent(8, 1, object : View {
+            public override fun draw(canvas: Canvas) { canvas.writeString(0, 0, label) }
+        }).layout(8)
+        label = "after"
+
+        repeat(2) {
+            val buffer = ScreenBuffer(8, 1)
+            snapshot.draw(Canvas.of(buffer))
+            assertEquals("before", buffer.line(0))
+            val liveBuffer = ScreenBuffer(8, 1)
+            live.draw(Canvas.of(liveBuffer))
+            assertEquals("after", liveBuffer.line(0))
+        }
+    }
+
+    @Test
     fun `flowing content counts trailing blank rows and blank-only content`() {
         val content = contentView { cursor ->
             cursor.writeLine("line")

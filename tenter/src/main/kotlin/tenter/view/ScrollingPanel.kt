@@ -45,7 +45,7 @@ public fun scrollingPanel(
     borderColor: ColorRole = ChromeRole.PANEL_BORDER,
     titleColor: ColorRole = ChromeRole.ACCENT,
 ): ScrollingPanel {
-    val paddedContent = Padded(Bordered.PADDING.vertical(), content)
+    val paddedContent = Padded.prepared(Bordered.PADDING.vertical(), content)
     val viewport = Viewport(paddedContent, state)
     val bordered = Bordered(
         content = viewport,

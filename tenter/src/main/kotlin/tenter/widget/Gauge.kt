@@ -24,7 +24,7 @@ public class Gauge(
         // The bar is proportionally scaled: a fixed barWidth-cell bar spans the whole 0–maxValue
         // range (each block ≈ maxValue/barWidth units). The max sits inline after "]".
         val filled = if (maxValue <= 0) 0 else {
-            (value.toLong() * barWidth / maxValue).toInt().coerceIn(0, barWidth)
+            (value.toLong() * barWidth / maxValue).coerceIn(0L, barWidth.toLong()).toInt()
         }
         val bar = "█".repeat(filled) + "░".repeat(barWidth - filled)
         val color = colorFor(value)

@@ -23,32 +23,32 @@ internal object SetupPanels {
                 id = SetupPanelId.MODE,
                 title = "MODE",
                 badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.MODE)).toString(),
-                normal = { Panel.Presentation(it.modeView, width = 0) },
-                minimized = { Panel.Presentation(it.minimizedModeView, it.minimizedModeWidth) },
+                normal = { Panel.Presentation.allocated(it.modeView) },
+                minimized = { Panel.Presentation.fixedWidth(it.minimizedModeView, it.minimizedModeWidth) },
             ),
             SetupPanel(
                 id = SetupPanelId.MAP,
                 title = "MAP",
                 badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.MAP)).toString(),
-                normal = { Panel.Presentation(it.mapView, width = 0) },
-                maximized = { Panel.Presentation(it.maximizedMapView, width = 0) },
-                minimized = { Panel.Presentation(it.mapView, it.minimizedMapWidth) },
+                normal = { Panel.Presentation.allocated(it.mapView) },
+                maximized = { Panel.Presentation.allocated(it.maximizedMapView) },
+                minimized = { Panel.Presentation.fixedWidth(it.mapView, it.minimizedMapWidth) },
             ),
             SetupPanel(
                 id = SetupPanelId.PLAYER_1,
                 title = "PLAYER 1",
                 badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.PLAYER_1)).toString(),
-                normal = { Panel.Presentation(it.player1View, width = 0) },
-                maximized = { Panel.Presentation(it.maximizedPlayer1View, width = 0) },
-                minimized = { Panel.Presentation(it.minimizedPlayer1View, it.minimizedPlayerWidth(PlayerId.PLAYER_1)) },
+                normal = { Panel.Presentation.allocated(it.player1View) },
+                maximized = { Panel.Presentation.allocated(it.maximizedPlayer1View) },
+                minimized = { Panel.Presentation.fixedWidth(it.minimizedPlayer1View, it.minimizedPlayerWidth(PlayerId.PLAYER_1)) },
             ),
             SetupPanel(
                 id = SetupPanelId.PLAYER_2,
                 title = "PLAYER 2",
                 badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.PLAYER_2)).toString(),
-                normal = { Panel.Presentation(it.player2View, width = 0) },
-                maximized = { Panel.Presentation(it.maximizedPlayer2View, width = 0) },
-                minimized = { Panel.Presentation(it.minimizedPlayer2View, it.minimizedPlayerWidth(PlayerId.PLAYER_2)) },
+                normal = { Panel.Presentation.allocated(it.player2View) },
+                maximized = { Panel.Presentation.allocated(it.maximizedPlayer2View) },
+                minimized = { Panel.Presentation.fixedWidth(it.minimizedPlayer2View, it.minimizedPlayerWidth(PlayerId.PLAYER_2)) },
             ),
             helpPanel(
                 id = SetupPanelId.HELP,
@@ -56,6 +56,6 @@ internal object SetupPanels {
                 sections = { it.helpSections },
             ),
         )
-        return PanelSet.uniform(panels)
+        return PanelSet.uniform(panels, reservedColumns = 4, fixedWidthPanels = setOf(SetupPanelId.HELP))
     }
 }
