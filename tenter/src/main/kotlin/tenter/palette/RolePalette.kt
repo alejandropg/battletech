@@ -30,16 +30,3 @@ public interface RolePalette {
     public fun background(role: ColorRole): PaletteColor =
         if (role == ChromeRole.DEFAULT) defaultBackground else foreground(role)
 }
-
-/**
- * Layers a copied override map over this stable palette, preserving all untouched foregrounds,
- * backgrounds, and application roles, including previous overrides. An override replaces both
- * colors of its role, except DEFAULT's background which uses [defaultBackground].
- * Chrome colors and overrides are validated eagerly; delegated application colors are validated
- * when resolved. The base palette must remain stable for the renderer's lifetime.
- */
-public fun RolePalette.withOverrides(
-    name: String = "overrides",
-    overrides: Map<ColorRole, PaletteColor> = emptyMap(),
-    defaultBackground: PaletteColor = this.defaultBackground,
-): RolePalette = OverrideRolePalette(name, this, overrides, defaultBackground)

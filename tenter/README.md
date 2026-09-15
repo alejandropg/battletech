@@ -140,11 +140,9 @@ operation; dimensions and glyph inputs with invalid or negative values fail earl
 `NERD_FONT` is opt-in. `SelectableRow`, `Checkbox`, and `Gauge` accept their styling/glyph choices;
 Tenter does not require Nerd Fonts.
 
-`DefaultRolePalette` works without a domain theme file. `RolePalette.withOverrides` and
-`MapRolePalette` support validated custom palettes. Every toolkit `ChromeRole` must be supplied by
-a map palette. Overrides compose: untouched domain roles and custom foreground/background
-resolution delegate to the previous stable palette; override maps are copied. Every toolkit role
-and override is validated eagerly, and delegated domain colors when resolved. Palette colors
+`DefaultRolePalette` works without a domain theme file. `MapRolePalette` supports validated custom
+palettes. Every toolkit `ChromeRole` must be supplied by a map palette. Every toolkit role
+is validated eagerly. Palette colors
 must match the palette's declared `AnsiLevel`, which is an authoring tier: `AnsiLevel.NONE` is not
 one and `MapRolePalette` rejects it. Fixed colors are
 resolved by the renderer in both foreground and background channels. When the *terminal* reports

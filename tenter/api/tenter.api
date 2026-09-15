@@ -341,11 +341,6 @@ public final class tenter/palette/RolePalette$DefaultImpls {
 	public static fun background (Ltenter/palette/RolePalette;Ltenter/palette/ColorRole;)Ltenter/palette/PaletteColor;
 }
 
-public final class tenter/palette/RolePaletteKt {
-	public static final fun withOverrides (Ltenter/palette/RolePalette;Ljava/lang/String;Ljava/util/Map;Ltenter/palette/PaletteColor;)Ltenter/palette/RolePalette;
-	public static synthetic fun withOverrides$default (Ltenter/palette/RolePalette;Ljava/lang/String;Ljava/util/Map;Ltenter/palette/PaletteColor;ILjava/lang/Object;)Ltenter/palette/RolePalette;
-}
-
 public final class tenter/panel/Panel {
 	public static final field Companion Ltenter/panel/Panel$Companion;
 	public static final field MINIMIZED_WIDTH I
