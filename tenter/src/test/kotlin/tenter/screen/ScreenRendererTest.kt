@@ -1,12 +1,18 @@
 package tenter.screen
 
+import tenter.palette.ChromeRole
+import tenter.palette.ColorRole
+import tenter.palette.FixedColorRole
+import tenter.palette.PaletteColor
+import tenter.palette.RolePalette
+
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.terminal.Terminal
 import com.github.ajalt.mordant.terminal.TerminalRecorder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.screen.PaletteColor.TrueColor
+import tenter.palette.PaletteColor.TrueColor
 
 /**
  * A minimal, fully-authored [RolePalette] for exercising [ScreenRenderer]'s own mechanics —

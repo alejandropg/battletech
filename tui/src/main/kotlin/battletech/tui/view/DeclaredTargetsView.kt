@@ -4,7 +4,7 @@ import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.game.phase.DeclaredWeaponEntry
 import battletech.tui.icon.targetIcon
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.view.TextCursor
 import tenter.widget.ValueRow
 

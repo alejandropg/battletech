@@ -1,7 +1,7 @@
 package tenter.view
 
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.text.textClusters
 
 internal fun verticalTextContent(title: String, style: Cell.Style = Cell.Style(ChromeRole.TEXT_PRIMARY)): ContentView =

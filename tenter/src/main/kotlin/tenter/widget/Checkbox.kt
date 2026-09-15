@@ -1,8 +1,8 @@
 package tenter.widget
 
 import tenter.screen.Cell
-import tenter.screen.ColorRole
-import tenter.screen.ChromeRole
+import tenter.palette.ColorRole
+import tenter.palette.ChromeRole
 import tenter.text.CellWidth
 import tenter.view.TextCursor
 

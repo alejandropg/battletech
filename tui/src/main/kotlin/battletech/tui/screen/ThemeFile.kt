@@ -3,9 +3,9 @@ package battletech.tui.screen
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import tenter.screen.ChromeRole
-import tenter.screen.ColorRole
-import tenter.screen.PaletteColor
+import tenter.palette.ChromeRole
+import tenter.palette.ColorRole
+import tenter.palette.PaletteColor
 
 /**
  * On-disk shape of a theme file: one color space plus a value for every [ChromeRole] and

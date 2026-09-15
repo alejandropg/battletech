@@ -9,7 +9,7 @@ themselves. `battletech.tui.screen.TuiPaletteTest` enforces every contrast/disti
 guarantee described below against the actual packaged files — if this doc and that test ever
 disagree, the test is authoritative.
 
-Independent Tenter consumers do not need these BattleTech assets. `tenter.screen.DefaultRolePalette`
+Independent Tenter consumers do not need these BattleTech assets. `tenter.palette.DefaultRolePalette`
 is a ready-to-use ANSI-16 palette for toolkit chrome; terminal-defined ANSI colors determine its
 appearance. Consumers can call `RolePalette.withOverrides` to layer copied overrides over a stable
 base, replace selected roles, and add domain roles. Chaining preserves untouched domain roles and
@@ -21,7 +21,7 @@ themes, whose values and snapshots are intentionally unchanged.
 ## File format
 
 One file per theme, one color space per file — there is no conversion between tiers (see
-`tenter.screen.PaletteColor`'s KDoc). `colorSpace` selects both the value syntax and the
+`tenter.palette.PaletteColor`'s KDoc). `colorSpace` selects both the value syntax and the
 `AnsiLevel` tier the theme targets:
 
 | `colorSpace` | Value syntax                         | `PaletteColor` subtype |
@@ -40,12 +40,12 @@ One file per theme, one color space per file — there is no conversion between 
 }
 ```
 
-`chrome` must hold exactly the 13 `tenter.screen.ChromeRole` names; `board` must hold exactly the
+`chrome` must hold exactly the 13 `tenter.palette.ChromeRole` names; `board` must hold exactly the
 27 `battletech.tui.screen.BoardRole` names; and `heatScale` must hold exactly the three
 `battletech.tui.screen.HeatScaleRole` names. A missing or unrecognized role name fails to load with
 a `ThemeLoadException` naming the offending role and table — this is the load-time replacement for
 the compile-time exhaustiveness check a hand-written `RolePalette` object used to get for free (see
-`tenter.screen.RolePalette`'s KDoc). Custom themes written before the `heatScale` table was added
+`tenter.palette.RolePalette`'s KDoc). Custom themes written before the `heatScale` table was added
 must add all three roles; there is deliberately no unverified fallback color.
 
 Resolution is not theme-specific: `battletech.tui.screen.ThemeLoader` is a thin adapter over

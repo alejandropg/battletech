@@ -3,7 +3,7 @@ package battletech.tui.screen
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 
 /** Mirrors `battletech.tactical.model.map.MapFileTest` for [ThemeFile.toTheme]'s validation. */
 internal class ThemeFileTest {
@@ -25,7 +25,7 @@ internal class ThemeFileTest {
         val theme = file.toTheme("test")
 
         assertThat(theme.toString()).isEqualTo("test")
-        assertThat(theme.foreground(ChromeRole.DANGER)).isEqualTo(tenter.screen.PaletteColor.TrueColor(0, 0, 0))
+        assertThat(theme.foreground(ChromeRole.DANGER)).isEqualTo(tenter.palette.PaletteColor.TrueColor(0, 0, 0))
     }
 
     @Test

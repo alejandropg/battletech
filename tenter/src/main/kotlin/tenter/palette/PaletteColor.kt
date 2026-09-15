@@ -1,11 +1,11 @@
-package tenter.screen
+package tenter.palette
 
 import com.github.ajalt.mordant.rendering.AnsiLevel
 
 /**
  * A color in whatever space its palette was authored in. Never converted between spaces — a
  * palette picks one [PaletteColor] subtype for every role it defines, matching the terminal
- * capability that palette targets, and [StyleTagCache] renders each subtype with the matching
+ * capability that palette targets, and [tenter.screen.StyleTagCache] renders each subtype with the matching
  * ANSI encoding directly. There is no nearest-color downsampling anywhere in this package.
  */
 public sealed interface PaletteColor {

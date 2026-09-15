@@ -1,12 +1,12 @@
 package battletech.tui.animation
 
-import tenter.screen.FixedColorRole
-import tenter.screen.PaletteColor
+import tenter.palette.FixedColorRole
+import tenter.palette.PaletteColor
 
 /**
  * A [FixedColorRole] wrapping one ANSI-16 code — the weapon-fire animations' entire color
  * vocabulary. These are hardcoded, not themed: every animation must render with the same palette
- * regardless of which [tenter.screen.RolePalette] the host app loaded. The Tenter renderer
+ * regardless of which [tenter.palette.RolePalette] the host app loaded. The Tenter renderer
  * resolves a [FixedColorRole] straight to [color] without ever consulting the loaded theme.
  *
  * Values use fixed ANSI-16 escapes — for example, `"\033[31;1m"` (bright red) maps to
@@ -49,7 +49,7 @@ internal val ANIMATION_BACKGROUND: AnimationColor = AnimationColor(PaletteColor.
 /**
  * The floating panel's border color — `battletech.tui.view.Workspace` passes this as
  * [tenter.view.Bordered]'s `borderColor` so the frame itself is hardcoded too, not
- * [tenter.screen.ChromeRole.PANEL_BORDER]. Reuses [ANIMATION_GRAY]'s value rather than a fourth
+ * [tenter.palette.ChromeRole.PANEL_BORDER]. Reuses [ANIMATION_GRAY]'s value rather than a fourth
  * dim gray constant.
  */
 internal val ANIMATION_BORDER: AnimationColor = ANIMATION_GRAY

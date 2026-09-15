@@ -1,6 +1,6 @@
 package battletech.tui.screen
 
-import tenter.screen.ColorRole
+import tenter.palette.ColorRole
 
 /** Background colors for the current heat rung and the projected heating/cooling interval. */
 internal enum class HeatScaleRole : ColorRole {

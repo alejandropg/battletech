@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.screen.ScreenBuffer
 import tenter.view.TextCursor
 

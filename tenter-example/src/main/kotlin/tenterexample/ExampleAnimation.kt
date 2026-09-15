@@ -6,7 +6,7 @@ import tenter.animation.AnimationPlayback
 import tenter.animation.AnimationSize
 import tenter.animation.GlyphGrid
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.view.View
 
 internal class ExampleAnimation : Animation {

@@ -1,7 +1,7 @@
 package tenterexample
 
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.view.Columns
 import tenter.view.ContentLayout
 import tenter.view.ContentView

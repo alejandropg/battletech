@@ -14,7 +14,7 @@ import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.screen.RevealRect
 import tenter.screen.ScreenBuffer
 import tenter.view.Viewport

@@ -8,17 +8,16 @@ import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
 import battletech.tui.input.Keybindings
-import tenter.input.KeyGlyph
 import tenter.animation.AnimationPlayback
+import tenter.input.KeyGlyph
+import tenter.palette.ChromeRole
+import tenter.panel.PanelHit
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
 import tenter.screen.ScreenBuffer
-import tenter.panel.PanelHit
 import tenter.text.CellWidth
 import tenter.view.Bordered
 import tenter.view.FlashMessage
-import tenter.view.ScrollOffset
 import tenter.view.View
 
 private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
@@ -161,11 +160,11 @@ private fun renderGameOverBanner(board: Canvas, outcome: MatchOutcome) {
 
 /**
  * Renders one bordered overlay box at [animation]'s own placement, playing its current frame — a
- * plain border ([ANIMATION_BORDER], not the themed [tenter.screen.ChromeRole.PANEL_BORDER]
+ * plain border ([ANIMATION_BORDER], not the themed [ChromeRole.PANEL_BORDER]
  * [Bordered] would otherwise default to) with no title, badge, or hint text anywhere in it (unlike
  * [renderGameOverBanner]), so the animation itself is the only thing drawn inside. The border's
  * BACKGROUND is the one cell in this whole panel still themed — [Bordered] always paints its frame
- * with [tenter.screen.ChromeRole.DEFAULT] and takes no background override; making even that
+ * with [ChromeRole.DEFAULT] and takes no background override; making even that
  * hardcoded would mean not using [Bordered] at all, which isn't worth it for one ring of cells.
  *
  * No-ops if this animation's bordered size doesn't fit [screen] —

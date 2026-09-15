@@ -6,6 +6,10 @@ import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.TextStyle
 import com.github.ajalt.colormath.Color as ColorValue
 import com.github.ajalt.colormath.model.Ansi16 as ColormathAnsi16
+import tenter.palette.ColorRole
+import tenter.palette.FixedColorRole
+import tenter.palette.PaletteColor
+import tenter.palette.RolePalette
 
 /**
  * Renders [Cell.Style]s to cached open/close ANSI escape strings.

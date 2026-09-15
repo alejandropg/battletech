@@ -16,7 +16,7 @@ import battletech.tui.game.phase.WeaponAllocation
 import battletech.tui.mediumLaser
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.view.line
 import tenter.view.render
 import tenter.view.text

@@ -16,7 +16,7 @@ import battletech.tui.icon.terrainIcon
 import battletech.tui.screen.BoardRole
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 
 public object HexRenderer {
 

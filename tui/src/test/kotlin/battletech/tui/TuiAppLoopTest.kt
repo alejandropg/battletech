@@ -57,7 +57,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.Cell
-import tenter.screen.PaletteColor
+import tenter.palette.PaletteColor
 import tenter.screen.ScreenRenderer
 import tenter.view.HelpView
 import tenter.screen.Canvas

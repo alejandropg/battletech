@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.takeWhile
 import tenter.panel.PanelState
 import tenter.screen.Canvas
-import tenter.screen.DefaultRolePalette
+import tenter.palette.DefaultRolePalette
 import tenter.screen.ScreenBuffer
 import tenter.screen.ScreenRenderer
 import tenter.screen.Insets

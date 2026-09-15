@@ -1,13 +1,10 @@
 package tenter.panel
 
+import tenter.palette.ChromeRole
 import tenter.screen.Canvas
-import tenter.screen.ChromeRole
 import tenter.view.ContentView
 import tenter.view.ViewportState
 import tenter.view.scrollingPanel
-
-/** Stable identity for a [Panel] — a bare marker interface for the [Panel]'s [K] type parameter. */
-public interface PanelId
 
 /**
  * One stateful panel declaration. A panel owns its current state, restore state, attachment, and

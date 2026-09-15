@@ -1,8 +1,8 @@
 package tenter.view
 
 import tenter.screen.Canvas
-import tenter.screen.ChromeRole
-import tenter.screen.ColorRole
+import tenter.palette.ChromeRole
+import tenter.palette.ColorRole
 
 /**
  * A bordered, scrolling panel — [Bordered] for the box and [Viewport] for the scroll math, wired

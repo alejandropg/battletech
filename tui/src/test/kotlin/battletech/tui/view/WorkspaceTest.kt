@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.screen.Point
 import tenter.screen.ScreenBuffer
 import tenter.animation.AnimationPlayback

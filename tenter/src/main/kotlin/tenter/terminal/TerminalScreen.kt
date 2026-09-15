@@ -1,7 +1,7 @@
 package tenter.terminal
 
 import com.github.ajalt.mordant.terminal.Terminal
-import tenter.screen.RolePalette
+import tenter.palette.RolePalette
 import tenter.screen.ScreenRenderer
 
 // Mordant exposes cursor control but not the alternate screen buffer. These are raw escapes,

@@ -2,8 +2,8 @@ package tenter.view
 
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
-import tenter.screen.ColorRole
+import tenter.palette.ChromeRole
+import tenter.palette.ColorRole
 import tenter.screen.Insets
 import tenter.text.CellWidth
 

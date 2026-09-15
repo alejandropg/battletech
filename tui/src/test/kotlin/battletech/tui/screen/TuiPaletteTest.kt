@@ -7,9 +7,9 @@ import com.github.ajalt.mordant.rendering.AnsiLevel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
-import tenter.screen.ChromeRole
-import tenter.screen.ColorRole
-import tenter.screen.PaletteColor
+import tenter.palette.ChromeRole
+import tenter.palette.ColorRole
+import tenter.palette.PaletteColor
 
 /**
  * Verifies each built-in [Theme] (loaded from the packaged `theme` resources via [ThemeLoader],

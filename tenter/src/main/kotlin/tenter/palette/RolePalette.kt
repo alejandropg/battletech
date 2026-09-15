@@ -1,4 +1,4 @@
-package tenter.screen
+package tenter.palette
 
 /**
  * Resolves every [ColorRole] a host application uses — [ChromeRole] plus whatever domain-specific

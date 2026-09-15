@@ -244,6 +244,108 @@ public final class tenter/input/ScrollAction$Pages : tenter/input/ScrollAction {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class tenter/palette/ChromeRole : java/lang/Enum, tenter/palette/ColorRole {
+	public static final field ACCENT Ltenter/palette/ChromeRole;
+	public static final field DANGER Ltenter/palette/ChromeRole;
+	public static final field DEFAULT Ltenter/palette/ChromeRole;
+	public static final field DISABLED Ltenter/palette/ChromeRole;
+	public static final field DRAFT Ltenter/palette/ChromeRole;
+	public static final field INFO Ltenter/palette/ChromeRole;
+	public static final field PANEL_BORDER Ltenter/palette/ChromeRole;
+	public static final field PANEL_BORDER_FOCUSED Ltenter/palette/ChromeRole;
+	public static final field SUCCESS Ltenter/palette/ChromeRole;
+	public static final field TEXT_MUTED Ltenter/palette/ChromeRole;
+	public static final field TEXT_PRIMARY Ltenter/palette/ChromeRole;
+	public static final field TEXT_SUBTLE Ltenter/palette/ChromeRole;
+	public static final field WARNING Ltenter/palette/ChromeRole;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Ltenter/palette/ChromeRole;
+	public static fun values ()[Ltenter/palette/ChromeRole;
+}
+
+public abstract interface class tenter/palette/ColorRole {
+}
+
+public final class tenter/palette/DefaultRolePalette : tenter/palette/RolePalette {
+	public static final field INSTANCE Ltenter/palette/DefaultRolePalette;
+	public fun background (Ltenter/palette/ColorRole;)Ltenter/palette/PaletteColor;
+	public fun foreground (Ltenter/palette/ColorRole;)Ltenter/palette/PaletteColor;
+	public fun getDefaultBackground ()Ltenter/palette/PaletteColor;
+}
+
+public abstract interface class tenter/palette/FixedColorRole : tenter/palette/ColorRole {
+	public abstract fun getColor ()Ltenter/palette/PaletteColor;
+}
+
+public final class tenter/palette/MapRolePalette : tenter/palette/RolePalette {
+	public fun <init> (Ljava/lang/String;Lcom/github/ajalt/mordant/rendering/AnsiLevel;Ltenter/palette/PaletteColor;Ljava/util/Map;)V
+	public fun background (Ltenter/palette/ColorRole;)Ltenter/palette/PaletteColor;
+	public fun foreground (Ltenter/palette/ColorRole;)Ltenter/palette/PaletteColor;
+	public fun getDefaultBackground ()Ltenter/palette/PaletteColor;
+	public final fun getLevel ()Lcom/github/ajalt/mordant/rendering/AnsiLevel;
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class tenter/palette/PaletteColor {
+	public static final field Companion Ltenter/palette/PaletteColor$Companion;
+}
+
+public final class tenter/palette/PaletteColor$Ansi16 : tenter/palette/PaletteColor {
+	public fun <init> (I)V
+	public final fun component1 ()I
+	public final fun copy (I)Ltenter/palette/PaletteColor$Ansi16;
+	public static synthetic fun copy$default (Ltenter/palette/PaletteColor$Ansi16;IILjava/lang/Object;)Ltenter/palette/PaletteColor$Ansi16;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCode ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class tenter/palette/PaletteColor$Companion {
+	public final fun parse (Ljava/lang/String;Lcom/github/ajalt/mordant/rendering/AnsiLevel;)Ltenter/palette/PaletteColor;
+}
+
+public final class tenter/palette/PaletteColor$TrueColor : tenter/palette/PaletteColor {
+	public fun <init> (III)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun copy (III)Ltenter/palette/PaletteColor$TrueColor;
+	public static synthetic fun copy$default (Ltenter/palette/PaletteColor$TrueColor;IIIILjava/lang/Object;)Ltenter/palette/PaletteColor$TrueColor;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBlue ()I
+	public final fun getGreen ()I
+	public final fun getRed ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class tenter/palette/PaletteColor$Xterm256 : tenter/palette/PaletteColor {
+	public fun <init> (I)V
+	public final fun component1 ()I
+	public final fun copy (I)Ltenter/palette/PaletteColor$Xterm256;
+	public static synthetic fun copy$default (Ltenter/palette/PaletteColor$Xterm256;IILjava/lang/Object;)Ltenter/palette/PaletteColor$Xterm256;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getIndex ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class tenter/palette/RolePalette {
+	public fun background (Ltenter/palette/ColorRole;)Ltenter/palette/PaletteColor;
+	public abstract fun foreground (Ltenter/palette/ColorRole;)Ltenter/palette/PaletteColor;
+	public abstract fun getDefaultBackground ()Ltenter/palette/PaletteColor;
+}
+
+public final class tenter/palette/RolePalette$DefaultImpls {
+	public static fun background (Ltenter/palette/RolePalette;Ltenter/palette/ColorRole;)Ltenter/palette/PaletteColor;
+}
+
+public final class tenter/palette/RolePaletteKt {
+	public static final fun withOverrides (Ltenter/palette/RolePalette;Ljava/lang/String;Ljava/util/Map;Ltenter/palette/PaletteColor;)Ltenter/palette/RolePalette;
+	public static synthetic fun withOverrides$default (Ltenter/palette/RolePalette;Ljava/lang/String;Ljava/util/Map;Ltenter/palette/PaletteColor;ILjava/lang/Object;)Ltenter/palette/RolePalette;
+}
+
 public final class tenter/panel/Panel {
 	public static final field Companion Ltenter/panel/Panel$Companion;
 	public static final field MINIMIZED_WIDTH I
@@ -357,7 +459,7 @@ public final class tenter/screen/Canvas {
 	public final fun region (Ltenter/screen/Rect;)Ltenter/screen/Canvas;
 	public final fun revealRect ()Ltenter/screen/RevealRect;
 	public final fun set (IILtenter/screen/Cell;)V
-	public final fun setFg (IILjava/lang/String;Ltenter/screen/ColorRole;)V
+	public final fun setFg (IILjava/lang/String;Ltenter/palette/ColorRole;)V
 	public final fun writeString (IILjava/lang/String;Ltenter/screen/Cell$Style;)V
 	public static synthetic fun writeString$default (Ltenter/screen/Canvas;IILjava/lang/String;Ltenter/screen/Cell$Style;ILjava/lang/Object;)V
 }
@@ -390,16 +492,16 @@ public final class tenter/screen/Cell$Companion {
 public final class tenter/screen/Cell$Style {
 	public static final field Companion Ltenter/screen/Cell$Style$Companion;
 	public fun <init> ()V
-	public fun <init> (Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;Z)V
-	public synthetic fun <init> (Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ltenter/screen/ColorRole;
-	public final fun component2 ()Ltenter/screen/ColorRole;
+	public fun <init> (Ltenter/palette/ColorRole;Ltenter/palette/ColorRole;Z)V
+	public synthetic fun <init> (Ltenter/palette/ColorRole;Ltenter/palette/ColorRole;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ltenter/palette/ColorRole;
+	public final fun component2 ()Ltenter/palette/ColorRole;
 	public final fun component3 ()Z
-	public final fun copy (Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;Z)Ltenter/screen/Cell$Style;
-	public static synthetic fun copy$default (Ltenter/screen/Cell$Style;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;ZILjava/lang/Object;)Ltenter/screen/Cell$Style;
+	public final fun copy (Ltenter/palette/ColorRole;Ltenter/palette/ColorRole;Z)Ltenter/screen/Cell$Style;
+	public static synthetic fun copy$default (Ltenter/screen/Cell$Style;Ltenter/palette/ColorRole;Ltenter/palette/ColorRole;ZILjava/lang/Object;)Ltenter/screen/Cell$Style;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getBg ()Ltenter/screen/ColorRole;
-	public final fun getFg ()Ltenter/screen/ColorRole;
+	public final fun getBg ()Ltenter/palette/ColorRole;
+	public final fun getFg ()Ltenter/palette/ColorRole;
 	public final fun getStrikethrough ()Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -407,39 +509,6 @@ public final class tenter/screen/Cell$Style {
 
 public final class tenter/screen/Cell$Style$Companion {
 	public final fun getDEFAULT ()Ltenter/screen/Cell$Style;
-}
-
-public final class tenter/screen/ChromeRole : java/lang/Enum, tenter/screen/ColorRole {
-	public static final field ACCENT Ltenter/screen/ChromeRole;
-	public static final field DANGER Ltenter/screen/ChromeRole;
-	public static final field DEFAULT Ltenter/screen/ChromeRole;
-	public static final field DISABLED Ltenter/screen/ChromeRole;
-	public static final field DRAFT Ltenter/screen/ChromeRole;
-	public static final field INFO Ltenter/screen/ChromeRole;
-	public static final field PANEL_BORDER Ltenter/screen/ChromeRole;
-	public static final field PANEL_BORDER_FOCUSED Ltenter/screen/ChromeRole;
-	public static final field SUCCESS Ltenter/screen/ChromeRole;
-	public static final field TEXT_MUTED Ltenter/screen/ChromeRole;
-	public static final field TEXT_PRIMARY Ltenter/screen/ChromeRole;
-	public static final field TEXT_SUBTLE Ltenter/screen/ChromeRole;
-	public static final field WARNING Ltenter/screen/ChromeRole;
-	public static fun getEntries ()Lkotlin/enums/EnumEntries;
-	public static fun valueOf (Ljava/lang/String;)Ltenter/screen/ChromeRole;
-	public static fun values ()[Ltenter/screen/ChromeRole;
-}
-
-public abstract interface class tenter/screen/ColorRole {
-}
-
-public final class tenter/screen/DefaultRolePalette : tenter/screen/RolePalette {
-	public static final field INSTANCE Ltenter/screen/DefaultRolePalette;
-	public fun background (Ltenter/screen/ColorRole;)Ltenter/screen/PaletteColor;
-	public fun foreground (Ltenter/screen/ColorRole;)Ltenter/screen/PaletteColor;
-	public fun getDefaultBackground ()Ltenter/screen/PaletteColor;
-}
-
-public abstract interface class tenter/screen/FixedColorRole : tenter/screen/ColorRole {
-	public abstract fun getColor ()Ltenter/screen/PaletteColor;
 }
 
 public final class tenter/screen/Insets {
@@ -468,60 +537,6 @@ public final class tenter/screen/Insets {
 public final class tenter/screen/Insets$Companion {
 	public final fun all (I)Ltenter/screen/Insets;
 	public final fun getNONE ()Ltenter/screen/Insets;
-}
-
-public final class tenter/screen/MapRolePalette : tenter/screen/RolePalette {
-	public fun <init> (Ljava/lang/String;Lcom/github/ajalt/mordant/rendering/AnsiLevel;Ltenter/screen/PaletteColor;Ljava/util/Map;)V
-	public fun background (Ltenter/screen/ColorRole;)Ltenter/screen/PaletteColor;
-	public fun foreground (Ltenter/screen/ColorRole;)Ltenter/screen/PaletteColor;
-	public fun getDefaultBackground ()Ltenter/screen/PaletteColor;
-	public final fun getLevel ()Lcom/github/ajalt/mordant/rendering/AnsiLevel;
-	public fun toString ()Ljava/lang/String;
-}
-
-public abstract interface class tenter/screen/PaletteColor {
-	public static final field Companion Ltenter/screen/PaletteColor$Companion;
-}
-
-public final class tenter/screen/PaletteColor$Ansi16 : tenter/screen/PaletteColor {
-	public fun <init> (I)V
-	public final fun component1 ()I
-	public final fun copy (I)Ltenter/screen/PaletteColor$Ansi16;
-	public static synthetic fun copy$default (Ltenter/screen/PaletteColor$Ansi16;IILjava/lang/Object;)Ltenter/screen/PaletteColor$Ansi16;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getCode ()I
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class tenter/screen/PaletteColor$Companion {
-	public final fun parse (Ljava/lang/String;Lcom/github/ajalt/mordant/rendering/AnsiLevel;)Ltenter/screen/PaletteColor;
-}
-
-public final class tenter/screen/PaletteColor$TrueColor : tenter/screen/PaletteColor {
-	public fun <init> (III)V
-	public final fun component1 ()I
-	public final fun component2 ()I
-	public final fun component3 ()I
-	public final fun copy (III)Ltenter/screen/PaletteColor$TrueColor;
-	public static synthetic fun copy$default (Ltenter/screen/PaletteColor$TrueColor;IIIILjava/lang/Object;)Ltenter/screen/PaletteColor$TrueColor;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getBlue ()I
-	public final fun getGreen ()I
-	public final fun getRed ()I
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class tenter/screen/PaletteColor$Xterm256 : tenter/screen/PaletteColor {
-	public fun <init> (I)V
-	public final fun component1 ()I
-	public final fun copy (I)Ltenter/screen/PaletteColor$Xterm256;
-	public static synthetic fun copy$default (Ltenter/screen/PaletteColor$Xterm256;IILjava/lang/Object;)Ltenter/screen/PaletteColor$Xterm256;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getIndex ()I
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
 }
 
 public final class tenter/screen/Point {
@@ -573,21 +588,6 @@ public final class tenter/screen/RevealRect {
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class tenter/screen/RolePalette {
-	public fun background (Ltenter/screen/ColorRole;)Ltenter/screen/PaletteColor;
-	public abstract fun foreground (Ltenter/screen/ColorRole;)Ltenter/screen/PaletteColor;
-	public abstract fun getDefaultBackground ()Ltenter/screen/PaletteColor;
-}
-
-public final class tenter/screen/RolePalette$DefaultImpls {
-	public static fun background (Ltenter/screen/RolePalette;Ltenter/screen/ColorRole;)Ltenter/screen/PaletteColor;
-}
-
-public final class tenter/screen/RolePaletteKt {
-	public static final fun withOverrides (Ltenter/screen/RolePalette;Ljava/lang/String;Ljava/util/Map;Ltenter/screen/PaletteColor;)Ltenter/screen/RolePalette;
-	public static synthetic fun withOverrides$default (Ltenter/screen/RolePalette;Ljava/lang/String;Ljava/util/Map;Ltenter/screen/PaletteColor;ILjava/lang/Object;)Ltenter/screen/RolePalette;
-}
-
 public final class tenter/screen/ScreenBuffer {
 	public fun <init> (II)V
 	public final fun get (II)Ltenter/screen/Cell;
@@ -597,7 +597,7 @@ public final class tenter/screen/ScreenBuffer {
 }
 
 public final class tenter/screen/ScreenRenderer {
-	public fun <init> (Lcom/github/ajalt/mordant/terminal/Terminal;Ltenter/screen/RolePalette;)V
+	public fun <init> (Lcom/github/ajalt/mordant/terminal/Terminal;Ltenter/palette/RolePalette;)V
 	public final fun clear ()V
 	public final fun render (Ltenter/screen/ScreenBuffer;)V
 }
@@ -618,16 +618,16 @@ public final class tenter/screen/StyledText {
 }
 
 public final class tenter/screen/StyledText$Builder {
+	public final fun append (Ljava/lang/String;Ltenter/palette/ColorRole;)V
 	public final fun append (Ljava/lang/String;Ltenter/screen/Cell$Style;)V
-	public final fun append (Ljava/lang/String;Ltenter/screen/ColorRole;)V
 	public final fun append (Ltenter/screen/StyledText;)V
 	public static synthetic fun append$default (Ltenter/screen/StyledText$Builder;Ljava/lang/String;Ltenter/screen/Cell$Style;ILjava/lang/Object;)V
 }
 
 public final class tenter/screen/StyledText$Companion {
 	public final fun getEMPTY ()Ltenter/screen/StyledText;
+	public final fun of (Ljava/lang/String;Ltenter/palette/ColorRole;)Ltenter/screen/StyledText;
 	public final fun of (Ljava/lang/String;Ltenter/screen/Cell$Style;)Ltenter/screen/StyledText;
-	public final fun of (Ljava/lang/String;Ltenter/screen/ColorRole;)Ltenter/screen/StyledText;
 	public static synthetic fun of$default (Ltenter/screen/StyledText$Companion;Ljava/lang/String;Ltenter/screen/Cell$Style;ILjava/lang/Object;)Ltenter/screen/StyledText;
 }
 
@@ -687,7 +687,7 @@ public final class tenter/terminal/TerminalEventKt {
 }
 
 public final class tenter/terminal/TerminalScreenKt {
-	public static final fun withScreen (Lcom/github/ajalt/mordant/terminal/Terminal;Ltenter/screen/RolePalette;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static final fun withScreen (Lcom/github/ajalt/mordant/terminal/Terminal;Ltenter/palette/RolePalette;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 }
 
 public final class tenter/text/CellWidth {
@@ -714,15 +714,15 @@ public final class tenter/text/TextWrap {
 
 public final class tenter/view/Bordered : tenter/view/View {
 	public static final field Companion Ltenter/view/Bordered$Companion;
-	public fun <init> (Ltenter/view/View;Ljava/lang/String;Ljava/lang/String;Ltenter/screen/Insets;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;)V
-	public synthetic fun <init> (Ltenter/view/View;Ljava/lang/String;Ljava/lang/String;Ltenter/screen/Insets;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ltenter/view/View;Ljava/lang/String;Ljava/lang/String;Ltenter/screen/Insets;Ltenter/palette/ColorRole;Ltenter/palette/ColorRole;)V
+	public synthetic fun <init> (Ltenter/view/View;Ljava/lang/String;Ljava/lang/String;Ltenter/screen/Insets;Ltenter/palette/ColorRole;Ltenter/palette/ColorRole;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun draw (Ltenter/screen/Canvas;)V
 }
 
 public final class tenter/view/Bordered$Companion {
 	public final fun getBORDER ()Ltenter/screen/Insets;
-	public final fun prepared (Ltenter/view/ContentView;Ljava/lang/String;Ljava/lang/String;Ltenter/screen/Insets;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;)Ltenter/view/ContentView;
-	public static synthetic fun prepared$default (Ltenter/view/Bordered$Companion;Ltenter/view/ContentView;Ljava/lang/String;Ljava/lang/String;Ltenter/screen/Insets;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;ILjava/lang/Object;)Ltenter/view/ContentView;
+	public final fun prepared (Ltenter/view/ContentView;Ljava/lang/String;Ljava/lang/String;Ltenter/screen/Insets;Ltenter/palette/ColorRole;Ltenter/palette/ColorRole;)Ltenter/view/ContentView;
+	public static synthetic fun prepared$default (Ltenter/view/Bordered$Companion;Ltenter/view/ContentView;Ljava/lang/String;Ljava/lang/String;Ltenter/screen/Insets;Ltenter/palette/ColorRole;Ltenter/palette/ColorRole;ILjava/lang/Object;)Ltenter/view/ContentView;
 }
 
 public final class tenter/view/Columns : tenter/view/ContentView {
@@ -864,8 +864,8 @@ public final class tenter/view/ScrollingPanel : tenter/view/View {
 }
 
 public final class tenter/view/ScrollingPanelKt {
-	public static final fun scrollingPanel (Ljava/lang/String;Ljava/lang/String;Ltenter/view/ContentView;Ltenter/view/ViewportState;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;)Ltenter/view/ScrollingPanel;
-	public static synthetic fun scrollingPanel$default (Ljava/lang/String;Ljava/lang/String;Ltenter/view/ContentView;Ltenter/view/ViewportState;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;ILjava/lang/Object;)Ltenter/view/ScrollingPanel;
+	public static final fun scrollingPanel (Ljava/lang/String;Ljava/lang/String;Ltenter/view/ContentView;Ltenter/view/ViewportState;Ltenter/palette/ColorRole;Ltenter/palette/ColorRole;)Ltenter/view/ScrollingPanel;
+	public static synthetic fun scrollingPanel$default (Ljava/lang/String;Ljava/lang/String;Ltenter/view/ContentView;Ltenter/view/ViewportState;Ltenter/palette/ColorRole;Ltenter/palette/ColorRole;ILjava/lang/Object;)Ltenter/view/ScrollingPanel;
 }
 
 public final class tenter/view/Stack : tenter/view/ContentView {
@@ -937,9 +937,9 @@ public final class tenter/widget/CheckState : java/lang/Enum {
 
 public final class tenter/widget/Checkbox {
 	public static final field INSTANCE Ltenter/widget/Checkbox;
-	public final fun draw (Ltenter/view/TextCursor;IILtenter/widget/CheckState;Ltenter/screen/ColorRole;Ltenter/widget/CheckboxGlyphs;)V
-	public static synthetic fun draw$default (Ltenter/widget/Checkbox;Ltenter/view/TextCursor;IILtenter/widget/CheckState;Ltenter/screen/ColorRole;Ltenter/widget/CheckboxGlyphs;ILjava/lang/Object;)V
-	public final fun intrinsicColor (Ltenter/widget/CheckState;)Ltenter/screen/ColorRole;
+	public final fun draw (Ltenter/view/TextCursor;IILtenter/widget/CheckState;Ltenter/palette/ColorRole;Ltenter/widget/CheckboxGlyphs;)V
+	public static synthetic fun draw$default (Ltenter/widget/Checkbox;Ltenter/view/TextCursor;IILtenter/widget/CheckState;Ltenter/palette/ColorRole;Ltenter/widget/CheckboxGlyphs;ILjava/lang/Object;)V
+	public final fun intrinsicColor (Ltenter/widget/CheckState;)Ltenter/palette/ColorRole;
 }
 
 public final class tenter/widget/CheckboxGlyphs {
@@ -985,12 +985,12 @@ public final class tenter/widget/PipTrack {
 
 public final class tenter/widget/SelectableRow {
 	public static final field INSTANCE Ltenter/widget/SelectableRow;
-	public final fun draw (Ltenter/view/TextCursor;Ljava/lang/String;Ltenter/widget/CheckState;ZLjava/lang/String;Ljava/util/List;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;Ltenter/widget/CheckboxGlyphs;)V
-	public static synthetic fun draw$default (Ltenter/widget/SelectableRow;Ltenter/view/TextCursor;Ljava/lang/String;Ltenter/widget/CheckState;ZLjava/lang/String;Ljava/util/List;Ltenter/screen/ColorRole;Ltenter/screen/ColorRole;Ltenter/widget/CheckboxGlyphs;ILjava/lang/Object;)V
+	public final fun draw (Ltenter/view/TextCursor;Ljava/lang/String;Ltenter/widget/CheckState;ZLjava/lang/String;Ljava/util/List;Ltenter/palette/ColorRole;Ltenter/palette/ColorRole;Ltenter/widget/CheckboxGlyphs;)V
+	public static synthetic fun draw$default (Ltenter/widget/SelectableRow;Ltenter/view/TextCursor;Ljava/lang/String;Ltenter/widget/CheckState;ZLjava/lang/String;Ljava/util/List;Ltenter/palette/ColorRole;Ltenter/palette/ColorRole;Ltenter/widget/CheckboxGlyphs;ILjava/lang/Object;)V
 }
 
 public final class tenter/widget/ValueRow {
 	public static final field INSTANCE Ltenter/widget/ValueRow;
-	public final fun draw (Ltenter/view/TextCursor;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ltenter/screen/ColorRole;)V
+	public final fun draw (Ltenter/view/TextCursor;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ltenter/palette/ColorRole;)V
 }
 

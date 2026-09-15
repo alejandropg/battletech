@@ -21,7 +21,7 @@ import battletech.tui.icon.movementModeIcon
 import battletech.tui.icon.unitStoodUpIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.screen.ScreenBuffer
 import tenter.view.ViewportState
 import tenter.view.line

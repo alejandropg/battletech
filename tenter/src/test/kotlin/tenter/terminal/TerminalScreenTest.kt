@@ -14,9 +14,9 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import tenter.screen.ColorRole
-import tenter.screen.PaletteColor
-import tenter.screen.RolePalette
+import tenter.palette.ColorRole
+import tenter.palette.PaletteColor
+import tenter.palette.RolePalette
 import kotlin.time.TimeMark
 
 private object ScreenTestPalette : RolePalette {

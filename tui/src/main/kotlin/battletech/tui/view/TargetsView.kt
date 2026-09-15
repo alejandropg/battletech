@@ -4,7 +4,7 @@ import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.unit.UnitId
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.widget.CheckState
 import tenter.view.TextCursor
 import tenter.widget.SelectableRow

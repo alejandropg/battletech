@@ -14,7 +14,7 @@ import tenter.panel.PanelSet
 import tenter.panel.PanelState
 import tenter.panel.VerticalTitleView
 import tenter.screen.Canvas
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.screen.ScreenBuffer
 import tenter.view.ContentView
 import tenter.view.contentView

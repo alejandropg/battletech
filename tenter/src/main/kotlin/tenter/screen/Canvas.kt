@@ -1,9 +1,7 @@
 package tenter.screen
 
+import tenter.palette.ColorRole
 import tenter.text.textClusters
-
-/** A rect, in some [Canvas]'s local coords, that content wants kept visible — see [Canvas.markReveal]. */
-public data class RevealRect(val x: Int, val y: Int, val width: Int, val height: Int)
 
 /**
  * A rectangular, clipped, origin-translated region of a [ScreenBuffer]. All coordinates

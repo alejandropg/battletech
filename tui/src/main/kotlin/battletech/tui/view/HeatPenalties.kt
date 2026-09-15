@@ -1,7 +1,7 @@
 package battletech.tui.view
 
 import battletech.tactical.heat.HeatScale
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 
 /**
  * Heat-scale penalty text, read off [HeatScale] in one place so [UnitStatusView] and the

@@ -1,4 +1,4 @@
-package tenter.screen
+package tenter.palette
 
 internal class OverrideRolePalette(
     private val name: String,

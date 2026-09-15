@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.screen.ScreenBuffer
 
 internal class HexRendererTest {

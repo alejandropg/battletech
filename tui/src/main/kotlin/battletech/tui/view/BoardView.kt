@@ -14,7 +14,7 @@ import battletech.tui.screen.BoardRole
 import battletech.tactical.unit.UnitRoster
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.text.CellWidth
 import tenter.view.Bordered
 import tenter.view.View

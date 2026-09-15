@@ -6,7 +6,7 @@ import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.displayName
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.screen.Insets
 import tenter.screen.StyledText
 import tenter.screen.styled

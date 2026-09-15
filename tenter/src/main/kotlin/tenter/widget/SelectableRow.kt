@@ -1,8 +1,8 @@
 package tenter.widget
 
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
-import tenter.screen.ColorRole
+import tenter.palette.ChromeRole
+import tenter.palette.ColorRole
 import tenter.view.TextCursor
 
 /** Renders one cursor-highlightable row with an optional checkbox and right-aligned value. */

@@ -9,8 +9,8 @@ import battletech.tui.screen.HeatScaleRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.screen.ChromeRole
-import tenter.screen.ColorRole
+import tenter.palette.ChromeRole
+import tenter.palette.ColorRole
 import tenter.screen.ScreenBuffer
 import tenter.view.line
 import tenter.view.render

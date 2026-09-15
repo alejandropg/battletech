@@ -2,7 +2,7 @@ package battletech.tui.view.record
 
 import battletech.tui.screen.BoardRole
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 
 /**
  * Shared cell styles for the maximized UNIT STATUS record sheet — one palette so every card

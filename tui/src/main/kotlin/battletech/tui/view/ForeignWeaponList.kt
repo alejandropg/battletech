@@ -2,7 +2,7 @@ package battletech.tui.view
 
 import battletech.tactical.unit.ForeignUnit
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.view.TextCursor
 
 /**

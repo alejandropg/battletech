@@ -1,7 +1,7 @@
 package tenter.widget
 
 import tenter.screen.Cell
-import tenter.screen.ColorRole
+import tenter.palette.ColorRole
 import tenter.view.TextCursor
 
 /** Renders "<left> … <right>" then one indented line per entry in [subLines], all in [color]. */

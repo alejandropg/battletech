@@ -1,4 +1,4 @@
-package tenter.screen
+package tenter.palette
 
 /**
  * A conservative ANSI-16 palette for consumers that need a working palette immediately.

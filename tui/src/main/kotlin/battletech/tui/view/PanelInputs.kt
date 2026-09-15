@@ -11,7 +11,6 @@ import battletech.tui.input.Keybindings
 import tenter.input.KeySection
 import tenter.view.ContentView
 import tenter.view.fixedContent
-import tenter.view.View
 
 /**
  * The view-model inputs for one render frame, derived from [AppState] once and

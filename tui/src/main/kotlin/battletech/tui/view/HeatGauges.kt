@@ -6,7 +6,7 @@ import battletech.tactical.model.GameMap
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.view.TextCursor
 import tenter.widget.Gauge
 

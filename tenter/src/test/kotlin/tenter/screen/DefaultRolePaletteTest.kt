@@ -1,5 +1,9 @@
 package tenter.screen
 
+import tenter.palette.ChromeRole
+import tenter.palette.PaletteColor
+import tenter.palette.DefaultRolePalette
+
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.terminal.Terminal
 import com.github.ajalt.mordant.terminal.TerminalRecorder

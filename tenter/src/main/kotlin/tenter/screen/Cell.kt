@@ -1,5 +1,8 @@
 package tenter.screen
 
+import tenter.palette.ChromeRole
+import tenter.palette.ColorRole
+
 public data class Cell(
     val char: String = " ",
     val style: Style = Style.DEFAULT,

@@ -1,15 +1,15 @@
 package battletech.tui.screen
 
-import tenter.screen.ColorRole
+import tenter.palette.ColorRole
 
 /**
  * The tactical-board-specific color roles: terrain, movement, player, and elevation semantics
  * that have no meaning to `tenter`'s generic widgets. Every [battletech.tui.screen.RolePalette]
- * (via [tenter.screen.RolePalette]) resolves these alongside [tenter.screen.ChromeRole] — see
+ * (via [tenter.palette.RolePalette]) resolves these alongside [tenter.palette.ChromeRole] — see
  * [ColorRole]'s KDoc for the two-enum `when` shape every palette implements.
  *
  * Several roles deliberately resolve to the same value in some themes (e.g. `ACCENT`/
- * `BOARD_ACTIVE` from [tenter.screen.ChromeRole], or `DANGER`/[TARGET_SELECTED] here). That is
+ * `BOARD_ACTIVE` from [tenter.palette.ChromeRole], or `DANGER`/[TARGET_SELECTED] here). That is
  * intentional, not duplication: they are semantically distinct call sites that happen to share a
  * color today, and keeping them separate lets a theme diverge them later without touching a
  * single call site. Do not merge them into one entry.

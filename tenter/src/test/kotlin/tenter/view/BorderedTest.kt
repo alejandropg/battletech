@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.screen.Insets
 import tenter.screen.ScreenBuffer
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 
 /** Pixel parity for [Bordered]'s border, title, badge, gutters, and scrollbar-thumb decoration. */
 internal class BorderedTest {

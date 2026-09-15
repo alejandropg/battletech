@@ -1,7 +1,7 @@
 package battletech.tui.setup
 
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.view.ContentLayout
 import tenter.view.ContentView
 import tenter.view.RevealPreference

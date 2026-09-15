@@ -1,5 +1,7 @@
 package tenter.screen
 
+import tenter.palette.ChromeRole
+
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

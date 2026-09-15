@@ -1,5 +1,7 @@
 package tenter.screen
 
+import tenter.palette.ColorRole
+
 import tenter.text.CellWidth
 import tenter.text.TextTruncation
 import tenter.text.TextWrap

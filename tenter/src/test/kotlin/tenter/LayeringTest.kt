@@ -6,12 +6,13 @@ import org.junit.jupiter.api.Test
 
 /**
  * Enforces the internal layering `docs/architecture.md` describes for this module —
- * `text -> screen -> view -> widget/panel`, with terminal consuming input and screen for scoped
+ * `text/input -> palette -> screen -> view -> widget/panel`, with terminal consuming input,
+ * palette, and screen for scoped
  * lifecycle, never the reverse — as an allowed-dependency matrix
  * between `tenter`'s direct child packages. [ArchitectureTest] enforces the module's *external*
  * seam (no `battletech.*` import, nothing outside an approved third-party allowlist); this
  * enforces the seams *between* its own packages, which nothing previously checked — a
- * `tenter.screen` file importing `tenter.panel` passed every existing test.
+ * a `tenter.screen` file importing `tenter.panel` passed every existing test.
  */
 class LayeringTest {
 
@@ -22,12 +23,13 @@ class LayeringTest {
     private val allowed: Map<String, Set<String>> = mapOf(
         "text" to emptySet(),
         "input" to emptySet(),
-        "screen" to setOf("text"),
+        "palette" to emptySet(),
+        "screen" to setOf("palette", "text"),
         "animation" to setOf("screen", "text", "view"),
-        "terminal" to setOf("input", "screen"),
-        "view" to setOf("input", "screen", "text"),
-        "widget" to setOf("screen", "text", "view"),
-        "panel" to setOf("screen", "view"),
+        "terminal" to setOf("input", "palette", "screen"),
+        "view" to setOf("input", "palette", "screen", "text"),
+        "widget" to setOf("palette", "screen", "text", "view"),
+        "panel" to setOf("palette", "screen", "view"),
     )
 
     /** The direct child of `tenter` [packageName] belongs to, e.g. `tenter.view.scrolling` -> `"view"`. */

@@ -1,4 +1,4 @@
-package tenter.screen
+package tenter.palette
 
 import com.github.ajalt.mordant.rendering.AnsiLevel
 
@@ -15,7 +15,7 @@ import com.github.ajalt.mordant.rendering.AnsiLevel
  * later mutation by a loader or caller cannot change a palette after a renderer has cached it.
  *
  * [AnsiLevel.NONE] is not an authoring tier and is rejected: it names a terminal that cannot show
- * color, not a set of color values. Author for the tier the colors use; [ScreenRenderer] drops
+ * color, not a set of color values. Author for the tier the colors use; [tenter.screen.ScreenRenderer] drops
  * every SGR tag on its own when the terminal reports NONE.
  */
 public class MapRolePalette(

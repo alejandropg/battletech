@@ -2,7 +2,7 @@ package battletech.tui.view
 
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.text.CellWidth
 
 /** Canonical right-aligned help hint shared by the TUI's chrome views. */

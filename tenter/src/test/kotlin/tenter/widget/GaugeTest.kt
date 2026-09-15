@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import tenter.screen.Canvas
 import tenter.screen.ScreenBuffer
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.view.TextCursor
 
 internal class GaugeTest {

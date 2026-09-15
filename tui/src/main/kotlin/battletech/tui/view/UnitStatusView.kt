@@ -15,7 +15,7 @@ import battletech.tui.icon.filledCircleIcon
 import battletech.tui.icon.infinityIcon
 import battletech.tui.screen.BoardRole
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.text.CellWidth
 import tenter.view.TextCursor
 

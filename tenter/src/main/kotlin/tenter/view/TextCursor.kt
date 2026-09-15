@@ -2,7 +2,7 @@ package tenter.view
 
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.screen.StyledText
 import tenter.text.CellWidth
 import tenter.text.TextTruncation

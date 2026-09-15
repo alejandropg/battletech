@@ -1,4 +1,4 @@
-package tenter.screen
+package tenter.palette
 
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import org.junit.jupiter.api.Assertions.assertEquals

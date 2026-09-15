@@ -3,7 +3,7 @@ package battletech.tui.setup
 import battletech.tui.view.HelpHint
 import tenter.screen.Canvas
 import tenter.screen.Cell
-import tenter.screen.ChromeRole
+import tenter.palette.ChromeRole
 import tenter.screen.Insets
 import tenter.text.CellWidth
 import tenter.text.TextTruncation

@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.runBlocking
 import tenter.screen.Canvas
-import tenter.screen.DefaultRolePalette
+import tenter.palette.DefaultRolePalette
 import tenter.screen.ScreenBuffer
 import tenter.terminal.TerminalEvent
 import tenter.terminal.inputEvents
