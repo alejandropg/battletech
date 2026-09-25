@@ -1,0 +1,48 @@
+package io.archinaut.battletech.tactical.heat
+
+import io.archinaut.battletech.tactical.dice.DiceRoller
+import io.archinaut.battletech.tactical.model.GameState
+import io.archinaut.battletech.tactical.model.TurnPhase
+import io.archinaut.battletech.tactical.session.GameEvent
+import io.archinaut.battletech.tactical.session.HeatDissipated
+import io.archinaut.battletech.tactical.session.PhaseOutcome
+import io.archinaut.battletech.tactical.session.SystemPhaseHandler
+import io.archinaut.battletech.tactical.session.TurnState
+
+/**
+ * System phase. On entry, folds each unit's heat generated this turn into its
+ * standing heat and dissipates ([applyHeatPhase]), then
+ * walks the units in state order running, per unit, [resolveUnitHeatPhase]'s fixed
+ * sequence of per-unit effects (shutdown/restart, life support, consciousness
+ * recovery, ammo explosion, drowning) — each gated so it only consumes dice when
+ * the unit's state actually warrants it, keeping untouched fixtures dice-free.
+ *
+ * Completes immediately. Accepts no commands.
+ */
+public class HeatPhaseHandler : SystemPhaseHandler() {
+
+    override val phase: TurnPhase = TurnPhase.HEAT
+
+    override fun onEntry(
+        state: GameState,
+        turn: TurnState,
+        roller: DiceRoller,
+    ): PhaseOutcome {
+        val before = state.units.associate { it.id to it.currentHeat }
+        val folded = state.applyHeatPhase()
+        val after = folded.units.associate { it.id to it.currentHeat }
+        val events = mutableListOf<GameEvent>(HeatDissipated(before, after))
+
+        val processedUnits = folded.units.mapUnits { unit ->
+            // Captured before any of this turn's resolution steps mutate consciousness,
+            // so resolveUnitHeatPhase's recovery step can tell "was already unconscious
+            // coming into this phase" apart from "knocked out by life support just now".
+            val wasUnconsciousBeforePhase = !unit.isPilotConscious
+            val (processed, unitEvents) = resolveUnitHeatPhase(unit, folded, wasUnconsciousBeforePhase, roller)
+            events += unitEvents
+            processed
+        }
+
+        return PhaseOutcome(folded.copy(units = processedUnits), turn, events)
+    }
+}

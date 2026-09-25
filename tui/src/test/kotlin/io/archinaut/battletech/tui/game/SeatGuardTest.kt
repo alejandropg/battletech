@@ -1,0 +1,163 @@
+package io.archinaut.battletech.tui.game
+
+import io.archinaut.battletech.tactical.model.HexCoordinates
+import io.archinaut.battletech.tactical.model.HexDirection
+import io.archinaut.battletech.tactical.model.PlayerId
+import io.archinaut.battletech.tactical.model.TurnPhase
+import io.archinaut.battletech.tactical.session.Impulse
+import io.archinaut.battletech.tui.aGameMap
+import io.archinaut.battletech.tui.aGameState
+import io.archinaut.battletech.tui.aTurnState
+import io.archinaut.battletech.tui.aUnit
+import io.archinaut.battletech.tui.game.phase.AttackPhase
+import io.archinaut.battletech.tui.game.phase.MovementPhase
+import io.archinaut.battletech.tui.input.BoardClick
+import io.archinaut.battletech.tui.input.IdleAction
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+
+/**
+ * Single-seat client enforcement in idle selecting states
+ * ([MovementPhase.SelectingUnit], [AttackPhase.SelectingAttacker]).
+ *
+ * A client may act only for a seat present in [AppState.seats]. Host/join play puts exactly one
+ * seat there — PLAYER_1 for a `host` process (its own local seat), PLAYER_2 for a joiner —
+ * so this client may act only while that seat is the active player, regardless of whether that
+ * seat's own session happens to be local or remote. Tab, Enter, click, and 'c' must all be
+ * blocked with the "Waiting for opponent" flash on the opponent's turn — previously only
+ * Enter/click were guarded (via `selectOwnUnit`),
+ * letting Tab and 'c' drive the opponent's units. Cursor movement is unaffected; see
+ * [HotSeatRegression] for what happens when both seats are present.
+ */
+internal class SeatGuardTest {
+
+    private fun enterKey(): IdleAction = IdleAction.SelectUnit
+    private fun tabKey(): IdleAction = IdleAction.CycleUnit
+    private fun cKey(): IdleAction = IdleAction.CommitDeclarations
+    private fun arrowUp(): IdleAction = IdleAction.MoveCursor(HexDirection.N)
+
+    // A click resolved to the middle of hex (0, 0) — see BoardClickMappingTest for the real
+    // screen-coordinate round-trip; here the phase only ever sees the already-resolved hex.
+    private fun clickOnOrigin(): BoardClick = BoardClick(HexCoordinates(0, 0))
+
+    @Nested
+    inner class MovementIdleBlockedOnOpponentTurn {
+        private val p1Unit = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0))
+        private val gameState = aGameState(units = listOf(p1Unit), map = aGameMap(cols = 5, rows = 5))
+        private val turnState = aTurnState() // movement active player defaults to PLAYER_1
+
+        private fun localP2State(cursor: HexCoordinates = HexCoordinates(0, 0)): AppState =
+            AppState(gameState, turnState, MovementPhase.SelectingUnit, cursor).let {
+                it.copy(seats = mapOf(PlayerId.PLAYER_2 to it.anySession))
+            }
+
+        @Test
+        fun `Tab is blocked with waiting flash and unchanged state`() {
+            val original = localP2State()
+
+            val result = MovementPhase.SelectingUnit.handle(tabKey(), original)
+
+            assertNotNull(result)
+            assertEquals("Waiting for opponent", result!!.flash?.text)
+            assertEquals(original, result.app)
+        }
+
+        @Test
+        fun `Enter on the active player's unit is blocked with waiting flash and unchanged state`() {
+            val original = localP2State(cursor = HexCoordinates(0, 0))
+
+            val result = MovementPhase.SelectingUnit.handle(enterKey(), original)
+
+            assertNotNull(result)
+            assertEquals("Waiting for opponent", result!!.flash?.text)
+            assertEquals(original, result.app)
+        }
+
+        @Test
+        fun `mouse click is blocked with waiting flash and unchanged state`() {
+            val original = localP2State(cursor = HexCoordinates(3, 3))
+
+            val result = MovementPhase.SelectingUnit.handle(clickOnOrigin(), original)
+
+            assertNotNull(result)
+            assertEquals("Waiting for opponent", result!!.flash?.text)
+            assertEquals(original, result.app)
+        }
+
+        @Test
+        fun `arrow key still moves the cursor`() {
+            val original = localP2State(cursor = HexCoordinates(2, 2))
+
+            val result = MovementPhase.SelectingUnit.handle(arrowUp(), original)
+
+            assertNotNull(result)
+            assertEquals(HexCoordinates(2, 1), result!!.app.cursor)
+            assertEquals(null, result.flash)
+        }
+    }
+
+    @Nested
+    inner class AttackIdleBlockedOnOpponentTurn {
+        private val gameState = aGameState()
+        private val turnState = aTurnState() // attack active player defaults to PLAYER_1
+
+        private fun localP2State(): AppState =
+            AppState(gameState, turnState, AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK), HexCoordinates(0, 0)).let {
+                it.copy(seats = mapOf(PlayerId.PLAYER_2 to it.anySession))
+            }
+
+        @Test
+        fun `commit is blocked with waiting flash and unchanged state`() {
+            val original = localP2State()
+
+            val result = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK).handle(cKey(), original)
+
+            assertNotNull(result)
+            assertEquals("Waiting for opponent", result!!.flash?.text)
+            assertEquals(original, result.app)
+        }
+    }
+
+    @Nested
+    inner class HotSeatRegression {
+        @Test
+        fun `Tab still cycles and enters the sub-mode in hot-seat`() {
+            val u1 = aUnit(id = "u1", owner = PlayerId.PLAYER_1, position = HexCoordinates(0, 0), walkingMP = 4)
+            val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_1, position = HexCoordinates(2, 2), walkingMP = 4)
+            val gameState = aGameState(units = listOf(u1, u2), map = aGameMap(cols = 5, rows = 5))
+            // The default AppState factory maps both seats to the same session — hot-seat.
+            val state = AppState(gameState, aTurnState(), MovementPhase.SelectingUnit, HexCoordinates(0, 0))
+
+            val result = MovementPhase.SelectingUnit.handle(tabKey(), state)
+
+            assertNotNull(result)
+            assertEquals(HexCoordinates(2, 2), result!!.app.cursor)
+            val browsing = assertInstanceOf(MovementPhase.Browsing::class.java, result.app.phase)
+            assertEquals(u2.id, browsing.unitId)
+        }
+
+        /**
+         * The regression guard for the whole "seats carry the information, not a flag" premise:
+         * with both seats present (hot-seat), PLAYER_2's turn must be actionable by this process
+         * too — proving hot-seat bypasses the seat check because [AppState.seats] contains both
+         * players, not because of a `seats.size == 2` (or similar) conditional anywhere in the
+         * guard itself.
+         */
+        @Test
+        fun `PLAYER_2's turn accepts input for PLAYER_2 in hot-seat`() {
+            val u2 = aUnit(id = "u2", owner = PlayerId.PLAYER_2, position = HexCoordinates(0, 0), walkingMP = 4)
+            val gameState = aGameState(units = listOf(u2), map = aGameMap(cols = 5, rows = 5))
+            val turnState = aTurnState(movementOrder = listOf(Impulse(PlayerId.PLAYER_2, 1)))
+            val state = AppState(gameState, turnState, MovementPhase.SelectingUnit, HexCoordinates(0, 0))
+
+            val result = MovementPhase.SelectingUnit.handle(enterKey(), state)
+
+            assertNotNull(result)
+            assertEquals(null, result!!.flash)
+            assertInstanceOf(MovementPhase.Browsing::class.java, result.app.phase)
+        }
+    }
+}

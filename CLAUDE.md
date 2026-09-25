@@ -34,7 +34,7 @@ Not needed for everyday context — read the row's doc when its trigger applies.
 ./gradlew build
 ./gradlew test
 ./gradlew :<module>:test
-./gradlew :tactical:test --tests "battletech.tactical.attack.HitLocationTest"   # single class
+./gradlew :tactical:test --tests "io.archinaut.battletech.tactical.attack.HitLocationTest"   # single class
 
 # Build and run the TUI (`:tui:run` throws by design — Gradle forks a JVM with no TTY)
 ./gradlew :tui:shadowJar && java -jar tui/build/libs/tui.jar
@@ -48,7 +48,7 @@ Dependencies flow: `tui` → `tactical` + `network`; `network` → (`api`) `tact
 
 - **`tactical/`** — the engine: tactical rules (combat, to-hit, movement, heat) plus game/map/mech loading. Delivery-agnostic: no UI assumptions, no console I/O.
 - **`network/`** — client/server layer over `tactical` (`GameServer`, `LobbyHost`, `SocketAcceptor`, `ClientGameSession`, `LobbyClient`, `transport/`, wire protocol). No UI; reuses `tactical`'s types as wire DTOs rather than redefining them.
-- **`tui/`** — the BattleTech terminal UI, built on the external Tenter library. Entry point `battletech.tui.MainKt`; bare invocation opens the interactive setup screen (`setup/`).
+- **`tui/`** — the BattleTech terminal UI, built on the external Tenter library. Entry point `io.archinaut.battletech.tui.MainKt`; bare invocation opens the interactive setup screen (`setup/`).
 - **`strategic/` + `bt/`** — placeholders. Ignore unless explicitly asked.
 
 ### Architecture principles
@@ -63,7 +63,7 @@ OOP + SOLID + KISS + DRY + YAGNI
 - **Coarse commit-on-intent commands + rich per-player queries**: ask `PlayerView` what is legal right now, then submit a single coarse command (`MoveUnit`, `CommitAttackImpulse`). Don't add fine-grained mutation commands; build the next coarse command instead.
 - **Per-player projection is the only read path for hidden info**: read state only via `session.stateFor(viewer)` / `session.logFor(viewer)`, never raw `GameState`. Redaction is type-enforced — a leak is a compile error, not a discipline problem. Rationale: `docs/architecture.md`.
 - **Every player is a client — locality is an adapter, not a branch**: local and remote seats both reach the session through `transport/`'s connection port (`InMemoryConnection` / `JsonLineConnection`). `GameServer` cannot tell them apart and is deliberately NOT a `GameSession`. `main()` is the only place that knows which mode ran — do not add a branch anywhere else asking "is this hot-seat?", and do not give a local player a private path to the session. Rationale: `docs/architecture.md`.
-- **Every match is created through `LobbyHost.commit`**: hot-seat, `host`, and `server` all build their `GameServer` by constructing a `LobbyHost` and calling `commit(initial)` — never `GameServer.host` directly — even though only interactive `host` mode ever actually parks a peer against it first. `tui` still reaches `battletech.network` only from `Main.kt` and `Composition.kt` (widened deliberately from `Main.kt` alone; `Composition.kt` holds the `SetupLobby` adapters over `LobbyHost`/`LobbyClient`) — the interactive setup screen itself (`tui/setup/`) talks only to the `SetupLobby` port. Rationale: `docs/architecture.md`, wire shape: `docs/wire-protocol.md`.
+- **Every match is created through `LobbyHost.commit`**: hot-seat, `host`, and `server` all build their `GameServer` by constructing a `LobbyHost` and calling `commit(initial)` — never `GameServer.host` directly — even though only interactive `host` mode ever actually parks a peer against it first. `tui` still reaches `io.archinaut.battletech.network` only from `Main.kt` and `Composition.kt` (widened deliberately from `Main.kt` alone; `Composition.kt` holds the `SetupLobby` adapters over `LobbyHost`/`LobbyClient`) — the interactive setup screen itself (`tui/setup/`) talks only to the `SetupLobby` port. Rationale: `docs/architecture.md`, wire shape: `docs/wire-protocol.md`.
 - **Subscription is canonical**: `session.subscribe(listener)` is the raw, session-wide event feed for clients — it is not the redaction seam. `CommandResult.Accepted.events` is a courtesy to the submitter; do not rely on it for cross-player notification.
 - **Package boundaries in `tactical` are test-enforced**: an allowed-dependency matrix between `attack/`, `dice/`, `heat/`, `io/`, `model/`, `movement/`, `query/`, `rules/`, `session/`, `unit/` — `model`/`dice`/`io`/`rules` are leaves relative to `session`/`query`. `ArchitectureTest` (Konsist) fails the build on any unlisted import; rationale and the two allowed cycles (`heat ⇄ attack`, `movement`/`attack` → `session`) are in `docs/architecture.md`.
 - **Phase handlers live with their rules**: a `PhaseHandler` implementation lives in the package whose rules it drives (e.g. `movement/`, `attack/weapon/`), not in `session/`. System phases with no rules package of their own (`InitiativePhaseHandler`, `EndPhaseHandler`) stay in `session/`. Full registration order: `docs/architecture.md`.

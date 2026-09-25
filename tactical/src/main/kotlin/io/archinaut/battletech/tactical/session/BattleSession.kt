@@ -1,0 +1,246 @@
+package io.archinaut.battletech.tactical.session
+
+import io.archinaut.battletech.tactical.attack.physical.PhysicalAttackPhaseHandler
+import io.archinaut.battletech.tactical.attack.weapon.WeaponAttackPhaseHandler
+import io.archinaut.battletech.tactical.dice.DiceRoller
+import io.archinaut.battletech.tactical.dice.RandomDiceRoller
+import io.archinaut.battletech.tactical.heat.HeatPhaseHandler
+import io.archinaut.battletech.tactical.model.GameState
+import io.archinaut.battletech.tactical.model.MatchStatus
+import io.archinaut.battletech.tactical.model.PlayerId
+import io.archinaut.battletech.tactical.model.victoryStatus
+import io.archinaut.battletech.tactical.movement.MovementPhaseHandler
+import io.archinaut.battletech.tactical.query.DefaultPlayerView
+import io.archinaut.battletech.tactical.query.PlayerGameState
+import io.archinaut.battletech.tactical.query.PlayerView
+import io.archinaut.battletech.tactical.query.projectFor
+import io.archinaut.battletech.tactical.unit.destructionReason
+
+/**
+ * Holds [GameState] and [TurnState] privately and delegates command processing to a list
+ * of [PhaseHandler] strategies (one per [io.archinaut.battletech.tactical.model.TurnPhase]) in
+ * canonical order.
+ *
+ * Within [submitCommand], the current handler decides whether to [PhaseHandler.accepts]
+ * (else [CommandRejection.WrongPhase]), then [PhaseHandler.validate]s (else a specific
+ * rejection), then [PhaseHandler.apply]s.
+ *
+ * Threading: not internally synchronised. Callers must serialise commands.
+ */
+public class BattleSession(
+    initialGameState: GameState,
+    initialTurnState: TurnState = TurnState.NULL,
+    private val roller: DiceRoller = RandomDiceRoller(),
+    initialPhase: io.archinaut.battletech.tactical.model.TurnPhase = standardHandlers().first().phase,
+    initialNeedsOnEntry: Boolean = true,
+) : GameSession {
+
+    private val handlers: List<PhaseHandler> = standardHandlers()
+    private var _gameState: GameState = initialGameState
+    private var _turnState: TurnState = initialTurnState
+
+    // If this fires, it means a TurnPhase was added to the enum without a corresponding
+    // handler being registered in standardHandlers() — a registration mistake, not a bad
+    // caller argument (handlers is no longer injectable; it's always standardHandlers()).
+    private var _currentPhaseIndex: Int = handlers.indexOfFirst { it.phase == initialPhase }.also {
+        require(it >= 0) { "initialPhase $initialPhase not present in handlers" }
+    }
+    private var _needsOnEntry: Boolean = initialNeedsOnEntry
+    private var _matchOver: Boolean = false
+
+    private val listeners: MutableList<(GameEvent) -> Unit> = mutableListOf()
+
+    private val _gameLog: GameLog = GameLog()
+
+    public override val gameLog: GameLog get() = _gameLog
+
+    /**
+     * The authoritative, unredacted state. Deliberately not part of [GameSession]: it
+     * exists for the server-side call sites that legitimately need raw state in-process
+     * ([io.archinaut.battletech.network.server.GameServer] building outbound
+     * [io.archinaut.battletech.network.wire.GameSnapshot]s, the headless printer in `Main.kt`).
+     */
+    public val gameState: GameState get() = _gameState
+    public override val turnState: TurnState get() = _turnState
+    public override val currentPhase: io.archinaut.battletech.tactical.model.TurnPhase
+        get() = handlers[_currentPhaseIndex].phase
+    public override val activePlayer: PlayerId?
+        get() = handlers[_currentPhaseIndex].activePlayer(_turnState)
+    public override val isMatchOver: Boolean get() = _matchOver
+
+    /** Built from [stateFor] — the projection — never from raw [_gameState]. */
+    public override fun viewFor(playerId: PlayerId): PlayerView =
+        DefaultPlayerView(playerId, stateFor(playerId), _turnState)
+
+    public override fun stateFor(viewer: PlayerId?): PlayerGameState =
+        _gameState.projectFor(viewer, revealAll = _matchOver)
+
+    /**
+     * The log counterpart of [stateFor]: same viewer, same [_matchOver] reveal, applied
+     * per-entry via [GameEvent.redactFor] instead of per-unit via [io.archinaut.battletech.tactical.query.projectFor].
+     */
+    public override fun logFor(viewer: PlayerId?): List<LogEntry> =
+        _gameLog.snapshot().mapNotNull { entry ->
+            entry.event.redactFor(viewer, _gameState, revealAll = _matchOver)?.let { entry.copy(event = it) }
+        }
+
+    /**
+     * Register [listener] to receive every event emitted by this session, unfiltered.
+     *
+     * Returns a [Subscription] whose [Subscription.unsubscribe] detaches the listener.
+     * Listeners are invoked synchronously on the thread that called [submitCommand] /
+     * [advance]; long-running work should be deferred to another thread by the listener.
+     */
+    public override fun subscribe(listener: (GameEvent) -> Unit): Subscription {
+        listeners += listener
+        return object : Subscription {
+            override fun unsubscribe() {
+                listeners.remove(listener)
+            }
+        }
+    }
+
+    public override fun submitCommand(command: GameCommand): CommandResult {
+        if (_matchOver) return CommandResult.Rejected(CommandRejection.MatchOver)
+        val handler = handlers[_currentPhaseIndex]
+        if (!handler.accepts(command, _turnState)) {
+            return CommandResult.Rejected(CommandRejection.WrongPhase(handler.phase))
+        }
+        val active = handler.activePlayer(_turnState)
+        if (active != null && active != command.playerId) {
+            return CommandResult.Rejected(CommandRejection.NotYourTurn(activePlayer = active, attemptedBy = command.playerId))
+        }
+        handler.validate(command, _gameState, _turnState)?.let { reason ->
+            return CommandResult.Rejected(reason)
+        }
+        val outcome = handler.apply(command, _gameState, _turnState, roller)
+        logEvents(outcome.events)
+        _gameState = outcome.state
+        _turnState = outcome.turn
+        val events = outcome.events.toMutableList()
+        events.addAll(runDestructionSweep())
+        events.addAll(cascade())
+        dispatch(events)
+        return CommandResult.Accepted(events)
+    }
+
+    /**
+     * Records [event] in the log at the current turn number and dispatches
+     * it to subscribers, without touching game/turn state or the phase
+     * cascade. For out-of-band happenings (e.g. a network server annotating
+     * a connect/disconnect) that deliveries want to land in the same
+     * chronological log subscribers already see everything else through.
+     */
+    public fun annotate(event: GameEvent) {
+        _gameLog.append(LogEntry(_turnState.turnNumber, event))
+        dispatch(listOf(event))
+    }
+
+    /**
+     * Kickstart the session at game start: fires the initial phase's
+     * on-entry if pending, then cascades through any auto-completing system
+     * phases. After construction with a fresh [TurnState.NULL], one call
+     * lands the session at [io.archinaut.battletech.tactical.model.TurnPhase.MOVEMENT]
+     * with initiative rolled and the movement sequence seeded.
+     */
+    public fun advance(): List<GameEvent> {
+        if (_matchOver) return emptyList()
+        val events = mutableListOf<GameEvent>()
+        if (_needsOnEntry) {
+            events.addAll(fireOnEntry())
+            events.addAll(runDestructionSweep())
+        }
+        events.addAll(cascade())
+        dispatch(events)
+        return events
+    }
+
+    private fun logEvents(events: List<GameEvent>) {
+        for (event in events) {
+            _gameLog.append(LogEntry(_turnState.turnNumber, event))
+        }
+    }
+
+    private fun dispatch(events: List<GameEvent>) {
+        if (events.isEmpty() || listeners.isEmpty()) return
+        // Iterate over a snapshot so listeners that unsubscribe themselves
+        // mid-dispatch don't trip a ConcurrentModificationException.
+        val snapshot = listeners.toList()
+        for (event in events) for (listener in snapshot) listener(event)
+    }
+
+    private fun cascade(): List<GameEvent> {
+        val events = mutableListOf<GameEvent>()
+        while (!_matchOver && handlers[_currentPhaseIndex].isComplete(_turnState)) {
+            events += advanceIndex()
+            events.addAll(fireOnEntry())
+            events.addAll(runDestructionSweep())
+        }
+        return events
+    }
+
+    private fun fireOnEntry(): List<GameEvent> {
+        val outcome = handlers[_currentPhaseIndex].onEntry(_gameState, _turnState, roller)
+        logEvents(outcome.events)
+        _gameState = outcome.state
+        _turnState = outcome.turn
+        _needsOnEntry = false
+        return outcome.events
+    }
+
+    /**
+     * Centralized destruction check, run after every state-mutating step
+     * (command application, phase `onEntry`) so kills are caught regardless
+     * of source (weapon/physical damage, ammo cook-off, future crit/pilot
+     * conditions) without duplicating detect+flag+event+match-over logic in
+     * every handler. Flips newly-destroyed units' [io.archinaut.battletech.tactical.unit.CombatUnit.isDestroyed],
+     * emits one [UnitDestroyed] per newly destroyed unit, then asks the pure
+     * [io.archinaut.battletech.tactical.model.victoryStatus] rule whether the match just ended; if so, sets
+     * [_matchOver] and emits [MatchEnded] exactly once. Idempotent — a sweep with nothing newly
+     * destroyed and the match already decided returns an empty list.
+     */
+    private fun runDestructionSweep(): List<GameEvent> {
+        if (_matchOver) return emptyList()
+
+        val events = mutableListOf<GameEvent>()
+        val newlyDestroyed = _gameState.units.all.filter { !it.isDestroyed && destructionReason(it) != null }
+
+        if (newlyDestroyed.isNotEmpty()) {
+            _gameState = _gameState.copy(
+                units = _gameState.units.withUnits(newlyDestroyed.map { it.copy(isDestroyed = true) }),
+            )
+            for (unit in newlyDestroyed) {
+                events += UnitDestroyed(unit.id, destructionReason(unit)!!)
+            }
+        }
+
+        val status = victoryStatus(_gameState)
+        if (status is MatchStatus.Ended) {
+            _matchOver = true
+            events += MatchEnded(status.outcome)
+        }
+
+        logEvents(events)
+        return events
+    }
+
+    private fun advanceIndex(): GameEvent {
+        val from = handlers[_currentPhaseIndex].phase
+        _currentPhaseIndex = (_currentPhaseIndex + 1) % handlers.size
+        _needsOnEntry = true
+        val event = PhaseChanged(from, handlers[_currentPhaseIndex].phase)
+        logEvents(listOf(event))
+        return event
+    }
+
+    private companion object {
+        private fun standardHandlers(): List<PhaseHandler> = listOf(
+            InitiativePhaseHandler(),
+            MovementPhaseHandler(),
+            WeaponAttackPhaseHandler(),
+            PhysicalAttackPhaseHandler(),
+            HeatPhaseHandler(),
+            EndPhaseHandler(),
+        )
+    }
+}

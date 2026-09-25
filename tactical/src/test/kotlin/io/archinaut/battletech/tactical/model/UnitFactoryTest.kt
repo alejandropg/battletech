@@ -1,0 +1,130 @@
+package io.archinaut.battletech.tactical.model
+
+import io.archinaut.battletech.tactical.unit.HeatSink
+import io.archinaut.battletech.tactical.unit.HeatSinkType
+import io.archinaut.battletech.tactical.unit.MechModels
+import io.archinaut.battletech.tactical.unit.UnitId
+import io.archinaut.battletech.tactical.unit.createUnit
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+
+internal class UnitFactoryTest {
+
+    @Test
+    fun `createUnit sets instance-specific fields`() {
+        val unit = MechModels["AS7-D"].createUnit(
+            id = UnitId("test-atlas"),
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(2, 3),
+        )
+
+        assertEquals(UnitId("test-atlas"), unit.id)
+        assertEquals(HexCoordinates(2, 3), unit.position)
+    }
+
+    @Test
+    fun `createUnit uses chassis stats from model`() {
+        val unit = MechModels["AS7-D"].createUnit(
+            id = UnitId("atlas"),
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+        )
+
+        assertEquals("Atlas AS7-D", unit.name)
+        assertEquals(3, unit.walkingMP)
+        assertEquals(5, unit.runningMP)
+        assertEquals(0, unit.jumpMP)
+        assertEquals(HeatSink(HeatSinkType.STS, 20), unit.heatSink)
+    }
+
+    @Test
+    fun `createUnit uses default pilot skills`() {
+        val unit = MechModels["HBK-4G"].createUnit(
+            id = UnitId("hunchback"),
+            PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+        )
+
+        assertEquals(4, unit.gunnerySkill)
+        assertEquals(5, unit.pilotingSkill)
+    }
+
+    @Test
+    fun `createUnit accepts custom pilot skills`() {
+        val unit = MechModels["WVR-6R"].createUnit(
+            id = UnitId("wolverine"),
+            PlayerId.PLAYER_1,
+            gunnerySkill = 3,
+            pilotingSkill = 4,
+            position = HexCoordinates(0, 0),
+        )
+
+        assertEquals(3, unit.gunnerySkill)
+        assertEquals(4, unit.pilotingSkill)
+    }
+
+    @Test
+    fun `createUnit sets jump MP for jumping mechs`() {
+        val unit = MechModels["WVR-6R"].createUnit(
+            id = UnitId("wolverine"),
+            PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+        )
+
+        assertEquals(5, unit.jumpMP)
+    }
+
+    @Test
+    fun `each createUnit call returns equivalent weapon loadouts`() {
+        val unit1 = MechModels["AS7-D"].createUnit(
+            id = UnitId("a"),
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0)
+        )
+        val unit2 = MechModels["AS7-D"].createUnit(
+            id = UnitId("b"),
+            owner = PlayerId.PLAYER_1,
+            position = HexCoordinates(1, 1)
+        )
+
+        assertEquals(unit1.weapons[0], unit2.weapons[0])
+    }
+
+    @Test
+    fun `MechModels lookup by variant string`() {
+        val model = MechModels["HBK-4G"]
+
+        assertEquals("HBK-4G", model.variant)
+        assertEquals("Hunchback HBK-4G", model.name)
+    }
+
+    @Test
+    fun `createUnit defaults to PLAYER_1`() {
+        val unit = MechModels["AS7-D"].createUnit(
+            id = UnitId("atlas"),
+            PlayerId.PLAYER_1,
+            position = HexCoordinates(0, 0),
+        )
+
+        assertEquals(PlayerId.PLAYER_1, unit.owner)
+    }
+
+    @Test
+    fun `createUnit accepts custom owner`() {
+        val unit = MechModels["AS7-D"].createUnit(
+            id = UnitId("atlas"),
+            owner = PlayerId.PLAYER_2,
+            position = HexCoordinates(0, 0),
+        )
+
+        assertEquals(PlayerId.PLAYER_2, unit.owner)
+    }
+
+    @Test
+    fun `MechModels throws on unknown variant`() {
+        assertThrows<IllegalStateException> {
+            MechModels["UNKNOWN"]
+        }
+    }
+}

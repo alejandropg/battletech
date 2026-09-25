@@ -1,0 +1,77 @@
+package io.archinaut.battletech.tui.view
+
+import io.archinaut.battletech.tactical.model.GameState
+import io.archinaut.battletech.tactical.model.HexCoordinates
+import io.archinaut.battletech.tactical.model.HexDirection
+import io.archinaut.battletech.tactical.model.PlayerId
+import io.archinaut.battletech.tactical.model.TurnPhase
+import io.archinaut.battletech.tactical.session.Impulse
+import io.archinaut.battletech.tactical.unit.UnitRoster
+import io.archinaut.battletech.tui.aGameMap
+import io.archinaut.battletech.tui.aTurnState
+import io.archinaut.battletech.tui.aUnit
+import io.archinaut.battletech.tui.anAppState
+import io.archinaut.battletech.tui.game.phase.AttackPhase
+import io.archinaut.battletech.tui.game.phase.WeaponAllocation
+import io.archinaut.battletech.tui.mediumLaser
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.render
+import io.archinaut.tenter.view.text
+
+/**
+ * End-to-end integration: AppState → declaredTargetsRender → DeclaredTargetsView.render.
+ * Covers the full chain without starting the TUI binary; the individual stages are
+ * covered by DeclaredTargetsRenderTest and DeclaredTargetsViewTest.
+ */
+internal class DeclaredTargetsIntegrationTest {
+
+    private val map = aGameMap(cols = 7, rows = 7)
+    private val turnState = aTurnState(attackOrder = listOf(Impulse(PlayerId.PLAYER_1, 1)))
+
+    @Test
+    fun `Declaring phase draft flows through render data to the view in gray`() {
+        val attacker = aUnit(
+            id = "wolf", owner = PlayerId.PLAYER_1, name = "Wolverine",
+            position = HexCoordinates(2, 3), facing = HexDirection.N,
+            weapons = listOf(mediumLaser()),
+        )
+        val target = aUnit(
+            id = "atlas", owner = PlayerId.PLAYER_2,
+            position = HexCoordinates(2, 1),
+        )
+        val gameState = GameState(UnitRoster(listOf(attacker, target)), map)
+        val phase = AttackPhase.Declaring(
+            attackTurnPhase = TurnPhase.WEAPON_ATTACK,
+            unitId = attacker.id,
+            allocation = WeaponAllocation(
+                torsoFacing = HexDirection.N,
+                weaponAssignments = mapOf(target.id to setOf(0)),
+                primaryTargetId = target.id,
+            ),
+            drafts = emptyMap(),
+        )
+
+        val renderData = phase.declaredTargets(anAppState(phase, gameState = gameState, turnState = turnState), phase.allDrafts())
+        val buffer = render(DeclaredTargetsView(renderData), 28, 30)
+
+        val wolfRow = (0 until 30).first { buffer.line(it).contains("wolf") }
+        val colors = (2 until 28).map { col -> buffer.get(col, wolfRow).style.fg }.toSet()
+        assertTrue(colors.contains(ChromeRole.DRAFT)) {
+            "Expected wolf (draft) row to use ChromeRole.DRAFT, got: $colors"
+        }
+    }
+
+    @Test
+    fun `SelectingAttacker with no drafts renders empty panel`() {
+        val gameState = GameState(UnitRoster(emptyList()), map)
+        val phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK)
+
+        val renderData = phase.declaredTargets(anAppState(phase, gameState = gameState, turnState = turnState), phase.drafts)
+        val buffer = render(DeclaredTargetsView(renderData), 28, 20)
+
+        assertTrue(buffer.text().contains("No declarations"))
+    }
+}

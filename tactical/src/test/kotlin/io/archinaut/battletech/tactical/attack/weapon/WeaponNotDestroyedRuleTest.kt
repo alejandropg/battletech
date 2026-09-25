@@ -1,0 +1,32 @@
+package io.archinaut.battletech.tactical.attack.weapon
+
+import io.archinaut.battletech.tactical.attack.aWeaponAttackContext
+import io.archinaut.battletech.tactical.rules.RuleResult
+import io.archinaut.battletech.tactical.query.aWeapon
+import io.archinaut.battletech.tactical.rules.RuleRejection
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+
+internal class WeaponNotDestroyedRuleTest {
+
+    private val rule = WeaponNotDestroyedRule()
+
+    @Test
+    fun `satisfied when weapon is functional`() {
+        val result = rule.evaluate(aWeaponAttackContext(weapon = aWeapon()))
+
+        assertEquals(RuleResult.Satisfied, result)
+    }
+
+    @Test
+    fun `unsatisfied when weapon is destroyed`() {
+        val result = rule.evaluate(aWeaponAttackContext(weapon = aWeapon(name = "AC/20", destroyed = true)))
+
+        assertThat(result).isInstanceOf(RuleResult.Unsatisfied::class.java)
+        val unsatisfied = result as RuleResult.Unsatisfied
+        assertThat(unsatisfied.reason).isInstanceOf(RuleRejection.WeaponDestroyed::class.java)
+        val destroyed = unsatisfied.reason as RuleRejection.WeaponDestroyed
+        assertEquals("AC/20", destroyed.weaponName)
+    }
+}

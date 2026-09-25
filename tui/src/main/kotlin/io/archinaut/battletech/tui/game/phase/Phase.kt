@@ -1,0 +1,52 @@
+package io.archinaut.battletech.tui.game.phase
+
+import io.archinaut.battletech.tactical.model.TurnPhase
+import io.archinaut.battletech.tui.game.AppState
+import io.archinaut.battletech.tui.game.RenderData
+import io.archinaut.battletech.tui.input.ContextId
+import io.archinaut.tenter.input.InputAction
+
+/**
+ * UI sub-state machine for the active player phase. Phases are pure
+ * UI-workflow objects: they hold cursor / hover / draft state, map input
+ * events to [io.archinaut.battletech.tactical.session.GameCommand]s, and produce render
+ * data. They never mutate game state directly — all writes flow through
+ * [AppState.submitCommand].
+ */
+internal sealed interface Phase {
+    val turnPhase: TurnPhase
+
+    /** Which [io.archinaut.tenter.input.KeyLayer] resolves keyboard input for this phase — see `Keybindings`. */
+    val keyContext: ContextId
+
+    /** Null means this phase does not consume [action] — a real three-valued protocol [io.archinaut.battletech.tui.loop.runLoop] relies on. */
+    fun handle(action: InputAction, app: AppState): Transition?
+
+    fun board(app: AppState): RenderData = RenderData.EMPTY
+
+    /** This phase's contribution to the status bar: the prompt, and the active player if any. */
+    fun status(app: AppState): PhaseStatus
+
+    /**
+     * This phase's contribution to the UNIT STATUS panel: the focused unit (if any) plus the heat
+     * an in-progress declaration would generate if committed. See [UnitStatusRender]'s KDoc for
+     * why the two are bundled.
+     */
+    fun unitStatus(app: AppState): UnitStatusRender
+
+    /**
+     * Phase-local side panels the active phase wants visible, as content — see [PhasePanels]'s
+     * KDoc for why presence and visibility are the same fact here.
+     */
+    fun panels(app: AppState): PhasePanels = PhasePanels.NONE
+}
+
+/**
+ * A sub-mode entered from an idle unit-selection state (destination browsing,
+ * facing, weapon/physical declaration). Pressing Esc backs out one level via
+ * [onCancel], which returns to the parent phase — usually the idle selecting
+ * state, or the previous sub-mode in a multi-step flow.
+ */
+internal interface CancelableSubPhase {
+    fun onCancel(app: AppState): Transition
+}

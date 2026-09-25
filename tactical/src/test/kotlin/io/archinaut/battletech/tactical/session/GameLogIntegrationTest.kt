@@ -1,0 +1,119 @@
+package io.archinaut.battletech.tactical.session
+
+import io.archinaut.battletech.tactical.dice.DiceRoller
+import io.archinaut.battletech.tactical.model.GameMap
+import io.archinaut.battletech.tactical.model.GameState
+import io.archinaut.battletech.tactical.model.HexCoordinates
+import io.archinaut.battletech.tactical.model.HexDirection
+import io.archinaut.battletech.tactical.model.MovementMode
+import io.archinaut.battletech.tactical.model.PlayerId
+import io.archinaut.battletech.tactical.model.TurnPhase
+import io.archinaut.battletech.tactical.movement.MovementStep
+import io.archinaut.battletech.tactical.movement.ReachableHex
+import io.archinaut.battletech.tactical.unit.UnitRoster
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+
+internal class GameLogIntegrationTest {
+
+    private val mech1 = aMech("m1", PlayerId.PLAYER_1, HexCoordinates(0, 0))
+    private val mech2 = aMech("m2", PlayerId.PLAYER_2, HexCoordinates(3, 0))
+
+    @Test
+    fun `a freshly constructed session has an empty game log`() {
+        val session = freshSession()
+
+        assertThat(session.gameLog.snapshot()).isEmpty()
+    }
+
+    @Test
+    fun `advance kickstart appends entries for emitted events`() {
+        val session = freshSession()
+
+        session.advance()
+
+        val events = session.gameLog.snapshot().map { it.event }
+        assertThat(events.any { it is InitiativeRolled }).isTrue()
+    }
+
+    @Test
+    fun `all events including phase changes are stored in the log`() {
+        val session = freshSession()
+
+        session.advance()
+
+        val events = session.gameLog.snapshot().map { it.event }
+        assertThat(events.any { it is PhaseChanged }).isTrue()
+    }
+
+    @Test
+    fun `submitCommand appends entries for emitted events`() {
+        val session = sessionInMovement()
+        // mech1 is at (0,0) facing N; move one hex north — server-computable in 1 MP.
+        val destination = ReachableHex(
+            position = HexCoordinates(0, -1),
+            facing = HexDirection.N,
+            mpSpent = 1,
+            path = listOf(MovementStep(HexCoordinates(0, -1), HexDirection.N)),
+        )
+
+        session.submitCommand(MoveUnit(PlayerId.PLAYER_1, mech1.id, destination, MovementMode.WALK))
+
+        val events = session.gameLog.snapshot().map { it.event }
+        assertThat(events.any { it is UnitMoved && it.unitId == mech1.id }).isTrue()
+    }
+
+    @Test
+    fun `TurnEnded log entry is labeled with the turn that ended, not the next turn`() {
+        // End-phase cascade: HEAT (last phase before END) → END → INITIATIVE → MOVEMENT.
+        // We construct the session at HEAT with an empty turn state so the cascade
+        // rolls through end-of-turn into a fresh turn 2.
+        val turn = TurnState.NULL.copy(turnNumber = 1)
+        val session = BattleSession(
+            initialGameState = GameState(UnitRoster(listOf(mech1, mech2)), GameMap(hexesFor(listOf(mech1, mech2)))),
+            initialTurnState = turn,
+            roller = DiceRoller.seeded(42),
+            initialPhase = TurnPhase.HEAT,
+        )
+
+        session.advance()
+
+        val turnEnded = session.gameLog.snapshot().single { it.event is TurnEnded }
+        assertThat((turnEnded.event as TurnEnded).turnNumber).isEqualTo(1)
+        assertThat(turnEnded.turn).isEqualTo(1)
+    }
+
+    @Test
+    fun `log entries carry the current turn number`() {
+        val session = sessionInMovement(
+            turn = aMovementTurn().copy(turnNumber = 3),
+        )
+        // mech1 is at (0,0) facing N; move one hex north — server-computable in 1 MP.
+        val destination = ReachableHex(
+            position = HexCoordinates(0, -1),
+            facing = HexDirection.N,
+            mpSpent = 1,
+            path = listOf(MovementStep(HexCoordinates(0, -1), HexDirection.N)),
+        )
+
+        session.submitCommand(MoveUnit(PlayerId.PLAYER_1, mech1.id, destination, MovementMode.WALK))
+
+        val newEntries = session.gameLog.snapshot()
+        assertThat(newEntries).isNotEmpty
+        assertThat(newEntries.last().turn).isEqualTo(3)
+    }
+
+    private fun freshSession(): BattleSession = BattleSession(
+        initialGameState = GameState(UnitRoster(listOf(mech1, mech2)), GameMap(hexesFor(listOf(mech1, mech2)))),
+        initialTurnState = TurnState.NULL,
+        roller = DiceRoller.seeded(42),
+    )
+
+    private fun sessionInMovement(turn: TurnState = aMovementTurn()): BattleSession = BattleSession(
+        initialGameState = GameState(UnitRoster(listOf(mech1, mech2)), GameMap(hexesFor(listOf(mech1, mech2)))),
+        initialTurnState = turn,
+        roller = DiceRoller.seeded(42),
+        initialPhase = TurnPhase.MOVEMENT,
+        initialNeedsOnEntry = false,
+    )
+}

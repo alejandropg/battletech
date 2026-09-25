@@ -1,0 +1,49 @@
+package io.archinaut.battletech.tui.view
+
+import io.archinaut.battletech.tactical.heat.HeatScale
+import io.archinaut.battletech.tactical.heat.projectHeat
+import io.archinaut.battletech.tactical.model.GameMap
+import io.archinaut.battletech.tactical.unit.CombatUnit
+import io.archinaut.battletech.tactical.unit.HeatSource
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.widget.Gauge
+
+/**
+ * The "Current" gauge, this-turn heat sources (committed solid, [pendingHeat] drafted), the sink
+ * dissipation gauge, and the "Projected" gauge — the [io.archinaut.battletech.tactical.heat.HeatProjection]
+ * preview shared by the NORMAL [UnitStatusView] and the maximized record sheet's
+ * [io.archinaut.battletech.tui.view.record.HeatLadder]. Neither card's surrounding header/spacing is drawn
+ * here — callers wrap this with their own [TextCursor.writeHeader] and blank lines.
+ */
+internal class HeatGauges(
+    private val unit: CombatUnit,
+    private val map: GameMap,
+    private val pendingHeat: List<HeatSource>,
+) : PreparedTextView() {
+
+    override fun render(content: TextCursor) {
+        val projection = projectHeat(unit, map, pendingHeat)
+        val heatBar = Gauge(barWidth = 20, maxValue = HeatScale.MAX_HEAT)
+
+        content.writeLine("Current")
+        heatBar.draw(content, 0, unit.currentHeat)
+        for (source in projection.committed) content.writeLine("  ${source.label} +${source.amount}")
+        for (source in projection.pending) content.writeLine("  ${source.label} +${source.amount}", DRAFT_STYLE)
+
+        val sink = unit.heatSink
+        val sinkSuffix =
+            if (sink.type.sinkRatio == 1) "${sink.type.name} ${projection.dissipation}"
+            else "${sink.type.name} ${sink.units}(${projection.dissipation})"
+        Gauge(barWidth = 10, maxValue = projection.dissipation, suffix = sinkSuffix)
+            .draw(content, 0, projection.dissipated)
+
+        content.writeLine("Projected")
+        heatBar.draw(content, 0, projection.projected)
+    }
+
+    private companion object {
+        private val DRAFT_STYLE = Cell.Style(ChromeRole.DRAFT)
+    }
+}

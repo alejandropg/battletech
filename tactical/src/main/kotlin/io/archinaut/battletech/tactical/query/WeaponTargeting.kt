@@ -1,0 +1,143 @@
+package io.archinaut.battletech.tactical.query
+
+import io.archinaut.battletech.tactical.attack.ToHitBreakdown
+import io.archinaut.battletech.tactical.attack.WeaponAttackContext
+import io.archinaut.battletech.tactical.attack.weapon.FireWeaponActionDefinition
+import io.archinaut.battletech.tactical.attack.weapon.FiringArc
+import io.archinaut.battletech.tactical.attack.weapon.TargetInfo
+import io.archinaut.battletech.tactical.attack.weapon.WeaponTargetInfo
+import io.archinaut.battletech.tactical.attack.weaponToHitBreakdown
+import io.archinaut.battletech.tactical.attack.weaponToHitModifiers
+import io.archinaut.battletech.tactical.model.HexCoordinates
+import io.archinaut.battletech.tactical.model.HexDirection
+import io.archinaut.battletech.tactical.unit.CombatUnit
+import io.archinaut.battletech.tactical.unit.UnitId
+import io.archinaut.battletech.tactical.unit.VisibleUnit
+import io.archinaut.battletech.tactical.unit.cannotFireFromSensorDamage
+
+/**
+ * Weapon targeting over a per-viewer [PlayerGameState] — the same projection a remote
+ * client holds, so a `join`ed seat answers targeting queries locally with the identical
+ * code the host runs.
+ *
+ * The attacker is resolved via [PlayerGameState.ownUnitById] (to-hit math needs its gunnery,
+ * heat and sensor criticals, and the attacker is always the viewer's own unit); targets stay
+ * [VisibleUnit], which is all the shared math ever reads off them.
+ */
+internal class WeaponTargeting(private val state: PlayerGameState) {
+
+    private val definition = FireWeaponActionDefinition()
+
+    fun fireArc(attackerId: UnitId, torsoFacing: HexDirection): Set<HexCoordinates> {
+        val attacker = state.units.byId(attackerId)
+        return FiringArc.forwardArc(attacker.position, torsoFacing, state.map)
+    }
+
+    fun validTargets(attackerId: UnitId, torsoFacing: HexDirection): Set<UnitId> {
+        val attacker = state.ownUnitById(attackerId)
+        // An unconscious pilot cannot act this turn — same actor-eligibility
+        // treatment as a sensor-blinded unit. Unconscious units remain valid TARGETS
+        // (see the `!it.isDestroyed` filter below, which deliberately does not also
+        // check isPilotConscious).
+        if (!attacker.isPilotConscious) return emptySet()
+        if (attacker.cannotFireFromSensorDamage()) return emptySet()
+        val arc = FiringArc.forwardArc(attacker.position, torsoFacing, state.map)
+        return state.units.enemiesOf(attacker)
+            .filter { it.position in arc }
+            .filter { enemy -> hasEligibleWeapon(attacker, enemy) }
+            .map { it.id }
+            .toSet()
+    }
+
+    fun targetInfos(attackerId: UnitId, torsoFacing: HexDirection, primaryTargetId: UnitId? = null): List<TargetInfo> {
+        val attacker = state.ownUnitById(attackerId)
+        val targetIds = validTargets(attackerId, torsoFacing)
+        return targetIds.mapNotNull { targetId ->
+            val target = state.units.byId(targetId)
+            val distance = attacker.position.distanceTo(target.position)
+            val isPrimaryTarget = primaryTargetId == null || targetId == primaryTargetId
+
+            val weapons = attacker.weapons.mapIndexed { index, weapon ->
+                val context = WeaponAttackContext(
+                    actor = attacker,
+                    target = target,
+                    weapon = weapon,
+                    map = state.map,
+                )
+                if (definition.firstRejection(context) != null) {
+                    WeaponTargetInfo.Unavailable(
+                        weaponIndex = index,
+                        weaponName = weapon.name,
+                        damage = weapon.damage,
+                    )
+                } else {
+                    val modifiers = weaponToHitModifiers(
+                        attacker = attacker,
+                        target = target,
+                        weapon = weapon,
+                        distance = distance,
+                        isPrimaryTarget = isPrimaryTarget,
+                        map = state.map,
+                    )
+                    // C4: the only to-hit-number math here is the shared predictor
+                    // (io.archinaut.battletech.tactical.attack.weaponToHitBreakdown), also used by
+                    // AttackResolution.resolveOneAttack — read and apply can't drift.
+                    WeaponTargetInfo.Available(
+                        weaponIndex = index,
+                        weaponName = weapon.name,
+                        damage = weapon.damage,
+                        toHit = weaponToHitBreakdown(attacker, modifiers),
+                    )
+                }
+            }
+
+            if (weapons.none { it is WeaponTargetInfo.Available }) return@mapNotNull null
+            TargetInfo(unitId = targetId, unitName = target.name, weapons = weapons)
+        }
+    }
+
+    /**
+     * The to-hit breakdown for [attackerId] firing [weaponIndex] at [targetId], independent of
+     * current firing arc — used to render a COMMITTED declaration, which resolution will honor
+     * (or miss on range/arc) regardless of what the attacker's torso currently points at; see
+     * [io.archinaut.battletech.tactical.attack.AttackResolution]. Null only when [weaponIndex] doesn't exist
+     * on the attacker (a corrupt declaration) — a case [DeclaredWeaponLine.Undisclosed] also
+     * covers.
+     */
+    fun breakdownFor(
+        attackerId: UnitId,
+        targetId: UnitId,
+        weaponIndex: Int,
+        isPrimaryTarget: Boolean,
+    ): ToHitBreakdown? {
+        val attacker = state.ownUnitById(attackerId)
+        val weapon = attacker.weapons.getOrNull(weaponIndex) ?: return null
+        val target = state.units.byId(targetId)
+        val distance = attacker.position.distanceTo(target.position)
+        val modifiers = weaponToHitModifiers(
+            attacker = attacker,
+            target = target,
+            weapon = weapon,
+            distance = distance,
+            isPrimaryTarget = isPrimaryTarget,
+            map = state.map,
+        )
+        return weaponToHitBreakdown(attacker, modifiers)
+    }
+
+    /**
+     * Returns true if [attacker] has at least one weapon that passes all tactical
+     * firing rules ([FireWeaponActionDefinition]) against [target]. Used as the
+     * per-target eligibility filter in [validTargets].
+     */
+    private fun hasEligibleWeapon(attacker: CombatUnit, target: VisibleUnit): Boolean =
+        attacker.weapons.any { weapon ->
+            val context = WeaponAttackContext(
+                actor = attacker,
+                target = target,
+                weapon = weapon,
+                map = state.map,
+            )
+            definition.firstRejection(context) == null
+        }
+}

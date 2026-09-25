@@ -1,0 +1,80 @@
+package io.archinaut.battletech.tactical.query
+
+import io.archinaut.battletech.tactical.attack.weapon.TargetInfo
+import io.archinaut.battletech.tactical.model.HexCoordinates
+import io.archinaut.battletech.tactical.model.HexDirection
+import io.archinaut.battletech.tactical.model.PlayerId
+import io.archinaut.battletech.tactical.movement.ReachabilityMap
+import io.archinaut.battletech.tactical.unit.UnitId
+
+/**
+ * Read-side surface scoped to one [PlayerId]. Deliveries (TUI, web, remote
+ * client) consume this to answer "what is legal right now?" without
+ * reaching into raw [io.archinaut.battletech.tactical.model.GameState].
+ *
+ * [playerId] is an access boundary, not just a display convenience: a view is built over
+ * that player's [PlayerGameState] projection. Queries about the viewer's own units answer
+ * in full; data belonging to units the viewer does not own is either absent from the
+ * result type entirely ([DeclaredWeaponLine.Undisclosed]) or was never reachable to begin
+ * with (see [ForeignUnit]). Asking for something only an owner could know — e.g. movement
+ * legality for a foreign unit — fails loudly rather than answering wrongly; see
+ * [PlayerGameState.ownUnitById].
+ */
+public interface PlayerView {
+    public val playerId: PlayerId
+
+    /** Reachability map for each available movement mode, in WALK→RUN→JUMP
+     *  order, skipping modes the unit cannot perform. */
+    public fun legalMovementsFor(unitId: UnitId): List<ReachabilityMap>
+
+    /** Hexes in the attacker's forward firing arc given a torso facing. */
+    public fun fireArc(attackerId: UnitId, torsoFacing: HexDirection): Set<HexCoordinates>
+
+    /** Enemy unit IDs in arc AND having at least one weapon that can engage. */
+    public fun validTargets(attackerId: UnitId, torsoFacing: HexDirection): Set<UnitId>
+
+    /**
+     * Full target/weapon legality and success-chance data for the cursor UI. [primaryTargetId]
+     * is which of [attackerId]'s targets this impulse is primary — every other target is
+     * secondary and carries the `+1 SECONDARY_TARGET` modifier — or null when no primary has
+     * been elected yet, in which case every target previews as primary (today's rule for an
+     * attacker's first declared target of the impulse).
+     */
+    public fun targetInfos(attackerId: UnitId, torsoFacing: HexDirection, primaryTargetId: UnitId? = null): List<TargetInfo>
+
+    /** Physical-attack options (punch per arm, kick) against each adjacent enemy. */
+    public fun physicalAttackOptions(attackerId: UnitId): List<PhysicalAttackOption>
+
+    /**
+     * Legal torso facings for [unitId]: its leg facing (no twist) or ±1
+     * hexside either way. Empty if the unit doesn't exist. Single source
+     * shared with the impulse-commit validation
+     * ([io.archinaut.battletech.tactical.attack.ImpulseAttackPhaseHandler.validateTorsoFacings])
+     * via [io.archinaut.battletech.tactical.attack.torsoTwistOptions] so the TUI's twist
+     * input handling can never drift from what the server will accept.
+     */
+    public fun legalTorsoFacings(unitId: UnitId): Set<HexDirection>
+
+    /**
+     * Committed weapon-attack declarations for the current attack impulse sequence, across both
+     * players, grouped one entry per (attacker, target) pair and ordered by impulse-commit
+     * player order then attacker id — the projection the DECLARED TARGETS panel renders
+     * alongside the viewing player's own in-progress (uncommitted) drafts, which stay
+     * client-side (see [io.archinaut.battletech.tactical.session.GameCommand]'s transient-UI-workflow carve-out).
+     */
+    public fun declaredWeaponAttacks(): List<DeclaredWeaponAttack>
+
+    /**
+     * The same committed declarations as [declaredWeaponAttacks], grouped by attacker and then
+     * by player slot in impulse-commit order — the shape a declared-targets panel renders
+     * directly. Each player in [PlayerId] gets a slot even with zero committed declarations,
+     * so a caller merging in other per-player data (the TUI's own in-progress, uncommitted
+     * drafts, which stay client-side — see [io.archinaut.battletech.tactical.session.GameCommand]'s
+     * transient-UI-workflow carve-out) can find the right slot to insert into without
+     * re-deriving player order or the attacker grouping itself.
+     */
+    public fun declaredAttacksByPlayer(): List<DeclaredPlayerAttacks>
+
+    /** Positions of the given unit IDs on the board. */
+    public fun resolveTargetPositions(targetIds: Set<UnitId>): Set<HexCoordinates>
+}

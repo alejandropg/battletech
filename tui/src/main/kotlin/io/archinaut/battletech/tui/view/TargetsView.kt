@@ -1,0 +1,93 @@
+package io.archinaut.battletech.tui.view
+
+import io.archinaut.battletech.tactical.attack.weapon.TargetInfo
+import io.archinaut.battletech.tactical.attack.weapon.WeaponTargetInfo
+import io.archinaut.battletech.tactical.unit.UnitId
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.widget.CheckState
+import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.widget.SelectableRow
+import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
+
+internal class TargetsView(
+    private val targets: List<TargetInfo>,
+    private val weaponAssignments: Map<UnitId, Set<Int>>,
+    private val primaryTargetId: UnitId?,
+    private val cursorTargetIndex: Int,
+    private val cursorWeaponIndex: Int = 0,
+) : PreparedTextView() {
+
+    override fun render(content: TextCursor) {
+        if (targets.isEmpty()) {
+            content.writeLine("No targets", TEXT_PRIMARY_STYLE)
+            return
+        }
+
+        for ((index, target) in targets.withIndex()) {
+            val isCursorOnTarget = index == cursorTargetIndex
+            val tag = when {
+                primaryTargetId == null -> ""
+                target.unitId == primaryTargetId -> " [P]"
+                else -> " [S]"
+            }
+            val nameColor = if (isCursorOnTarget) ChromeRole.ACCENT else ChromeRole.TEXT_PRIMARY
+            val nameLine = "${UnitLabel.of(target.unitId, target.unitName)}$tag"
+            content.writeLine(nameLine, Cell.Style(nameColor))
+
+            val assignedToThisTarget = weaponAssignments[target.unitId] ?: emptySet()
+            val assignedToOtherTargets = weaponAssignments.entries
+                .filter { (k, _) -> k != target.unitId }
+                .flatMap { (_, v) -> v }
+                .toSet()
+
+            for ((wi, weapon) in target.weapons.withIndex()) {
+                val isCursorHere = isCursorOnTarget && wi == cursorWeaponIndex
+                val isAssignedElsewhere = weapon.weaponIndex in assignedToOtherTargets
+                val isAssignedHere = weapon.weaponIndex in assignedToThisTarget
+                val isDisabled = weapon !is WeaponTargetInfo.Available || isAssignedElsewhere
+
+                val state = when {
+                    isAssignedElsewhere -> CheckState.INDETERMINATE
+                    isAssignedHere -> CheckState.CHECKED
+                    else -> CheckState.UNCHECKED
+                }
+
+                val color = if (isDisabled) ChromeRole.DISABLED else ChromeRole.TEXT_PRIMARY
+                when (weapon) {
+                    is WeaponTargetInfo.Available ->
+                        SelectableRow.draw(
+                            content = content,
+                            label = weapon.weaponName,
+                            checkState = state,
+                            cursor = isCursorHere,
+                            right = hitChanceLabel(weapon.toHit),
+                            subLines = weapon.toHit.displayLabels(),
+                            textColor = color,
+                            checkboxColor = if (isDisabled) ChromeRole.DISABLED else null,
+                            glyphs = TUI_CHECKBOX_GLYPHS,
+                        )
+                    is WeaponTargetInfo.Unavailable ->
+                        SelectableRow.draw(
+                            content = content,
+                            label = weapon.weaponName,
+                            checkState = state,
+                            cursor = isCursorHere,
+                            right = "—",
+                            textColor = color,
+                            checkboxColor = if (isDisabled) ChromeRole.DISABLED else null,
+                            glyphs = TUI_CHECKBOX_GLYPHS,
+                        )
+                }
+            }
+
+            content.newLine() // blank line between targets
+        }
+    }
+
+    internal companion object {
+        internal const val TITLE: String = "TARGETS"
+
+        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
+    }
+}

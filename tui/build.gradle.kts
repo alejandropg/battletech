@@ -7,7 +7,7 @@ plugins {
 }
 
 application {
-    mainClass.set("battletech.tui.MainKt")
+    mainClass.set("io.archinaut.battletech.tui.MainKt")
 }
 
 repositories {

@@ -1,0 +1,117 @@
+package io.archinaut.battletech.tactical.attack.weapon
+
+import io.archinaut.battletech.tactical.attack.AttackResult
+import io.archinaut.battletech.tactical.attack.ImpulseAttackPhaseHandler
+import io.archinaut.battletech.tactical.attack.WeaponAttackContext
+import io.archinaut.battletech.tactical.attack.resolveAttacksWithCrits
+import io.archinaut.battletech.tactical.dice.DiceRoller
+import io.archinaut.battletech.tactical.heat.applyWeaponHeat
+import io.archinaut.battletech.tactical.model.GameState
+import io.archinaut.battletech.tactical.model.TurnPhase
+import io.archinaut.battletech.tactical.session.AttackDeclarationsRecorded
+import io.archinaut.battletech.tactical.session.AttacksResolved
+import io.archinaut.battletech.tactical.session.CommandRejection
+import io.archinaut.battletech.tactical.session.CommitAttackImpulse
+import io.archinaut.battletech.tactical.session.GameCommand
+import io.archinaut.battletech.tactical.session.GameEvent
+import io.archinaut.battletech.tactical.session.PhaseOutcome
+import io.archinaut.battletech.tactical.session.TurnState
+
+/**
+ * Weapon-fire attack phase. On entry seeds the attack impulse sequence
+ * (loser declares first; alternating impulses). Accepts
+ * [CommitAttackImpulse] from the active attack player.
+ *
+ * Declarations accumulate across impulses; on the final impulse they are
+ * resolved against the current game state and damage is applied.
+ */
+public class WeaponAttackPhaseHandler : ImpulseAttackPhaseHandler() {
+
+    override val phase: TurnPhase = TurnPhase.WEAPON_ATTACK
+
+    override fun acceptsCommand(command: GameCommand): Boolean = command is CommitAttackImpulse
+
+    /**
+     * Validates every [AttackDeclaration] and torso-facing entry in a
+     * [CommitAttackImpulse] before [apply] runs. Pure — no dice rolls, no mutation.
+     *
+     * Checks (in order, returns first violation):
+     *  1. Attacker exists and is owned by [CommitAttackImpulse.playerId]; target exists, is not
+     *     friendly, and is not destroyed (shared [validateTarget]).
+     *  2. Weapon index is valid on that attacker.
+     *  3. Tactical legality (range, LOS, ammo, etc.) via [FireWeaponActionDefinition.firstRejection].
+     *  4. Each torso-facing unit exists, is owned by the command player, and the
+     *     requested facing is a legal ±1 twist from the unit's leg facing (shared [validateTorsoFacings]).
+     *
+     * The active-player check (session-level) is NOT repeated here — [BattleSession]
+     * already rejects mismatched active players before calling [validate].
+     */
+    override fun validate(
+        command: GameCommand,
+        state: GameState,
+        turn: TurnState,
+    ): CommandRejection? {
+        val cmd = command as CommitAttackImpulse
+
+        for (decl in cmd.declarations) {
+            validateTarget(decl.attackerId, decl.targetId, cmd.playerId, state)?.let { return it }
+
+            val attacker = state.units.byId(decl.attackerId)
+            if (decl.weaponIndex !in attacker.weapons.indices) {
+                return CommandRejection.NoSuchWeapon(decl.attackerId, decl.weaponIndex)
+            }
+
+            val target = state.units.byId(decl.targetId)
+            val context = WeaponAttackContext(
+                actor = attacker,
+                // target is passed as-is: the rules only read its public projection (see
+                // AttackContext), and CombatUnit is a VisibleUnit.
+                target = target,
+                weapon = attacker.weapons[decl.weaponIndex],
+                map = state.map,
+            )
+            FireWeaponActionDefinition().firstRejection(context)?.let { rejection ->
+                return CommandRejection.RuleViolation(rejection)
+            }
+        }
+
+        return validateTorsoFacings(cmd, state)
+    }
+
+    override fun apply(
+        command: GameCommand,
+        state: GameState,
+        turn: TurnState,
+        roller: DiceRoller,
+    ): PhaseOutcome {
+        val cmd = command as CommitAttackImpulse
+        val events = mutableListOf<GameEvent>()
+
+        var newState = applyTorsoFacingsStep(state, cmd.torsoFacings, events)
+
+        // Fired weapons generate heat regardless of whether they hit; record it
+        // on the attacker now so the Heat Phase folds it in.
+        newState = newState.applyWeaponHeat(cmd.declarations)
+
+        var newAttack = turn.attack.recordWeaponImpulse(cmd.declarations)
+
+        events += AttackDeclarationsRecorded(player = cmd.playerId, declarations = cmd.declarations)
+
+        val accumulated = newAttack.weaponDeclarations
+        if (newAttack.isComplete && accumulated.isNotEmpty()) {
+            val stateBeforeCrits = newState
+            val (resolvedState, results, criticalHits) = resolveAttacksWithCrits(accumulated, newState, roller)
+            newState = resolvedState
+            newAttack = newAttack.clearWeaponDeclarations()
+            events += AttacksResolved(results)
+            events += criticalHits
+
+            val (stateAfterTail, tailEvents) =
+                resolveVolleyTail(stateBeforeCrits, newState, results.filterIsInstance<AttackResult.Hit>(), roller)
+            newState = stateAfterTail
+            events += tailEvents
+        }
+
+        return PhaseOutcome(newState, turn.copy(attack = newAttack), events)
+    }
+}

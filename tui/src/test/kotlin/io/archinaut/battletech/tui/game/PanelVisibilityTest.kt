@@ -1,0 +1,171 @@
+package io.archinaut.battletech.tui.game
+
+import io.archinaut.battletech.tactical.attack.AttackResult
+import io.archinaut.battletech.tactical.attack.ToHitAttempt
+import io.archinaut.battletech.tactical.attack.ToHitBase
+import io.archinaut.battletech.tactical.attack.ToHitBreakdown
+import io.archinaut.battletech.tactical.dice.DiceRoll
+import io.archinaut.battletech.tactical.model.HexCoordinates
+import io.archinaut.battletech.tactical.model.TurnPhase
+import io.archinaut.battletech.tactical.unit.UnitId
+import io.archinaut.battletech.tui.aGameState
+import io.archinaut.battletech.tui.game.phase.AttackPhase
+import io.archinaut.battletech.tui.game.phase.MovementPhase
+import io.archinaut.battletech.tui.game.phase.PhysicalAttackPhase
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+internal class PanelVisibilityTest {
+
+    private val emptyState = aGameState()
+    private val cursor = HexCoordinates(0, 0)
+
+    @Test
+    fun `movement phase shows only LOG and UNIT STATUS by default`() {
+        val appState = AppState(
+            gameState = emptyState,
+            phase = MovementPhase.SelectingUnit,
+            cursor = cursor,
+        )
+
+        val visible = PanelVisibility.visiblePanels(appState)
+
+        assertEquals(setOf(GamePanelId.LOG, GamePanelId.UNIT_STATUS), visible)
+    }
+
+    @Test
+    fun `weapon attack phase includes DECLARED TARGETS`() {
+        val appState = AppState(
+            gameState = emptyState,
+            phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK),
+            cursor = cursor,
+        )
+
+        val visible = PanelVisibility.visiblePanels(appState)
+
+        assertTrue(visible.contains(GamePanelId.LOG))
+        assertTrue(visible.contains(GamePanelId.UNIT_STATUS))
+        assertTrue(visible.contains(GamePanelId.DECLARED_TARGETS))
+    }
+
+    @Test
+    fun `physical attack phase does not reserve DECLARED TARGETS`() {
+        // The dedicated physical-attack flow does not populate the declared-targets
+        // panel, so reserving its column would render as a blank gap between the
+        // tactical map and the attack-results panel. The freed width goes to the map.
+        val appState = AppState(
+            gameState = emptyState,
+            phase = PhysicalAttackPhase.SelectingAttacker(),
+            cursor = cursor,
+        )
+
+        val visible = PanelVisibility.visiblePanels(appState)
+
+        assertFalse(visible.contains(GamePanelId.DECLARED_TARGETS))
+    }
+
+    @Test
+    fun `movement phase does not include attack panels`() {
+        val appState = AppState(
+            gameState = emptyState,
+            phase = MovementPhase.SelectingUnit,
+            cursor = cursor,
+        )
+
+        val visible = PanelVisibility.visiblePanels(appState)
+
+        assertFalse(visible.contains(GamePanelId.DECLARED_TARGETS))
+        assertFalse(visible.contains(GamePanelId.TARGETS))
+        assertFalse(visible.contains(GamePanelId.TARGET_STATUS))
+    }
+
+    @Test
+    fun `HELP is closed by default`() {
+        val appState = AppState(
+            gameState = emptyState,
+            phase = MovementPhase.SelectingUnit,
+            cursor = cursor,
+        )
+
+        val visible = PanelVisibility.visiblePanels(appState)
+
+        assertFalse(visible.contains(GamePanelId.HELP))
+    }
+
+    @Test
+    fun `HELP becomes visible once opened`() {
+        val appState = AppState(
+            gameState = emptyState,
+            phase = MovementPhase.SelectingUnit,
+            cursor = cursor,
+        ).copy(helpOpen = true)
+
+        val visible = PanelVisibility.visiblePanels(appState)
+
+        assertTrue(visible.contains(GamePanelId.HELP))
+    }
+
+    private fun aResult() = AttackResult.Miss(
+        attempt = ToHitAttempt(
+            attackerId = UnitId("a"),
+            targetId = UnitId("b"),
+            weaponName = "Med Laser",
+            toHitRoll = DiceRoll(2, 3),
+            toHit = ToHitBreakdown(ToHitBase.GUNNERY, skill = 4, modifiers = emptyList()),
+        ),
+    )
+
+    @Test
+    fun `results panel shows during physical attack right after weapon resolution`() {
+        val appState = AppState(
+            gameState = emptyState,
+            phase = AttackPhase.SelectingAttacker(TurnPhase.PHYSICAL_ATTACK),
+            cursor = cursor,
+        ).copy(lastAttackResults = listOf(aResult()))
+
+        val visible = PanelVisibility.visiblePanels(appState)
+
+        assertTrue(visible.contains(GamePanelId.ATTACK_RESULTS))
+    }
+
+    @Test
+    fun `results panel shows during movement`() {
+        val appState = AppState(
+            gameState = emptyState,
+            phase = MovementPhase.SelectingUnit,
+            cursor = cursor,
+        ).copy(lastAttackResults = listOf(aResult()))
+
+        val visible = PanelVisibility.visiblePanels(appState)
+
+        assertTrue(visible.contains(GamePanelId.ATTACK_RESULTS))
+    }
+
+    @Test
+    fun `BOARD is never in the visible set — it is the PanelSet's main panel, always present`() {
+        val appState = AppState(
+            gameState = emptyState,
+            phase = MovementPhase.SelectingUnit,
+            cursor = cursor,
+        )
+
+        val visible = PanelVisibility.visiblePanels(appState)
+
+        assertFalse(visible.contains(GamePanelId.BOARD))
+    }
+
+    @Test
+    fun `results panel hidden during weapon attack phase`() {
+        val appState = AppState(
+            gameState = emptyState,
+            phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK),
+            cursor = cursor,
+        ).copy(lastAttackResults = listOf(aResult()))
+
+        val visible = PanelVisibility.visiblePanels(appState)
+
+        assertFalse(visible.contains(GamePanelId.ATTACK_RESULTS))
+    }
+}

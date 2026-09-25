@@ -1,0 +1,60 @@
+package io.archinaut.battletech.tactical.unit
+
+import io.archinaut.battletech.tactical.model.HexCoordinates
+import io.archinaut.battletech.tactical.model.HexDirection
+import io.archinaut.battletech.tactical.model.PlayerId
+import kotlinx.serialization.Serializable
+
+/**
+ * A per-viewer projection of a [CombatUnit]: exposes only the fields a BattleTech player can
+ * observe about ANY unit on the table, whether or not they own it. [CombatUnit] itself
+ * implements this directly — it already carries every field this interface declares, plus
+ * the record-sheet data (gunnery, heat, internal structure, ...) that stays reachable for the
+ * owner's own rendering. [ForeignUnit] holds nothing beyond what is declared here — there is
+ * no field to leak because the field does not exist on the type.
+ *
+ * Deliberately public, despite looking sensitive at a glance:
+ * - [movementThisTurn] — you watch the enemy move across the table.
+ * - [isProne], [isShutdown], [isDestroyed] — visibly true of the miniature itself.
+ * - [armor] — damage is applied openly in BattleTech; armor diagrams are not hidden.
+ * - [isPilotConscious] — an unconscious pilot leaves the 'Mech visibly inert, and
+ *   [io.archinaut.battletech.tactical.session.PilotKnockedUnconscious] carries no private data, so it
+ *   reaches every player's log unredacted. Hiding the field the log announces would be
+ *   theater. The pilot *hit count* behind it stays private (record-sheet data).
+ * - [tonnage] is public **deliberately**: [name] already reveals the chassis (e.g.
+ *   "Atlas AS7-D"), and tonnage is looked up from that chassis name in the Technical
+ *   Readouts. Hiding a field that's derivable from a field you already show is theater,
+ *   not redaction. (The pre-projection minimal public unit type omitted tonnage; that was an inconsistency
+ *   this projection does not repeat.)
+ * - [maxArmor] — same reasoning as [tonnage]: the exact chassis+variant named by [name]
+ *   has one published armor allocation per location, so the maximum is derivable from a
+ *   field already shown. Only the *current* internal structure stays private — max
+ *   internal structure would still leak nothing on its own, but nothing on the record
+ *   sheet needs it disclosed without the current value beside it.
+ *
+ * The test for "is this public?" is **observability**, not sensitivity: could an
+ * opponent learn it by watching the table or hearing the roll announced? If yes,
+ * withholding it buys nothing and costs consistency. [ForeignUnit] enumerates what
+ * fails that test and is therefore absent by design.
+ */
+@Serializable
+public sealed interface VisibleUnit {
+    public val id: UnitId
+    public val owner: PlayerId
+    public val name: String
+    public val tonnage: Int
+    public val position: HexCoordinates
+    public val facing: HexDirection
+    public val torsoFacing: HexDirection
+    public val armor: ArmorLayout
+    public val maxArmor: ArmorLayout
+    public val walkingMP: Int
+    public val runningMP: Int
+    public val jumpMP: Int
+    public val weapons: List<WeaponView>
+    public val isProne: Boolean
+    public val isShutdown: Boolean
+    public val isDestroyed: Boolean
+    public val isPilotConscious: Boolean
+    public val movementThisTurn: MovementThisTurn
+}

@@ -3,7 +3,7 @@ plugins {
 }
 
 application {
-    mainClass.set("battletech.MainKt")
+    mainClass.set("io.archinaut.battletech.MainKt")
 }
 
 dependencies {

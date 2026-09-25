@@ -1,0 +1,37 @@
+package io.archinaut.battletech.tactical.attack.physical
+
+import io.archinaut.battletech.tactical.attack.AttackContext
+import io.archinaut.battletech.tactical.attack.AttackRule
+import io.archinaut.battletech.tactical.model.GameMap
+import io.archinaut.battletech.tactical.model.HexCoordinates
+import io.archinaut.battletech.tactical.model.unitWaterDepth
+import io.archinaut.battletech.tactical.rules.RuleResult
+import io.archinaut.battletech.tactical.rules.RuleRejection
+import kotlin.math.abs
+
+/** Punch reach: elevation and water-depth limits (`docs/rules/physical-attacks.md` §3). */
+public class PunchReachRule : AttackRule<AttackContext> {
+    override fun evaluate(context: AttackContext): RuleResult {
+        val depth = unitWaterDepth(context.target.position, context.map)
+        if (depth >= 2) return RuleResult.Unsatisfied(RuleRejection.TargetUnderwater(depth))
+
+        val delta = levelOf(context.target.position, context.map) - levelOf(context.actor.position, context.map)
+        if (abs(delta) > 1) return RuleResult.Unsatisfied(RuleRejection.ElevationOutOfReach(delta))
+        return RuleResult.Satisfied
+    }
+}
+
+/** Kick reach: elevation and water-depth limits (`docs/rules/physical-attacks.md` §3). */
+public class KickReachRule : AttackRule<AttackContext> {
+    override fun evaluate(context: AttackContext): RuleResult {
+        val depth = unitWaterDepth(context.target.position, context.map)
+        if (depth >= 1) return RuleResult.Unsatisfied(RuleRejection.TargetUnderwater(depth))
+
+        val delta = levelOf(context.target.position, context.map) - levelOf(context.actor.position, context.map)
+        if (delta !in -1..0) return RuleResult.Unsatisfied(RuleRejection.ElevationOutOfReach(delta))
+        return RuleResult.Satisfied
+    }
+}
+
+private fun levelOf(position: HexCoordinates, map: GameMap): Int =
+    map.hexes[position]?.elevation ?: 0

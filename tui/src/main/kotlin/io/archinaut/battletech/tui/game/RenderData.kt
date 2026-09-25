@@ -1,0 +1,71 @@
+package io.archinaut.battletech.tui.game
+
+import io.archinaut.battletech.tactical.attack.lineOfSight
+import io.archinaut.battletech.tactical.model.GameMap
+import io.archinaut.battletech.tactical.model.HexCoordinates
+import io.archinaut.battletech.tactical.model.HexDirection
+import io.archinaut.battletech.tactical.model.MovementMode
+import io.archinaut.battletech.tactical.movement.ReachabilityMap
+import io.archinaut.battletech.tui.hex.HexHighlight
+
+public data class RenderData(
+    val hexHighlights: Map<HexCoordinates, HexHighlight> = emptyMap(),
+    val reachableFacings: Map<HexCoordinates, Set<HexDirection>> = emptyMap(),
+    val facingSelection: FacingSelection? = null,
+    /**
+     * Torso overrides for uncommitted twists, keyed by the attacker's hex. Every entry here
+     * differs from that unit's committed `torsoFacing` — an untouched draft is indistinguishable
+     * from committed state and must not appear, since [BoardView][io.archinaut.battletech.tui.view.BoardView]
+     * paints every entry in the draft color.
+     */
+    val draftTorsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
+    val validTargetPositions: Set<HexCoordinates> = emptySet(),
+    val selectedTargetPosition: HexCoordinates? = null,
+    /** The hex a hovered/confirmed movement destination sits on — highlighted `BoardRole.BOARD_ACTIVE`. */
+    val pathDestination: HexCoordinates? = null,
+    /** The movement mode ([pathDestination]'s mode) drawn as a walk/run/jump glyph on the board. */
+    val movementMode: MovementMode? = null,
+) {
+    internal companion object {
+        internal val EMPTY: RenderData = RenderData()
+    }
+}
+
+/**
+ * Line-of-sight highlight hexes from [attackerPosition] to each of [targetPositions].
+ * Positions only — [io.archinaut.battletech.tactical.attack.lineOfSight] never needs anything else
+ * about either unit, so this works identically whether a target is owned by the viewer
+ * or not.
+ */
+internal fun losHighlights(
+    attackerPosition: HexCoordinates,
+    targetPositions: Set<HexCoordinates>,
+    map: GameMap,
+): Map<HexCoordinates, HexHighlight> =
+    targetPositions.flatMap { losLine(attackerPosition, it, map) }.associateWith { HexHighlight.LINE_OF_SIGHT }
+
+internal fun selectedLosHighlights(
+    attackerPosition: HexCoordinates,
+    targetPosition: HexCoordinates,
+    map: GameMap,
+): Map<HexCoordinates, HexHighlight> =
+    losLine(attackerPosition, targetPosition, map).associateWith { HexHighlight.LINE_OF_SIGHT_SELECTED }
+
+private fun losLine(attackerPosition: HexCoordinates, targetPosition: HexCoordinates, map: GameMap): List<HexCoordinates> {
+    if (lineOfSight(attackerPosition, targetPosition, map).blocked) return emptyList()
+    return attackerPosition.lineTo(targetPosition).drop(1).dropLast(1)
+}
+
+internal fun reachabilityHighlights(reachability: ReachabilityMap): Map<HexCoordinates, HexHighlight> {
+    val highlight = when (reachability.mode) {
+        MovementMode.WALK -> HexHighlight.REACHABLE_WALK
+        MovementMode.RUN -> HexHighlight.REACHABLE_RUN
+        MovementMode.JUMP -> HexHighlight.REACHABLE_JUMP
+    }
+    return reachability.destinations.associate { it.position to highlight }
+}
+
+internal fun pathHighlights(path: List<HexCoordinates>?): Map<HexCoordinates, HexHighlight> {
+    if (path == null) return emptyMap()
+    return path.dropLast(1).associateWith { HexHighlight.PATH }
+}

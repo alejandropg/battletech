@@ -1,0 +1,55 @@
+package io.archinaut.battletech.tui.view
+
+import io.archinaut.battletech.tactical.query.PlayerGameState
+import io.archinaut.battletech.tactical.session.LogEntry
+import io.archinaut.tenter.screen.styled
+import io.archinaut.tenter.text.CellWidth
+import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.view.Viewport
+
+/**
+ * Marks its last written row for reveal, so the enclosing [Viewport] follows new entries to
+ * the bottom exactly as [TargetsView]'s cursor row does — the same mechanism, not a bespoke
+ * bottom-anchor. A consequence: a new entry always scrolls to the bottom, even if the reader had
+ * scrolled up to review history.
+ */
+internal class LogView(
+    private val entries: List<LogEntry>,
+    private val state: PlayerGameState,
+) : PreparedTextView() {
+
+    override fun render(content: TextCursor) {
+        var lastTurn: Int? = null
+
+        for (entry in entries) {
+            val logLines = GameLogFormatter.lines(entry.event, state)
+            if (logLines.isEmpty()) continue
+
+            if (entry.turn != lastTurn) {
+                content.writeHeader("TURN ${entry.turn}")
+                lastTurn = entry.turn
+            }
+
+            for (line in logLines) {
+                val prefixWidth = CellWidth.of(line.icon) + 1
+                val indent = " ".repeat(prefixWidth)
+                val available = content.width - prefixWidth
+
+                line.content.wrap(available, available).forEachIndexed { i, wrapped ->
+                    content.writeLine(
+                        styled {
+                            append(if (i == 0) "${line.icon} " else indent)
+                            append(wrapped)
+                        },
+                    )
+                }
+            }
+        }
+
+        if (content.row > 0) content.markRevealAt(content.row - 1)
+    }
+
+    internal companion object {
+        internal const val TITLE: String = "LOG"
+    }
+}

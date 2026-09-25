@@ -1,0 +1,108 @@
+package io.archinaut.battletech.tactical.unit
+
+import io.archinaut.battletech.tactical.model.MechLocation
+import io.archinaut.battletech.tactical.query.aUnit
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+
+internal class CriticalDamageStatusTest {
+
+    @Test
+    fun `undamaged unit reports zero hits and no penalties for every component`() {
+        val unit = aUnit()
+
+        val statuses = unit.criticalDamageStatus()
+
+        assertThat(statuses.map { it.component })
+            .containsExactly(
+                CriticalComponent.ENGINE,
+                CriticalComponent.GYRO,
+                CriticalComponent.SENSOR,
+                CriticalComponent.LIFE_SUPPORT,
+            )
+        assertThat(statuses).allSatisfy { status ->
+            assertThat(status.hits).isZero()
+            assertThat(status.penalties).isEmpty()
+        }
+    }
+
+    @Test
+    fun `engine status reports capacity 3 and heat-per-turn penalty`() {
+        // CENTER_TORSO Engine slots (`docs/rules/critical-hits.md` §3).
+        val oneHit = aUnit().copy(criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(0)))
+        val twoHits = aUnit().copy(criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(0, 7)))
+        val threeHits = aUnit().copy(criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(0, 7, 8)))
+
+        val engineOf = { unit: CombatUnit -> unit.criticalDamageStatus().first { it.component == CriticalComponent.ENGINE } }
+
+        val oneStatus = engineOf(oneHit)
+        assertThat(oneStatus.capacity).isEqualTo(3)
+        assertThat(oneStatus.hits).isEqualTo(1)
+        assertThat(oneStatus.penalties).containsExactly(CritEffect.HeatPerTurn(5))
+
+        val twoStatus = engineOf(twoHits)
+        assertThat(twoStatus.hits).isEqualTo(2)
+        assertThat(twoStatus.penalties).containsExactly(CritEffect.HeatPerTurn(10))
+
+        val threeStatus = engineOf(threeHits)
+        assertThat(threeStatus.hits).isEqualTo(3)
+        // 3 engine crits destroy the unit (see DestructionTest) rather than report an
+        // ongoing penalty here — that unit is eliminated and shown via the destruction path.
+        assertThat(threeStatus.penalties).isEmpty()
+    }
+
+    @Test
+    fun `gyro status reports capacity 2 - 1 crit is PSR penalty, 2 crits cannot stand`() {
+        // CENTER_TORSO Gyro slots (`docs/rules/critical-hits.md` §3).
+        val oneHit = aUnit().copy(criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(3)))
+        val twoHits = aUnit().copy(criticalHits = mapOf(MechLocation.CENTER_TORSO to setOf(3, 4)))
+
+        val gyroOf = { unit: CombatUnit -> unit.criticalDamageStatus().first { it.component == CriticalComponent.GYRO } }
+
+        val oneStatus = gyroOf(oneHit)
+        assertThat(oneStatus.capacity).isEqualTo(2)
+        assertThat(oneStatus.hits).isEqualTo(1)
+        assertThat(oneStatus.penalties).containsExactly(CritEffect.PsrPenalty(GYRO_PSR_PENALTY))
+
+        val twoStatus = gyroOf(twoHits)
+        assertThat(twoStatus.hits).isEqualTo(2)
+        assertThat(twoStatus.penalties).contains(CritEffect.CannotStand)
+    }
+
+    @Test
+    fun `sensor status reports capacity 2 - 1 crit is to-hit penalty, 2 crits cannot fire`() {
+        // HEAD Sensors slots (`docs/rules/critical-hits.md` §3).
+        val oneHit = aUnit().copy(criticalHits = mapOf(MechLocation.HEAD to setOf(1)))
+        val twoHits = aUnit().copy(criticalHits = mapOf(MechLocation.HEAD to setOf(1, 4)))
+
+        val sensorOf = { unit: CombatUnit -> unit.criticalDamageStatus().first { it.component == CriticalComponent.SENSOR } }
+
+        val oneStatus = sensorOf(oneHit)
+        assertThat(oneStatus.capacity).isEqualTo(2)
+        assertThat(oneStatus.hits).isEqualTo(1)
+        assertThat(oneStatus.penalties).containsExactly(CritEffect.ToHitPenalty(SENSOR_TO_HIT_PENALTY))
+
+        val twoStatus = sensorOf(twoHits)
+        assertThat(twoStatus.hits).isEqualTo(2)
+        assertThat(twoStatus.penalties).containsExactly(CritEffect.CannotFire)
+    }
+
+    @Test
+    fun `life support status reports capacity 2 - 1 crit is heat-threshold hit, 2 crits is per-turn hit`() {
+        // HEAD LifeSupport slots (`docs/rules/critical-hits.md` §3).
+        val oneHit = aUnit().copy(criticalHits = mapOf(MechLocation.HEAD to setOf(0)))
+        val twoHits = aUnit().copy(criticalHits = mapOf(MechLocation.HEAD to setOf(0, 5)))
+
+        val lifeSupportOf =
+            { unit: CombatUnit -> unit.criticalDamageStatus().first { it.component == CriticalComponent.LIFE_SUPPORT } }
+
+        val oneStatus = lifeSupportOf(oneHit)
+        assertThat(oneStatus.capacity).isEqualTo(2)
+        assertThat(oneStatus.hits).isEqualTo(1)
+        assertThat(oneStatus.penalties).containsExactly(CritEffect.PilotDamageWhenHeatAtLeast(LIFE_SUPPORT_HEAT_THRESHOLD))
+
+        val twoStatus = lifeSupportOf(twoHits)
+        assertThat(twoStatus.hits).isEqualTo(2)
+        assertThat(twoStatus.penalties).containsExactly(CritEffect.PilotDamageEachTurn)
+    }
+}

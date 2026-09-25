@@ -2,10 +2,10 @@
 
 The TUI's six built-in color themes (`dark`, `light`, `dark-256`, `light-256`, `dark-16`,
 `light-16`) are data, not code: each is a JSON file in the repository's root `theme/` directory,
-loaded at runtime by `battletech.tui.screen.resolveTheme` — see that function's KDoc and
-`battletech.tui.screen.ThemeFile` for the exact resolution and validation rules. This doc covers
+loaded at runtime by `io.archinaut.battletech.tui.screen.resolveTheme` — see that function's KDoc and
+`io.archinaut.battletech.tui.screen.ThemeFile` for the exact resolution and validation rules. This doc covers
 the file format and, since JSON can't hold comments, the design rationale behind the values
-themselves. `battletech.tui.screen.TuiPaletteTest` enforces every contrast/distinctness/ordering
+themselves. `io.archinaut.battletech.tui.screen.TuiPaletteTest` enforces every contrast/distinctness/ordering
 guarantee described below against the actual packaged files — if this doc and that test ever
 disagree, the test is authoritative.
 
@@ -39,16 +39,16 @@ One file per theme, one color space per file — there is no conversion between 
 ```
 
 `chrome` must hold exactly the 13 `io.archinaut.tenter.palette.ChromeRole` names; `board` must hold exactly the
-27 `battletech.tui.screen.BoardRole` names; and `heatScale` must hold exactly the three
-`battletech.tui.screen.HeatScaleRole` names. A missing or unrecognized role name fails to load with
+27 `io.archinaut.battletech.tui.screen.BoardRole` names; and `heatScale` must hold exactly the three
+`io.archinaut.battletech.tui.screen.HeatScaleRole` names. A missing or unrecognized role name fails to load with
 a `ThemeLoadException` naming the offending role and table — this is the load-time replacement for
 the compile-time exhaustiveness check a hand-written `RolePalette` object used to get for free (see
 `io.archinaut.tenter.palette.RolePalette`'s KDoc). Custom themes written before the `heatScale` table was added
 must add all three roles; there is deliberately no unverified fallback color.
 
-Resolution is not theme-specific: `battletech.tui.screen.ThemeLoader` is a thin adapter over
-`battletech.tactical.io.ResourceOrFileLoader` (see `docs/architecture.md`), the same generic loader
-`battletech.tactical.model.map.GameMapLoader` uses for maps. A packaged theme is resolved as
+Resolution is not theme-specific: `io.archinaut.battletech.tui.screen.ThemeLoader` is a thin adapter over
+`io.archinaut.battletech.tactical.io.ResourceOrFileLoader` (see `docs/architecture.md`), the same generic loader
+`io.archinaut.battletech.tactical.model.map.GameMapLoader` uses for maps. A packaged theme is resolved as
 `theme/<name>.json` on the classpath; `theme/index.json` lists the built-in names
 (`{"names": [...]}` — the same schema `map/index.json` uses) so an unrecognized `--theme` name can
 name the built-ins in its error, since a jar can't otherwise list a resource directory. For
@@ -172,6 +172,6 @@ two target markers, active vs. border, and the terrain icon set — never share 
 Edit (or add) a file under `theme/`; if adding one, also add its name to `theme/index.json`. No
 Kotlin change or rebuild is required to *use* a custom theme (`--theme <path>` loads any theme file
 directly), but a new **built-in** theme should still get the same verification the six shipped ones
-get: extend `battletech.tui.screen.TuiPaletteTest`'s built-in theme list (it already reads from
+get: extend `io.archinaut.battletech.tui.screen.TuiPaletteTest`'s built-in theme list (it already reads from
 `ThemeLoader().builtInNames()`, so this is automatic) and confirm it against the contrast/
 distinctness guarantees above before shipping it.

@@ -1,0 +1,16 @@
+package io.archinaut.battletech.tactical.session
+
+import io.archinaut.battletech.tactical.model.PlayerId
+import kotlinx.serialization.Serializable
+
+@Serializable
+public data class ImpulseSequence(
+    val order: List<Impulse>,
+    val currentIndex: Int = 0,
+) {
+    val isComplete: Boolean get() = currentIndex >= order.size
+    val current: Impulse get() = order[currentIndex]
+    val activePlayer: PlayerId get() = current.player
+
+    public fun advance(): ImpulseSequence = copy(currentIndex = currentIndex + 1)
+}

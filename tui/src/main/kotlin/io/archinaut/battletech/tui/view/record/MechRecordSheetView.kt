@@ -1,0 +1,42 @@
+package io.archinaut.battletech.tui.view.record
+
+import io.archinaut.battletech.tactical.model.GameMap
+import io.archinaut.battletech.tactical.unit.CombatUnit
+import io.archinaut.battletech.tactical.unit.ForeignUnit
+import io.archinaut.battletech.tactical.unit.HeatSource
+import io.archinaut.battletech.tactical.unit.VisibleUnit
+import io.archinaut.tenter.view.ContentLayout
+import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.view.contentView
+import kotlin.math.min
+
+/**
+ * The maximized UNIT STATUS panel: a wide, graphical 'Mech record sheet — armor and internal
+ * structure as pip circles instead of bare numbers, the warrior data block, the heat ladder, the
+ * full critical hit table, and the weapons & equipment inventory. [io.archinaut.battletech.tui.view.UnitStatusView]
+ * remains the compact NORMAL-state list; this is the same [subject]/[pendingHeat] data laid out
+ * the way the printed record sheet lays it out.
+ *
+ * Clamped to [SheetLayout.SHEET_WIDTH] columns regardless of how wide the maximized panel actually
+ * is — a very wide terminal doesn't need an even wider sheet, just unused margin. A thin dispatcher
+ * over [OwnRecordSheetView]/[ForeignRecordSheetView]: which one draws is the type-enforced
+ * redaction seam, same as [subject]'s own [VisibleUnit]/[ForeignUnit]/[CombatUnit] hierarchy.
+ */
+internal class MechRecordSheetView(
+    private val subject: VisibleUnit?,
+    private val map: GameMap,
+    private val pendingHeat: List<HeatSource> = emptyList(),
+) : ContentView {
+
+    override fun layout(availableWidth: Int): ContentLayout {
+        val sheetWidth = min(availableWidth, SheetLayout.SHEET_WIDTH)
+        val content = when (val unit = subject) {
+            null -> contentView { it.writeLine("No unit selected", SheetStyles.TEXT_PRIMARY) }
+            is ForeignUnit -> ForeignRecordSheetView(unit)
+            is CombatUnit -> OwnRecordSheetView(unit, map, pendingHeat)
+        }.layout(sheetWidth)
+        return io.archinaut.tenter.view.contentLayout(sheetWidth, content.height) {
+            place(0, 0, content)
+        }
+    }
+}

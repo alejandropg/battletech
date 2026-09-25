@@ -1,0 +1,330 @@
+package io.archinaut.battletech.tui
+
+import io.archinaut.battletech.network.client.JoinRejectedException
+import io.archinaut.battletech.network.client.ClientGameSession
+import io.archinaut.battletech.network.client.LobbyClient
+import io.archinaut.battletech.network.server.GameServer
+import io.archinaut.battletech.network.server.LobbyHost
+import io.archinaut.battletech.network.server.SocketAcceptor
+import io.archinaut.battletech.tactical.model.GameState
+import io.archinaut.battletech.tactical.model.PlayerId
+import io.archinaut.battletech.tactical.model.content.AssetBundle
+import io.archinaut.battletech.tactical.model.content.AssetRegistry
+import io.archinaut.battletech.tactical.model.content.ContentCatalog
+import io.archinaut.battletech.tactical.model.content.summarize
+import io.archinaut.battletech.tactical.model.map.MapLoadException
+import io.archinaut.battletech.tactical.model.mech.MechLoadException
+import io.archinaut.battletech.tactical.model.unit.UnitLoadException
+import io.archinaut.battletech.tactical.query.projectFor
+import io.archinaut.battletech.tactical.session.GameEvent
+import io.archinaut.battletech.tactical.unit.AutoDeploy
+import io.archinaut.battletech.tui.input.Keybindings
+import io.archinaut.battletech.tui.screen.Theme
+import io.archinaut.battletech.tui.screen.ThemeLoadException
+import io.archinaut.battletech.tui.screen.defaultThemeName
+import io.archinaut.battletech.tui.screen.resolveTheme
+import io.archinaut.battletech.tui.setup.SetupApp
+import io.archinaut.battletech.tui.setup.SetupMode
+import io.archinaut.battletech.tui.setup.SetupOutcome
+import io.archinaut.battletech.tui.setup.SetupState
+import io.archinaut.battletech.tui.view.GameLogFormatter
+import com.github.ajalt.mordant.terminal.Terminal
+import java.io.IOException
+import java.util.concurrent.CountDownLatch
+import kotlin.io.path.Path
+import io.archinaut.tenter.screen.ScreenRenderer
+import io.archinaut.tenter.terminal.withScreen
+
+/** Builds the [ContentCatalog] for one launch: every built-in plus [launch]'s `--add-*` registrations. */
+private fun resolveContentOrExit(launch: Launch): ContentCatalog = try {
+    ContentCatalog.load(launch.mapPaths.map(::Path), launch.mechPaths.map(::Path), launch.unitPaths.map(::Path))
+} catch (e: MapLoadException) {
+    System.err.println(e.message)
+    kotlin.system.exitProcess(2)
+} catch (e: MechLoadException) {
+    System.err.println(e.message)
+    kotlin.system.exitProcess(2)
+} catch (e: UnitLoadException) {
+    System.err.println(e.message)
+    kotlin.system.exitProcess(2)
+}
+
+/** Assembles [setup]'s board/roster selection out of [content] into a validated starting [GameState]. */
+private fun resolveGameOrExit(content: ContentCatalog, setup: Setup): GameState = try {
+    content.resolveGame(setup.mapName, setup.unitsName)
+} catch (e: MapLoadException) {
+    System.err.println(e.message)
+    kotlin.system.exitProcess(2)
+} catch (e: UnitLoadException) {
+    System.err.println(e.message)
+    kotlin.system.exitProcess(2)
+}
+
+private fun resolveThemeOrExit(themeName: String?): Theme? = themeName?.let {
+    try {
+        resolveTheme(it)
+    } catch (e: ThemeLoadException) {
+        System.err.println(e.message)
+        kotlin.system.exitProcess(2)
+    }
+}
+
+/** Bound on [awaitKickstart]'s poll loop — generous for an in-process, no-I/O handoff. */
+private const val KICKSTART_TIMEOUT_MS: Long = 2000
+
+/**
+ * Blocks until every hot-seat [seats] session has caught up with [server]'s current phase.
+ *
+ * [GameServer.attach] sends a seat its [io.archinaut.battletech.network.wire.ServerMessage.JoinAccepted]
+ * BEFORE calling [io.archinaut.battletech.tactical.session.BattleSession.advance] (see [GameServer]'s KDoc
+ * on kickstart) — true even for the second [GameServer.connectLocal] call, the one whose join
+ * completes the roster and triggers the advance. The post-kickstart state reaches each seat
+ * afterward as a [io.archinaut.battletech.network.wire.ServerMessage.StatePush], applied asynchronously by
+ * that seat's own reader thread. A [GameServer.connectLocal] call can therefore return before
+ * its own session reflects the kickstart, and the OTHER already-connected seat's session lags
+ * the same way. [TuiApp] reads `currentPhase` to build its initial `AppState` and is not the
+ * place to absorb transport timing — so composition waits here first: [server]`.currentPhase`
+ * is read under the server's own lock (see [GameServer.currentPhase]), which cannot return
+ * until [GameServer.attach]'s synchronized block — kickstart included — has finished, so it is
+ * always the post-kickstart ground truth to converge every seat against.
+ */
+private fun awaitKickstart(server: GameServer, seats: Map<PlayerId, ClientGameSession>) {
+    val deadline = System.nanoTime() + KICKSTART_TIMEOUT_MS * 1_000_000L
+    while (seats.values.any { it.currentPhase != server.currentPhase }) {
+        check(System.nanoTime() < deadline) {
+            "hot-seat kickstart did not land within ${KICKSTART_TIMEOUT_MS}ms: " +
+                "server=${server.currentPhase}, seats=${seats.mapValues { it.value.currentPhase }}"
+        }
+        Thread.sleep(1)
+    }
+}
+
+/**
+ * Owns the one alternate-screen/cursor scope for this process (D17): constructs the one
+ * [Terminal] + [ScreenRenderer] it uses for its whole run — whether that means only [TuiApp], or
+ * [SetupApp] followed by [TuiApp] on the interactive path — and hands both to [block]. The input
+ * flows collected by each application acquire and release raw mode independently. [themeName]
+ * null auto-selects from the terminal's detected color support, exactly as [TuiApp] used to do
+ * internally.
+ */
+private fun withScreen(themeName: String?, block: (Terminal, ScreenRenderer) -> Unit) {
+    val terminal = Terminal()
+    val theme = resolveThemeOrExit(themeName) ?: resolveTheme(defaultThemeName(terminal.terminalInfo.ansiLevel))
+    terminal.withScreen(theme) { renderer ->
+        block(terminal, renderer)
+    }
+}
+
+/**
+ * Entry point for the TUI application.
+ * Processes command-line arguments and launches the [TuiApp].
+ */
+public fun main(args: Array<String>) {
+    val launch = parseArgs(args)
+
+    when (val mode = launch.mode) {
+        is Mode.HotSeat -> {
+            val content = resolveContentOrExit(launch)
+            // Every match commits through LobbyHost now, hot-seat included (D12) — with nothing
+            // ever parked here, this is exactly GameServer.host's own behavior.
+            val server = LobbyHost(ownContent = content.contribution()).commit(resolveGameOrExit(content, mode.setup))
+            // Build the map from each returned session's OWN playerId — connectLocal() assigns
+            // seats via (allSeats - clients.keys).min(), not call order, so the Nth call is not
+            // guaranteed to be the Nth PlayerId. See GameServer.connectLocal's KDoc.
+            // The SAME bundle goes to every seat (D-Q18: re-registering an identical asset is a
+            // silent no-op) — no branch on which seat this is.
+            val seats = List(PlayerId.entries.size) { server.connectLocal(content.contribution()) }.associateBy { it.playerId }
+            check(seats.keys == PlayerId.entries.toSet()) {
+                "hot-seat roster incomplete: expected ${PlayerId.entries.toSet()}, got ${seats.keys}"
+            }
+            // TuiApp reads currentPhase to build its initial AppState, so composition must
+            // absorb the kickstart race here — see awaitKickstart's KDoc.
+            awaitKickstart(server, seats)
+            server.use { withScreen(launch.themeName) { terminal, renderer -> TuiApp(seats, terminal, renderer).run() } }
+        }
+
+        is Mode.Host -> {
+            val content = resolveContentOrExit(launch)
+            // Commits immediately (today's --map/--unit are already given, D2) — a joiner that
+            // connects after this always hits the committed JoinAccepted fast path, never the
+            // lobby's park phase (D13). connectLocal() runs inside onServerReady, before the
+            // acceptor exists at all, so it's deterministically PLAYER_1 regardless.
+            lateinit var localSession: ClientGameSession
+            val server = LobbyHost(ownContent = content.contribution())
+                .commit(resolveGameOrExit(content, mode.setup)) { localSession = it.connectLocal(content.contribution()) }
+            val acceptor = SocketAcceptor(server, mode.port)
+            acceptor.start()
+            println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
+            acceptor.use {
+                server.use {
+                    withScreen(launch.themeName) { terminal, renderer ->
+                        TuiApp(seats = mapOf(localSession.playerId to localSession), terminal, renderer).run()
+                    }
+                }
+            }
+        }
+
+        is Mode.Join -> {
+            // --add-map/--add-mech contribute this seat's registered content to the host's
+            // shared asset registry, even though join never SELECTS a map or unit collection of
+            // its own — see ContentCatalog.contribution's KDoc.
+            val content = resolveContentOrExit(launch)
+            val lobbyClient = try {
+                LobbyClient.connect(mode.host, mode.port, mode.sessionId, content.contribution())
+            } catch (e: JoinRejectedException) {
+                System.err.println("Join rejected: ${e.reason}")
+                kotlin.system.exitProcess(1)
+            } catch (e: IOException) {
+                System.err.println("Could not connect to ${mode.host}:${mode.port}: ${e.message}")
+                kotlin.system.exitProcess(1)
+            }
+
+            if (lobbyClient.isCommitted) {
+                lobbyClient.awaitMatch().use { remote ->
+                    withScreen(launch.themeName) { terminal, renderer ->
+                        TuiApp(seats = mapOf(remote.playerId to remote), terminal, renderer).run()
+                    }
+                }
+            } else {
+                withScreen(launch.themeName) { terminal, renderer ->
+                    val initial = SetupState(
+                        catalog = lobbyClient.catalog,
+                        registry = lobbyClient.registry,
+                        mode = SetupMode.HOST,
+                        modeLocked = true,
+                        opponentConnected = true,
+                        opponentEverConnected = true,
+                        readOnly = true,
+                    )
+                    val outcome = SetupApp(terminal, renderer, Keybindings.DEFAULT, LobbyMirrorAdapter(lobbyClient), initial).run()
+                    if (outcome == SetupOutcome.MatchStarted) {
+                        lobbyClient.awaitMatch().use { remote -> TuiApp(mapOf(remote.playerId to remote), terminal, renderer).run() }
+                    } else {
+                        lobbyClient.close()
+                    }
+                }
+            }
+        }
+
+        // --theme is accepted at the root for every mode but is meaningless for a headless
+        // server, so launch.themeName is simply never read on this path — no branch needed.
+        is Mode.Server -> {
+            val content = resolveContentOrExit(launch)
+            runHeadlessServer(mode.port, resolveGameOrExit(content, mode.setup), content.contribution())
+        }
+
+        // Bare invocation (D1). Nothing is printed on this path (D3): a stray println would
+        // corrupt the setup screen's first frame — the host endpoint lives in panel 1 instead.
+        Mode.Interactive -> runInteractive(launch, resolveContentOrExit(launch))
+    }
+}
+
+/**
+ * The interactive path: the setup screen defines the match, then the very same terminal runs it.
+ *
+ * The [LobbyHostAdapter] is always constructed but stays inert until the user locks HOST mode —
+ * `beginHosting()` is only ever called then, so hot-seat never opens a socket at all (D12) — and
+ * it is closed only once the match is over, because its acceptor is the one an interactive host
+ * has for the whole run (see [LobbyHostAdapter.close]).
+ */
+private fun runInteractive(launch: Launch, content: ContentCatalog) {
+    val registry = AssetRegistry.EMPTY.merge(content.contribution()).registry
+    val hostAdapter = LobbyHostAdapter(content.contribution())
+
+    hostAdapter.use {
+        withScreen(launch.themeName) { terminal, renderer ->
+            val initial = SetupState(catalog = registry.summarize(), registry = registry)
+            when (val outcome = SetupApp(terminal, renderer, Keybindings.DEFAULT, hostAdapter, initial).run()) {
+                SetupOutcome.Quit -> Unit
+                SetupOutcome.MatchStarted -> Unit // unreachable — hostAdapter never emits it
+                is SetupOutcome.Commit -> {
+                    val state = AutoDeploy.deploy(outcome.plan, outcome.registry)
+                    val existingLobby = hostAdapter.lobbyHost
+                    if (existingLobby != null) {
+                        // HOST: one local seat (the parked peer re-attaches on its own, exactly
+                        // like the direct `host` subcommand).
+                        lateinit var localSession: ClientGameSession
+                        val server = existingLobby.commit(state) { localSession = it.connectLocal(content.contribution()) }
+                        server.use { TuiApp(seats = mapOf(localSession.playerId to localSession), terminal, renderer).run() }
+                    } else {
+                        // HOT_SEAT: beginHosting() was never called — a throwaway LobbyHost with
+                        // nothing parked, exactly like the direct `hot-seat` subcommand.
+                        val server = LobbyHost(ownContent = content.contribution()).commit(state)
+                        val seats =
+                            List(PlayerId.entries.size) { server.connectLocal(content.contribution()) }.associateBy { it.playerId }
+                        check(seats.keys == PlayerId.entries.toSet()) {
+                            "interactive roster incomplete: expected ${PlayerId.entries.toSet()}, got ${seats.keys}"
+                        }
+                        awaitKickstart(server, seats)
+                        server.use { TuiApp(seats, terminal, renderer).run() }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Headless dedicated server: no [TuiApp], no Mordant terminal. Both players connect
+ * remotely via the `join` subcommand. Runs until Ctrl-C (or another SIGTERM), printing every game
+ * event to stdout as it happens; the process stays up after [io.archinaut.battletech.tactical.session.MatchEnded].
+ * [content] is this launch's own registered catalog — contributed to the shared asset registry
+ * the same way any other seat's is (D-Q24).
+ */
+private fun runHeadlessServer(port: Int, initialGameState: GameState, content: AssetBundle = AssetBundle.EMPTY) {
+    // Commits immediately, nothing ever parked (D12/D13) — both players connect after, via join.
+    val server = LobbyHost(ownContent = content).commit(initialGameState)
+
+    val printer = GameEventPrinter(System.out)
+    // Replay the seeded notices before subscribing so the printer sees the whole log from the
+    // start without racing the accept loop — see GameServer.host's KDoc for why this is safe.
+    server.gameLog.snapshot().forEach { entry -> printer.print(entry.event, server.gameState, entry.turn) }
+    server.subscribe { event ->
+        printer.print(event, server.gameState, server.turnState.turnNumber)
+    }
+
+    val acceptor = SocketAcceptor(server, port)
+    acceptor.start()
+    println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
+
+    val latch = CountDownLatch(1)
+    Runtime.getRuntime().addShutdownHook(
+        Thread {
+            acceptor.close()
+            server.close()
+            latch.countDown()
+        },
+    )
+    latch.await()
+}
+
+/**
+ * Renders [GameEvent]s to an [Appendable] as human-readable log lines, printing a
+ * `== TURN n ==` header whenever the turn number changes from the last-printed event.
+ * Formatting is delegated to the tui-internal [GameLogFormatter], which every other
+ * surface (the in-game log panel) also uses, so the console output matches what a
+ * connected player's TUI shows.
+ *
+ * [print] is synchronized because, per [io.archinaut.battletech.network.server.GameServer]'s threading
+ * model, subscription listeners fire on whatever thread mutates the session (client
+ * reader threads under the server's lock) — the only mutable state here is [lastPrintedTurn].
+ */
+internal class GameEventPrinter(private val out: Appendable) {
+    private var lastPrintedTurn: Int? = null
+
+    /**
+     * There is no single "viewer" to project [gameState] for here, so it is revealed in full
+     * via [projectFor] rather than redacted for an arbitrary seat. [GameLogFormatter] itself
+     * takes the same [PlayerGameState] shape every other consumer (the in-game LOG panel) does.
+     */
+    @Synchronized
+    fun print(event: GameEvent, gameState: GameState, turnNumber: Int) {
+        val lines = GameLogFormatter.lines(event, gameState.projectFor(viewer = null, revealAll = true))
+        if (lines.isEmpty()) return
+        if (turnNumber != lastPrintedTurn) {
+            out.append("== TURN $turnNumber ==\n")
+            lastPrintedTurn = turnNumber
+        }
+        lines.forEach { line -> out.append("${line.icon} ${line.text}\n") }
+    }
+}
