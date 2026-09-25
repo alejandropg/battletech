@@ -356,6 +356,9 @@ internal suspend fun runLoop(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
+            // Deliberately swallowed: an exception escaping collect would cancel this scope from
+            // outside, including the raw-mode input reader — see Tenter's `inputEvents` KDoc for
+            // why that can leave the terminal stuck in raw mode and the JVM unable to exit.
             System.err.println("Unhandled throwable while processing $ui:")
             e.printStackTrace()
         }

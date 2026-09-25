@@ -29,7 +29,7 @@ that implements a bare marker root from a separate file (`CombatUnit`/`ForeignUn
 `VisibleUnit`) uses its own name unprefixed, the same as any other single-segment case.
 
 This is build-enforced, not hand-maintained discipline, by two tests in
-`network/src/test/kotlin/battletech/network/wire/`:
+`network/src/test/kotlin/io/archinaut/battletech/network/wire/`:
 
 - `WireDiscriminatorConventionTest` discovers every top-level `@Serializable sealed`
   interface/class under `io.archinaut.battletech.` via Konsist, walks each down to its concrete leaves via
@@ -61,7 +61,7 @@ merges every seat's bundle in join order (first-registrant wins); the decoder no
 bootstrap's `registry` field (not `mechModels`) to build its resolver. A collision is reported as an
 `AssetConflict` event through the normal (shared) game log rather than a client-local check — the
 client no longer inspects host content against its own catalog at all.
-`network/src/test/kotlin/battletech/network/wire/WireFormatRoundTripTest.kt` additionally pins the
+`network/src/test/kotlin/io/archinaut/battletech/network/wire/WireFormatRoundTripTest.kt` additionally pins the
 literal JSON for one flat (`RuleRejection.NoAmmo`) and one nested (`GameEvent`'s
 `UnitStoodUp.Undisclosed`) variant, to catch a discriminator change that round-tripping alone would
 miss (encoding and decoding with the same code on both sides of an assertion agrees with itself

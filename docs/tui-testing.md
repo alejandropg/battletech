@@ -129,6 +129,20 @@ java -jar tui/build/libs/tui.jar hot-seat --theme light-16
 styling — every theme claim is about which SGR bytes get emitted, so `-p` cannot verify any of
 them; `-e` keeps the escape sequences in the captured text.
 
+### Mouse input
+
+tmux can inject raw X10 mouse reports into the running app:
+
+```bash
+tmux send-keys -t btech -H 1b 5b 4d <cb> <x+33> <y+33>
+```
+
+- `cb`: `20` left press, `60` wheel-up, `61` wheel-down (hex).
+- Coordinates are 0-based cell positions plus 33, one byte each; a value ≥ 128 (column or row
+  ≥ 95) must be UTF-8 encoded instead (e.g. column 154 → 187 → `c2 bb`).
+- On posix, Mordant 3.0.2 reports wheel ticks as left/right presses; see `legacyPanelScrollDelta`
+  (`tui/.../input/LegacyPanelMouse.kt`) for why side panels scroll anyway.
+
 ### Theme visual checklist
 
 - Full-surface painting: no cell shows the terminal's own background instead of the theme's —

@@ -44,7 +44,7 @@ Unit, map, mech, and theme loading share `io.archinaut.battletech.tactical.io.Re
 
 ## Enforced package boundaries
 
-`tactical/src/test/kotlin/battletech/tactical/ArchitectureTest.kt` uses Konsist to assert an
+`tactical/src/test/kotlin/io/archinaut/battletech/tactical/ArchitectureTest.kt` uses Konsist to assert an
 **allowed-dependency matrix** between the direct child packages of `io.archinaut.battletech.tactical` (a file
 under `attack/physical/`, `attack/weapon/`, or `model/map/` counts as its parent). Every edge not
 listed is a violation — this replaced four narrower prohibition tests (attack ⊥ movement,
@@ -79,15 +79,15 @@ the moment an unlisted import is added, and a second test asserts every package 
 least one real file — the four prohibition tests this replaced passed vacuously if their package
 filter matched zero files, so a rename could silently disable a rule.
 
-`tui/src/test/kotlin/battletech/tui/ArchitectureTest.kt` enforces the *locality-is-an-adapter*
-invariant (`CLAUDE.md`) mechanically: only `battletech/tui/Main.kt` and `battletech/tui/
-Composition.kt` may import `io.archinaut.battletech.network.*` (the two-file allowlist was widened
-deliberately when `Composition.kt` was added — see "The lobby: one commit path" below — rather
-than letting `Main.kt` grow past a screenful of wiring), and `tui` may not import
+`tui/src/test/kotlin/io/archinaut/battletech/tui/ArchitectureTest.kt` enforces the *locality-is-an-adapter*
+invariant (`CLAUDE.md`) mechanically: only `tui/Main.kt` and `tui/Composition.kt` may import
+`io.archinaut.battletech.network.*` (`Composition.kt` is on the allowlist so the lobby adapters — see
+"The lobby: one commit path" below — live outside `Main.kt` rather than growing it past a screenful
+of wiring), and `tui` may not import
 `io.archinaut.battletech.strategic.*`.
 
 **Keybindings are data, not `when` branches**: every keyboard binding in `tui` is a chord-to-action
-value in one `KeyMap<ContextId>` (`Keybindings.DEFAULT`, built in `tui/src/main/kotlin/battletech/
+value in one `KeyMap<ContextId>` (`Keybindings.DEFAULT`, built in `tui/src/main/kotlin/io/archinaut/battletech/
 tui/input/Keybindings.kt`), not a statement scattered across `RunLoop` and each `Phase.handle`.
 Resolution precedence is an ordered list of active contexts — `CHROME` and, when a side panel is
 focused, the TUI-owned `PANEL_SCROLL` policy layer, always first; the active phase's own context,
@@ -137,9 +137,9 @@ presentation policy of wrapping each sampled view in the existing bordered regio
 
 Supporting detail for the architecture invariants stated tersely in `CLAUDE.md`.
 
-**Why the projection seam works**: the game has real hidden information — a player sees only public values for units they don't own. This is enforced at a single projection seam, not by per-render checks. `ForeignUnit` (`tactical/src/main/kotlin/battletech/tactical/unit/ForeignUnit.kt`) simply has no `gunnerySkill`/`currentHeat`/`internalStructure` field, so a leak is a compile error rather than a discipline problem. `VisibleUnit.kt` (same package) holds the sealed interface both projections implement; there is no separate "OwnUnit" type — `CombatUnit` (also `unit/`) implements `VisibleUnit` directly and carries the full record-sheet data itself. Match-over reveal is a deliberate `revealAll` flag threaded into the projection (`BattleSession.stateFor`/`logFor`, gated on `_matchOver`), not an accident of a null viewer — a null viewer (spectator) still gets the redacted view unless the match has ended.
+**Why the projection seam works**: the game has real hidden information — a player sees only public values for units they don't own. This is enforced at a single projection seam, not by per-render checks. `ForeignUnit` (`tactical/src/main/kotlin/io/archinaut/battletech/tactical/unit/ForeignUnit.kt`) simply has no `gunnerySkill`/`currentHeat`/`internalStructure` field, so a leak is a compile error rather than a discipline problem. `VisibleUnit.kt` (same package) holds the sealed interface both projections implement; there is no separate "OwnUnit" type — `CombatUnit` (also `unit/`) implements `VisibleUnit` directly and carries the full record-sheet data itself. Match-over reveal is a deliberate `revealAll` flag threaded into the projection (`BattleSession.stateFor`/`logFor`, gated on `_matchOver`), not an accident of a null viewer — a null viewer (spectator) still gets the redacted view unless the match has ended.
 
-**Why session-wide subscription is safe**: `BattleSession.subscribe(listener)` (`tactical/src/main/kotlin/battletech/tactical/session/BattleSession.kt`) delivers every `GameEvent` to every listener, unfiltered and session-wide — but it is not the redaction seam. Per-player enforcement happens once, at `stateFor`/`logFor`. `GameServer` builds every outbound message through those two methods — across all three outbound paths (snapshot, `StatePush` delta, bootstrap log) — and never constructs a message from a raw subscribed event. Untrusted/modified clients are in scope for this guarantee. A `connectLocal()` seat crosses that same seam (it is a client like any other, see below) and so gets the same redaction, even though an in-process seat is never the adversary the guarantee is written against.
+**Why session-wide subscription is safe**: `BattleSession.subscribe(listener)` (`tactical/src/main/kotlin/io/archinaut/battletech/tactical/session/BattleSession.kt`) delivers every `GameEvent` to every listener, unfiltered and session-wide — but it is not the redaction seam. Per-player enforcement happens once, at `stateFor`/`logFor`. `GameServer` builds every outbound message through those two methods — across all three outbound paths (snapshot, `StatePush` delta, bootstrap log) — and never constructs a message from a raw subscribed event. Untrusted/modified clients are in scope for this guarantee. A `connectLocal()` seat crosses that same seam (it is a client like any other, see below) and so gets the same redaction, even though an in-process seat is never the adversary the guarantee is written against.
 
 **Why every player is a client**: a seat sitting at this terminal reaches the session the same way a seat across the internet does — `GameServer` cannot tell them apart, and nothing outside `main()` can either. The seam is `transport/`'s `ServerConnection`/`ClientConnection` port: remote seats get `JsonLineConnection` (newline-delimited JSON over a socket), local seats get `InMemoryConnection` (two queues passing message objects, no serialization). Hot-seat is therefore a `GameServer` with two `connectLocal()` clients and no listening socket at all; `host` is one `connectLocal()` client plus a `SocketAcceptor`; `server` is an acceptor with no local client; `join` is a lone `ClientGameSession`.
 
