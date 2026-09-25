@@ -1,9 +1,9 @@
 package battletech.tui.view
 
 import battletech.tactical.unit.ForeignUnit
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.view.TextCursor
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.TextCursor
 
 /**
  * One indented line per [ForeignUnit.weapons] entry, name only — no location/damage/ammo, since

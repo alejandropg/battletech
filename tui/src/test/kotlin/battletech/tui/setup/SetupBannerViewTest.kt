@@ -2,9 +2,9 @@ package battletech.tui.setup
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import tenter.screen.ScreenBuffer
-import tenter.text.CellWidth
-import tenter.view.render
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.text.CellWidth
+import io.archinaut.tenter.view.render
 
 internal class SetupBannerViewTest {
 

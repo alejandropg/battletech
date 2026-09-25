@@ -13,9 +13,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.palette.ChromeRole
-import tenter.screen.ScreenBuffer
-import tenter.view.renderInPanel
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.view.renderInPanel
 
 internal class TargetStatusViewTest {
 

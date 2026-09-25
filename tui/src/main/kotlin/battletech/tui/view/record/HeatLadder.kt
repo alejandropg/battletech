@@ -8,7 +8,7 @@ import battletech.tactical.unit.HeatSource
 import battletech.tui.screen.HeatScaleRole
 import battletech.tui.view.HeatGauges
 import battletech.tui.view.HeatPenalties
-import tenter.view.TextCursor
+import io.archinaut.tenter.view.TextCursor
 import battletech.tui.view.PreparedTextView
 
 /**

@@ -11,11 +11,11 @@ import battletech.tui.input.BoardMouse
 import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import tenter.panel.Panel
-import tenter.panel.PanelSet
-import tenter.screen.Canvas
-import tenter.screen.ScreenBuffer
-import tenter.view.fixedContent
+import io.archinaut.tenter.panel.Panel
+import io.archinaut.tenter.panel.PanelSet
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.view.fixedContent
 
 /**
  * Round-trips a click through the REAL frame composition: a unit is rendered onto the board

@@ -3,7 +3,7 @@ package battletech.tui.view.record
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.view.SpecialUnitStatusList
 import battletech.tui.view.UnitLabel
-import tenter.view.TextCursor
+import io.archinaut.tenter.view.TextCursor
 import battletech.tui.view.PreparedTextView
 
 /**

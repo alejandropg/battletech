@@ -5,10 +5,10 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.DynamicTest
-import tenter.animation.Animation
-import tenter.screen.Cell
-import tenter.screen.ScreenBuffer
-import tenter.view.render
+import io.archinaut.tenter.animation.Animation
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.view.render
 import kotlin.random.Random
 
 /** Renders every cell of [this] frame as one string per row, for equality/content assertions. */

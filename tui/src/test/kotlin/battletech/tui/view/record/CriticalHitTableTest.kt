@@ -11,10 +11,10 @@ import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.palette.ChromeRole
-import tenter.view.line
-import tenter.view.render
-import tenter.view.text
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.render
+import io.archinaut.tenter.view.text
 
 /** [CriticalHitTable], driven by a real Atlas AS7-D built through the production [MechModels] path. */
 internal class CriticalHitTableTest {

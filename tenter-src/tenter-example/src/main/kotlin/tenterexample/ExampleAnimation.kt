@@ -1,13 +1,13 @@
 package tenterexample
 
 import kotlin.time.Duration.Companion.milliseconds
-import tenter.animation.Animation
-import tenter.animation.AnimationPlayback
-import tenter.animation.AnimationSize
-import tenter.animation.GlyphGrid
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.view.View
+import io.archinaut.tenter.animation.Animation
+import io.archinaut.tenter.animation.AnimationPlayback
+import io.archinaut.tenter.animation.AnimationSize
+import io.archinaut.tenter.animation.GlyphGrid
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.View
 
 internal class ExampleAnimation : Animation {
     override val size: AnimationSize = AnimationSize(width = 3, height = 1)

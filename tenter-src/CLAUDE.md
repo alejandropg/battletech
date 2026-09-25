@@ -6,7 +6,7 @@ This directory is a standalone Kotlin/JVM Gradle project. Work from this directo
 
 - Use `./gradlew build` for tests, ABI validation, and the example's negative compilation check.
 - Use `./gradlew :tenter-example:packagedSmoke` to compile and run the example against the packaged library jar and cached external dependencies.
-- Use `./gradlew :tenter:publishToMavenLocal` to install `com.github.tenter:tenter:0.1.0-SNAPSHOT` for local consumers. Update the version in `gradle/libs.versions.toml` when releasing a new version.
+- Use `./gradlew :tenter:publishToMavenLocal` to install `io.archinaut:tenter:0.1.0-SNAPSHOT` for local consumers. Update the version in `gradle/libs.versions.toml` when releasing a new version.
 - Review public API changes against `tenter/api/tenter.api`. Run `./gradlew :tenter:updateKotlinAbi` only after intentionally accepting a change.
 
 ## Architecture

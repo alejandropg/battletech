@@ -1,7 +1,7 @@
 package battletech.tui.input
 
 import battletech.tactical.model.HexDirection
-import tenter.input.InputAction
+import io.archinaut.tenter.input.InputAction
 
 public sealed interface FacingAction : InputAction {
     public data class SelectFacing(val direction: HexDirection) : FacingAction {

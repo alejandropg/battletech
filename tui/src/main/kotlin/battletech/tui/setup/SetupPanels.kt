@@ -4,8 +4,8 @@ import battletech.tui.input.ChromeAction
 import battletech.tui.input.Keybindings
 import battletech.tui.view.helpPanel
 import battletech.tactical.model.PlayerId
-import tenter.panel.Panel
-import tenter.panel.PanelSet
+import io.archinaut.tenter.panel.Panel
+import io.archinaut.tenter.panel.PanelSet
 
 internal typealias SetupPanel = Panel<SetupPanelId, SetupPanelInputs>
 internal typealias SetupPanelSet = PanelSet<SetupPanelId, SetupPanelInputs>

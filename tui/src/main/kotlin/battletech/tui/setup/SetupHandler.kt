@@ -3,7 +3,7 @@ package battletech.tui.setup
 import battletech.tactical.model.PlayerId
 import battletech.tactical.model.content.MatchPlan
 import battletech.tactical.unit.AutoDeploy
-import tenter.view.FlashMessage
+import io.archinaut.tenter.view.FlashMessage
 
 /** Shown when a read-only mirror presses an editing key — one message for `space`/`a`/`d`/`c`. */
 internal const val READ_ONLY_REFUSAL: String = "the host is choosing — this view is read-only"

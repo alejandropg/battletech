@@ -4,13 +4,13 @@ import battletech.tactical.model.TurnPhase
 
 /**
  * Decides which SIDE panels EXIST this frame, as a set of [GamePanelId] values — never [GamePanelId.BOARD],
- * which is the `tenter.panel.PanelSet`'s `main` panel and is always present regardless of this set.
+ * which is the `io.archinaut.tenter.panel.PanelSet`'s `main` panel and is always present regardless of this set.
  * Composes four kinds of owner:
  *
  *  - **Always-on** structural panels (LOG, UNIT STATUS).
  *  - **User-opened** panels (HELP) — [AppState.helpOpen], toggled by `?`. Unlike every other
  *    panel's `Alt+<key>`, which focuses a panel that already exists (a display preference owned
- *    by `tenter.panel.Panel` itself), `?` toggles whether HELP exists AT ALL — a different
+ *    by `io.archinaut.tenter.panel.Panel` itself), `?` toggles whether HELP exists AT ALL — a different
  *    action, so it is a different piece of state, and one that belongs here rather than on the
  *    panel (see [AppState.helpOpen]'s KDoc).
  *  - **Cross-phase** state-driven panels (ATTACK RESULTS) whose visibility spans

@@ -4,10 +4,10 @@ import battletech.tui.aUnit
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.palette.ChromeRole
-import tenter.view.line
-import tenter.view.render
-import tenter.view.text
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.render
+import io.archinaut.tenter.view.text
 
 internal class SpecialUnitStatusListTest {
 

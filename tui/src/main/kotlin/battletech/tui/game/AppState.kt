@@ -42,7 +42,7 @@ internal data class AppState(
     val cursor: HexCoordinates,
     // Whether the HELP panel exists this frame — a user action recorded here (like any other
     // AppState field a phase or event can drive), NOT a display preference. It feeds
-    // battletech.tui.game.PanelVisibility, which tenter.panel.Panel cannot see; a panel's own
+    // battletech.tui.game.PanelVisibility, which io.archinaut.tenter.panel.Panel cannot see; a panel's own
     // state (minimized/normal/maximized) and scroll, in contrast, have no reader outside their
     // own rendering and so live on the Panel instead. See PanelVisibility's KDoc for the `?`
     // vs `Alt+<key>` distinction this split exists to express.

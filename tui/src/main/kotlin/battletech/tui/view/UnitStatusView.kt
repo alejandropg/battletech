@@ -14,10 +14,10 @@ import battletech.tui.icon.emptyCircleIcon
 import battletech.tui.icon.filledCircleIcon
 import battletech.tui.icon.infinityIcon
 import battletech.tui.screen.BoardRole
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.text.CellWidth
-import tenter.view.TextCursor
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.text.CellWidth
+import io.archinaut.tenter.view.TextCursor
 
 internal class UnitStatusView(
     private val subject: VisibleUnit?,

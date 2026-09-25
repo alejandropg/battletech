@@ -5,8 +5,8 @@ import battletech.tui.icon.destroyedIcon
 import battletech.tui.icon.facingArrowIcon
 import battletech.tui.icon.torsoArrowIcon
 import battletech.tui.screen.BoardRole
-import tenter.screen.Canvas
-import tenter.palette.ColorRole
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.palette.ColorRole
 
 public object UnitRenderer {
 

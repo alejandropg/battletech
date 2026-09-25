@@ -1,7 +1,7 @@
 package battletech.tui.input
 
 import battletech.tactical.model.HexDirection
-import tenter.input.InputAction
+import io.archinaut.tenter.input.InputAction
 
 public sealed interface BrowsingAction : InputAction {
     public data class MoveCursor(val direction: HexDirection) : BrowsingAction {

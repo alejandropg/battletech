@@ -8,9 +8,9 @@ import battletech.tactical.unit.UnitId
 import battletech.tactical.unit.createUnit
 import battletech.tui.view.record.MechRecordSheetView
 import battletech.tui.view.record.SheetLayout
-import tenter.text.CellWidth
-import tenter.view.ContentLayout
-import tenter.view.ContentView
+import io.archinaut.tenter.text.CellWidth
+import io.archinaut.tenter.view.ContentLayout
+import io.archinaut.tenter.view.ContentView
 
 /** Prepared maximized roster selection with the selected record sheet as its detail child. */
 internal class MechSelectionMaximizedView(

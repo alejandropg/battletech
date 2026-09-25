@@ -18,12 +18,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
-import tenter.input.InputAction
+import io.archinaut.tenter.input.InputAction
 import battletech.tui.input.legacyPanelScrollDelta
-import tenter.input.PanAction
-import tenter.input.ScrollAction
-import tenter.screen.ScreenRenderer
-import tenter.view.FlashMessage
+import io.archinaut.tenter.input.PanAction
+import io.archinaut.tenter.input.ScrollAction
+import io.archinaut.tenter.screen.ScreenRenderer
+import io.archinaut.tenter.view.FlashMessage
 
 /** Panel focus order the `Enter`/`Tab` cycle walks — HELP is never in it (see [nextPanel]'s KDoc). */
 private val PANEL_CYCLE_ORDER = listOf(SetupPanelId.MODE, SetupPanelId.MAP, SetupPanelId.PLAYER_1, SetupPanelId.PLAYER_2)

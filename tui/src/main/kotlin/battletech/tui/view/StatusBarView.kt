@@ -4,17 +4,17 @@ import battletech.tactical.model.PlayerId
 import battletech.tactical.model.TurnPhase
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.displayName
-import tenter.screen.Canvas
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.screen.Insets
-import tenter.screen.StyledText
-import tenter.screen.styled
-import tenter.text.CellWidth
-import tenter.text.TextTruncation
-import tenter.view.Bordered
-import tenter.view.TextCursor
-import tenter.view.View
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.Insets
+import io.archinaut.tenter.screen.StyledText
+import io.archinaut.tenter.screen.styled
+import io.archinaut.tenter.text.CellWidth
+import io.archinaut.tenter.text.TextTruncation
+import io.archinaut.tenter.view.Bordered
+import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.view.View
 
 internal class StatusBarView(
     private val phase: TurnPhase,

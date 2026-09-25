@@ -3,11 +3,11 @@ package battletech.tui.view
 import battletech.tactical.attack.weapon.TargetInfo
 import battletech.tactical.attack.weapon.WeaponTargetInfo
 import battletech.tactical.unit.UnitId
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.widget.CheckState
-import tenter.view.TextCursor
-import tenter.widget.SelectableRow
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.widget.CheckState
+import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.widget.SelectableRow
 import battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 internal class TargetsView(

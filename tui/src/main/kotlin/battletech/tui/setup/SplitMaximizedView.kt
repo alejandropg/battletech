@@ -1,12 +1,12 @@
 package battletech.tui.setup
 
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.view.ContentLayout
-import tenter.view.ContentView
-import tenter.view.RevealPreference
-import tenter.view.contentLayout
-import tenter.view.contentView
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.ContentLayout
+import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.view.RevealPreference
+import io.archinaut.tenter.view.contentLayout
+import io.archinaut.tenter.view.contentView
 
 /** Prepared composition for a maximized setup panel. */
 internal class SplitMaximizedView(

@@ -16,8 +16,8 @@ import battletech.tui.input.AttackAction
 import battletech.tui.input.BoardClick
 import battletech.tui.input.ContextId
 import battletech.tui.input.IdleAction
-import tenter.input.InputAction
-import tenter.view.FlashMessage
+import io.archinaut.tenter.input.InputAction
+import io.archinaut.tenter.view.FlashMessage
 
 internal const val PHYSICAL_DECLARING_PROMPT = "Declare punch/kick"
 

@@ -1,11 +1,11 @@
 package battletech.tui.setup
 
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.view.TextCursor
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.TextCursor
 import battletech.tui.view.PreparedTextView
-import tenter.widget.CheckState
-import tenter.widget.SelectableRow
+import io.archinaut.tenter.widget.CheckState
+import io.archinaut.tenter.widget.SelectableRow
 import battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 /** Panel 1 (D19/D4/D5): the mode picker while unlocked, then the chosen mode plus host details. */

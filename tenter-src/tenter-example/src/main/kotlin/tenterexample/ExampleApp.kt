@@ -3,18 +3,18 @@ package tenterexample
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
-import tenter.input.MouseInput
-import tenter.input.ScrollAction
-import tenter.panel.Panel
-import tenter.panel.PanelLayout
-import tenter.panel.PanelSet
-import tenter.panel.PanelState
-import tenter.screen.Canvas
-import tenter.screen.ScreenBuffer
-import tenter.view.ContentView
-import tenter.view.HelpView
-import tenter.view.Stack
-import tenter.view.contentView
+import io.archinaut.tenter.input.MouseInput
+import io.archinaut.tenter.input.ScrollAction
+import io.archinaut.tenter.panel.Panel
+import io.archinaut.tenter.panel.PanelLayout
+import io.archinaut.tenter.panel.PanelSet
+import io.archinaut.tenter.panel.PanelState
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.view.HelpView
+import io.archinaut.tenter.view.Stack
+import io.archinaut.tenter.view.contentView
 
 internal enum class ExampleLayoutMode {
     MAIN_AND_SIDES,

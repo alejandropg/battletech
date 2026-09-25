@@ -25,8 +25,8 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import tenter.screen.ScreenRenderer
-import tenter.view.HelpView
+import io.archinaut.tenter.screen.ScreenRenderer
+import io.archinaut.tenter.view.HelpView
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class SetupLoopTest {

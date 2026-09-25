@@ -3,7 +3,7 @@ package battletech.tui.input
 import battletech.tactical.model.HexCoordinates
 import battletech.tui.hex.HexLayout
 import com.github.ajalt.mordant.input.MouseEvent
-import tenter.screen.Point
+import io.archinaut.tenter.screen.Point
 
 internal object BoardMouse {
     fun mapContentToHex(event: MouseEvent, contentPoint: Point?): HexCoordinates? {

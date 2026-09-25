@@ -3,10 +3,10 @@ package battletech.tui.animation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.animation.Animation
-import tenter.animation.AnimationSize
-import tenter.animation.GlyphGrid
-import tenter.screen.Cell
+import io.archinaut.tenter.animation.Animation
+import io.archinaut.tenter.animation.AnimationSize
+import io.archinaut.tenter.animation.GlyphGrid
+import io.archinaut.tenter.screen.Cell
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds

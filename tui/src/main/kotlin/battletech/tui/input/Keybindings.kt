@@ -5,15 +5,15 @@ import battletech.tui.game.GamePanelId
 import battletech.tui.setup.SetupAction
 import battletech.tui.setup.SetupPanelId
 import com.github.ajalt.mordant.input.KeyboardEvent
-import tenter.input.HintGroup
-import tenter.input.InputAction
-import tenter.input.KeyBinding
-import tenter.input.KeyGlyph
-import tenter.input.KeyLayer
-import tenter.input.KeyMap
-import tenter.input.KeySection
-import tenter.input.PanAction
-import tenter.input.ScrollAction
+import io.archinaut.tenter.input.HintGroup
+import io.archinaut.tenter.input.InputAction
+import io.archinaut.tenter.input.KeyBinding
+import io.archinaut.tenter.input.KeyGlyph
+import io.archinaut.tenter.input.KeyLayer
+import io.archinaut.tenter.input.KeyMap
+import io.archinaut.tenter.input.KeySection
+import io.archinaut.tenter.input.PanAction
+import io.archinaut.tenter.input.ScrollAction
 
 /** The domain facade over the generic [KeyMap] — every keyboard binding in this application. */
 internal class Keybindings(private val keyMap: KeyMap<ContextId>) {
@@ -103,7 +103,7 @@ private fun chromeLayer(): KeyLayer {
  * The game screen's own chrome: panel focus (`0`-`9`) and board pan/recenter — bindings that only
  * make sense once a [GamePanelId] board exists, so they don't belong in [chromeLayer], which every
  * screen (including SETUP) shares. `title = null`: these chords are documented by GLOBAL's
- * `gameFocusPanel`/`pan`/`recenter` rows (see [tenter.input.KeyMap]'s KDoc on section-less layers).
+ * `gameFocusPanel`/`pan`/`recenter` rows (see [io.archinaut.tenter.input.KeyMap]'s KDoc on section-less layers).
  */
 private fun gameChromeLayer(): KeyLayer {
     val focusPanelBindings = listOf(

@@ -3,9 +3,9 @@ package battletech.tui.animation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.palette.ChromeRole
-import tenter.palette.FixedColorRole
-import tenter.view.render
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.palette.FixedColorRole
+import io.archinaut.tenter.view.render
 import kotlin.random.Random
 
 internal class AnimationViewTest {

@@ -4,8 +4,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
-import tenter.palette.ChromeRole
-import tenter.palette.PaletteColor
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.palette.PaletteColor
 import java.nio.file.Path
 import kotlin.io.path.writeText
 

@@ -9,14 +9,14 @@ import com.github.ajalt.mordant.input.KeyboardEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.input.PanAction
-import tenter.input.ScrollAction
-import tenter.panel.PanelId
-import tenter.text.CellWidth
+import io.archinaut.tenter.input.PanAction
+import io.archinaut.tenter.input.ScrollAction
+import io.archinaut.tenter.panel.PanelId
+import io.archinaut.tenter.text.CellWidth
 
 /**
- * Application invariants over [Keybindings.DEFAULT]'s [tenter.input.KeyMap]. Structural keymap
- * validation belongs to [tenter.input.KeyMap]'s constructor; these tests retain the TUI policies
+ * Application invariants over [Keybindings.DEFAULT]'s [io.archinaut.tenter.input.KeyMap]. Structural keymap
+ * validation belongs to [io.archinaut.tenter.input.KeyMap]'s constructor; these tests retain the TUI policies
  * that the reusable toolkit cannot know, plus behavior-specific default binding coverage.
  */
 internal class KeybindingsTest {

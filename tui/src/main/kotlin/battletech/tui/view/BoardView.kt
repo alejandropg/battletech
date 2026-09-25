@@ -12,13 +12,13 @@ import battletech.tui.hex.HexRenderer
 import battletech.tui.hex.UnitRenderer
 import battletech.tui.screen.BoardRole
 import battletech.tactical.unit.UnitRoster
-import tenter.screen.Canvas
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.text.CellWidth
-import tenter.view.Bordered
-import tenter.view.View
-import tenter.view.Viewport
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.text.CellWidth
+import io.archinaut.tenter.view.Bordered
+import io.archinaut.tenter.view.View
+import io.archinaut.tenter.view.Viewport
 
 /**
  * The tactical map's content: coordinate labels, every hex, highlight, and unit glyph, drawn at

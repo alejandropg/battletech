@@ -17,7 +17,7 @@ import battletech.tui.input.Keybindings
 import battletech.tui.loop.UiEvent
 import battletech.tui.loop.runLoop
 import battletech.tui.screen.resolveTheme
-import tenter.screen.ScreenRenderer
+import io.archinaut.tenter.screen.ScreenRenderer
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.rendering.AnsiLevel

@@ -4,7 +4,7 @@ import battletech.tactical.attack.consciousnessTarget
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 import battletech.tui.view.PilotHitsTrack
-import tenter.view.TextCursor
+import io.archinaut.tenter.view.TextCursor
 import battletech.tui.view.PreparedTextView
 
 /**

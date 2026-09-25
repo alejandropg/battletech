@@ -4,8 +4,8 @@ import battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 import battletech.tui.icon.emptyCircleIcon
 import battletech.tui.icon.filledCircleIcon
 import battletech.tui.icon.pilotDeadIcon
-import tenter.screen.Cell
-import tenter.view.TextCursor
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.view.TextCursor
 
 /**
  * The canonical 6-box "Hits" track (record sheet Pilot Data): [hits] (coerced to

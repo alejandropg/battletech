@@ -23,13 +23,13 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.palette.ChromeRole
-import tenter.screen.Point
-import tenter.screen.ScreenBuffer
-import tenter.animation.AnimationPlayback
-import tenter.view.FlashMessage
-import tenter.view.HelpView
-import tenter.view.text
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.Point
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.animation.AnimationPlayback
+import io.archinaut.tenter.view.FlashMessage
+import io.archinaut.tenter.view.HelpView
+import io.archinaut.tenter.view.text
 import kotlin.random.Random
 
 /**
@@ -286,7 +286,7 @@ internal class WorkspaceTest {
         return false
     }
 
-    private fun frame(animation: tenter.animation.Animation, x: Int, y: Int, index: Int = 0): AnimationPlayback.Frame<PanelPlacement> =
+    private fun frame(animation: io.archinaut.tenter.animation.Animation, x: Int, y: Int, index: Int = 0): AnimationPlayback.Frame<PanelPlacement> =
         AnimationPlayback.Frame(
             value = PanelPlacement(x, y),
             size = animation.size,

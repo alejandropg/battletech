@@ -6,19 +6,19 @@ import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.takeWhile
-import tenter.panel.PanelState
-import tenter.screen.Canvas
-import tenter.palette.DefaultRolePalette
-import tenter.screen.ScreenBuffer
-import tenter.screen.ScreenRenderer
-import tenter.screen.Insets
-import tenter.view.Bordered
-import tenter.view.Padded
-import tenter.view.contentView
-import tenter.terminal.TerminalEvent
-import tenter.terminal.inputEvents
-import tenter.terminal.resizeEvents
-import tenter.terminal.withScreen
+import io.archinaut.tenter.panel.PanelState
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.palette.DefaultRolePalette
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.screen.ScreenRenderer
+import io.archinaut.tenter.screen.Insets
+import io.archinaut.tenter.view.Bordered
+import io.archinaut.tenter.view.Padded
+import io.archinaut.tenter.view.contentView
+import io.archinaut.tenter.terminal.TerminalEvent
+import io.archinaut.tenter.terminal.inputEvents
+import io.archinaut.tenter.terminal.resizeEvents
+import io.archinaut.tenter.terminal.withScreen
 
 /**
  * Runs the separate-consumer smoke scenario without raw input or terminal lifecycle escapes.
@@ -125,7 +125,7 @@ private fun runInteractive(terminal: Terminal, renderer: ScreenRenderer) {
     }
 }
 
-private fun renderAnimationFrame(view: tenter.view.View): ScreenBuffer {
+private fun renderAnimationFrame(view: io.archinaut.tenter.view.View): ScreenBuffer {
     val buffer = ScreenBuffer(3, 1)
     view.draw(Canvas.of(buffer))
     return buffer

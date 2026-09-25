@@ -11,7 +11,7 @@ This directory is a standalone Gradle project. Build and publish the library for
 ./gradlew :tenter:publishToMavenLocal
 ```
 
-The published coordinate is `com.github.tenter:tenter:0.1.0-SNAPSHOT`. The example depends on the
+The published coordinate is `io.archinaut:tenter:0.1.0-SNAPSHOT`. The example depends on the
 library within this build. Package architecture and contributor guidance live in
 [`docs/architecture.md`](docs/architecture.md) and [`AGENTS.md`](AGENTS.md).
 
@@ -26,13 +26,13 @@ import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.runBlocking
-import tenter.screen.Canvas
-import tenter.palette.DefaultRolePalette
-import tenter.screen.ScreenBuffer
-import tenter.terminal.TerminalEvent
-import tenter.terminal.inputEvents
-import tenter.terminal.withScreen
-import tenter.view.contentView
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.palette.DefaultRolePalette
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.terminal.TerminalEvent
+import io.archinaut.tenter.terminal.inputEvents
+import io.archinaut.tenter.terminal.withScreen
+import io.archinaut.tenter.view.contentView
 
 public fun main() {
     val terminal = Terminal()
@@ -175,7 +175,7 @@ and release, only one input reader should be active per terminal, and cancellati
 bounded polling. Rendering, panel state, and size observation must be confined by the caller to one
 execution context; Tenter does not create an event-loop abstraction.
 
-The optional `tenter.animation` package provides finite `Animation` descriptions,
+The optional `io.archinaut.tenter.animation` package provides finite `Animation` descriptions,
 `AnimationPlayback`, `AnimationSize`, and `GlyphGrid`. Playback is pure elapsed-time sampling.
 Applications own the clock, placement, rendering, and cancellation policy.
 

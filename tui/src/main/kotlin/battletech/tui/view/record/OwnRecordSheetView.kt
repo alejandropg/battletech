@@ -3,9 +3,9 @@ package battletech.tui.view.record
 import battletech.tactical.model.GameMap
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
-import tenter.view.Columns
-import tenter.view.Stack
-import tenter.view.TextCursor
+import io.archinaut.tenter.view.Columns
+import io.archinaut.tenter.view.Stack
+import io.archinaut.tenter.view.TextCursor
 import battletech.tui.view.PreparedTextView
 
 /**

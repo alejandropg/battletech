@@ -1,7 +1,7 @@
 package battletech.tui.input
 
 import battletech.tactical.model.HexCoordinates
-import tenter.input.InputAction
+import io.archinaut.tenter.input.InputAction
 
 /**
  * A left-click resolved to a board hex. Produced by `runLoop` (which owns the board origin and the

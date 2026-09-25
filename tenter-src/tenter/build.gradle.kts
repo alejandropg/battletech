@@ -5,7 +5,7 @@ plugins {
     `maven-publish`
 }
 
-group = "com.github.tenter"
+group = "io.archinaut"
 version = libs.versions.tenter.get()
 
 kotlin {

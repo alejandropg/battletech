@@ -9,16 +9,16 @@ import battletech.tui.input.Keybindings
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
-import tenter.panel.Panel
-import tenter.panel.PanelSet
-import tenter.panel.PanelState
-import tenter.panel.VerticalTitleView
-import tenter.screen.Canvas
-import tenter.palette.ChromeRole
-import tenter.screen.ScreenBuffer
-import tenter.view.ContentView
-import tenter.view.contentView
-import tenter.view.text
+import io.archinaut.tenter.panel.Panel
+import io.archinaut.tenter.panel.PanelSet
+import io.archinaut.tenter.panel.PanelState
+import io.archinaut.tenter.panel.VerticalTitleView
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.view.contentView
+import io.archinaut.tenter.view.text
 
 /** Managed panel behavior is exercised through the public [PanelSet] seam. */
 internal class PanelTest {

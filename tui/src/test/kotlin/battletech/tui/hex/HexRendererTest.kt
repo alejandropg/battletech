@@ -10,9 +10,9 @@ import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
-import tenter.screen.Canvas
-import tenter.palette.ChromeRole
-import tenter.screen.ScreenBuffer
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.ScreenBuffer
 
 internal class HexRendererTest {
 

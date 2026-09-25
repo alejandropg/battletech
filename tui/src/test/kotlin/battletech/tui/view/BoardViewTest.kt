@@ -13,13 +13,13 @@ import battletech.tui.icon.destroyedIcon
 import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import tenter.screen.Canvas
-import tenter.palette.ChromeRole
-import tenter.screen.RevealRect
-import tenter.screen.ScreenBuffer
-import tenter.view.Viewport
-import tenter.view.line
-import tenter.view.render
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.RevealRect
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.view.Viewport
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.render
 
 /**
  * [BoardView] is now plain content — no chrome, no scroll, no clipping; that's all

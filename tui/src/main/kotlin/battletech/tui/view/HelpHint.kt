@@ -1,9 +1,9 @@
 package battletech.tui.view
 
-import tenter.screen.Canvas
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.text.CellWidth
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.text.CellWidth
 
 /** Canonical right-aligned help hint shared by the TUI's chrome views. */
 internal object HelpHint {

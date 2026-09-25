@@ -1,6 +1,6 @@
 package battletech.tui.setup
 
-import tenter.input.InputAction
+import io.archinaut.tenter.input.InputAction
 
 internal sealed interface SetupAction : InputAction {
     data class MoveCursor(val delta: Int) : SetupAction {

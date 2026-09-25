@@ -1,7 +1,7 @@
 package battletech.tui.input
 
 import com.github.ajalt.mordant.input.MouseEvent
-import tenter.input.MouseInput
+import io.archinaut.tenter.input.MouseInput
 
 /**
  * Preserves the TUI's Mordant 3.0.2 compatibility behavior for side panels only. The toolkit

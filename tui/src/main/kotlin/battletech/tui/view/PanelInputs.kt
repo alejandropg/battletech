@@ -8,9 +8,9 @@ import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.input.ContextId
 import battletech.tui.input.Keybindings
-import tenter.input.KeySection
-import tenter.view.ContentView
-import tenter.view.fixedContent
+import io.archinaut.tenter.input.KeySection
+import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.view.fixedContent
 
 /**
  * The view-model inputs for one render frame, derived from [AppState] once and
@@ -27,7 +27,7 @@ internal class PanelInputs(private val appState: AppState, private val keys: Key
 
     private val renderData by lazy { appState.phase.board(appState) }
 
-    /** The tactical board's view — see [Panels.build]'s board [tenter.panel.Panel]. */
+    /** The tactical board's view — see [Panels.build]'s board [io.archinaut.tenter.panel.Panel]. */
     val boardView: ContentView by lazy {
         val board = BoardView(
             appState.state,

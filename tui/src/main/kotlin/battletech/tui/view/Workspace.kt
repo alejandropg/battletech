@@ -8,17 +8,17 @@ import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.game.PanelVisibility
 import battletech.tui.input.Keybindings
-import tenter.animation.AnimationPlayback
-import tenter.input.KeyGlyph
-import tenter.palette.ChromeRole
-import tenter.panel.PanelHit
-import tenter.screen.Canvas
-import tenter.screen.Cell
-import tenter.screen.ScreenBuffer
-import tenter.text.CellWidth
-import tenter.view.Bordered
-import tenter.view.FlashMessage
-import tenter.view.View
+import io.archinaut.tenter.animation.AnimationPlayback
+import io.archinaut.tenter.input.KeyGlyph
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.panel.PanelHit
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.text.CellWidth
+import io.archinaut.tenter.view.Bordered
+import io.archinaut.tenter.view.FlashMessage
+import io.archinaut.tenter.view.View
 
 private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
 
@@ -29,7 +29,7 @@ private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
  *
  * Panel VISIBILITY (does a side panel exist this frame) is never stored here — see
  * [PanelVisibility] — only what the user chose to remember about a panel that DOES exist (state,
- * scroll, focus) lives on [panels] itself, see [tenter.panel.Panel]'s and [tenter.panel.PanelSet]'s
+ * scroll, focus) lives on [panels] itself, see [io.archinaut.tenter.panel.Panel]'s and [io.archinaut.tenter.panel.PanelSet]'s
  * KDoc. [panels] is built fresh per [Workspace] (never a global singleton), so one test's panel
  * state can never leak into another's.
  */
@@ -39,13 +39,13 @@ internal class Workspace(private val keys: Keybindings) {
     /** The panel currently receiving keyboard focus — border/title/thumb render green for it. */
     val focused: GamePanelId get() = panels.focused
 
-    /** Focuses [id], demoting whatever side panel was maximized — see [tenter.panel.PanelSet.focus]. */
+    /** Focuses [id], demoting whatever side panel was maximized — see [io.archinaut.tenter.panel.PanelSet.focus]. */
     fun focus(id: GamePanelId) = panels.focus(id)
 
     /** Focuses [id], or cycles it forward when it is already focused. */
     internal fun focusOrCycle(id: GamePanelId) = panels.focusOrCycle(id)
 
-    /** Cycles the focused panel's state (`+`/`-`) — see [tenter.panel.PanelSet.cycleFocusedState]. */
+    /** Cycles the focused panel's state (`+`/`-`) — see [io.archinaut.tenter.panel.PanelSet.cycleFocusedState]. */
     fun cycleFocusedState(delta: Int) = panels.cycleFocusedState(delta)
 
     /** Scrolls the focused panel by one content row — keyboard `↑`/`↓`. */
@@ -73,7 +73,7 @@ internal class Workspace(private val keys: Keybindings) {
      * Composes and draws one frame into a fresh [width]x[height] buffer: the board, every visible
      * side panel, the status bar, and — once the match has ended — a game-over banner over
      * whichever panel currently occupies the content region. Every panel absorbs its own settled
-     * scroll and reveal for the next call — see [tenter.panel.Panel.render] — so nothing
+     * scroll and reveal for the next call — see [io.archinaut.tenter.panel.Panel.render] — so nothing
      * round-trips back through [AppState].
      *
      */

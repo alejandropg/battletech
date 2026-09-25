@@ -14,10 +14,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
-import tenter.screen.ScreenBuffer
-import tenter.view.line
-import tenter.view.render
-import tenter.view.text
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.render
+import io.archinaut.tenter.view.text
 import kotlin.math.abs
 
 /**

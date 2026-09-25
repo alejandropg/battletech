@@ -65,9 +65,9 @@ import battletech.tui.icon.unitFellIcon
 import battletech.tui.icon.unitRestartedIcon
 import battletech.tui.icon.unitShutdownIcon
 import battletech.tui.icon.unitStoodUpIcon
-import tenter.screen.StyledText
-import tenter.screen.joinStyled
-import tenter.screen.styled
+import io.archinaut.tenter.screen.StyledText
+import io.archinaut.tenter.screen.joinStyled
+import io.archinaut.tenter.screen.styled
 
 internal object GameLogFormatter {
 

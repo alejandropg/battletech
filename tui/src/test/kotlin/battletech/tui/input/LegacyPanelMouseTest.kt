@@ -4,7 +4,7 @@ import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import tenter.input.MouseInput
+import io.archinaut.tenter.input.MouseInput
 
 internal class LegacyPanelMouseTest {
 

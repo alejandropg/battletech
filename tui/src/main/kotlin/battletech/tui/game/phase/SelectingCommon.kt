@@ -6,11 +6,11 @@ import battletech.tactical.session.CommandResult
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.game.AppState
-import tenter.view.FlashMessage
+import io.archinaut.tenter.view.FlashMessage
 import battletech.tui.game.moveCursor
 import battletech.tui.input.BoardClick
 import battletech.tui.input.IdleAction
-import tenter.input.InputAction
+import io.archinaut.tenter.input.InputAction
 
 /**
  * A short flash for a rejected command, or null if [result] was accepted.

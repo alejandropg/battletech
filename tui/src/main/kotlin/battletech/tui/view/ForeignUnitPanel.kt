@@ -1,9 +1,9 @@
 package battletech.tui.view
 
 import battletech.tactical.unit.ForeignUnit
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.view.TextCursor
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.TextCursor
 
 /**
  * Renders a [ForeignUnit] — name, public special statuses, movement, armor (front + rear values

@@ -1,16 +1,16 @@
 package battletech.tui.animation
 
-import tenter.palette.FixedColorRole
-import tenter.palette.PaletteColor
+import io.archinaut.tenter.palette.FixedColorRole
+import io.archinaut.tenter.palette.PaletteColor
 
 /**
  * A [FixedColorRole] wrapping one ANSI-16 code — the weapon-fire animations' entire color
  * vocabulary. These are hardcoded, not themed: every animation must render with the same palette
- * regardless of which [tenter.palette.RolePalette] the host app loaded. The Tenter renderer
+ * regardless of which [io.archinaut.tenter.palette.RolePalette] the host app loaded. The Tenter renderer
  * resolves a [FixedColorRole] straight to [color] without ever consulting the loaded theme.
  *
  * Values use fixed ANSI-16 escapes — for example, `"\033[31;1m"` (bright red) maps to
- * [ANIMATION_DANGER]. [tenter.screen.Cell.Style] has no bold attribute, so a `;1` (bold) escape
+ * [ANIMATION_DANGER]. [io.archinaut.tenter.screen.Cell.Style] has no bold attribute, so a `;1` (bold) escape
  * maps to its bright `9x` code rather than losing the intensity distinction entirely.
  */
 internal data class AnimationColor(override val color: PaletteColor) : FixedColorRole
@@ -48,8 +48,8 @@ internal val ANIMATION_BACKGROUND: AnimationColor = AnimationColor(PaletteColor.
 
 /**
  * The floating panel's border color — `battletech.tui.view.Workspace` passes this as
- * [tenter.view.Bordered]'s `borderColor` so the frame itself is hardcoded too, not
- * [tenter.palette.ChromeRole.PANEL_BORDER]. Reuses [ANIMATION_GRAY]'s value rather than a fourth
+ * [io.archinaut.tenter.view.Bordered]'s `borderColor` so the frame itself is hardcoded too, not
+ * [io.archinaut.tenter.palette.ChromeRole.PANEL_BORDER]. Reuses [ANIMATION_GRAY]'s value rather than a fourth
  * dim gray constant.
  */
 internal val ANIMATION_BORDER: AnimationColor = ANIMATION_GRAY

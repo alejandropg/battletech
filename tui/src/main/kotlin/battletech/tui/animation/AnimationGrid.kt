@@ -1,7 +1,7 @@
 package battletech.tui.animation
 
-import tenter.animation.AnimationSize
-import tenter.animation.GlyphGrid
+import io.archinaut.tenter.animation.AnimationSize
+import io.archinaut.tenter.animation.GlyphGrid
 import kotlin.math.abs
 
 /** A point in animation-grid space, always [Double] — a burst's origin/target are integer cells,

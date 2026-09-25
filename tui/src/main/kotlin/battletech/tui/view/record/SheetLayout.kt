@@ -3,11 +3,11 @@ package battletech.tui.view.record
 /**
  * Column-width budget for the maximized UNIT STATUS record sheet. [SHEET_WIDTH] is derived from
  * the widths below it, rather than restated as its own number, so the two can never drift apart:
- * it is exactly what the four-card top band needs once [tenter.view.Columns]' [GUTTER] is
+ * it is exactly what the four-card top band needs once [io.archinaut.tenter.view.Columns]' [GUTTER] is
  * included. Narrower terminals reflow cards to later bands rather than clipping them.
  */
 internal object SheetLayout {
-    /** [tenter.view.Columns]/[tenter.view.Stack] gutter used throughout the sheet. */
+    /** [io.archinaut.tenter.view.Columns]/[io.archinaut.tenter.view.Stack] gutter used throughout the sheet. */
     const val GUTTER: Int = 2
 
     const val MECH_DATA_WIDTH: Int = 28

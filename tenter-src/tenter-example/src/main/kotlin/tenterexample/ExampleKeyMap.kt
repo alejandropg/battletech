@@ -1,11 +1,11 @@
 package tenterexample
 
 import com.github.ajalt.mordant.input.KeyboardEvent
-import tenter.input.HintGroup
-import tenter.input.KeyBinding
-import tenter.input.KeyLayer
-import tenter.input.KeyMap
-import tenter.input.ScrollAction
+import io.archinaut.tenter.input.HintGroup
+import io.archinaut.tenter.input.KeyBinding
+import io.archinaut.tenter.input.KeyLayer
+import io.archinaut.tenter.input.KeyMap
+import io.archinaut.tenter.input.ScrollAction
 
 internal object ExampleKeyMap {
     internal val map: KeyMap<ExampleContext> = KeyMap(

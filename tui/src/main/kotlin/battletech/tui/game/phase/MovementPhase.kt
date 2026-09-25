@@ -27,8 +27,8 @@ import battletech.tui.input.BrowsingAction
 import battletech.tui.input.ContextId
 import battletech.tui.input.FacingAction
 import battletech.tui.input.IdleAction
-import tenter.input.InputAction
-import tenter.view.FlashMessage
+import io.archinaut.tenter.input.InputAction
+import io.archinaut.tenter.view.FlashMessage
 
 internal const val SELECT_FACING_PROMPT = "Select facing"
 

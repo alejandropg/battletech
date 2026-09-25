@@ -1,9 +1,9 @@
 package battletech.tui.animation
 
-import tenter.animation.Animation
-import tenter.animation.AnimationSize
-import tenter.animation.GlyphGrid
-import tenter.screen.Cell
+import io.archinaut.tenter.animation.Animation
+import io.archinaut.tenter.animation.AnimationSize
+import io.archinaut.tenter.animation.GlyphGrid
+import io.archinaut.tenter.screen.Cell
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.min

@@ -2,7 +2,7 @@ package battletech.tui.view
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import tenter.palette.ChromeRole
+import io.archinaut.tenter.palette.ChromeRole
 
 /** Focused tests for [HeatPenalties.lines] and [HeatPenalties.categories]. */
 internal class HeatPenaltiesTest {

@@ -1,6 +1,6 @@
 package battletech.tui.setup
 
-import tenter.panel.PanelId
+import io.archinaut.tenter.panel.PanelId
 
 internal enum class SetupPanelId : PanelId { MODE, MAP, PLAYER_1, PLAYER_2, HELP }
 

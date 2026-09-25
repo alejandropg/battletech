@@ -5,10 +5,10 @@ import battletech.tactical.attack.HitLocation
 import battletech.tui.game.phase.AttackResultsRender
 import battletech.tui.icon.attackOutcomeIcon
 import battletech.tui.icon.targetIcon
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.view.TextCursor
-import tenter.widget.ValueRow
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.widget.ValueRow
 
 internal class AttackResultsView(private val data: AttackResultsRender) : PreparedTextView() {
 

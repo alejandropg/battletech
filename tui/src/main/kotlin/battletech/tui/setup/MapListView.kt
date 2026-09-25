@@ -1,12 +1,12 @@
 package battletech.tui.setup
 
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.text.CellWidth
-import tenter.view.TextCursor
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.text.CellWidth
+import io.archinaut.tenter.view.TextCursor
 import battletech.tui.view.PreparedTextView
-import tenter.widget.CheckState
-import tenter.widget.SelectableRow
+import io.archinaut.tenter.widget.CheckState
+import io.archinaut.tenter.widget.SelectableRow
 import battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 /** Panel 2: every registered map, single-select (D6/D7-style rows, but MAP has no count column). */

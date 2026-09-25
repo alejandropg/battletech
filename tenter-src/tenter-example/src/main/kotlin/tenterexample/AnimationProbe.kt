@@ -1,6 +1,6 @@
 package tenterexample
 
-import tenter.view.View
+import io.archinaut.tenter.view.View
 
 internal data class AnimationProbe(
     val firstFrame: View,

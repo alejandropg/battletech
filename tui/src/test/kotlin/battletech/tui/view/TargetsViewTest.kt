@@ -10,12 +10,12 @@ import battletech.tactical.unit.UnitId
 import battletech.tui.icon.diceRoll
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.palette.ChromeRole
-import tenter.view.line
-import tenter.view.render
-import tenter.view.text
-import tenter.widget.CheckState
-import tenter.widget.checkboxIcon
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.render
+import io.archinaut.tenter.view.text
+import io.archinaut.tenter.widget.CheckState
+import io.archinaut.tenter.widget.checkboxIcon
 import battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 internal class TargetsViewTest {

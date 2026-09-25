@@ -16,11 +16,11 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.panel.PanelState
-import tenter.view.HelpView
-import tenter.panel.declaredCycle
-import tenter.view.line
-import tenter.view.text
+import io.archinaut.tenter.panel.PanelState
+import io.archinaut.tenter.view.HelpView
+import io.archinaut.tenter.panel.declaredCycle
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.text
 
 internal class SetupWorkspaceTest {
 
@@ -347,7 +347,7 @@ internal class SetupWorkspaceTest {
         assertTrue(buffer.text().contains(second.tonnage.toString()))
     }
 
-    private fun assertFourBlankColumnsAroundDivider(buffer: tenter.screen.ScreenBuffer, row: Int, dividerColumn: Int) {
+    private fun assertFourBlankColumnsAroundDivider(buffer: io.archinaut.tenter.screen.ScreenBuffer, row: Int, dividerColumn: Int) {
         for (offset in 1..4) {
             assertEquals(" ", buffer.get(dividerColumn - offset, row).char)
             assertEquals(" ", buffer.get(dividerColumn + offset, row).char)

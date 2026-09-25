@@ -4,7 +4,7 @@ import battletech.tactical.model.HexDirection
 import battletech.tactical.model.MovementMode
 import battletech.tactical.model.Terrain
 import battletech.tactical.unit.CriticalSlotContent
-import tenter.widget.CheckboxGlyphs
+import io.archinaut.tenter.widget.CheckboxGlyphs
 
 /** TUI's explicit Nerd Font preference; generic Tenter callers use plain Unicode by default. */
 internal val TUI_CHECKBOX_GLYPHS: CheckboxGlyphs = CheckboxGlyphs.NERD_FONT

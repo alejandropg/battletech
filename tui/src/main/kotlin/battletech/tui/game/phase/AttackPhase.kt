@@ -31,7 +31,7 @@ import battletech.tui.input.AttackAction
 import battletech.tui.input.BoardClick
 import battletech.tui.input.ContextId
 import battletech.tui.input.IdleAction
-import tenter.input.InputAction
+import io.archinaut.tenter.input.InputAction
 
 internal const val DECLARING_PROMPT = "Declare weapon fire"
 

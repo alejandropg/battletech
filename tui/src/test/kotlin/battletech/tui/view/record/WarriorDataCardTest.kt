@@ -8,9 +8,9 @@ import battletech.tui.icon.pilotDeadIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.view.line
-import tenter.view.render
-import tenter.view.text
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.render
+import io.archinaut.tenter.view.text
 
 /** [WarriorDataCard] — gunnery/piloting, the Hits Taken track, and the Consciousness# row. */
 internal class WarriorDataCardTest {

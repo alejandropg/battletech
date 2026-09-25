@@ -1,8 +1,8 @@
 package battletech.tui.animation
 
-import tenter.animation.Animation
-import tenter.animation.AnimationSize
-import tenter.view.Bordered
+import io.archinaut.tenter.animation.Animation
+import io.archinaut.tenter.animation.AnimationSize
+import io.archinaut.tenter.view.Bordered
 
 /** A panel's absolute top-left on screen, border included. */
 internal data class PanelPlacement(val x: Int, val y: Int)

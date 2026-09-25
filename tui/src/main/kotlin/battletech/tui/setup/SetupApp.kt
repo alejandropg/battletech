@@ -11,10 +11,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
-import tenter.screen.ScreenRenderer
-import tenter.terminal.TerminalEvent
-import tenter.terminal.inputEvents
-import tenter.terminal.resizeEvents
+import io.archinaut.tenter.screen.ScreenRenderer
+import io.archinaut.tenter.terminal.TerminalEvent
+import io.archinaut.tenter.terminal.inputEvents
+import io.archinaut.tenter.terminal.resizeEvents
 
 internal sealed interface SetupOutcome {
     data class Commit(val plan: MatchPlan, val registry: AssetRegistry) : SetupOutcome
@@ -27,7 +27,7 @@ internal sealed interface SetupOutcome {
 /**
  * Runs the interactive setup screen to completion. Mirrors `battletech.tui.TuiApp` but *accepts*
  * its terminal/renderer rather than constructing them (D17), so `Main.kt` can keep one
- * [tenter.terminal.withScreen] scope across whichever app runs next. That scope owns the
+ * [io.archinaut.tenter.terminal.withScreen] scope across whichever app runs next. That scope owns the
  * alternate screen and cursor; this app's collected input flow owns its own raw-mode lifetime.
  */
 internal class SetupApp(

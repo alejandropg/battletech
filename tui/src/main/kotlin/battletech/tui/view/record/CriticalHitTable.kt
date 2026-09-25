@@ -6,10 +6,10 @@ import battletech.tactical.unit.CriticalSlotContent
 import battletech.tactical.unit.SLOT_COUNTS
 import battletech.tactical.unit.isSlotDestroyed
 import battletech.tui.view.MechLabels
-import tenter.screen.Insets
-import tenter.view.Columns
-import tenter.view.Padded
-import tenter.view.TextCursor
+import io.archinaut.tenter.screen.Insets
+import io.archinaut.tenter.view.Columns
+import io.archinaut.tenter.view.Padded
+import io.archinaut.tenter.view.TextCursor
 import battletech.tui.view.PreparedTextView
 
 /**

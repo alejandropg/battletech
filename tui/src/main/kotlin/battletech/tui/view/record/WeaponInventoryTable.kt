@@ -6,9 +6,9 @@ import battletech.tactical.unit.remainingShots
 import battletech.tui.icon.ammoIcon
 import battletech.tui.icon.infinityIcon
 import battletech.tui.view.MechLabels
-import tenter.view.TextCursor
-import tenter.view.TextCursor.Align.LEFT
-import tenter.view.TextCursor.Align.RIGHT
+import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.view.TextCursor.Align.LEFT
+import io.archinaut.tenter.view.TextCursor.Align.RIGHT
 import battletech.tui.view.PreparedTextView
 
 /**

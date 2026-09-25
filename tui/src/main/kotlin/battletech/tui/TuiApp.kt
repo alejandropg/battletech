@@ -16,10 +16,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
-import tenter.screen.ScreenRenderer
-import tenter.terminal.TerminalEvent
-import tenter.terminal.inputEvents
-import tenter.terminal.resizeEvents
+import io.archinaut.tenter.screen.ScreenRenderer
+import io.archinaut.tenter.terminal.TerminalEvent
+import io.archinaut.tenter.terminal.inputEvents
+import io.archinaut.tenter.terminal.resizeEvents
 
 /**
  * [seats] is the set of seats this process drives, each mapped to the [GameSession] that seat
@@ -32,7 +32,7 @@ import tenter.terminal.resizeEvents
  * a session or calls `advance()` itself.
  *
  * [terminal]/[renderer] are accepted, not constructed (D17): `Main.kt` builds one [Terminal] +
- * [ScreenRenderer] inside one [tenter.terminal.withScreen] scope for the whole process and hands
+ * [ScreenRenderer] inside one [io.archinaut.tenter.terminal.withScreen] scope for the whole process and hands
  * the same pair to both the setup screen ([battletech.tui.setup.SetupApp]) and this class. The
  * scope owns alternate-screen/cursor cleanup; this app's cold input flow acquires and releases
  * raw mode while it is collected, with no flicker at the hand-off between the two screens.
@@ -57,10 +57,10 @@ public class TuiApp(
      * ### Single-thread confinement
      * All session mutations, AppState updates, and rendering run on the single
      * [runBlocking] (main) thread. Only the terminal input producer runs on
-     * Dispatchers.IO — that is handled internally by [tenter.terminal.inputEvents].
+     * Dispatchers.IO — that is handled internally by [io.archinaut.tenter.terminal.inputEvents].
      *
      * ### Quit is not flow cancellation
-     * Quit is detected inside [tenter.terminal.inputEvents] using the keymap's predicate, which emits a
+     * Quit is detected inside [io.archinaut.tenter.terminal.inputEvents] using the keymap's predicate, which emits a
      * [TerminalEvent.Quit], mapped below to [UiEvent.Quit], and then naturally completes its
      * flow. We never cancel the flow externally as a quit mechanism — doing so would leave the
      * terminal in raw mode.

@@ -1,9 +1,9 @@
 package battletech.tui.view
 
-import tenter.input.KeySection
-import tenter.panel.Panel
-import tenter.panel.PanelId
-import tenter.view.HelpView
+import io.archinaut.tenter.input.KeySection
+import io.archinaut.tenter.panel.Panel
+import io.archinaut.tenter.panel.PanelId
+import io.archinaut.tenter.view.HelpView
 
 /**
  * Builds the shared HELP panel. Callers supply only the panel identity, badge, and the

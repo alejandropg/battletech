@@ -5,14 +5,14 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.VisibleUnit
 import battletech.tui.icon.emptyCircleIcon
 import battletech.tui.icon.filledCircleIcon
-import tenter.screen.Canvas
-import tenter.screen.Cell
-import tenter.text.CellWidth
-import tenter.view.ContentLayout
-import tenter.view.ContentView
-import tenter.view.fixedContent
-import tenter.view.TextCursor
-import tenter.widget.PipTrack
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.text.CellWidth
+import io.archinaut.tenter.view.ContentLayout
+import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.view.fixedContent
+import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.widget.PipTrack
 
 /**
  * The record sheet's front-facing paper doll. [armor] and [internalStructure] share one

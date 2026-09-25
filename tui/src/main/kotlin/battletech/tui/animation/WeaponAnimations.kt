@@ -1,8 +1,8 @@
 package battletech.tui.animation
 
 import battletech.tactical.attack.AttackResult
-import tenter.animation.Animation
-import tenter.animation.AnimationPlayback
+import io.archinaut.tenter.animation.Animation
+import io.archinaut.tenter.animation.AnimationPlayback
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds

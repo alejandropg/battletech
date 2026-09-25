@@ -1,12 +1,12 @@
 package battletech.tui.input
 
-import tenter.input.InputAction
-import tenter.panel.PanelId
+import io.archinaut.tenter.input.InputAction
+import io.archinaut.tenter.panel.PanelId
 
 /**
  * Chrome actions that name something in *this* application. They live here rather than in `tenter`
  * because [FocusPanel] names a [PanelId] from one of this application's own panel enums, and
- * `tenter.input` is a leaf that cannot see `tenter.panel`, let alone `battletech`. Keeping the
+ * `io.archinaut.tenter.input` is a leaf that cannot see `io.archinaut.tenter.panel`, let alone `battletech`. Keeping the
  * whole CHROME vocabulary in one sealed hierarchy also keeps `runLoop`'s dispatch `when`
  * exhaustive. [FocusPanel.panel] is typed as the general [PanelId] rather than a game-specific enum
  * so the same action family serves both the game screen and the setup screen; each loop only ever

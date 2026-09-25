@@ -5,13 +5,13 @@ import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.runBlocking
-import tenter.screen.Canvas
-import tenter.palette.DefaultRolePalette
-import tenter.screen.ScreenBuffer
-import tenter.terminal.TerminalEvent
-import tenter.terminal.inputEvents
-import tenter.terminal.withScreen
-import tenter.view.contentView
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.palette.DefaultRolePalette
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.terminal.TerminalEvent
+import io.archinaut.tenter.terminal.inputEvents
+import io.archinaut.tenter.terminal.withScreen
+import io.archinaut.tenter.view.contentView
 
 public fun main() {
     val terminal = Terminal()

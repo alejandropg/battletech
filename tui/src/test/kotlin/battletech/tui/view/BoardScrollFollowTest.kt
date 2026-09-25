@@ -9,11 +9,11 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.view.ScrollState
-import tenter.view.ViewportState
-import tenter.view.fixedContent
-import tenter.view.render
-import tenter.view.scrollingPanel
+import io.archinaut.tenter.view.ScrollState
+import io.archinaut.tenter.view.ViewportState
+import io.archinaut.tenter.view.fixedContent
+import io.archinaut.tenter.view.render
+import io.archinaut.tenter.view.scrollingPanel
 
 internal class BoardScrollFollowTest {
 

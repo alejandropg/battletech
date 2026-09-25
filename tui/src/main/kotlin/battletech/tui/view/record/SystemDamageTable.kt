@@ -7,9 +7,9 @@ import battletech.tui.icon.emptyCircleIcon
 import battletech.tui.icon.filledCircleIcon
 import battletech.tui.view.MechLabels
 import battletech.tui.view.formatCritEffect
-import tenter.view.TextCursor
+import io.archinaut.tenter.view.TextCursor
 import battletech.tui.view.PreparedTextView
-import tenter.widget.PipTrack
+import io.archinaut.tenter.widget.PipTrack
 
 /** The SYSTEM DAMAGE card: hit tracks and penalties for the 'Mech's shared components. */
 internal class SystemDamageTable(private val unit: CombatUnit) : PreparedTextView() {

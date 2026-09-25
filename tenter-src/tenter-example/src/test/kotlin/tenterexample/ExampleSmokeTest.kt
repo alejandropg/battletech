@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import tenter.panel.Panel
-import tenter.panel.PanelSet
+import io.archinaut.tenter.panel.Panel
+import io.archinaut.tenter.panel.PanelSet
 
 internal class ExampleSmokeTest {
 

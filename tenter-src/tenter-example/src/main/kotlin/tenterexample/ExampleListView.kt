@@ -1,15 +1,15 @@
 package tenterexample
 
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.view.Columns
-import tenter.view.ContentLayout
-import tenter.view.ContentView
-import tenter.view.Stack
-import tenter.view.contentView
-import tenter.widget.CheckState
-import tenter.widget.CheckboxGlyphs
-import tenter.widget.SelectableRow
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.Columns
+import io.archinaut.tenter.view.ContentLayout
+import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.view.Stack
+import io.archinaut.tenter.view.contentView
+import io.archinaut.tenter.widget.CheckState
+import io.archinaut.tenter.widget.CheckboxGlyphs
+import io.archinaut.tenter.widget.SelectableRow
 
 /** The generated catalog content, deliberately composed from prepared stack and column views. */
 internal class ExampleListView(

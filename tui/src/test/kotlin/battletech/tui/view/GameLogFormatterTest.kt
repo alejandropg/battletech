@@ -79,7 +79,7 @@ import battletech.tui.icon.undisclosedCriticalHitIcon
 import battletech.tui.mediumLaser
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import tenter.screen.Cell
+import io.archinaut.tenter.screen.Cell
 
 internal class GameLogFormatterTest {
 

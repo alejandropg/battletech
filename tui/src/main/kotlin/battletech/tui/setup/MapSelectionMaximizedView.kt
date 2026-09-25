@@ -2,9 +2,9 @@ package battletech.tui.setup
 
 import battletech.tactical.model.GameMap
 import battletech.tui.view.BoardView
-import tenter.view.ContentLayout
-import tenter.view.ContentView
-import tenter.view.fixedContent
+import io.archinaut.tenter.view.ContentLayout
+import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.view.fixedContent
 
 /**
  * The maximized MAP panel: the normal map selector at left and the highlighted map rendered with

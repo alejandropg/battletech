@@ -5,9 +5,9 @@ import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.ForeignUnit
 import battletech.tactical.unit.HeatSource
 import battletech.tactical.unit.VisibleUnit
-import tenter.view.ContentLayout
-import tenter.view.ContentView
-import tenter.view.contentView
+import io.archinaut.tenter.view.ContentLayout
+import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.view.contentView
 import kotlin.math.min
 
 /**
@@ -35,7 +35,7 @@ internal class MechRecordSheetView(
             is ForeignUnit -> ForeignRecordSheetView(unit)
             is CombatUnit -> OwnRecordSheetView(unit, map, pendingHeat)
         }.layout(sheetWidth)
-        return tenter.view.contentLayout(sheetWidth, content.height) {
+        return io.archinaut.tenter.view.contentLayout(sheetWidth, content.height) {
             place(0, 0, content)
         }
     }

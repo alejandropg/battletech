@@ -1,9 +1,9 @@
 package battletech.tui.view
 
 import battletech.tactical.unit.VisibleUnit
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.view.TextCursor
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.TextCursor
 
 /**
  * Renders the visibly-observable exceptional states of [unit] as a compact, untitled block.

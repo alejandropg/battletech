@@ -5,7 +5,7 @@ import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import tenter.screen.Point
+import io.archinaut.tenter.screen.Point
 import battletech.tui.view.BoardView
 
 internal class BoardMouseTest {

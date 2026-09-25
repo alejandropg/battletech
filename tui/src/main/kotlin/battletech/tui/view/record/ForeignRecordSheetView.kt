@@ -2,11 +2,11 @@ package battletech.tui.view.record
 
 import battletech.tactical.unit.ForeignUnit
 import battletech.tui.view.ForeignWeaponList
-import tenter.view.Columns
-import tenter.view.Stack
-import tenter.view.TextCursor
-import tenter.view.ContentView
-import tenter.view.contentView
+import io.archinaut.tenter.view.Columns
+import io.archinaut.tenter.view.Stack
+import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.view.contentView
 import battletech.tui.view.PreparedTextView
 
 /**

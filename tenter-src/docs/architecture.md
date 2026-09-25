@@ -4,9 +4,9 @@ Tenter is a JVM terminal UI toolkit over Mordant. Its public contract is describ
 
 ## Package layering
 
-`palette`, `text`, and `input` are leaves. `screen` uses `palette` and `text`; `terminal` uses `input`, `palette`, and `screen`; `view` uses `input`, `palette`, `screen`, and `text`; `animation` uses `screen`, `view`, and `text`; `widget` and `panel` sit above `view` and `screen`. `tenter/src/test/kotlin/tenter/LayeringTest.kt` enforces the full allowed-dependency matrix.
+`palette`, `text`, and `input` are leaves. `screen` uses `palette` and `text`; `terminal` uses `input`, `palette`, and `screen`; `view` uses `input`, `palette`, `screen`, and `text`; `animation` uses `screen`, `view`, and `text`; `widget` and `panel` sit above `view` and `screen`. `tenter/src/test/kotlin/io/archinaut/tenter/LayeringTest.kt` enforces the full allowed-dependency matrix.
 
-`tenter/src/test/kotlin/tenter/ArchitectureTest.kt` prevents BattleTech imports and limits main-source imports to Tenter, Kotlin, Java, kotlinx, and Mordant. The same test keeps managed `Panel` mutations behind `PanelSet`.
+`tenter/src/test/kotlin/io/archinaut/tenter/ArchitectureTest.kt` prevents BattleTech imports and limits main-source imports to Tenter, Kotlin, Java, kotlinx, and Mordant. The same test keeps managed `Panel` mutations behind `PanelSet`.
 
 The packages have distinct jobs: `palette` owns semantic colors; `text` owns display-cell metrics; `screen` owns buffers, canvas painting, and diff rendering; `view` owns prepared content and layout; `animation` owns finite frame descriptions and elapsed-time playback; `widget` owns reusable fragments; `panel` owns stateful panel composition; `input` owns key maps and pointer helpers; `terminal` owns terminal event flows and screen lifecycle.
 

@@ -10,7 +10,7 @@ import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.terminal.terminalEvents
+import io.archinaut.tenter.terminal.terminalEvents
 import tenterexample.hello.runHello
 
 internal class HelloExampleTest {

@@ -6,9 +6,9 @@ import battletech.tui.aUnit
 import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import tenter.palette.ChromeRole
-import tenter.screen.ScreenBuffer
-import tenter.view.render
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.view.render
 
 internal class StatusBarViewTest {
 

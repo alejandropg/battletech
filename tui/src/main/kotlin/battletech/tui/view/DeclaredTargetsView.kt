@@ -3,10 +3,10 @@ package battletech.tui.view
 import battletech.tui.game.phase.DeclaredTargetsRender
 import battletech.tui.game.phase.DeclaredWeaponEntry
 import battletech.tui.icon.targetIcon
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.view.TextCursor
-import tenter.widget.ValueRow
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.widget.ValueRow
 
 internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : PreparedTextView() {
 

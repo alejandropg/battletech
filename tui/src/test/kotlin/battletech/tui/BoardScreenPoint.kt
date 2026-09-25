@@ -4,7 +4,7 @@ import battletech.tui.game.AppState
 import battletech.tui.game.GamePanelId
 import battletech.tui.input.Keybindings
 import battletech.tui.view.Workspace
-import tenter.screen.Point
+import io.archinaut.tenter.screen.Point
 
 /** Locates content through completed-frame hits, without depending on toolkit chrome insets. */
 internal fun boardScreenPoint(state: AppState, contentX: Int, contentY: Int): Point {

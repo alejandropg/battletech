@@ -32,8 +32,8 @@ import com.github.ajalt.mordant.terminal.Terminal
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import kotlin.io.path.Path
-import tenter.screen.ScreenRenderer
-import tenter.terminal.withScreen
+import io.archinaut.tenter.screen.ScreenRenderer
+import io.archinaut.tenter.terminal.withScreen
 
 /** Builds the [ContentCatalog] for one launch: every built-in plus [launch]'s `--add-*` registrations. */
 private fun resolveContentOrExit(launch: Launch): ContentCatalog = try {

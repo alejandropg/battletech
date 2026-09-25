@@ -3,10 +3,10 @@ package battletech.tui.setup
 import battletech.tactical.model.PlayerId
 import battletech.tui.input.ContextId
 import battletech.tui.input.Keybindings
-import tenter.input.KeySection
-import tenter.panel.Panel
-import tenter.text.CellWidth
-import tenter.view.ContentView
+import io.archinaut.tenter.input.KeySection
+import io.archinaut.tenter.panel.Panel
+import io.archinaut.tenter.text.CellWidth
+import io.archinaut.tenter.view.ContentView
 
 /**
  * The per-frame view-model for the setup screen, mirroring `battletech.tui.view.PanelInputs`:

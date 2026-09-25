@@ -11,9 +11,9 @@ import battletech.tui.icon.infinityIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.view.line
-import tenter.view.render
-import tenter.view.text
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.render
+import io.archinaut.tenter.view.text
 
 /** [WeaponInventoryTable], driven by a real Atlas AS7-D built through the production [MechModels] path. */
 internal class WeaponInventoryTableTest {

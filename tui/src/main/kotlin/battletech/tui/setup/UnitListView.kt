@@ -1,13 +1,13 @@
 package battletech.tui.setup
 
 import battletech.tactical.unit.MechModel
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.view.TextCursor
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.TextCursor
 import battletech.tui.view.PreparedTextView
-import tenter.widget.CheckState
-import tenter.widget.SelectableRow
-import tenter.widget.ValueRow
+import io.archinaut.tenter.widget.CheckState
+import io.archinaut.tenter.widget.SelectableRow
+import io.archinaut.tenter.widget.ValueRow
 import battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 /**

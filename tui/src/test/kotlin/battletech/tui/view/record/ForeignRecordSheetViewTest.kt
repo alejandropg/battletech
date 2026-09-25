@@ -13,12 +13,12 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.view.line
-import tenter.view.render
-import tenter.view.text
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.render
+import io.archinaut.tenter.view.text
 
 /**
- * [ForeignRecordSheetView] drawn directly, as its own [tenter.view.View] — not just through
+ * [ForeignRecordSheetView] drawn directly, as its own [io.archinaut.tenter.view.View] — not just through
  * [MechRecordSheetView]'s dispatch — since it stopped being a static `render(canvas, content,
  * unit)` function and became an ordinary View.
  */

@@ -5,10 +5,10 @@ import battletech.tactical.heat.projectHeat
 import battletech.tactical.model.GameMap
 import battletech.tactical.unit.CombatUnit
 import battletech.tactical.unit.HeatSource
-import tenter.screen.Cell
-import tenter.palette.ChromeRole
-import tenter.view.TextCursor
-import tenter.widget.Gauge
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.widget.Gauge
 
 /**
  * The "Current" gauge, this-turn heat sources (committed solid, [pendingHeat] drafted), the sink

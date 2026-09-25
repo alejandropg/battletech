@@ -11,12 +11,12 @@ import battletech.tui.icon.targetIcon
 import battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.palette.ChromeRole
-import tenter.screen.ScreenBuffer
-import tenter.view.line
-import tenter.view.render
-import tenter.view.renderInPanel
-import tenter.view.text
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.render
+import io.archinaut.tenter.view.renderInPanel
+import io.archinaut.tenter.view.text
 
 internal class DeclaredTargetsViewTest {
 

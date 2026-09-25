@@ -4,8 +4,8 @@ import battletech.tui.game.GamePanelId
 import battletech.tui.input.Keybindings
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import tenter.panel.PanelState
-import tenter.panel.declaredCycle
+import io.archinaut.tenter.panel.PanelState
+import io.archinaut.tenter.panel.declaredCycle
 
 /**
  * What [Panels.build] DECLARES — which panel is main, and which [PanelState]s each one offers —

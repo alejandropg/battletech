@@ -21,13 +21,13 @@ import battletech.tui.icon.movementModeIcon
 import battletech.tui.icon.unitStoodUpIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import tenter.palette.ChromeRole
-import tenter.screen.ScreenBuffer
-import tenter.view.ViewportState
-import tenter.view.line
-import tenter.view.render
-import tenter.view.renderInPanel
-import tenter.view.scrollingPanel
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.view.ViewportState
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.render
+import io.archinaut.tenter.view.renderInPanel
+import io.archinaut.tenter.view.scrollingPanel
 
 internal class LogViewTest {
 

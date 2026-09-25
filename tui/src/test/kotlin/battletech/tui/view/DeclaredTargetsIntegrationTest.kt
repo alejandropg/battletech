@@ -16,10 +16,10 @@ import battletech.tui.game.phase.WeaponAllocation
 import battletech.tui.mediumLaser
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.palette.ChromeRole
-import tenter.view.line
-import tenter.view.render
-import tenter.view.text
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.view.line
+import io.archinaut.tenter.view.render
+import io.archinaut.tenter.view.text
 
 /**
  * End-to-end integration: AppState → declaredTargetsRender → DeclaredTargetsView.render.

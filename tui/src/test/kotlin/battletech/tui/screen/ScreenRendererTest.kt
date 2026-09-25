@@ -6,15 +6,15 @@ import com.github.ajalt.mordant.terminal.TerminalRecorder
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import tenter.screen.Canvas
-import tenter.screen.Cell
-import tenter.screen.ScreenBuffer
-import tenter.screen.ScreenRenderer
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.screen.ScreenRenderer
 
 /**
- * Verifies BattleTech's own themes render through [tenter.screen.ScreenRenderer] with their
+ * Verifies BattleTech's own themes render through [io.archinaut.tenter.screen.ScreenRenderer] with their
  * authored, theme-specific values — no downsampling between tiers, no nearest-color
- * approximation. [tenter.screen.ScreenRendererTest] already covers the renderer's generic
+ * approximation. [io.archinaut.tenter.screen.ScreenRendererTest] already covers the renderer's generic
  * mechanics (diffing, run coalescing, alt-screen switching) against a palette fixture; this class
  * only re-checks what's specific to `tui`'s six built-in [Theme]s and [defaultThemeName].
  */

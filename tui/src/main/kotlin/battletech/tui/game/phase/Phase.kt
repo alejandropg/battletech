@@ -4,7 +4,7 @@ import battletech.tactical.model.TurnPhase
 import battletech.tui.game.AppState
 import battletech.tui.game.RenderData
 import battletech.tui.input.ContextId
-import tenter.input.InputAction
+import io.archinaut.tenter.input.InputAction
 
 /**
  * UI sub-state machine for the active player phase. Phases are pure
@@ -16,7 +16,7 @@ import tenter.input.InputAction
 internal sealed interface Phase {
     val turnPhase: TurnPhase
 
-    /** Which [tenter.input.KeyLayer] resolves keyboard input for this phase — see `Keybindings`. */
+    /** Which [io.archinaut.tenter.input.KeyLayer] resolves keyboard input for this phase — see `Keybindings`. */
     val keyContext: ContextId
 
     /** Null means this phase does not consume [action] — a real three-valued protocol [battletech.tui.loop.runLoop] relies on. */

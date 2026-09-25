@@ -1,7 +1,7 @@
 package battletech.tui.view
 
 import battletech.tactical.unit.ForeignUnit
-import tenter.view.TextCursor
+import io.archinaut.tenter.view.TextCursor
 
 internal class TargetStatusView(private val unit: ForeignUnit) : PreparedTextView() {
 

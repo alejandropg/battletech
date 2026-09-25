@@ -1,6 +1,6 @@
 package battletech.tui.input
 
-import tenter.input.InputAction
+import io.archinaut.tenter.input.InputAction
 
 public sealed interface AttackAction : InputAction {
     public data class TwistTorso(val clockwise: Boolean) : AttackAction {

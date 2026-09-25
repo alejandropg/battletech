@@ -22,9 +22,9 @@ import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import tenter.input.ScrollAction
-import tenter.panel.PanelHit
-import tenter.screen.Point
+import io.archinaut.tenter.input.ScrollAction
+import io.archinaut.tenter.panel.PanelHit
+import io.archinaut.tenter.screen.Point
 
 /**
  * [resolveInput] is where "what input is live this frame" is decided, and the only place the
