@@ -27,15 +27,8 @@ Two tiers, distinguished by **how they load** — not by topic:
 
 - **`tactical/`** (`battletech.tactical.*`) — delivery-agnostic: every delivery (TUI, `network`, any future web UI) consumes it through the same public surface. `attack/` (incl. `physical/`, `weapon/`), `dice/`, `heat/`, `io/` (`ResourceOrFileLoader`), `model/` (core state plus `map/`, `unit/` (unit-collection content loading — the on-disk roster format, distinct from the `unit/` top-level package below, which holds the runtime domain types), `mech/`, and `content/` (`ContentCatalog`, the deep module tying map/mech/unit content together) content loading), `movement/`, `query/`, `rules/`, `session/`, and `unit/` (runtime domain types — `CombatUnit`, `UnitId`, `UnitRoster`, `MechModel`). `ContentCatalog.resolveGame` pairs a selected map with a selected unit collection and returns a complete `GameState`; launchers do not separately construct maps and rosters.
 - **`network/`** (`battletech.network.*`): `client/` (`ClientGameSession`, `LobbyClient` — the joiner's half of the pre-match lobby), `server/` (`GameServer`, `LobbyHost` — the host's half of the lobby, `ConnectionSink` — the seam both share, `SocketAcceptor`), `transport/` (`ServerConnection`/`ClientConnection` port + the `JsonLineConnection` and `InMemoryConnection` adapters), `wire/` (`Messages`, `SessionId`, `WireJson`). Reuses `tactical.session`/`tactical.query` types directly as wire DTOs (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) rather than redefining them; the lobby's own DTOs (`MatchPlan`, `ContentSummary`) live in `tactical.model.content` for the same reason — visible to both `tui` and `network` with no wire-specific redefinition. See "The lobby: one commit path" below.
-- **`tenter/`** (`tenter.*`) — a standalone terminal-UI toolkit over [Mordant](https://github.com/ajalt/mordant); the one module deliberately meant to be lifted out into its own library later. `palette/` (`ColorRole`/`FixedColorRole`/`ChromeRole`, `PaletteColor`, `RolePalette`/`DefaultRolePalette`, validated/copying `MapRolePalette`) is the dependency-free semantic color and palette module. `screen/` (`Canvas`/`ScreenBuffer`/`Cell`/`Insets`, the diffing `ScreenRenderer`, and memoizing `StyleTagCache`), `view/` (`View` and its implementations only — prepared `ContentView`/`ContentLayout`, layout decorators `Padded`/`Bordered`/`Viewport`/`scrollingPanel`/`ScrollingPanel`, sibling-composition decorators `Columns`/`Stack`, the pure internal `ScrollGeometry` math, leaf views `HelpView`/`FlashMessage`, and `TextCursor` — the row-cursor over a `Canvas` that `widget/` paints through; `ViewportState` owns scroll intent and exposes an immutable settled `ScrollState`; prepared callers provide flowing content or explicit-size `fixedContent` raw views, so intrinsic layout has no measurement adapter or hidden row ceiling), `animation/` (`AnimationSize`/`Animation` finite frame descriptions, optional priority-compositing `GlyphGrid`, and pure elapsed-time `AnimationPlayback`; late redraws skip obsolete frames), `widget/` (reusable fragments painted into a `TextCursor` rather than a raw `Canvas`: `Checkbox`/`CheckboxGlyphs`/`CheckState`/`Gauge`/`ValueRow`/`PipTrack` — including `PipTrack.drawAdvancing`, the cursor-advancing sibling of `PipTrack.draw`), `text/` (dependency-free text metrics shared by `screen/` and `view/`: `CellWidth`/`TextWrap`/`TextTruncation`), `panel/` (`PanelId` — a bare marker interface; `PanelState`; `Panel<K, I>`, whose nested `Presentation` groups prepared content with its width; and `PanelSet`, whose named factories exclusively attach stateful panels and expose immutable state/settled-offset observations; `PanelLayout`, `VerticalTitleView`), `input/` (`InputAction`/`KeyBinding`/`HintGroup`/`KeyLayer`/`KeyMap` — the declarative keybinding machinery every delivery's own keymap is built from; a binding's chord is a plain Mordant `KeyboardEvent`, matched against the event exactly as the terminal reported it — `tenter` folds nothing, because whether two spellings are the same keystroke is an application decision, not one the toolkit makes on a caller's behalf — since `tenter` adds vocabulary on top of Mordant rather than wrapping it — see "`tenter` does not hide Mordant" below; `MouseInput` — the mouse-wheel workaround only, its keyboard mappings absorbed into `KeyMap`; plus `KeyGlyph`/`KeyHint`/`KeySection`/`PanAction`/`ScrollAction`), `terminal/` (`TerminalEvent` + the raw-mode/resize `Flow` producers, `terminalEvents` taking its quit predicate as a parameter rather than importing one). No `battletech.*` imports anywhere in this module — see the invariant in `CLAUDE.md` and `tenter/src/test/kotlin/tenter/ArchitectureTest.kt`. Dependencies run one way — `text`/`input`/`palette` are leaves; `screen` → `palette`/`text`; `terminal` → `input`/`palette`/`screen`; `view` → `input`/`palette`/`screen`/`text`; `animation` → `screen`/`view`/`text`; `widget`/`panel` → `palette`/`view` (+ `screen`) — never the reverse. `tenter/src/test/kotlin/tenter/LayeringTest.kt` (Konsist) enforces the full matrix, not just the general shape.
 - **`tui/`** (`battletech.tui.*`) — the BattleTech terminal UI, built on `tenter`. Uses [Clikt](https://github.com/ajalt/clikt) for the CLI (`hot-seat`/`host`/`join`/`server` subcommands, bare invocation opens the interactive setup screen). Entry point `battletech.tui.MainKt`. `Main.kt` and `Composition.kt` are the only two files allowed to import `battletech.network` — see "The lobby: one commit path" below. `game/` (incl. `phase/` — app state, phase-specific UI logic like `AttackPhase`/`MovementPhase`/`WeaponAllocation`; each `Phase` declares a `keyContext: ContextId`, its address into `Keybindings`' `KeyMap`; `GamePanelId` — this app's `tenter.panel.PanelId`, now a bare marker enum with no badge of its own), `hex/` (hex-grid rendering/geometry — a `BoardRole`-flavored consumer of `tenter.screen`), `icon/` (`FontIcons.kt` — the app-wide NerdFont/Unicode glyph vocabulary: log-line markers, pip/ammo/infinity glyphs, dice faces, plus the hex-facing/terrain/movement icons `hex/` itself consumes; not `battletech.tui.hex` because most of its callers are outside the board — log formatting, the record sheet, weapon/pilot tracks), `input/` (`ContextId` — the key-layer addresses, `GAME_CHROME`/`SETUP` among them; `Keybindings` — the domain facade over `tenter.input.KeyMap`, its `DEFAULT` the one declarative table of every binding, plus `badgeFor`/`hints`/`isQuit`; `ChromeAction`/`IdleAction`/`BrowsingAction`/`FacingAction`/`AttackAction` — the per-context `InputAction` families; `BoardClick` — the one mouse-click action, produced by `RunLoop`; `BoardMouse` — the mouse-to-hex mapping), `loop/` (`RunLoop` + `UiEvent`, the headless-testable event/render loop — composes `tenter.terminal`'s flows and `tenter.panel`'s `Panel`/`PanelSet`/`PanelLayout` into the game's own frame; resolves both keyboard and mouse input into `InputAction`s via `Keybindings` before a `Phase` ever sees them), `screen/` (`BoardRole` — the terrain/movement/player color roles — plus `ThemeFile`/`ThemeLoader`/`resolveTheme`, which load the six built-in `RolePalette`s from packaged theme files under `theme/`; `Theme` here is `internal typealias Theme = tenter.palette.MapRolePalette` — the app-specific pieces are the on-disk schema (`ThemeFile`'s `chrome`/`board`/`heatScale` role tables) and the loader, not the palette type or its color-value parsing, both of which live in `tenter` now; see `docs/color-themes.md`), `setup/` (the interactive setup screen — see "The lobby: one commit path" below), `view/` (the board and every side panel built on `tenter.view`'s decorators and `tenter.panel`'s `Panel<GamePanelId, PanelInputs>`/`PanelSet<GamePanelId, PanelInputs>`, aliased `GamePanel`/`GamePanelSet`; `Workspace` owns the `GamePanelSet` for one run; `view/record/` — the maximized UNIT STATUS panel's graphical record sheet).
 - **`strategic/` + `bt/`** — placeholders. `strategic` holds one stub class (`calculateCampaignMovement(d) = d * 2`); `bt` (`battletech.MainKt`) is a hello-world that prints it. Ignore unless explicitly asked.
-
-The compact package inventory above abbreviates the lifecycle edge; the enforced matrix is
-`screen` → `text` and `terminal` → `input`/`screen`. `screen` remains independent of
-`terminal`: only the terminal scope imports the renderer to coordinate screen lifecycle. Input
-flows are cold: collecting `inputEvents` acquires raw mode and normal completion or cancellation
-releases it, while `Terminal.withScreen` owns only the alternate screen and cursor.
 
 The TUI CLI has explicit `hot-seat`, `host`, `join`, and `server` subcommands; bare invocation
 opens the interactive setup screen instead of any of them (`Mode.Interactive`), which defines a
@@ -92,39 +85,10 @@ Composition.kt` may import `battletech.network.*` (the two-file allowlist was wi
 deliberately when `Composition.kt` was added — see "The lobby: one commit path" below — rather
 than letting `Main.kt` grow past a screenful of wiring), and `tui` may not import
 `battletech.strategic.*`.
-`tenter/src/test/kotlin/tenter/LayeringTest.kt` enforces the internal-layering matrix named in
-`tenter/`'s package-layout entry above — `tenter/src/test/kotlin/tenter/ArchitectureTest.kt`
-enforces the module's *external* seam (no `battletech.*`, nothing outside the third-party
-allowlist) but nothing previously checked the seams between `tenter`'s own packages.
-
-**`tenter` does not hide Mordant**: it adds primitives *on top of* Mordant, it is not an
-abstraction layer over it. Mordant's own types cross `tenter`'s surface freely and deliberately —
-`TerminalEvent.Input` carries an `InputEvent`, `MouseInput.scrollDelta` takes a `MouseEvent`,
-`terminalEvents` takes a `(KeyboardEvent) -> Boolean`, and a `KeyBinding`'s chord *is* a
-`KeyboardEvent`. Someone building on `tenter` can reach for Mordant directly whenever they want to,
-with no conversion at the seam and no parallel vocabulary to learn. So a wrapper type is only worth
-introducing where it carries something Mordant's does not: a `KeyChord` holding the same four
-fields as `KeyboardEvent` earned nothing, and the one thing it did carry — folding two spellings of
-a keystroke into one canonical form — turned out not to belong in the toolkit at all. `KeyMap`
-compares a chord to the event exactly as reported; a binding is declared in the form its platform
-actually produces. Which spellings count as one key is a *policy*, and it varies by platform and by
-application: posix derives `shift` from the character produced (`?` arrives with `shift = false`),
-while Windows reports the physical key state (`shift = true`), so `tui` declares both encodings for
-its shifted punctuation (`Keybindings.shiftedPunctuation`). A toolkit that folded them would also be
-deciding, for every future application, that `Q` and `q` can never mean different things — which
-`tui` now relies on them doing (`BROWSE DESTINATION` moves the cursor on `qweasd` and commits a
-facing on `QWEASD`). (The Konsist allowlist in `ArchitectureTest` reflects this: `com.github.ajalt.*`
-is permitted anywhere in the module, unlike every other third-party dependency.)
 
 **Keybindings are data, not `when` branches**: every keyboard binding in `tui` is a chord-to-action
 value in one `KeyMap<ContextId>` (`Keybindings.DEFAULT`, built in `tui/src/main/kotlin/battletech/
 tui/input/Keybindings.kt`), not a statement scattered across `RunLoop` and each `Phase.handle`.
-`KeyMap` copies its context/layer/group collections and validates structural invariants at
-construction: exact chords are unique within a layer, group ids and binding references are valid,
-titled references are local, sectionless references resolve to exactly one titled owner, and every
-group is credited or explicitly `bindingless`. Repeated group ids on different titled layers are
-therefore safe when references are local; a sectionless reference must use an unambiguous id. The
-caller keeps the identity/equality and `InputAction.id` of action values stable after construction.
 Resolution precedence is an ordered list of active contexts — `CHROME` and, when a side panel is
 focused, the TUI-owned `PANEL_SCROLL` policy layer, always first; the active phase's own context,
 last, and omitted entirely once the match has ended — computed fresh every frame in `RunLoop.
@@ -153,33 +117,21 @@ property that makes narrowing an `InputAction` back down to (say) `BrowsingActio
 rather than shape: a characterisation of the default chords, and `badgeFor`'s per-panel badge,
 which also asserts no two panels share one.
 
-## Why `RunLoop` and `Workspace` stayed in `tui`
+## Why `RunLoop` and `Workspace` live in `tui`
 
-`tenter` took the render core, the view/layout decorators, the panel framework, and the terminal
-input/event plumbing — everything that was already generic as written. Two pieces that look
-similarly mechanical stayed behind on purpose:
+Both components encode BattleTech application policy:
 
 - **`RunLoop`** (`tui/loop/RunLoop.kt`) is BattleTech's own event-dispatch policy — phase
   handling, match-over gating, flash-message lifecycle, session resync — built *from*
-  `tenter.terminal`'s event flows and `tenter.panel`'s `Panel`/`PanelLayout`, not a generic loop
-  itself. Generalizing it would mean inventing an event-loop abstraction with exactly one client
-  today; that's a seam with nothing on the other side of it yet.
+  `tenter.terminal`'s event flows and `tenter.panel`'s `Panel`/`PanelLayout`.
 - **`Workspace`** (`tui/view/Workspace.kt`) is the frame *composition* — where the board and
   which panels go, in what order, under what title — for this one game. `tenter.panel.PanelLayout`
-  already extracted the actual geometry math (`compute`/`slotAt`) that `Workspace` calls into;
-  what's left is BattleTech-specific composition, not reusable machinery.
+  supplies geometry through `compute`/`slotAt`; `Workspace` chooses the BattleTech frame.
 
-Animation ownership follows the same seam. `tenter.animation` describes finite frames and samples
-elapsed time; it owns no clock, coroutine, renderer, placement, or cancellation policy. `tui`
-owns the weapon effects, fixed colors, category selection, five-second duration, one-second
+`tui` owns the weapon effects, fixed colors, category selection, five-second duration, one-second
 stagger, and fixed panel placements. `RunLoop` owns the monotonic clock, one scheduled wake-up,
 token invalidation, input blocking, cancellation, and stale event rejection. `Workspace` owns the
-presentation policy of wrapping each sampled view in the existing bordered region. This keeps
-generic playback testable through its frame and delay result while leaving BattleTech timing and
-input policy at the application seam.
-
-If a second delivery (a future web UI) ever needs the same event-loop shape, that's the signal to
-extract it — not before.
+presentation policy of wrapping each sampled view in the existing bordered region.
 
 ## Invariants: rationale
 
@@ -275,69 +227,11 @@ deliberately rather than generalizing the two into one loop abstraction — same
 `RunLoop` and `Workspace` stayed in `tui`" below: two mechanically-similar clients isn't yet
 evidence of one reusable shape.
 
-The independent `tenter-example` module is the extraction rehearsal and the final consumer
-regression: it depends only on `tenter`, contains no BattleTech resources or types, and is tested
-both as a normal Gradle module and from an isolated packaged-jar build. Its catalog demo exercises
-the public prepared-content, panel, hit-test, keymap, palette, lifecycle, and animation seams; the
-application-owned loop remains deliberately outside `tenter`.
+The setup screen renders MODE/MAP/PLAYER 1/PLAYER 2 as equal-width columns with
+`PanelSet.uniform`, reserving four slots and keeping HELP at a fixed width.
 
-The setup screen's four content panels (MODE/MAP/PLAYER 1/PLAYER 2) render as equal-width
-columns rather than one derived-width `main` panel beside fixed-width sides — the internal layout
-math behind the named `PanelSet.uniform` factory adds this as a second layout
-mode alongside the game's original `compute`/`PanelSet.mainAndSides` shape, not a replacement for
-it — `PanelSet.main` is nullable now, and `render` branches on whether it is null to pick which
-`PanelLayout` function to call.
-
-Uniform-only configuration belongs to `PanelSet.uniform`: `fixedWidthPanels` is copied and
-`reservedColumns` optionally reserves proportional slots for hidden panels. The toolkit subtracts
-visible minimized proportional panels from this reservation; the setup declares four slots and
-fixed HELP once, without per-frame column bookkeeping. With no reservation, visible proportional
-panels divide the available width. The common `render` operation has no mode-specific options.
-
-Prepared composition accepts `ContentView` children at construction. `Padded.prepared` and
-`Bordered.prepared` produce intrinsic content, while their raw constructors remain allocated-canvas
-`View` decorators. Immediate and recording text cursors preserve the same last-nonempty reveal
-semantics. Viewports re-engage following on a change to either destination dimension.
-
-`Panel` is a stateful module for one screen lifetime. Its private viewport, current state, and
-maximized restore state are mutated only through a `PanelSet`; `PanelSet` retains immutable
-settled-offset observations after rendering and exclusively attaches each panel instance at
-construction. A state's `Panel.Presentation` groups prepared content with an explicit allocated
-or fixed-width preference (`allocated`/`fixedWidth` factories), so a
-per-frame builder runs once and the same result drives layout and painting. `PanelLayout.Slot`
-contains only the panel identity, on-canvas outer/content rectangles, and the settled viewport
-observation. `PanelSet.panelAt`/`hitTest` read that completed frame, so callers never reproduce
-border, padding, or scroll arithmetic; a border or spacer hit identifies the panel without
-inventing a content point. Small screens clip slots in declaration order, keep missing uniform
-columns reserved, and never publish negative or out-of-canvas geometry.
-A set publishes rectangles and ids, never its own `Panel` declarations, and published layout lists
-are unmodifiable copies; `ViewportState.settled` is the single settled-frame read path, so neither
-`Viewport` nor `ScrollingPanel` exposes a second one. The set publishes its next
-geometry and privately staged viewport state only after all panels paint successfully, preserving
-previous offsets, hit-testing/paging geometry, and queued scroll/recenter intent if a draw throws.
-Canvas writes and application callback side effects are not rolled back. Chrome padding constants
-are internal; consumers use frame observations, including in integration tests.
-
-A set's panels are fixed at construction, so every id-addressed operation (`focus`, `focusOrCycle`,
-`scroll`, `requestRecenter`, `stateOf`) rejects an undeclared id with
-`IllegalArgumentException` instead of no-opping, and their observations are total: `focused` always
-names a panel — an empty uniform frame retains the focus it had rather than dropping it.
-Focused commands continue to target that hidden panel; paging without a displayed viewport uses
-one row per direction. Offsets are read from the returned layout's scroll observations, not a
-second query on the set. Each panel queues recentering in its private viewport state until its
-next drawable frame, without competing with requests for other panels. A nondrawable slot publishes
-no scroll observation, while its viewport retains the previous snapshot and queued intent.
-Nullability is reserved for
-genuine absence: `panelAt`/`hitTest` (a coordinate may hit nothing), `PanelHit.contentPoint` (a
-border hit has no content coordinate), and `PanelLayout.Slot.scroll`/`ViewportState.settled` (no
-drawable frame yet). This is why `Workspace` and `SetupWorkspace` no longer carry fallback ids.
-
-`tenter.input.MouseInput.scrollDelta` recognizes only Mordant's explicit wheel flags and validates
-the caller's positive step. Ordinary left/right buttons are not toolkit scroll signals. The TUI's
-`legacyPanelScrollDelta` keeps its Mordant-version compatibility fallback as an application-local
-policy for side panels, while board clicks use `PanelSet.hitTest`'s settled content point and
-then apply only the board's own label/hex geometry. Independent consumers do not inherit that
-workaround.
+The TUI's `legacyPanelScrollDelta` keeps its Mordant-version compatibility fallback for side
+panels. Board clicks use `PanelSet.hitTest`'s content point and the board's label/hex geometry.
 
 This is not uniformity for its own sake. When the local player had a private path (a `submitCommand` override on `GameServer`), the seat check existed twice — derived from the connection's assigned seat on the remote path, a hardcoded `PlayerId.PLAYER_1` on the local one — and the two could disagree. They did: with both seats remote, a `PLAYER_1` command passed both gates despite the class documenting that it "stays frozen". Making the local player a client deletes the second path, so the guarantee ("neither side can act as another seat's") has one place to live. The same collapse happened in the TUI, where `localPlayer: PlayerId?` pinned the viewer *and* gated input, both keyed on null-means-hot-seat; `TuiApp` now takes the seats it drives (`Map<PlayerId, GameSession>`) and hot-seat simply holds both, so the gate never fires because of what the map contains rather than because anything checked.
 

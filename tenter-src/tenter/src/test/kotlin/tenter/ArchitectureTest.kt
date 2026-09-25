@@ -6,9 +6,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Enforces `tenter`'s one architectural promise: it is a standalone terminal-UI toolkit that
- * knows nothing about BattleTech and depends on nothing beyond Kotlin/kotlinx/Mordant. This is
- * what keeps a future extraction into its own library viable — a single BattleTech import
- * anywhere in this module would silently reattach it to the game.
+ * knows nothing about BattleTech and depends on nothing beyond Kotlin/kotlinx/Mordant.
  */
 class ArchitectureTest {
 

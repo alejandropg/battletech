@@ -4,10 +4,21 @@ Tenter is a JVM terminal-UI toolkit built on Mordant. Callers describe prepared 
 input intent, and inspect completed-frame observations; Tenter owns glyph integrity, layout size,
 scroll following, panel geometry, and terminal-scope cleanup.
 
+This directory is a standalone Gradle project. Build and publish the library for local consumers:
+
+```sh
+./gradlew build :tenter-example:packagedSmoke
+./gradlew :tenter:publishToMavenLocal
+```
+
+The published coordinate is `com.github.tenter:tenter:0.1.0-SNAPSHOT`. The example depends on the
+library within this build. Package architecture and contributor guidance live in
+[`docs/architecture.md`](docs/architecture.md) and [`AGENTS.md`](AGENTS.md).
+
 ## First run
 
 This complete entry point paints a greeting and waits for `q`. It is the compiled
-[HelloMain.kt](../tenter-example/src/main/kotlin/tenterexample/hello/HelloMain.kt) example.
+[HelloMain.kt](tenter-example/src/main/kotlin/tenterexample/hello/HelloMain.kt) example.
 
 ```kotlin
 import com.github.ajalt.mordant.input.MouseTracking
@@ -43,7 +54,7 @@ public fun runHello(terminal: Terminal, events: Flow<TerminalEvent>) {
 }
 ```
 
-Build and launch the [independent consumer demo](../tenter-example) from a real terminal:
+Build and launch the [independent consumer demo](tenter-example) from a real terminal:
 
 ```sh
 ./gradlew :tenter-example:installDist
@@ -173,8 +184,8 @@ Applications own the clock, placement, rendering, and cancellation policy.
 Tenter targets JVM 25 with Kotlin 2.4.10. Its public surface exposes Mordant 3.0.2 types and
 `kotlinx-coroutines-core` 1.11.0 types where they are part of the interface; it is not
 multiplatform. Tests should exercise public views, buffers, `PanelSet` observations, and
-Mordant's `TerminalRecorder`. `ViewTestSupport` is repository-only test support used by the TUI;
-it is not an independently supported or published fixture artifact.
+Mordant's `TerminalRecorder`. Rendering test support lives in Tenter's test sources and is not
+published as part of the library.
 
 The supported contract is the public API tracked in `api/tenter.api`: content/painting, managed
 panels and observations, text/widgets, palettes, input, terminal scopes, and finite animations.

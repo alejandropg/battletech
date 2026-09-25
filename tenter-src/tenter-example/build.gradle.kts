@@ -5,7 +5,7 @@ import java.io.File
 import java.io.ByteArrayOutputStream
 
 plugins {
-    id("battletech.kotlin-application")
+    id("tenter.kotlin-application")
 }
 
 application {

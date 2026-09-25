@@ -10,6 +10,10 @@ application {
     mainClass.set("battletech.tui.MainKt")
 }
 
+repositories {
+    mavenLocal()
+}
+
 tasks.named<ProcessResources>("processResources") {
     from(rootProject.layout.projectDirectory.dir("theme")) {
         into("theme")
@@ -32,13 +36,12 @@ tasks.named<JavaExec>("run") {
 dependencies {
     implementation(project(":tactical"))
     implementation(project(":network"))
-    implementation(project(":tenter"))
+    implementation(libs.tenter)
     implementation(libs.clikt)
     implementation(libs.mordant)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(testFixtures(project(":tenter")))
     testImplementation(libs.konsist)
 }
 

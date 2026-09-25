@@ -44,12 +44,11 @@ Not needed for everyday context — read the row's doc when its trigger applies.
 
 ### Module Structure
 
-Dependencies flow: `tui` → `tactical` + `network` + `tenter`; `network` → (`api`) `tactical`; `bt` → `strategic` + `tactical`.
+Dependencies flow: `tui` → `tactical` + `network`; `network` → (`api`) `tactical`; `bt` → `strategic` + `tactical`.
 
 - **`tactical/`** — the engine: tactical rules (combat, to-hit, movement, heat) plus game/map/mech loading. Delivery-agnostic: no UI assumptions, no console I/O.
 - **`network/`** — client/server layer over `tactical` (`GameServer`, `LobbyHost`, `SocketAcceptor`, `ClientGameSession`, `LobbyClient`, `transport/`, wire protocol). No UI; reuses `tactical`'s types as wire DTOs rather than redefining them.
-- **`tenter/`** — BattleTech-free terminal-UI toolkit (`screen`/`view`/`animation`/`widget`/`panel`/`input`/`terminal`/`text`) over Mordant; `animation` supplies finite frame descriptions, optional glyph grids, and pure elapsed-time playback; meant to be extractable as a library.
-- **`tui/`** — the BattleTech terminal UI, built on `tenter`. Entry point `battletech.tui.MainKt`; bare invocation opens the interactive setup screen (`setup/`).
+- **`tui/`** — the BattleTech terminal UI, built on the external Tenter library. Entry point `battletech.tui.MainKt`; bare invocation opens the interactive setup screen (`setup/`).
 - **`strategic/` + `bt/`** — placeholders. Ignore unless explicitly asked.
 
 ### Architecture principles
@@ -69,8 +68,6 @@ OOP + SOLID + KISS + DRY + YAGNI
 - **Package boundaries in `tactical` are test-enforced**: an allowed-dependency matrix between `attack/`, `dice/`, `heat/`, `io/`, `model/`, `movement/`, `query/`, `rules/`, `session/`, `unit/` — `model`/`dice`/`io`/`rules` are leaves relative to `session`/`query`. `ArchitectureTest` (Konsist) fails the build on any unlisted import; rationale and the two allowed cycles (`heat ⇄ attack`, `movement`/`attack` → `session`) are in `docs/architecture.md`.
 - **Phase handlers live with their rules**: a `PhaseHandler` implementation lives in the package whose rules it drives (e.g. `movement/`, `attack/weapon/`), not in `session/`. System phases with no rules package of their own (`InitiativePhaseHandler`, `EndPhaseHandler`) stay in `session/`. Full registration order: `docs/architecture.md`.
 - **Every wire-crossing sealed variant needs a `@SerialName` following the one convention — test-enforced**: `WireJson` uses `classDiscriminator = "type"`, and an unannotated variant's discriminator defaults to its fully-qualified class name, welding the wire format to package layout. The convention: the serial name is the variant's lexical nesting path relative to its package, decapitalized and dot-joined, dropping only as many leading segments as needed to stay unique within its hierarchy (`RuleRejection.NotAdjacent` → `"notAdjacent"`; `GameEvent`'s `UnitStoodUp.Detailed` → `"unitStoodUp.detailed"`, since a bare `"detailed"` would collide with sibling `Detailed`s elsewhere in that hierarchy). This fails the build on a missing, invented, or colliding value; test paths and the golden-file mechanism are in `docs/wire-protocol.md`. Bump `PROTOCOL_VERSION` (`network/wire/Messages.kt`) on any non-additive change to `GameCommand`/`GameEvent`/`CommandRejection`/`RuleRejection`/etc.
-- **`tenter` is BattleTech-free — Konsist-enforced**: no file under `tenter/` may import anything starting with `battletech.`, and every import there must resolve to `tenter.*`, `kotlin*`, `java*`, or `com.github.ajalt.*` (an allowlist, so a new third-party dependency also fails the build).
-- **`tenter`'s internal layering is test-enforced**: `text`/`input` are leaves; `widget`/`panel` sit at the top — never the reverse. Full matrix: `docs/architecture.md`.
 - **No raw `Random`**: always go through `DiceRoller`. Seeded tests must match production roll order.
 
 ## Tool Preferences

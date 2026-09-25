@@ -9,36 +9,16 @@ resources and the shadow jar get packaged.
 Applied via `id("battletech.<name>")`:
 
 - **`battletech.kotlin-common`** — base for every module: applies `kotlin("jvm")`, sets the JVM toolchain (JVM 21 when `CLAUDE_CODE` env var is set — Claude Cloud constraint — otherwise the catalog version), enables `explicitApi()`, configures JUnit Platform + test logging, wires standard test deps (JUnit BOM/bundle, MockK, AssertJ).
-- **`battletech.kotlin-library`** — applies `kotlin-common`; used by `strategic`, `tactical`, `network`, `tenter`.
-- **`battletech.kotlin-application`** — applies `kotlin-common` + the `application` plugin; used by `bt`, `tui`, and the independent `tenter-example` consumer.
+- **`battletech.kotlin-library`** — applies `kotlin-common`; used by `strategic`, `tactical`, and `network`.
+- **`battletech.kotlin-application`** — applies `kotlin-common` + the `application` plugin; used by `bt` and `tui`.
 - **`battletech.kotlin-serialization`** — applies the Kotlin serialization plugin; used by `tactical` and `network` (both need kotlinx-serialization for `GameState`/wire types).
-
-`tenter/build.gradle.kts` additionally applies the stock `java-test-fixtures` plugin (not a `battletech.*` convention plugin) for the repository-only `ViewTestSupport.kt` helpers consumed by `tui`'s tests. The fixture is intentionally not an independently supported or published consumer artifact; production visibility is decided by the public Tenter surface.
-
-The same build also enables Kotlin 2.4.10's built-in experimental JVM ABI validation for Tenter.
-`tenter/api/tenter.api` is the machine-generated reference dump; `:tenter:checkKotlinAbi` compares
-the current public binary surface with it, and `:tenter:updateKotlinAbi` regenerates it after an
-intentional reviewed change. The dump is a compatibility aid, not a promise of semantic
-compatibility: additions to sealed hierarchies/enums, Kotlin named/default arguments, and behavior
-contracts still require review.
-Preserve the generator's trailing blank line: the ABI checker compares it exactly. The scoped
-`.gitattributes` whitespace rule allows that generated EOF without disabling other whitespace checks.
 
 ## Module dependency edges
 
 - `network → tactical`: `api(project(":tactical"))` in `network/build.gradle.kts` — deliberately transitive (not `implementation`). `network` re-exports `tactical` types (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) directly as wire DTOs instead of redefining them, so consumers of `network` need `tactical`'s types on their compile classpath too.
 - `bt → strategic`, `bt → tactical`: both `implementation(project(...))` in `bt/build.gradle.kts`.
-- `tui → tactical`, `tui → network`, `tui → tenter`: all `implementation(project(...))` in `tui/build.gradle.kts`; `tui` additionally takes `testImplementation(testFixtures(project(":tenter")))` for shared rendering test helpers.
-- `tenter-example → tenter`: the example's only production module dependency. It uses no BattleTech
-  project artifact, repository resource, or test fixture. Build with `./gradlew :tenter-example:installDist`
-  and run `tenter-example/build/install/tenter-example/bin/tenter-example` from a real terminal.
-  Gradle's `run` task cannot supply a TTY and reports this launch procedure.
-  `:tenter-example:packagedSmoke` compiles the example's source in a disposable standalone Gradle build against only the
-  packaged Tenter jar and its resolved runtime closure.
-  `:tenter-example:rejectRawComposition`, included in `check`, compiles deliberately invalid
-  external fixtures and requires specific type errors for raw `Stack` and `Columns` children.
-  Its build directory is separate from the positive packaged consumer.
-- `strategic`, `tactical`, and `tenter` declare no `project(...)` dependencies on other modules (`strategic/build.gradle.kts`, `tactical/build.gradle.kts`, `tenter/build.gradle.kts`). `tenter` depends only on `mordant` and `kotlinx-coroutines-core` (both `api`, since `Terminal`/`InputEvent`/`Flow` types appear in its own public surface) — no BattleTech module may appear on its classpath, enforced per the invariant in `CLAUDE.md`.
+- `tui → tactical`, `tui → network`: `implementation(project(...))` in `tui/build.gradle.kts`.
+- `strategic` and `tactical` declare no `project(...)` dependencies on other modules.
 
 ## TUI packaging
 

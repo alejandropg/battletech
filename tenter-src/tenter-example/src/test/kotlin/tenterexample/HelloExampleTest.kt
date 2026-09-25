@@ -16,7 +16,7 @@ import tenterexample.hello.runHello
 internal class HelloExampleTest {
     @Test
     fun `readme entry point is the compiled hello source`() {
-        val readme = Files.readString(Path.of("../tenter/README.md"))
+        val readme = Files.readString(Path.of("../README.md"))
         val snippet = readme.substringAfter("```kotlin\n").substringBefore("\n```")
         val source = Files.readString(Path.of("src/main/kotlin/tenterexample/hello/HelloMain.kt"))
 
