@@ -1,4 +1,8 @@
-package io.archinaut.tenter.panel
+package io.archinaut.battletech.tui.view
+
+import io.archinaut.tenter.panel.PanelId
+import io.archinaut.tenter.panel.PanelSet
+import io.archinaut.tenter.panel.PanelState
 
 /**
  * The states [id] steps through over four forward cycles from NORMAL — the observable consequence

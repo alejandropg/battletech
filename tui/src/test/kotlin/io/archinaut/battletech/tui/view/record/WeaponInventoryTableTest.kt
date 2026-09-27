@@ -8,12 +8,12 @@ import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.battletech.tactical.unit.createUnit
 import io.archinaut.battletech.tui.icon.ammoIcon
 import io.archinaut.battletech.tui.icon.infinityIcon
+import io.archinaut.battletech.tui.view.line
+import io.archinaut.battletech.tui.view.render
+import io.archinaut.battletech.tui.view.text
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.render
-import io.archinaut.tenter.view.text
 
 /** [WeaponInventoryTable], driven by a real Atlas AS7-D built through the production [MechModels] path. */
 internal class WeaponInventoryTableTest {

@@ -14,12 +14,9 @@ import io.archinaut.battletech.tui.anAppState
 import io.archinaut.battletech.tui.game.phase.AttackPhase
 import io.archinaut.battletech.tui.game.phase.WeaponAllocation
 import io.archinaut.battletech.tui.mediumLaser
+import io.archinaut.tenter.palette.ChromeRole
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.render
-import io.archinaut.tenter.view.text
 
 /**
  * End-to-end integration: AppState → declaredTargetsRender → DeclaredTargetsView.render.

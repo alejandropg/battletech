@@ -20,8 +20,6 @@ import io.archinaut.battletech.tui.icon.targetIcon
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.view.renderInPanel
-import io.archinaut.tenter.view.text
 
 internal class AttackResultsViewTest {
 

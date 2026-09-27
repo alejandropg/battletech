@@ -1,12 +1,12 @@
 package io.archinaut.battletech.tui.animation
 
+import io.archinaut.battletech.tui.view.render
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.palette.FixedColorRole
+import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.palette.FixedColorRole
-import io.archinaut.tenter.view.render
-import kotlin.random.Random
 
 internal class AnimationViewTest {
 

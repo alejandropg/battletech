@@ -6,14 +6,14 @@ import io.archinaut.battletech.tactical.unit.HeatSource
 import io.archinaut.battletech.tui.aGameMap
 import io.archinaut.battletech.tui.aUnit
 import io.archinaut.battletech.tui.screen.HeatScaleRole
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
+import io.archinaut.battletech.tui.view.line
+import io.archinaut.battletech.tui.view.render
 import io.archinaut.tenter.palette.ChromeRole
 import io.archinaut.tenter.palette.ColorRole
 import io.archinaut.tenter.screen.ScreenBuffer
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.render
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 
 /** [HeatLadder] — the current/projected heat gauges plus the 30-to-0 heat scale rungs. */
 internal class HeatLadderTest {

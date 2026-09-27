@@ -1,13 +1,13 @@
 package io.archinaut.battletech.tui.view.record
 
 import io.archinaut.battletech.tui.aUnit
+import io.archinaut.battletech.tui.view.line
+import io.archinaut.battletech.tui.view.render
+import io.archinaut.battletech.tui.view.text
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.render
-import io.archinaut.tenter.view.text
 
 /** [MechDataCard] — the identity/tonnage/movement card shared by own and enemy record sheets. */
 internal class MechDataCardTest {

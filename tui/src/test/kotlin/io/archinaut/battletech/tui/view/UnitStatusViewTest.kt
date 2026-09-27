@@ -28,13 +28,12 @@ import io.archinaut.battletech.tui.icon.filledCircleIcon
 import io.archinaut.battletech.tui.icon.infinityIcon
 import io.archinaut.battletech.tui.icon.pilotDeadIcon
 import io.archinaut.battletech.tui.screen.BoardRole
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.ScreenBuffer
-import io.archinaut.tenter.view.renderInPanel
 
 internal class UnitStatusViewTest {
 

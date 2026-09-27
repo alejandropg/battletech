@@ -15,15 +15,15 @@ import io.archinaut.battletech.tui.aUnit
 import io.archinaut.battletech.tui.anArmorLayout
 import io.archinaut.battletech.tui.anInternalStructureLayout
 import io.archinaut.battletech.tui.screen.BoardRole
+import io.archinaut.battletech.tui.view.line
+import io.archinaut.battletech.tui.view.render
+import io.archinaut.battletech.tui.view.text
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.ScreenBuffer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.ScreenBuffer
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.render
-import io.archinaut.tenter.view.text
 
 /** [MechRecordSheetView] — subject dispatch, the width clamp, and the foreign-unit redaction guard. */
 internal class MechRecordSheetViewTest {

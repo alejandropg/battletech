@@ -9,14 +9,10 @@ import io.archinaut.battletech.tui.game.phase.DeclaredWeaponEntry
 import io.archinaut.battletech.tui.icon.diceRoll
 import io.archinaut.battletech.tui.icon.targetIcon
 import io.archinaut.battletech.tui.screen.BoardRole
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
 import io.archinaut.tenter.palette.ChromeRole
 import io.archinaut.tenter.screen.ScreenBuffer
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.render
-import io.archinaut.tenter.view.renderInPanel
-import io.archinaut.tenter.view.text
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 
 internal class DeclaredTargetsViewTest {
 

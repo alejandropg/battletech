@@ -1,10 +1,10 @@
 package io.archinaut.battletech.tui.setup
 
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
+import io.archinaut.battletech.tui.view.render
 import io.archinaut.tenter.screen.ScreenBuffer
 import io.archinaut.tenter.text.CellWidth
-import io.archinaut.tenter.view.render
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 internal class SetupBannerViewTest {
 

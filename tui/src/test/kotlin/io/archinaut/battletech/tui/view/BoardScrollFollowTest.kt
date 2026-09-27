@@ -5,15 +5,14 @@ import io.archinaut.battletech.tactical.query.PlayerGameState
 import io.archinaut.battletech.tactical.query.projectFor
 import io.archinaut.battletech.tui.aGameMap
 import io.archinaut.battletech.tui.aGameState
+import io.archinaut.tenter.view.ScrollState
+import io.archinaut.tenter.view.ViewportState
+import io.archinaut.tenter.view.fixedContent
+import io.archinaut.tenter.view.scrollingPanel
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.view.ScrollState
-import io.archinaut.tenter.view.ViewportState
-import io.archinaut.tenter.view.fixedContent
-import io.archinaut.tenter.view.render
-import io.archinaut.tenter.view.scrollingPanel
 
 internal class BoardScrollFollowTest {
 

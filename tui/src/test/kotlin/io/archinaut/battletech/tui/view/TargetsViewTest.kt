@@ -7,16 +7,13 @@ import io.archinaut.battletech.tactical.attack.ToHitModifier
 import io.archinaut.battletech.tactical.attack.weapon.TargetInfo
 import io.archinaut.battletech.tactical.attack.weapon.WeaponTargetInfo
 import io.archinaut.battletech.tactical.unit.UnitId
+import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 import io.archinaut.battletech.tui.icon.diceRoll
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
 import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.render
-import io.archinaut.tenter.view.text
 import io.archinaut.tenter.widget.CheckState
 import io.archinaut.tenter.widget.checkboxIcon
-import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 
 internal class TargetsViewTest {
 

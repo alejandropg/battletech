@@ -2,12 +2,12 @@
 
 A multi-module Kotlin project to play BattleTech tabletop game in a terminal (TUI).
 
-The TUI consumes Tenter as a library. Until it has its own published repository, build and install
-the standalone project in this checkout before building BattleTech:
+The TUI consumes Tenter (`io.archinaut:tenter`) as a library resolved from Maven Local. Until it
+is published, clone the Tenter repository and install it before building BattleTech:
 
 ```sh
-cd tenter-src && ./gradlew :tenter:publishToMavenLocal
-cd .. && ./gradlew build
+./gradlew :tenter:publishToMavenLocal   # in the Tenter checkout
+./gradlew build                         # in this checkout
 ```
 
 The terminal should use a NerdFonts font. Truecolor gets the full terrain palette; 256-color and

@@ -19,15 +19,12 @@ import io.archinaut.battletech.tui.aUnit
 import io.archinaut.battletech.tui.icon.initiativeIcon
 import io.archinaut.battletech.tui.icon.movementModeIcon
 import io.archinaut.battletech.tui.icon.unitStoodUpIcon
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
 import io.archinaut.tenter.palette.ChromeRole
 import io.archinaut.tenter.screen.ScreenBuffer
 import io.archinaut.tenter.view.ViewportState
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.render
-import io.archinaut.tenter.view.renderInPanel
 import io.archinaut.tenter.view.scrollingPanel
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 internal class LogViewTest {
 

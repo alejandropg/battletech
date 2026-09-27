@@ -1,7 +1,12 @@
-package io.archinaut.tenter.view
+package io.archinaut.battletech.tui.view
 
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.view.ScrollOffset
+import io.archinaut.tenter.view.View
+import io.archinaut.tenter.view.ViewportState
+import io.archinaut.tenter.view.scrollingPanel
 
 /** Renders [view] into a fresh [width]x[height] buffer and returns it for assertions. */
 public fun render(view: View, width: Int, height: Int): ScreenBuffer {

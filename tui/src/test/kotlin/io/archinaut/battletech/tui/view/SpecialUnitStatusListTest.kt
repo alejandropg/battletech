@@ -1,13 +1,10 @@
 package io.archinaut.battletech.tui.view
 
 import io.archinaut.battletech.tui.aUnit
+import io.archinaut.tenter.palette.ChromeRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.render
-import io.archinaut.tenter.view.text
 
 internal class SpecialUnitStatusListTest {
 

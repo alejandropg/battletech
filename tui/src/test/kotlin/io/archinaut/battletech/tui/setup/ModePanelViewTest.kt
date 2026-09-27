@@ -1,16 +1,16 @@
 package io.archinaut.battletech.tui.setup
 
+import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
+import io.archinaut.battletech.tui.view.line
+import io.archinaut.battletech.tui.view.render
+import io.archinaut.battletech.tui.view.text
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.widget.CheckState
+import io.archinaut.tenter.widget.checkboxIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.render
-import io.archinaut.tenter.view.text
-import io.archinaut.tenter.widget.CheckState
-import io.archinaut.tenter.widget.checkboxIcon
-import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 internal class ModePanelViewTest {
 

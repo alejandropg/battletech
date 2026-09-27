@@ -7,6 +7,11 @@ import io.archinaut.battletech.tui.anInternalStructureLayout
 import io.archinaut.battletech.tui.icon.emptyCircleIcon
 import io.archinaut.battletech.tui.icon.filledCircleIcon
 import io.archinaut.battletech.tui.screen.BoardRole
+import io.archinaut.battletech.tui.view.line
+import io.archinaut.battletech.tui.view.render
+import io.archinaut.battletech.tui.view.text
+import io.archinaut.tenter.screen.ScreenBuffer
+import kotlin.math.abs
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -14,11 +19,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
-import io.archinaut.tenter.screen.ScreenBuffer
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.render
-import io.archinaut.tenter.view.text
-import kotlin.math.abs
 
 /**
  * [LocationDiagram] via its [LocationDiagram.armor]/[LocationDiagram.internalStructure] factories

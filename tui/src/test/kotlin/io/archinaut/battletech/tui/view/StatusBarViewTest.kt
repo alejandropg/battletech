@@ -4,11 +4,10 @@ import io.archinaut.battletech.tactical.model.PlayerId
 import io.archinaut.battletech.tactical.model.TurnPhase
 import io.archinaut.battletech.tui.aUnit
 import io.archinaut.battletech.tui.screen.BoardRole
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
 import io.archinaut.tenter.palette.ChromeRole
 import io.archinaut.tenter.screen.ScreenBuffer
-import io.archinaut.tenter.view.render
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 internal class StatusBarViewTest {
 

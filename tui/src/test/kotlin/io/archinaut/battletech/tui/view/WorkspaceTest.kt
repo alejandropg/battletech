@@ -13,24 +13,23 @@ import io.archinaut.battletech.tui.anAppState
 import io.archinaut.battletech.tui.animation.ANIMATION_BACKGROUND
 import io.archinaut.battletech.tui.animation.LaserBurstAnimation
 import io.archinaut.battletech.tui.animation.MissileSalvoAnimation
-import io.archinaut.battletech.tui.animation.panelSize
 import io.archinaut.battletech.tui.animation.PanelPlacement
+import io.archinaut.battletech.tui.animation.panelSize
 import io.archinaut.battletech.tui.game.GamePanelId
 import io.archinaut.battletech.tui.game.phase.MovementPhase
 import io.archinaut.battletech.tui.input.Keybindings
+import io.archinaut.tenter.animation.AnimationPlayback
+import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.Point
+import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.view.FlashMessage
+import io.archinaut.tenter.view.HelpView
+import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.Point
-import io.archinaut.tenter.screen.ScreenBuffer
-import io.archinaut.tenter.animation.AnimationPlayback
-import io.archinaut.tenter.view.FlashMessage
-import io.archinaut.tenter.view.HelpView
-import io.archinaut.tenter.view.text
-import kotlin.random.Random
 
 /**
  * [Workspace] composes the board, every visible side panel, the status bar, and the game-over

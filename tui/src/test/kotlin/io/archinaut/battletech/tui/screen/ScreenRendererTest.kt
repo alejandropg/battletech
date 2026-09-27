@@ -14,7 +14,7 @@ import io.archinaut.tenter.screen.ScreenRenderer
 /**
  * Verifies BattleTech's own themes render through [io.archinaut.tenter.screen.ScreenRenderer] with their
  * authored, theme-specific values — no downsampling between tiers, no nearest-color
- * approximation. [io.archinaut.tenter.screen.ScreenRendererTest] already covers the renderer's generic
+ * approximation. Tenter's own `ScreenRendererTest` already covers the renderer's generic
  * mechanics (diffing, run coalescing, alt-screen switching) against a palette fixture; this class
  * only re-checks what's specific to `tui`'s six built-in [Theme]s and [defaultThemeName].
  */

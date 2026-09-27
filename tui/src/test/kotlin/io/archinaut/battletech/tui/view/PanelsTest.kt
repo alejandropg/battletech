@@ -2,10 +2,9 @@ package io.archinaut.battletech.tui.view
 
 import io.archinaut.battletech.tui.game.GamePanelId
 import io.archinaut.battletech.tui.input.Keybindings
+import io.archinaut.tenter.panel.PanelState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.panel.PanelState
-import io.archinaut.tenter.panel.declaredCycle
 
 /**
  * What [Panels.build] DECLARES — which panel is main, and which [PanelState]s each one offers —

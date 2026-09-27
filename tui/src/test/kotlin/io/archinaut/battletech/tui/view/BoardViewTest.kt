@@ -11,15 +11,13 @@ import io.archinaut.battletech.tui.hex.HexHighlight
 import io.archinaut.battletech.tui.hex.HexLayout
 import io.archinaut.battletech.tui.icon.destroyedIcon
 import io.archinaut.battletech.tui.screen.BoardRole
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
-import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.RevealRect
 import io.archinaut.tenter.screen.ScreenBuffer
 import io.archinaut.tenter.view.Viewport
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.render
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 /**
  * [BoardView] is now plain content — no chrome, no scroll, no clipping; that's all

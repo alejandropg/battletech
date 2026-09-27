@@ -10,7 +10,6 @@ import io.archinaut.battletech.tui.hex.HexHighlight
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.view.render
 
 internal class BoardViewMovementPhaseStateOverlayTest {
 

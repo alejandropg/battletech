@@ -1,26 +1,26 @@
 package io.archinaut.battletech.tui.setup
 
-import io.archinaut.battletech.tactical.model.content.AssetRegistry
-import io.archinaut.battletech.tactical.model.content.ContentSummary
-import io.archinaut.battletech.tactical.model.PlayerId
 import io.archinaut.battletech.tactical.model.GameMap
 import io.archinaut.battletech.tactical.model.Hex
 import io.archinaut.battletech.tactical.model.HexCoordinates
+import io.archinaut.battletech.tactical.model.PlayerId
+import io.archinaut.battletech.tactical.model.content.AssetRegistry
+import io.archinaut.battletech.tactical.model.content.ContentSummary
 import io.archinaut.battletech.tactical.model.content.MatchPlan
 import io.archinaut.battletech.tactical.model.content.summarize
 import io.archinaut.battletech.tactical.unit.MechModels
 import io.archinaut.battletech.tui.input.Keybindings
+import io.archinaut.battletech.tui.view.declaredCycle
+import io.archinaut.battletech.tui.view.line
+import io.archinaut.battletech.tui.view.text
+import io.archinaut.tenter.panel.PanelState
+import io.archinaut.tenter.view.HelpView
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.panel.PanelState
-import io.archinaut.tenter.view.HelpView
-import io.archinaut.tenter.panel.declaredCycle
-import io.archinaut.tenter.view.line
-import io.archinaut.tenter.view.text
 
 internal class SetupWorkspaceTest {
 
