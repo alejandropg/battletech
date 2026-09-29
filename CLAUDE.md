@@ -23,13 +23,13 @@ Not needed for everyday context — read the row's doc when its trigger applies.
 
 - Kotlin 2.4
 - JVM 25
-- Gradle 9.7.1 (Kotlin DSL, convention plugins in `buildSrc/`)
+- Gradle 9.7.x (Kotlin DSL, convention plugins in `buildSrc/`)
 - JUnit Jupiter + MockK + AssertJ for tests
 - `explicitApi()` is on repo-wide — declare `public`/`internal` explicitly.
 
-## Essential Commands
+## Commands
 
-```bash
+```sh
 # Build / test
 ./gradlew build
 ./gradlew test
@@ -51,11 +51,7 @@ Dependencies flow: `tui` → `tactical` + `network`; `network` → (`api`) `tact
 - **`tui/`** — the BattleTech terminal UI, built on the external Tenter library. Entry point `io.archinaut.battletech.tui.MainKt`; bare invocation opens the interactive setup screen (`setup/`).
 - **`strategic/` + `bt/`** — placeholders. Ignore unless explicitly asked.
 
-### Architecture principles
-
-OOP + SOLID + KISS + DRY + YAGNI
-
-### Architecture invariants
+### Invariants
 
 - **Server-authoritative**: one `BattleSession` per match owns state; deliveries (TUI, `network`, future web UI) never mutate `GameState` directly.
 - **Command-driven**: state changes flow through `session.submitCommand(GameCommand)`. The session auto-cascades through any phase whose `isComplete` is true (firing each new phase's `onEntry`, emitting `PhaseChanged`), stopping at the next player phase. `session.advance()` is the one-shot kickstart at game start.

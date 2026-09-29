@@ -1,0 +1,9 @@
+[plugins."aca-devel@aca"]
+enabled = true
+
+[plugins."aca-git@aca"]
+enabled = true
+
+[plugins."aca-kotlin@aca"]
+enabled = true
+

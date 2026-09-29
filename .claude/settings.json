@@ -1,7 +1,4 @@
 {
-  "env": {
-    "ENABLE_LSP_TOOL": "true"
-  },
   "includeGitInstructions": false,
   "permissions": {
     "deny": [
@@ -24,5 +21,8 @@
   },
   "enabledPlugins": {
     "kotlin-lsp@claude-plugins-official": true
+    "aca-devel@aca": true,
+    "aca-git@aca": true,
+    "aca-kotlin@aca": true
   }
 }
