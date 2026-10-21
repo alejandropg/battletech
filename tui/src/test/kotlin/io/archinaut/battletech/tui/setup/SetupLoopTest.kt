@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.setup
 
+import io.archinaut.battletech.tui.view.HELP_TITLE
 import io.archinaut.battletech.tactical.model.GameMap
 import io.archinaut.battletech.tactical.model.Hex
 import io.archinaut.battletech.tactical.model.HexCoordinates
@@ -13,7 +14,7 @@ import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.battletech.tui.screen.resolveTheme
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.rendering.AnsiLevel
-import com.github.ajalt.mordant.terminal.Terminal
+import com.github.ajalt.mordant.terminal.Terminal as MordantTerminal
 import com.github.ajalt.mordant.terminal.TerminalRecorder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -25,15 +26,14 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.screen.ScreenRenderer
-import io.archinaut.tenter.view.HelpView
+import io.archinaut.tenter.terminal.Terminal
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class SetupLoopTest {
 
     private val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = 120, height = 40)
-    private val terminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
-    private val renderer = ScreenRenderer(terminal, resolveTheme("dark"))
+    private val terminal = MordantTerminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
+    private val screen = Terminal(terminal, resolveTheme("dark"))
 
     private val map: GameMap = GameMap(
         hexes = (0 until 8).map { row -> HexCoordinates(0, row) }.associateWith { Hex(it) },
@@ -51,8 +51,7 @@ internal class SetupLoopTest {
         return setupLoop(
             events = merge(flowOf(*events), internalEvents.receiveAsFlow()),
             internalEvents = internalEvents,
-            terminal = terminal,
-            renderer = renderer,
+            screen = screen,
             initialState = initial,
             keys = Keybindings.DEFAULT,
             lobby = lobby,
@@ -122,7 +121,7 @@ internal class SetupLoopTest {
             SetupUiEvent.Quit,
         )
 
-        // The diffing renderer (see ScreenRenderer) only retransmits cells that actually
+        // The diffing renderer (see tenter's Terminal) only retransmits cells that actually
         // changed relative to the previous prompt, so a character the old and new prompt
         // happen to share at the same column is legitimately skipped — "no units" is the
         // substring guaranteed to survive as one contiguous run regardless of what the
@@ -156,7 +155,7 @@ internal class SetupLoopTest {
             SetupUiEvent.Quit,
         )
 
-        assertThat(recorder.output()).contains(HelpView.TITLE)
+        assertThat(recorder.output()).contains(HELP_TITLE)
     }
 
     @Test
@@ -166,31 +165,30 @@ internal class SetupLoopTest {
             setupLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = initialState().copy(modeLocked = true),
                 keys = Keybindings.DEFAULT,
                 lobby = NoLobby,
             )
         }
 
-        renderer.clear()
+        screen.clear()
         recorder.clearOutput()
         internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
         assertThat(recorder.output()).contains("PLAYER 1")
         assertThat(recorder.output()).doesNotContain("'MECH DATA")
 
-        renderer.clear()
+        screen.clear()
         recorder.clearOutput()
         internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
         assertThat(recorder.output()).contains("'MECH DATA")
 
-        renderer.clear()
+        screen.clear()
         recorder.clearOutput()
         internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
         assertThat(recorder.output()).doesNotContain("PLAYER 1")
 
-        renderer.clear()
+        screen.clear()
         recorder.clearOutput()
         internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
         assertThat(recorder.output()).contains("PLAYER 1")

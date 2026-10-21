@@ -4,8 +4,8 @@ import io.archinaut.battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 import io.archinaut.battletech.tui.icon.emptyCircleIcon
 import io.archinaut.battletech.tui.icon.filledCircleIcon
 import io.archinaut.battletech.tui.icon.pilotDeadIcon
-import io.archinaut.tenter.screen.Cell
-import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.screen.Style
+import io.archinaut.tenter.widget.RowWriter
 
 /**
  * The canonical 6-box "Hits" track (record sheet Pilot Data): [hits] (coerced to
@@ -17,12 +17,12 @@ import io.archinaut.tenter.view.TextCursor
  */
 internal object PilotHitsTrack {
     fun draw(
-        content: TextCursor,
+        content: RowWriter,
         column: Int,
         stride: Int,
         hits: Int,
-        filledStyle: Cell.Style,
-        emptyStyle: Cell.Style,
+        filledStyle: Style,
+        emptyStyle: Style,
     ) {
         val filledCount = hits.coerceIn(0, PILOT_DEATH_THRESHOLD)
         var col = column

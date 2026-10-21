@@ -6,23 +6,23 @@ import io.archinaut.battletech.tui.setup.SetupAction
 import io.archinaut.battletech.tui.setup.SetupPanelId
 import com.github.ajalt.mordant.input.KeyboardEvent
 import io.archinaut.tenter.input.HintGroup
-import io.archinaut.tenter.input.InputAction
 import io.archinaut.tenter.input.KeyBinding
-import io.archinaut.tenter.input.KeyGlyph
 import io.archinaut.tenter.input.KeyLayer
 import io.archinaut.tenter.input.KeyMap
 import io.archinaut.tenter.input.KeySection
-import io.archinaut.tenter.input.PanAction
-import io.archinaut.tenter.input.ScrollAction
 
 /** The domain facade over the generic [KeyMap] — every keyboard binding in this application. */
-internal class Keybindings(private val keyMap: KeyMap<ContextId>) {
+internal class Keybindings(
+    /** Each context's declared layer, as given; kept for invariant tests, which read the declaration. */
+    internal val layers: Map<ContextId, KeyLayer<Action>>,
+) {
+    private val keyMap: KeyMap<ContextId, Action> = KeyMap(layers)
 
-    fun resolve(active: List<ContextId>, event: KeyboardEvent): InputAction? = keyMap.resolve(active, event)
+    fun resolve(active: List<ContextId>, event: KeyboardEvent): Action? = keyMap.resolve(active, event)
 
     fun hints(context: ContextId): KeySection = keyMap.hints(context)
 
-    /** ctrl+c today. Injected into `terminalEvents` so quit is a binding without leaving the takeWhile. */
+    /** ctrl+c today. Ends event collection in [uiEvents], so quit is a binding like any other. */
     fun isQuit(event: KeyboardEvent): Boolean =
         keyMap.resolve(listOf(ContextId.CHROME), event) == ChromeAction.Quit
 
@@ -37,16 +37,14 @@ internal class Keybindings(private val keyMap: KeyMap<ContextId>) {
      * "the help one" in every screen that exists — a list that silently rots the moment a screen
      * is added.
      */
-    fun badgeFor(action: InputAction): Char? = keyMap.chordsFor(action).firstOrNull()?.key?.singleOrNull()
-
-    internal fun map(): KeyMap<ContextId> = keyMap // invariant tests only
+    fun badgeFor(action: Action): Char? = keyMap.chordsFor(action).firstOrNull()?.key?.singleOrNull()
 
     companion object {
-        val DEFAULT: Keybindings = Keybindings(KeyMap(defaultLayers()))
+        val DEFAULT: Keybindings = Keybindings(defaultLayers())
     }
 }
 
-private fun defaultLayers(): Map<ContextId, KeyLayer> = mapOf(
+private fun defaultLayers(): Map<ContextId, KeyLayer<Action>> = mapOf(
     ContextId.CHROME to chromeLayer(),
     ContextId.GAME_CHROME to gameChromeLayer(),
     ContextId.PANEL_SCROLL to panelScrollLayer(),
@@ -77,7 +75,7 @@ private fun defaultLayers(): Map<ContextId, KeyLayer> = mapOf(
  * are game-only — see [gameChromeLayer] — so this layer's own bindings never collide with SETUP's
  * `1`-`4` panel-focus chords.
  */
-private fun chromeLayer(): KeyLayer {
+private fun chromeLayer(): KeyLayer<Action> {
     val bindings = shiftedPunctuation("?", ChromeAction.ToggleHelp, "toggleHelp") +
         shiftedPunctuation("+", ChromeAction.CycleState(1), "cycleState") +
         listOf(
@@ -105,7 +103,7 @@ private fun chromeLayer(): KeyLayer {
  * screen (including SETUP) shares. `title = null`: these chords are documented by GLOBAL's
  * `gameFocusPanel`/`pan`/`recenter` rows (see [io.archinaut.tenter.input.KeyMap]'s KDoc on section-less layers).
  */
-private fun gameChromeLayer(): KeyLayer {
+private fun gameChromeLayer(): KeyLayer<Action> {
     val focusPanelBindings = listOf(
         KeyboardEvent("0") to GamePanelId.BOARD,
         KeyboardEvent("1") to GamePanelId.UNIT_STATUS,
@@ -128,7 +126,7 @@ private fun gameChromeLayer(): KeyLayer {
  * game, which uses `0`-`9` via [gameChromeLayer]) — see `docs`'s interactive-setup-screen plan for
  * why the two never need to coexist in one active-context list.
  */
-private fun setupLayer(): KeyLayer {
+private fun setupLayer(): KeyLayer<Action> {
     val focusPanelBindings = listOf(
         KeyboardEvent("1") to SetupPanelId.MODE,
         KeyboardEvent("2") to SetupPanelId.MAP,
@@ -165,7 +163,7 @@ private fun setupLayer(): KeyLayer {
 }
 
 /** Board-style pan chords shared by the game and setup maximized views. */
-private fun panBindings(hintGroup: String): List<KeyBinding> = listOf(
+private fun panBindings(hintGroup: String): List<KeyBinding<Action>> = listOf(
     KeyboardEvent("h") to PanAction.Direction.LEFT,
     KeyboardEvent("l") to PanAction.Direction.RIGHT,
     KeyboardEvent("k") to PanAction.Direction.UP,
@@ -176,7 +174,7 @@ private fun panBindings(hintGroup: String): List<KeyBinding> = listOf(
     KeyboardEvent("ArrowDown", ctrl = true) to PanAction.Direction.DOWN,
 ).map { (chord, direction) -> KeyBinding(chord, PanAction.Pan(direction), hintGroup) }
 
-private fun panelScrollLayer(): KeyLayer = KeyLayer(
+private fun panelScrollLayer(): KeyLayer<Action> = KeyLayer(
     title = null,
     bindings = listOf(
         KeyBinding(KeyboardEvent("ArrowUp"), ScrollAction.Lines(-1), "scrollFocused"),
@@ -191,7 +189,7 @@ private fun panelScrollLayer(): KeyLayer = KeyLayer(
  * Browsing][io.archinaut.battletech.tui.game.phase.MovementPhase.Browsing] — mirrors the old `InputMapper.
  * keyToDirection`, including `q`/`e`→NW/NE and `a`→SW alongside the wasd/arrow set.
  */
-private fun cursorBindings(action: (HexDirection) -> InputAction): List<KeyBinding> = listOf(
+private fun cursorBindings(action: (HexDirection) -> Action): List<KeyBinding<Action>> = listOf(
     KeyboardEvent("ArrowUp") to HexDirection.N,
     KeyboardEvent("w") to HexDirection.N,
     KeyboardEvent("ArrowDown") to HexDirection.S,
@@ -210,7 +208,7 @@ private val FACING_KEYS: List<Pair<String, HexDirection>> = listOf(
 )
 
 /** Lowercase for SELECT FACING; uppercase for BROWSE DESTINATION, where lowercase moves the cursor. */
-private fun facingBindings(shifted: Boolean, action: (HexDirection) -> InputAction): List<KeyBinding> =
+private fun facingBindings(shifted: Boolean, action: (HexDirection) -> Action): List<KeyBinding<Action>> =
     FACING_KEYS.map { (key, direction) ->
         val chord = if (shifted) KeyboardEvent(key.uppercase(), shift = true) else KeyboardEvent(key)
         KeyBinding(chord, action(direction), "selectFacing")
@@ -221,7 +219,7 @@ private fun facingBindings(shifted: Boolean, action: (HexDirection) -> InputActi
  * produced (`?` arrives with `shift = false`); Windows reports the physical key state
  * (`shift = true`). One key, spelled two ways by two terminals — not two ways to do one thing.
  */
-private fun shiftedPunctuation(key: String, action: InputAction, hintGroup: String): List<KeyBinding> =
+private fun shiftedPunctuation(key: String, action: Action, hintGroup: String): List<KeyBinding<Action>> =
     listOf(
         KeyBinding(KeyboardEvent(key), action, hintGroup),
         KeyBinding(KeyboardEvent(key, shift = true), action, hintGroup),
@@ -230,7 +228,7 @@ private fun shiftedPunctuation(key: String, action: InputAction, hintGroup: Stri
 private val MOVE_CURSOR_HINT = HintGroup("moveCursor", "qweasd/←→↑↓", "move cursor")
 
 /** Shared by MOVEMENT_IDLE, WEAPON_IDLE, and PHYSICAL_IDLE — identical bindings, different title/commit wording. */
-private fun idleLayer(title: String, commitAction: IdleAction, commitDescription: String): KeyLayer = KeyLayer(
+private fun idleLayer(title: String, commitAction: IdleAction, commitDescription: String): KeyLayer<Action> = KeyLayer(
     title = title,
     bindings = cursorBindings { IdleAction.MoveCursor(it) } + listOf(
         KeyBinding(KeyboardEvent("Enter"), IdleAction.SelectUnit, "selectUnit"),
@@ -245,7 +243,7 @@ private fun idleLayer(title: String, commitAction: IdleAction, commitDescription
     ),
 )
 
-private fun browsingLayer(): KeyLayer = KeyLayer(
+private fun browsingLayer(): KeyLayer<Action> = KeyLayer(
     title = "BROWSE DESTINATION",
     bindings = cursorBindings { BrowsingAction.MoveCursor(it) } +
         facingBindings(shifted = true) { BrowsingAction.SelectFacing(it) } + listOf(
@@ -264,7 +262,7 @@ private fun browsingLayer(): KeyLayer = KeyLayer(
     ),
 )
 
-private fun facingLayer(): KeyLayer = KeyLayer(
+private fun facingLayer(): KeyLayer<Action> = KeyLayer(
     title = "SELECT FACING",
     bindings = facingBindings(shifted = false) { FacingAction.SelectFacing(it) } + listOf(
         KeyBinding(KeyboardEvent("Escape"), FacingAction.Cancel, "cancel"),
@@ -278,7 +276,7 @@ private fun facingLayer(): KeyLayer = KeyLayer(
 )
 
 /** Shared by WEAPON_DECLARING and PHYSICAL_DECLARING — the latter drops the torso-twist rows (§4.2). */
-private fun declaringLayer(title: String, includeTwistTorso: Boolean): KeyLayer {
+private fun declaringLayer(title: String, includeTwistTorso: Boolean): KeyLayer<Action> {
     val twistTorsoBindings = if (includeTwistTorso) {
         listOf(
             KeyBinding(KeyboardEvent("ArrowRight"), AttackAction.TwistTorso(clockwise = true), "twistTorso"),

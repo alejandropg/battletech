@@ -9,9 +9,7 @@ import com.github.ajalt.mordant.input.KeyboardEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.input.PanAction
-import io.archinaut.tenter.input.ScrollAction
-import io.archinaut.tenter.panel.PanelId
+import io.archinaut.tenter.widget.panel.PanelId
 import io.archinaut.tenter.text.CellWidth
 
 /**
@@ -21,15 +19,15 @@ import io.archinaut.tenter.text.CellWidth
  */
 internal class KeybindingsTest {
 
-    private val map = Keybindings.DEFAULT.map()
+    private val layers = Keybindings.DEFAULT.layers
 
-    private val chromeChords = map.layer(ContextId.CHROME).bindings.map { it.chord }.toSet()
+    private val chromeChords = layers.getValue(ContextId.CHROME).bindings.map { it.chord }.toSet()
 
     @Test
     fun `CHROME's chords never collide with a non-shadowing context's chords`() {
         for (context in ContextId.entries) {
             if (context == ContextId.CHROME) continue
-            val layer = map.layer(context)
+            val layer = layers.getValue(context)
             if (context in SHADOWING_CONTEXTS) continue
             val collisions = layer.bindings.map { it.chord }.filter { it in chromeChords }
             assertTrue(collisions.isEmpty(), "CHROME collides with $context on: $collisions")
@@ -47,7 +45,7 @@ internal class KeybindingsTest {
     fun `a shadowing context never shadows CHROME — it exists to override phase contexts only`() {
         for (context in ContextId.entries) {
             if (context == ContextId.CHROME) continue
-            val layer = map.layer(context)
+            val layer = layers.getValue(context)
             if (context !in SHADOWING_CONTEXTS) continue
             val collisions = layer.bindings.map { it.chord }.filter { it in chromeChords }
             assertTrue(
@@ -59,13 +57,13 @@ internal class KeybindingsTest {
 
     @Test
     fun `every declared context has a layer`() {
-        assertEquals(ContextId.entries.toSet(), map.contexts)
+        assertEquals(ContextId.entries.toSet(), layers.keys)
     }
 
     @Test
     fun `every binding's action matches its context's declared action family`() {
         for (context in ContextId.entries) {
-            for (binding in map.layer(context).bindings) {
+            for (binding in layers.getValue(context).bindings) {
                 val ok = when (context) {
                     ContextId.CHROME -> binding.action is ChromeAction || binding.action is PanAction
                     ContextId.GAME_CHROME -> binding.action is ChromeAction || binding.action is PanAction
@@ -84,7 +82,7 @@ internal class KeybindingsTest {
     @Test
     fun `every hint label is exactly one cell per codepoint`() {
         for (context in ContextId.entries) {
-            for (group in map.layer(context).hintGroups) {
+            for (group in layers.getValue(context).hintGroups) {
                 assertEquals(
                     group.label.codePointCount(0, group.label.length),
                     CellWidth.of(group.label),

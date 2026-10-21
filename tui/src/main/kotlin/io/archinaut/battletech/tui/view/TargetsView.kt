@@ -1,12 +1,13 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.attack.weapon.TargetInfo
 import io.archinaut.battletech.tactical.attack.weapon.WeaponTargetInfo
 import io.archinaut.battletech.tactical.unit.UnitId
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.ChromeRole
 import io.archinaut.tenter.widget.CheckState
-import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.widget.RowWriter
 import io.archinaut.tenter.widget.SelectableRow
 import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
@@ -16,9 +17,9 @@ internal class TargetsView(
     private val primaryTargetId: UnitId?,
     private val cursorTargetIndex: Int,
     private val cursorWeaponIndex: Int = 0,
-) : PreparedTextView() {
+) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
+    override fun write(content: RowWriter) {
         if (targets.isEmpty()) {
             content.writeLine("No targets", TEXT_PRIMARY_STYLE)
             return
@@ -33,7 +34,7 @@ internal class TargetsView(
             }
             val nameColor = if (isCursorOnTarget) ChromeRole.ACCENT else ChromeRole.TEXT_PRIMARY
             val nameLine = "${UnitLabel.of(target.unitId, target.unitName)}$tag"
-            content.writeLine(nameLine, Cell.Style(nameColor))
+            content.writeLine(nameLine, Style(nameColor))
 
             val assignedToThisTarget = weaponAssignments[target.unitId] ?: emptySet()
             val assignedToOtherTargets = weaponAssignments.entries
@@ -55,28 +56,31 @@ internal class TargetsView(
 
                 val color = if (isDisabled) ChromeRole.DISABLED else ChromeRole.TEXT_PRIMARY
                 when (weapon) {
-                    is WeaponTargetInfo.Available ->
-                        SelectableRow.draw(
-                            content = content,
-                            label = weapon.weaponName,
-                            checkState = state,
-                            cursor = isCursorHere,
-                            right = hitChanceLabel(weapon.toHit),
-                            subLines = weapon.toHit.displayLabels(),
-                            textColor = color,
-                            checkboxColor = if (isDisabled) ChromeRole.DISABLED else null,
-                            glyphs = TUI_CHECKBOX_GLYPHS,
+                    is WeaponTargetInfo.Available -> {
+                        content.draw(
+                            SelectableRow(
+                                label = weapon.weaponName,
+                                checkState = state,
+                                selected = isCursorHere,
+                                right = hitChanceLabel(weapon.toHit),
+                                textColor = color,
+                                checkboxColor = if (isDisabled) ChromeRole.DISABLED else null,
+                                glyphs = TUI_CHECKBOX_GLYPHS,
+                            ),
                         )
+                        content.writeSubLines(weapon.toHit.displayLabels(), if (isCursorHere) ChromeRole.ACCENT else color)
+                    }
                     is WeaponTargetInfo.Unavailable ->
-                        SelectableRow.draw(
-                            content = content,
-                            label = weapon.weaponName,
-                            checkState = state,
-                            cursor = isCursorHere,
-                            right = "—",
-                            textColor = color,
-                            checkboxColor = if (isDisabled) ChromeRole.DISABLED else null,
-                            glyphs = TUI_CHECKBOX_GLYPHS,
+                        content.draw(
+                            SelectableRow(
+                                label = weapon.weaponName,
+                                checkState = state,
+                                selected = isCursorHere,
+                                right = "—",
+                                textColor = color,
+                                checkboxColor = if (isDisabled) ChromeRole.DISABLED else null,
+                                glyphs = TUI_CHECKBOX_GLYPHS,
+                            ),
                         )
                 }
             }
@@ -88,6 +92,6 @@ internal class TargetsView(
     internal companion object {
         internal const val TITLE: String = "TARGETS"
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
     }
 }

@@ -27,7 +27,7 @@ Two tiers, distinguished by **how they load** — not by topic:
 
 - **`tactical/`** (`io.archinaut.battletech.tactical.*`) — delivery-agnostic: every delivery (TUI, `network`, any future web UI) consumes it through the same public surface. `attack/` (incl. `physical/`, `weapon/`), `dice/`, `heat/`, `io/` (`ResourceOrFileLoader`), `model/` (core state plus `map/`, `unit/` (unit-collection content loading — the on-disk roster format, distinct from the `unit/` top-level package below, which holds the runtime domain types), `mech/`, and `content/` (`ContentCatalog`, the deep module tying map/mech/unit content together) content loading), `movement/`, `query/`, `rules/`, `session/`, and `unit/` (runtime domain types — `CombatUnit`, `UnitId`, `UnitRoster`, `MechModel`). `ContentCatalog.resolveGame` pairs a selected map with a selected unit collection and returns a complete `GameState`; launchers do not separately construct maps and rosters.
 - **`network/`** (`io.archinaut.battletech.network.*`): `client/` (`ClientGameSession`, `LobbyClient` — the joiner's half of the pre-match lobby), `server/` (`GameServer`, `LobbyHost` — the host's half of the lobby, `ConnectionSink` — the seam both share, `SocketAcceptor`), `transport/` (`ServerConnection`/`ClientConnection` port + the `JsonLineConnection` and `InMemoryConnection` adapters), `wire/` (`Messages`, `SessionId`, `WireJson`). Reuses `tactical.session`/`tactical.query` types directly as wire DTOs (`GameCommand`, `GameEvent`, `PlayerGameState`, `LogEntry`, `TurnState`) rather than redefining them; the lobby's own DTOs (`MatchPlan`, `ContentSummary`) live in `tactical.model.content` for the same reason — visible to both `tui` and `network` with no wire-specific redefinition. See "The lobby: one commit path" below.
-- **`tui/`** (`io.archinaut.battletech.tui.*`) — the BattleTech terminal UI, built on `tenter`. Uses [Clikt](https://github.com/ajalt/clikt) for the CLI (`hot-seat`/`host`/`join`/`server` subcommands, bare invocation opens the interactive setup screen). Entry point `io.archinaut.battletech.tui.MainKt`. `Main.kt` and `Composition.kt` are the only two files allowed to import `io.archinaut.battletech.network` — see "The lobby: one commit path" below. `game/` (incl. `phase/` — app state, phase-specific UI logic like `AttackPhase`/`MovementPhase`/`WeaponAllocation`; each `Phase` declares a `keyContext: ContextId`, its address into `Keybindings`' `KeyMap`; `GamePanelId` — this app's `io.archinaut.tenter.panel.PanelId`, now a bare marker enum with no badge of its own), `hex/` (hex-grid rendering/geometry — a `BoardRole`-flavored consumer of `io.archinaut.tenter.screen`), `icon/` (`FontIcons.kt` — the app-wide NerdFont/Unicode glyph vocabulary: log-line markers, pip/ammo/infinity glyphs, dice faces, plus the hex-facing/terrain/movement icons `hex/` itself consumes; not `io.archinaut.battletech.tui.hex` because most of its callers are outside the board — log formatting, the record sheet, weapon/pilot tracks), `input/` (`ContextId` — the key-layer addresses, `GAME_CHROME`/`SETUP` among them; `Keybindings` — the domain facade over `io.archinaut.tenter.input.KeyMap`, its `DEFAULT` the one declarative table of every binding, plus `badgeFor`/`hints`/`isQuit`; `ChromeAction`/`IdleAction`/`BrowsingAction`/`FacingAction`/`AttackAction` — the per-context `InputAction` families; `BoardClick` — the one mouse-click action, produced by `RunLoop`; `BoardMouse` — the mouse-to-hex mapping), `loop/` (`RunLoop` + `UiEvent`, the headless-testable event/render loop — composes `io.archinaut.tenter.terminal`'s flows and `io.archinaut.tenter.panel`'s `Panel`/`PanelSet`/`PanelLayout` into the game's own frame; resolves both keyboard and mouse input into `InputAction`s via `Keybindings` before a `Phase` ever sees them), `screen/` (`BoardRole` — the terrain/movement/player color roles — plus `ThemeFile`/`ThemeLoader`/`resolveTheme`, which load the six built-in `RolePalette`s from packaged theme files under `theme/`; `Theme` here is `internal typealias Theme = io.archinaut.tenter.palette.MapRolePalette` — the app-specific pieces are the on-disk schema (`ThemeFile`'s `chrome`/`board`/`heatScale` role tables) and the loader, not the palette type or its color-value parsing, both of which live in `tenter` now; see `docs/color-themes.md`), `setup/` (the interactive setup screen — see "The lobby: one commit path" below), `view/` (the board and every side panel built on `io.archinaut.tenter.view`'s decorators and `io.archinaut.tenter.panel`'s `Panel<GamePanelId, PanelInputs>`/`PanelSet<GamePanelId, PanelInputs>`, aliased `GamePanel`/`GamePanelSet`; `Workspace` owns the `GamePanelSet` for one run; `view/record/` — the maximized UNIT STATUS panel's graphical record sheet).
+- **`tui/`** (`io.archinaut.battletech.tui.*`) — the BattleTech terminal UI, built on `tenter`. Uses [Clikt](https://github.com/ajalt/clikt) for the CLI (`hot-seat`/`host`/`join`/`server` subcommands, bare invocation opens the interactive setup screen). Entry point `io.archinaut.battletech.tui.MainKt`. `Main.kt` and `Composition.kt` are the only two files allowed to import `io.archinaut.battletech.network` — see "The lobby: one commit path" below. `game/` (incl. `phase/` — app state, phase-specific UI logic like `AttackPhase`/`MovementPhase`/`WeaponAllocation`; each `Phase` declares a `keyContext: ContextId`, its address into `Keybindings`' `KeyMap`; `GamePanelId` — this app's `io.archinaut.tenter.widget.panel.PanelId`, now a bare marker enum with no badge of its own), `hex/` (hex-grid rendering/geometry — a `BoardRole`-flavored consumer of `io.archinaut.tenter.screen`), `icon/` (`FontIcons.kt` — the app-wide NerdFont/Unicode glyph vocabulary: log-line markers, pip/ammo/infinity glyphs, dice faces, plus the hex-facing/terrain/movement icons `hex/` itself consumes; not `io.archinaut.battletech.tui.hex` because most of its callers are outside the board — log formatting, the record sheet, weapon/pilot tracks), `input/` (`ContextId` — the key-layer addresses, `GAME_CHROME`/`SETUP` among them; `Keybindings` — the domain facade over `io.archinaut.tenter.input.KeyMap<ContextId, Action>`, its `DEFAULT` the one declarative table of every binding, plus `badgeFor`/`hints`/`isQuit`; `Action` — this app's action marker, with `ChromeAction`/`IdleAction`/`BrowsingAction`/`FacingAction`/`AttackAction`/`PanAction`/`ScrollAction` its per-context families; `uiEvents` — tenter's terminal event flow ended at the quit chord; `BoardClick` — the one mouse-click action, produced by `RunLoop`; `BoardMouse` — the mouse-to-hex mapping), `loop/` (`RunLoop` + `UiEvent`, the headless-testable event/render loop — draws each frame through `io.archinaut.tenter.terminal.Terminal.draw`; resolves both keyboard and mouse input into `Action`s via `Keybindings` before a `Phase` ever sees them), `screen/` (`BoardRole` — the terrain/movement/player color roles — plus `ThemeFile`/`ThemeLoader`/`resolveTheme`, which load the six built-in `RolePalette`s from packaged theme files under `theme/`; `Theme` here is `internal typealias Theme = io.archinaut.tenter.palette.MapRolePalette` — the app-specific pieces are the on-disk schema (`ThemeFile`'s `chrome`/`ui`/`board`/`heatScale` role tables, `ui` holding this app's own `UiRole`s) and the loader, not the palette type or its color-value parsing, both of which live in `tenter` now; see `docs/color-themes.md`), `setup/` (the interactive setup screen — see "The lobby: one commit path" below), `view/` (the board and every side panel built on `io.archinaut.tenter.widget`'s widgets and `io.archinaut.tenter.widget.panel`'s `Panel<GamePanelId, PanelInputs>`/`PanelSet<GamePanelId, PanelInputs>`; `GamePanels` declares them and places them each frame; `Workspace` owns the `PanelSet` for one run; `view/record/` — the maximized UNIT STATUS panel's graphical record sheet).
 - **`strategic/` + `bt/`** — placeholders. `strategic` holds one stub class (`calculateCampaignMovement(d) = d * 2`); `bt` (`io.archinaut.battletech.MainKt`) is a hello-world that prints it. Ignore unless explicitly asked.
 
 The TUI CLI has explicit `hot-seat`, `host`, `join`, and `server` subcommands; bare invocation
@@ -99,7 +99,7 @@ bindable), so it carries the match-ended gate by hand; both halves live together
 checks them there rather than through rendered output — once the match ends `Workspace.render`
 swaps the status bar for the match-over line and stops drawing flash text, so a blocked input and
 a handled one produce the same frame and any assertion on output passes vacuously. A
-`Phase` never sees a key or a mouse coordinate, only the resolved `InputAction`; the HELP panel's
+`Phase` never sees a key or a mouse coordinate, only the resolved `Action`; the HELP panel's
 sections and every panel's border badge are *derived* from the same table (`Keybindings.hints`/
 `badgeFor`) rather than hand-maintained copies that could drift from what a chord actually does.
 `badgeFor` takes the *action* whose chord to label, not the panel: which action reaches a panel is
@@ -112,7 +112,7 @@ The TUI's `KeybindingsTest` retains the application policies that cannot belong 
 `CHROME`, which every shadowing layer precedes; every declared `ContextId` has a layer; every hint
 label is exactly one cell per codepoint, so a help panel's key column stays aligned; and every
 binding's action matches its context's declared action family — the
-property that makes narrowing an `InputAction` back down to (say) `BrowsingAction` inside a
+property that makes narrowing an `Action` back down to (say) `BrowsingAction` inside a
 `Phase.handle` safe by construction rather than a runtime hope. Two further tests pin behaviour
 rather than shape: a characterisation of the default chords, and `badgeFor`'s per-panel badge,
 which also asserts no two panels share one.
@@ -123,10 +123,11 @@ Both components encode BattleTech application policy:
 
 - **`RunLoop`** (`tui/loop/RunLoop.kt`) is BattleTech's own event-dispatch policy — phase
   handling, match-over gating, flash-message lifecycle, session resync — built *from*
-  `io.archinaut.tenter.terminal`'s event flows and `io.archinaut.tenter.panel`'s `Panel`/`PanelLayout`.
+  `io.archinaut.tenter.terminal`'s event flow and `Terminal.draw`.
 - **`Workspace`** (`tui/view/Workspace.kt`) is the frame *composition* — where the board and
-  which panels go, in what order, under what title — for this one game. `io.archinaut.tenter.panel.PanelLayout`
-  supplies geometry through `compute`/`slotAt`; `Workspace` chooses the BattleTech frame.
+  which panels go, in what order, how wide in each mode — for this one game. Tenter's panels have
+  no size of their own: `GamePanels.areas` splits the frame with `io.archinaut.tenter.screen.Layout`
+  every frame, and `Workspace` hands the result to the `Panels` widget.
 
 `tui` owns the weapon effects, fixed colors, category selection, five-second duration, one-second
 stagger, and fixed panel placements. `RunLoop` owns the monotonic clock, one scheduled wake-up,
@@ -216,19 +217,20 @@ selections and the committed flag are therefore held and replayed at registratio
 `LobbyCommitted` landing in the window is simply lost and the joiner's mirror waits forever for a
 match that has already started.
 
-`TuiApp` and `tui/setup/SetupApp` share one `Terminal` + `io.archinaut.tenter.screen.ScreenRenderer`, scoped
-through `io.archinaut.tenter.terminal.Terminal.withScreen` rather than each constructing their own:
+`TuiApp` and `tui/setup/SetupApp` share one Mordant terminal + `io.archinaut.tenter.terminal.Terminal`, scoped
+through `io.archinaut.tenter.terminal.withScreen` rather than each constructing their own:
 `Main.kt`'s `withScreen` helper selects the palette, opens one alternate-screen/cursor scope, and
 hands the same pair to whichever app(s) run in sequence (`SetupApp` then `TuiApp` on the
 interactive path), so there is no flicker or double screen transition at the hand-off between the
-two screens. Each app's cold `inputEvents` flow acquires and releases raw mode when collected;
+two screens. Each app's cold `uiEvents` flow acquires and releases raw mode when collected;
 the two collectors may therefore run sequentially inside the one screen scope. `SetupApp`/`SetupLoop` mirror `TuiApp`/`RunLoop`'s shape
 deliberately rather than generalizing the two into one loop abstraction — same rationale as "Why
 `RunLoop` and `Workspace` stayed in `tui`" below: two mechanically-similar clients isn't yet
 evidence of one reusable shape.
 
-The setup screen renders MODE/MAP/PLAYER 1/PLAYER 2 as equal-width columns with
-`PanelSet.uniform`, reserving four slots and keeping HELP at a fixed width.
+The setup screen renders MODE/MAP/PLAYER 1/PLAYER 2 as equal-width columns — `SetupPanels.areas`
+reserves four slots, sizes a minimized panel to its compact list's width each frame, and keeps
+HELP at the game screen's HELP width.
 
 The TUI's `legacyPanelScrollDelta` keeps its Mordant-version compatibility fallback for side
 panels. Board clicks use `PanelSet.hitTest`'s content point and the board's label/hex geometry.

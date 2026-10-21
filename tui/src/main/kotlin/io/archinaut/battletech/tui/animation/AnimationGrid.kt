@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.animation
 
-import io.archinaut.tenter.animation.AnimationSize
+import io.archinaut.tenter.screen.Size
 import io.archinaut.tenter.animation.GlyphGrid
 import kotlin.math.abs
 
@@ -36,7 +36,7 @@ internal fun validTargetPoints(
     centerX: Int,
     centerY: Int,
     radius: Int,
-    size: AnimationSize,
+    size: Size,
 ): List<Point> {
     val points = mutableListOf<Point>()
     for (y in maxOf(0, centerY - radius)..minOf(size.height - 1, centerY + radius)) {

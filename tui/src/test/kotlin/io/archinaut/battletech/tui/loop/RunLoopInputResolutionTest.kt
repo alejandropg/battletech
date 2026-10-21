@@ -22,8 +22,8 @@ import com.github.ajalt.mordant.input.MouseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.input.ScrollAction
-import io.archinaut.tenter.panel.PanelHit
+import io.archinaut.battletech.tui.input.ScrollAction
+import io.archinaut.tenter.widget.panel.PanelHit
 import io.archinaut.tenter.screen.Point
 
 /**

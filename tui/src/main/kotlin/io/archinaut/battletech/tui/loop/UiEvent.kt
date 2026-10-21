@@ -2,7 +2,7 @@ package io.archinaut.battletech.tui.loop
 
 import io.archinaut.battletech.tactical.session.GameEvent
 import com.github.ajalt.mordant.input.InputEvent
-import com.github.ajalt.mordant.rendering.Size
+import io.archinaut.tenter.screen.Size
 
 /**
  * Events the TUI loop multiplexes:

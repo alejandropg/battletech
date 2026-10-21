@@ -8,8 +8,6 @@ import io.archinaut.battletech.tui.input.Keybindings
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
-import com.github.ajalt.mordant.rendering.Size
-import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
@@ -18,12 +16,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
-import io.archinaut.tenter.input.InputAction
+import io.archinaut.battletech.tui.input.Action
 import io.archinaut.battletech.tui.input.legacyPanelScrollDelta
-import io.archinaut.tenter.input.PanAction
-import io.archinaut.tenter.input.ScrollAction
-import io.archinaut.tenter.screen.ScreenRenderer
-import io.archinaut.tenter.view.FlashMessage
+import io.archinaut.battletech.tui.input.PanAction
+import io.archinaut.battletech.tui.input.ScrollAction
+import io.archinaut.tenter.terminal.Terminal
+import io.archinaut.tenter.widget.FlashMessage
 
 /** Panel focus order the `Enter`/`Tab` cycle walks — HELP is never in it (see [nextPanel]'s KDoc). */
 private val PANEL_CYCLE_ORDER = listOf(SetupPanelId.MODE, SetupPanelId.MAP, SetupPanelId.PLAYER_1, SetupPanelId.PLAYER_2)
@@ -36,8 +34,7 @@ private val PANEL_CYCLE_ORDER = listOf(SetupPanelId.MODE, SetupPanelId.MAP, Setu
 internal suspend fun setupLoop(
     events: Flow<SetupUiEvent>,
     internalEvents: SendChannel<SetupUiEvent>,
-    terminal: Terminal,
-    renderer: ScreenRenderer,
+    screen: Terminal,
     initialState: SetupState,
     keys: Keybindings,
     lobby: SetupLobby,
@@ -46,7 +43,6 @@ internal suspend fun setupLoop(
     var activeFlash: FlashMessage? = null
     var flashGeneration = 0L
     var flashJob: Job? = null
-    var size = currentSize(terminal)
     // Which panel to return focus to when HELP closes — one-shot, loop-local state, exactly as
     // the game's chrome never stores this either.
     var focusBeforeHelp: SetupPanelId? = null
@@ -56,8 +52,7 @@ internal suspend fun setupLoop(
     val workspace = SetupWorkspace(keys)
 
     fun render() {
-        val buffer = workspace.render(state, size.width, size.height, activeFlash)
-        renderer.render(buffer)
+        screen.draw { frame -> workspace.render(frame, state, activeFlash) }
     }
 
     /**
@@ -98,7 +93,7 @@ internal suspend fun setupLoop(
                     val event = ui.event
 
                     if (event is MouseEvent) {
-                        val panelId = workspace.panelAt(event.x, event.y)
+                        val panelId = workspace.hitTest(event.x, event.y)?.id
                         val delta = legacyPanelScrollDelta(event, sidePanel = panelId != null)
                         if (delta != null) {
                             panelId?.let { workspace.scrollPanel(it, delta) }
@@ -132,7 +127,7 @@ internal suspend fun setupLoop(
                                         state = state.copy(helpOpen = true)
                                         workspace.focus(SetupPanelId.HELP)
                                     }
-                                is ChromeAction.CycleState -> workspace.cycleFocusedState(action.delta)
+                                is ChromeAction.CycleState -> workspace.cycleFocusedMode(action.delta)
                                 ChromeAction.Quit -> Unit // absorbed upstream — see Keybindings.isQuit
                             }
                             render()
@@ -206,7 +201,7 @@ internal suspend fun setupLoop(
                 }
 
                 is SetupUiEvent.Resized -> {
-                    size = ui.size
+                    screen.resize(ui.size.width, ui.size.height)
                     render()
                 }
 
@@ -262,14 +257,7 @@ internal suspend fun setupLoop(
     outcome
 }
 
-private fun resolveSetupInput(event: InputEvent, keys: Keybindings): InputAction? = when (event) {
+private fun resolveSetupInput(event: InputEvent, keys: Keybindings): Action? = when (event) {
     is KeyboardEvent -> keys.resolve(listOf(ContextId.SETUP, ContextId.CHROME, ContextId.PANEL_SCROLL), event)
     is MouseEvent -> null
-}
-
-private fun currentSize(terminal: Terminal): Size {
-    val size = terminal.updateSize()
-    check(size.width > 0) { "Terminal width must be positive, got: $size" }
-    check(size.height > 0) { "Terminal height must be positive, got: $size" }
-    return Size(size.width, size.height)
 }

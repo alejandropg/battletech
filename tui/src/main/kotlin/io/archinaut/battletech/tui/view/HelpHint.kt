@@ -1,7 +1,7 @@
 package io.archinaut.battletech.tui.view
 
 import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.ChromeRole
 import io.archinaut.tenter.text.CellWidth
 
@@ -14,8 +14,8 @@ internal object HelpHint {
 
     internal fun draw(canvas: Canvas, row: Int) {
         val column = column(canvas)
-        if (column >= 0) canvas.writeString(column, row, LABEL, STYLE)
+        if (column >= 0) canvas.setString(column, row, LABEL, STYLE)
     }
 
-    private val STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
+    private val STYLE = Style(ChromeRole.TEXT_PRIMARY)
 }

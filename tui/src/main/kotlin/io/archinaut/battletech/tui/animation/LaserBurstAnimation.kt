@@ -1,9 +1,10 @@
 package io.archinaut.battletech.tui.animation
 
+import io.archinaut.tenter.palette.PaletteColor
 import io.archinaut.tenter.animation.Animation
-import io.archinaut.tenter.animation.AnimationSize
+import io.archinaut.tenter.screen.Size
 import io.archinaut.tenter.animation.GlyphGrid
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import kotlin.math.hypot
 import kotlin.random.Random
 import kotlin.time.Duration
@@ -22,7 +23,7 @@ internal class LaserBurstAnimation(
     radius: Int = DEFAULT_RADIUS,
     random: Random = Random.Default,
 ) : Animation {
-    override val size: AnimationSize = AnimationSize(width = 70, height = 20)
+    override val size: Size = Size(width = 70, height = 20)
     private val bursts: List<LaserBurst> = buildBursts(bursts, targetX, targetY, radius, size, random)
     override val frameCount: Int = sequenceFrames(this.bursts)
     override val frameDuration: Duration = ANIMATION_DURATION / frameCount
@@ -58,7 +59,7 @@ private val LASER_PRIORITY: Map<Char, Int> = mapOf(
 
 private fun laserPriority(char: Char): Int = LASER_PRIORITY[char] ?: 0
 
-private val LASER_COLORS: Map<Char, AnimationColor> = mapOf(
+private val LASER_COLORS: Map<Char, PaletteColor> = mapOf(
     '.' to ANIMATION_GRAY, ',' to ANIMATION_GRAY, ':' to ANIMATION_GRAY,
     'o' to ANIMATION_CYAN,
     '=' to ANIMATION_DANGER, '~' to ANIMATION_MAGENTA, '-' to ANIMATION_WARNING,
@@ -67,17 +68,17 @@ private val LASER_COLORS: Map<Char, AnimationColor> = mapOf(
 )
 
 // Unmapped chars are always ' '. The foreground is never actually seen on a space, but must still
-// be a FixedColorRole rather than a themed ChromeRole, or resolving this Style's tags would pull
+// be a fixed PaletteColor rather than a themed ChromeRole, or resolving this Style's tags would pull
 // the loaded theme's default foreground into an otherwise fully hardcoded palette.
-private fun laserStyle(char: Char): Cell.Style =
-    Cell.Style(fg = LASER_COLORS[char] ?: ANIMATION_GRAY, bg = ANIMATION_BACKGROUND)
+private fun laserStyle(char: Char): Style =
+    Style(fg = LASER_COLORS[char] ?: ANIMATION_GRAY, bg = ANIMATION_BACKGROUND)
 
 private fun buildBursts(
     total: Int,
     centerX: Int,
     centerY: Int,
     radius: Int,
-    size: AnimationSize,
+    size: Size,
     random: Random,
 ): List<LaserBurst> {
     val targets = validTargetPoints(centerX, centerY, radius, size)

@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.battletech.tui.screen.UiRole
 import io.archinaut.battletech.tactical.model.PlayerId
 import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.battletech.tui.game.phase.DeclaredAttackerEntry
@@ -9,8 +10,7 @@ import io.archinaut.battletech.tui.game.phase.DeclaredWeaponEntry
 import io.archinaut.battletech.tui.icon.diceRoll
 import io.archinaut.battletech.tui.icon.targetIcon
 import io.archinaut.battletech.tui.screen.BoardRole
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -23,7 +23,7 @@ internal class DeclaredTargetsViewTest {
     private fun attacker(name: String, player: PlayerId, draft: Boolean, vararg targets: DeclaredTargetEntry) =
         DeclaredAttackerEntry(UnitId(name), player, draft, targets.toList())
 
-    private fun rowContaining(buffer: ScreenBuffer, text: String): Int =
+    private fun rowContaining(buffer: Canvas, text: String): Int =
         (0 until buffer.height).firstOrNull { row -> text in buffer.line(row) } ?: -1
 
     @Test
@@ -59,8 +59,8 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Wolverine")
         assertTrue(row >= 0) { "Expected to find Wolverine attacker row" }
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == ChromeRole.DRAFT }) {
-            "Expected attacker row to contain ChromeRole.DRAFT"
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == UiRole.DRAFT }) {
+            "Expected attacker row to contain UiRole.DRAFT"
         }
     }
 
@@ -169,7 +169,7 @@ internal class DeclaredTargetsViewTest {
         )
 
         // The scrollbar thumb '█' must appear on the right border (col width-1) somewhere
-        val thumbFound = (1 until height - 1).any { row -> buffer.get(width - 1, row).char == "▐" }
+        val thumbFound = (1 until height - 1).any { row -> buffer.get(width - 1, row).symbol == "▐" }
         assertTrue(thumbFound) { "Expected scrollbar thumb '▐' on right border in:\n${buffer.text()}" }
     }
 

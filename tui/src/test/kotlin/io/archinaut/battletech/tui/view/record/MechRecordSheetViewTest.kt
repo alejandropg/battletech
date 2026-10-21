@@ -19,7 +19,7 @@ import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
 import io.archinaut.battletech.tui.view.text
 import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -56,7 +56,7 @@ internal class MechRecordSheetViewTest {
         movementThisTurn = MovementThisTurn.Stationary,
     )
 
-    private fun assertTwoBlankRowsBefore(buffer: ScreenBuffer, row: Int, width: Int) {
+    private fun assertTwoBlankRowsBefore(buffer: Canvas, row: Int, width: Int) {
         assertTrue(buffer.line(row - 1, width = width).isBlank())
         assertTrue(buffer.line(row - 2, width = width).isBlank())
         assertFalse(buffer.line(row - 3, width = width).isBlank())
@@ -99,16 +99,16 @@ internal class MechRecordSheetViewTest {
         val heatScaleRow = (0 until buffer.height).first { buffer.line(it).contains("HEAT SCALE") }
         val criticalRow = (0 until buffer.height).first { buffer.line(it).contains("CRITICAL HIT TABLE") }
         assertEquals(0, buffer.line(criticalRow).indexOf("── CRITICAL HIT TABLE"))
-        assertEquals("─", buffer.get(SheetLayout.SHEET_WIDTH - 1, criticalRow).char)
-        assertEquals(" ", buffer.get(SheetLayout.SHEET_WIDTH, criticalRow).char)
+        assertEquals("─", buffer.get(SheetLayout.SHEET_WIDTH - 1, criticalRow).symbol)
+        assertEquals(" ", buffer.get(SheetLayout.SHEET_WIDTH, criticalRow).symbol)
         assertTrue(criticalRow > heatScaleRow + 31)
         assertTwoBlankRowsBefore(buffer, criticalRow, SheetLayout.SHEET_WIDTH)
 
         val systemRow = (0 until buffer.height).first { buffer.line(it).contains("SYSTEM DAMAGE") }
         assertEquals(0, buffer.line(systemRow).indexOf("── SYSTEM DAMAGE"))
         assertEquals(criticalRow + 17, systemRow)
-        assertEquals("─", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH - 1, systemRow).char)
-        assertEquals(" ", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH, systemRow).char)
+        assertEquals("─", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH - 1, systemRow).symbol)
+        assertEquals(" ", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH, systemRow).symbol)
     }
 
     @Test
@@ -144,7 +144,7 @@ internal class MechRecordSheetViewTest {
         }
 
         assertEquals(BoardRole.DESTROYED, buffer.get(col, row).style.fg)
-        assertTrue(buffer.get(col, row).style.strikethrough)
+        assertTrue(buffer.get(col, row).style.strikethrough == true)
     }
 
     @Test
@@ -184,7 +184,7 @@ internal class MechRecordSheetViewTest {
         for (row in 0 until buffer.height) {
             for (col in SheetLayout.SHEET_WIDTH until buffer.width) {
                 val cell = buffer.get(col, row)
-                assertTrue(cell.char == " ", "unexpected '${cell.char}' at ($col,$row), past the ${SheetLayout.SHEET_WIDTH}-column budget")
+                assertTrue(cell.symbol == " ", "unexpected '${cell.symbol}' at ($col,$row), past the ${SheetLayout.SHEET_WIDTH}-column budget")
             }
         }
     }

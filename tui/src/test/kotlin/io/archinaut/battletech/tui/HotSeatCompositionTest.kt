@@ -17,12 +17,12 @@ import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.battletech.tui.loop.UiEvent
 import io.archinaut.battletech.tui.loop.runLoop
 import io.archinaut.battletech.tui.screen.resolveTheme
-import io.archinaut.tenter.screen.ScreenRenderer
+import io.archinaut.tenter.terminal.Terminal
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.rendering.AnsiLevel
-import com.github.ajalt.mordant.rendering.Size
-import com.github.ajalt.mordant.terminal.Terminal
+import io.archinaut.tenter.screen.Size
+import com.github.ajalt.mordant.terminal.Terminal as MordantTerminal
 import com.github.ajalt.mordant.terminal.TerminalRecorder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -65,8 +65,8 @@ import kotlin.random.Random
 internal class HotSeatCompositionTest {
 
     private val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = 120, height = 40)
-    private val terminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
-    private val renderer = ScreenRenderer(terminal, resolveTheme("dark"))
+    private val terminal = MordantTerminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
+    private val screen = Terminal(terminal, resolveTheme("dark"))
 
     private lateinit var server: GameServer
     private lateinit var seats: Map<PlayerId, ClientGameSession>
@@ -174,8 +174,7 @@ internal class HotSeatCompositionTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = initialState,
                     keys = Keybindings.DEFAULT,
                 )

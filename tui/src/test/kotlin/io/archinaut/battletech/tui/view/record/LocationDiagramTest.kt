@@ -10,7 +10,7 @@ import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
 import io.archinaut.battletech.tui.view.text
-import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.screen.Canvas
 import kotlin.math.abs
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -43,7 +43,7 @@ internal class LocationDiagramTest {
     )
 
     /** (row, column) of the first caption beginning with [label]. */
-    private fun ScreenBuffer.locate(label: String): Pair<Int, Int> {
+    private fun Canvas.locate(label: String): Pair<Int, Int> {
         for (row in 0 until height) {
             val col = line(row).indexOf(label)
             if (col >= 0) return row to col
@@ -54,7 +54,7 @@ internal class LocationDiagramTest {
     private fun countGlyph(text: String, glyph: String): Int =
         if (glyph.isEmpty()) 0 else text.split(glyph).size - 1
 
-    private fun assertCentered(buffer: ScreenBuffer, outline: String) {
+    private fun assertCentered(buffer: Canvas, outline: String) {
         val (_, column) = buffer.locate(outline)
         val leftMargin = column
         val rightMargin = buffer.width - column - outline.length
@@ -108,9 +108,9 @@ internal class LocationDiagramTest {
         val contour = buffer.get(38, 7)
 
         assertEquals(BoardRole.DESTROYED, buffer.get(valueCol, valueRow).style.fg)
-        assertTrue(buffer.get(valueCol, valueRow).style.strikethrough)
+        assertTrue(buffer.get(valueCol, valueRow).style.strikethrough == true)
         assertEquals(BoardRole.DESTROYED, contour.style.fg)
-        assertTrue(contour.style.strikethrough)
+        assertTrue(contour.style.strikethrough == true)
     }
 
     @Test
@@ -123,7 +123,7 @@ internal class LocationDiagramTest {
         val buffer = render(LocationDiagram.internalStructure(unit), width = diagramWidth, height = diagramHeight)
         val (row, col) = buffer.locate("31/31")
 
-        assertFalse(buffer.get(col, row).style.strikethrough)
+        assertFalse(buffer.get(col, row).style.strikethrough == true)
     }
 
     @Test
@@ -138,7 +138,7 @@ internal class LocationDiagramTest {
         val (valueRow, valueCol) = buffer.locate("47/47")
 
         assertEquals(BoardRole.DESTROYED, buffer.get(valueCol, valueRow).style.fg)
-        assertTrue(buffer.get(valueCol, valueRow).style.strikethrough)
+        assertTrue(buffer.get(valueCol, valueRow).style.strikethrough == true)
     }
 
     @Test
@@ -229,9 +229,9 @@ internal class LocationDiagramTest {
         val (rearValueRow, _) = buffer.locate("5/5")
 
         assertEquals("16/16", buffer.line(frontValueRow, x = 48, width = 5))
-        assertEquals("╮", buffer.get(53, frontValueRow + 1).char)
+        assertEquals("╮", buffer.get(53, frontValueRow + 1).symbol)
         assertEquals("5/5", buffer.line(rearValueRow, x = 48, width = 3))
-        assertEquals("╯", buffer.get(51, rearValueRow - 1).char)
+        assertEquals("╯", buffer.get(51, rearValueRow - 1).symbol)
     }
 
     @ParameterizedTest
@@ -249,7 +249,7 @@ internal class LocationDiagramTest {
         val (rearValueRow, _) = buffer.locate(rearValue)
 
         assertEquals(" $rearValue", buffer.line(rearValueRow, x = 29, width = rearValue.length + 1))
-        assertEquals("╰", buffer.get(29, rearValueRow - 1).char)
+        assertEquals("╰", buffer.get(29, rearValueRow - 1).symbol)
     }
 
     @Test
@@ -349,12 +349,12 @@ internal class LocationDiagramTest {
 
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
 
-        assertEquals("╲", buffer.get(28, 12).char)
-        assertEquals("╱", buffer.get(52, 12).char)
-        assertEquals("╱", buffer.get(24, 15).char)
-        assertEquals("╲", buffer.get(56, 15).char)
-        assertEquals("╱", buffer.get(31, 24).char)
-        assertEquals("╲", buffer.get(49, 24).char)
+        assertEquals("╲", buffer.get(28, 12).symbol)
+        assertEquals("╱", buffer.get(52, 12).symbol)
+        assertEquals("╱", buffer.get(24, 15).symbol)
+        assertEquals("╲", buffer.get(56, 15).symbol)
+        assertEquals("╱", buffer.get(31, 24).symbol)
+        assertEquals("╲", buffer.get(49, 24).symbol)
     }
 
     @Test

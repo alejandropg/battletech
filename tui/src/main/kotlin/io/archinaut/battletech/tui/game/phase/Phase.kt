@@ -4,7 +4,7 @@ import io.archinaut.battletech.tactical.model.TurnPhase
 import io.archinaut.battletech.tui.game.AppState
 import io.archinaut.battletech.tui.game.RenderData
 import io.archinaut.battletech.tui.input.ContextId
-import io.archinaut.tenter.input.InputAction
+import io.archinaut.battletech.tui.input.Action
 
 /**
  * UI sub-state machine for the active player phase. Phases are pure
@@ -20,7 +20,7 @@ internal sealed interface Phase {
     val keyContext: ContextId
 
     /** Null means this phase does not consume [action] — a real three-valued protocol [io.archinaut.battletech.tui.loop.runLoop] relies on. */
-    fun handle(action: InputAction, app: AppState): Transition?
+    fun handle(action: Action, app: AppState): Transition?
 
     fun board(app: AppState): RenderData = RenderData.EMPTY
 

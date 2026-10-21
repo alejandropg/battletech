@@ -1,9 +1,9 @@
 package io.archinaut.battletech.tui.view
 
 import io.archinaut.battletech.tactical.unit.ForeignUnit
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.widget.RowWriter
 
 /**
  * Renders a [ForeignUnit] — name, public special statuses, movement, armor (front + rear values
@@ -14,12 +14,12 @@ import io.archinaut.tenter.view.TextCursor
  */
 internal object ForeignUnitPanel {
 
-    private val ACCENT_STYLE = Cell.Style(ChromeRole.ACCENT)
-    private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
-    private val INFO_STYLE = Cell.Style(ChromeRole.INFO)
-    private val SUCCESS_STYLE = Cell.Style(ChromeRole.SUCCESS)
+    private val ACCENT_STYLE = Style(ChromeRole.ACCENT)
+    private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
+    private val INFO_STYLE = Style(ChromeRole.INFO)
+    private val SUCCESS_STYLE = Style(ChromeRole.SUCCESS)
 
-    fun render(content: TextCursor, unit: ForeignUnit) {
+    fun render(content: RowWriter, unit: ForeignUnit) {
         // UNIT
         with(content) {
             writeLine(UnitLabel.of(unit), ACCENT_STYLE)
@@ -29,7 +29,7 @@ internal object ForeignUnitPanel {
 
         // MOVEMENT
         with(content) {
-            writeHeader("MOVEMENT")
+            draw(SectionHeading("MOVEMENT"))
             writeLine("Walk : ${unit.walkingMP}    Run : ${unit.runningMP}", TEXT_PRIMARY_STYLE)
             if (unit.jumpMP > 0) writeLine("Jump : ${unit.jumpMP}", TEXT_PRIMARY_STYLE)
             newLine()
@@ -38,16 +38,16 @@ internal object ForeignUnitPanel {
         // ARMOR
         with(content) {
             val armor = unit.armor
-            writeHeader("ARMOR")
+            draw(SectionHeading("ARMOR"))
             write(9, "HD:%2d".format(armor.head), INFO_STYLE)
             newLine()
             write(2, "LT:%2d".format(armor.leftTorso), SUCCESS_STYLE)
             write(9, "CT:%2d".format(armor.centerTorso), ACCENT_STYLE)
             write(16, "RT:%2d".format(armor.rightTorso), SUCCESS_STYLE)
             newLine()
-            write(3, "r:%2d".format(armor.leftTorsoRear), Cell.Style.DEFAULT)
-            write(10, "r:%2d".format(armor.centerTorsoRear), Cell.Style.DEFAULT)
-            write(17, "r:%2d".format(armor.rightTorsoRear), Cell.Style.DEFAULT)
+            write(3, "r:%2d".format(armor.leftTorsoRear), Style.DEFAULT)
+            write(10, "r:%2d".format(armor.centerTorsoRear), Style.DEFAULT)
+            write(17, "r:%2d".format(armor.rightTorsoRear), Style.DEFAULT)
             newLine()
             write(0, "LA:%2d".format(armor.leftArm), SUCCESS_STYLE)
             write(17, "RA:%2d".format(armor.rightArm), SUCCESS_STYLE)
@@ -58,7 +58,7 @@ internal object ForeignUnitPanel {
         }
 
         // WEAPONS
-        content.writeHeader("WEAPONS")
+        content.draw(SectionHeading("WEAPONS"))
         content.draw(ForeignWeaponList(unit))
     }
 }

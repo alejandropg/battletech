@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.setup
 
+import io.archinaut.battletech.tui.view.HELP_TITLE
 import io.archinaut.battletech.tactical.model.GameMap
 import io.archinaut.battletech.tactical.model.Hex
 import io.archinaut.battletech.tactical.model.HexCoordinates
@@ -13,8 +14,7 @@ import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.battletech.tui.view.declaredCycle
 import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.text
-import io.archinaut.tenter.panel.PanelState
-import io.archinaut.tenter.view.HelpView
+import io.archinaut.tenter.widget.panel.PanelMode
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -28,7 +28,7 @@ internal class SetupWorkspaceTest {
     fun `unlocked mode panel keeps the normal setup column width`() {
         val width = 80
         val state = SetupState(catalog = ContentSummary(), registry = AssetRegistry.EMPTY)
-        val buffer = SetupWorkspace(Keybindings.DEFAULT).render(
+        val buffer = SetupWorkspace(Keybindings.DEFAULT).draw(
             state = state,
             width = width,
             height = 24,
@@ -36,9 +36,9 @@ internal class SetupWorkspaceTest {
         )
         val panelTop = SetupBannerView.reservedHeight(width)
 
-        assertEquals("╮", buffer.get(width / 4 - 1, panelTop).char)
-        assertEquals(" ", buffer.get(width / 4, panelTop).char)
-        assertEquals(" ", buffer.get(width - 1, panelTop).char)
+        assertEquals("╮", buffer.get(width / 4 - 1, panelTop).symbol)
+        assertEquals(" ", buffer.get(width / 4, panelTop).symbol)
+        assertEquals(" ", buffer.get(width - 1, panelTop).symbol)
     }
 
     @Test
@@ -53,14 +53,14 @@ internal class SetupWorkspaceTest {
         val workspace = SetupWorkspace(Keybindings.DEFAULT)
         val panelTop = SetupBannerView.reservedHeight(width)
 
-        workspace.render(state, width = width, height = 24, flash = null)
+        workspace.draw(state, width = width, height = 24, flash = null)
 
-        assertEquals(SetupPanelId.MODE, workspace.panelAt(18, panelTop + 1))
-        assertEquals(SetupPanelId.MAP, workspace.panelAt(20, panelTop + 1))
-        assertEquals(SetupPanelId.PLAYER_1, workspace.panelAt(40, panelTop + 1))
-        assertEquals(SetupPanelId.PLAYER_2, workspace.panelAt(59, panelTop + 1))
-        assertEquals(SetupPanelId.HELP, workspace.panelAt(78, panelTop + 1))
-        assertEquals(SetupPanelId.HELP, workspace.panelAt(119, panelTop + 1))
+        assertEquals(SetupPanelId.MODE, workspace.hitTest(18, panelTop + 1)?.id)
+        assertEquals(SetupPanelId.MAP, workspace.hitTest(20, panelTop + 1)?.id)
+        assertEquals(SetupPanelId.PLAYER_1, workspace.hitTest(40, panelTop + 1)?.id)
+        assertEquals(SetupPanelId.PLAYER_2, workspace.hitTest(59, panelTop + 1)?.id)
+        assertEquals(SetupPanelId.HELP, workspace.hitTest(78, panelTop + 1)?.id)
+        assertEquals(SetupPanelId.HELP, workspace.hitTest(119, panelTop + 1)?.id)
     }
 
     @Test
@@ -74,11 +74,11 @@ internal class SetupWorkspaceTest {
         val workspace = SetupWorkspace(Keybindings.DEFAULT)
         val panelTop = SetupBannerView.reservedHeight(width)
 
-        workspace.render(state, width = width, height = 24, flash = null)
+        workspace.draw(state, width = width, height = 24, flash = null)
 
-        assertEquals(SetupPanelId.MODE, workspace.panelAt(18, panelTop + 1))
-        assertNull(workspace.panelAt(20, panelTop + 1))
-        assertEquals(SetupPanelId.HELP, workspace.panelAt(78, panelTop + 1))
+        assertEquals(SetupPanelId.MODE, workspace.hitTest(18, panelTop + 1)?.id)
+        assertNull(workspace.hitTest(20, panelTop + 1)?.id)
+        assertEquals(SetupPanelId.HELP, workspace.hitTest(78, panelTop + 1)?.id)
     }
 
     @Test
@@ -94,18 +94,18 @@ internal class SetupWorkspaceTest {
         val panelTop = SetupBannerView.reservedHeight(width)
 
         workspace.focus(SetupPanelId.HELP)
-        workspace.cycleFocusedState(1)
-        val buffer = workspace.render(state, width = width, height = 24, flash = null)
+        workspace.cycleFocusedMode(1)
+        val buffer = workspace.draw(state, width = width, height = 24, flash = null)
 
-        assertEquals(SetupPanelId.HELP, workspace.panelAt(0, panelTop + 1))
-        assertEquals(SetupPanelId.HELP, workspace.panelAt(width - 1, panelTop + 1))
-        assertTrue(buffer.text().contains(HelpView.TITLE))
+        assertEquals(SetupPanelId.HELP, workspace.hitTest(0, panelTop + 1)?.id)
+        assertEquals(SetupPanelId.HELP, workspace.hitTest(width - 1, panelTop + 1)?.id)
+        assertTrue(buffer.text().contains(HELP_TITLE))
     }
 
     @Test
     fun `setup panels cycle a compact MODE and maximizable map and player panels`() {
-        val minimizeOnly = listOf(PanelState.MINIMIZED, PanelState.NORMAL, PanelState.MINIMIZED, PanelState.NORMAL)
-        val allThree = listOf(PanelState.MAXIMIZED, PanelState.MINIMIZED, PanelState.NORMAL, PanelState.MAXIMIZED)
+        val minimizeOnly = listOf(PanelMode.MINIMIZED, PanelMode.NORMAL, PanelMode.MINIMIZED, PanelMode.NORMAL)
+        val allThree = listOf(PanelMode.MAXIMIZED, PanelMode.MINIMIZED, PanelMode.NORMAL, PanelMode.MAXIMIZED)
 
         assertEquals(minimizeOnly, SetupPanels.build(Keybindings.DEFAULT).declaredCycle(SetupPanelId.MODE))
         assertEquals(allThree, SetupPanels.build(Keybindings.DEFAULT).declaredCycle(SetupPanelId.MAP))
@@ -131,13 +131,13 @@ internal class SetupWorkspaceTest {
         val panelTop = SetupBannerView.reservedHeight(width)
 
         workspace.focus(SetupPanelId.MAP)
-        workspace.cycleFocusedState(-1)
-        val buffer = workspace.render(state, width = width, height = 24, flash = null)
+        workspace.cycleFocusedMode(-1)
+        val buffer = workspace.draw(state, width = width, height = 24, flash = null)
 
-        assertEquals(SetupPanelId.MODE, workspace.panelAt(0, panelTop + 1))
-        assertEquals(SetupPanelId.MAP, workspace.panelAt(28, panelTop + 1))
-        assertEquals(SetupPanelId.MAP, workspace.panelAt(43, panelTop + 1))
-        assertEquals(SetupPanelId.PLAYER_1, workspace.panelAt(44, panelTop + 1))
+        assertEquals(SetupPanelId.MODE, workspace.hitTest(0, panelTop + 1)?.id)
+        assertEquals(SetupPanelId.MAP, workspace.hitTest(28, panelTop + 1)?.id)
+        assertEquals(SetupPanelId.MAP, workspace.hitTest(43, panelTop + 1)?.id)
+        assertEquals(SetupPanelId.PLAYER_1, workspace.hitTest(44, panelTop + 1)?.id)
         assertTrue(buffer.line(panelTop + 3, x = 30, width = 12).contains("long-map"))
     }
 
@@ -155,22 +155,22 @@ internal class SetupWorkspaceTest {
 
         val mapWorkspace = SetupWorkspace(Keybindings.DEFAULT)
         mapWorkspace.focus(SetupPanelId.MAP)
-        mapWorkspace.cycleFocusedState(-1)
-        mapWorkspace.render(state, width = 101, height = 24, flash = null)
+        mapWorkspace.cycleFocusedMode(-1)
+        mapWorkspace.draw(state, width = 101, height = 24, flash = null)
 
-        assertEquals(SetupPanelId.MODE, mapWorkspace.panelAt(28, panelTop + 1))
-        assertEquals(SetupPanelId.MAP, mapWorkspace.panelAt(29, panelTop + 1))
+        assertEquals(SetupPanelId.MODE, mapWorkspace.hitTest(28, panelTop + 1)?.id)
+        assertEquals(SetupPanelId.MAP, mapWorkspace.hitTest(29, panelTop + 1)?.id)
 
         val playerWorkspace = SetupWorkspace(Keybindings.DEFAULT)
         playerWorkspace.focus(SetupPanelId.PLAYER_2)
-        playerWorkspace.cycleFocusedState(-1)
-        playerWorkspace.render(state, width = 102, height = 24, flash = null)
+        playerWorkspace.cycleFocusedMode(-1)
+        playerWorkspace.draw(state, width = 102, height = 24, flash = null)
         val playerPanelTop = SetupBannerView.reservedHeight(102)
 
-        assertEquals(SetupPanelId.MAP, playerWorkspace.panelAt(55, playerPanelTop + 1))
-        assertEquals(SetupPanelId.PLAYER_1, playerWorkspace.panelAt(56, playerPanelTop + 1))
-        assertEquals(SetupPanelId.PLAYER_1, playerWorkspace.panelAt(82, playerPanelTop + 1))
-        assertEquals(SetupPanelId.PLAYER_2, playerWorkspace.panelAt(83, playerPanelTop + 1))
+        assertEquals(SetupPanelId.MAP, playerWorkspace.hitTest(55, playerPanelTop + 1)?.id)
+        assertEquals(SetupPanelId.PLAYER_1, playerWorkspace.hitTest(56, playerPanelTop + 1)?.id)
+        assertEquals(SetupPanelId.PLAYER_1, playerWorkspace.hitTest(82, playerPanelTop + 1)?.id)
+        assertEquals(SetupPanelId.PLAYER_2, playerWorkspace.hitTest(83, playerPanelTop + 1)?.id)
     }
 
     @Test
@@ -186,16 +186,16 @@ internal class SetupWorkspaceTest {
         val panelTop = SetupBannerView.reservedHeight(220)
 
         workspace.focus(SetupPanelId.PLAYER_1)
-        workspace.cycleFocusedState(1)
-        val buffer = workspace.render(state, width = 220, height = 100, flash = null)
+        workspace.cycleFocusedMode(1)
+        val buffer = workspace.draw(state, width = 220, height = 100, flash = null)
         val dividerRow = (panelTop + 1 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
-        val dividerColumn = (1 until buffer.width).first { buffer.get(it, dividerRow).char == "│" }
+        val dividerColumn = (1 until buffer.width).first { buffer.get(it, dividerRow).symbol == "│" }
 
         assertTrue(dividerColumn > 1)
-        assertEquals("│", buffer.get(dividerColumn, dividerRow).char)
+        assertEquals("│", buffer.get(dividerColumn, dividerRow).symbol)
         assertFourBlankColumnsAroundDivider(buffer, dividerRow, dividerColumn)
         assertTrue(buffer.text().contains("AS7-D"))
-        assertTrue((dividerColumn + 1 until buffer.width).any { buffer.get(it, dividerRow).char == "'" })
+        assertTrue((dividerColumn + 1 until buffer.width).any { buffer.get(it, dividerRow).symbol == "'" })
         assertTrue(buffer.text().contains("WARRIOR DATA"))
         assertTrue(buffer.text().contains("INTERNAL STRUCTURE DIAGRAM"))
     }
@@ -207,7 +207,7 @@ internal class SetupWorkspaceTest {
         val state = SetupState(catalog = registry.summarize(), registry = registry, modeLocked = true)
         val workspace = SetupWorkspace(Keybindings.DEFAULT)
 
-        val buffer = workspace.render(state, width = 220, height = 40, flash = null)
+        val buffer = workspace.draw(state, width = 220, height = 40, flash = null)
 
         assertTrue(buffer.text().contains("TON WLK RUN JMP"))
         val rosterLine = buffer.text().lines().first { it.contains(model.variant) }
@@ -222,10 +222,10 @@ internal class SetupWorkspaceTest {
         val workspace = SetupWorkspace(Keybindings.DEFAULT)
 
         workspace.focus(SetupPanelId.PLAYER_2)
-        workspace.cycleFocusedState(1)
-        val first = workspace.render(state, width = 220, height = 24, flash = null)
+        workspace.cycleFocusedMode(1)
+        val first = workspace.draw(state, width = 220, height = 24, flash = null)
         workspace.scrollFocused(0, 20)
-        val scrolled = workspace.render(state, width = 220, height = 24, flash = null)
+        val scrolled = workspace.draw(state, width = 220, height = 24, flash = null)
 
         assertTrue(first.text().contains("'MECH DATA"))
         assertTrue(first.text().contains("WARRIOR DATA"))
@@ -247,16 +247,16 @@ internal class SetupWorkspaceTest {
         val panelTop = SetupBannerView.reservedHeight(120)
 
         workspace.focus(SetupPanelId.MAP)
-        workspace.cycleFocusedState(1)
-        val buffer = workspace.render(state, width = 120, height = 40, flash = null)
+        workspace.cycleFocusedMode(1)
+        val buffer = workspace.draw(state, width = 120, height = 40, flash = null)
 
         assertTrue(buffer.text().contains("arena"))
         assertTrue(buffer.text().contains("01"))
         val dividerColumn = (1 until buffer.width - 1).first { column ->
-            (panelTop + 1 until buffer.height).any { row -> buffer.get(column, row).char == "│" }
+            (panelTop + 1 until buffer.height).any { row -> buffer.get(column, row).symbol == "│" }
         }
         assertTrue(dividerColumn > 1)
-        assertEquals("│", buffer.get(dividerColumn, panelTop + 2).char)
+        assertEquals("│", buffer.get(dividerColumn, panelTop + 2).symbol)
         assertFourBlankColumnsAroundDivider(buffer, panelTop + 2, dividerColumn)
     }
 
@@ -271,10 +271,10 @@ internal class SetupWorkspaceTest {
         val workspace = SetupWorkspace(Keybindings.DEFAULT)
 
         workspace.focus(SetupPanelId.MAP)
-        workspace.cycleFocusedState(1)
-        val first = workspace.render(state, width = 120, height = 24, flash = null)
+        workspace.cycleFocusedMode(1)
+        val first = workspace.draw(state, width = 120, height = 24, flash = null)
         workspace.scrollFocused(0, 20)
-        val scrolled = workspace.render(state, width = 120, height = 24, flash = null)
+        val scrolled = workspace.draw(state, width = 120, height = 24, flash = null)
 
         assertTrue(first.text().contains("01"))
         assertNotEquals(first.text(), scrolled.text())
@@ -290,10 +290,10 @@ internal class SetupWorkspaceTest {
         val workspace = SetupWorkspace(Keybindings.DEFAULT)
 
         workspace.focus(SetupPanelId.MAP)
-        workspace.cycleFocusedState(1)
-        val first = workspace.render(state, width = 80, height = 24, flash = null)
+        workspace.cycleFocusedMode(1)
+        val first = workspace.draw(state, width = 80, height = 24, flash = null)
         workspace.scrollFocused(20, 0)
-        val scrolled = workspace.render(state, width = 80, height = 24, flash = null)
+        val scrolled = workspace.draw(state, width = 80, height = 24, flash = null)
 
         assertNotEquals(first.text(), scrolled.text())
     }
@@ -318,8 +318,8 @@ internal class SetupWorkspaceTest {
         val workspace = SetupWorkspace(Keybindings.DEFAULT)
 
         workspace.focus(SetupPanelId.MAP)
-        workspace.cycleFocusedState(1)
-        val buffer = workspace.render(state, width = 120, height = 80, flash = null)
+        workspace.cycleFocusedMode(1)
+        val buffer = workspace.draw(state, width = 120, height = 80, flash = null)
 
         // "beta" has 12 rows to "alpha"'s 3: only the cursored map's board reaches row 11.
         assertTrue(buffer.text().contains("11"))
@@ -339,18 +339,18 @@ internal class SetupWorkspaceTest {
         val workspace = SetupWorkspace(Keybindings.DEFAULT)
 
         workspace.focus(SetupPanelId.PLAYER_1)
-        workspace.cycleFocusedState(1)
-        val buffer = workspace.render(state, width = 220, height = 100, flash = null)
+        workspace.cycleFocusedMode(1)
+        val buffer = workspace.draw(state, width = 220, height = 100, flash = null)
 
         // Both variants appear in the left-hand list; only the cursored one's tonnage reaches
         // the record sheet on the right.
         assertTrue(buffer.text().contains(second.tonnage.toString()))
     }
 
-    private fun assertFourBlankColumnsAroundDivider(buffer: io.archinaut.tenter.screen.ScreenBuffer, row: Int, dividerColumn: Int) {
+    private fun assertFourBlankColumnsAroundDivider(buffer: io.archinaut.tenter.terminal.CompletedFrame, row: Int, dividerColumn: Int) {
         for (offset in 1..4) {
-            assertEquals(" ", buffer.get(dividerColumn - offset, row).char)
-            assertEquals(" ", buffer.get(dividerColumn + offset, row).char)
+            assertEquals(" ", buffer.get(dividerColumn - offset, row).symbol)
+            assertEquals(" ", buffer.get(dividerColumn + offset, row).symbol)
         }
     }
 }

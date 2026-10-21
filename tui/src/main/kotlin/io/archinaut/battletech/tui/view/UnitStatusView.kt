@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.heat.projectHeat
 import io.archinaut.battletech.tactical.model.GameMap
 import io.archinaut.battletech.tactical.unit.CombatUnit
@@ -14,18 +15,18 @@ import io.archinaut.battletech.tui.icon.emptyCircleIcon
 import io.archinaut.battletech.tui.icon.filledCircleIcon
 import io.archinaut.battletech.tui.icon.infinityIcon
 import io.archinaut.battletech.tui.screen.BoardRole
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.ChromeRole
 import io.archinaut.tenter.text.CellWidth
-import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.widget.RowWriter
 
 internal class UnitStatusView(
     private val subject: VisibleUnit?,
     private val map: GameMap,
     private val pendingHeat: List<HeatSource> = emptyList(),
-) : PreparedTextView() {
+) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
+    override fun write(content: RowWriter) {
         when (subject) {
             null -> {
                 content.writeLine("No unit selected", TEXT_PRIMARY_STYLE)
@@ -49,7 +50,7 @@ internal class UnitStatusView(
 
         // PILOT
         with(content) {
-            writeHeader("PILOT")
+            draw(SectionHeading("PILOT"))
             // Canonical 6-box "Hits" track (record sheet Pilot Data): filled = hits taken,
             // empty = remaining boxes. No "health" concept in the rules — hits accumulate
             // upward, each one forcing a Consciousness roll (PilotHits.kt).
@@ -71,7 +72,7 @@ internal class UnitStatusView(
 
         // MOVEMENT
         with(content) {
-            writeHeader("MOVEMENT")
+            draw(SectionHeading("MOVEMENT"))
             writeLine("Walk : ${unit.walkingMP}    Run : ${unit.runningMP}", TEXT_PRIMARY_STYLE)
             if (unit.jumpMP > 0) writeLine("Jump : ${unit.jumpMP}", TEXT_PRIMARY_STYLE)
             newLine()
@@ -79,7 +80,7 @@ internal class UnitStatusView(
 
         // HEAT
         with(content) {
-            writeHeader("HEAT")
+            draw(SectionHeading("HEAT"))
             draw(HeatGauges(unit, map, pendingHeat))
 
             val projection = projectHeat(unit, map, pendingHeat)
@@ -87,7 +88,7 @@ internal class UnitStatusView(
             if (penalties.isNotEmpty()) {
                 writeLine("Penalties")
                 for ((text, fg) in penalties) {
-                    writeLine(text, Cell.Style(fg))
+                    writeLine(text, Style(fg))
                 }
             }
             newLine()
@@ -97,16 +98,16 @@ internal class UnitStatusView(
         with(content) {
             val armor = unit.armor
             val is_ = unit.internalStructure
-            writeHeader("ARMOR")
+            draw(SectionHeading("ARMOR"))
             writeLocation(9, "HD", armor.head, is_.head, ChromeRole.INFO)
             newLine()
             writeLocation(2, "LT", armor.leftTorso, is_.leftTorso, ChromeRole.SUCCESS)
             writeLocation(9, "CT", armor.centerTorso, is_.centerTorso, ChromeRole.ACCENT)
             writeLocation(16, "RT", armor.rightTorso, is_.rightTorso, ChromeRole.SUCCESS)
             newLine()
-            write(3, "r:%2d".format(armor.leftTorsoRear), Cell.Style.DEFAULT)
-            write(10, "r:%2d".format(armor.centerTorsoRear), Cell.Style.DEFAULT)
-            write(17, "r:%2d".format(armor.rightTorsoRear), Cell.Style.DEFAULT)
+            write(3, "r:%2d".format(armor.leftTorsoRear), Style.DEFAULT)
+            write(10, "r:%2d".format(armor.centerTorsoRear), Style.DEFAULT)
+            write(17, "r:%2d".format(armor.rightTorsoRear), Style.DEFAULT)
             newLine()
             writeLocation(0, "LA", armor.leftArm, is_.leftArm, ChromeRole.SUCCESS)
             writeLocation(17, "RA", armor.rightArm, is_.rightArm, ChromeRole.SUCCESS)
@@ -139,7 +140,7 @@ internal class UnitStatusView(
 
         // WEAPONS
         with(content) {
-            writeHeader("WEAPONS")
+            draw(SectionHeading("WEAPONS"))
             for (weapon in unit.weapons) {
                 val style = if (weapon.destroyed) DESTROYED_STYLE else TEXT_PRIMARY_STYLE
                 val right = weapon.ammoType?.let { type -> "${unit.remainingShots(type)} ${ammoIcon()}" }
@@ -154,8 +155,8 @@ internal class UnitStatusView(
      * zero-[structure] location renders red with a strikethrough (it's gone); an intact location
      * renders in its normal [intactColor].
      */
-    private fun TextCursor.writeLocation(padding: Int, label: String, value: Int, structure: Int, intactColor: ChromeRole) {
-        val style = if (structure == 0) DESTROYED_STYLE else Cell.Style(intactColor)
+    private fun RowWriter.writeLocation(padding: Int, label: String, value: Int, structure: Int, intactColor: ChromeRole) {
+        val style = if (structure == 0) DESTROYED_STYLE else Style(intactColor)
         write(padding, "%s:%2d".format(label, value), style)
     }
 
@@ -167,7 +168,7 @@ internal class UnitStatusView(
      * [io.archinaut.battletech.tactical.unit.criticalDamageStatus]; the only thing decided here is the
      * column label for [status].component.
      */
-    private fun writeCritDots(content: TextCursor, status: ComponentCritStatus) {
+    private fun writeCritDots(content: RowWriter, status: ComponentCritStatus) {
         val label = MechLabels.component(status.component)
         val capacity = status.capacity
         val destroyedCount = status.hits.coerceIn(0, capacity)
@@ -193,9 +194,9 @@ internal class UnitStatusView(
     internal companion object {
         internal const val TITLE: String = "UNIT STATUS"
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
-        private val ACCENT_STYLE = Cell.Style(ChromeRole.ACCENT)
-        private val DANGER_STYLE = Cell.Style(ChromeRole.DANGER)
-        private val DESTROYED_STYLE = Cell.Style(BoardRole.DESTROYED, strikethrough = true)
+        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
+        private val ACCENT_STYLE = Style(ChromeRole.ACCENT)
+        private val DANGER_STYLE = Style(ChromeRole.DANGER)
+        private val DESTROYED_STYLE = Style(BoardRole.DESTROYED, strikethrough = true)
     }
 }

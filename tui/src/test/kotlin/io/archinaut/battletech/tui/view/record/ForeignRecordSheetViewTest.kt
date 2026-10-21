@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * [ForeignRecordSheetView] drawn directly, as its own [io.archinaut.tenter.view.View] — not just through
+ * [ForeignRecordSheetView] drawn directly, as its own [io.archinaut.tenter.widget.Widget] — not just through
  * [MechRecordSheetView]'s dispatch — since it stopped being a static `render(canvas, content,
  * unit)` function and became an ordinary View.
  */

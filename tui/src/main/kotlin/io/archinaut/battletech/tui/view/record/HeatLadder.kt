@@ -1,5 +1,7 @@
 package io.archinaut.battletech.tui.view.record
 
+import io.archinaut.battletech.tui.view.SectionHeading
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.heat.HeatScale
 import io.archinaut.battletech.tactical.heat.projectHeat
 import io.archinaut.battletech.tactical.model.GameMap
@@ -8,8 +10,7 @@ import io.archinaut.battletech.tactical.unit.HeatSource
 import io.archinaut.battletech.tui.screen.HeatScaleRole
 import io.archinaut.battletech.tui.view.HeatGauges
 import io.archinaut.battletech.tui.view.HeatPenalties
-import io.archinaut.tenter.view.TextCursor
-import io.archinaut.battletech.tui.view.PreparedTextView
+import io.archinaut.tenter.widget.RowWriter
 
 /**
  * The HEAT card: [HeatGauges] — the same current/dissipation/projected gauges
@@ -28,15 +29,15 @@ internal class HeatLadder(
     private val unit: CombatUnit,
     private val map: GameMap,
     private val pendingHeat: List<HeatSource>,
-) : PreparedTextView() {
+) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
-        content.writeHeader("HEAT")
+    override fun write(content: RowWriter) {
+        content.draw(SectionHeading("HEAT"))
         content.draw(HeatGauges(unit, map, pendingHeat))
         content.newLine()
 
         val projection = projectHeat(unit, map, pendingHeat)
-        content.writeHeader("HEAT SCALE")
+        content.draw(SectionHeading("HEAT SCALE"))
         for (heat in HeatScale.MAX_HEAT downTo 0) {
             val slots = HeatPenalties.categories(heat)
             val slotsBelow = if (heat > 0) HeatPenalties.categories(heat - 1) else List(slots.size) { null }

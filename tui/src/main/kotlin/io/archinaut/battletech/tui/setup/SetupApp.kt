@@ -3,18 +3,14 @@ package io.archinaut.battletech.tui.setup
 import io.archinaut.battletech.tactical.model.content.AssetRegistry
 import io.archinaut.battletech.tactical.model.content.MatchPlan
 import io.archinaut.battletech.tui.input.Keybindings
-import com.github.ajalt.mordant.input.MouseTracking
-import com.github.ajalt.mordant.rendering.Size
-import com.github.ajalt.mordant.terminal.Terminal
+import io.archinaut.battletech.tui.input.uiEvents
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
-import io.archinaut.tenter.screen.ScreenRenderer
+import io.archinaut.tenter.terminal.Terminal
 import io.archinaut.tenter.terminal.TerminalEvent
-import io.archinaut.tenter.terminal.inputEvents
-import io.archinaut.tenter.terminal.resizeEvents
+import com.github.ajalt.mordant.terminal.Terminal as MordantTerminal
 
 internal sealed interface SetupOutcome {
     data class Commit(val plan: MatchPlan, val registry: AssetRegistry) : SetupOutcome
@@ -26,13 +22,13 @@ internal sealed interface SetupOutcome {
 
 /**
  * Runs the interactive setup screen to completion. Mirrors `io.archinaut.battletech.tui.TuiApp` but *accepts*
- * its terminal/renderer rather than constructing them (D17), so `Main.kt` can keep one
+ * its terminals rather than constructing them (D17), so `Main.kt` can keep one
  * [io.archinaut.tenter.terminal.withScreen] scope across whichever app runs next. That scope owns the
  * alternate screen and cursor; this app's collected input flow owns its own raw-mode lifetime.
  */
 internal class SetupApp(
-    private val terminal: Terminal,
-    private val renderer: ScreenRenderer,
+    private val terminal: MordantTerminal,
+    private val screen: Terminal,
     private val keys: Keybindings,
     private val lobby: SetupLobby,
     private val initial: SetupState,
@@ -44,13 +40,11 @@ internal class SetupApp(
 
         setupLoop(
             events = merge(
-                terminal.inputEvents(MouseTracking.Normal, isQuit = keys::isQuit).map { it.toSetupUiEvent() },
-                terminal.resizeEvents().map { it.toSetupUiEvent() },
+                terminal.uiEvents(keys, quit = SetupUiEvent.Quit) { it.toSetupUiEvent() },
                 internalEvents.receiveAsFlow(),
             ),
             internalEvents = internalEvents,
-            terminal = terminal,
-            renderer = renderer,
+            screen = screen,
             initialState = initial,
             keys = keys,
             lobby = lobby,
@@ -60,6 +54,5 @@ internal class SetupApp(
 
 private fun TerminalEvent.toSetupUiEvent(): SetupUiEvent = when (this) {
     is TerminalEvent.Input -> SetupUiEvent.Input(event)
-    is TerminalEvent.Resized -> SetupUiEvent.Resized(Size(size.width, size.height))
-    TerminalEvent.Quit -> SetupUiEvent.Quit
+    is TerminalEvent.Resized -> SetupUiEvent.Resized(size)
 }

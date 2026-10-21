@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.battletech.tui.screen.UiRole
 import io.archinaut.battletech.tactical.model.GameState
 import io.archinaut.battletech.tactical.model.HexCoordinates
 import io.archinaut.battletech.tactical.model.HexDirection
@@ -14,7 +15,6 @@ import io.archinaut.battletech.tui.anAppState
 import io.archinaut.battletech.tui.game.phase.AttackPhase
 import io.archinaut.battletech.tui.game.phase.WeaponAllocation
 import io.archinaut.battletech.tui.mediumLaser
-import io.archinaut.tenter.palette.ChromeRole
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -56,8 +56,8 @@ internal class DeclaredTargetsIntegrationTest {
 
         val wolfRow = (0 until 30).first { buffer.line(it).contains("wolf") }
         val colors = (2 until 28).map { col -> buffer.get(col, wolfRow).style.fg }.toSet()
-        assertTrue(colors.contains(ChromeRole.DRAFT)) {
-            "Expected wolf (draft) row to use ChromeRole.DRAFT, got: $colors"
+        assertTrue(colors.contains(UiRole.DRAFT)) {
+            "Expected wolf (draft) row to use UiRole.DRAFT, got: $colors"
         }
     }
 

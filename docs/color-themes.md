@@ -33,18 +33,21 @@ One file per theme, one color space per file — there is no conversion between 
   "colorSpace": "truecolor",
   "background": "#101418",
   "chrome": { "DEFAULT": "#DDE2E5", "...": "..." },
+  "ui": { "DRAFT": "#A6ADB4" },
   "heatScale": { "CURRENT_BG": "#3A3218", "...": "..." },
   "board":  { "PLAYER_1": "#A0F4FF", "...": "..." }
 }
 ```
 
-`chrome` must hold exactly the 13 `io.archinaut.tenter.palette.ChromeRole` names; `board` must hold exactly the
+`chrome` must hold exactly the 12 `io.archinaut.tenter.palette.ChromeRole` names; `ui` must hold exactly the
+`io.archinaut.battletech.tui.screen.UiRole` names (today only `DRAFT`); `board` must hold exactly the
 27 `io.archinaut.battletech.tui.screen.BoardRole` names; and `heatScale` must hold exactly the three
 `io.archinaut.battletech.tui.screen.HeatScaleRole` names. A missing or unrecognized role name fails to load with
 a `ThemeLoadException` naming the offending role and table — this is the load-time replacement for
 the compile-time exhaustiveness check a hand-written `RolePalette` object used to get for free (see
 `io.archinaut.tenter.palette.RolePalette`'s KDoc). Custom themes written before the `heatScale` table was added
-must add all three roles; there is deliberately no unverified fallback color.
+must add all three roles, and custom themes that list `DRAFT` under `chrome` must move it to `ui`;
+there is deliberately no unverified fallback color.
 
 Resolution is not theme-specific: `io.archinaut.battletech.tui.screen.ThemeLoader` is a thin adapter over
 `io.archinaut.battletech.tactical.io.ResourceOrFileLoader` (see `docs/architecture.md`), the same generic loader
@@ -101,7 +104,7 @@ what it outlines, not legible at a set ratio.
 
 **`PANEL_BORDER`/`PANEL_BORDER_FOCUSED` are a pair: the unfocused neutral and a saturated green,
 respectively.** A panel's border, title, badge, and scrollbar thumb all key off which of the two is
-focused — `Bordered`'s default (`PANEL_BORDER`) is what every non-focusable box still uses, so
+focused — a `Block`'s default (`PANEL_BORDER`) is what every non-focusable box still uses, so
 giving it a neutral meaning rather than deleting it kept every other bordered view (help text, the
 match-over banner) unchanged. The light tiers use a mid-grey (`#5A6169` truecolor, `241` ansi256)
 rather than white for the unfocused neutral: a literal white/light-grey border fails the 4.5:1

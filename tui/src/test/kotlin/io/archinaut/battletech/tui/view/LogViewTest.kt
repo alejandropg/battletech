@@ -20,9 +20,8 @@ import io.archinaut.battletech.tui.icon.initiativeIcon
 import io.archinaut.battletech.tui.icon.movementModeIcon
 import io.archinaut.battletech.tui.icon.unitStoodUpIcon
 import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.ScreenBuffer
-import io.archinaut.tenter.view.ViewportState
-import io.archinaut.tenter.view.scrollingPanel
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.widget.ViewportState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -54,8 +53,8 @@ internal class LogViewTest {
         view: LogView,
         width: Int = 28,
         height: Int = 10,
-        scrollOffset: Int? = null,
-    ): ScreenBuffer = renderInPanel(
+        scrollOffset: Int = 0,
+    ): Canvas = renderInPanel(
         view,
         badge = '9',
         title = LogView.TITLE,
@@ -69,7 +68,7 @@ internal class LogViewTest {
         val view = LogView(entries = emptyList(), state = emptyState)
         val buffer = renderDecorated(view)
 
-        val topRow = (0 until 28).joinToString("") { buffer.get(it, 0).char }
+        val topRow = (0 until 28).joinToString("") { buffer.get(it, 0).symbol }
         assertEquals('╭', topRow[0])
         assertEquals('╮', topRow[27])
         assert(topRow.contains("LOG")) { "Top border should contain 'LOG', got: $topRow" }
@@ -104,7 +103,7 @@ internal class LogViewTest {
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
         assert(buffer.line(3, 2, 24).contains("0101→0201")) { "Expected first move entry" }
         assert(buffer.line(4, 2, 24).contains("0101→0301")) { "Expected second move entry" }
-        assertEquals(ChromeRole.DEFAULT, buffer.get(2, 3).style.fg)
+        assertEquals(null, buffer.get(2, 3).style.fg, "renders in the default color")
     }
 
     @Test
@@ -196,24 +195,22 @@ internal class LogViewTest {
 
         // First render: no previousReveal, so it follows to the bottom — establishes the reveal.
         val viewportState = ViewportState()
-        val first = scrollingPanel(
+        val first = panelViewport(
             title = LogView.TITLE,
             badge = "9",
             content = view,
-            state = viewportState,
         )
-        render(first, 28, 6)
+        render(first, viewportState, 28, 6)
         viewportState.scrollBy(0, -100)
 
         // Second render: the user has wheeled back to the top; the log hasn't changed, so the
         // reveal row is identical — the manual offset must be respected, not re-followed.
-        val second = scrollingPanel(
+        val second = panelViewport(
             title = LogView.TITLE,
             badge = "9",
             content = view,
-            state = viewportState,
         )
-        val buffer = render(second, 28, 6)
+        val buffer = render(second, viewportState, 28, 6)
 
         assertEquals(0, viewportState.settled?.offset?.y, "a manual scroll to the top must not snap back to the bottom")
         val firstLine = buffer.line(2, 2, 24)
@@ -229,32 +226,29 @@ internal class LogViewTest {
         // row — there is no bespoke "let the reader linger on history" carve-out anymore.
         val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val viewportState = ViewportState()
-        val scrolledAway = scrollingPanel(
+        val scrolledAway = panelViewport(
             title = LogView.TITLE,
             badge = "9",
             content = LogView(tenEntries, state = emptyState),
-            state = viewportState,
         )
-        render(scrolledAway, 28, 6)
+        render(scrolledAway, viewportState, 28, 6)
         viewportState.scrollBy(0, -100)
-        val manuallyScrolledUp = scrollingPanel(
+        val manuallyScrolledUp = panelViewport(
             title = LogView.TITLE,
             badge = "9",
             content = LogView(tenEntries, state = emptyState),
-            state = viewportState,
         )
-        render(manuallyScrolledUp, 28, 6)
+        render(manuallyScrolledUp, viewportState, 28, 6)
         assertEquals(0, viewportState.settled?.offset?.y, "sanity check: scrolled away from the bottom")
 
         // An eleventh entry arrives; the reveal row moves, so the view follows it to the bottom.
         val elevenEntries = tenEntries + LogEntry(turn = 11, event = stoodUp())
-        val newEntryArrives = scrollingPanel(
+        val newEntryArrives = panelViewport(
             title = LogView.TITLE,
             badge = "9",
             content = LogView(elevenEntries, state = emptyState),
-            state = viewportState,
         )
-        val buffer = render(newEntryArrives, 28, 6)
+        val buffer = render(newEntryArrives, viewportState, 28, 6)
 
         val bottomInnerRow = buffer.line(4, 2, 24)
         assertEquals("${unitStoodUpIcon()} m stood up", bottomInnerRow)
@@ -281,11 +275,11 @@ internal class LogViewTest {
         // Right border column must stay '│' on every row inside the panel —
         // no cell on the right border should have been overwritten by leaking content.
         for (y in 1..4) {
-            assertEquals("│", buffer.get(39, y).char, "right border at row $y")
+            assertEquals("│", buffer.get(39, y).symbol, "right border at row $y")
         }
         // Each dice icon must occupy exactly one cell as a full surrogate-pair string,
         // not a split half-surrogate per cell. Row 2 is the turn header; the entry is on row 3.
-        val entryLine = (2 until 38).joinToString("") { buffer.get(it, 3).char }.trimEnd()
+        val entryLine = (2 until 38).joinToString("") { buffer.get(it, 3).symbol }.trimEnd()
         val dice4 = String(Character.toChars(0xF01CD))
         assert(entryLine.contains(dice4)) { "entry line should contain dice_4 glyph: '$entryLine'" }
     }
@@ -312,10 +306,10 @@ internal class LogViewTest {
         assertEquals("${movementModeIcon(MovementMode.WALK)} atlas (1 MP) 0101→0102", entryLine)
 
         // Layout: x=2 icon, x=3 space, x=4..8 "atlas", x=9 space before "(1 MP)".
-        assertEquals(ChromeRole.DEFAULT, buffer.get(2, 3).style.fg, "icon stays default")
+        assertEquals(null, buffer.get(2, 3).style.fg, "icon stays default")
         assertEquals(playerColor(PlayerId.PLAYER_1), buffer.get(4, 3).style.fg, "'a' of atlas")
         assertEquals(playerColor(PlayerId.PLAYER_1), buffer.get(8, 3).style.fg, "'s' of atlas")
-        assertEquals(ChromeRole.DEFAULT, buffer.get(9, 3).style.fg, "prose after the name stays default")
+        assertEquals(null, buffer.get(9, 3).style.fg, "prose after the name stays default")
     }
 
     @Test

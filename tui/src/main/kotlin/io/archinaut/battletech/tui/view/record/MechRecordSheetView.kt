@@ -5,9 +5,11 @@ import io.archinaut.battletech.tactical.unit.CombatUnit
 import io.archinaut.battletech.tactical.unit.ForeignUnit
 import io.archinaut.battletech.tactical.unit.HeatSource
 import io.archinaut.battletech.tactical.unit.VisibleUnit
-import io.archinaut.tenter.view.ContentLayout
-import io.archinaut.tenter.view.ContentView
-import io.archinaut.tenter.view.contentView
+import io.archinaut.tenter.screen.Padding
+import io.archinaut.tenter.widget.Block
+import io.archinaut.tenter.widget.MeasurableWidget
+import io.archinaut.tenter.widget.RowWriter
+import io.archinaut.tenter.widget.block
 import kotlin.math.min
 
 /**
@@ -26,17 +28,16 @@ internal class MechRecordSheetView(
     private val subject: VisibleUnit?,
     private val map: GameMap,
     private val pendingHeat: List<HeatSource> = emptyList(),
-) : ContentView {
+) : MeasurableWidget {
 
-    override fun layout(availableWidth: Int): ContentLayout {
-        val sheetWidth = min(availableWidth, SheetLayout.SHEET_WIDTH)
+    override fun write(writer: RowWriter) {
+        val sheetWidth = min(writer.width, SheetLayout.SHEET_WIDTH)
         val content = when (val unit = subject) {
-            null -> contentView { it.writeLine("No unit selected", SheetStyles.TEXT_PRIMARY) }
+            null -> MeasurableWidget { it.writeLine("No unit selected", SheetStyles.TEXT_PRIMARY) }
             is ForeignUnit -> ForeignRecordSheetView(unit)
             is CombatUnit -> OwnRecordSheetView(unit, map, pendingHeat)
-        }.layout(sheetWidth)
-        return io.archinaut.tenter.view.contentLayout(sheetWidth, content.height) {
-            place(0, 0, content)
         }
+        // The margin past the sheet's width keeps it from stretching across a very wide panel.
+        writer.draw(content.block(Block(padding = Padding(right = writer.width - sheetWidth))))
     }
 }

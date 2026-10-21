@@ -8,7 +8,7 @@ import io.archinaut.tenter.palette.ColorRole
 import io.archinaut.tenter.palette.PaletteColor
 
 /**
- * On-disk shape of a theme file: one color space plus a value for every [ChromeRole] and
+ * On-disk shape of a theme file: one color space plus a value for every [ChromeRole], [UiRole],
  * [BoardRole], and [HeatScaleRole], split into semantic tables so a missing or unknown role names
  * where it belongs. Every color value is a string parsed according to [colorSpace] — see
  * [ColorSpace]'s KDoc for the three syntaxes.
@@ -18,6 +18,7 @@ internal data class ThemeFile(
     val colorSpace: ColorSpace,
     val background: String,
     val chrome: Map<String, String> = emptyMap(),
+    val ui: Map<String, String> = emptyMap(),
     val board: Map<String, String> = emptyMap(),
     val heatScale: Map<String, String> = emptyMap(),
 ) {
@@ -27,6 +28,7 @@ internal data class ThemeFile(
         val defaultBackground = parseColor(background, "$name: background")
         val colors = mutableMapOf<ColorRole, PaletteColor>()
         resolveRoles(chrome, ChromeRole.entries.associateBy { it.name }, "chrome", name, colors)
+        resolveRoles(ui, UiRole.entries.associateBy { it.name }, "ui", name, colors)
         resolveRoles(board, BoardRole.entries.associateBy { it.name }, "board", name, colors)
         resolveRoles(heatScale, HeatScaleRole.entries.associateBy { it.name }, "heatScale", name, colors)
         return Theme(name, colorSpace.level, defaultBackground, colors)

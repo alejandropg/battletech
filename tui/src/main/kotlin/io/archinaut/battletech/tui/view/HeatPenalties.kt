@@ -1,7 +1,9 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.battletech.tui.screen.UiRole
 import io.archinaut.battletech.tactical.heat.HeatScale
 import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.palette.ColorRole
 
 /**
  * Heat-scale penalty text, read off [HeatScale] in one place so [UnitStatusView] and the
@@ -33,13 +35,13 @@ internal object HeatPenalties {
      * worse (every category in [categories] is non-decreasing in heat, so the worse of two heat
      * levels' text is always one of the two, never a blend). A line is solid
      * ([ChromeRole.DEFAULT]) when that worst text is already in force at [current]; otherwise
-     * it's projection-only ([ChromeRole.DRAFT]).
+     * it's projection-only ([UiRole.DRAFT]).
      */
-    fun lines(current: Int, projected: Int): List<Pair<String, ChromeRole>> {
+    fun lines(current: Int, projected: Int): List<Pair<String, ColorRole>> {
         val atCurrent = categories(current)
         val worst = categories(maxOf(current, projected))
         return worst.zip(atCurrent).mapNotNull { (worstLine, currentLine) ->
-            worstLine?.let { it to (if (currentLine == worstLine) ChromeRole.DEFAULT else ChromeRole.DRAFT) }
+            worstLine?.let { it to (if (currentLine == worstLine) ChromeRole.DEFAULT else UiRole.DRAFT) }
         }
     }
 }

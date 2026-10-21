@@ -68,6 +68,7 @@ internal class ThemeSourceTest {
 
     private fun minimalTrueColorTheme(background: String): String {
         val chromeEntries = ChromeRole.entries.joinToString(",\n") { "\"${it.name}\": \"#000000\"" }
+        val uiEntries = UiRole.entries.joinToString(",\n") { "\"${it.name}\": \"#000000\"" }
         val boardEntries = BoardRole.entries.joinToString(",\n") { "\"${it.name}\": \"#000000\"" }
         val heatScaleEntries = HeatScaleRole.entries.joinToString(",\n") { "\"${it.name}\": \"#000000\"" }
         return """
@@ -75,6 +76,7 @@ internal class ThemeSourceTest {
           "colorSpace": "truecolor",
           "background": "$background",
           "chrome": { $chromeEntries },
+          "ui": { $uiEntries },
           "board": { $boardEntries },
           "heatScale": { $heatScaleEntries }
         }

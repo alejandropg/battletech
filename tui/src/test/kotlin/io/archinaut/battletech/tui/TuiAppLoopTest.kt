@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui
 
+import io.archinaut.battletech.tui.view.HELP_TITLE
 import io.archinaut.battletech.tactical.attack.AttackResult
 import io.archinaut.battletech.tactical.attack.ToHitAttempt
 import io.archinaut.battletech.tactical.attack.ToHitBase
@@ -19,13 +20,12 @@ import io.archinaut.battletech.tui.game.AppState
 import io.archinaut.battletech.tui.game.phase.AttackPhase
 import io.archinaut.battletech.tui.view.BoardView
 import io.archinaut.battletech.tui.game.phase.MovementPhase
-import io.archinaut.battletech.tui.animation.AnimationColor
 import io.archinaut.battletech.tui.animation.AnimationLayout
 import io.archinaut.battletech.tui.animation.PanelPlacement
 import io.archinaut.battletech.tui.animation.WeaponAnimations
 import io.archinaut.tenter.animation.Animation
 import io.archinaut.tenter.animation.AnimationPlayback
-import io.archinaut.tenter.animation.AnimationSize
+import io.archinaut.tenter.screen.Size
 import io.archinaut.tenter.animation.GlyphGrid
 import io.archinaut.battletech.tui.icon.sessionNoticeIcon
 import io.archinaut.battletech.tui.input.Keybindings
@@ -38,8 +38,7 @@ import io.archinaut.battletech.tui.view.UnitStatusView
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import com.github.ajalt.mordant.rendering.AnsiLevel
-import com.github.ajalt.mordant.rendering.Size
-import com.github.ajalt.mordant.terminal.Terminal
+import com.github.ajalt.mordant.terminal.Terminal as MordantTerminal
 import com.github.ajalt.mordant.terminal.TerminalRecorder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -56,13 +55,11 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.PaletteColor
-import io.archinaut.tenter.screen.ScreenRenderer
-import io.archinaut.tenter.view.HelpView
+import io.archinaut.tenter.terminal.Terminal
 import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.view.View
-import kotlin.random.Random
+import io.archinaut.tenter.widget.Widget
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -73,8 +70,8 @@ internal class TuiAppLoopTest {
     // TRUECOLOR so the renderer emits ANSI escape sequences we can search for.
     // Width/height must be positive to pass TuiApp.currentSize() checks.
     private val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = 120, height = 40)
-    private val terminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
-    private val renderer = ScreenRenderer(terminal, resolveTheme("dark"))
+    private val terminal = MordantTerminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
+    private val screen = Terminal(terminal, resolveTheme("dark"))
 
     /**
      * Build a minimal AppState backed by a real BattleSession positioned at
@@ -130,13 +127,12 @@ internal class TuiAppLoopTest {
         runLoop(
             events = merge(events, internalEvents.receiveAsFlow()),
             internalEvents = internalEvents,
-            terminal = terminal,
-            renderer = renderer,
+            screen = screen,
             initialState = buildAppState(),
             keys = Keybindings.DEFAULT,
         )
 
-        // The diffing renderer (see ScreenRenderer) only sends a full cursor-home + repaint on
+        // The diffing renderer (see tenter's Terminal) only sends a full cursor-home + repaint on
         // the very first frame; a later frame that only moved the cursor sends setPosition(s)
         // just for the cells that changed, not another [1;1H. So "at least 2 render passes" is
         // checked as at least 2 distinct position writes overall, not 2 cursor-home sequences —
@@ -164,8 +160,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
@@ -196,8 +191,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
@@ -235,8 +229,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
@@ -268,8 +261,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
@@ -287,7 +279,7 @@ internal class TuiAppLoopTest {
 
         // Deliver stale FlashExpired for generation 1 — must NOT clear generation 2 flash. A
         // stale expiry doesn't trigger a re-render at all (see runLoop's FlashExpired branch),
-        // so under the diffing renderer (see ScreenRenderer) the correct, directly-observable
+        // so under the diffing renderer (see tenter's Terminal) the correct, directly-observable
         // signal that generation 2 survived untouched is that nothing gets sent: if it HAD been
         // wrongly cleared, the prompt reverting away from "Not your unit" is a real visual change
         // and would show up as non-empty output.
@@ -318,8 +310,8 @@ internal class TuiAppLoopTest {
     // single event. There is no clean way to provoke a real java.lang.Error through this
     // test's public event surface (AppState/phase handling has no reachable Error path,
     // and faking one would require test-only production hooks, which we avoid per the
-    // project's no-gold-plating stance). The NegativeArraySizeException below stands in
-    // as a representative "something throws mid-handling" case; it exercises the same
+    // project's no-gold-plating stance). A volley builder that throws stands in as a
+    // representative "something throws mid-handling" case; it exercises the same
     // catch-and-continue path that now also covers Throwable.
     // -------------------------------------------------------------------------
 
@@ -331,21 +323,20 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
+                buildVolley = { _, _, _ -> throw IllegalStateException("volley construction failed") },
             )
         }
 
-        // Negative dimensions make ScreenBuffer's backing array allocation throw
-        // NegativeArraySizeException inside renderFrame — a stand-in for any bug
-        // surfacing during event handling.
-        internalEvents.send(UiEvent.Resized(Size(-1, 40)))
+        // Resolving attacks builds the weapon-fire volley, which throws here — a stand-in for
+        // any bug surfacing during event handling.
+        internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
 
         // The loop must still be alive and processing events after the failure. Resized to a
         // size distinct from the terminal's original 120x40 (not back to 120x40): the diffing
-        // renderer (see ScreenRenderer) would otherwise diff this recovery frame against the
+        // renderer (see tenter's Terminal) would otherwise diff this recovery frame against the
         // last successful one — content-identical, since nothing about appState actually
         // changed — and correctly send nothing, which would look indistinguishable from the
         // loop being dead. A genuinely new size forces a full repaint, so non-empty output here
@@ -371,8 +362,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
@@ -396,8 +386,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
@@ -435,8 +424,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
@@ -479,8 +467,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
@@ -527,8 +514,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = initialState,
                 keys = Keybindings.DEFAULT,
             )
@@ -566,8 +552,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = initialState,
                 keys = Keybindings.DEFAULT,
             )
@@ -578,7 +563,7 @@ internal class TuiAppLoopTest {
 
         // Nothing in appState actually changes for a no-resync Session event (phase, matchEnded,
         // and lastAttackResults all fall through to their previous values), so the diffing
-        // renderer (see ScreenRenderer) sends nothing at all. That emptiness is a stronger,
+        // renderer (see tenter's Terminal) sends nothing at all. That emptiness is a stronger,
         // more direct proof that lastAttackResults specifically was untouched than re-scanning
         // for the panel title would be: if it HAD been cleared, the panel disappearing is a real
         // visual change and would show up as non-empty output.
@@ -610,8 +595,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = initialState,
                 keys = Keybindings.DEFAULT,
             )
@@ -623,7 +607,7 @@ internal class TuiAppLoopTest {
         internalEvents.send(UiEvent.Session(notice))
 
         // Checked as separate tokens, not one joined phrase: the diffing renderer (see
-        // ScreenRenderer) only retransmits cells that actually changed, so a separator space
+        // Terminal) only retransmits cells that actually changed, so a separator space
         // that was already blank in the previous frame is legitimately skipped -- the terminal
         // still displays "Opponent connected" correctly, but the raw byte log the recorder
         // captures may show the words as disjoint writes rather than one contiguous run.
@@ -651,22 +635,21 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
         }
 
-        assertFalse(recorder.output().contains(HelpView.TITLE), "HELP should be closed by default")
+        assertFalse(recorder.output().contains(HELP_TITLE), "HELP should be closed by default")
 
         recorder.clearOutput()
         internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
-        assertTrue(recorder.output().contains(HelpView.TITLE), "? should open HELP")
+        assertTrue(recorder.output().contains(HELP_TITLE), "? should open HELP")
 
         recorder.clearOutput()
         internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
-        assertFalse(recorder.output().contains(HelpView.TITLE), "? again should close HELP")
+        assertFalse(recorder.output().contains(HELP_TITLE), "? again should close HELP")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -680,8 +663,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
@@ -710,30 +692,29 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
         }
 
-        renderer.clear()
+        screen.clear()
         recorder.clearOutput()
         internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
         assertTrue(recorder.output().contains(UnitStatusView.TITLE), "first press should focus UNIT STATUS at NORMAL")
         assertFalse(recorder.output().contains("'MECH DATA"), "first press should not resize UNIT STATUS")
 
-        renderer.clear()
+        screen.clear()
         recorder.clearOutput()
         internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
         assertTrue(recorder.output().contains("'MECH DATA"), "second press should maximize UNIT STATUS")
 
-        renderer.clear()
+        screen.clear()
         recorder.clearOutput()
         internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
         assertFalse(recorder.output().contains(UnitStatusView.TITLE), "third press should minimize UNIT STATUS")
 
-        renderer.clear()
+        screen.clear()
         recorder.clearOutput()
         internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
         assertTrue(recorder.output().contains(UnitStatusView.TITLE), "fourth press should restore NORMAL")
@@ -751,8 +732,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
@@ -763,7 +743,7 @@ internal class TuiAppLoopTest {
 
         internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
 
-        assertTrue(recorder.output().contains(HelpView.TITLE), "? should still open HELP after MatchEnded")
+        assertTrue(recorder.output().contains(HELP_TITLE), "? should still open HELP after MatchEnded")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -809,8 +789,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildWideMapAppState(),
                     keys = Keybindings.DEFAULT,
                 )
@@ -868,8 +847,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildWideMapAppState(),
                     keys = Keybindings.DEFAULT,
                 )
@@ -937,8 +915,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
                 buildVolley = testVolley(TestAnimation()),
@@ -967,8 +944,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                     buildVolley = testVolley(TestAnimation(frameCount = 10, onFrame = frameIndices::add)),
@@ -995,8 +971,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
                 buildVolley = testVolley(
@@ -1048,8 +1023,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = timerSink,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                     buildVolley = testVolley(TestAnimation(frameCount = 10, onFrame = frameIndices::add)),
@@ -1097,8 +1071,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = timerSink,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                     buildVolley = testVolley(TestAnimation(frameCount = 10, onFrame = frameIndices::add)),
@@ -1129,8 +1102,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
                 buildVolley = { _, _, _ ->
@@ -1160,8 +1132,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                     buildVolley = { _, width, height ->
@@ -1202,8 +1173,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                     buildVolley = { _, width, height ->
@@ -1250,8 +1220,7 @@ internal class TuiAppLoopTest {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = terminal,
-                renderer = renderer,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
                 buildVolley = testVolley(TestAnimation(frameCount = 3, frameDuration = 10.milliseconds)),
@@ -1286,8 +1255,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                     buildVolley = testVolley(TestAnimation()),
@@ -1323,8 +1291,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                     buildVolley = { results, width, height ->
@@ -1357,15 +1324,14 @@ internal class TuiAppLoopTest {
     @Test
     fun `a terminal smaller than the panel never starts the animation`() = runTest(UnconfinedTestDispatcher()) {
         val smallRecorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = 70, height = 20)
-        val smallTerminal = Terminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = smallRecorder)
-        val smallRenderer = ScreenRenderer(smallTerminal, resolveTheme("dark"))
+        val smallTerminal = MordantTerminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = smallRecorder)
+        val smallScreen = Terminal(smallTerminal, resolveTheme("dark"))
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         val loopJob = launch {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                terminal = smallTerminal,
-                renderer = smallRenderer,
+                screen = smallScreen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
                 buildVolley = testVolley(TestAnimation()),
@@ -1400,8 +1366,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                     buildVolley = testVolley(
@@ -1454,8 +1419,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                     buildVolley = { _, width, height ->
@@ -1491,8 +1455,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                     buildVolley = testVolley(
@@ -1528,8 +1491,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                     buildVolley = testVolley(long(), long(), long()),
@@ -1560,8 +1522,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                 )
@@ -1587,8 +1548,7 @@ internal class TuiAppLoopTest {
                 runLoop(
                     events = internalEvents.receiveAsFlow(),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                 )
@@ -1610,7 +1570,7 @@ internal class TuiAppLoopTest {
      * A minimal deterministic [Animation] test double — fast frames, one visible glyph.
      *
      * The glyph MOVES with [index]. Frames that render identically would diff to nothing in
-     * [ScreenRenderer], so a still test double makes "is it still animating?" indistinguishable
+     * tenter's [Terminal], so a still test double makes "is it still animating?" indistinguishable
      * from "did it stop?" — which is exactly what several tests below assert on.
      */
     private class TestAnimation(
@@ -1619,20 +1579,20 @@ internal class TuiAppLoopTest {
         private val onFrame: (Int) -> Unit = {},
         private val onDraw: () -> Unit = {},
     ) : Animation {
-        override val size: AnimationSize = AnimationSize(width = 70, height = 20)
+        override val size: Size = Size(width = 70, height = 20)
 
-        override fun frame(index: Int): View {
+        override fun frame(index: Int): Widget {
             onFrame(index)
             val glyphs = GlyphGrid(
                 size = size,
                 priority = { if (it == 'A') 1 else 0 },
-                style = { Cell.Style(fg = AnimationColor(PaletteColor.Ansi16(97))) },
+                style = { Style(fg = PaletteColor.Ansi16(97)) },
             )
             glyphs.put(index % size.width, index % size.height, 'A')
-            return object : View {
-                override fun draw(canvas: Canvas) {
+            return object : Widget {
+                override fun render(canvas: Canvas) {
                     onDraw()
-                    glyphs.draw(canvas)
+                    glyphs.render(canvas)
                 }
             }
         }

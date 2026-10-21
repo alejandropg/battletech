@@ -9,6 +9,7 @@ import io.archinaut.tenter.palette.ChromeRole
 internal class ThemeFileTest {
 
     private val allChrome = ChromeRole.entries.associate { it.name to "#000000" }
+    private val allUi = UiRole.entries.associate { it.name to "#000000" }
     private val allBoard = BoardRole.entries.associate { it.name to "#000000" }
     private val allHeatScale = HeatScaleRole.entries.associate { it.name to "#000000" }
 
@@ -18,6 +19,7 @@ internal class ThemeFileTest {
             colorSpace = ColorSpace.TRUECOLOR,
             background = "#010203",
             chrome = allChrome,
+            ui = allUi,
             board = allBoard,
             heatScale = allHeatScale,
         )
@@ -34,6 +36,7 @@ internal class ThemeFileTest {
             colorSpace = ColorSpace.TRUECOLOR,
             background = "#000000",
             chrome = allChrome - ChromeRole.DANGER.name,
+            ui = allUi,
             board = allBoard,
             heatScale = allHeatScale,
         )
@@ -48,6 +51,7 @@ internal class ThemeFileTest {
             colorSpace = ColorSpace.TRUECOLOR,
             background = "#000000",
             chrome = allChrome,
+            ui = allUi,
             board = allBoard - BoardRole.PLAYER_1.name,
             heatScale = allHeatScale,
         )
@@ -62,6 +66,7 @@ internal class ThemeFileTest {
             colorSpace = ColorSpace.TRUECOLOR,
             background = "#000000",
             chrome = allChrome,
+            ui = allUi,
             board = allBoard,
             heatScale = allHeatScale - HeatScaleRole.CURRENT_BG.name,
         )
@@ -76,6 +81,7 @@ internal class ThemeFileTest {
             colorSpace = ColorSpace.TRUECOLOR,
             background = "#000000",
             chrome = allChrome + ("NOT_A_ROLE" to "#000000"),
+            ui = allUi,
             board = allBoard,
             heatScale = allHeatScale,
         )
@@ -90,6 +96,7 @@ internal class ThemeFileTest {
             colorSpace = ColorSpace.TRUECOLOR,
             background = "#000000",
             chrome = allChrome,
+            ui = allUi,
             board = allBoard + ("NOT_A_ROLE" to "#000000"),
             heatScale = allHeatScale,
         )
@@ -104,6 +111,7 @@ internal class ThemeFileTest {
             colorSpace = ColorSpace.TRUECOLOR,
             background = "#000000",
             chrome = allChrome,
+            ui = allUi,
             board = allBoard,
             heatScale = allHeatScale + ("NOT_A_ROLE" to "#000000"),
         )
@@ -113,11 +121,42 @@ internal class ThemeFileTest {
     }
 
     @Test
+    fun `a missing ui role names it`() {
+        val file = ThemeFile(
+            colorSpace = ColorSpace.TRUECOLOR,
+            background = "#000000",
+            chrome = allChrome,
+            ui = allUi - UiRole.DRAFT.name,
+            board = allBoard,
+            heatScale = allHeatScale,
+        )
+
+        val exception = assertThrows<ThemeLoadException> { file.toTheme("test") }
+        assertThat(exception.message).contains("missing ui roles").contains("DRAFT")
+    }
+
+    @Test
+    fun `DRAFT in the chrome table is rejected, since it is an application role`() {
+        val file = ThemeFile(
+            colorSpace = ColorSpace.TRUECOLOR,
+            background = "#000000",
+            chrome = allChrome + ("DRAFT" to "#000000"),
+            ui = allUi,
+            board = allBoard,
+            heatScale = allHeatScale,
+        )
+
+        val exception = assertThrows<ThemeLoadException> { file.toTheme("test") }
+        assertThat(exception.message).contains("unknown chrome role").contains("DRAFT")
+    }
+
+    @Test
     fun `a malformed hex value is rejected`() {
         val file = ThemeFile(
             colorSpace = ColorSpace.TRUECOLOR,
             background = "not-a-color",
             chrome = allChrome,
+            ui = allUi,
             board = allBoard,
             heatScale = allHeatScale,
         )
@@ -131,6 +170,7 @@ internal class ThemeFileTest {
             colorSpace = ColorSpace.ANSI256,
             background = "999",
             chrome = ChromeRole.entries.associate { it.name to "233" },
+            ui = allUi,
             board = BoardRole.entries.associate { it.name to "233" },
             heatScale = HeatScaleRole.entries.associate { it.name to "233" },
         )
@@ -144,6 +184,7 @@ internal class ThemeFileTest {
             colorSpace = ColorSpace.ANSI16,
             background = "50",
             chrome = ChromeRole.entries.associate { it.name to "30" },
+            ui = allUi,
             board = BoardRole.entries.associate { it.name to "30" },
             heatScale = HeatScaleRole.entries.associate { it.name to "30" },
         )
@@ -157,6 +198,7 @@ internal class ThemeFileTest {
             colorSpace = ColorSpace.ANSI256,
             background = "bright-red",
             chrome = ChromeRole.entries.associate { it.name to "233" },
+            ui = allUi,
             board = BoardRole.entries.associate { it.name to "233" },
             heatScale = HeatScaleRole.entries.associate { it.name to "233" },
         )

@@ -1,11 +1,12 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.unit.ForeignUnit
-import io.archinaut.tenter.view.TextCursor
+import io.archinaut.tenter.widget.RowWriter
 
-internal class TargetStatusView(private val unit: ForeignUnit) : PreparedTextView() {
+internal class TargetStatusView(private val unit: ForeignUnit) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
+    override fun write(content: RowWriter) {
         ForeignUnitPanel.render(content, unit)
     }
 

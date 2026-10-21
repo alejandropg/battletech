@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.battletech.tui.screen.UiRole
 import io.archinaut.battletech.tactical.model.GameMap
 import io.archinaut.battletech.tactical.model.HexCoordinates
 import io.archinaut.battletech.tactical.model.HexDirection
@@ -13,17 +14,16 @@ import io.archinaut.battletech.tui.hex.UnitRenderer
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.battletech.tactical.unit.UnitRoster
 import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Rect
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.ChromeRole
 import io.archinaut.tenter.text.CellWidth
-import io.archinaut.tenter.view.Bordered
-import io.archinaut.tenter.view.View
-import io.archinaut.tenter.view.Viewport
+import io.archinaut.tenter.widget.Widget
 
 /**
  * The tactical map's content: coordinate labels, every hex, highlight, and unit glyph, drawn at
- * its unscrolled screen position. Purely content — chrome and scrolling belong to the
- * [Bordered]/[Viewport] that wraps this view (see its construction in `RunLoop.renderFrame`); the
+ * its unscrolled screen position. Purely content — chrome and scrolling belong to the panel
+ * [io.archinaut.tenter.widget.panel.Panel] that wraps this view (see its construction in `RunLoop.renderFrame`); the
  * only thing this view contributes to scrolling is marking the cursor hex for reveal via
  * [Canvas.markReveal], so auto-follow keeps it visible.
  */
@@ -38,9 +38,9 @@ internal class BoardView(
     private val draftTorsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
     private val validTargetPositions: Set<HexCoordinates> = emptySet(),
     private val selectedTargetPosition: HexCoordinates? = null,
-) : View {
+) : Widget {
 
-    override fun draw(canvas: Canvas) {
+    override fun render(canvas: Canvas) {
         val (mapWidth, mapHeight) = mapSize(state.map)
         renderCoordinates(canvas, mapWidth, mapHeight)
 
@@ -106,13 +106,13 @@ internal class BoardView(
                     unit.facing,
                     renderColor,
                     torsoFacing = torsoFacing,
-                    torsoColor = if (draftTorso != null) ChromeRole.DRAFT else renderColor,
+                    torsoColor = if (draftTorso != null) UiRole.DRAFT else renderColor,
                     isDestroyed = unit.isDestroyed,
                 )
             }
 
             if (coords == cursorPosition) {
-                canvas.markReveal(x, y, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT)
+                canvas.markReveal(Rect(x, y, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT))
             }
         }
     }
@@ -126,8 +126,8 @@ internal class BoardView(
             val label = coordinateLabel(col + 1)
             val centerX = MAP_ORIGIN_X + col * HexGeometry.COL_STRIDE + HexGeometry.HEX_WIDTH / 2
             val labelX = centerX - CellWidth.of(label) / 2
-            canvas.writeString(labelX, 0, label, COORDINATE_STYLE)
-            canvas.writeString(
+            canvas.setString(labelX, 0, label, COORDINATE_STYLE)
+            canvas.setString(
                 labelX,
                 MAP_ORIGIN_Y + mapHeight + BOTTOM_LABEL_GAP,
                 label,
@@ -138,8 +138,8 @@ internal class BoardView(
         for (row in 0..maxRow) {
             val label = coordinateLabel(row + 1)
             val labelY = MAP_ORIGIN_Y + row * HexGeometry.ROW_STRIDE + HexGeometry.HEX_HEIGHT / 2
-            canvas.writeString(0, labelY, label, COORDINATE_STYLE)
-            canvas.writeString(MAP_ORIGIN_X + mapWidth + SIDE_LABEL_GAP, labelY, label, COORDINATE_STYLE)
+            canvas.setString(0, labelY, label, COORDINATE_STYLE)
+            canvas.setString(MAP_ORIGIN_X + mapWidth + SIDE_LABEL_GAP, labelY, label, COORDINATE_STYLE)
         }
     }
 
@@ -157,7 +157,7 @@ internal class BoardView(
         internal fun preview(map: GameMap): BoardView =
             BoardView(PlayerGameState(UnitRoster(emptyList()), map))
 
-        private val COORDINATE_STYLE: Cell.Style = Cell.Style(ChromeRole.TEXT_SUBTLE)
+        private val COORDINATE_STYLE: Style = Style(ChromeRole.TEXT_SUBTLE)
 
         /** The unscrolled content size needed to draw [map] and its coordinate labels. */
         internal fun contentSize(map: GameMap): Pair<Int, Int> {

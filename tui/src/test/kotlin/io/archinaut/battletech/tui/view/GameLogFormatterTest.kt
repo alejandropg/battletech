@@ -79,7 +79,7 @@ import io.archinaut.battletech.tui.icon.undisclosedCriticalHitIcon
 import io.archinaut.battletech.tui.mediumLaser
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 
 internal class GameLogFormatterTest {
 
@@ -891,8 +891,8 @@ internal class GameLogFormatterTest {
 
         // Unstyled, so it merges with the surrounding prose into one default-styled span —
         // that merge is itself evidence of no color (a colored name could not merge with default text).
-        assertThat(content.spans).allMatch { it.style == Cell.Style.DEFAULT }
-        assertThat(content.plain).contains("ghost")
+        assertThat(content.spans).allMatch { it.style == Style.DEFAULT }
+        assertThat(content.spans.joinToString("") { it.text }).contains("ghost")
     }
 
     @Test

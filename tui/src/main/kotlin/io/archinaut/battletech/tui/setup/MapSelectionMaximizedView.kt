@@ -2,9 +2,9 @@ package io.archinaut.battletech.tui.setup
 
 import io.archinaut.battletech.tactical.model.GameMap
 import io.archinaut.battletech.tui.view.BoardView
-import io.archinaut.tenter.view.ContentLayout
-import io.archinaut.tenter.view.ContentView
-import io.archinaut.tenter.view.fixedContent
+import io.archinaut.tenter.widget.MeasurableWidget
+import io.archinaut.tenter.widget.RowWriter
+import io.archinaut.tenter.widget.fixedSize
 
 /**
  * The maximized MAP panel: the normal map selector at left and the highlighted map rendered with
@@ -15,19 +15,20 @@ internal class MapSelectionMaximizedView(
     private val selected: String?,
     private val cursorIndex: Int,
     private val mapFor: (String) -> GameMap?,
-) : ContentView {
+) : MeasurableWidget {
 
-    override fun layout(availableWidth: Int): ContentLayout {
-        val cursorMap = cursorMap()
-        val detail = cursorMap?.let { map ->
+    override fun write(writer: RowWriter) {
+        val detail = cursorMap()?.let { map ->
             val (boardWidth, boardHeight) = BoardView.contentSize(map)
-            fixedContent(boardWidth, boardHeight, BoardView.preview(map))
+            BoardView.preview(map).fixedSize(boardWidth, boardHeight)
         }
-        return SplitMaximizedView(
-            leftWidth = MapListView.contentWidth(maps),
-            left = MapListView(maps, selected, cursorIndex),
-            detail = detail,
-        ).layout(availableWidth)
+        writer.draw(
+            SplitMaximizedView(
+                leftWidth = MapListView.contentWidth(maps),
+                left = MapListView(maps, selected, cursorIndex),
+                detail = detail,
+            ),
+        )
     }
 
     private fun cursorMap(): GameMap? =

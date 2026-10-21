@@ -2,10 +2,11 @@ package io.archinaut.battletech.tui.animation
 
 import io.archinaut.battletech.tui.animation.LaserBurstAnimation.Companion.DEFAULT_RADIUS
 import io.archinaut.battletech.tui.animation.LaserBurstAnimation.Companion.DEFAULT_TARGET_Y
+import io.archinaut.tenter.palette.PaletteColor
 import io.archinaut.tenter.animation.Animation
-import io.archinaut.tenter.animation.AnimationSize
+import io.archinaut.tenter.screen.Size
 import io.archinaut.tenter.animation.GlyphGrid
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import kotlin.math.hypot
 import kotlin.random.Random
 import kotlin.time.Duration
@@ -21,7 +22,7 @@ internal class MachineGunAnimation(
     radius: Int = DEFAULT_RADIUS,
     random: Random = Random.Default,
 ) : Animation {
-    override val size: AnimationSize = AnimationSize(width = 70, height = 20)
+    override val size: Size = Size(width = 70, height = 20)
     private val shots: List<GunShot> = buildShots(bursts, targetX, targetY, radius, size, random)
     override val frameCount: Int = sequenceFrames(shots)
     override val frameDuration: Duration = ANIMATION_DURATION / frameCount
@@ -59,21 +60,21 @@ private val MACHINE_GUN_PRIORITY: Map<Char, Int> = mapOf(
 
 private fun machineGunPriority(char: Char): Int = MACHINE_GUN_PRIORITY[char] ?: 0
 
-private val MACHINE_GUN_COLORS: Map<Char, AnimationColor> = mapOf(
+private val MACHINE_GUN_COLORS: Map<Char, PaletteColor> = mapOf(
     '.' to ANIMATION_GRAY, ',' to ANIMATION_GRAY, ':' to ANIMATION_GRAY,
     'c' to ANIMATION_AMBER, 'o' to ANIMATION_WARNING, '-' to ANIMATION_WARNING,
     '=' to ANIMATION_BRIGHT, '+' to ANIMATION_DANGER, '*' to ANIMATION_WARNING,
     '@' to ANIMATION_BRIGHT, 'X' to ANIMATION_BRIGHT, '#' to ANIMATION_BRIGHT,
 )
 
-// See laserStyle: unmapped (i.e. space) falls back to a FixedColorRole so no cell ever resolves
+// See laserStyle: unmapped (i.e. space) falls back to a fixed PaletteColor so no cell ever resolves
 // through the loaded theme.
-private fun machineGunStyle(char: Char): Cell.Style =
-    Cell.Style(fg = MACHINE_GUN_COLORS[char] ?: ANIMATION_GRAY, bg = ANIMATION_BACKGROUND)
+private fun machineGunStyle(char: Char): Style =
+    Style(fg = MACHINE_GUN_COLORS[char] ?: ANIMATION_GRAY, bg = ANIMATION_BACKGROUND)
 
 private enum class GunSide { LEFT, BOTTOM }
 
-private fun randomOrigin(random: Random, side: GunSide, size: AnimationSize): Point = when (side) {
+private fun randomOrigin(random: Random, side: GunSide, size: Size): Point = when (side) {
     GunSide.LEFT -> point(0, random.nextInt(size.height / 2, size.height))
     GunSide.BOTTOM -> point(random.nextInt(0, size.width / 3), size.height - 1)
 }
@@ -83,7 +84,7 @@ private fun buildShots(
     centerX: Int,
     centerY: Int,
     radius: Int,
-    size: AnimationSize,
+    size: Size,
     random: Random,
 ): List<GunShot> {
     val targets = validTargetPoints(centerX, centerY, radius, size)

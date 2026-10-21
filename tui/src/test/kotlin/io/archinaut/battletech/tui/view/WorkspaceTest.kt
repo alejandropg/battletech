@@ -18,12 +18,11 @@ import io.archinaut.battletech.tui.animation.panelSize
 import io.archinaut.battletech.tui.game.GamePanelId
 import io.archinaut.battletech.tui.game.phase.MovementPhase
 import io.archinaut.battletech.tui.input.Keybindings
+import io.archinaut.tenter.terminal.CompletedFrame
 import io.archinaut.tenter.animation.AnimationPlayback
 import io.archinaut.tenter.palette.ChromeRole
 import io.archinaut.tenter.screen.Point
-import io.archinaut.tenter.screen.ScreenBuffer
-import io.archinaut.tenter.view.FlashMessage
-import io.archinaut.tenter.view.HelpView
+import io.archinaut.tenter.widget.FlashMessage
 import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -48,24 +47,24 @@ internal class WorkspaceTest {
     fun `visible panels render, in Panels_build order, right-aligned against the board`() {
         val workspace = Workspace(Keybindings.DEFAULT)
 
-        val buffer = workspace.render(appState, width = 120, height = 40, flash = null)
+        val buffer = workspace.draw(appState, width = 120, height = 40, flash = null)
 
         assertTrue(buffer.text().contains(UnitStatusView.TITLE))
         assertTrue(buffer.text().contains(LogView.TITLE))
-        // LOG is last among MOVEMENT's visible panels in Panels.build()'s order, so it sits
+        // LOG is last among MOVEMENT's visible panels in GamePanels' order, so it sits
         // flush against the right edge.
-        assertEquals(GamePanelId.LOG, workspace.panelAt(118, 10))
+        assertEquals(GamePanelId.LOG, workspace.hitTest(118, 10)?.id)
     }
 
     @Test
     fun `HELP does not exist in the layout until AppState_helpOpen is set`() {
         val workspace = Workspace(Keybindings.DEFAULT)
 
-        val closed = workspace.render(appState, width = 120, height = 40, flash = null)
-        assertFalse(closed.text().contains(HelpView.TITLE))
+        val closed = workspace.draw(appState, width = 120, height = 40, flash = null)
+        assertFalse(closed.text().contains(HELP_TITLE))
 
-        val opened = workspace.render(appState.copy(helpOpen = true), width = 120, height = 40, flash = null)
-        assertTrue(opened.text().contains(HelpView.TITLE))
+        val opened = workspace.draw(appState.copy(helpOpen = true), width = 120, height = 40, flash = null)
+        assertTrue(opened.text().contains(HELP_TITLE))
     }
 
     @Test
@@ -80,8 +79,8 @@ internal class WorkspaceTest {
         val selected = anAppState(phase, gameState = aGameState(units = listOf(unit), map = aGameMap()))
         val workspace = Workspace(Keybindings.DEFAULT)
 
-        val promptBuffer = workspace.render(selected, width = 120, height = 40, flash = null)
-        val flashBuffer = workspace.render(selected, width = 120, height = 40, flash = FlashMessage("Not available"))
+        val promptBuffer = workspace.draw(selected, width = 120, height = 40, flash = null)
+        val flashBuffer = workspace.draw(selected, width = 120, height = 40, flash = FlashMessage("Not available"))
 
         assertTrue(statusRow(promptBuffer).contains("W1: Wolverine WVR-6R ┆ Walk (5 MP)"))
         assertFalse(statusRow(flashBuffer).contains("W1: Wolverine WVR-6R"))
@@ -91,36 +90,36 @@ internal class WorkspaceTest {
     @Test
     fun `minimizing the focused panel shrinks it to its stub — no more horizontal title, board absorbs the freed width`() {
         val workspace = Workspace(Keybindings.DEFAULT)
-        workspace.render(appState, width = 120, height = 40, flash = null)
+        workspace.draw(appState, width = 120, height = 40, flash = null)
 
         workspace.focus(GamePanelId.LOG)
-        workspace.cycleFocusedState(-1) // NORMAL -> MINIMIZED
-        val buffer = workspace.render(appState, width = 120, height = 40, flash = null)
+        workspace.cycleFocusedMode(-1) // NORMAL -> MINIMIZED
+        val buffer = workspace.draw(appState, width = 120, height = 40, flash = null)
 
         assertFalse(buffer.text().contains(LogView.TITLE), "minimized panel draws its title one letter per row")
         // LOG's stub is 7 wide, so it now spans columns 113..119 — and unlike the collapsed panels
         // this replaced, a stub IS a hit-test target: it has nothing to scroll, but swallowing the
         // click keeps it from falling through to the board's click-to-hex mapping.
-        assertEquals(GamePanelId.LOG, workspace.panelAt(118, 10), "a minimized stub is still a scroll target")
+        assertEquals(GamePanelId.LOG, workspace.hitTest(118, 10)?.id, "a minimized stub is still a scroll target")
     }
 
     @Test
-    fun `panelAt returns the board and excludes the status bar`() {
+    fun `hit testing finds the board and excludes the status bar`() {
         val workspace = Workspace(Keybindings.DEFAULT)
-        workspace.render(appState, width = 120, height = 40, flash = null)
+        workspace.draw(appState, width = 120, height = 40, flash = null)
 
-        assertEquals(GamePanelId.BOARD, workspace.panelAt(x = 5, y = 10), "board area")
-        assertNull(workspace.panelAt(x = 118, y = 1), "status bar row")
+        assertEquals(GamePanelId.BOARD, workspace.hitTest(x = 5, y = 10)?.id, "board area")
+        assertNull(workspace.hitTest(x = 118, y = 1)?.id, "status bar row")
     }
 
     @Test
     fun `scrollPanel does not touch the board`() {
         val workspace = Workspace(Keybindings.DEFAULT)
-        workspace.render(appState, width = 120, height = 40, flash = null)
+        workspace.draw(appState, width = 120, height = 40, flash = null)
 
         val before = workspace.boardOrigin(120, 40)
         workspace.scrollPanel(GamePanelId.UNIT_STATUS, delta = 3)
-        workspace.render(appState, width = 120, height = 40, flash = null)
+        workspace.draw(appState, width = 120, height = 40, flash = null)
 
         assertEquals(before, workspace.boardOrigin(120, 40), "scrolling a panel must not touch the board")
     }
@@ -128,10 +127,10 @@ internal class WorkspaceTest {
     @Test
     fun `scrollPanel on a panel that is not currently placed is a safe no-op`() {
         val workspace = Workspace(Keybindings.DEFAULT)
-        workspace.render(appState, width = 120, height = 40, flash = null) // TARGETS isn't visible in MOVEMENT
+        workspace.draw(appState, width = 120, height = 40, flash = null) // TARGETS isn't visible in MOVEMENT
 
         workspace.scrollPanel(GamePanelId.TARGETS, delta = 3) // must not throw
-        val buffer = workspace.render(appState, width = 120, height = 40, flash = null)
+        val buffer = workspace.draw(appState, width = 120, height = 40, flash = null)
 
         assertFalse(buffer.text().contains(TargetsView.TITLE))
     }
@@ -143,10 +142,10 @@ internal class WorkspaceTest {
 
         // First render follows the cursor into view. The cursor doesn't move afterward, so a
         // manual pan on top of that settled offset must survive the next render untouched.
-        workspace.render(wideMap, width = 80, height = 30, flash = null)
+        workspace.draw(wideMap, width = 80, height = 30, flash = null)
         val before = workspace.boardOrigin(80, 30)
         workspace.panBoard(5, 0)
-        workspace.render(wideMap, width = 80, height = 30, flash = null)
+        workspace.draw(wideMap, width = 80, height = 30, flash = null)
 
         assertEquals(before.x + 5, workspace.boardOrigin(80, 30).x)
     }
@@ -170,9 +169,9 @@ internal class WorkspaceTest {
         val workspace = Workspace(Keybindings.DEFAULT)
         workspace.focus(GamePanelId.LOG)
 
-        val buffer = workspace.render(appState, width = 120, height = 40, flash = null)
+        val buffer = workspace.draw(appState, width = 120, height = 40, flash = null)
 
-        // MOVEMENT's visible panels are UNIT_STATUS then LOG (Panels.build order), each 28 wide,
+        // MOVEMENT's visible panels are UNIT_STATUS then LOG (GamePanels order), each 28 wide,
         // right-aligned against a 120-wide screen: UNIT_STATUS spans 64..91, LOG spans 92..119.
         assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, buffer.get(92, 4).style.fg, "LOG (focused) border corner")
         assertEquals(ChromeRole.PANEL_BORDER, buffer.get(64, 4).style.fg, "UNIT_STATUS (unfocused) border corner")
@@ -182,9 +181,9 @@ internal class WorkspaceTest {
     fun `a maximized panel hides the board and the other panels`() {
         val workspace = Workspace(Keybindings.DEFAULT)
         workspace.focus(GamePanelId.LOG)
-        workspace.cycleFocusedState(1) // NORMAL -> MAXIMIZED
+        workspace.cycleFocusedMode(1) // NORMAL -> MAXIMIZED
 
-        val buffer = workspace.render(appState, width = 120, height = 40, flash = null)
+        val buffer = workspace.draw(appState, width = 120, height = 40, flash = null)
 
         assertTrue(buffer.text().contains(LogView.TITLE))
         assertFalse(buffer.text().contains(UnitStatusView.TITLE), "UNIT_STATUS must not be laid out while LOG is maximized")
@@ -197,13 +196,13 @@ internal class WorkspaceTest {
         val state = anAppState(MovementPhase.SelectingUnit, gameState = aGameState(units = listOf(unit), map = aGameMap()))
         val workspace = Workspace(Keybindings.DEFAULT)
 
-        val normal = workspace.render(state, width = 120, height = 40, flash = null)
+        val normal = workspace.draw(state, width = 120, height = 40, flash = null)
         assertTrue(normal.text().contains(UnitStatusView.TITLE))
         assertFalse(normal.text().contains("'MECH DATA"), "NORMAL still renders the compact UnitStatusView")
 
         workspace.focus(GamePanelId.UNIT_STATUS)
-        workspace.cycleFocusedState(1) // NORMAL -> MAXIMIZED
-        val maximized = workspace.render(state, width = 200, height = 200, flash = null)
+        workspace.cycleFocusedMode(1) // NORMAL -> MAXIMIZED
+        val maximized = workspace.draw(state, width = 200, height = 200, flash = null)
 
         assertTrue(maximized.text().contains(UnitStatusView.TITLE), "same panel, same title")
         assertTrue(maximized.text().contains("'MECH DATA"), "MAXIMIZED renders the record sheet")
@@ -214,10 +213,48 @@ internal class WorkspaceTest {
         val workspace = Workspace(Keybindings.DEFAULT)
         val ended = appState.copy(matchEnded = MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1)))
 
-        val buffer = workspace.render(ended, width = 120, height = 40, flash = null)
+        val buffer = workspace.draw(ended, width = 120, height = 40, flash = null)
 
         assertTrue(buffer.text().contains("MATCH OVER"))
         assertTrue(buffer.text().contains("P1 wins!"))
+    }
+
+    @Test
+    fun `the game-over banner covers the board under it instead of letting the terrain show through`() {
+        val workspace = Workspace(Keybindings.DEFAULT)
+        val board = anAppState(MovementPhase.SelectingUnit, gameState = aGameState(map = aGameMap(cols = 15, rows = 15)))
+        val ended = board.copy(matchEnded = MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1)))
+
+        val buffer = workspace.draw(ended, width = 120, height = 40, flash = null)
+
+        val titleRow = (0 until buffer.height).first { buffer.line(it).contains("MATCH OVER") }
+        val left = buffer.line(titleRow).indexOf('╭')
+        val right = buffer.line(titleRow).indexOf('╮')
+        for (y in titleRow until titleRow + 7) {
+            for (x in left..right) {
+                assertNull(buffer.get(x, y).style.bg, "banner cell ($x, $y) shows the board's background")
+            }
+        }
+        val interior = (left + 1 until right).joinToString("") { buffer.get(it, titleRow + 1).symbol }
+        assertEquals(" ".repeat(right - left - 1), interior, "the board's glyphs show inside the banner")
+    }
+
+    @Test
+    fun `an animation panel's border covers the board instead of letting the terrain show through`() {
+        val workspace = Workspace(Keybindings.DEFAULT)
+        val board = anAppState(MovementPhase.SelectingUnit, gameState = aGameState(map = aGameMap(cols = 15, rows = 15)))
+        val animation = LaserBurstAnimation(random = Random(1))
+        val panelSize = animation.size.panelSize
+
+        val buffer = workspace.draw(board, width = 120, height = 40, flash = null, animations = listOf(frame(animation, x = 5, y = 5)))
+
+        val right = 5 + panelSize.width - 1
+        val bottom = 5 + panelSize.height - 1
+        val border = (5..right).flatMap { x -> listOf(x to 5, x to bottom) } +
+            (5..bottom).flatMap { y -> listOf(5 to y, right to y) }
+        for ((x, y) in border) {
+            assertNull(buffer.get(x, y).style.bg, "border cell ($x, $y) shows the board's background")
+        }
     }
 
     @Test
@@ -228,14 +265,14 @@ internal class WorkspaceTest {
         val animation = LaserBurstAnimation(random = Random(1))
         val panel = frame(animation, x = left, y = top)
 
-        val buffer = workspace.render(appState, width = 120, height = 40, flash = null, animations = listOf(panel))
+        val buffer = workspace.draw(appState, width = 120, height = 40, flash = null, animations = listOf(panel))
 
-        assertEquals('╭', buffer.get(left, top).char.single())
-        assertEquals('╮', buffer.get(left + animation.size.panelSize.width - 1, top).char.single())
-        assertEquals('╰', buffer.get(left, top + animation.size.panelSize.height - 1).char.single())
+        assertEquals('╭', buffer.get(left, top).symbol.single())
+        assertEquals('╮', buffer.get(left + animation.size.panelSize.width - 1, top).symbol.single())
+        assertEquals('╰', buffer.get(left, top + animation.size.panelSize.height - 1).symbol.single())
         // The top border carries only box-drawing dashes — no title, badge, or hint text anywhere in it.
         val topBorder = (left + 1 until left + animation.size.panelSize.width - 1)
-            .joinToString("") { buffer.get(it, top).char }
+            .joinToString("") { buffer.get(it, top).symbol }
         assertEquals("─".repeat(animation.size.width), topBorder)
     }
 
@@ -246,13 +283,13 @@ internal class WorkspaceTest {
         val under = frame(LaserBurstAnimation(random = Random(1)), x = 10, y = 5)
         val over = frame(MissileSalvoAnimation(random = Random(2)), x = 10, y = 6)
 
-        val buffer = workspace.render(
+        val buffer = workspace.draw(
             appState, width = 120, height = 40, flash = null, animations = listOf(under, over),
         )
 
         // Row 6 is the OVER panel's top border, drawn after the under panel's interior row.
-        assertEquals('╭', buffer.get(10, 6).char.single(), "the later panel's border must win")
-        assertEquals('╭', buffer.get(10, 5).char.single(), "the earlier panel's own top border survives above it")
+        assertEquals('╭', buffer.get(10, 6).symbol.single(), "the later panel's border must win")
+        assertEquals('╭', buffer.get(10, 5).symbol.single(), "the earlier panel's own top border survives above it")
     }
 
     @Test
@@ -261,11 +298,11 @@ internal class WorkspaceTest {
         val animation = LaserBurstAnimation(random = Random(1))
         val panel = frame(animation, x = 0, y = 0)
 
-        val tooNarrow = workspace.render(
+        val tooNarrow = workspace.draw(
             appState, width = animation.size.panelSize.width - 1, height = animation.size.panelSize.height + 5,
             flash = null, animations = listOf(panel),
         )
-        val tooShort = workspace.render(
+        val tooShort = workspace.draw(
             appState, width = animation.size.panelSize.width + 5, height = animation.size.panelSize.height - 1,
             flash = null, animations = listOf(panel),
         )
@@ -276,7 +313,7 @@ internal class WorkspaceTest {
         assertFalse(hasFixedAnimationBackground(tooShort), "no panel should draw when it doesn't fit height-wise")
     }
 
-    private fun hasFixedAnimationBackground(buffer: ScreenBuffer): Boolean {
+    private fun hasFixedAnimationBackground(buffer: CompletedFrame): Boolean {
         for (y in 0 until buffer.height) {
             for (x in 0 until buffer.width) {
                 if (buffer.get(x, y).style.bg == ANIMATION_BACKGROUND) return true
@@ -285,13 +322,13 @@ internal class WorkspaceTest {
         return false
     }
 
-    private fun frame(animation: io.archinaut.tenter.animation.Animation, x: Int, y: Int, index: Int = 0): AnimationPlayback.Frame<PanelPlacement> =
-        AnimationPlayback.Frame(
+    private fun frame(animation: io.archinaut.tenter.animation.Animation, x: Int, y: Int, index: Int = 0): AnimationPlayback.VisibleFrame<PanelPlacement> =
+        AnimationPlayback.VisibleFrame(
             value = PanelPlacement(x, y),
             size = animation.size,
             content = animation.frame(index),
         )
 
-    private fun statusRow(buffer: ScreenBuffer): String =
-        (0 until buffer.width).joinToString("") { buffer.get(it, 1).char }
+    private fun statusRow(buffer: CompletedFrame): String =
+        (0 until buffer.width).joinToString("") { buffer.get(it, 1).symbol }
 }

@@ -5,8 +5,6 @@ import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
 import io.archinaut.battletech.tui.view.text
-import io.archinaut.tenter.widget.CheckState
-import io.archinaut.tenter.widget.checkboxIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -81,14 +79,14 @@ internal class UnitListViewTest {
         // label length. Spot-check that a handful of columns line up exactly between the header
         // and both data rows.
         val statsStart = width - 15
-        assertEquals("T", buffer.get(statsStart, headerRow).char) // header's TON
-        assertEquals("1", buffer.get(statsStart, as7dRow).char) // AS7-D tonnage "100"
-        assertEquals(" ", buffer.get(statsStart, whm6rRow).char) // WHM-6R tonnage " 70"
+        assertEquals("T", buffer.get(statsStart, headerRow).symbol) // header's TON
+        assertEquals("1", buffer.get(statsStart, as7dRow).symbol) // AS7-D tonnage "100"
+        assertEquals(" ", buffer.get(statsStart, whm6rRow).symbol) // WHM-6R tonnage " 70"
 
         val jmpCol = width - 1 // last column of the JMP field, and of the panel
-        assertEquals("P", buffer.get(jmpCol, headerRow).char)
-        assertEquals(" ", buffer.get(jmpCol, as7dRow).char) // AS7-D can't jump
-        assertEquals(" ", buffer.get(jmpCol, whm6rRow).char) // WHM-6R can't jump
+        assertEquals("P", buffer.get(jmpCol, headerRow).symbol)
+        assertEquals(" ", buffer.get(jmpCol, as7dRow).symbol) // AS7-D can't jump
+        assertEquals(" ", buffer.get(jmpCol, whm6rRow).symbol) // WHM-6R can't jump
 
         // The count sits right next to the variant id, ahead of the stat columns — not pushed
         // past them, and not shown at all when it's 0. Label text starts at column 4 (cursor
@@ -118,8 +116,8 @@ internal class UnitListViewTest {
         val jumperRow = 2
         val jmpCol = width - 1
 
-        assertEquals(" ", buffer.get(jmpCol, as7dRow).char)
-        assertEquals("6", buffer.get(jmpCol, jumperRow).char)
+        assertEquals(" ", buffer.get(jmpCol, as7dRow).symbol)
+        assertEquals("6", buffer.get(jmpCol, jumperRow).symbol)
     }
 
     @Test
@@ -154,7 +152,7 @@ internal class UnitListViewTest {
             height = 3,
         )
 
-        assertEquals("▶", buffer.get(0, 1).char)
-        assertEquals(checkboxIcon(CheckState.CHECKED, TUI_CHECKBOX_GLYPHS), buffer.get(2, 1).char)
+        assertEquals("▶", buffer.get(0, 1).symbol)
+        assertEquals(TUI_CHECKBOX_GLYPHS.checked, buffer.get(2, 1).symbol)
     }
 }

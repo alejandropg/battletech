@@ -10,8 +10,6 @@ import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 import io.archinaut.battletech.tui.icon.diceRoll
 import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.widget.CheckState
-import io.archinaut.tenter.widget.checkboxIcon
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -150,7 +148,7 @@ internal class TargetsViewTest {
 
         val output = renderToString(view)
 
-        assertTrue(output.contains(checkboxIcon(CheckState.CHECKED, TUI_CHECKBOX_GLYPHS)))
+        assertTrue(output.contains(TUI_CHECKBOX_GLYPHS.checked))
     }
 
     @Test

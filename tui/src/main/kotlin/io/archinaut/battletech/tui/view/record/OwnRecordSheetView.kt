@@ -1,12 +1,13 @@
 package io.archinaut.battletech.tui.view.record
 
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.model.GameMap
 import io.archinaut.battletech.tactical.unit.CombatUnit
 import io.archinaut.battletech.tactical.unit.HeatSource
-import io.archinaut.tenter.view.Columns
-import io.archinaut.tenter.view.Stack
-import io.archinaut.tenter.view.TextCursor
-import io.archinaut.battletech.tui.view.PreparedTextView
+import io.archinaut.tenter.widget.Column
+import io.archinaut.tenter.widget.Columns
+import io.archinaut.tenter.widget.Stack
+import io.archinaut.tenter.widget.RowWriter
 
 /**
  * The maximized record sheet for a unit the viewer owns: every private card — warrior data, the
@@ -18,23 +19,23 @@ internal class OwnRecordSheetView(
     private val unit: CombatUnit,
     private val map: GameMap,
     private val pendingHeat: List<HeatSource>,
-) : PreparedTextView() {
+) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
+    override fun write(content: RowWriter) {
         val upperSections = Columns(
             listOf(
-                Columns.Child(SheetLayout.MECH_DATA_WIDTH, MechDataCard(unit)),
-                Columns.Child(SheetLayout.WARRIOR_DATA_WIDTH, WarriorDataCard(unit)),
-                Columns.Child(SheetLayout.WEAPON_INVENTORY_WIDTH, WeaponInventoryTable(unit)),
+                Column(SheetLayout.MECH_DATA_WIDTH, MechDataCard(unit)),
+                Column(SheetLayout.WARRIOR_DATA_WIDTH, WarriorDataCard(unit)),
+                Column(SheetLayout.WEAPON_INVENTORY_WIDTH, WeaponInventoryTable(unit)),
             ),
         )
         val diagrams = Columns(
             listOf(
-                Columns.Child(
+                Column(
                     SheetLayout.ARMOR_DIAGRAM_WIDTH,
                     LocationDiagram.armor(unit) { !unit.internalStructure.isIntact(it) },
                 ),
-                Columns.Child(
+                Column(
                     SheetLayout.INTERNAL_STRUCTURE_DIAGRAM_WIDTH,
                     LocationDiagram.internalStructure(unit),
                 ),
@@ -49,8 +50,8 @@ internal class OwnRecordSheetView(
         )
         val upperBand = Columns(
             listOf(
-                Columns.Child(SheetLayout.MAIN_CONTENT_WIDTH, mainContent),
-                Columns.Child(SheetLayout.HEAT_WIDTH, HeatLadder(unit, map, pendingHeat)),
+                Column(SheetLayout.MAIN_CONTENT_WIDTH, mainContent),
+                Column(SheetLayout.HEAT_WIDTH, HeatLadder(unit, map, pendingHeat)),
             ),
         )
 

@@ -1,13 +1,12 @@
 package io.archinaut.battletech.tui.setup
 
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.unit.MechModel
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.view.TextCursor
-import io.archinaut.battletech.tui.view.PreparedTextView
+import io.archinaut.tenter.widget.RowWriter
 import io.archinaut.tenter.widget.CheckState
 import io.archinaut.tenter.widget.SelectableRow
-import io.archinaut.tenter.widget.ValueRow
 import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 
 /**
@@ -16,7 +15,7 @@ import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
  * ([MechSelectionMaximizedView]), which shows full stats via its own record-sheet detail pane.
  *
  * [mechFor] is `null` for both of those (the minimized column and the maximized left pane): the
- * count is right-aligned via [SelectableRow.draw]'s own `right` column. Supplying [mechFor] (used
+ * count is right-aligned via [SelectableRow]'s own `right` column. Supplying [mechFor] (used
  * by the NORMAL, unmaximized PLAYER panel) draws a `TON WLK RUN JMP` header and adds four
  * right-aligned stat columns instead — the count moves next to the variant id, in the row's label,
  * so it sits in the same place relative to the variant either way rather than getting pushed past
@@ -24,7 +23,7 @@ import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
  *
  * A stats-mode row's `right` string, and the header's own `right` string, are both always exactly
  * [FIELD_WIDTH] `* 4 + 3` characters (four fixed-width fields, three single-space separators) —
- * that fixed length is what keeps them aligned. [ValueRow.draw] (which both go through) flushes
+ * that fixed length is what keeps them aligned. [RowWriter.writeRow] (which both go through) flushes
  * the *entire* `right` string so its last character lands on the panel's last column; it has no
  * notion of "columns", just one right-anchored string per line. A `right` even one character
  * shorter or longer than its neighbors' would silently shift that row's stat fields out of line
@@ -35,9 +34,9 @@ internal class UnitListView(
     private val counts: (String) -> Int,
     private val cursorIndex: Int,
     private val mechFor: ((String) -> MechModel?)? = null,
-) : PreparedTextView() {
+) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
+    override fun write(content: RowWriter) {
         if (variants.isEmpty()) {
             content.writeLine("No mechs registered", TEXT_PRIMARY_STYLE)
             return
@@ -55,13 +54,14 @@ internal class UnitListView(
             val state = if (count == 0) CheckState.UNCHECKED else CheckState.CHECKED
             val label = if (mechFor == null || count == 0) variant else "$variant$LABEL_COUNT_SEPARATOR$countLabel"
             val right = if (mechFor == null) countLabel else statsBlock(mechFor(variant))
-            SelectableRow.draw(
-                content = content,
-                label = label,
-                checkState = state,
-                cursor = isCursorHere,
-                right = right,
-                glyphs = TUI_CHECKBOX_GLYPHS,
+            content.draw(
+                SelectableRow(
+                    label = label,
+                    checkState = state,
+                    selected = isCursorHere,
+                    right = right,
+                    glyphs = TUI_CHECKBOX_GLYPHS,
+                ),
             )
         }
     }
@@ -81,14 +81,14 @@ internal class UnitListView(
         return values.joinToString(" ") { it.padStart(FIELD_WIDTH) }
     }
 
-    private fun drawStatsHeader(content: TextCursor) {
-        ValueRow.draw(content = content, left = "", right = STATS_HEADER, subLines = emptyList(), color = ChromeRole.TEXT_MUTED)
+    private fun drawStatsHeader(content: RowWriter) {
+        content.writeRow("", STATS_HEADER, Style(ChromeRole.TEXT_MUTED))
     }
 
     private companion object {
         const val FIELD_WIDTH = 3
         const val STATS_HEADER = "TON WLK RUN JMP" // 4 * FIELD_WIDTH + 3 separators = 15 chars, must match statsBlock()'s length
         const val LABEL_COUNT_SEPARATOR = "  "
-        val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
+        val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
     }
 }

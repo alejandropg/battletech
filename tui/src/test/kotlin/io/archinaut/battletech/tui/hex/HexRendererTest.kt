@@ -11,54 +11,52 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.ScreenBuffer
 
 internal class HexRendererTest {
 
     @Test
     fun `renders clear hex border characters`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         // Row 0: "  _____  "
-        assertEquals("_", buffer.get(2, 0).char)
-        assertEquals("_", buffer.get(6, 0).char)
+        assertEquals("_", buffer.get(2, 0).symbol)
+        assertEquals("_", buffer.get(6, 0).symbol)
         // Row 1: " /     \ "
-        assertEquals("/", buffer.get(1, 1).char)
-        assertEquals("\\", buffer.get(7, 1).char)
+        assertEquals("/", buffer.get(1, 1).symbol)
+        assertEquals("\\", buffer.get(7, 1).symbol)
         // Row 2: "/       \"
-        assertEquals("/", buffer.get(0, 2).char)
-        assertEquals("\\", buffer.get(8, 2).char)
+        assertEquals("/", buffer.get(0, 2).symbol)
+        assertEquals("\\", buffer.get(8, 2).symbol)
         // Row 3: "\       /"
-        assertEquals("\\", buffer.get(0, 3).char)
-        assertEquals("/", buffer.get(8, 3).char)
+        assertEquals("\\", buffer.get(0, 3).symbol)
+        assertEquals("/", buffer.get(8, 3).symbol)
         // Row 4: " \_____/ "
-        assertEquals("\\", buffer.get(1, 4).char)
-        assertEquals("_", buffer.get(2, 4).char)
-        assertEquals("/", buffer.get(7, 4).char)
+        assertEquals("\\", buffer.get(1, 4).symbol)
+        assertEquals("_", buffer.get(2, 4).symbol)
+        assertEquals("/", buffer.get(7, 4).symbol)
     }
 
     // ---- terrain fill roles (theme-independent — assert the role, not a resolved color) --------
 
     @Test
     fun `clear hex fills with TERRAIN_CLEAR_BG`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.TERRAIN_CLEAR_BG, buffer.get(4, 3).style.bg)
     }
 
     @Test
     fun `light woods hex fills with TERRAIN_WOODS_LIGHT_BG and icons with TERRAIN_WOODS_LIGHT_ICON`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, buffer.get(4, 3).style.bg)
         assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_ICON, buffer.get(2, 1).style.fg)
@@ -66,10 +64,10 @@ internal class HexRendererTest {
 
     @Test
     fun `heavy woods hex fills with TERRAIN_WOODS_HEAVY_BG and icons with TERRAIN_WOODS_HEAVY_ICON`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.HEAVY_WOODS)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.TERRAIN_WOODS_HEAVY_BG, buffer.get(4, 3).style.bg)
         assertEquals(BoardRole.TERRAIN_WOODS_HEAVY_ICON, buffer.get(2, 1).style.fg)
@@ -77,10 +75,10 @@ internal class HexRendererTest {
 
     @Test
     fun `rough hex fills with TERRAIN_ROUGH_BG and icons with TERRAIN_ROUGH_ICON`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.ROUGH)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.TERRAIN_ROUGH_BG, buffer.get(4, 3).style.bg)
         assertEquals(BoardRole.TERRAIN_ROUGH_ICON, buffer.get(2, 1).style.fg)
@@ -88,10 +86,10 @@ internal class HexRendererTest {
 
     @Test
     fun `shallow water (depth less than or equal to 1) fills with TERRAIN_WATER_SHALLOW_BG`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 1)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.TERRAIN_WATER_SHALLOW_BG, buffer.get(4, 3).style.bg)
         assertEquals(BoardRole.TERRAIN_WATER_ICON, buffer.get(2, 1).style.fg)
@@ -99,10 +97,10 @@ internal class HexRendererTest {
 
     @Test
     fun `deep water (depth 2) fills with TERRAIN_WATER_DEEP_BG`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 2)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.TERRAIN_WATER_DEEP_BG, buffer.get(4, 3).style.bg)
         // The water terrain icon color does not vary with depth — only the fill does.
@@ -111,10 +109,10 @@ internal class HexRendererTest {
 
     @Test
     fun `very deep water (depth greater than or equal to 3) fills with TERRAIN_WATER_VERY_DEEP_BG`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = 3)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.TERRAIN_WATER_VERY_DEEP_BG, buffer.get(4, 3).style.bg)
         assertEquals(BoardRole.TERRAIN_WATER_ICON, buffer.get(2, 1).style.fg)
@@ -125,12 +123,12 @@ internal class HexRendererTest {
         val codePoints = 0xF0F0F..0xF0F17
 
         for ((elevation, codePoint) in (1..9).zip(codePoints)) {
-            val buffer = ScreenBuffer(10, 6)
+            val buffer = Canvas.offscreen(10, 6)
             val hex = Hex(HexCoordinates(0, 0), elevation = elevation)
 
-            HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+            HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-            assertEquals(String(Character.toChars(codePoint)), buffer.get(6, 1).char, "elevation=$elevation")
+            assertEquals(String(Character.toChars(codePoint)), buffer.get(6, 1).symbol, "elevation=$elevation")
         }
     }
 
@@ -149,10 +147,10 @@ internal class HexRendererTest {
         )
 
         for ((depth, codePoint) in (1..9).zip(codePoints)) {
-            val buffer = ScreenBuffer(10, 6)
+            val buffer = Canvas.offscreen(10, 6)
             val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, depth = depth)
 
-            HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+            HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
             val badge = buffer.get(6, 1)
             val expectedBg = when {
@@ -160,27 +158,27 @@ internal class HexRendererTest {
                 depth == 2 -> BoardRole.TERRAIN_WATER_DEEP_BG
                 else -> BoardRole.TERRAIN_WATER_VERY_DEEP_BG
             }
-            assertEquals(String(Character.toChars(codePoint)), badge.char, "depth=$depth")
+            assertEquals(String(Character.toChars(codePoint)), badge.symbol, "depth=$depth")
             assertEquals(expectedBg, badge.style.bg, "depth=$depth")
         }
     }
 
     @Test
     fun `elevation badge is rendered instead of depth badge when both are present`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.WATER, elevation = 2, depth = 3)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals(String(Character.toChars(0xF0F10)), buffer.get(6, 1).char)
+        assertEquals(String(Character.toChars(0xF0F10)), buffer.get(6, 1).symbol)
     }
 
     @Test
     fun `zero elevation and depth render no badge — content stays the plain terrain fill`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.TERRAIN_CLEAR_BG, buffer.get(6, 1).style.bg)
     }
@@ -194,8 +192,8 @@ internal class HexRendererTest {
             Hex(HexCoordinates(0, 0), terrain = Terrain.ROUGH, elevation = 2) to BoardRole.TERRAIN_ROUGH_BG,
         )
         for ((hex, expectedFill) in cases) {
-            val buffer = ScreenBuffer(10, 6)
-            HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+            val buffer = Canvas.offscreen(10, 6)
+            HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
             // Content cell away from the badge column (x+6) — the fill, not the badge.
             assertEquals(expectedFill, buffer.get(4, 3).style.bg, "terrain=${hex.terrain} elevation=${hex.elevation}")
         }
@@ -203,10 +201,10 @@ internal class HexRendererTest {
 
     @Test
     fun `a CLEAR hex with no elevation still fills with TERRAIN_CLEAR_BG`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.CLEAR)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.TERRAIN_CLEAR_BG, buffer.get(4, 3).style.bg)
     }
@@ -218,10 +216,10 @@ internal class HexRendererTest {
         // material terrain, where elevation only tints the single badge cell.
         val cases = listOf(1 to BoardRole.ELEVATION_1_BADGE_BG, 2 to BoardRole.ELEVATION_2_BADGE_BG, 3 to BoardRole.ELEVATION_HIGH_BADGE_BG)
         for ((elevation, expectedFill) in cases) {
-            val buffer = ScreenBuffer(10, 6)
+            val buffer = Canvas.offscreen(10, 6)
             val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.CLEAR, elevation = elevation)
 
-            HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+            HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
             assertEquals(expectedFill, buffer.get(4, 3).style.bg, "content cell, elevation=$elevation")
             assertEquals(expectedFill, buffer.get(0, 2).style.bg, "border cell, elevation=$elevation")
@@ -231,10 +229,10 @@ internal class HexRendererTest {
 
     @Test
     fun `elevation 1 badge uses ELEVATION_1_BADGE_BG and ELEVATION_BADGE_FG at the badge cell`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), elevation = 1)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         val badge = buffer.get(6, 1)
         assertEquals(BoardRole.ELEVATION_1_BADGE_BG, badge.style.bg)
@@ -243,10 +241,10 @@ internal class HexRendererTest {
 
     @Test
     fun `elevation 2 badge uses ELEVATION_2_BADGE_BG`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), elevation = 2)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.ELEVATION_2_BADGE_BG, buffer.get(6, 1).style.bg)
     }
@@ -254,10 +252,10 @@ internal class HexRendererTest {
     @Test
     fun `elevation 3 and up badge uses ELEVATION_HIGH_BADGE_BG`() {
         for (elevation in listOf(3, 5, 9)) {
-            val buffer = ScreenBuffer(10, 6)
+            val buffer = Canvas.offscreen(10, 6)
             val hex = Hex(HexCoordinates(0, 0), elevation = elevation)
 
-            HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+            HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
             assertEquals(BoardRole.ELEVATION_HIGH_BADGE_BG, buffer.get(6, 1).style.bg, "elevation=$elevation")
         }
@@ -265,10 +263,10 @@ internal class HexRendererTest {
 
     @Test
     fun `the badge replaces the terrain fill only for its own cell`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS, elevation = 1)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.ELEVATION_1_BADGE_BG, buffer.get(6, 1).style.bg, "badge cell")
         assertNotEquals(BoardRole.ELEVATION_1_BADGE_BG, buffer.get(4, 3).style.bg, "content cell keeps the terrain fill")
@@ -279,60 +277,60 @@ internal class HexRendererTest {
 
     @Test
     fun `border glyphs carry the terrain background tint`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        assertEquals("/", buffer.get(0, 2).char) // left border glyph
+        assertEquals("/", buffer.get(0, 2).symbol) // left border glyph
         assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, buffer.get(0, 2).style.bg)
     }
 
     @Test
     fun `hex does not tint its own top edge but tints its bottom edge`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        // Top edge (row 0) belongs to the hex above — inherited, so DEFAULT here.
-        assertEquals(ChromeRole.DEFAULT, buffer.get(2, 0).style.bg)
+        // Top edge (row 0) belongs to the hex above — this hex leaves its background unset.
+        assertEquals(null, buffer.get(2, 0).style.bg)
         // Bottom edge (row 4) is this hex's own — tinted.
         assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, buffer.get(2, 4).style.bg)
     }
 
     @Test
     fun `top edge inherits the background of the hex above`() {
-        val buffer = ScreenBuffer(10, 10)
+        val buffer = Canvas.offscreen(10, 10)
         val woods = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
         val clear = Hex(HexCoordinates(0, 1))
 
         // The clear hex one ROW_STRIDE down shares its top edge (row 0 at y=4) with the woods
         // hex's bottom edge (row 4 at y=4). Drawn after, it must not overwrite the woods tint.
-        HexRenderer.render(Canvas.of(buffer), 0, 0, woods, HexHighlight.NONE)
-        HexRenderer.render(Canvas.of(buffer), 0, HexGeometry.ROW_STRIDE, clear, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, woods, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, HexGeometry.ROW_STRIDE, clear, HexHighlight.NONE)
 
         assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, buffer.get(2, HexGeometry.ROW_STRIDE).style.bg)
     }
 
     @Test
     fun `reachability dot inherits the terrain background`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.REACHABLE_WALK)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.REACHABLE_WALK)
 
-        assertEquals(".", buffer.get(4, 2).char)
+        assertEquals(".", buffer.get(4, 2).symbol)
         assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
     }
 
     @Test
     fun `facing arrows inherit the terrain background`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        HexRenderer.renderFacingArrows(Canvas.of(buffer), 0, 0, setOf(HexDirection.N), BoardRole.MOVE_WALK)
+        HexRenderer.renderFacingArrows(buffer, 0, 0, setOf(HexDirection.N), BoardRole.MOVE_WALK)
 
         // N arrow sits at (x+4, y+2)
         assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
@@ -340,13 +338,13 @@ internal class HexRendererTest {
 
     @Test
     fun `facing keys inherit the terrain background and render in BOARD_ACTIVE`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0), terrain = Terrain.LIGHT_WOODS)
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
-        HexRenderer.renderFacingKeys(Canvas.of(buffer), 0, 0, setOf(HexDirection.N))
+        HexRenderer.renderFacingKeys(buffer, 0, 0, setOf(HexDirection.N))
 
-        assertEquals("w", buffer.get(4, 2).char)
+        assertEquals("w", buffer.get(4, 2).symbol)
         assertEquals(BoardRole.BOARD_ACTIVE, buffer.get(4, 2).style.fg)
         assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, buffer.get(4, 2).style.bg)
     }
@@ -355,10 +353,10 @@ internal class HexRendererTest {
 
     @Test
     fun `cursor highlight changes border color to BOARD_ACTIVE`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.CURSOR)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.CURSOR)
 
         assertEquals(BoardRole.BOARD_ACTIVE, buffer.get(1, 1).style.fg) // '/' border
         assertEquals(BoardRole.BOARD_ACTIVE, buffer.get(7, 1).style.fg) // '\' border
@@ -367,96 +365,96 @@ internal class HexRendererTest {
 
     @Test
     fun `ordinary hex border uses BOARD_BORDER`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.NONE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.NONE)
 
         assertEquals(BoardRole.BOARD_BORDER, buffer.get(1, 1).style.fg)
     }
 
     @Test
     fun `reachable walk highlight shows a MOVE_WALK dot at the overlay cell`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.REACHABLE_WALK)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.REACHABLE_WALK)
 
-        assertEquals(".", buffer.get(4, 2).char)
+        assertEquals(".", buffer.get(4, 2).symbol)
         assertEquals(BoardRole.MOVE_WALK, buffer.get(4, 2).style.fg)
     }
 
     @Test
     fun `reachable run highlight shows a MOVE_RUN dot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.REACHABLE_RUN)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.REACHABLE_RUN)
 
-        assertEquals(".", buffer.get(4, 2).char)
+        assertEquals(".", buffer.get(4, 2).symbol)
         assertEquals(BoardRole.MOVE_RUN, buffer.get(4, 2).style.fg)
     }
 
     @Test
     fun `reachable jump highlight shows a MOVE_JUMP dot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.REACHABLE_JUMP)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.REACHABLE_JUMP)
 
-        assertEquals(".", buffer.get(4, 2).char)
+        assertEquals(".", buffer.get(4, 2).symbol)
         assertEquals(BoardRole.MOVE_JUMP, buffer.get(4, 2).style.fg)
     }
 
     @Test
     fun `path highlight without mode shows star at the movement overlay cell`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.PATH)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH)
 
-        assertEquals("*", buffer.get(4, 2).char)
+        assertEquals("*", buffer.get(4, 2).symbol)
         assertEquals(BoardRole.BOARD_ACTIVE, buffer.get(4, 2).style.fg)
     }
 
     @Test
     fun `path highlight with WALK mode shows walk icon`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.PATH, MovementMode.WALK)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH, MovementMode.WALK)
 
-        assertEquals(String(Character.toChars(0xF0583)), buffer.get(4, 2).char)
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(4, 2).symbol)
     }
 
     @Test
     fun `path highlight with RUN mode shows run icon`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.PATH, MovementMode.RUN)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH, MovementMode.RUN)
 
-        assertEquals(String(Character.toChars(0xF046E)), buffer.get(4, 2).char)
+        assertEquals(String(Character.toChars(0xF046E)), buffer.get(4, 2).symbol)
     }
 
     @Test
     fun `path highlight with JUMP mode shows jump icon`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.PATH, MovementMode.JUMP)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.PATH, MovementMode.JUMP)
 
-        assertEquals(String(Character.toChars(0xF14DE)), buffer.get(4, 2).char)
+        assertEquals(String(Character.toChars(0xF14DE)), buffer.get(4, 2).symbol)
     }
 
     @Test
     fun `attack range highlight shows an ATTACK_RANGE dot at the movement overlay cell`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.ATTACK_RANGE)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.ATTACK_RANGE)
 
-        assertEquals(".", buffer.get(4, 2).char)
+        assertEquals(".", buffer.get(4, 2).symbol)
         assertEquals(BoardRole.ATTACK_RANGE, buffer.get(4, 2).style.fg)
     }
 
@@ -464,39 +462,39 @@ internal class HexRendererTest {
 
     @Test
     fun `line of sight highlight shows a LINE_OF_SIGHT dot at the top-center marker cell`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.LINE_OF_SIGHT)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.LINE_OF_SIGHT)
 
-        assertEquals(".", buffer.get(4, 1).char)
+        assertEquals(".", buffer.get(4, 1).symbol)
         assertEquals(BoardRole.LINE_OF_SIGHT, buffer.get(4, 1).style.fg)
         // Not at the movement-overlay cell — LOS and movement overlays never collide.
-        assertNotEquals(".", buffer.get(4, 2).char)
+        assertNotEquals(".", buffer.get(4, 2).symbol)
     }
 
     @Test
     fun `line of sight selected highlight shows the target icon at the top-center marker cell`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.LINE_OF_SIGHT_SELECTED)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.LINE_OF_SIGHT_SELECTED)
 
-        assertEquals(targetIcon(), buffer.get(4, 1).char)
+        assertEquals(targetIcon(), buffer.get(4, 1).symbol)
         assertEquals(BoardRole.TARGET_SELECTED, buffer.get(4, 1).style.fg)
     }
 
     @Test
     fun `a unit rendered on the same hex cannot overwrite the top-center LOS marker`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
         val hex = Hex(HexCoordinates(0, 0))
 
-        HexRenderer.render(Canvas.of(buffer), 0, 0, hex, HexHighlight.LINE_OF_SIGHT)
+        HexRenderer.render(buffer, 0, 0, hex, HexHighlight.LINE_OF_SIGHT)
         // UnitRenderer only ever writes to rows 2 and 3 (id row, facing-arrow row) — never row 1,
         // where the LOS/target marker lives — so the marker must survive a unit drawn on top.
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1)
 
-        assertEquals(".", buffer.get(4, 1).char, "LOS marker must still be present after the unit renders")
+        assertEquals(".", buffer.get(4, 1).symbol, "LOS marker must still be present after the unit renders")
         assertEquals(BoardRole.LINE_OF_SIGHT, buffer.get(4, 1).style.fg)
     }
 }

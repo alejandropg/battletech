@@ -1,9 +1,10 @@
 package io.archinaut.battletech.tui.animation
 
+import io.archinaut.tenter.palette.PaletteColor
 import io.archinaut.tenter.animation.Animation
-import io.archinaut.tenter.animation.AnimationSize
+import io.archinaut.tenter.screen.Size
 import io.archinaut.tenter.animation.GlyphGrid
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.min
@@ -24,7 +25,7 @@ internal class MissileSalvoAnimation(
     private val originY: Double = DEFAULT_ORIGIN_Y,
     random: Random = Random.Default,
 ) : Animation {
-    override val size: AnimationSize = AnimationSize(width = 70, height = 20)
+    override val size: Size = Size(width = 70, height = 20)
     override val frameCount: Int = CYCLE_FRAMES
     override val frameDuration: Duration = ANIMATION_DURATION / frameCount
 
@@ -66,17 +67,17 @@ private val MISSILE_PRIORITY: Map<Char, Int> = mapOf(
 
 private fun missilePriority(char: Char): Int = MISSILE_PRIORITY[char] ?: 0
 
-private val MISSILE_COLORS: Map<Char, AnimationColor> = mapOf(
+private val MISSILE_COLORS: Map<Char, PaletteColor> = mapOf(
     '.' to ANIMATION_GRAY, ',' to ANIMATION_GRAY, ':' to ANIMATION_CYAN,
     '-' to ANIMATION_BRIGHT, '|' to ANIMATION_BRIGHT, '/' to ANIMATION_BRIGHT, '\\' to ANIMATION_BRIGHT,
     '~' to ANIMATION_BRIGHT_CYAN, '+' to ANIMATION_WARNING, '*' to ANIMATION_BRIGHT,
     'o' to ANIMATION_WARNING, 'O' to ANIMATION_DANGER, '@' to ANIMATION_BRIGHT, '#' to ANIMATION_BRIGHT,
 )
 
-// See laserStyle: unmapped (i.e. space) falls back to a FixedColorRole so no cell ever resolves
+// See laserStyle: unmapped (i.e. space) falls back to a fixed PaletteColor so no cell ever resolves
 // through the loaded theme.
-private fun missileStyle(char: Char): Cell.Style =
-    Cell.Style(fg = MISSILE_COLORS[char] ?: ANIMATION_GRAY, bg = ANIMATION_BACKGROUND)
+private fun missileStyle(char: Char): Style =
+    Style(fg = MISSILE_COLORS[char] ?: ANIMATION_GRAY, bg = ANIMATION_BACKGROUND)
 
 /**
  * Always builds [total] deterministic-per-[random] curves; the caller slices the prefix it wants

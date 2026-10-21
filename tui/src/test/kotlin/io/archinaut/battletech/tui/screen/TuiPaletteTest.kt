@@ -285,7 +285,7 @@ internal class TuiPaletteTest {
                 .isGreaterThanOrEqualTo(4.5)
 
             for (background in listOf(HeatScaleRole.HEATING_BG, HeatScaleRole.COOLING_BG)) {
-                for (foreground in listOf(ChromeRole.TEXT_MUTED, ChromeRole.DRAFT)) {
+                for (foreground in listOf(ChromeRole.TEXT_MUTED, UiRole.DRAFT)) {
                     val ratio = contrast(
                         luminance(theme.foreground(foreground)),
                         luminance(theme.background(background)),

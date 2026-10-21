@@ -45,10 +45,10 @@ internal class CriticalHitTableTest {
 
         // Slot 0 (line "1. AC/20", right under the header) was destroyed above.
         assertEquals(BoardRole.DESTROYED, buffer.get(col, headerRow + 1).style.fg)
-        assertTrue(buffer.get(col, headerRow + 1).style.strikethrough)
+        assertTrue(buffer.get(col, headerRow + 1).style.strikethrough == true)
         // Slot 1 ("2. AC/20") was not.
         assertEquals(ChromeRole.TEXT_PRIMARY, buffer.get(col, headerRow + 2).style.fg)
-        assertTrue(!buffer.get(col, headerRow + 2).style.strikethrough)
+        assertTrue(buffer.get(col, headerRow + 2).style.strikethrough != true)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.battletech.tui.screen.UiRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import io.archinaut.tenter.palette.ChromeRole
@@ -49,8 +50,8 @@ internal class HeatPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-1 MP" to ChromeRole.DRAFT,
-                "+1 To-Hit" to ChromeRole.DRAFT,
+                "-1 MP" to UiRole.DRAFT,
+                "+1 To-Hit" to UiRole.DRAFT,
             ),
             lines,
         )
@@ -64,10 +65,10 @@ internal class HeatPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-3 MP" to ChromeRole.DRAFT,
-                "+2 To-Hit" to ChromeRole.DRAFT,
-                "Shutdown 4+" to ChromeRole.DRAFT,
-                "Ammo 4+" to ChromeRole.DRAFT,
+                "-3 MP" to UiRole.DRAFT,
+                "+2 To-Hit" to UiRole.DRAFT,
+                "Shutdown 4+" to UiRole.DRAFT,
+                "Ammo 4+" to UiRole.DRAFT,
             ),
             lines,
         )
@@ -95,10 +96,10 @@ internal class HeatPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-3 MP" to ChromeRole.DRAFT,
-                "+2 To-Hit" to ChromeRole.DRAFT,
-                "Shutdown 6+" to ChromeRole.DRAFT,
-                "Ammo 4+" to ChromeRole.DRAFT,
+                "-3 MP" to UiRole.DRAFT,
+                "+2 To-Hit" to UiRole.DRAFT,
+                "Shutdown 6+" to UiRole.DRAFT,
+                "Ammo 4+" to UiRole.DRAFT,
             ),
             lines,
         )
@@ -111,10 +112,10 @@ internal class HeatPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-5 MP" to ChromeRole.DRAFT,
-                "+4 To-Hit" to ChromeRole.DRAFT,
-                "Shutdown AUTO" to ChromeRole.DRAFT,
-                "Ammo 10+" to ChromeRole.DRAFT,
+                "-5 MP" to UiRole.DRAFT,
+                "+4 To-Hit" to UiRole.DRAFT,
+                "Shutdown AUTO" to UiRole.DRAFT,
+                "Ammo 10+" to UiRole.DRAFT,
             ),
             lines,
         )
@@ -142,10 +143,10 @@ internal class HeatPenaltiesTest {
 
         assertEquals(
             listOf(
-                "-3 MP" to ChromeRole.DRAFT,
-                "+2 To-Hit" to ChromeRole.DRAFT,
-                "Shutdown 4+" to ChromeRole.DRAFT,
-                "Ammo 4+" to ChromeRole.DRAFT,
+                "-3 MP" to UiRole.DRAFT,
+                "+2 To-Hit" to UiRole.DRAFT,
+                "Shutdown 4+" to UiRole.DRAFT,
+                "Ammo 4+" to UiRole.DRAFT,
             ),
             lines,
         )

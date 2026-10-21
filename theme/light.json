@@ -11,10 +11,12 @@
     "SUCCESS": "#245A27",
     "WARNING": "#604A00",
     "DANGER": "#8F1827",
-    "DRAFT": "#59636C",
     "DISABLED": "#737B82",
     "PANEL_BORDER": "#5A6169",
     "PANEL_BORDER_FOCUSED": "#007B00"
+  },
+  "ui": {
+    "DRAFT": "#59636C"
   },
   "heatScale": {
     "CURRENT_BG": "#F1E0AE",

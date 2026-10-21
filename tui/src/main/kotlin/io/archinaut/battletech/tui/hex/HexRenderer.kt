@@ -16,6 +16,7 @@ import io.archinaut.battletech.tui.icon.terrainIcon
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.ChromeRole
 
 public object HexRenderer {
@@ -51,7 +52,7 @@ public object HexRenderer {
         }
         for (direction in facings) {
             val (dx, dy) = facingPosition(direction)
-            canvas.setFg(x + dx, y + dy, facingIcon(direction), color)
+            canvas.setString(x + dx, y + dy, facingIcon(direction), Style(fg = color))
         }
     }
 
@@ -64,7 +65,7 @@ public object HexRenderer {
     public fun renderFacingKeys(canvas: Canvas, x: Int, y: Int, facings: Set<HexDirection>) {
         for (direction in facings) {
             val (dx, dy) = facingPosition(direction)
-            canvas.setFg(x + dx, y + dy, facingKey(direction), BoardRole.BOARD_ACTIVE)
+            canvas.setString(x + dx, y + dy, facingKey(direction), Style(fg = BoardRole.BOARD_ACTIVE))
         }
     }
 
@@ -95,7 +96,7 @@ public object HexRenderer {
 
     /** Movement/range/path overlays: the safe bottom-center cell, clear of terrain icon and elevation badge. */
     private fun renderOverlayChar(canvas: Canvas, x: Int, y: Int, char: String, color: BoardRole) {
-        canvas.setFg(x + 4, y + 2, char, color)
+        canvas.setString(x + 4, y + 2, char, Style(fg = color))
     }
 
     /**
@@ -105,7 +106,7 @@ public object HexRenderer {
      * overwrite either.
      */
     private fun renderMarker(canvas: Canvas, x: Int, y: Int, char: String, color: BoardRole) {
-        canvas.setFg(x + 4, y + 1, char, color)
+        canvas.setString(x + 4, y + 1, char, Style(fg = color))
     }
 
     /**
@@ -137,9 +138,9 @@ public object HexRenderer {
         // top edge belongs to the upper hex. Tinting it would paint a coloured band protruding
         // above the hexagon.
         for (i in 2..6) {
-            canvas.setFg(x + i, y, "_", fg)
+            canvas.setString(x + i, y, "_", Style(fg = fg))
         }
-        val style = Cell.Style(fg, bg)
+        val style = Style(fg, bg)
         // Row 1: " /     \ "
         canvas.set(x + 1, y + 1, Cell("/", style))
         canvas.set(x + 7, y + 1, Cell("\\", style))
@@ -158,7 +159,7 @@ public object HexRenderer {
     }
 
     private fun renderContent(canvas: Canvas, x: Int, y: Int, bg: BoardRole) {
-        val style = Cell.Style(ChromeRole.DEFAULT, bg)
+        val style = Style(ChromeRole.DEFAULT, bg)
         val cell = Cell(style = style)
         // Row 1 content (narrow): x+2..x+6
         for (i in 2..6) {
@@ -182,7 +183,7 @@ public object HexRenderer {
             Terrain.WATER       -> BoardRole.TERRAIN_WATER_ICON
             Terrain.ROUGH       -> BoardRole.TERRAIN_ROUGH_ICON
         }
-        canvas.set(x + 2, y + 1, Cell(terrainIcon(terrain), Cell.Style(color, bg)))
+        canvas.set(x + 2, y + 1, Cell(terrainIcon(terrain), Style(color, bg)))
     }
 
     /**
@@ -194,10 +195,10 @@ public object HexRenderer {
      */
     private fun renderLevelBadge(canvas: Canvas, x: Int, y: Int, elevation: Int, depth: Int) {
         if (elevation != 0) {
-            val style = Cell.Style(BoardRole.ELEVATION_BADGE_FG, elevationBadgeBg(elevation))
+            val style = Style(BoardRole.ELEVATION_BADGE_FG, elevationBadgeBg(elevation))
             canvas.set(x + 6, y + 1, Cell(elevationIcon(elevation), style))
         } else if (depth != 0) {
-            canvas.setFg(x + 6, y + 1, depthIcon(depth), BoardRole.ELEVATION_BADGE_FG)
+            canvas.setString(x + 6, y + 1, depthIcon(depth), Style(fg = BoardRole.ELEVATION_BADGE_FG))
         }
     }
 

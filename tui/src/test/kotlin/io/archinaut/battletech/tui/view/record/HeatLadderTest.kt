@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.view.record
 
+import io.archinaut.battletech.tui.screen.UiRole
 import io.archinaut.battletech.tactical.unit.HeatSink
 import io.archinaut.battletech.tactical.unit.HeatSinkType
 import io.archinaut.battletech.tactical.unit.HeatSource
@@ -10,7 +11,7 @@ import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
 import io.archinaut.tenter.palette.ChromeRole
 import io.archinaut.tenter.palette.ColorRole
-import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -20,9 +21,10 @@ internal class HeatLadderTest {
 
     private fun rowForHeat(headerRow: Int, heat: Int): Int = headerRow + 1 + (30 - heat)
 
-    private fun assertRowBackground(buffer: ScreenBuffer, row: Int, expected: ColorRole) {
+    /** An unset background renders as the default one, so it counts as [ChromeRole.DEFAULT]. */
+    private fun assertRowBackground(buffer: Canvas, row: Int, expected: ColorRole) {
         for (column in 0 until buffer.width) {
-            assertEquals(expected, buffer.get(column, row).style.bg, "column $column on row $row")
+            assertEquals(expected, buffer.get(column, row).style.bg ?: ChromeRole.DEFAULT, "column $column on row $row")
         }
     }
 
@@ -42,7 +44,7 @@ internal class HeatLadderTest {
 
         val projectedRow = rowForHeat(headerRow, 0)
         assertTrue(buffer.line(projectedRow).contains("▶"))
-        assertEquals(ChromeRole.DRAFT, buffer.get(0, projectedRow).style.fg)
+        assertEquals(UiRole.DRAFT, buffer.get(0, projectedRow).style.fg)
         assertRowBackground(buffer, projectedRow, HeatScaleRole.COOLING_BG)
         assertRowBackground(buffer, rowForHeat(headerRow, 5), HeatScaleRole.COOLING_BG)
         assertEquals(ChromeRole.TEXT_MUTED, buffer.get(0, rowForHeat(headerRow, 5)).style.fg)
@@ -68,7 +70,7 @@ internal class HeatLadderTest {
             assertRowBackground(buffer, rowForHeat(headerRow, heat), HeatScaleRole.HEATING_BG)
         }
         assertEquals(ChromeRole.TEXT_MUTED, buffer.get(0, rowForHeat(headerRow, 7)).style.fg)
-        assertEquals(ChromeRole.DRAFT, buffer.get(0, rowForHeat(headerRow, 10)).style.fg)
+        assertEquals(UiRole.DRAFT, buffer.get(0, rowForHeat(headerRow, 10)).style.fg)
         assertRowBackground(buffer, rowForHeat(headerRow, 4), ChromeRole.DEFAULT)
         assertRowBackground(buffer, rowForHeat(headerRow, 11), ChromeRole.DEFAULT)
     }

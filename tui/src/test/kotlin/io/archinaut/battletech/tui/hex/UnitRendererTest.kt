@@ -1,12 +1,11 @@
 package io.archinaut.battletech.tui.hex
 
+import io.archinaut.battletech.tui.screen.UiRole
 import io.archinaut.battletech.tactical.model.HexDirection
 import io.archinaut.battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.ScreenBuffer
 
 internal class UnitRendererTest {
 
@@ -28,131 +27,131 @@ internal class UnitRendererTest {
 
     @Test
     fun `renders unit id at hex center`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1)
 
-        assertEquals("A", buffer.get(4, 3).char)
-        assertEquals("1", buffer.get(5, 3).char)
+        assertEquals("A", buffer.get(4, 3).symbol)
+        assertEquals("1", buffer.get(5, 3).symbol)
         assertEquals(BoardRole.PLAYER_1, buffer.get(4, 3).style.fg)
         assertEquals(BoardRole.PLAYER_1, buffer.get(5, 3).style.fg)
     }
 
     @Test
     fun `renders only the chars present when id is shorter than 2 chars`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A", HexDirection.N, BoardRole.PLAYER_1)
+        UnitRenderer.render(buffer, 0, 0, "A", HexDirection.N, BoardRole.PLAYER_1)
 
-        assertEquals("A", buffer.get(4, 3).char)
-        assertEquals(" ", buffer.get(5, 3).char)
+        assertEquals("A", buffer.get(4, 3).symbol)
+        assertEquals(" ", buffer.get(5, 3).symbol)
     }
 
     @Test
     fun `takes at most 2 chars from a longer id`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "ABC", HexDirection.N, BoardRole.PLAYER_1)
+        UnitRenderer.render(buffer, 0, 0, "ABC", HexDirection.N, BoardRole.PLAYER_1)
 
-        assertEquals("A", buffer.get(4, 3).char)
-        assertEquals("B", buffer.get(5, 3).char)
-        assertEquals(" ", buffer.get(6, 3).char)
+        assertEquals("A", buffer.get(4, 3).symbol)
+        assertEquals("B", buffer.get(5, 3).symbol)
+        assertEquals(" ", buffer.get(6, 3).symbol)
     }
 
     @Test
     fun `renders destroyed marker left of id when destroyed and id row is not crowded`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, isDestroyed = true)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, isDestroyed = true)
 
-        assertEquals("A", buffer.get(4, 3).char)
-        assertEquals("1", buffer.get(5, 3).char)
-        assertEquals(ICON_ROBOT_DEAD, buffer.get(3, 3).char)
+        assertEquals("A", buffer.get(4, 3).symbol)
+        assertEquals("1", buffer.get(5, 3).symbol)
+        assertEquals(ICON_ROBOT_DEAD, buffer.get(3, 3).symbol)
         assertEquals(BoardRole.PLAYER_1, buffer.get(3, 3).style.fg)
     }
 
     @Test
     fun `renders north facing arrow`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1)
 
-        assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
+        assertEquals(ICON_FACING_N, buffer.get(4, 2).symbol)
     }
 
     @Test
     fun `renders south facing arrow`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.S, BoardRole.PLAYER_1)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.S, BoardRole.PLAYER_1)
 
-        assertEquals(ICON_FACING_S, buffer.get(4, 3).char)
-        assertEquals("A", buffer.get(4, 2).char)
-        assertEquals("1", buffer.get(5, 2).char)
+        assertEquals(ICON_FACING_S, buffer.get(4, 3).symbol)
+        assertEquals("A", buffer.get(4, 2).symbol)
+        assertEquals("1", buffer.get(5, 2).symbol)
     }
 
     @Test
     fun `renders northeast facing arrow`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NE, BoardRole.PLAYER_1)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.NE, BoardRole.PLAYER_1)
 
-        assertEquals(ICON_FACING_NE, buffer.get(5, 2).char)
+        assertEquals(ICON_FACING_NE, buffer.get(5, 2).symbol)
     }
 
     @Test
     fun `renders southeast facing arrow`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SE, BoardRole.PLAYER_1)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.SE, BoardRole.PLAYER_1)
 
-        assertEquals(ICON_FACING_SE, buffer.get(5, 3).char)
-        assertEquals("A", buffer.get(4, 2).char)
+        assertEquals(ICON_FACING_SE, buffer.get(5, 3).symbol)
+        assertEquals("A", buffer.get(4, 2).symbol)
     }
 
     @Test
     fun `renders southwest facing arrow`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SW, BoardRole.PLAYER_1)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.SW, BoardRole.PLAYER_1)
 
-        assertEquals(ICON_FACING_SW, buffer.get(3, 3).char)
-        assertEquals("A", buffer.get(4, 2).char)
+        assertEquals(ICON_FACING_SW, buffer.get(3, 3).symbol)
+        assertEquals("A", buffer.get(4, 2).symbol)
     }
 
     @Test
     fun `renders northwest facing arrow`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, BoardRole.PLAYER_1)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.NW, BoardRole.PLAYER_1)
 
-        assertEquals(ICON_FACING_NW, buffer.get(3, 2).char)
+        assertEquals(ICON_FACING_NW, buffer.get(3, 2).symbol)
     }
 
     @Test
     fun `no torso arrow when torso equals leg facing`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, torsoFacing = HexDirection.N)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, torsoFacing = HexDirection.N)
 
         // No extra arrow should be rendered - just the normal facing arrow at (4,2)
-        assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
+        assertEquals(ICON_FACING_N, buffer.get(4, 2).symbol)
         // Position 5,2 should be empty (no torso arrow)
-        assertEquals(" ", buffer.get(5, 2).char)
+        assertEquals(" ", buffer.get(5, 2).symbol)
     }
 
     @Test
     fun `torso arrow uses torsoColor when given, independent of unit color`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
         UnitRenderer.render(
-            Canvas.of(buffer), 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1,
+            buffer, 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1,
             torsoFacing = HexDirection.NE,
-            torsoColor = ChromeRole.DRAFT,
+            torsoColor = UiRole.DRAFT,
         )
 
-        assertEquals(ICON_TORSO_NE, buffer.get(5, 2).char)
-        assertEquals(ChromeRole.DRAFT, buffer.get(5, 2).style.fg)
+        assertEquals(ICON_TORSO_NE, buffer.get(5, 2).symbol)
+        assertEquals(UiRole.DRAFT, buffer.get(5, 2).style.fg)
         // Id and leg-facing arrow stay in the unit color.
         assertEquals(BoardRole.PLAYER_1, buffer.get(4, 3).style.fg)
         assertEquals(BoardRole.PLAYER_1, buffer.get(4, 2).style.fg)
@@ -160,131 +159,131 @@ internal class UnitRendererTest {
 
     @Test
     fun `torso arrow defaults to unit color when torsoColor is omitted`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, torsoFacing = HexDirection.NE)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, torsoFacing = HexDirection.NE)
 
         assertEquals(BoardRole.PLAYER_1, buffer.get(5, 2).style.fg)
     }
 
     @Test
     fun `clockwise twist with N legs places torso arrow at NE slot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, torsoFacing = HexDirection.NE)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, torsoFacing = HexDirection.NE)
 
-        assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
-        assertEquals(ICON_TORSO_NE, buffer.get(5, 2).char)
+        assertEquals(ICON_FACING_N, buffer.get(4, 2).symbol)
+        assertEquals(ICON_TORSO_NE, buffer.get(5, 2).symbol)
     }
 
     @Test
     fun `counterclockwise twist with N legs places torso arrow at NW slot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, torsoFacing = HexDirection.NW)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, torsoFacing = HexDirection.NW)
 
-        assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
-        assertEquals(ICON_TORSO_NW, buffer.get(3, 2).char)
+        assertEquals(ICON_FACING_N, buffer.get(4, 2).symbol)
+        assertEquals(ICON_TORSO_NW, buffer.get(3, 2).symbol)
     }
 
     @Test
     fun `clockwise twist with NE legs places torso arrow at SE slot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NE, BoardRole.PLAYER_1, torsoFacing = HexDirection.SE)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.NE, BoardRole.PLAYER_1, torsoFacing = HexDirection.SE)
 
-        assertEquals(ICON_FACING_NE, buffer.get(5, 2).char)
-        assertEquals(ICON_TORSO_SE, buffer.get(5, 3).char)
+        assertEquals(ICON_FACING_NE, buffer.get(5, 2).symbol)
+        assertEquals(ICON_TORSO_SE, buffer.get(5, 3).symbol)
     }
 
     @Test
     fun `counterclockwise twist with NE legs places torso arrow at N slot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NE, BoardRole.PLAYER_1, torsoFacing = HexDirection.N)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.NE, BoardRole.PLAYER_1, torsoFacing = HexDirection.N)
 
-        assertEquals(ICON_FACING_NE, buffer.get(5, 2).char)
-        assertEquals(ICON_TORSO_N, buffer.get(4, 2).char)
+        assertEquals(ICON_FACING_NE, buffer.get(5, 2).symbol)
+        assertEquals(ICON_TORSO_N, buffer.get(4, 2).symbol)
     }
 
     @Test
     fun `clockwise twist with SE legs places torso arrow at S slot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SE, BoardRole.PLAYER_1, torsoFacing = HexDirection.S)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.SE, BoardRole.PLAYER_1, torsoFacing = HexDirection.S)
 
-        assertEquals(ICON_FACING_SE, buffer.get(5, 3).char)
-        assertEquals(ICON_TORSO_S, buffer.get(4, 3).char)
+        assertEquals(ICON_FACING_SE, buffer.get(5, 3).symbol)
+        assertEquals(ICON_TORSO_S, buffer.get(4, 3).symbol)
     }
 
     @Test
     fun `counterclockwise twist with SE legs places torso arrow at NE slot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SE, BoardRole.PLAYER_1, torsoFacing = HexDirection.NE)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.SE, BoardRole.PLAYER_1, torsoFacing = HexDirection.NE)
 
-        assertEquals(ICON_FACING_SE, buffer.get(5, 3).char)
-        assertEquals(ICON_TORSO_NE, buffer.get(5, 2).char)
+        assertEquals(ICON_FACING_SE, buffer.get(5, 3).symbol)
+        assertEquals(ICON_TORSO_NE, buffer.get(5, 2).symbol)
     }
 
     @Test
     fun `clockwise twist with S legs places torso arrow at SW slot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.S, BoardRole.PLAYER_1, torsoFacing = HexDirection.SW)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.S, BoardRole.PLAYER_1, torsoFacing = HexDirection.SW)
 
-        assertEquals(ICON_FACING_S, buffer.get(4, 3).char)
-        assertEquals(ICON_TORSO_SW, buffer.get(3, 3).char)
+        assertEquals(ICON_FACING_S, buffer.get(4, 3).symbol)
+        assertEquals(ICON_TORSO_SW, buffer.get(3, 3).symbol)
     }
 
     @Test
     fun `counterclockwise twist with S legs places torso arrow at SE slot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.S, BoardRole.PLAYER_1, torsoFacing = HexDirection.SE)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.S, BoardRole.PLAYER_1, torsoFacing = HexDirection.SE)
 
-        assertEquals(ICON_FACING_S, buffer.get(4, 3).char)
-        assertEquals(ICON_TORSO_SE, buffer.get(5, 3).char)
+        assertEquals(ICON_FACING_S, buffer.get(4, 3).symbol)
+        assertEquals(ICON_TORSO_SE, buffer.get(5, 3).symbol)
     }
 
     @Test
     fun `clockwise twist with SW legs places torso arrow at NW slot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SW, BoardRole.PLAYER_1, torsoFacing = HexDirection.NW)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.SW, BoardRole.PLAYER_1, torsoFacing = HexDirection.NW)
 
-        assertEquals(ICON_FACING_SW, buffer.get(3, 3).char)
-        assertEquals(ICON_TORSO_NW, buffer.get(3, 2).char)
+        assertEquals(ICON_FACING_SW, buffer.get(3, 3).symbol)
+        assertEquals(ICON_TORSO_NW, buffer.get(3, 2).symbol)
     }
 
     @Test
     fun `counterclockwise twist with SW legs places torso arrow at S slot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SW, BoardRole.PLAYER_1, torsoFacing = HexDirection.S)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.SW, BoardRole.PLAYER_1, torsoFacing = HexDirection.S)
 
-        assertEquals(ICON_FACING_SW, buffer.get(3, 3).char)
-        assertEquals(ICON_TORSO_S, buffer.get(4, 3).char)
+        assertEquals(ICON_FACING_SW, buffer.get(3, 3).symbol)
+        assertEquals(ICON_TORSO_S, buffer.get(4, 3).symbol)
     }
 
     @Test
     fun `clockwise twist with NW legs places torso arrow at N slot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, BoardRole.PLAYER_1, torsoFacing = HexDirection.N)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.NW, BoardRole.PLAYER_1, torsoFacing = HexDirection.N)
 
-        assertEquals(ICON_FACING_NW, buffer.get(3, 2).char)
-        assertEquals(ICON_TORSO_N, buffer.get(4, 2).char)
+        assertEquals(ICON_FACING_NW, buffer.get(3, 2).symbol)
+        assertEquals(ICON_TORSO_N, buffer.get(4, 2).symbol)
     }
 
     @Test
     fun `counterclockwise twist with NW legs places torso arrow at SW slot`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, BoardRole.PLAYER_1, torsoFacing = HexDirection.SW)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.NW, BoardRole.PLAYER_1, torsoFacing = HexDirection.SW)
 
-        assertEquals(ICON_FACING_NW, buffer.get(3, 2).char)
-        assertEquals(ICON_TORSO_SW, buffer.get(3, 3).char)
+        assertEquals(ICON_FACING_NW, buffer.get(3, 2).symbol)
+        assertEquals(ICON_TORSO_SW, buffer.get(3, 3).symbol)
     }
 
     // --- id-shift edge case: torso arrow lands in the id row at column x+3 --------------------
@@ -296,73 +295,73 @@ internal class UnitRendererTest {
 
     @Test
     fun `id does not shift when facing NW and torso SW puts the torso arrow at x+3 in the id row`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, BoardRole.PLAYER_1, torsoFacing = HexDirection.SW)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.NW, BoardRole.PLAYER_1, torsoFacing = HexDirection.SW)
 
         // Torso arrow unaffected, still at its own slot (x+3, id row).
-        assertEquals(ICON_TORSO_SW, buffer.get(3, 3).char)
+        assertEquals(ICON_TORSO_SW, buffer.get(3, 3).symbol)
         // Facing arrow unaffected.
-        assertEquals(ICON_FACING_NW, buffer.get(3, 2).char)
+        assertEquals(ICON_FACING_NW, buffer.get(3, 2).symbol)
         // Id stays at its default columns x+4/x+5 — x+3 doesn't collide with them.
-        assertEquals("A", buffer.get(4, 3).char)
-        assertEquals("1", buffer.get(5, 3).char)
+        assertEquals("A", buffer.get(4, 3).symbol)
+        assertEquals("1", buffer.get(5, 3).symbol)
     }
 
     @Test
     fun `id does not shift when facing SW and torso NW puts the torso arrow at x+3 in the id row`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SW, BoardRole.PLAYER_1, torsoFacing = HexDirection.NW)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.SW, BoardRole.PLAYER_1, torsoFacing = HexDirection.NW)
 
         // Facing SW: id row is y+2 (SW is "south" -> arrow at y+3, id at y+2).
         // Torso NW: not "south" -> torso row y+2 (== id row), offset 3 (x+3) — no collision
         // with the id's default columns x+4/x+5, so no shift.
-        assertEquals(ICON_TORSO_NW, buffer.get(3, 2).char)
-        assertEquals(ICON_FACING_SW, buffer.get(3, 3).char)
-        assertEquals("A", buffer.get(4, 2).char)
-        assertEquals("1", buffer.get(5, 2).char)
+        assertEquals(ICON_TORSO_NW, buffer.get(3, 2).symbol)
+        assertEquals(ICON_FACING_SW, buffer.get(3, 3).symbol)
+        assertEquals("A", buffer.get(4, 2).symbol)
+        assertEquals("1", buffer.get(5, 2).symbol)
     }
 
     @Test
     fun `id shifts left when facing SE and torso NE puts the torso arrow at x+5 in the id row`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.SE, BoardRole.PLAYER_1, torsoFacing = HexDirection.NE)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.SE, BoardRole.PLAYER_1, torsoFacing = HexDirection.NE)
 
         // Facing SE: id row is y+2 (SE is "south" -> arrow at y+3, id at y+2).
         // Torso NE: not "south" -> torso row y+2 (== id row), offset 5 (x+5) — collides with
         // the id's default columns (x+4/x+5), so the id shifts left to x+3/x+4 instead.
-        assertEquals(ICON_TORSO_NE, buffer.get(5, 2).char)
-        assertEquals(ICON_FACING_SE, buffer.get(5, 3).char)
-        assertEquals("A", buffer.get(3, 2).char)
-        assertEquals("1", buffer.get(4, 2).char)
+        assertEquals(ICON_TORSO_NE, buffer.get(5, 2).symbol)
+        assertEquals(ICON_FACING_SE, buffer.get(5, 3).symbol)
+        assertEquals("A", buffer.get(3, 2).symbol)
+        assertEquals("1", buffer.get(4, 2).symbol)
     }
 
     // --- destroyed-marker relocation ---------------------------------------------------------
 
     @Test
     fun `destroyed unit with a torso arrow at x+3 in the id row puts the marker in the arrow row`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
         UnitRenderer.render(
-            Canvas.of(buffer), 0, 0, "A1", HexDirection.NW, BoardRole.PLAYER_1,
+            buffer, 0, 0, "A1", HexDirection.NW, BoardRole.PLAYER_1,
             torsoFacing = HexDirection.SW, isDestroyed = true,
         )
 
         // Id row (y+3) is fully occupied by the id at its default columns (x+4,x+5) and the
         // torso arrow (x+3) — no shift needed, but the row is still crowded.
-        assertEquals(ICON_TORSO_SW, buffer.get(3, 3).char)
-        assertEquals("A", buffer.get(4, 3).char)
-        assertEquals("1", buffer.get(5, 3).char)
+        assertEquals(ICON_TORSO_SW, buffer.get(3, 3).symbol)
+        assertEquals("A", buffer.get(4, 3).symbol)
+        assertEquals("1", buffer.get(5, 3).symbol)
         // Marker relocates to the arrow row, avoiding the facing arrow's column (x+3).
-        assertEquals(ICON_FACING_NW, buffer.get(3, 2).char)
-        assertEquals(ICON_ROBOT_DEAD, buffer.get(4, 2).char)
+        assertEquals(ICON_FACING_NW, buffer.get(3, 2).symbol)
+        assertEquals(ICON_ROBOT_DEAD, buffer.get(4, 2).symbol)
     }
 
     @Test
     fun `destroyed unit whose torso arrow lands in the id row at x+5 still relocates the marker`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
         // Facing NE + torso SE: torso row (SE is "south" -> 3) equals the id row (NE is not
         // "south" -> id row 3) at column x+5, which collides with the id's default columns
@@ -370,27 +369,27 @@ internal class UnitRendererTest {
         // torso arrow fill x+3..x+5), so the marker must still relocate to the arrow row rather
         // than collide with the torso arrow.
         UnitRenderer.render(
-            Canvas.of(buffer), 0, 0, "A1", HexDirection.NE, BoardRole.PLAYER_1,
+            buffer, 0, 0, "A1", HexDirection.NE, BoardRole.PLAYER_1,
             torsoFacing = HexDirection.SE, isDestroyed = true,
         )
 
-        assertEquals("A", buffer.get(3, 3).char)
-        assertEquals("1", buffer.get(4, 3).char)
-        assertEquals(ICON_TORSO_SE, buffer.get(5, 3).char)
+        assertEquals("A", buffer.get(3, 3).symbol)
+        assertEquals("1", buffer.get(4, 3).symbol)
+        assertEquals(ICON_TORSO_SE, buffer.get(5, 3).symbol)
         // Facing arrow at x+5 in the arrow row; marker prefers x+4 there, which is free.
-        assertEquals(ICON_FACING_NE, buffer.get(5, 2).char)
-        assertEquals(ICON_ROBOT_DEAD, buffer.get(4, 2).char)
+        assertEquals(ICON_FACING_NE, buffer.get(5, 2).symbol)
+        assertEquals(ICON_ROBOT_DEAD, buffer.get(4, 2).symbol)
     }
 
     @Test
     fun `destroyed unit with an uncrowded id row puts the marker left of the id`() {
-        val buffer = ScreenBuffer(10, 6)
+        val buffer = Canvas.offscreen(10, 6)
 
-        UnitRenderer.render(Canvas.of(buffer), 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, isDestroyed = true)
+        UnitRenderer.render(buffer, 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1, isDestroyed = true)
 
-        assertEquals("A", buffer.get(4, 3).char)
-        assertEquals("1", buffer.get(5, 3).char)
-        assertEquals(ICON_ROBOT_DEAD, buffer.get(3, 3).char)
-        assertEquals(ICON_FACING_N, buffer.get(4, 2).char)
+        assertEquals("A", buffer.get(4, 3).symbol)
+        assertEquals("1", buffer.get(5, 3).symbol)
+        assertEquals(ICON_ROBOT_DEAD, buffer.get(3, 3).symbol)
+        assertEquals(ICON_FACING_N, buffer.get(4, 2).symbol)
     }
 }

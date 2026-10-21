@@ -1,25 +1,15 @@
 package io.archinaut.battletech.tui.setup
 
-import io.archinaut.tenter.input.InputAction
+import io.archinaut.battletech.tui.input.Action
 
-internal sealed interface SetupAction : InputAction {
-    data class MoveCursor(val delta: Int) : SetupAction {
-        override val id: String get() = "setup.moveCursor.$delta"
-    }
+internal sealed interface SetupAction : Action {
+    data class MoveCursor(val delta: Int) : SetupAction
 
-    data class Adjust(val delta: Int) : SetupAction {
-        override val id: String get() = "setup.adjust.$delta"
-    }
+    data class Adjust(val delta: Int) : SetupAction
 
-    data object Toggle : SetupAction {
-        override val id: String get() = "setup.toggle"
-    }
+    data object Toggle : SetupAction
 
-    data object NextPanel : SetupAction {
-        override val id: String get() = "setup.nextPanel"
-    }
+    data object NextPanel : SetupAction
 
-    data object Commit : SetupAction {
-        override val id: String get() = "setup.commit"
-    }
+    data object Commit : SetupAction
 }

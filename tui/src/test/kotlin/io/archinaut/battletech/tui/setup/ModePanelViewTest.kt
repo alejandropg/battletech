@@ -5,8 +5,6 @@ import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
 import io.archinaut.battletech.tui.view.text
 import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.widget.CheckState
-import io.archinaut.tenter.widget.checkboxIcon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -28,10 +26,10 @@ internal class ModePanelViewTest {
             height = 6,
         )
 
-        assertEquals(" ", buffer.get(0, 0).char)
-        assertEquals("▶", buffer.get(0, 2).char)
-        assertEquals(checkboxIcon(CheckState.CHECKED, TUI_CHECKBOX_GLYPHS), buffer.get(2, 0).char)
-        assertEquals(checkboxIcon(CheckState.UNCHECKED, TUI_CHECKBOX_GLYPHS), buffer.get(2, 2).char)
+        assertEquals(" ", buffer.get(0, 0).symbol)
+        assertEquals("▶", buffer.get(0, 2).symbol)
+        assertEquals(TUI_CHECKBOX_GLYPHS.checked, buffer.get(2, 0).symbol)
+        assertEquals(TUI_CHECKBOX_GLYPHS.unchecked, buffer.get(2, 2).symbol)
         assertEquals(ChromeRole.TEXT_PRIMARY, buffer.get(4, 0).style.fg)
         assertEquals(ChromeRole.ACCENT, buffer.get(4, 2).style.fg)
         assertEquals("    Both players share this terminal", buffer.line(1, width = 50))

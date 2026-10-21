@@ -25,9 +25,9 @@ internal class BoardViewMovementPhaseStateOverlayTest {
 
         // Hex center is at x+4, y+2 from hex render origin
         // Hex (1,1) center at (15, 9), including the board's coordinate margins
-        assertEquals(".", buffer.get(15, 9).char)
+        assertEquals(".", buffer.get(15, 9).symbol)
         // Hex (2,1) center at (22, 7), including the board's coordinate margins
-        assertEquals(".", buffer.get(22, 7).char)
+        assertEquals(".", buffer.get(22, 7).symbol)
     }
 
     @Test
@@ -48,7 +48,7 @@ internal class BoardViewMovementPhaseStateOverlayTest {
         val buffer = render(view, 40, 24)
 
         // Hex (1,1) center is at (15, 9); the REACHABLE_WALK dot must be suppressed
-        assertNotEquals(".", buffer.get(15, 9).char)
+        assertNotEquals(".", buffer.get(15, 9).symbol)
     }
 
     @Test
@@ -70,7 +70,7 @@ internal class BoardViewMovementPhaseStateOverlayTest {
         val buffer = render(view, 40, 24)
 
         // Hex (1,0) center at (15, 5); N arrow also lands at (15, 5)
-        assertEquals(String(Character.toChars(0xF0583)), buffer.get(15, 5).char)
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(15, 5).symbol)
     }
 
     @Test
@@ -88,9 +88,9 @@ internal class BoardViewMovementPhaseStateOverlayTest {
         val buffer = render(view, 40, 24)
 
         // Hex (0,0) center at (8, 3), including the board's coordinate margins
-        assertEquals(String(Character.toChars(0xF0583)), buffer.get(8, 3).char)
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(8, 3).symbol)
         // Hex (1,0) center at (15, 5), including the board's coordinate margins
-        assertEquals(String(Character.toChars(0xF0583)), buffer.get(15, 5).char)
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(15, 5).symbol)
     }
 
     @Test
@@ -109,6 +109,6 @@ internal class BoardViewMovementPhaseStateOverlayTest {
         val buffer = render(view, 40, 24)
 
         // Hex (1,0) center at (15, 5); all-facings destination shows mode icon
-        assertEquals(String(Character.toChars(0xF0583)), buffer.get(15, 5).char)
+        assertEquals(String(Character.toChars(0xF0583)), buffer.get(15, 5).symbol)
     }
 }

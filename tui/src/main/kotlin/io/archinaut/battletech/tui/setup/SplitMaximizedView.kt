@@ -1,53 +1,54 @@
 package io.archinaut.battletech.tui.setup
 
-import io.archinaut.tenter.screen.Cell
 import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.view.ContentLayout
-import io.archinaut.tenter.view.ContentView
-import io.archinaut.tenter.view.RevealPreference
-import io.archinaut.tenter.view.contentLayout
-import io.archinaut.tenter.view.contentView
+import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Rect
+import io.archinaut.tenter.screen.Size
+import io.archinaut.tenter.screen.Style
+import io.archinaut.tenter.widget.MeasurableWidget
+import io.archinaut.tenter.widget.RowWriter
+import io.archinaut.tenter.widget.Widget
+import io.archinaut.tenter.widget.fixedSize
+import io.archinaut.tenter.widget.measure
 
-/** Prepared composition for a maximized setup panel. */
+/**
+ * Composition for a maximized setup panel: [left] at [leftWidth], then — when there is a [detail] —
+ * a divider and the detail at whatever width it needs, so a detail wider than the panel scrolls
+ * horizontally rather than wrapping below the list. When both request visibility, [left]'s
+ * request wins: it holds the cursor.
+ */
 internal class SplitMaximizedView(
     private val leftWidth: Int,
-    private val left: ContentView,
-    private val detail: ContentView?,
-) : ContentView {
+    private val left: MeasurableWidget,
+    private val detail: MeasurableWidget?,
+) : MeasurableWidget {
 
-    override fun layout(availableWidth: Int): ContentLayout {
-        require(availableWidth >= 0) { "available width must not be negative: $availableWidth" }
-        val leftLayout = left.layout(leftWidth)
-        val detailAvailableWidth = (
-            availableWidth - leftWidth - SIDE_GUTTER - DIVIDER_WIDTH - SIDE_GUTTER
-        ).coerceAtLeast(0)
-        val detailLayout = detail?.layout(detailAvailableWidth)
-        val height = maxOf(leftLayout.height, detailLayout?.height ?: 0)
-        val detailX = leftWidth + SIDE_GUTTER + if (detailLayout == null) 0 else DIVIDER_WIDTH + SIDE_GUTTER
-        val naturalWidth = totalWidth(leftWidth, detailLayout?.width ?: 0)
-        val divider = if (detailLayout == null) null else divider(height)
-
-        return contentLayout(
-            width = naturalWidth,
-            height = height,
-            revealPreference = RevealPreference.FIRST,
-        ) {
-            place(0, 0, leftLayout)
-            divider?.let { place(leftWidth + SIDE_GUTTER, 0, it) }
-            detailLayout?.let { place(detailX, 0, it) }
-        }
+    override fun write(writer: RowWriter) {
+        val detailAvailableWidth = (writer.width - leftWidth - SIDE_GUTTER - DIVIDER_WIDTH - SIDE_GUTTER).coerceAtLeast(0)
+        val detailSize = detail?.measure(detailAvailableWidth)
+        val height = maxOf(left.measure(leftWidth).height, detailSize?.height ?: 0)
+        writer.draw(Split(height, detailSize).fixedSize(totalWidth(leftWidth, detailSize?.width ?: 0), height))
     }
 
-    private fun divider(height: Int): ContentLayout = contentView { cursor ->
-        repeat(height) {
-            cursor.write(0, "│", Cell.Style(ChromeRole.PANEL_BORDER))
-            cursor.newLine()
+    private inner class Split(private val height: Int, private val detailSize: Size?) : Widget {
+        override fun render(canvas: Canvas) {
+            if (detail != null && detailSize != null) {
+                val dividerX = leftWidth + SIDE_GUTTER
+                for (row in 0 until height) canvas.set(dividerX, row, Cell("│", DIVIDER_STYLE))
+                val detailX = dividerX + DIVIDER_WIDTH + SIDE_GUTTER
+                detail.render(canvas.region(Rect(detailX, 0, detailSize.width, height)))
+            }
+            // Rendered last, so its reveal request — the list cursor — is the one that wins.
+            left.render(canvas.region(Rect(0, 0, leftWidth, height)))
         }
-    }.layout(1)
+    }
 
     internal companion object {
         const val SIDE_GUTTER: Int = 4
         const val DIVIDER_WIDTH: Int = 1
+
+        private val DIVIDER_STYLE = Style(ChromeRole.PANEL_BORDER)
 
         internal fun totalWidth(leftWidth: Int, detailWidth: Int): Int =
             leftWidth + SIDE_GUTTER + if (detailWidth > 0) DIVIDER_WIDTH + SIDE_GUTTER + detailWidth else 0

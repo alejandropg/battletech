@@ -1,11 +1,14 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.query.PlayerGameState
 import io.archinaut.battletech.tactical.session.LogEntry
-import io.archinaut.tenter.screen.styled
 import io.archinaut.tenter.text.CellWidth
-import io.archinaut.tenter.view.TextCursor
-import io.archinaut.tenter.view.Viewport
+import io.archinaut.tenter.widget.Column
+import io.archinaut.tenter.widget.Columns
+import io.archinaut.tenter.widget.Paragraph
+import io.archinaut.tenter.widget.RowWriter
+import io.archinaut.tenter.widget.Viewport
 
 /**
  * Marks its last written row for reveal, so the enclosing [Viewport] follows new entries to
@@ -16,9 +19,9 @@ import io.archinaut.tenter.view.Viewport
 internal class LogView(
     private val entries: List<LogEntry>,
     private val state: PlayerGameState,
-) : PreparedTextView() {
+) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
+    override fun write(content: RowWriter) {
         var lastTurn: Int? = null
 
         for (entry in entries) {
@@ -26,27 +29,27 @@ internal class LogView(
             if (logLines.isEmpty()) continue
 
             if (entry.turn != lastTurn) {
-                content.writeHeader("TURN ${entry.turn}")
+                content.draw(SectionHeading("TURN ${entry.turn}"))
                 lastTurn = entry.turn
             }
 
             for (line in logLines) {
+                // The icon gets its own column so wrapped text hangs indented under the first row.
                 val prefixWidth = CellWidth.of(line.icon) + 1
-                val indent = " ".repeat(prefixWidth)
-                val available = content.width - prefixWidth
-
-                line.content.wrap(available, available).forEachIndexed { i, wrapped ->
-                    content.writeLine(
-                        styled {
-                            append(if (i == 0) "${line.icon} " else indent)
-                            append(wrapped)
-                        },
-                    )
-                }
+                val available = (content.width - prefixWidth).coerceAtLeast(1)
+                content.draw(
+                    Columns(
+                        listOf(
+                            Column(prefixWidth, Paragraph(line.icon)),
+                            Column(available, Paragraph(listOf(line.content), wrap = true)),
+                        ),
+                        gutter = 0,
+                    ),
+                )
             }
         }
 
-        if (content.row > 0) content.markRevealAt(content.row - 1)
+        if (content.row > 0) content.markReveal(row = content.row - 1)
     }
 
     internal companion object {

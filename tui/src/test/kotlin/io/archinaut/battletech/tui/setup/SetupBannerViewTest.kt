@@ -1,7 +1,7 @@
 package io.archinaut.battletech.tui.setup
 
 import io.archinaut.battletech.tui.view.render
-import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.text.CellWidth
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -40,6 +40,6 @@ internal class SetupBannerViewTest {
         assertEquals("╰" + "─".repeat(width - 2) + "╯", row(buffer, height - 1))
     }
 
-    private fun row(buffer: ScreenBuffer, index: Int): String =
-        (0 until buffer.width).joinToString("") { buffer.get(it, index).char }
+    private fun row(buffer: Canvas, index: Int): String =
+        (0 until buffer.width).joinToString("") { buffer.get(it, index).symbol }
 }

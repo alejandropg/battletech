@@ -1,24 +1,24 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.attack.AttackResult
 import io.archinaut.battletech.tactical.attack.HitLocation
 import io.archinaut.battletech.tui.game.phase.AttackResultsRender
 import io.archinaut.battletech.tui.icon.attackOutcomeIcon
 import io.archinaut.battletech.tui.icon.targetIcon
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.view.TextCursor
-import io.archinaut.tenter.widget.ValueRow
+import io.archinaut.tenter.widget.RowWriter
 
-internal class AttackResultsView(private val data: AttackResultsRender) : PreparedTextView() {
+internal class AttackResultsView(private val data: AttackResultsRender) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
+    override fun write(content: RowWriter) {
 
         val byAttacker = data.results.groupBy { it.attackerId }
 
         for ((attackerId, attackerResults) in byAttacker) {
             val attackerColor = playerColor(data.units.byId(attackerId).owner)
-            content.writeLine(attackerId.value, Cell.Style(attackerColor))
+            content.writeLine(attackerId.value, Style(attackerColor))
 
             val byTarget = attackerResults.groupBy { it.targetId }
 
@@ -33,7 +33,7 @@ internal class AttackResultsView(private val data: AttackResultsRender) : Prepar
         }
     }
 
-    private fun renderWeaponResult(content: TextCursor, result: AttackResult) {
+    private fun renderWeaponResult(content: RowWriter, result: AttackResult) {
         // Block 1: unified hit widget (weapon name, TN, success %, modifiers)
         // The TN and modifier breakdown are both observable (announced at the table), so
         // AttackResult itself is never redacted (see GameEvent.redactFor's KDoc) — but the
@@ -42,14 +42,14 @@ internal class AttackResultsView(private val data: AttackResultsRender) : Prepar
         // + sum(modifiers), so the skill stays derivable by subtraction from what's shown here.
         val isOwnAttacker = data.units.byId(result.attackerId).owner == data.viewer
         val breakdown = if (isOwnAttacker) result.toHit.displayLabels() else result.toHit.modifiers.displayLabels()
-        ValueRow.draw(content, "  ${result.weaponName}", hitChanceLabel(result.toHit), breakdown, ChromeRole.TEXT_PRIMARY)
+        content.draw(ValueRow("  ${result.weaponName}", hitChanceLabel(result.toHit), breakdown, ChromeRole.TEXT_PRIMARY))
 
         // Block 2: raw roll (left) + outcome (right-aligned, in its own color)
         val hit = result is AttackResult.Hit
         val outcomeText = "${if (hit) "HIT" else "MISS"} ${attackOutcomeIcon(hit)}"
         val outcomeColor = if (hit) ChromeRole.SUCCESS else ChromeRole.DANGER
         val rollLine = "   ${diceRollLabel(result.toHitRoll)}"
-        content.writeRow(rollLine, outcomeText, TEXT_PRIMARY_STYLE, Cell.Style(outcomeColor))
+        content.writeRow(rollLine, outcomeText, TEXT_PRIMARY_STYLE, Style(outcomeColor))
 
         // Block 3: location + damage (hit only)
         if (result is AttackResult.ClusterHit) {
@@ -82,6 +82,6 @@ internal class AttackResultsView(private val data: AttackResultsRender) : Prepar
     internal companion object {
         const val TITLE: String = "ATTACK RESULTS"
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
     }
 }

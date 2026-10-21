@@ -11,10 +11,12 @@
     "SUCCESS": "22",
     "WARNING": "58",
     "DANGER": "88",
-    "DRAFT": "241",
     "DISABLED": "243",
     "PANEL_BORDER": "241",
     "PANEL_BORDER_FOCUSED": "22"
+  },
+  "ui": {
+    "DRAFT": "241"
   },
   "heatScale": {
     "CURRENT_BG": "229",

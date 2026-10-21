@@ -10,7 +10,7 @@ import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.battletech.tactical.unit.WeaponMountId
 import io.archinaut.battletech.tui.anArmorLayout
 import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -50,7 +50,7 @@ internal class TargetStatusViewTest {
     )
 
     /** Render via decorator at (0,0) — pixel-parity regression guard for box/coordinates. */
-    private fun renderDecorated(view: TargetStatusView, width: Int = 28, height: Int = 30): ScreenBuffer =
+    private fun renderDecorated(view: TargetStatusView, width: Int = 28, height: Int = 30): Canvas =
         renderInPanel(view, badge = '4', title = TargetStatusView.TITLE, width = width, height = height)
 
     @Test
@@ -58,13 +58,13 @@ internal class TargetStatusViewTest {
         val view = TargetStatusView(aForeignUnit())
         val buffer = renderDecorated(view)
 
-        assertEquals("╭", buffer.get(0, 0).char)
-        assertEquals("╮", buffer.get(27, 0).char)
-        assertEquals("╰", buffer.get(0, 29).char)
-        assertEquals("╯", buffer.get(27, 29).char)
-        val prefix = (2 until 6).joinToString("") { buffer.get(it, 0).char }
+        assertEquals("╭", buffer.get(0, 0).symbol)
+        assertEquals("╮", buffer.get(27, 0).symbol)
+        assertEquals("╰", buffer.get(0, 29).symbol)
+        assertEquals("╯", buffer.get(27, 29).symbol)
+        val prefix = (2 until 6).joinToString("") { buffer.get(it, 0).symbol }
         assertEquals("[4] ", prefix)
-        val title = (6 until 19).joinToString("") { buffer.get(it, 0).char }
+        val title = (6 until 19).joinToString("") { buffer.get(it, 0).symbol }
         assertEquals("TARGET STATUS", title)
     }
 
@@ -74,7 +74,7 @@ internal class TargetStatusViewTest {
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
-        val line = (2 until 15).joinToString("") { buffer.get(it, 2).char }
+        val line = (2 until 15).joinToString("") { buffer.get(it, 2).symbol }
         assertEquals("u1: Hunchback", line)
         assertEquals(ChromeRole.ACCENT, buffer.get(2, 2).style.fg)
     }
@@ -99,9 +99,9 @@ internal class TargetStatusViewTest {
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
-        val headerRow = (2 until 26).joinToString("") { buffer.get(it, 4).char }
+        val headerRow = (2 until 26).joinToString("") { buffer.get(it, 4).symbol }
         assertTrue(headerRow.contains("MOVEMENT"))
-        val walkRunRow = (2 until 26).joinToString("") { buffer.get(it, 5).char }
+        val walkRunRow = (2 until 26).joinToString("") { buffer.get(it, 5).symbol }
         assertTrue(walkRunRow.contains("Walk"))
         assertTrue(walkRunRow.contains("Run"))
         assertTrue(walkRunRow.contains("4"))
@@ -114,15 +114,15 @@ internal class TargetStatusViewTest {
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
-        val armorHeader = (2 until 26).joinToString("") { buffer.get(it, 7).char }
+        val armorHeader = (2 until 26).joinToString("") { buffer.get(it, 7).symbol }
         assertTrue(armorHeader.contains("ARMOR"))
-        val hdRow = (2 until 26).joinToString("") { buffer.get(it, 8).char }
+        val hdRow = (2 until 26).joinToString("") { buffer.get(it, 8).symbol }
         assertTrue(hdRow.contains("HD"))
         assertTrue(hdRow.contains("9"))
-        val ctRow = (2 until 26).joinToString("") { buffer.get(it, 9).char }
+        val ctRow = (2 until 26).joinToString("") { buffer.get(it, 9).symbol }
         assertTrue(ctRow.contains("CT"))
         assertTrue(ctRow.contains("47"))
-        val llRow = (2 until 26).joinToString("") { buffer.get(it, 12).char }
+        val llRow = (2 until 26).joinToString("") { buffer.get(it, 12).symbol }
         assertTrue(llRow.contains("LL"))
         assertTrue(llRow.contains("41"))
     }
@@ -133,11 +133,11 @@ internal class TargetStatusViewTest {
         val view = TargetStatusView(unit)
         val buffer = renderDecorated(view)
 
-        val weaponsHeader = (2 until 26).joinToString("") { buffer.get(it, 14).char }
+        val weaponsHeader = (2 until 26).joinToString("") { buffer.get(it, 14).symbol }
         assertTrue(weaponsHeader.contains("WEAPONS"))
-        val weapon1Row = (2 until 26).joinToString("") { buffer.get(it, 15).char }
+        val weapon1Row = (2 until 26).joinToString("") { buffer.get(it, 15).symbol }
         assertTrue(weapon1Row.contains("AC/20"))
-        val weapon2Row = (2 until 26).joinToString("") { buffer.get(it, 16).char }
+        val weapon2Row = (2 until 26).joinToString("") { buffer.get(it, 16).symbol }
         assertTrue(weapon2Row.contains("Medium Laser"))
     }
 
@@ -148,15 +148,15 @@ internal class TargetStatusViewTest {
         val buffer = renderDecorated(view)
 
         val allText = (0 until 30).flatMap { row ->
-            (0 until 28).map { col -> buffer.get(col, row).char }
+            (0 until 28).map { col -> buffer.get(col, row).symbol }
         }.joinToString("")
         assertFalse(allText.contains("Gunnery"))
         assertFalse(allText.contains("Piloting"))
     }
 
-    private fun rowContaining(buffer: ScreenBuffer, text: String): Int {
+    private fun rowContaining(buffer: Canvas, text: String): Int {
         for (row in 0 until buffer.height) {
-            val line = (2 until 26).joinToString("") { buffer.get(it, row).char }
+            val line = (2 until 26).joinToString("") { buffer.get(it, row).symbol }
             if (line.contains(text)) return row
         }
         error("No row contains \"$text\"")

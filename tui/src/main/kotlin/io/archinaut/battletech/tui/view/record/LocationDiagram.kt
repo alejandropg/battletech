@@ -1,18 +1,19 @@
 package io.archinaut.battletech.tui.view.record
 
+import io.archinaut.battletech.tui.view.SectionHeading
 import io.archinaut.battletech.tactical.model.MechLocation
 import io.archinaut.battletech.tactical.unit.CombatUnit
 import io.archinaut.battletech.tactical.unit.VisibleUnit
 import io.archinaut.battletech.tui.icon.emptyCircleIcon
 import io.archinaut.battletech.tui.icon.filledCircleIcon
 import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.text.CellWidth
-import io.archinaut.tenter.view.ContentLayout
-import io.archinaut.tenter.view.ContentView
-import io.archinaut.tenter.view.fixedContent
-import io.archinaut.tenter.view.TextCursor
-import io.archinaut.tenter.widget.PipTrack
+import io.archinaut.tenter.screen.Rect
+import io.archinaut.tenter.widget.MeasurableWidget
+import io.archinaut.tenter.widget.RowWriter
+import io.archinaut.tenter.widget.Widget
+import io.archinaut.tenter.widget.fixedSize
 
 /**
  * The record sheet's front-facing paper doll. [armor] and [internalStructure] share one
@@ -27,10 +28,11 @@ import io.archinaut.tenter.widget.PipTrack
 internal class LocationDiagram private constructor(
     private val title: String,
     private val body: Body,
-) : ContentView {
+) : MeasurableWidget {
 
-    override fun layout(availableWidth: Int): ContentLayout =
-        fixedContent(availableWidth, naturalHeight(), this).layout(availableWidth)
+    override fun write(writer: RowWriter) {
+        writer.draw(painting.fixedSize(writer.width, naturalHeight()))
+    }
 
     /** One body section: armor/structure [remaining] out of [max], and destruction state. */
     internal data class Location(
@@ -90,9 +92,12 @@ internal class LocationDiagram private constructor(
         }
     }
 
-    override fun draw(canvas: Canvas) {
-        TextCursor(canvas).writeHeader(title)
-        drawRobot(canvas, body.sizes)
+    /** The diagram painted at fixed coordinates, centered in whatever width it is given. */
+    private val painting: Widget = object : Widget {
+        override fun render(canvas: Canvas) {
+            SectionHeading(title).render(canvas.region(Rect(0, 0, canvas.width, 1)))
+            drawRobot(canvas, body.sizes)
+        }
     }
 
     private fun drawRobot(canvas: Canvas, sizes: DiagramSizes) {
@@ -228,13 +233,13 @@ internal class LocationDiagram private constructor(
         sizes: DiagramSizes,
         y: Int,
     ) {
-        canvas.writeString(
+        canvas.setString(
             geometry.headX - HEAD_SIDE_LABEL_GAP - CellWidth.of(LEFT_SIDE_LABEL),
             y,
             LEFT_SIDE_LABEL,
             locationStyle(body.leftTorso),
         )
-        canvas.writeString(
+        canvas.setString(
             geometry.headX + sizes.head + HEAD_SIDE_LABEL_GAP + 2,
             y,
             RIGHT_SIDE_LABEL,
@@ -256,7 +261,7 @@ internal class LocationDiagram private constructor(
             "Torso",
             locationStyle(body.centerTorso),
         )
-        canvas.writeString(
+        canvas.setString(
             geometry.leftTorsoX + 1,
             torsoTop - 1,
             value(body.leftTorso),
@@ -316,7 +321,7 @@ internal class LocationDiagram private constructor(
         val bottomY = separatorY + rear.rows + 1
         drawBottom(canvas, rearX, bottomY, rearWidth, rearStyle)
         when (side) {
-            BodySide.LEFT -> canvas.writeString(rearX + 1, bottomY + 1, value(rear.location), rearStyle)
+            BodySide.LEFT -> canvas.setString(rearX + 1, bottomY + 1, value(rear.location), rearStyle)
             BodySide.CENTER ->
                 drawCentered(canvas, rearX, rearWidth + 2, bottomY + 1, value(rear.location), rearStyle)
             BodySide.RIGHT -> drawRightAligned(
@@ -338,17 +343,17 @@ internal class LocationDiagram private constructor(
         x: Int,
         y: Int,
         width: Int,
-        style: Cell.Style,
+        style: Style,
     ) {
         when (side) {
             BodySide.LEFT -> {
-                canvas.writeString(x + 1, y, "╲", style)
-                canvas.writeString(x + width + 1, y, "│", style)
+                canvas.setString(x + 1, y, "╲", style)
+                canvas.setString(x + width + 1, y, "│", style)
             }
             BodySide.CENTER -> drawEmptyRow(canvas, x, y, width, style)
             BodySide.RIGHT -> {
-                canvas.writeString(x, y, "│", style)
-                canvas.writeString(x + width, y, "╱", style)
+                canvas.setString(x, y, "│", style)
+                canvas.setString(x + width, y, "╱", style)
             }
         }
     }
@@ -359,10 +364,10 @@ internal class LocationDiagram private constructor(
         x: Int,
         y: Int,
         width: Int,
-        style: Cell.Style,
+        style: Style,
     ) {
         val separator = if (side == BodySide.CENTER) centeredRearSeparator(width) else "╌".repeat(width)
-        canvas.writeString(x, y, "│" + separator + "│", style)
+        canvas.setString(x, y, "│" + separator + "│", style)
     }
 
     private fun centeredRearSeparator(width: Int): String {
@@ -387,13 +392,13 @@ internal class LocationDiagram private constructor(
         val transitionY = topY + rows + 1
         val narrowX = when (side) {
             BodySide.LEFT -> {
-                canvas.writeString(x, transitionY, "│", style)
-                canvas.writeString(x + width, transitionY, "╱", style)
+                canvas.setString(x, transitionY, "│", style)
+                canvas.setString(x + width, transitionY, "╱", style)
                 x
             }
             BodySide.RIGHT -> {
-                canvas.writeString(x + 1, transitionY, "╲", style)
-                canvas.writeString(x + width + 1, transitionY, "│", style)
+                canvas.setString(x + 1, transitionY, "╲", style)
+                canvas.setString(x + width + 1, transitionY, "│", style)
                 x + 1
             }
             BodySide.CENTER -> error("an arm must be left or right")
@@ -420,13 +425,13 @@ internal class LocationDiagram private constructor(
         val transitionY = topY + rows + 1
         val footX = when (side) {
             BodySide.LEFT -> {
-                canvas.writeString(x - 1, transitionY, "╱", style)
-                canvas.writeString(x + width + 1, transitionY, "│", style)
+                canvas.setString(x - 1, transitionY, "╱", style)
+                canvas.setString(x + width + 1, transitionY, "│", style)
                 x - 2
             }
             BodySide.RIGHT -> {
-                canvas.writeString(x, transitionY, "│", style)
-                canvas.writeString(x + width + 2, transitionY, "╲", style)
+                canvas.setString(x, transitionY, "│", style)
+                canvas.setString(x + width + 2, transitionY, "╲", style)
                 x
             }
             BodySide.CENTER -> error("a leg must be left or right")
@@ -449,12 +454,12 @@ internal class LocationDiagram private constructor(
         val style = locationStyle(location)
         when (side) {
             BodySide.LEFT -> {
-                canvas.writeString(x - CellWidth.of(label) - 1, y, label, style)
-                canvas.writeString(x - CellWidth.of(value(location)) - 1, y + 1, value(location), style)
+                canvas.setString(x - CellWidth.of(label) - 1, y, label, style)
+                canvas.setString(x - CellWidth.of(value(location)) - 1, y + 1, value(location), style)
             }
             BodySide.RIGHT -> {
-                canvas.writeString(x + width + 3, y, label, style)
-                canvas.writeString(x + width + 3, y + 1, value(location), style)
+                canvas.setString(x + width + 3, y, label, style)
+                canvas.setString(x + width + 3, y + 1, value(location), style)
             }
             BodySide.CENTER -> error("a limb must be left or right")
         }
@@ -488,28 +493,25 @@ internal class LocationDiagram private constructor(
         for (row in 0 until rows) drawEmptyRow(canvas, x, y + row, width, outlineStyle)
 
         val damage = (location.max - location.remaining).coerceIn(0, location.max)
-        PipTrack(filledCircleIcon(), emptyCircleIcon(), perRow = width, spacing = 0).draw(
-            TextCursor(canvas),
-            column = x + 1,
-            row = y,
+        PipTrack(filledCircleIcon(), emptyCircleIcon(), perRow = width, spacing = 0).forEachPip(
             used = damage,
             capacity = location.max,
             usedStyle = SheetStyles.DANGER,
             emptyStyle = outlineStyle,
-        )
+        ) { column, row, glyph, style -> canvas.setString(x + 1 + column, y + row, glyph, style) }
     }
 
-    private fun drawTop(canvas: Canvas, x: Int, y: Int, width: Int, style: Cell.Style) {
-        canvas.writeString(x, y, "╭" + "─".repeat(width) + "╮", style)
+    private fun drawTop(canvas: Canvas, x: Int, y: Int, width: Int, style: Style) {
+        canvas.setString(x, y, "╭" + "─".repeat(width) + "╮", style)
     }
 
-    private fun drawBottom(canvas: Canvas, x: Int, y: Int, width: Int, style: Cell.Style) {
-        canvas.writeString(x, y, "╰" + "─".repeat(width) + "╯", style)
+    private fun drawBottom(canvas: Canvas, x: Int, y: Int, width: Int, style: Style) {
+        canvas.setString(x, y, "╰" + "─".repeat(width) + "╯", style)
     }
 
-    private fun drawEmptyRow(canvas: Canvas, x: Int, y: Int, width: Int, style: Cell.Style) {
-        canvas.writeString(x, y, "│", style)
-        canvas.writeString(x + width + 1, y, "│", style)
+    private fun drawEmptyRow(canvas: Canvas, x: Int, y: Int, width: Int, style: Style) {
+        canvas.setString(x, y, "│", style)
+        canvas.setString(x + width + 1, y, "│", style)
     }
 
     private fun drawCentered(
@@ -518,9 +520,9 @@ internal class LocationDiagram private constructor(
         width: Int,
         y: Int,
         text: String,
-        style: Cell.Style,
+        style: Style,
     ) {
-        canvas.writeString(x + (width - CellWidth.of(text)) / 2, y, text, style)
+        canvas.setString(x + (width - CellWidth.of(text)) / 2, y, text, style)
     }
 
     private fun drawRightAligned(
@@ -529,10 +531,10 @@ internal class LocationDiagram private constructor(
         width: Int,
         y: Int,
         text: String,
-        style: Cell.Style,
+        style: Style,
         rightPadding: Int = 0,
     ) {
-        canvas.writeString(x + width - CellWidth.of(text) - rightPadding, y, text, style)
+        canvas.setString(x + width - CellWidth.of(text) - rightPadding, y, text, style)
     }
 
     private fun rowsFor(capacity: Int, width: Int): Int =
@@ -547,7 +549,7 @@ internal class LocationDiagram private constructor(
 
     private fun value(location: Location): String = location.remaining.toString() + "/" + location.max
 
-    private fun locationStyle(location: Location): Cell.Style =
+    private fun locationStyle(location: Location): Style =
         if (location.destroyed) SheetStyles.DESTROYED else SheetStyles.TEXT_PRIMARY
 
     private enum class BodySide {

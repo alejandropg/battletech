@@ -5,7 +5,7 @@ import io.archinaut.battletech.tactical.model.TurnPhase
 import io.archinaut.battletech.tui.aUnit
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.ScreenBuffer
+import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -116,8 +116,8 @@ internal class StatusBarViewTest {
             val buffer = render(view, width, Workspace.STATUS_BAR_HEIGHT)
 
             assertEquals("? : help", row(buffer).substring(width - 10, width - 2))
-            assertEquals(" ", buffer.get(width - 2, 1).char)
-            assertEquals("│", buffer.get(width - 1, 1).char)
+            assertEquals(" ", buffer.get(width - 2, 1).symbol)
+            assertEquals("│", buffer.get(width - 1, 1).symbol)
         }
     }
 
@@ -129,7 +129,7 @@ internal class StatusBarViewTest {
 
         assertEquals("MOVEMENT | Player 1 | Select destination", row(buffer).substring(2, 42))
         assertEquals("? : help", row(buffer).substring(59, 67))
-        assertEquals("│", buffer.get(68, 1).char)
+        assertEquals("│", buffer.get(68, 1).symbol)
     }
 
     @Test
@@ -156,11 +156,11 @@ internal class StatusBarViewTest {
 
         val expected = "W1: Wolverine WVR-6R ┆ ${"x".repeat(21)}…"
         assertEquals(expected, row(buffer).substring(24, 69))
-        assertEquals(" ", buffer.get(69, 1).char)
+        assertEquals(" ", buffer.get(69, 1).symbol)
         assertEquals("? : help", row(buffer).substring(70, 78))
-        assertEquals("│", buffer.get(79, 1).char)
+        assertEquals("│", buffer.get(79, 1).symbol)
     }
 
-    private fun row(buffer: ScreenBuffer, index: Int = 1): String =
-        (0 until buffer.width).joinToString("") { buffer.get(it, index).char }
+    private fun row(buffer: Canvas, index: Int = 1): String =
+        (0 until buffer.width).joinToString("") { buffer.get(it, index).symbol }
 }

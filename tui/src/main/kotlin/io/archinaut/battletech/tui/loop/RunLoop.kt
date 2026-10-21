@@ -21,8 +21,6 @@ import io.archinaut.battletech.tui.view.Workspace
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
-import com.github.ajalt.mordant.rendering.Size
-import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
@@ -32,12 +30,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import io.archinaut.tenter.animation.AnimationPlayback
-import io.archinaut.tenter.input.InputAction
-import io.archinaut.tenter.input.PanAction
-import io.archinaut.tenter.input.ScrollAction
-import io.archinaut.tenter.view.FlashMessage
-import io.archinaut.tenter.screen.ScreenRenderer
-import io.archinaut.tenter.panel.PanelHit
+import io.archinaut.battletech.tui.input.Action
+import io.archinaut.battletech.tui.input.PanAction
+import io.archinaut.battletech.tui.input.ScrollAction
+import io.archinaut.tenter.widget.FlashMessage
+import io.archinaut.tenter.terminal.Terminal
+import io.archinaut.tenter.widget.panel.PanelHit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.nanoseconds
@@ -57,8 +55,7 @@ import kotlin.time.Duration.Companion.nanoseconds
 internal suspend fun runLoop(
     events: Flow<UiEvent>,
     internalEvents: SendChannel<UiEvent>,
-    terminal: Terminal,
-    renderer: ScreenRenderer,
+    screen: Terminal,
     initialState: AppState,
     keys: Keybindings,
     buildVolley: (List<AttackResult>, Int, Int) -> AnimationPlayback<PanelPlacement>? =
@@ -76,7 +73,6 @@ internal suspend fun runLoop(
     var activeAnimation: ActiveAnimation? = null
     var animationTimer: Job? = null
     var animationToken = 0L
-    var size = currentSize(terminal)
 
     // One Workspace for this whole run: every panel remembers its own state (minimized/normal/
     // maximized), scroll offset, and auto-follow reveal across frames (see Panel's KDoc).
@@ -130,14 +126,7 @@ internal suspend fun runLoop(
             stopVolley()
         }
         try {
-            val buffer = workspace.render(
-                appState,
-                size.width,
-                size.height,
-                activeFlash,
-                sample?.frames.orEmpty(),
-            )
-            renderer.render(buffer)
+            screen.draw { frame -> workspace.render(frame, appState, activeFlash, sample?.frames.orEmpty()) }
             if (active != null && activeAnimation === active) {
                 val nextChange = sample?.nextChangeIn
                 if (nextChange != null) {
@@ -157,7 +146,7 @@ internal suspend fun runLoop(
 
     /** Starts one elapsed-time playback and lets the triggering render show frame zero. */
     fun startVolley(results: List<AttackResult>) {
-        val started = buildVolley(results, size.width, size.height) ?: return
+        val started = buildVolley(results, screen.area.width, screen.area.height) ?: return
         invalidateAnimationTimer()
         activeAnimation = ActiveAnimation(started, nowNanos())
     }
@@ -237,8 +226,8 @@ internal suspend fun runLoop(
                                         appState = appState.copy(helpOpen = true)
                                         workspace.focus(GamePanelId.HELP)
                                     }
-                                is ChromeAction.CycleState -> workspace.cycleFocusedState(action.delta)
-                                // Absorbed by terminalEvents' takeWhile — unreachable here by construction.
+                                is ChromeAction.CycleState -> workspace.cycleFocusedMode(action.delta)
+                                // Absorbed by uiEvents' takeWhile — unreachable here by construction.
                                 ChromeAction.Quit -> Unit
                             }
                             render()
@@ -296,7 +285,7 @@ internal suspend fun runLoop(
                 }
 
                 is UiEvent.Resized -> {
-                    size = ui.size
+                    screen.resize(ui.size.width, ui.size.height)
                     // Panels were placed against the OLD size, so any resize invalidates the whole
                     // layout — not just one that no longer fits. Cancelling is honest and cheap;
                     // re-solving placements mid-flight would make panels jump around instead.
@@ -357,8 +346,8 @@ internal suspend fun runLoop(
             throw e
         } catch (e: Throwable) {
             // Deliberately swallowed: an exception escaping collect would cancel this scope from
-            // outside, including the raw-mode input reader — see Tenter's `inputEvents` KDoc for
-            // why that can leave the terminal stuck in raw mode and the JVM unable to exit.
+            // outside, including the raw-mode input reader — see Tenter's `events` KDoc for how
+            // collection owns raw mode.
             System.err.println("Unhandled throwable while processing $ui:")
             e.printStackTrace()
         }
@@ -388,7 +377,7 @@ internal fun resolveInput(
     focused: GamePanelId,
     appState: AppState,
     boardHit: PanelHit<GamePanelId>? = null,
-): InputAction? = when (event) {
+): Action? = when (event) {
     is KeyboardEvent -> keys.resolve(activeContexts(focused, appState), event)
     is MouseEvent ->
         if (appState.matchEnded != null) {
@@ -414,11 +403,4 @@ private fun activeContexts(focused: GamePanelId, appState: AppState): List<Conte
     add(ContextId.CHROME)
     add(ContextId.GAME_CHROME)
     if (appState.matchEnded == null) add(appState.phase.keyContext)
-}
-
-private fun currentSize(terminal: Terminal): Size {
-    val size = terminal.updateSize()
-    check(size.width > 0) { "Terminal width must be positive, got: $size" }
-    check(size.height > 0) { "Terminal height must be positive, got: $size" }
-    return Size(size.width, size.height)
 }

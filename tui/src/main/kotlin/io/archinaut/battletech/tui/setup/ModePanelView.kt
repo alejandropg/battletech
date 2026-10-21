@@ -1,9 +1,9 @@
 package io.archinaut.battletech.tui.setup
 
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.widget.MeasurableWidget
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.view.TextCursor
-import io.archinaut.battletech.tui.view.PreparedTextView
+import io.archinaut.tenter.widget.RowWriter
 import io.archinaut.tenter.widget.CheckState
 import io.archinaut.tenter.widget.SelectableRow
 import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
@@ -16,34 +16,36 @@ internal class ModePanelView(
     private val opponentConnected: Boolean,
     private val cursorIndex: Int,
     private val compact: Boolean = false,
-) : PreparedTextView() {
+) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
+    override fun write(content: RowWriter) {
         if (!modeLocked || compact) {
             for ((index, candidate) in SetupMode.entries.withIndex()) {
-                SelectableRow.draw(
-                    content = content,
-                    label = label(candidate),
-                    checkState = if (candidate == mode) CheckState.CHECKED else CheckState.UNCHECKED,
-                    cursor = index == cursorIndex,
-                    glyphs = TUI_CHECKBOX_GLYPHS,
+                content.draw(
+                    SelectableRow(
+                        label = label(candidate),
+                        checkState = if (candidate == mode) CheckState.CHECKED else CheckState.UNCHECKED,
+                        selected = index == cursorIndex,
+                        glyphs = TUI_CHECKBOX_GLYPHS,
+                    ),
                 )
                 if (!compact) {
                     content.writeLine(
                         "    ${description(candidate)}",
-                        Cell.Style(if (index == cursorIndex) ChromeRole.ACCENT else ChromeRole.TEXT_PRIMARY),
+                        Style(if (index == cursorIndex) ChromeRole.ACCENT else ChromeRole.TEXT_PRIMARY),
                     )
                 }
             }
             return
         }
 
-        SelectableRow.draw(
-            content = content,
-            label = label(mode),
-            checkState = CheckState.CHECKED,
-            cursor = false,
-            glyphs = TUI_CHECKBOX_GLYPHS,
+        content.draw(
+            SelectableRow(
+                label = label(mode),
+                checkState = CheckState.CHECKED,
+                selected = false,
+                glyphs = TUI_CHECKBOX_GLYPHS,
+            ),
         )
 
         val ep = endpoint
@@ -71,6 +73,6 @@ internal class ModePanelView(
             SetupMode.HOST -> "host"
         }
 
-        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
     }
 }

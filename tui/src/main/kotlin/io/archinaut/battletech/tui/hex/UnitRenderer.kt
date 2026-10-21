@@ -6,6 +6,7 @@ import io.archinaut.battletech.tui.icon.facingArrowIcon
 import io.archinaut.battletech.tui.icon.torsoArrowIcon
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.ColorRole
 
 public object UnitRenderer {
@@ -49,7 +50,7 @@ public object UnitRenderer {
         val idBaseX = if (idShiftedForTorso) x + 3 else x + 4
         id.take(2).forEachIndexed { index, char ->
             val cellX = idBaseX + index
-            canvas.setFg(cellX, y + idRow, char.toString(), color)
+            canvas.setString(cellX, y + idRow, char.toString(), Style(fg = color))
         }
 
         if (isDestroyed) {
@@ -62,13 +63,13 @@ public object UnitRenderer {
             } else {
                 x + 3
             }
-            canvas.setFg(markerX, y + markerRow, destroyedIcon(), color)
+            canvas.setString(markerX, y + markerRow, destroyedIcon(), Style(fg = color))
         }
 
-        canvas.setFg(arrowX, y + arrowRow, arrowChar, color)
+        canvas.setString(arrowX, y + arrowRow, arrowChar, Style(fg = color))
 
         if (torsoChar != null && torsoX != null && torsoRow != null) {
-            canvas.setFg(torsoX, y + torsoRow, torsoChar, torsoColor)
+            canvas.setString(torsoX, y + torsoRow, torsoChar, Style(fg = torsoColor))
         }
     }
 
