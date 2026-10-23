@@ -16,14 +16,10 @@ import io.archinaut.battletech.tui.hex.HexLayout
 import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.battletech.tui.loop.UiEvent
 import io.archinaut.battletech.tui.loop.runLoop
-import io.archinaut.battletech.tui.screen.resolveTheme
 import io.archinaut.tenter.terminal.Terminal
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
-import com.github.ajalt.mordant.rendering.AnsiLevel
 import io.archinaut.tenter.screen.Size
-import com.github.ajalt.mordant.terminal.Terminal as MordantTerminal
-import com.github.ajalt.mordant.terminal.TerminalRecorder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -64,9 +60,7 @@ import kotlin.random.Random
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class HotSeatCompositionTest {
 
-    private val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = 120, height = 40)
-    private val terminal = MordantTerminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
-    private val screen = Terminal(terminal, resolveTheme("dark"))
+    private val screen = Terminal.headless(width = 120, height = 40)
 
     private lateinit var server: GameServer
     private lateinit var seats: Map<PlayerId, ClientGameSession>
@@ -207,11 +201,11 @@ internal class HotSeatCompositionTest {
                 }
 
                 // Drain any resync UiEvent.Session the passive seat's subscription fired after
-                // the poll above, so the recorded output reflects the fully-converged frame.
+                // the poll above, so the latest frame reflects the fully-converged state.
                 internalEvents.send(UiEvent.Resized(Size(120, 40)))
 
                 assertThat(server.stateFor(mover).units.byId(unit.id).position).isEqualTo(destination.position)
-                assertThat(recorder.output()).doesNotContain("Waiting for opponent")
+                assertThat(screen.lastFrameText()).doesNotContain("Waiting for opponent")
 
                 // AppState.viewer follows the active player across real client sessions — the
                 // property that only holds because both real seats are in the map.

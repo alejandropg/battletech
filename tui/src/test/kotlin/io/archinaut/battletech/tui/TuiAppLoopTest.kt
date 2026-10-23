@@ -31,15 +31,11 @@ import io.archinaut.battletech.tui.icon.sessionNoticeIcon
 import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.battletech.tui.loop.UiEvent
 import io.archinaut.battletech.tui.loop.runLoop
-import io.archinaut.battletech.tui.screen.resolveTheme
 import io.archinaut.battletech.tui.view.AttackResultsView
 import io.archinaut.battletech.tui.view.LogView
 import io.archinaut.battletech.tui.view.UnitStatusView
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
-import com.github.ajalt.mordant.rendering.AnsiLevel
-import com.github.ajalt.mordant.terminal.Terminal as MordantTerminal
-import com.github.ajalt.mordant.terminal.TerminalRecorder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ChannelResult
@@ -53,6 +49,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import io.archinaut.tenter.screen.Style
@@ -67,11 +64,18 @@ import kotlin.time.Duration.Companion.seconds
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class TuiAppLoopTest {
 
-    // TRUECOLOR so the renderer emits ANSI escape sequences we can search for.
     // Width/height must be positive to pass TuiApp.currentSize() checks.
-    private val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = 120, height = 40)
-    private val terminal = MordantTerminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
-    private val screen = Terminal(terminal, resolveTheme("dark"))
+    private val screen = Terminal.headless(width = 120, height = 40)
+
+    /** The text of the latest frame the loop drew. */
+    private fun screenText(): String = screen.lastFrameText()
+
+    /** Whether [action] made the loop draw a new frame: each draw returns a fresh frame. */
+    private inline fun drewAfter(action: () -> Unit): Boolean {
+        val before = screen.lastFrame
+        action()
+        return screen.lastFrame !== before
+    }
 
     /**
      * Build a minimal AppState backed by a real BattleSession positioned at
@@ -112,7 +116,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `scripted Input and Quit flow completes and produces at least two rendered frames`() = runTest {
+    fun `scripted Input and Quit flow completes after rendering`() = runTest {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         // Quit is included in the scripted flow — takeWhile stops on Quit and
         // merge cancels all source coroutines so the loop exits cleanly.
@@ -132,15 +136,29 @@ internal class TuiAppLoopTest {
             keys = Keybindings.DEFAULT,
         )
 
-        // The diffing renderer (see tenter's Terminal) only sends a full cursor-home + repaint on
-        // the very first frame; a later frame that only moved the cursor sends setPosition(s)
-        // just for the cells that changed, not another [1;1H. So "at least 2 render passes" is
-        // checked as at least 2 distinct position writes overall, not 2 cursor-home sequences —
-        // this generalizes to both the full-repaint and the dirty-cell-diff render paths.
-        val out = recorder.output()
-        assertTrue(out.isNotEmpty(), "Expected non-empty recorder output")
-        val positionWrites = Regex("\\[\\d+;\\d+H").findAll(out).count()
-        assertTrue(positionWrites >= 2, "Expected at least 2 position writes (2 render passes), got $positionWrites")
+        assertNotNull(screen.lastFrame, "Expected the loop to render")
+    }
+
+    @Test
+    fun `the loop renders its initial frame and redraws on input`() = runTest(UnconfinedTestDispatcher()) {
+        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+        val loopJob = launch {
+            runLoop(
+                events = internalEvents.receiveAsFlow(),
+                internalEvents = internalEvents,
+                screen = screen,
+                initialState = buildAppState(),
+                keys = Keybindings.DEFAULT,
+            )
+        }
+
+        assertNotNull(screen.lastFrame, "Expected the initial frame before any event")
+        // ArrowDown, not ArrowUp: north from row 0 is off the map and would leave the cursor put.
+        assertTrue(drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) }, "Expected input to redraw")
+
+        internalEvents.send(UiEvent.Quit)
+        loopJob.join()
     }
 
     // -------------------------------------------------------------------------
@@ -172,9 +190,8 @@ internal class TuiAppLoopTest {
         // With UnconfinedTestDispatcher, send() resumes the loop eagerly; by the time
         // send() returns (or shortly after), the event has been processed and flash rendered.
 
-        val outWithFlash = recorder.output()
         assertTrue(
-            outWithFlash.contains("Not your"),
+            screenText().contains("Not your unit"),
             "Expected 'Not your unit' flash in output after pressing Enter on enemy unit",
         )
 
@@ -199,17 +216,15 @@ internal class TuiAppLoopTest {
 
         // Trigger the flash.
         internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
-        assertTrue(recorder.output().contains("Not your"), "Flash should appear after trigger")
+        assertTrue(screenText().contains("Not your unit"), "Flash should appear after trigger")
 
         // Advance virtual time past the 3s flash duration — the flash job's delay() fires,
         // sending FlashExpired back through internalEvents. The loop processes it and re-renders
         // without the flash text.
-        recorder.clearOutput()
         advanceTimeBy(3100.milliseconds)
 
-        val outAfterExpiry = recorder.output()
         assertFalse(
-            outAfterExpiry.contains("Not your unit"),
+            screenText().contains("Not your unit"),
             "Flash text should be gone after FlashExpired, but still present",
         )
 
@@ -236,14 +251,11 @@ internal class TuiAppLoopTest {
         }
 
         // Initial frame rendered, loop suspended on receive.
-        val outputBefore = recorder.output().length
-        assertTrue(outputBefore > 0, "Expected initial frame to be rendered")
+        assertNotNull(screen.lastFrame, "Expected initial frame to be rendered")
 
-        // Send a resize event — loop processes it and re-renders.
-        internalEvents.send(UiEvent.Resized(Size(160, 45)))
-
-        val outputAfter = recorder.output().length
-        assertTrue(outputAfter > outputBefore, "Expected more output after Resized event triggered re-render")
+        // Send a resize event — loop processes it and re-renders at the new size.
+        assertTrue(drewAfter { internalEvents.send(UiEvent.Resized(Size(160, 45))) }, "Expected Resized to trigger a re-render")
+        assertEquals(160, checkNotNull(screen.lastFrame).width)
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -269,27 +281,16 @@ internal class TuiAppLoopTest {
 
         // Flash A: generation 1.
         internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
-        // The diff renderer only emits changed cells. The previous prompt and flash share the
-        // trailing " unit", so the observable changed run is "Not your".
-        assertTrue(recorder.output().contains("Not your"), "Flash A should appear")
+        assertTrue(screenText().contains("Not your unit"), "Flash A should appear")
 
         // Flash B: generation 2 replaces flash A (same trigger, same message text — only the
         // internal generation counter differs, which isn't independently visible on screen).
         internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
 
-        // Deliver stale FlashExpired for generation 1 — must NOT clear generation 2 flash. A
-        // stale expiry doesn't trigger a re-render at all (see runLoop's FlashExpired branch),
-        // so under the diffing renderer (see tenter's Terminal) the correct, directly-observable
-        // signal that generation 2 survived untouched is that nothing gets sent: if it HAD been
-        // wrongly cleared, the prompt reverting away from "Not your unit" is a real visual change
-        // and would show up as non-empty output.
-        recorder.clearOutput()
-        internalEvents.send(UiEvent.FlashExpired(1L))
-
-        assertTrue(
-            recorder.output().isEmpty(),
-            "A stale FlashExpired must not trigger a render, let alone clear flash B",
-        )
+        // Deliver stale FlashExpired for generation 1 — runLoop ignores it without rendering, and
+        // generation 2's flash stays.
+        assertFalse(drewAfter { internalEvents.send(UiEvent.FlashExpired(1L)) }, "A stale FlashExpired must not render")
+        assertTrue(screenText().contains("Not your unit"), "A stale FlashExpired must not clear flash B")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -334,16 +335,11 @@ internal class TuiAppLoopTest {
         // any bug surfacing during event handling.
         internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
 
-        // The loop must still be alive and processing events after the failure. Resized to a
-        // size distinct from the terminal's original 120x40 (not back to 120x40): the diffing
-        // renderer (see tenter's Terminal) would otherwise diff this recovery frame against the
-        // last successful one — content-identical, since nothing about appState actually
-        // changed — and correctly send nothing, which would look indistinguishable from the
-        // loop being dead. A genuinely new size forces a full repaint, so non-empty output here
-        // specifically proves the loop recovered and rendered again.
-        recorder.clearOutput()
-        internalEvents.send(UiEvent.Resized(Size(130, 42)))
-        assertTrue(recorder.output().isNotEmpty(), "Expected loop to keep rendering after a handled exception")
+        // The loop must still be alive and processing events after the failure.
+        assertTrue(
+            drewAfter { internalEvents.send(UiEvent.Resized(Size(130, 42))) },
+            "Expected loop to keep rendering after a handled exception",
+        )
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -370,7 +366,7 @@ internal class TuiAppLoopTest {
 
         internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1))))
 
-        val output = recorder.output()
+        val output = screenText()
         assertTrue(output.contains("MATCH OVER"), "Expected 'MATCH OVER' banner title in output")
         assertTrue(output.contains("P1 wins!"), "Expected winner label 'P1 wins!' in output")
 
@@ -394,7 +390,7 @@ internal class TuiAppLoopTest {
 
         internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Draw)))
 
-        val output = recorder.output()
+        val output = screenText()
         assertTrue(output.contains("MATCH OVER"), "Expected 'MATCH OVER' banner title in output")
         assertTrue(output.contains("Draw"), "Expected 'Draw' in output for null winner")
 
@@ -430,9 +426,6 @@ internal class TuiAppLoopTest {
             )
         }
 
-        // Deliberately no clearOutput(): the diffing renderer rewrites only changed cells, and a
-        // style run can split the flash text with escape sequences mid-string, so this matches on
-        // the same "Not your" prefix the Enter-flash test above uses.
         val enemyPoint = boardScreenPoint(buildAppState(), BoardView.MAP_ORIGIN_X, BoardView.MAP_ORIGIN_Y)
         internalEvents.send(
             UiEvent.Input(
@@ -445,7 +438,7 @@ internal class TuiAppLoopTest {
         )
 
         assertTrue(
-            recorder.output().contains("Not your"),
+            screenText().contains("Not your unit"),
             "A left click on hex (0,0) must resolve to a BoardClick and reach the phase",
         )
 
@@ -473,11 +466,10 @@ internal class TuiAppLoopTest {
             )
         }
 
-        recorder.clearOutput()
         internalEvents.send(UiEvent.Session(AttacksResolved(listOf(aResult()))))
 
         assertTrue(
-            recorder.output().contains(AttackResultsView.TITLE),
+            screenText().contains(AttackResultsView.TITLE),
             "Expected ATTACK RESULTS panel to appear after a passive-side AttacksResolved event",
         )
 
@@ -521,15 +513,14 @@ internal class TuiAppLoopTest {
         }
 
         assertTrue(
-            recorder.output().contains(AttackResultsView.TITLE),
+            screenText().contains(AttackResultsView.TITLE),
             "Precondition: results panel should be visible before the resync",
         )
-        recorder.clearOutput()
 
         internalEvents.send(UiEvent.Session(TurnEnded(1)))
 
         assertFalse(
-            recorder.output().contains(AttackResultsView.TITLE),
+            screenText().contains(AttackResultsView.TITLE),
             "Resync into WEAPON_ATTACK must clear lastAttackResults so the panel disappears",
         )
 
@@ -558,19 +549,11 @@ internal class TuiAppLoopTest {
             )
         }
 
-        recorder.clearOutput()
         internalEvents.send(UiEvent.Session(TurnEnded(1)))
 
-        // Nothing in appState actually changes for a no-resync Session event (phase, matchEnded,
-        // and lastAttackResults all fall through to their previous values), so the diffing
-        // renderer (see tenter's Terminal) sends nothing at all. That emptiness is a stronger,
-        // more direct proof that lastAttackResults specifically was untouched than re-scanning
-        // for the panel title would be: if it HAD been cleared, the panel disappearing is a real
-        // visual change and would show up as non-empty output.
         assertTrue(
-            recorder.output().isEmpty(),
-            "No-resync Session event must not clear a pre-set lastAttackResults, and since nothing " +
-                "else changed, must not repaint anything",
+            screenText().contains(AttackResultsView.TITLE),
+            "No-resync Session event must not clear a pre-set lastAttackResults",
         )
 
         internalEvents.send(UiEvent.Quit)
@@ -601,20 +584,13 @@ internal class TuiAppLoopTest {
             )
         }
 
-        recorder.clearOutput()
         val notice = SessionNotice("Opponent connected")
         session.annotate(notice)
         internalEvents.send(UiEvent.Session(notice))
 
-        // Checked as separate tokens, not one joined phrase: the diffing renderer (see
-        // Terminal) only retransmits cells that actually changed, so a separator space
-        // that was already blank in the previous frame is legitimately skipped -- the terminal
-        // still displays "Opponent connected" correctly, but the raw byte log the recorder
-        // captures may show the words as disjoint writes rather than one contiguous run.
-        val out = recorder.output()
+        val out = screenText()
         assertTrue(out.contains(sessionNoticeIcon()), "Expected the lan-connect icon in the LOG panel")
-        assertTrue(out.contains("Opponent"), "Expected the SessionNotice text in the LOG panel")
-        assertTrue(out.contains("connected"), "Expected the SessionNotice text in the LOG panel")
+        assertTrue(out.contains("Opponent connected"), "Expected the SessionNotice text in the LOG panel")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -641,15 +617,13 @@ internal class TuiAppLoopTest {
             )
         }
 
-        assertFalse(recorder.output().contains(HELP_TITLE), "HELP should be closed by default")
+        assertFalse(screenText().contains(HELP_TITLE), "HELP should be closed by default")
 
-        recorder.clearOutput()
         internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
-        assertTrue(recorder.output().contains(HELP_TITLE), "? should open HELP")
+        assertTrue(screenText().contains(HELP_TITLE), "? should open HELP")
 
-        recorder.clearOutput()
         internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
-        assertFalse(recorder.output().contains(HELP_TITLE), "? again should close HELP")
+        assertFalse(screenText().contains(HELP_TITLE), "? again should close HELP")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -669,60 +643,54 @@ internal class TuiAppLoopTest {
             )
         }
 
-        assertTrue(recorder.output().contains(LogView.TITLE), "LOG should render at NORMAL initially")
+        assertTrue(screenText().contains(LogView.TITLE), "LOG should render at NORMAL initially")
 
         internalEvents.send(UiEvent.Input(KeyboardEvent("9"))) // focus LOG (badge '9')
 
-        recorder.clearOutput()
         internalEvents.send(UiEvent.Input(KeyboardEvent("-"))) // NORMAL -> MINIMIZED
 
         // A minimized panel draws its title one character per row, so the horizontal
         // "LOG" string no longer appears anywhere in the frame — it becomes a stub.
-        assertFalse(recorder.output().contains(LogView.TITLE), "'-' should minimize the focused LOG panel to a stub")
+        assertFalse(screenText().contains(LogView.TITLE), "'-' should minimize the focused LOG panel to a stub")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
     }
 
     @Test
-    fun `reselecting a panel with its number cycles through every size`() = runTest(UnconfinedTestDispatcher()) {
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+    fun `reselecting the focused panel's number cycles its size, and UNIT STATUS shows its compact and full views`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-            )
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            // The size order itself is tenter's PanelSet.cycleFocusedMode; this checks the reselect
+            // binding and each size's UNIT STATUS view.
+            internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
+            assertTrue(screenText().contains(UnitStatusView.TITLE), "first press should focus UNIT STATUS at NORMAL")
+            assertFalse(screenText().contains("'MECH DATA"), "first press should not resize UNIT STATUS")
+
+            internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
+            assertTrue(screenText().contains("'MECH DATA"), "second press should maximize UNIT STATUS")
+
+            internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
+            assertFalse(screenText().contains(UnitStatusView.TITLE), "third press should minimize UNIT STATUS")
+
+            internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
+            assertTrue(screenText().contains(UnitStatusView.TITLE), "fourth press should restore NORMAL")
+            assertFalse(screenText().contains("'MECH DATA"), "restored NORMAL should use the compact view")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
         }
-
-        screen.clear()
-        recorder.clearOutput()
-        internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
-        assertTrue(recorder.output().contains(UnitStatusView.TITLE), "first press should focus UNIT STATUS at NORMAL")
-        assertFalse(recorder.output().contains("'MECH DATA"), "first press should not resize UNIT STATUS")
-
-        screen.clear()
-        recorder.clearOutput()
-        internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
-        assertTrue(recorder.output().contains("'MECH DATA"), "second press should maximize UNIT STATUS")
-
-        screen.clear()
-        recorder.clearOutput()
-        internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
-        assertFalse(recorder.output().contains(UnitStatusView.TITLE), "third press should minimize UNIT STATUS")
-
-        screen.clear()
-        recorder.clearOutput()
-        internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
-        assertTrue(recorder.output().contains(UnitStatusView.TITLE), "fourth press should restore NORMAL")
-        assertFalse(recorder.output().contains("'MECH DATA"), "restored NORMAL should use the compact view")
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-    }
 
     @Test
     fun `question mark still opens HELP after the match ends`() = runTest(UnconfinedTestDispatcher()) {
@@ -739,20 +707,20 @@ internal class TuiAppLoopTest {
         }
 
         internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1))))
-        recorder.clearOutput()
 
         internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
 
-        assertTrue(recorder.output().contains(HELP_TITLE), "? should still open HELP after MatchEnded")
+        assertTrue(screenText().contains(HELP_TITLE), "? should still open HELP after MatchEnded")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
     }
 
     // -------------------------------------------------------------------------
-    // Test 13: a manual board pan must survive subsequent renders. Auto-follow
-    // fires on reveal-target MOVEMENT, not on every render — otherwise the board
-    // springs back to the cursor on the next event of any kind, undoing the pan.
+    // Test 13: a manual board pan must survive subsequent renders. The follow rule
+    // itself — follow on reveal-target MOVEMENT, not on every render — is tenter's
+    // Viewport and tested there; this checks the board's wiring: the cursor is its
+    // reveal target, `l` pans it, and its viewport state survives across frames.
     // -------------------------------------------------------------------------
 
     /**
@@ -796,35 +764,27 @@ internal class TuiAppLoopTest {
             }
 
             // The marker unit at (2,2) is near the left edge, so it is on screen at rest.
-            assertTrue(recorder.output().contains("QQ"), "marker unit should be visible before panning")
+            assertTrue(screenText().contains("QQ"), "marker unit should be visible before panning")
 
-            // Pan right far enough to push the marker off the left edge. The recorder accumulates
-            // every frame, so the output is cleared before the LAST press and asserted on that
-            // frame alone — by then the marker has long since scrolled away, and a pan redraws
-            // the whole board area, so it would be retransmitted if it were still on screen.
-            repeat(19) { internalEvents.send(UiEvent.Input(KeyboardEvent("l"))) }
-            recorder.clearOutput()
-            internalEvents.send(UiEvent.Input(KeyboardEvent("l")))
+            // Pan right far enough to push the marker off the left edge.
+            repeat(20) { internalEvents.send(UiEvent.Input(KeyboardEvent("l"))) }
             assertFalse(
-                recorder.output().contains("QQ"),
+                screenText().contains("QQ"),
                 "panning right should scroll the marker unit out of view",
             )
 
             // An unbound key re-renders without resizing the viewport. Unconditional auto-follow
-            // would drag the board back and redraw the unit — the diffing renderer emits exactly
-            // the cells that changed, so its reappearance would show up here.
-            recorder.clearOutput()
+            // would drag the board back and redraw the unit.
             internalEvents.send(UiEvent.Input(KeyboardEvent("F12")))
             assertFalse(
-                recorder.output().contains("QQ"),
+                screenText().contains("QQ"),
                 "an unrelated re-render must not snap the board back to the cursor",
             )
 
             // Moving the cursor is a reveal-target change, so follow re-engages and brings it back.
-            recorder.clearOutput()
             internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
             assertTrue(
-                recorder.output().contains("QQ"),
+                screenText().contains("QQ"),
                 "cursor movement should follow the board back to the cursor",
             )
 
@@ -860,19 +820,17 @@ internal class TuiAppLoopTest {
             // Focus LOG. ArrowDown now scrolls LOG; if it still reached the phase the cursor would
             // move, follow would re-engage, and the marker would be redrawn.
             internalEvents.send(UiEvent.Input(KeyboardEvent("9")))
-            recorder.clearOutput()
             internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
             assertFalse(
-                recorder.output().contains("QQ"),
+                screenText().contains("QQ"),
                 "ArrowDown must not reach the phase while a side panel is focused",
             )
 
             // "0" focuses the board again, and the very same key moves the cursor once more.
             internalEvents.send(UiEvent.Input(KeyboardEvent("0")))
-            recorder.clearOutput()
             internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
             assertTrue(
-                recorder.output().contains("QQ"),
+                screenText().contains("QQ"),
                 "ArrowDown must reach the phase once the board is focused again",
             )
 
@@ -926,7 +884,7 @@ internal class TuiAppLoopTest {
         internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
 
         assertTrue(
-            recorder.output().contains(animationTopBorder),
+            screenText().contains(animationTopBorder),
             "Expected the animation panel's border after AttacksResolved",
         )
 
@@ -1002,7 +960,7 @@ internal class TuiAppLoopTest {
     }
 
     @Test
-    fun `stale animation token is ignored while a valid late sample jumps to its live frame`() =
+    fun `a stale animation token is ignored, and the valid one samples the live frame`() =
         runTest(UnconfinedTestDispatcher()) {
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val timerEvents = Channel<UiEvent>(Channel.UNLIMITED)
@@ -1113,11 +1071,10 @@ internal class TuiAppLoopTest {
         }
 
         internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-        recorder.clearOutput()
-        internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
+        val drew = drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) }
 
         assertEquals(1, factoryCalls)
-        assertTrue(recorder.output().isNotEmpty(), "normal input should still render after a failed volley")
+        assertTrue(drew, "normal input should still render after a failed volley")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -1152,12 +1109,12 @@ internal class TuiAppLoopTest {
 
             internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
             advanceTimeBy(10.milliseconds)
-            recorder.clearOutput()
-            advanceTimeBy(100.milliseconds)
-            assertEquals(0, panelsDrawn(recorder.output()), "a sampling failure must cancel the timer")
+            assertFalse(drewAfter { advanceTimeBy(100.milliseconds) }, "a sampling failure must cancel the timer")
 
-            internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
-            assertTrue(recorder.output().isNotEmpty(), "normal input should recover after sampling failure")
+            assertTrue(
+                drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) },
+                "normal input should recover after sampling failure",
+            )
 
             internalEvents.send(UiEvent.Quit)
             loopJob.join()
@@ -1197,16 +1154,15 @@ internal class TuiAppLoopTest {
 
             internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
             advanceTimeBy(10.milliseconds)
-            recorder.clearOutput()
-            advanceTimeBy(100.milliseconds)
-            assertEquals(0, panelsDrawn(recorder.output()), "a failed animation must cancel its timer")
+            assertFalse(drewAfter { advanceTimeBy(100.milliseconds) }, "a failed animation must cancel its timer")
 
-            internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
-            assertTrue(recorder.output().isNotEmpty(), "normal input should recover after a frame failure")
+            assertTrue(
+                drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) },
+                "normal input should recover after a frame failure",
+            )
 
-            recorder.clearOutput()
             internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            assertTrue(recorder.output().contains(animationTopBorder), "a later volley should still start")
+            assertTrue(screenText().contains(animationTopBorder), "a later volley should still start")
             assertEquals(2, builds)
 
             internalEvents.send(UiEvent.Quit)
@@ -1229,19 +1185,14 @@ internal class TuiAppLoopTest {
         }
 
         internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-        assertTrue(recorder.output().contains(animationTopBorder), "Panel should have appeared")
+        assertTrue(screenText().contains(animationTopBorder), "Panel should have appeared")
 
-        recorder.clearOutput()
         // 3 frames * 10ms, plus margin — enough for the elapsed timeline to complete.
-        advanceTimeBy(35.milliseconds)
+        assertTrue(drewAfter { advanceTimeBy(35.milliseconds) }, "Expected a recovery render once the panel is removed")
+        assertFalse(screenText().contains(animationTopBorder), "Panel border must be gone once playback finishes")
 
-        val out = recorder.output()
-        assertTrue(out.isNotEmpty(), "Expected a recovery render once the panel is removed")
-        assertFalse(out.contains(animationTopBorder), "Panel border must be gone once playback finishes")
-
-        recorder.clearOutput()
         internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-        assertTrue(recorder.output().contains(animationTopBorder), "a new volley should start after natural completion")
+        assertTrue(screenText().contains(animationTopBorder), "a new volley should start after natural completion")
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -1264,19 +1215,17 @@ internal class TuiAppLoopTest {
             }
 
             internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            assertTrue(recorder.output().contains(animationTopBorder), "Panel should have appeared")
+            assertTrue(screenText().contains(animationTopBorder), "Panel should have appeared")
 
             // A non-Esc key is swallowed before it even reaches resolveInput/the phase — RunLoop
-            // never calls render() for it at all, so a swallowed key produces literally no output.
-            recorder.clearOutput()
-            internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
-            assertTrue(recorder.output().isEmpty(), "A non-Esc key during playback must not trigger any render")
+            // never calls render() for it at all.
+            assertFalse(
+                drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) },
+                "A non-Esc key during playback must not trigger any render",
+            )
 
-            recorder.clearOutput()
-            internalEvents.send(UiEvent.Input(KeyboardEvent("Escape")))
-            val out = recorder.output()
-            assertTrue(out.isNotEmpty(), "Esc should trigger a recovery render")
-            assertFalse(out.contains(animationTopBorder), "Esc must remove the panel immediately")
+            assertTrue(drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("Escape"))) }, "Esc should trigger a recovery render")
+            assertFalse(screenText().contains(animationTopBorder), "Esc must remove the panel immediately")
 
             internalEvents.send(UiEvent.Quit)
             loopJob.join()
@@ -1308,12 +1257,11 @@ internal class TuiAppLoopTest {
             internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
             assertEquals(1, factoryCalls, "duplicate delivery must not rebuild active playback")
 
-            recorder.clearOutput()
             // Exactly one playback's worth of time leaves the single playback complete.
             advanceTimeBy(35.milliseconds)
 
             assertFalse(
-                recorder.output().contains(animationTopBorder),
+                screenText().contains(animationTopBorder),
                 "A single playback should have finished and been removed by now",
             )
 
@@ -1323,9 +1271,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `a terminal smaller than the panel never starts the animation`() = runTest(UnconfinedTestDispatcher()) {
-        val smallRecorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = 70, height = 20)
-        val smallTerminal = MordantTerminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = smallRecorder)
-        val smallScreen = Terminal(smallTerminal, resolveTheme("dark"))
+        val smallScreen = Terminal.headless(width = 70, height = 20)
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         val loopJob = launch {
             runLoop(
@@ -1339,11 +1285,10 @@ internal class TuiAppLoopTest {
             )
         }
 
-        smallRecorder.clearOutput()
         internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
 
         assertFalse(
-            smallRecorder.output().contains(animationTopBorder),
+            smallScreen.lastFrameText().contains(animationTopBorder),
             "A 70x20 terminal has no room for the 72x22 panel — it must never draw",
         )
 
@@ -1351,11 +1296,12 @@ internal class TuiAppLoopTest {
         loopJob.join()
     }
 
-    private fun panelsDrawn(output: String): Int =
-        Regex(Regex.escape(animationTopBorder)).findAll(output).count()
+    /** How many animation panels the latest frame shows. */
+    private fun panelsOnScreen(): Int =
+        Regex(Regex.escape(animationTopBorder)).findAll(screenText()).count()
 
     @Test
-    fun `weapon categories appear at one-second stagger boundaries`() =
+    fun `the loop wakes up when each staggered weapon category starts`() =
         runTest(UnconfinedTestDispatcher()) {
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             // Long animations so neither finishes while the stagger is under test.
@@ -1379,33 +1325,17 @@ internal class TuiAppLoopTest {
             }
 
             internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            assertEquals(
-                1,
-                panelsDrawn(recorder.output()),
-                "only the first category's panel should be on screen immediately",
-            )
             assertTrue(firstFrames.isNotEmpty(), "the first category should sample immediately")
-            assertTrue(secondFrames.isEmpty(), "the second category must remain pending")
-            assertTrue(thirdFrames.isEmpty(), "the third category must remain pending")
 
-            recorder.clearOutput()
-            advanceTimeBy(999.milliseconds)
+            // When a staggered clip becomes visible is the playback's rule, tested in tenter; what
+            // this loop owns is waking up at that moment rather than later.
+            advanceTimeBy(1.seconds)
             runCurrent()
-            assertTrue(secondFrames.isEmpty(), "the second category must remain absent before one second")
-            assertTrue(thirdFrames.isEmpty(), "the third category must remain absent before two seconds")
+            assertTrue(secondFrames.isNotEmpty(), "the loop should wake up when the second category starts")
 
-            advanceTimeBy(1.milliseconds)
+            advanceTimeBy(1.seconds)
             runCurrent()
-            assertTrue(secondFrames.isNotEmpty(), "the second category should start at one second")
-            assertTrue(thirdFrames.isEmpty(), "the third category must remain pending until two seconds")
-
-            advanceTimeBy(999.milliseconds)
-            runCurrent()
-            assertTrue(thirdFrames.isEmpty(), "the third category must remain absent before two seconds")
-
-            advanceTimeBy(1.milliseconds)
-            runCurrent()
-            assertTrue(thirdFrames.isNotEmpty(), "the third category should start at two seconds")
+            assertTrue(thirdFrames.isNotEmpty(), "the loop should wake up when the third category starts")
 
             internalEvents.send(UiEvent.Quit)
             loopJob.join()
@@ -1433,22 +1363,20 @@ internal class TuiAppLoopTest {
             }
 
             internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            assertEquals(1, panelsDrawn(recorder.output()), "only the first panel should be visible immediately")
-            recorder.clearOutput()
+            assertEquals(1, panelsOnScreen(), "only the first panel should be visible immediately")
             internalEvents.send(UiEvent.Resized(Size(160, 45)))
             advanceTimeBy(2.seconds)
-            assertEquals(0, panelsDrawn(recorder.output()), "resize must cancel the pending panel timer")
+            assertEquals(0, panelsOnScreen(), "resize must cancel the pending panel timer")
 
-            recorder.clearOutput()
             internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            assertEquals(1, panelsDrawn(recorder.output()), "a later volley should start after resize cancellation")
+            assertEquals(1, panelsOnScreen(), "a later volley should start after resize cancellation")
 
             internalEvents.send(UiEvent.Quit)
             loopJob.join()
         }
 
     @Test
-    fun `a short panel vanishes on its own while a longer one keeps playing`() =
+    fun `the loop keeps animating while any clip is still visible`() =
         runTest(UnconfinedTestDispatcher()) {
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val loopJob = launch {
@@ -1470,11 +1398,10 @@ internal class TuiAppLoopTest {
             // Let slot 1 appear and then immediately run out of frames.
             advanceTimeBy(WeaponAnimations.STAGGER + 40.milliseconds)
 
-            // Slot 0 is still ticking, so its border keeps being redrawn; the volley is alive.
-            recorder.clearOutput()
-            advanceTimeBy(60.milliseconds)
+            // Slot 1 has finished (the playback drops finished clips, tested in tenter), but slot 0
+            // is still visible, so the loop must keep its timer running.
             assertTrue(
-                recorder.output().isNotEmpty(),
+                drewAfter { advanceTimeBy(60.milliseconds) },
                 "the surviving panel should still be animating after the short one vanished",
             )
 
@@ -1502,12 +1429,13 @@ internal class TuiAppLoopTest {
             internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
             internalEvents.send(UiEvent.Input(KeyboardEvent("Escape")))
 
-            recorder.clearOutput()
             advanceTimeBy(500.milliseconds)
-            assertEquals(0, panelsDrawn(recorder.output()), "pending panels must not survive Esc")
+            assertEquals(0, panelsOnScreen(), "pending panels must not survive Esc")
 
-            internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
-            assertTrue(recorder.output().isNotEmpty(), "normal input must work after Esc cancellation")
+            assertTrue(
+                drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) },
+                "normal input must work after Esc cancellation",
+            )
 
             internalEvents.send(UiEvent.Quit)
             loopJob.join()
@@ -1528,11 +1456,10 @@ internal class TuiAppLoopTest {
                 )
             }
 
-            recorder.clearOutput()
             internalEvents.send(UiEvent.Session(AttacksResolved(listOf(aResult()))))
             assertEquals(
                 0,
-                panelsDrawn(recorder.output()),
+                panelsOnScreen(),
                 "aResult()'s \"Med Laser\" is not a real model name, so no category resolves",
             )
 
@@ -1554,11 +1481,10 @@ internal class TuiAppLoopTest {
                 )
             }
 
-            recorder.clearOutput()
             internalEvents.send(UiEvent.Session(AttacksResolved(listOf(aResult(weaponName = "Medium Laser")))))
             assertEquals(
                 1,
-                panelsDrawn(recorder.output()),
+                panelsOnScreen(),
                 "one energy weapon should raise exactly one panel",
             )
 
@@ -1569,9 +1495,7 @@ internal class TuiAppLoopTest {
     /**
      * A minimal deterministic [Animation] test double — fast frames, one visible glyph.
      *
-     * The glyph MOVES with [index]. Frames that render identically would diff to nothing in
-     * tenter's [Terminal], so a still test double makes "is it still animating?" indistinguishable
-     * from "did it stop?" — which is exactly what several tests below assert on.
+     * The glyph MOVES with [index], so consecutive frames differ visibly.
      */
     private class TestAnimation(
         override val frameCount: Int = 3,

@@ -1,10 +1,7 @@
 package io.archinaut.battletech.tui.view
 
-import com.github.ajalt.mordant.rendering.AnsiLevel
 import io.archinaut.battletech.tui.animation.PanelPlacement
 import io.archinaut.battletech.tui.game.AppState
-import com.github.ajalt.mordant.terminal.TerminalRecorder
-import io.archinaut.battletech.tui.screen.resolveTheme
 import io.archinaut.tenter.animation.AnimationPlayback
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Cell
@@ -24,7 +21,6 @@ import io.archinaut.tenter.widget.panel.Panel
 import io.archinaut.tenter.widget.panel.PanelId
 import io.archinaut.tenter.widget.panel.PanelSet
 import io.archinaut.tenter.widget.panel.Panels
-import com.github.ajalt.mordant.terminal.Terminal as MordantTerminal
 
 /** Renders [widget] into a fresh [width]x[height] canvas and returns it for assertions. */
 public fun render(widget: Widget, width: Int, height: Int): Canvas =
@@ -63,14 +59,11 @@ public fun renderInPanel(
 }
 
 /**
- * Draws one [width]x[height] frame with [draw] through a real [Terminal] themed `dark`, and returns
- * what it drew. Each call is a fresh terminal, so frames never diff against each other.
+ * Draws one [width]x[height] frame with [draw] through a headless [Terminal], and returns what it
+ * drew. Each call is a fresh terminal, so frames never diff against each other.
  */
-public fun drawFrame(width: Int, height: Int, draw: (Frame) -> Unit): CompletedFrame {
-    val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = width, height = height)
-    val backend = MordantTerminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
-    return Terminal(backend, resolveTheme("dark")).draw(draw)
-}
+public fun drawFrame(width: Int, height: Int, draw: (Frame) -> Unit): CompletedFrame =
+    Terminal.headless(width, height).draw(draw)
 
 /** Row [y], columns [x] until [x] + [width], right-trimmed. */
 public fun Canvas.line(y: Int, x: Int = 0, width: Int = this.width - x): String = line(::get, y, x, width)

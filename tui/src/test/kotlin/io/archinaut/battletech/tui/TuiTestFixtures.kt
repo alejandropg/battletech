@@ -32,6 +32,7 @@ import io.archinaut.battletech.tactical.unit.empty
 import io.archinaut.battletech.tui.game.AppState
 import io.archinaut.battletech.tui.game.phase.MovementPhase
 import io.archinaut.battletech.tui.game.phase.Phase
+import io.archinaut.tenter.terminal.Terminal
 
 internal fun mediumLaser(
     mountId: WeaponMountId = WeaponMountId(0),
@@ -186,3 +187,6 @@ internal fun aGameState(
     units = UnitRoster(units),
     map = map,
 )
+
+/** The text of the latest frame this terminal drew, one line per row. */
+internal fun Terminal.lastFrameText(): String = checkNotNull(lastFrame) { "nothing drawn yet" }.lines().joinToString("\n")

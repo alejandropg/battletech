@@ -64,8 +64,8 @@ Checklist:
 - `c` before a map and both rosters are non-empty flashes a reason on the prompt row instead of
   committing (try it right after locking the mode, before touching MAP/PLAYER panels).
 - A successful commit swaps the setup screen for the game screen in the same frame, no flicker —
-  this is `Main.kt`'s `withScreen` sharing one Mordant terminal/tenter `Terminal` and alternate-screen
-  scope across `SetupApp` and `TuiApp`; each app collects its cold input flow in sequence (see
+  this is `Main.kt` sharing one tenter `Terminal` and its `withScreen` alternate-screen scope
+  across `SetupApp` and `TuiApp`; each app collects its cold input flow in sequence (see
   `docs/architecture.md`).
 
 **Host/join over two tmux sessions** (localhost, no real network needed) exercises the lobby:

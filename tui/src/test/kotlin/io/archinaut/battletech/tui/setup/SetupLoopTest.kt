@@ -11,11 +11,7 @@ import io.archinaut.battletech.tactical.model.content.MatchPlan
 import io.archinaut.battletech.tactical.model.content.summarize
 import io.archinaut.battletech.tactical.unit.MechModels
 import io.archinaut.battletech.tui.input.Keybindings
-import io.archinaut.battletech.tui.screen.resolveTheme
 import com.github.ajalt.mordant.input.KeyboardEvent
-import com.github.ajalt.mordant.rendering.AnsiLevel
-import com.github.ajalt.mordant.terminal.Terminal as MordantTerminal
-import com.github.ajalt.mordant.terminal.TerminalRecorder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.flowOf
@@ -27,13 +23,12 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import io.archinaut.tenter.terminal.Terminal
+import io.archinaut.battletech.tui.lastFrameText
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class SetupLoopTest {
 
-    private val recorder = TerminalRecorder(ansiLevel = AnsiLevel.TRUECOLOR, width = 120, height = 40)
-    private val terminal = MordantTerminal(ansiLevel = AnsiLevel.TRUECOLOR, terminalInterface = recorder)
-    private val screen = Terminal(terminal, resolveTheme("dark"))
+    private val screen = Terminal.headless(width = 120, height = 40)
 
     private val map: GameMap = GameMap(
         hexes = (0 until 8).map { row -> HexCoordinates(0, row) }.associateWith { Hex(it) },
@@ -62,7 +57,7 @@ internal class SetupLoopTest {
     fun `stage 1 renders only the MODE panel`() = runTest {
         run(SetupUiEvent.Quit)
 
-        val out = recorder.output()
+        val out = screen.lastFrameText()
         assertThat(out).contains("MODE")
         assertThat(out).doesNotContain("PLAYER 1")
     }
@@ -74,7 +69,7 @@ internal class SetupLoopTest {
             SetupUiEvent.Quit,
         )
 
-        val out = recorder.output()
+        val out = screen.lastFrameText()
         assertThat(out).contains("MAP")
         assertThat(out).contains("PLAYER 1")
         assertThat(out).contains("PLAYER 2")
@@ -94,7 +89,7 @@ internal class SetupLoopTest {
         // loop simply runs the full sequence without failing on any of the four presses in a row
         // (a wrap bug would throw or otherwise corrupt state, not crash — so the meaningful check
         // is that MAP is still the reveal-visible panel content after cycling all the way around).
-        assertThat(recorder.output()).contains("MAP")
+        assertThat(screen.lastFrameText()).contains("MAP")
     }
 
     @Test
@@ -108,7 +103,7 @@ internal class SetupLoopTest {
             SetupUiEvent.Input(KeyboardEvent("Tab")),
             SetupUiEvent.Quit,
         )
-        assertThat(recorder.output()).contains("MAP")
+        assertThat(screen.lastFrameText()).contains("MAP")
     }
 
     @Test
@@ -121,12 +116,7 @@ internal class SetupLoopTest {
             SetupUiEvent.Quit,
         )
 
-        // The diffing renderer (see tenter's Terminal) only retransmits cells that actually
-        // changed relative to the previous prompt, so a character the old and new prompt
-        // happen to share at the same column is legitimately skipped — "no units" is the
-        // substring guaranteed to survive as one contiguous run regardless of what the
-        // previous prompt text was.
-        assertThat(recorder.output()).contains("no units")
+        assertThat(screen.lastFrameText()).contains("no units")
     }
 
     @Test
@@ -155,7 +145,7 @@ internal class SetupLoopTest {
             SetupUiEvent.Quit,
         )
 
-        assertThat(recorder.output()).contains(HELP_TITLE)
+        assertThat(screen.lastFrameText()).contains(HELP_TITLE)
     }
 
     @Test
@@ -172,27 +162,19 @@ internal class SetupLoopTest {
             )
         }
 
-        screen.clear()
-        recorder.clearOutput()
         internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
-        assertThat(recorder.output()).contains("PLAYER 1")
-        assertThat(recorder.output()).doesNotContain("'MECH DATA")
+        assertThat(screen.lastFrameText()).contains("PLAYER 1")
+        assertThat(screen.lastFrameText()).doesNotContain("'MECH DATA")
 
-        screen.clear()
-        recorder.clearOutput()
         internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
-        assertThat(recorder.output()).contains("'MECH DATA")
+        assertThat(screen.lastFrameText()).contains("'MECH DATA")
 
-        screen.clear()
-        recorder.clearOutput()
         internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
-        assertThat(recorder.output()).doesNotContain("PLAYER 1")
+        assertThat(screen.lastFrameText()).doesNotContain("PLAYER 1")
 
-        screen.clear()
-        recorder.clearOutput()
         internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
-        assertThat(recorder.output()).contains("PLAYER 1")
-        assertThat(recorder.output()).doesNotContain("'MECH DATA")
+        assertThat(screen.lastFrameText()).contains("PLAYER 1")
+        assertThat(screen.lastFrameText()).doesNotContain("'MECH DATA")
 
         internalEvents.send(SetupUiEvent.Quit)
         loopJob.join()
@@ -218,10 +200,9 @@ internal class SetupLoopTest {
         )
 
         // Quit, not Commit: `c` was refused even though the plan itself is complete. (The refusal
-        // message is asserted in SetupStateTest — here it would be split across the renderer's
-        // per-cell diff output.)
+        // message is asserted in SetupStateTest.)
         assertThat(outcome).isEqualTo(SetupOutcome.Quit)
-        assertThat(recorder.output()).contains("PLAYER 1") // panels stayed
+        assertThat(screen.lastFrameText()).contains("PLAYER 1") // panels stayed
     }
 
     /**
@@ -248,6 +229,6 @@ internal class SetupLoopTest {
         )
 
         assertThat(outcome).isEqualTo(SetupOutcome.Quit)
-        assertThat(recorder.output()).contains("PLAYER 1")
+        assertThat(screen.lastFrameText()).contains("PLAYER 1")
     }
 }

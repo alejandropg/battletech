@@ -33,7 +33,6 @@ import java.util.concurrent.CountDownLatch
 import kotlin.io.path.Path
 import io.archinaut.tenter.terminal.Terminal
 import io.archinaut.tenter.terminal.withScreen
-import com.github.ajalt.mordant.terminal.Terminal as MordantTerminal
 
 /** Builds the [ContentCatalog] for one launch: every built-in plus [launch]'s `--add-*` registrations. */
 private fun resolveContentOrExit(launch: Launch): ContentCatalog = try {
@@ -100,19 +99,15 @@ private fun awaitKickstart(server: GameServer, seats: Map<PlayerId, ClientGameSe
 }
 
 /**
- * Owns the one alternate-screen/cursor scope for this process (D17): constructs the one
- * [MordantTerminal] + tenter [Terminal] it uses for its whole run — whether that means only [TuiApp], or
- * [SetupApp] followed by [TuiApp] on the interactive path — and hands both to [block]. The input
- * flows collected by each application acquire and release raw mode independently. [themeName]
- * null auto-selects from the terminal's detected color support, exactly as [TuiApp] used to do
- * internally.
+ * The one tenter [Terminal] this process uses for its whole run (D17), and the theme its one
+ * [withScreen] scope draws with — whether that scope runs only [TuiApp], or [SetupApp] followed by
+ * [TuiApp] on the interactive path. Creating the terminal writes nothing, so a TUI mode calls this
+ * before starting any server: an invalid [themeName] exits here, with nothing yet to clean up.
+ * [themeName] null auto-selects from the terminal's detected color support.
  */
-private fun withScreen(themeName: String?, block: (MordantTerminal, Terminal) -> Unit) {
-    val terminal = MordantTerminal()
-    val theme = resolveThemeOrExit(themeName) ?: resolveTheme(defaultThemeName(terminal.terminalInfo.ansiLevel))
-    terminal.withScreen(theme) { screen ->
-        block(terminal, screen)
-    }
+private fun tuiScreen(themeName: String?): Pair<Terminal, Theme> {
+    val screen = Terminal()
+    return screen to (resolveThemeOrExit(themeName) ?: resolveTheme(defaultThemeName(screen.ansiLevel)))
 }
 
 /**
@@ -124,6 +119,7 @@ public fun main(args: Array<String>) {
 
     when (val mode = launch.mode) {
         is Mode.HotSeat -> {
+            val (screen, theme) = tuiScreen(launch.themeName)
             val content = resolveContentOrExit(launch)
             // Every match commits through LobbyHost now, hot-seat included (D12) — with nothing
             // ever parked here, this is exactly GameServer.host's own behavior.
@@ -140,10 +136,11 @@ public fun main(args: Array<String>) {
             // TuiApp reads currentPhase to build its initial AppState, so composition must
             // absorb the kickstart race here — see awaitKickstart's KDoc.
             awaitKickstart(server, seats)
-            server.use { withScreen(launch.themeName) { terminal, screen -> TuiApp(seats, terminal, screen).run() } }
+            server.use { screen.withScreen(theme) { TuiApp(seats, it).run() } }
         }
 
         is Mode.Host -> {
+            val (screen, theme) = tuiScreen(launch.themeName)
             val content = resolveContentOrExit(launch)
             // Commits immediately (today's --map/--unit are already given, D2) — a joiner that
             // connects after this always hits the committed JoinAccepted fast path, never the
@@ -157,8 +154,8 @@ public fun main(args: Array<String>) {
             println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
             acceptor.use {
                 server.use {
-                    withScreen(launch.themeName) { terminal, screen ->
-                        TuiApp(seats = mapOf(localSession.playerId to localSession), terminal, screen).run()
+                    screen.withScreen(theme) {
+                        TuiApp(seats = mapOf(localSession.playerId to localSession), it).run()
                     }
                 }
             }
@@ -168,6 +165,7 @@ public fun main(args: Array<String>) {
             // --add-map/--add-mech contribute this seat's registered content to the host's
             // shared asset registry, even though join never SELECTS a map or unit collection of
             // its own — see ContentCatalog.contribution's KDoc.
+            val (screen, theme) = tuiScreen(launch.themeName)
             val content = resolveContentOrExit(launch)
             val lobbyClient = try {
                 LobbyClient.connect(mode.host, mode.port, mode.sessionId, content.contribution())
@@ -181,12 +179,10 @@ public fun main(args: Array<String>) {
 
             if (lobbyClient.isCommitted) {
                 lobbyClient.awaitMatch().use { remote ->
-                    withScreen(launch.themeName) { terminal, screen ->
-                        TuiApp(seats = mapOf(remote.playerId to remote), terminal, screen).run()
-                    }
+                    screen.withScreen(theme) { TuiApp(seats = mapOf(remote.playerId to remote), it).run() }
                 }
             } else {
-                withScreen(launch.themeName) { terminal, screen ->
+                screen.withScreen(theme) {
                     val initial = SetupState(
                         catalog = lobbyClient.catalog,
                         registry = lobbyClient.registry,
@@ -196,9 +192,9 @@ public fun main(args: Array<String>) {
                         opponentEverConnected = true,
                         readOnly = true,
                     )
-                    val outcome = SetupApp(terminal, screen, Keybindings.DEFAULT, LobbyMirrorAdapter(lobbyClient), initial).run()
+                    val outcome = SetupApp(screen, Keybindings.DEFAULT, LobbyMirrorAdapter(lobbyClient), initial).run()
                     if (outcome == SetupOutcome.MatchStarted) {
-                        lobbyClient.awaitMatch().use { remote -> TuiApp(mapOf(remote.playerId to remote), terminal, screen).run() }
+                        lobbyClient.awaitMatch().use { remote -> TuiApp(mapOf(remote.playerId to remote), screen).run() }
                     } else {
                         lobbyClient.close()
                     }
@@ -215,7 +211,10 @@ public fun main(args: Array<String>) {
 
         // Bare invocation (D1). Nothing is printed on this path (D3): a stray println would
         // corrupt the setup screen's first frame — the host endpoint lives in panel 1 instead.
-        Mode.Interactive -> runInteractive(launch, resolveContentOrExit(launch))
+        Mode.Interactive -> {
+            val (screen, theme) = tuiScreen(launch.themeName)
+            runInteractive(screen, theme, resolveContentOrExit(launch))
+        }
     }
 }
 
@@ -227,14 +226,14 @@ public fun main(args: Array<String>) {
  * it is closed only once the match is over, because its acceptor is the one an interactive host
  * has for the whole run (see [LobbyHostAdapter.close]).
  */
-private fun runInteractive(launch: Launch, content: ContentCatalog) {
+private fun runInteractive(screen: Terminal, theme: Theme, content: ContentCatalog) {
     val registry = AssetRegistry.EMPTY.merge(content.contribution()).registry
     val hostAdapter = LobbyHostAdapter(content.contribution())
 
     hostAdapter.use {
-        withScreen(launch.themeName) { terminal, screen ->
+        screen.withScreen(theme) {
             val initial = SetupState(catalog = registry.summarize(), registry = registry)
-            when (val outcome = SetupApp(terminal, screen, Keybindings.DEFAULT, hostAdapter, initial).run()) {
+            when (val outcome = SetupApp(screen, Keybindings.DEFAULT, hostAdapter, initial).run()) {
                 SetupOutcome.Quit -> Unit
                 SetupOutcome.MatchStarted -> Unit // unreachable — hostAdapter never emits it
                 is SetupOutcome.Commit -> {
@@ -245,7 +244,7 @@ private fun runInteractive(launch: Launch, content: ContentCatalog) {
                         // like the direct `host` subcommand).
                         lateinit var localSession: ClientGameSession
                         val server = existingLobby.commit(state) { localSession = it.connectLocal(content.contribution()) }
-                        server.use { TuiApp(seats = mapOf(localSession.playerId to localSession), terminal, screen).run() }
+                        server.use { TuiApp(seats = mapOf(localSession.playerId to localSession), screen).run() }
                     } else {
                         // HOT_SEAT: beginHosting() was never called — a throwaway LobbyHost with
                         // nothing parked, exactly like the direct `hot-seat` subcommand.
@@ -256,7 +255,7 @@ private fun runInteractive(launch: Launch, content: ContentCatalog) {
                             "interactive roster incomplete: expected ${PlayerId.entries.toSet()}, got ${seats.keys}"
                         }
                         awaitKickstart(server, seats)
-                        server.use { TuiApp(seats, terminal, screen).run() }
+                        server.use { TuiApp(seats, screen).run() }
                     }
                 }
             }

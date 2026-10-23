@@ -217,10 +217,10 @@ selections and the committed flag are therefore held and replayed at registratio
 `LobbyCommitted` landing in the window is simply lost and the joiner's mirror waits forever for a
 match that has already started.
 
-`TuiApp` and `tui/setup/SetupApp` share one Mordant terminal + `io.archinaut.tenter.terminal.Terminal`, scoped
+`TuiApp` and `tui/setup/SetupApp` share one `io.archinaut.tenter.terminal.Terminal`, scoped
 through `io.archinaut.tenter.terminal.withScreen` rather than each constructing their own:
-`Main.kt`'s `withScreen` helper selects the palette, opens one alternate-screen/cursor scope, and
-hands the same pair to whichever app(s) run in sequence (`SetupApp` then `TuiApp` on the
+`Main.kt`'s `tuiTerminal` selects the palette and builds the terminal before any server starts,
+then one alternate-screen/cursor scope hands it to whichever app(s) run in sequence (`SetupApp` then `TuiApp` on the
 interactive path), so there is no flicker or double screen transition at the hand-off between the
 two screens. Each app's cold `uiEvents` flow acquires and releases raw mode when collected;
 the two collectors may therefore run sequentially inside the one screen scope. `SetupApp`/`SetupLoop` mirror `TuiApp`/`RunLoop`'s shape

@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
 import io.archinaut.tenter.terminal.Terminal
 import io.archinaut.tenter.terminal.TerminalEvent
-import com.github.ajalt.mordant.terminal.Terminal as MordantTerminal
 
 internal sealed interface SetupOutcome {
     data class Commit(val plan: MatchPlan, val registry: AssetRegistry) : SetupOutcome
@@ -22,12 +21,11 @@ internal sealed interface SetupOutcome {
 
 /**
  * Runs the interactive setup screen to completion. Mirrors `io.archinaut.battletech.tui.TuiApp` but *accepts*
- * its terminals rather than constructing them (D17), so `Main.kt` can keep one
+ * its terminal rather than constructing it (D17), so `Main.kt` can keep one
  * [io.archinaut.tenter.terminal.withScreen] scope across whichever app runs next. That scope owns the
  * alternate screen and cursor; this app's collected input flow owns its own raw-mode lifetime.
  */
 internal class SetupApp(
-    private val terminal: MordantTerminal,
     private val screen: Terminal,
     private val keys: Keybindings,
     private val lobby: SetupLobby,
@@ -40,7 +38,7 @@ internal class SetupApp(
 
         setupLoop(
             events = merge(
-                terminal.uiEvents(keys, quit = SetupUiEvent.Quit) { it.toSetupUiEvent() },
+                screen.uiEvents(keys, quit = SetupUiEvent.Quit) { it.toSetupUiEvent() },
                 internalEvents.receiveAsFlow(),
             ),
             internalEvents = internalEvents,
