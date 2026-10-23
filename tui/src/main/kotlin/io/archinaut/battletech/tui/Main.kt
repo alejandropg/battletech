@@ -182,21 +182,22 @@ public fun main(args: Array<String>) {
                     screen.withScreen(theme) { TuiApp(seats = mapOf(remote.playerId to remote), it).run() }
                 }
             } else {
-                screen.withScreen(theme) {
-                    val initial = SetupState(
-                        catalog = lobbyClient.catalog,
-                        registry = lobbyClient.registry,
-                        mode = SetupMode.HOST,
-                        modeLocked = true,
-                        opponentConnected = true,
-                        opponentEverConnected = true,
-                        readOnly = true,
-                    )
-                    val outcome = SetupApp(screen, Keybindings.DEFAULT, LobbyMirrorAdapter(lobbyClient), initial).run()
-                    if (outcome == SetupOutcome.MatchStarted) {
-                        lobbyClient.awaitMatch().use { remote -> TuiApp(mapOf(remote.playerId to remote), screen).run() }
-                    } else {
-                        lobbyClient.close()
+                // The match session shares lobbyClient's connection; closing both is harmless.
+                lobbyClient.use {
+                    screen.withScreen(theme) {
+                        val initial = SetupState(
+                            catalog = lobbyClient.catalog,
+                            registry = lobbyClient.registry,
+                            mode = SetupMode.HOST,
+                            modeLocked = true,
+                            opponentConnected = true,
+                            opponentEverConnected = true,
+                            readOnly = true,
+                        )
+                        val outcome = SetupApp(screen, Keybindings.DEFAULT, LobbyMirrorAdapter(lobbyClient), initial).run()
+                        if (outcome == SetupOutcome.MatchStarted) {
+                            lobbyClient.awaitMatch().use { remote -> TuiApp(mapOf(remote.playerId to remote), screen).run() }
+                        }
                     }
                 }
             }
