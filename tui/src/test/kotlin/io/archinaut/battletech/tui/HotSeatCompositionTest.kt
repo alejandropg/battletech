@@ -17,12 +17,6 @@ import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.battletech.tui.loop.UiEvent
 import io.archinaut.battletech.tui.loop.runLoop
 import io.archinaut.tenter.terminal.Terminal
-import io.archinaut.tenter.terminal.HeadlessTerminal
-import io.archinaut.tenter.terminal.Screen
-import kotlinx.coroutines.test.TestResult
-import kotlinx.coroutines.test.TestScope
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import io.archinaut.tenter.screen.Size
@@ -67,16 +61,6 @@ import kotlin.random.Random
 internal class HotSeatCompositionTest {
 
     private val terminal = Terminal.headless(width = 120, height = 40)
-
-    /**
-     * [runTest] with [terminal]'s screen open throughout, as `withScreen` holds it around the app in
-     * production.
-     */
-    private fun runOnScreen(
-        context: CoroutineContext = EmptyCoroutineContext,
-        terminal: HeadlessTerminal = this.terminal,
-        body: suspend TestScope.(Screen) -> Unit,
-    ): TestResult = terminal.withScreen { screen -> runTest(context) { body(screen) } }
 
 
     private lateinit var server: GameServer
@@ -156,82 +140,84 @@ internal class HotSeatCompositionTest {
      */
     @Test
     fun `the TUI drives both seats through the real path - a move lands, the view swings, no waiting-for-opponent flash`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val mover = server.turnState.movement.activePlayer
-            val opponent = PlayerId.entries.single { it != mover }
-            val moverSeat = seats.getValue(mover)
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val mover = server.turnState.movement.activePlayer
+                val opponent = PlayerId.entries.single { it != mover }
+                val moverSeat = seats.getValue(mover)
 
-            val unit = moverSeat.turnState.selectableUnits(moverSeat.stateFor(mover).units).first()
-            val reachability = moverSeat.viewFor(mover).legalMovementsFor(unit.id).first()
-            // Prefer an actual step (not "turn in place at the current hex", which can offer
-            // several facings for zero MP) so exactly one facing is legal there and Enter commits
-            // the move directly instead of opening the facing sub-menu.
-            val destination = reachability.destinations
-                .filter { it.position != unit.position }
-                .firstOrNull { candidate -> reachability.destinations.count { it.position == candidate.position } == 1 }
-                ?: reachability.destinations.first()
-            val (screenX, screenY) = HexLayout.hexToScreen(destination.position.col, destination.position.row)
+                val unit = moverSeat.turnState.selectableUnits(moverSeat.stateFor(mover).units).first()
+                val reachability = moverSeat.viewFor(mover).legalMovementsFor(unit.id).first()
+                // Prefer an actual step (not "turn in place at the current hex", which can offer
+                // several facings for zero MP) so exactly one facing is legal there and Enter commits
+                // the move directly instead of opening the facing sub-menu.
+                val destination = reachability.destinations
+                    .filter { it.position != unit.position }
+                    .firstOrNull { candidate -> reachability.destinations.count { it.position == candidate.position } == 1 }
+                    ?: reachability.destinations.first()
+                val (screenX, screenY) = HexLayout.hexToScreen(destination.position.col, destination.position.row)
 
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            val subscriptions = seats.values.map { seat -> seat.subscribe { internalEvents.trySend(UiEvent.Session(it)) } }
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                val subscriptions = seats.values.map { seat -> seat.subscribe { internalEvents.trySend(UiEvent.Session(it)) } }
 
-            val initialState = AppState(
-                seats = seats,
-                phase = mapToTuiPhase(server.currentPhase),
-                cursor = unit.position,
-            )
-
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = internalEvents,
-                    screen = screen,
-                    initialState = initialState,
-                    keys = Keybindings.DEFAULT,
+                val initialState = AppState(
+                    seats = seats,
+                    phase = mapToTuiPhase(server.currentPhase),
+                    cursor = unit.position,
                 )
-            }
 
-            try {
-                // Select the mover's unit under the cursor -> enters Browsing.
-                internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
-                // Click the destination hex -> sets hoveredDestination.
-                val destinationPoint = boardScreenPoint(
-                    initialState,
-                    BoardView.MAP_ORIGIN_X + screenX,
-                    BoardView.MAP_ORIGIN_Y + screenY,
-                )
-                internalEvents.send(
-                    UiEvent.Input(
-                        MouseEvent(
-                            x = destinationPoint.x,
-                            y = destinationPoint.y,
-                            left = true,
-                        ),
-                    ),
-                )
-                // Confirm the path -> submits MoveUnit through moverSeat's REAL ClientGameSession.
-                internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
-
-                awaitCondition {
-                    server.turnState.movement.activePlayer == opponent &&
-                        seats.values.all { it.activePlayer == opponent }
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = initialState,
+                        keys = Keybindings.DEFAULT,
+                    )
                 }
 
-                // Drain any resync UiEvent.Session the passive seat's subscription fired after
-                // the poll above, so the latest frame reflects the fully-converged state.
-                internalEvents.send(UiEvent.Resized(Size(120, 40)))
+                try {
+                    // Select the mover's unit under the cursor -> enters Browsing.
+                    internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
+                    // Click the destination hex -> sets hoveredDestination.
+                    val destinationPoint = boardScreenPoint(
+                        initialState,
+                        BoardView.MAP_ORIGIN_X + screenX,
+                        BoardView.MAP_ORIGIN_Y + screenY,
+                    )
+                    internalEvents.send(
+                        UiEvent.Input(
+                            MouseEvent(
+                                x = destinationPoint.x,
+                                y = destinationPoint.y,
+                                left = true,
+                            ),
+                        ),
+                    )
+                    // Confirm the path -> submits MoveUnit through moverSeat's REAL ClientGameSession.
+                    internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
 
-                assertThat(server.stateFor(mover).units.byId(unit.id).position).isEqualTo(destination.position)
-                assertThat(terminal.frameText()).doesNotContain("Waiting for opponent")
+                    awaitCondition {
+                        server.turnState.movement.activePlayer == opponent &&
+                            seats.values.all { it.activePlayer == opponent }
+                    }
 
-                // AppState.viewer follows the active player across real client sessions — the
-                // property that only holds because both real seats are in the map.
-                val resynced = AppState(seats = seats, phase = mapToTuiPhase(server.currentPhase), cursor = destination.position)
-                assertThat(resynced.viewer).isEqualTo(opponent)
-            } finally {
-                subscriptions.forEach { it.unsubscribe() }
-                internalEvents.send(UiEvent.Quit)
-                loopJob.join()
+                    // Drain any resync UiEvent.Session the passive seat's subscription fired after
+                    // the poll above, so the latest frame reflects the fully-converged state.
+                    internalEvents.send(UiEvent.Resized(Size(120, 40)))
+
+                    assertThat(server.stateFor(mover).units.byId(unit.id).position).isEqualTo(destination.position)
+                    assertThat(terminal.frameText()).doesNotContain("Waiting for opponent")
+
+                    // AppState.viewer follows the active player across real client sessions — the
+                    // property that only holds because both real seats are in the map.
+                    val resynced = AppState(seats = seats, phase = mapToTuiPhase(server.currentPhase), cursor = destination.position)
+                    assertThat(resynced.viewer).isEqualTo(opponent)
+                } finally {
+                    subscriptions.forEach { it.unsubscribe() }
+                    internalEvents.send(UiEvent.Quit)
+                    loopJob.join()
+                }
             }
         }
 

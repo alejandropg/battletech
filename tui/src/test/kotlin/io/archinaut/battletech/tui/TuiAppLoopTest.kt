@@ -55,12 +55,6 @@ import org.junit.jupiter.api.Test
 import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.PaletteColor
 import io.archinaut.tenter.terminal.Terminal
-import io.archinaut.tenter.terminal.HeadlessTerminal
-import io.archinaut.tenter.terminal.Screen
-import kotlinx.coroutines.test.TestResult
-import kotlinx.coroutines.test.TestScope
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.widget.Widget
 import kotlin.time.Duration
@@ -72,16 +66,6 @@ internal class TuiAppLoopTest {
 
     // Width/height must be positive to pass TuiApp.currentSize() checks.
     private val terminal = Terminal.headless(width = 120, height = 40)
-
-    /**
-     * [runTest] with [terminal]'s screen open throughout, as `withScreen` holds it around the app in
-     * production.
-     */
-    private fun runOnScreen(
-        context: CoroutineContext = EmptyCoroutineContext,
-        terminal: HeadlessTerminal = this.terminal,
-        body: suspend TestScope.(Screen) -> Unit,
-    ): TestResult = terminal.withScreen { screen -> runTest(context) { body(screen) } }
 
 
     /** The text of the latest frame the loop drew. */
@@ -133,49 +117,53 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `scripted Input and Quit flow completes after rendering`() = runOnScreen { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-        // Quit is included in the scripted flow — takeWhile stops on Quit and
-        // merge cancels all source coroutines so the loop exits cleanly.
-        // ArrowDown, not ArrowUp: the cursor starts at (0,0) on a 5x5 map, and moveCursor()
-        // clamps to the current hex when the neighbor is off the map — north from row 0 is off
-        // the map, so ArrowUp would leave the cursor (and the render) unchanged.
-        val events = flowOf(
-            UiEvent.Input(KeyboardEvent("ArrowDown")),
-            UiEvent.Quit,
-        )
+    fun `scripted Input and Quit flow completes after rendering`() = runTest {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            // Quit is included in the scripted flow — takeWhile stops on Quit and
+            // merge cancels all source coroutines so the loop exits cleanly.
+            // ArrowDown, not ArrowUp: the cursor starts at (0,0) on a 5x5 map, and moveCursor()
+            // clamps to the current hex when the neighbor is off the map — north from row 0 is off
+            // the map, so ArrowUp would leave the cursor (and the render) unchanged.
+            val events = flowOf(
+                UiEvent.Input(KeyboardEvent("ArrowDown")),
+                UiEvent.Quit,
+            )
 
-        runLoop(
-            events = merge(events, internalEvents.receiveAsFlow()),
-            internalEvents = internalEvents,
-            screen = screen,
-            initialState = buildAppState(),
-            keys = Keybindings.DEFAULT,
-        )
-
-        assertTrue(screenText().isNotBlank(), "Expected the loop to render")
-    }
-
-    @Test
-    fun `the loop renders its initial frame and redraws on input`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-
-        val loopJob = launch {
             runLoop(
-                events = internalEvents.receiveAsFlow(),
+                events = merge(events, internalEvents.receiveAsFlow()),
                 internalEvents = internalEvents,
                 screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
             )
+
+            assertTrue(screenText().isNotBlank(), "Expected the loop to render")
         }
+    }
 
-        assertTrue(screenText().isNotBlank(), "Expected the initial frame before any event")
-        // ArrowDown, not ArrowUp: north from row 0 is off the map and would leave the cursor put.
-        assertTrue(drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) }, "Expected input to redraw")
+    @Test
+    fun `the loop renders its initial frame and redraws on input`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            assertTrue(screenText().isNotBlank(), "Expected the initial frame before any event")
+            // ArrowDown, not ArrowUp: north from row 0 is off the map and would leave the cursor put.
+            assertTrue(drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) }, "Expected input to redraw")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -186,67 +174,71 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `flash appears after Not-your-unit trigger`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+    fun `flash appears after Not-your-unit trigger`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-        // Launch runLoop: with UnconfinedTestDispatcher it starts running eagerly
-        // and suspends when it hits the first channel receive (empty channel).
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
+            // Launch runLoop: with UnconfinedTestDispatcher it starts running eagerly
+            // and suspends when it hits the first channel receive (empty channel).
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            // Initial frame is rendered (loop is now suspended waiting for events).
+            // Enter on PLAYER_2 unit at (0,0) while PLAYER_1 is active → "Not your unit" flash.
+            internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
+            // With UnconfinedTestDispatcher, send() resumes the loop eagerly; by the time
+            // send() returns (or shortly after), the event has been processed and flash rendered.
+
+            assertTrue(
+                screenText().contains("Not your unit"),
+                "Expected 'Not your unit' flash in output after pressing Enter on enemy unit",
             )
+
+            // Stop the loop.
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
         }
-
-        // Initial frame is rendered (loop is now suspended waiting for events).
-        // Enter on PLAYER_2 unit at (0,0) while PLAYER_1 is active → "Not your unit" flash.
-        internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
-        // With UnconfinedTestDispatcher, send() resumes the loop eagerly; by the time
-        // send() returns (or shortly after), the event has been processed and flash rendered.
-
-        assertTrue(
-            screenText().contains("Not your unit"),
-            "Expected 'Not your unit' flash in output after pressing Enter on enemy unit",
-        )
-
-        // Stop the loop.
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
     }
 
     @Test
-    fun `flash text clears after FlashExpired fires through virtual time`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+    fun `flash text clears after FlashExpired fires through virtual time`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            // Trigger the flash.
+            internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
+            assertTrue(screenText().contains("Not your unit"), "Flash should appear after trigger")
+
+            // Advance virtual time past the 3s flash duration — the flash job's delay() fires,
+            // sending FlashExpired back through internalEvents. The loop processes it and re-renders
+            // without the flash text.
+            advanceTimeBy(3100.milliseconds)
+
+            assertFalse(
+                screenText().contains("Not your unit"),
+                "Flash text should be gone after FlashExpired, but still present",
             )
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
         }
-
-        // Trigger the flash.
-        internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
-        assertTrue(screenText().contains("Not your unit"), "Flash should appear after trigger")
-
-        // Advance virtual time past the 3s flash duration — the flash job's delay() fires,
-        // sending FlashExpired back through internalEvents. The loop processes it and re-renders
-        // without the flash text.
-        advanceTimeBy(3100.milliseconds)
-
-        assertFalse(
-            screenText().contains("Not your unit"),
-            "Flash text should be gone after FlashExpired, but still present",
-        )
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
     }
 
     // -------------------------------------------------------------------------
@@ -254,27 +246,29 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `Resized event triggers re-render`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+    fun `Resized event triggers re-render`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-            )
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            // Initial frame rendered, loop suspended on receive.
+            assertTrue(screenText().isNotBlank(), "Expected initial frame to be rendered")
+
+            // Send a resize event — loop processes it and re-renders at the new size.
+            assertTrue(drewAfter { internalEvents.send(UiEvent.Resized(Size(160, 45))) }, "Expected Resized to trigger a re-render")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
         }
-
-        // Initial frame rendered, loop suspended on receive.
-        assertTrue(screenText().isNotBlank(), "Expected initial frame to be rendered")
-
-        // Send a resize event — loop processes it and re-renders at the new size.
-        assertTrue(drewAfter { internalEvents.send(UiEvent.Resized(Size(160, 45))) }, "Expected Resized to trigger a re-render")
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
     }
 
     // -------------------------------------------------------------------------
@@ -282,34 +276,36 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `stale FlashExpired generation is ignored, newer flash stays visible`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+    fun `stale FlashExpired generation is ignored, newer flash stays visible`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-            )
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            // Flash A: generation 1.
+            internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
+            assertTrue(screenText().contains("Not your unit"), "Flash A should appear")
+
+            // Flash B: generation 2 replaces flash A (same trigger, same message text — only the
+            // internal generation counter differs, which isn't independently visible on screen).
+            internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
+
+            // Deliver stale FlashExpired for generation 1 — runLoop ignores it without rendering, and
+            // generation 2's flash stays.
+            assertFalse(drewAfter { internalEvents.send(UiEvent.FlashExpired(1L)) }, "A stale FlashExpired must not render")
+            assertTrue(screenText().contains("Not your unit"), "A stale FlashExpired must not clear flash B")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
         }
-
-        // Flash A: generation 1.
-        internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
-        assertTrue(screenText().contains("Not your unit"), "Flash A should appear")
-
-        // Flash B: generation 2 replaces flash A (same trigger, same message text — only the
-        // internal generation counter differs, which isn't independently visible on screen).
-        internalEvents.send(UiEvent.Input(KeyboardEvent("Enter")))
-
-        // Deliver stale FlashExpired for generation 1 — runLoop ignores it without rendering, and
-        // generation 2's flash stays.
-        assertFalse(drewAfter { internalEvents.send(UiEvent.FlashExpired(1L)) }, "A stale FlashExpired must not render")
-        assertTrue(screenText().contains("Not your unit"), "A stale FlashExpired must not clear flash B")
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
     }
 
     // -------------------------------------------------------------------------
@@ -333,33 +329,35 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `exception while handling one event does not stop the loop from reaching Quit`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+    fun `exception while handling one event does not stop the loop from reaching Quit`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-                buildVolley = { _, _, _ -> throw IllegalStateException("volley construction failed") },
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                    buildVolley = { _, _, _ -> throw IllegalStateException("volley construction failed") },
+                )
+            }
+
+            // Resolving attacks builds the weapon-fire volley, which throws here — a stand-in for
+            // any bug surfacing during event handling.
+            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+
+            // The loop must still be alive and processing events after the failure.
+            assertTrue(
+                drewAfter { internalEvents.send(UiEvent.Resized(Size(130, 42))) },
+                "Expected loop to keep rendering after a handled exception",
             )
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+            assertTrue(loopJob.isCompleted, "Expected loop to terminate cleanly on Quit after recovering from an exception")
         }
-
-        // Resolving attacks builds the weapon-fire volley, which throws here — a stand-in for
-        // any bug surfacing during event handling.
-        internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-
-        // The loop must still be alive and processing events after the failure.
-        assertTrue(
-            drewAfter { internalEvents.send(UiEvent.Resized(Size(130, 42))) },
-            "Expected loop to keep rendering after a handled exception",
-        )
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-        assertTrue(loopJob.isCompleted, "Expected loop to terminate cleanly on Quit after recovering from an exception")
     }
 
     // -------------------------------------------------------------------------
@@ -367,51 +365,55 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `game-over banner renders when MatchEnded event is received with a winner`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+    fun `game-over banner renders when MatchEnded event is received with a winner`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-            )
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1))))
+
+            val output = screenText()
+            assertTrue(output.contains("MATCH OVER"), "Expected 'MATCH OVER' banner title in output")
+            assertTrue(output.contains("P1 wins!"), "Expected winner label 'P1 wins!' in output")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
         }
-
-        internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1))))
-
-        val output = screenText()
-        assertTrue(output.contains("MATCH OVER"), "Expected 'MATCH OVER' banner title in output")
-        assertTrue(output.contains("P1 wins!"), "Expected winner label 'P1 wins!' in output")
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
     }
 
     @Test
-    fun `game-over banner shows Draw when MatchEnded has a Draw outcome`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+    fun `game-over banner shows Draw when MatchEnded has a Draw outcome`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-            )
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Draw)))
+
+            val output = screenText()
+            assertTrue(output.contains("MATCH OVER"), "Expected 'MATCH OVER' banner title in output")
+            assertTrue(output.contains("Draw"), "Expected 'Draw' in output for null winner")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
         }
-
-        internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Draw)))
-
-        val output = screenText()
-        assertTrue(output.contains("MATCH OVER"), "Expected 'MATCH OVER' banner title in output")
-        assertTrue(output.contains("Draw"), "Expected 'Draw' in output for null winner")
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
     }
 
     // -------------------------------------------------------------------------
@@ -429,253 +431,8 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `a board click on the enemy unit reaches the phase and flashes`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-            )
-        }
-
-        val enemyPoint = boardScreenPoint(buildAppState(), BoardView.MAP_ORIGIN_X, BoardView.MAP_ORIGIN_Y)
-        internalEvents.send(
-            UiEvent.Input(
-                MouseEvent(
-                    x = enemyPoint.x,
-                    y = enemyPoint.y,
-                    left = true,
-                ),
-            ),
-        )
-
-        assertTrue(
-            screenText().contains("Not your unit"),
-            "A left click on hex (0,0) must resolve to a BoardClick and reach the phase",
-        )
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-    }
-
-    // -------------------------------------------------------------------------
-    // Test 8: passive side (remote play) — Session(AttacksResolved) must
-    // populate lastAttackResults just like the submitter's own Transition
-    // does, so the ATTACK RESULTS panel appears on both terminals.
-    // -------------------------------------------------------------------------
-
-    @Test
-    fun `Session AttacksResolved populates lastAttackResults so the results panel appears`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-            )
-        }
-
-        internalEvents.send(UiEvent.Session(AttacksResolved(listOf(aResult()))))
-
-        assertTrue(
-            screenText().contains(AttackResultsView.TITLE),
-            "Expected ATTACK RESULTS panel to appear after a passive-side AttacksResolved event",
-        )
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-    }
-
-    // -------------------------------------------------------------------------
-    // Test 9: resync into WEAPON_ATTACK clears a pre-set lastAttackResults —
-    // mirrors commitAttackImpulse's isNewWeaponAttackPhase -> null so a new
-    // turn's weapon phase starts clean on the passive side too.
-    // -------------------------------------------------------------------------
-
-    @Test
-    fun `resync into WEAPON_ATTACK clears a pre-set lastAttackResults`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-
-        // Session is constructed already sitting at WEAPON_ATTACK while the TUI
-        // phase below is MovementPhase — a deliberate mismatch so the first
-        // Session event triggers the resync branch. Includes a unit matching
-        // aResult()'s attackerId so AttackResultsView's owner lookup resolves.
-        val base = AppState(
-            gameState = aGameState(units = listOf(aUnit(id = "ally", owner = PlayerId.PLAYER_1))),
-            turnState = aTurnState(),
-            phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK),
-            cursor = HexCoordinates(0, 0),
-        )
-        val initialState = base.copy(
-            phase = MovementPhase.SelectingUnit,
-            lastAttackResults = listOf(aResult()),
-        )
-
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = initialState,
-                keys = Keybindings.DEFAULT,
-            )
-        }
-
-        assertTrue(
-            screenText().contains(AttackResultsView.TITLE),
-            "Precondition: results panel should be visible before the resync",
-        )
-
-        internalEvents.send(UiEvent.Session(TurnEnded(1)))
-
-        assertFalse(
-            screenText().contains(AttackResultsView.TITLE),
-            "Resync into WEAPON_ATTACK must clear lastAttackResults so the panel disappears",
-        )
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-    }
-
-    // -------------------------------------------------------------------------
-    // Test 10: hot-seat regression — when the TUI phase already matches the
-    // session phase (no resync), a Session event must NOT clear a pre-set
-    // lastAttackResults.
-    // -------------------------------------------------------------------------
-
-    @Test
-    fun `Session event does not clear lastAttackResults when phase already matches (no resync)`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-        val initialState = buildAppState().copy(lastAttackResults = listOf(aResult()))
-
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = initialState,
-                keys = Keybindings.DEFAULT,
-            )
-        }
-
-        internalEvents.send(UiEvent.Session(TurnEnded(1)))
-
-        assertTrue(
-            screenText().contains(AttackResultsView.TITLE),
-            "No-resync Session event must not clear a pre-set lastAttackResults",
-        )
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-    }
-
-    // -------------------------------------------------------------------------
-    // Test 11: SessionNotice is just another gameLog entry now (the old
-    // parallel UI-notice mechanism is gone) — it renders in the LOG panel
-    // with its lan-connect icon at its true chronological log position. Mirrors production: a
-    // BattleSession.annotate call appends to the log and dispatches through
-    // subscribers, which the TUI turns into UiEvent.Session for a re-render.
-    // -------------------------------------------------------------------------
-
-    @Test
-    fun `SessionNotice recorded in the gameLog renders in the LOG panel with the lan-connect icon`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-        val initialState = buildAppState()
-        val session = initialState.anySession as BattleSession
-
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = initialState,
-                keys = Keybindings.DEFAULT,
-            )
-        }
-
-        val notice = SessionNotice("Opponent connected")
-        session.annotate(notice)
-        internalEvents.send(UiEvent.Session(notice))
-
-        val out = screenText()
-        assertTrue(out.contains(sessionNoticeIcon()), "Expected the lan-connect icon in the LOG panel")
-        assertTrue(out.contains("Opponent connected"), "Expected the SessionNotice text in the LOG panel")
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-    }
-
-    // -------------------------------------------------------------------------
-    // Test 12: ? opens/closes the HELP panel (and focuses it while open);
-    // 9 focuses LOG so `-` can minimize it to its stub; arrows belong to
-    // the focused panel, not the phase; ? keeps working once the match has
-    // ended.
-    // -------------------------------------------------------------------------
-
-    @Test
-    fun `question mark opens and closes the HELP panel`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-            )
-        }
-
-        assertFalse(screenText().contains(HELP_TITLE), "HELP should be closed by default")
-
-        internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
-        assertTrue(screenText().contains(HELP_TITLE), "? should open HELP")
-
-        internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
-        assertFalse(screenText().contains(HELP_TITLE), "? again should close HELP")
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-    }
-
-    @Test
-    fun `9 focuses LOG, then minus minimizes it to its stub`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-            )
-        }
-
-        assertTrue(screenText().contains(LogView.TITLE), "LOG should render at NORMAL initially")
-
-        internalEvents.send(UiEvent.Input(KeyboardEvent("9"))) // focus LOG (badge '9')
-
-        internalEvents.send(UiEvent.Input(KeyboardEvent("-"))) // NORMAL -> MINIMIZED
-
-        // A minimized panel draws its title one character per row, so the horizontal
-        // "LOG" string no longer appears anywhere in the frame — it becomes a stub.
-        assertFalse(screenText().contains(LogView.TITLE), "'-' should minimize the focused LOG panel to a stub")
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-    }
-
-    @Test
-    fun `reselecting the focused panel's number cycles its size, and UNIT STATUS shows its compact and full views`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
+    fun `a board click on the enemy unit reaches the phase and flashes`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
             val loopJob = launch {
@@ -688,48 +445,311 @@ internal class TuiAppLoopTest {
                 )
             }
 
-            // The size order itself is tenter's PanelSet.cycleFocusedMode; this checks the reselect
-            // binding and each size's UNIT STATUS view.
-            internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
-            assertTrue(screenText().contains(UnitStatusView.TITLE), "first press should focus UNIT STATUS at NORMAL")
-            assertFalse(screenText().contains("'MECH DATA"), "first press should not resize UNIT STATUS")
+            val enemyPoint = boardScreenPoint(buildAppState(), BoardView.MAP_ORIGIN_X, BoardView.MAP_ORIGIN_Y)
+            internalEvents.send(
+                UiEvent.Input(
+                    MouseEvent(
+                        x = enemyPoint.x,
+                        y = enemyPoint.y,
+                        left = true,
+                    ),
+                ),
+            )
 
-            internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
-            assertTrue(screenText().contains("'MECH DATA"), "second press should maximize UNIT STATUS")
-
-            internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
-            assertFalse(screenText().contains(UnitStatusView.TITLE), "third press should minimize UNIT STATUS")
-
-            internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
-            assertTrue(screenText().contains(UnitStatusView.TITLE), "fourth press should restore NORMAL")
-            assertFalse(screenText().contains("'MECH DATA"), "restored NORMAL should use the compact view")
+            assertTrue(
+                screenText().contains("Not your unit"),
+                "A left click on hex (0,0) must resolve to a BoardClick and reach the phase",
+            )
 
             internalEvents.send(UiEvent.Quit)
             loopJob.join()
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 8: passive side (remote play) — Session(AttacksResolved) must
+    // populate lastAttackResults just like the submitter's own Transition
+    // does, so the ATTACK RESULTS panel appears on both terminals.
+    // -------------------------------------------------------------------------
 
     @Test
-    fun `question mark still opens HELP after the match ends`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+    fun `Session AttacksResolved populates lastAttackResults so the results panel appears`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            internalEvents.send(UiEvent.Session(AttacksResolved(listOf(aResult()))))
+
+            assertTrue(
+                screenText().contains(AttackResultsView.TITLE),
+                "Expected ATTACK RESULTS panel to appear after a passive-side AttacksResolved event",
             )
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 9: resync into WEAPON_ATTACK clears a pre-set lastAttackResults —
+    // mirrors commitAttackImpulse's isNewWeaponAttackPhase -> null so a new
+    // turn's weapon phase starts clean on the passive side too.
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `resync into WEAPON_ATTACK clears a pre-set lastAttackResults`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+            // Session is constructed already sitting at WEAPON_ATTACK while the TUI
+            // phase below is MovementPhase — a deliberate mismatch so the first
+            // Session event triggers the resync branch. Includes a unit matching
+            // aResult()'s attackerId so AttackResultsView's owner lookup resolves.
+            val base = AppState(
+                gameState = aGameState(units = listOf(aUnit(id = "ally", owner = PlayerId.PLAYER_1))),
+                turnState = aTurnState(),
+                phase = AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK),
+                cursor = HexCoordinates(0, 0),
+            )
+            val initialState = base.copy(
+                phase = MovementPhase.SelectingUnit,
+                lastAttackResults = listOf(aResult()),
+            )
+
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = initialState,
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            assertTrue(
+                screenText().contains(AttackResultsView.TITLE),
+                "Precondition: results panel should be visible before the resync",
+            )
+
+            internalEvents.send(UiEvent.Session(TurnEnded(1)))
+
+            assertFalse(
+                screenText().contains(AttackResultsView.TITLE),
+                "Resync into WEAPON_ATTACK must clear lastAttackResults so the panel disappears",
+            )
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 10: hot-seat regression — when the TUI phase already matches the
+    // session phase (no resync), a Session event must NOT clear a pre-set
+    // lastAttackResults.
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `Session event does not clear lastAttackResults when phase already matches (no resync)`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            val initialState = buildAppState().copy(lastAttackResults = listOf(aResult()))
+
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = initialState,
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            internalEvents.send(UiEvent.Session(TurnEnded(1)))
+
+            assertTrue(
+                screenText().contains(AttackResultsView.TITLE),
+                "No-resync Session event must not clear a pre-set lastAttackResults",
+            )
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 11: SessionNotice is just another gameLog entry now (the old
+    // parallel UI-notice mechanism is gone) — it renders in the LOG panel
+    // with its lan-connect icon at its true chronological log position. Mirrors production: a
+    // BattleSession.annotate call appends to the log and dispatches through
+    // subscribers, which the TUI turns into UiEvent.Session for a re-render.
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `SessionNotice recorded in the gameLog renders in the LOG panel with the lan-connect icon`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            val initialState = buildAppState()
+            val session = initialState.anySession as BattleSession
+
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = initialState,
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            val notice = SessionNotice("Opponent connected")
+            session.annotate(notice)
+            internalEvents.send(UiEvent.Session(notice))
+
+            val out = screenText()
+            assertTrue(out.contains(sessionNoticeIcon()), "Expected the lan-connect icon in the LOG panel")
+            assertTrue(out.contains("Opponent connected"), "Expected the SessionNotice text in the LOG panel")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 12: ? opens/closes the HELP panel (and focuses it while open);
+    // 9 focuses LOG so `-` can minimize it to its stub; arrows belong to
+    // the focused panel, not the phase; ? keeps working once the match has
+    // ended.
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `question mark opens and closes the HELP panel`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            assertFalse(screenText().contains(HELP_TITLE), "HELP should be closed by default")
+
+            internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
+            assertTrue(screenText().contains(HELP_TITLE), "? should open HELP")
+
+            internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
+            assertFalse(screenText().contains(HELP_TITLE), "? again should close HELP")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+    }
+
+    @Test
+    fun `9 focuses LOG, then minus minimizes it to its stub`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
+
+            assertTrue(screenText().contains(LogView.TITLE), "LOG should render at NORMAL initially")
+
+            internalEvents.send(UiEvent.Input(KeyboardEvent("9"))) // focus LOG (badge '9')
+
+            internalEvents.send(UiEvent.Input(KeyboardEvent("-"))) // NORMAL -> MINIMIZED
+
+            // A minimized panel draws its title one character per row, so the horizontal
+            // "LOG" string no longer appears anywhere in the frame — it becomes a stub.
+            assertFalse(screenText().contains(LogView.TITLE), "'-' should minimize the focused LOG panel to a stub")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+    }
+
+    @Test
+    fun `reselecting the focused panel's number cycles its size, and UNIT STATUS shows its compact and full views`() =
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                    )
+                }
+
+                // The size order itself is tenter's PanelSet.cycleFocusedMode; this checks the reselect
+                // binding and each size's UNIT STATUS view.
+                internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
+                assertTrue(screenText().contains(UnitStatusView.TITLE), "first press should focus UNIT STATUS at NORMAL")
+                assertFalse(screenText().contains("'MECH DATA"), "first press should not resize UNIT STATUS")
+
+                internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
+                assertTrue(screenText().contains("'MECH DATA"), "second press should maximize UNIT STATUS")
+
+                internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
+                assertFalse(screenText().contains(UnitStatusView.TITLE), "third press should minimize UNIT STATUS")
+
+                internalEvents.send(UiEvent.Input(KeyboardEvent("1")))
+                assertTrue(screenText().contains(UnitStatusView.TITLE), "fourth press should restore NORMAL")
+                assertFalse(screenText().contains("'MECH DATA"), "restored NORMAL should use the compact view")
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
+            }
         }
 
-        internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1))))
+    @Test
+    fun `question mark still opens HELP after the match ends`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-        internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                )
+            }
 
-        assertTrue(screenText().contains(HELP_TITLE), "? should still open HELP after MatchEnded")
+            internalEvents.send(UiEvent.Session(MatchEnded(MatchOutcome.Victory(PlayerId.PLAYER_1))))
 
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
+            internalEvents.send(UiEvent.Input(KeyboardEvent("?")))
+
+            assertTrue(screenText().contains(HELP_TITLE), "? should still open HELP after MatchEnded")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -766,46 +786,48 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `a board pan survives an unrelated re-render, and cursor movement re-engages follow`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = internalEvents,
-                    screen = screen,
-                    initialState = buildWideMapAppState(),
-                    keys = Keybindings.DEFAULT,
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildWideMapAppState(),
+                        keys = Keybindings.DEFAULT,
+                    )
+                }
+
+                // The marker unit at (2,2) is near the left edge, so it is on screen at rest.
+                assertTrue(screenText().contains("QQ"), "marker unit should be visible before panning")
+
+                // Pan right far enough to push the marker off the left edge.
+                repeat(20) { internalEvents.send(UiEvent.Input(KeyboardEvent("l"))) }
+                assertFalse(
+                    screenText().contains("QQ"),
+                    "panning right should scroll the marker unit out of view",
                 )
+
+                // An unbound key re-renders without resizing the viewport. Unconditional auto-follow
+                // would drag the board back and redraw the unit.
+                internalEvents.send(UiEvent.Input(KeyboardEvent("F12")))
+                assertFalse(
+                    screenText().contains("QQ"),
+                    "an unrelated re-render must not snap the board back to the cursor",
+                )
+
+                // Moving the cursor is a reveal-target change, so follow re-engages and brings it back.
+                internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
+                assertTrue(
+                    screenText().contains("QQ"),
+                    "cursor movement should follow the board back to the cursor",
+                )
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
             }
-
-            // The marker unit at (2,2) is near the left edge, so it is on screen at rest.
-            assertTrue(screenText().contains("QQ"), "marker unit should be visible before panning")
-
-            // Pan right far enough to push the marker off the left edge.
-            repeat(20) { internalEvents.send(UiEvent.Input(KeyboardEvent("l"))) }
-            assertFalse(
-                screenText().contains("QQ"),
-                "panning right should scroll the marker unit out of view",
-            )
-
-            // An unbound key re-renders without resizing the viewport. Unconditional auto-follow
-            // would drag the board back and redraw the unit.
-            internalEvents.send(UiEvent.Input(KeyboardEvent("F12")))
-            assertFalse(
-                screenText().contains("QQ"),
-                "an unrelated re-render must not snap the board back to the cursor",
-            )
-
-            // Moving the cursor is a reveal-target change, so follow re-engages and brings it back.
-            internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
-            assertTrue(
-                screenText().contains("QQ"),
-                "cursor movement should follow the board back to the cursor",
-            )
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
         }
 
     // -------------------------------------------------------------------------
@@ -816,42 +838,44 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `arrows scroll the focused side panel instead of moving the cursor, and reach the phase again once the board is focused`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = internalEvents,
-                    screen = screen,
-                    initialState = buildWideMapAppState(),
-                    keys = Keybindings.DEFAULT,
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildWideMapAppState(),
+                        keys = Keybindings.DEFAULT,
+                    )
+                }
+
+                // Same idiom as the pan test above: push the marker unit off the left edge, so any
+                // cursor movement (which re-engages auto-follow) would visibly drag it back.
+                repeat(20) { internalEvents.send(UiEvent.Input(KeyboardEvent("l"))) }
+
+                // Focus LOG. ArrowDown now scrolls LOG; if it still reached the phase the cursor would
+                // move, follow would re-engage, and the marker would be redrawn.
+                internalEvents.send(UiEvent.Input(KeyboardEvent("9")))
+                internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
+                assertFalse(
+                    screenText().contains("QQ"),
+                    "ArrowDown must not reach the phase while a side panel is focused",
                 )
+
+                // "0" focuses the board again, and the very same key moves the cursor once more.
+                internalEvents.send(UiEvent.Input(KeyboardEvent("0")))
+                internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
+                assertTrue(
+                    screenText().contains("QQ"),
+                    "ArrowDown must reach the phase once the board is focused again",
+                )
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
             }
-
-            // Same idiom as the pan test above: push the marker unit off the left edge, so any
-            // cursor movement (which re-engages auto-follow) would visibly drag it back.
-            repeat(20) { internalEvents.send(UiEvent.Input(KeyboardEvent("l"))) }
-
-            // Focus LOG. ArrowDown now scrolls LOG; if it still reached the phase the cursor would
-            // move, follow would re-engage, and the marker would be redrawn.
-            internalEvents.send(UiEvent.Input(KeyboardEvent("9")))
-            internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
-            assertFalse(
-                screenText().contains("QQ"),
-                "ArrowDown must not reach the phase while a side panel is focused",
-            )
-
-            // "0" focuses the board again, and the very same key moves the cursor once more.
-            internalEvents.send(UiEvent.Input(KeyboardEvent("0")))
-            internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown")))
-            assertTrue(
-                screenText().contains("QQ"),
-                "ArrowDown must reach the phase once the board is focused again",
-            )
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
         }
 
     // -------------------------------------------------------------------------
@@ -883,340 +907,8 @@ internal class TuiAppLoopTest {
     }
 
     @Test
-    fun `AttacksResolved starts the animation panel`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-                buildVolley = testVolley(TestAnimation()),
-                nowNanos = { testScheduler.currentTime * 1_000_000L },
-            )
-        }
-
-        internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-
-        assertTrue(
-            screenText().contains(animationTopBorder),
-            "Expected the animation panel's border after AttacksResolved",
-        )
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-    }
-
-    @Test
-    fun `a session event resamples the active animation at the current elapsed time`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            val frameIndices = mutableListOf<Int>()
-            var clockNanos = 0L
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = internalEvents,
-                    screen = screen,
-                    initialState = buildAppState(),
-                    keys = Keybindings.DEFAULT,
-                    buildVolley = testVolley(TestAnimation(frameCount = 10, onFrame = frameIndices::add)),
-                    nowNanos = { clockNanos },
-                )
-            }
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            clockNanos = 15.milliseconds.inWholeNanoseconds
-            internalEvents.send(UiEvent.Session(SessionNotice("background update")))
-
-            assertTrue(frameIndices.contains(1), "a non-animation session event must sample the current frame")
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
-        }
-
-    @Test
-    fun `rendering time is subtracted before scheduling the next wake-up`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-        val frameIndices = mutableListOf<Int>()
-        var renderOffset = 0L
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-                buildVolley = testVolley(
-                    TestAnimation(
-                        frameCount = 10,
-                        onFrame = frameIndices::add,
-                        onDraw = { renderOffset = 3.milliseconds.inWholeNanoseconds },
-                    ),
-                ),
-                nowNanos = {
-                    testScheduler.currentTime * 1_000_000L + renderOffset
-                },
-            )
-        }
-
-        internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-        val callsAfterStart = frameIndices.size
-
-        advanceTimeBy(6.milliseconds)
-        assertEquals(callsAfterStart, frameIndices.size, "the compensated wake-up must not fire early")
-        renderOffset = 3.milliseconds.inWholeNanoseconds
-        advanceTimeBy(2.milliseconds)
-
-        assertTrue(frameIndices.contains(1), "rendering time should shorten the first timer delay")
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-    }
-
-    @Test
-    fun `a stale animation token is ignored, and the valid one samples the live frame`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            val timerEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            val timerSink = object : kotlinx.coroutines.channels.SendChannel<UiEvent> by internalEvents {
-                override suspend fun send(element: UiEvent) {
-                    if (element is UiEvent.AnimationTick) timerEvents.send(element)
-                    internalEvents.send(element)
-                }
-
-                override fun trySend(element: UiEvent): ChannelResult<Unit> {
-                    if (element is UiEvent.AnimationTick) timerEvents.trySend(element)
-                    return internalEvents.trySend(element)
-                }
-            }
-            val frameIndices = mutableListOf<Int>()
-            var clockNanos = 0L
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = timerSink,
-                    screen = screen,
-                    initialState = buildAppState(),
-                    keys = Keybindings.DEFAULT,
-                    buildVolley = testVolley(TestAnimation(frameCount = 10, onFrame = frameIndices::add)),
-                    nowNanos = { clockNanos },
-                )
-            }
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            advanceTimeBy(10.milliseconds)
-            val staleTick = checkNotNull(timerEvents.receive() as? UiEvent.AnimationTick)
-            val callsAfterStaleTick = frameIndices.size
-            internalEvents.send(staleTick)
-            assertEquals(callsAfterStaleTick, frameIndices.size, "the prior timer token must be stale after rearm")
-
-            clockNanos = 35.milliseconds.inWholeNanoseconds
-            advanceTimeBy(10.milliseconds)
-            val validTick = checkNotNull(timerEvents.receive() as? UiEvent.AnimationTick)
-            runCurrent()
-
-            assertTrue(validTick.token != staleTick.token, "rearm must issue a new token")
-            assertTrue(frameIndices.contains(3), "a late valid wake-up must sample the live frame")
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
-        }
-
-    @Test
-    fun `a timer from a canceled volley cannot affect a later volley`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            val timerEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            val timerSink = object : kotlinx.coroutines.channels.SendChannel<UiEvent> by internalEvents {
-                override suspend fun send(element: UiEvent) {
-                    if (element is UiEvent.AnimationTick) timerEvents.send(element)
-                    internalEvents.send(element)
-                }
-
-                override fun trySend(element: UiEvent): ChannelResult<Unit> {
-                    if (element is UiEvent.AnimationTick) timerEvents.trySend(element)
-                    return internalEvents.trySend(element)
-                }
-            }
-            val frameIndices = mutableListOf<Int>()
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = timerSink,
-                    screen = screen,
-                    initialState = buildAppState(),
-                    keys = Keybindings.DEFAULT,
-                    buildVolley = testVolley(TestAnimation(frameCount = 10, onFrame = frameIndices::add)),
-                    nowNanos = { testScheduler.currentTime * 1_000_000L },
-                )
-            }
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            advanceTimeBy(10.milliseconds)
-            val staleTick = checkNotNull(timerEvents.receive() as? UiEvent.AnimationTick)
-            internalEvents.send(UiEvent.Input(KeyboardEvent("Escape")))
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            val callsAfterNewVolley = frameIndices.size
-
-            internalEvents.send(staleTick)
-
-            assertEquals(callsAfterNewVolley, frameIndices.size, "a canceled volley's timer must stay stale")
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
-        }
-
-    @Test
-    fun `animation construction failure leaves normal input usable`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-        var factoryCalls = 0
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-                buildVolley = { _, _, _ ->
-                    factoryCalls++
-                    if (factoryCalls == 1) error("factory failure") else null
-                },
-            )
-        }
-
-        internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-        val drew = drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) }
-
-        assertEquals(1, factoryCalls)
-        assertTrue(drew, "normal input should still render after a failed volley")
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-    }
-
-    @Test
-    fun `active frame sampling failure clears playback and leaves normal input usable`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            var builds = 0
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = internalEvents,
-                    screen = screen,
-                    initialState = buildAppState(),
-                    keys = Keybindings.DEFAULT,
-                    buildVolley = { _, width, height ->
-                        builds++
-                        val animation = if (builds == 1) {
-                            TestAnimation(frameCount = 10, onFrame = { index ->
-                                if (index == 1) error("frame sampling failure")
-                            })
-                        } else {
-                            TestAnimation()
-                        }
-                        testVolley(animation)(emptyList(), width, height)
-                    },
-                    nowNanos = { testScheduler.currentTime * 1_000_000L },
-                )
-            }
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            advanceTimeBy(10.milliseconds)
-            assertFalse(drewAfter { advanceTimeBy(100.milliseconds) }, "a sampling failure must cancel the timer")
-
-            assertTrue(
-                drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) },
-                "normal input should recover after sampling failure",
-            )
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
-        }
-
-    @Test
-    fun `animation render failure cancels its timer and allows a later playback`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            var builds = 0
-            var draws = 0
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = internalEvents,
-                    screen = screen,
-                    initialState = buildAppState(),
-                    keys = Keybindings.DEFAULT,
-                    buildVolley = { _, width, height ->
-                        builds++
-                        val animation = if (builds == 1) {
-                            TestAnimation(
-                                frameCount = 10,
-                                onDraw = {
-                                    draws++
-                                    if (draws == 2) error("frame draw failure")
-                                },
-                            )
-                        } else {
-                            TestAnimation()
-                        }
-                        testVolley(animation)(emptyList(), width, height)
-                    },
-                    nowNanos = { testScheduler.currentTime * 1_000_000L },
-                )
-            }
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            advanceTimeBy(10.milliseconds)
-            assertFalse(drewAfter { advanceTimeBy(100.milliseconds) }, "a failed animation must cancel its timer")
-
-            assertTrue(
-                drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) },
-                "normal input should recover after a frame failure",
-            )
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            assertTrue(screenText().contains(animationTopBorder), "a later volley should still start")
-            assertEquals(2, builds)
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
-        }
-
-    @Test
-    fun `the panel disappears on its own once every frame has played`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-                buildVolley = testVolley(TestAnimation(frameCount = 3, frameDuration = 10.milliseconds)),
-                nowNanos = { testScheduler.currentTime * 1_000_000L },
-            )
-        }
-
-        internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-        assertTrue(screenText().contains(animationTopBorder), "Panel should have appeared")
-
-        // 3 frames * 10ms, plus margin — enough for the elapsed timeline to complete.
-        assertTrue(drewAfter { advanceTimeBy(35.milliseconds) }, "Expected a recovery render once the panel is removed")
-        assertFalse(screenText().contains(animationTopBorder), "Panel border must be gone once playback finishes")
-
-        internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-        assertTrue(screenText().contains(animationTopBorder), "a new volley should start after natural completion")
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
-    }
-
-    @Test
-    fun `Esc cancels the animation immediately and swallows every other key while it plays`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
+    fun `AttacksResolved starts the animation panel`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val loopJob = launch {
                 runLoop(
@@ -1231,25 +923,188 @@ internal class TuiAppLoopTest {
             }
 
             internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            assertTrue(screenText().contains(animationTopBorder), "Panel should have appeared")
 
-            // A non-Esc key is swallowed before it even reaches resolveInput/the phase — RunLoop
-            // never calls render() for it at all.
-            assertFalse(
-                drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) },
-                "A non-Esc key during playback must not trigger any render",
+            assertTrue(
+                screenText().contains(animationTopBorder),
+                "Expected the animation panel's border after AttacksResolved",
             )
-
-            assertTrue(drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("Escape"))) }, "Esc should trigger a recovery render")
-            assertFalse(screenText().contains(animationTopBorder), "Esc must remove the panel immediately")
 
             internalEvents.send(UiEvent.Quit)
             loopJob.join()
         }
+    }
 
     @Test
-    fun `hot-seat's duplicate AttacksResolved delivery starts exactly one playback`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
+    fun `a session event resamples the active animation at the current elapsed time`() =
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                val frameIndices = mutableListOf<Int>()
+                var clockNanos = 0L
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                        buildVolley = testVolley(TestAnimation(frameCount = 10, onFrame = frameIndices::add)),
+                        nowNanos = { clockNanos },
+                    )
+                }
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                clockNanos = 15.milliseconds.inWholeNanoseconds
+                internalEvents.send(UiEvent.Session(SessionNotice("background update")))
+
+                assertTrue(frameIndices.contains(1), "a non-animation session event must sample the current frame")
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
+            }
+        }
+
+    @Test
+    fun `rendering time is subtracted before scheduling the next wake-up`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            val frameIndices = mutableListOf<Int>()
+            var renderOffset = 0L
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                    buildVolley = testVolley(
+                        TestAnimation(
+                            frameCount = 10,
+                            onFrame = frameIndices::add,
+                            onDraw = { renderOffset = 3.milliseconds.inWholeNanoseconds },
+                        ),
+                    ),
+                    nowNanos = {
+                        testScheduler.currentTime * 1_000_000L + renderOffset
+                    },
+                )
+            }
+
+            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+            val callsAfterStart = frameIndices.size
+
+            advanceTimeBy(6.milliseconds)
+            assertEquals(callsAfterStart, frameIndices.size, "the compensated wake-up must not fire early")
+            renderOffset = 3.milliseconds.inWholeNanoseconds
+            advanceTimeBy(2.milliseconds)
+
+            assertTrue(frameIndices.contains(1), "rendering time should shorten the first timer delay")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+    }
+
+    @Test
+    fun `a stale animation token is ignored, and the valid one samples the live frame`() =
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                val timerEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                val timerSink = object : kotlinx.coroutines.channels.SendChannel<UiEvent> by internalEvents {
+                    override suspend fun send(element: UiEvent) {
+                        if (element is UiEvent.AnimationTick) timerEvents.send(element)
+                        internalEvents.send(element)
+                    }
+
+                    override fun trySend(element: UiEvent): ChannelResult<Unit> {
+                        if (element is UiEvent.AnimationTick) timerEvents.trySend(element)
+                        return internalEvents.trySend(element)
+                    }
+                }
+                val frameIndices = mutableListOf<Int>()
+                var clockNanos = 0L
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = timerSink,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                        buildVolley = testVolley(TestAnimation(frameCount = 10, onFrame = frameIndices::add)),
+                        nowNanos = { clockNanos },
+                    )
+                }
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                advanceTimeBy(10.milliseconds)
+                val staleTick = checkNotNull(timerEvents.receive() as? UiEvent.AnimationTick)
+                val callsAfterStaleTick = frameIndices.size
+                internalEvents.send(staleTick)
+                assertEquals(callsAfterStaleTick, frameIndices.size, "the prior timer token must be stale after rearm")
+
+                clockNanos = 35.milliseconds.inWholeNanoseconds
+                advanceTimeBy(10.milliseconds)
+                val validTick = checkNotNull(timerEvents.receive() as? UiEvent.AnimationTick)
+                runCurrent()
+
+                assertTrue(validTick.token != staleTick.token, "rearm must issue a new token")
+                assertTrue(frameIndices.contains(3), "a late valid wake-up must sample the live frame")
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
+            }
+        }
+
+    @Test
+    fun `a timer from a canceled volley cannot affect a later volley`() =
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                val timerEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                val timerSink = object : kotlinx.coroutines.channels.SendChannel<UiEvent> by internalEvents {
+                    override suspend fun send(element: UiEvent) {
+                        if (element is UiEvent.AnimationTick) timerEvents.send(element)
+                        internalEvents.send(element)
+                    }
+
+                    override fun trySend(element: UiEvent): ChannelResult<Unit> {
+                        if (element is UiEvent.AnimationTick) timerEvents.trySend(element)
+                        return internalEvents.trySend(element)
+                    }
+                }
+                val frameIndices = mutableListOf<Int>()
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = timerSink,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                        buildVolley = testVolley(TestAnimation(frameCount = 10, onFrame = frameIndices::add)),
+                        nowNanos = { testScheduler.currentTime * 1_000_000L },
+                    )
+                }
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                advanceTimeBy(10.milliseconds)
+                val staleTick = checkNotNull(timerEvents.receive() as? UiEvent.AnimationTick)
+                internalEvents.send(UiEvent.Input(KeyboardEvent("Escape")))
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                val callsAfterNewVolley = frameIndices.size
+
+                internalEvents.send(staleTick)
+
+                assertEquals(callsAfterNewVolley, frameIndices.size, "a canceled volley's timer must stay stale")
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
+            }
+        }
+
+    @Test
+    fun `animation construction failure leaves normal input usable`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             var factoryCalls = 0
             val loopJob = launch {
@@ -1259,61 +1114,250 @@ internal class TuiAppLoopTest {
                     screen = screen,
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
-                    buildVolley = { results, width, height ->
+                    buildVolley = { _, _, _ ->
                         factoryCalls++
-                        testVolley(TestAnimation(frameCount = 3, frameDuration = 10.milliseconds))(results, width, height)
+                        if (factoryCalls == 1) error("factory failure") else null
                     },
+                )
+            }
+
+            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+            val drew = drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) }
+
+            assertEquals(1, factoryCalls)
+            assertTrue(drew, "normal input should still render after a failed volley")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+    }
+
+    @Test
+    fun `active frame sampling failure clears playback and leaves normal input usable`() =
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                var builds = 0
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                        buildVolley = { _, width, height ->
+                            builds++
+                            val animation = if (builds == 1) {
+                                TestAnimation(frameCount = 10, onFrame = { index ->
+                                    if (index == 1) error("frame sampling failure")
+                                })
+                            } else {
+                                TestAnimation()
+                            }
+                            testVolley(animation)(emptyList(), width, height)
+                        },
+                        nowNanos = { testScheduler.currentTime * 1_000_000L },
+                    )
+                }
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                advanceTimeBy(10.milliseconds)
+                assertFalse(drewAfter { advanceTimeBy(100.milliseconds) }, "a sampling failure must cancel the timer")
+
+                assertTrue(
+                    drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) },
+                    "normal input should recover after sampling failure",
+                )
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
+            }
+        }
+
+    @Test
+    fun `animation render failure cancels its timer and allows a later playback`() =
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                var builds = 0
+                var draws = 0
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                        buildVolley = { _, width, height ->
+                            builds++
+                            val animation = if (builds == 1) {
+                                TestAnimation(
+                                    frameCount = 10,
+                                    onDraw = {
+                                        draws++
+                                        if (draws == 2) error("frame draw failure")
+                                    },
+                                )
+                            } else {
+                                TestAnimation()
+                            }
+                            testVolley(animation)(emptyList(), width, height)
+                        },
+                        nowNanos = { testScheduler.currentTime * 1_000_000L },
+                    )
+                }
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                advanceTimeBy(10.milliseconds)
+                assertFalse(drewAfter { advanceTimeBy(100.milliseconds) }, "a failed animation must cancel its timer")
+
+                assertTrue(
+                    drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) },
+                    "normal input should recover after a frame failure",
+                )
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                assertTrue(screenText().contains(animationTopBorder), "a later volley should still start")
+                assertEquals(2, builds)
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
+            }
+        }
+
+    @Test
+    fun `the panel disappears on its own once every frame has played`() = runTest(UnconfinedTestDispatcher()) {
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                    buildVolley = testVolley(TestAnimation(frameCount = 3, frameDuration = 10.milliseconds)),
                     nowNanos = { testScheduler.currentTime * 1_000_000L },
                 )
             }
 
-            // Both seats' subscriptions deliver the same event in hot-seat (TuiApp.run's KDoc) —
-            // simulated here by sending it twice back to back, before any tick is processed.
             internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            assertEquals(1, factoryCalls, "duplicate delivery must not rebuild active playback")
+            assertTrue(screenText().contains(animationTopBorder), "Panel should have appeared")
 
-            // Exactly one playback's worth of time leaves the single playback complete.
-            advanceTimeBy(35.milliseconds)
+            // 3 frames * 10ms, plus margin — enough for the elapsed timeline to complete.
+            assertTrue(drewAfter { advanceTimeBy(35.milliseconds) }, "Expected a recovery render once the panel is removed")
+            assertFalse(screenText().contains(animationTopBorder), "Panel border must be gone once playback finishes")
+
+            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+            assertTrue(screenText().contains(animationTopBorder), "a new volley should start after natural completion")
+
+            internalEvents.send(UiEvent.Quit)
+            loopJob.join()
+        }
+    }
+
+    @Test
+    fun `Esc cancels the animation immediately and swallows every other key while it plays`() =
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                        buildVolley = testVolley(TestAnimation()),
+                        nowNanos = { testScheduler.currentTime * 1_000_000L },
+                    )
+                }
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                assertTrue(screenText().contains(animationTopBorder), "Panel should have appeared")
+
+                // A non-Esc key is swallowed before it even reaches resolveInput/the phase — RunLoop
+                // never calls render() for it at all.
+                assertFalse(
+                    drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) },
+                    "A non-Esc key during playback must not trigger any render",
+                )
+
+                assertTrue(drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("Escape"))) }, "Esc should trigger a recovery render")
+                assertFalse(screenText().contains(animationTopBorder), "Esc must remove the panel immediately")
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
+            }
+        }
+
+    @Test
+    fun `hot-seat's duplicate AttacksResolved delivery starts exactly one playback`() =
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                var factoryCalls = 0
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                        buildVolley = { results, width, height ->
+                            factoryCalls++
+                            testVolley(TestAnimation(frameCount = 3, frameDuration = 10.milliseconds))(results, width, height)
+                        },
+                        nowNanos = { testScheduler.currentTime * 1_000_000L },
+                    )
+                }
+
+                // Both seats' subscriptions deliver the same event in hot-seat (TuiApp.run's KDoc) —
+                // simulated here by sending it twice back to back, before any tick is processed.
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                assertEquals(1, factoryCalls, "duplicate delivery must not rebuild active playback")
+
+                // Exactly one playback's worth of time leaves the single playback complete.
+                advanceTimeBy(35.milliseconds)
+
+                assertFalse(
+                    screenText().contains(animationTopBorder),
+                    "A single playback should have finished and been removed by now",
+                )
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
+            }
+        }
+
+    @Test
+    fun `a terminal smaller than the panel never starts the animation`() = runTest(UnconfinedTestDispatcher()) {
+        val small = Terminal.headless(width = 70, height = 20)
+        small.withScreen { screen ->
+            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+            val loopJob = launch {
+                runLoop(
+                    events = internalEvents.receiveAsFlow(),
+                    internalEvents = internalEvents,
+                    screen = screen,
+                    initialState = buildAppState(),
+                    keys = Keybindings.DEFAULT,
+                    buildVolley = testVolley(TestAnimation()),
+                    nowNanos = { testScheduler.currentTime * 1_000_000L },
+                )
+            }
+
+            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
 
             assertFalse(
-                screenText().contains(animationTopBorder),
-                "A single playback should have finished and been removed by now",
+                small.frameText().contains(animationTopBorder),
+                "A 70x20 terminal has no room for the 72x22 panel — it must never draw",
             )
 
             internalEvents.send(UiEvent.Quit)
             loopJob.join()
         }
-
-    @Test
-    fun `a terminal smaller than the panel never starts the animation`() {
-        val small = Terminal.headless(width = 70, height = 20)
-        runOnScreen(UnconfinedTestDispatcher(), small) { screen -> smallTerminalNeverAnimates(screen, small) }
-    }
-
-    private suspend fun TestScope.smallTerminalNeverAnimates(screen: Screen, small: HeadlessTerminal) {
-        val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-        val loopJob = launch {
-            runLoop(
-                events = internalEvents.receiveAsFlow(),
-                internalEvents = internalEvents,
-                screen = screen,
-                initialState = buildAppState(),
-                keys = Keybindings.DEFAULT,
-                buildVolley = testVolley(TestAnimation()),
-                nowNanos = { testScheduler.currentTime * 1_000_000L },
-            )
-        }
-
-        internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-
-        assertFalse(
-            small.frameText().contains(animationTopBorder),
-            "A 70x20 terminal has no room for the 72x22 panel — it must never draw",
-        )
-
-        internalEvents.send(UiEvent.Quit)
-        loopJob.join()
     }
 
     /** How many animation panels the latest frame shows. */
@@ -1322,194 +1366,206 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `the loop wakes up when each staggered weapon category starts`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            // Long animations so neither finishes while the stagger is under test.
-            val firstFrames = mutableListOf<Int>()
-            val secondFrames = mutableListOf<Int>()
-            val thirdFrames = mutableListOf<Int>()
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = internalEvents,
-                    screen = screen,
-                    initialState = buildAppState(),
-                    keys = Keybindings.DEFAULT,
-                    buildVolley = testVolley(
-                        TestAnimation(frameCount = 500, frameDuration = 10.milliseconds, onFrame = firstFrames::add),
-                        TestAnimation(frameCount = 500, frameDuration = 10.milliseconds, onFrame = secondFrames::add),
-                        TestAnimation(frameCount = 500, frameDuration = 10.milliseconds, onFrame = thirdFrames::add),
-                    ),
-                    nowNanos = { testScheduler.currentTime * 1_000_000L },
-                )
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                // Long animations so neither finishes while the stagger is under test.
+                val firstFrames = mutableListOf<Int>()
+                val secondFrames = mutableListOf<Int>()
+                val thirdFrames = mutableListOf<Int>()
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                        buildVolley = testVolley(
+                            TestAnimation(frameCount = 500, frameDuration = 10.milliseconds, onFrame = firstFrames::add),
+                            TestAnimation(frameCount = 500, frameDuration = 10.milliseconds, onFrame = secondFrames::add),
+                            TestAnimation(frameCount = 500, frameDuration = 10.milliseconds, onFrame = thirdFrames::add),
+                        ),
+                        nowNanos = { testScheduler.currentTime * 1_000_000L },
+                    )
+                }
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                assertTrue(firstFrames.isNotEmpty(), "the first category should sample immediately")
+
+                // When a staggered clip becomes visible is the playback's rule, tested in tenter; what
+                // this loop owns is waking up at that moment rather than later.
+                advanceTimeBy(1.seconds)
+                runCurrent()
+                assertTrue(secondFrames.isNotEmpty(), "the loop should wake up when the second category starts")
+
+                advanceTimeBy(1.seconds)
+                runCurrent()
+                assertTrue(thirdFrames.isNotEmpty(), "the loop should wake up when the third category starts")
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
             }
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            assertTrue(firstFrames.isNotEmpty(), "the first category should sample immediately")
-
-            // When a staggered clip becomes visible is the playback's rule, tested in tenter; what
-            // this loop owns is waking up at that moment rather than later.
-            advanceTimeBy(1.seconds)
-            runCurrent()
-            assertTrue(secondFrames.isNotEmpty(), "the loop should wake up when the second category starts")
-
-            advanceTimeBy(1.seconds)
-            runCurrent()
-            assertTrue(thirdFrames.isNotEmpty(), "the loop should wake up when the third category starts")
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
         }
 
     @Test
     fun `resize cancels pending panels and a later volley starts cleanly`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = internalEvents,
-                    screen = screen,
-                    initialState = buildAppState(),
-                    keys = Keybindings.DEFAULT,
-                    buildVolley = { _, width, height ->
-                        testVolley(
-                            TestAnimation(frameCount = 500, frameDuration = 10.milliseconds),
-                            TestAnimation(frameCount = 500, frameDuration = 10.milliseconds),
-                        )(emptyList(), width, height)
-                    },
-                    nowNanos = { testScheduler.currentTime * 1_000_000L },
-                )
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                        buildVolley = { _, width, height ->
+                            testVolley(
+                                TestAnimation(frameCount = 500, frameDuration = 10.milliseconds),
+                                TestAnimation(frameCount = 500, frameDuration = 10.milliseconds),
+                            )(emptyList(), width, height)
+                        },
+                        nowNanos = { testScheduler.currentTime * 1_000_000L },
+                    )
+                }
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                assertEquals(1, panelsOnScreen(), "only the first panel should be visible immediately")
+                internalEvents.send(UiEvent.Resized(Size(160, 45)))
+                advanceTimeBy(2.seconds)
+                assertEquals(0, panelsOnScreen(), "resize must cancel the pending panel timer")
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                assertEquals(1, panelsOnScreen(), "a later volley should start after resize cancellation")
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
             }
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            assertEquals(1, panelsOnScreen(), "only the first panel should be visible immediately")
-            internalEvents.send(UiEvent.Resized(Size(160, 45)))
-            advanceTimeBy(2.seconds)
-            assertEquals(0, panelsOnScreen(), "resize must cancel the pending panel timer")
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            assertEquals(1, panelsOnScreen(), "a later volley should start after resize cancellation")
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
         }
 
     @Test
     fun `the loop keeps animating while any clip is still visible`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = internalEvents,
-                    screen = screen,
-                    initialState = buildAppState(),
-                    keys = Keybindings.DEFAULT,
-                    buildVolley = testVolley(
-                        TestAnimation(frameCount = 500, frameDuration = 10.milliseconds), // outlives the test
-                        TestAnimation(frameCount = 1, frameDuration = 10.milliseconds),   // one frame, then gone
-                    ),
-                    nowNanos = { testScheduler.currentTime * 1_000_000L },
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                        buildVolley = testVolley(
+                            TestAnimation(frameCount = 500, frameDuration = 10.milliseconds), // outlives the test
+                            TestAnimation(frameCount = 1, frameDuration = 10.milliseconds),   // one frame, then gone
+                        ),
+                        nowNanos = { testScheduler.currentTime * 1_000_000L },
+                    )
+                }
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                // Let slot 1 appear and then immediately run out of frames.
+                advanceTimeBy(WeaponAnimations.STAGGER + 40.milliseconds)
+
+                // Slot 1 has finished (the playback drops finished clips, tested in tenter), but slot 0
+                // is still visible, so the loop must keep its timer running.
+                assertTrue(
+                    drewAfter { advanceTimeBy(60.milliseconds) },
+                    "the surviving panel should still be animating after the short one vanished",
                 )
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
             }
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            // Let slot 1 appear and then immediately run out of frames.
-            advanceTimeBy(WeaponAnimations.STAGGER + 40.milliseconds)
-
-            // Slot 1 has finished (the playback drops finished clips, tested in tenter), but slot 0
-            // is still visible, so the loop must keep its timer running.
-            assertTrue(
-                drewAfter { advanceTimeBy(60.milliseconds) },
-                "the surviving panel should still be animating after the short one vanished",
-            )
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
         }
 
     @Test
     fun `Esc cancels pending panels and restores normal input`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            val long = { TestAnimation(frameCount = 500, frameDuration = 10.milliseconds) }
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = internalEvents,
-                    screen = screen,
-                    initialState = buildAppState(),
-                    keys = Keybindings.DEFAULT,
-                    buildVolley = testVolley(long(), long(), long()),
-                    nowNanos = { testScheduler.currentTime * 1_000_000L },
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                val long = { TestAnimation(frameCount = 500, frameDuration = 10.milliseconds) }
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                        buildVolley = testVolley(long(), long(), long()),
+                        nowNanos = { testScheduler.currentTime * 1_000_000L },
+                    )
+                }
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+                internalEvents.send(UiEvent.Input(KeyboardEvent("Escape")))
+
+                advanceTimeBy(500.milliseconds)
+                assertEquals(0, panelsOnScreen(), "pending panels must not survive Esc")
+
+                assertTrue(
+                    drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) },
+                    "normal input must work after Esc cancellation",
                 )
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
             }
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-            internalEvents.send(UiEvent.Input(KeyboardEvent("Escape")))
-
-            advanceTimeBy(500.milliseconds)
-            assertEquals(0, panelsOnScreen(), "pending panels must not survive Esc")
-
-            assertTrue(
-                drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) },
-                "normal input must work after Esc cancellation",
-            )
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
         }
 
     @Test
     fun `the real category lookup drives the overlay — an unknown weapon name plays nothing`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            // No buildVolley override: this exercises WeaponModels.findByName for real.
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = internalEvents,
-                    screen = screen,
-                    initialState = buildAppState(),
-                    keys = Keybindings.DEFAULT,
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                // No buildVolley override: this exercises WeaponModels.findByName for real.
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                    )
+                }
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(listOf(aResult()))))
+                assertEquals(
+                    0,
+                    panelsOnScreen(),
+                    "aResult()'s \"Med Laser\" is not a real model name, so no category resolves",
                 )
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
             }
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(listOf(aResult()))))
-            assertEquals(
-                0,
-                panelsOnScreen(),
-                "aResult()'s \"Med Laser\" is not a real model name, so no category resolves",
-            )
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
         }
 
     @Test
     fun `the real category lookup draws one panel for a recognised weapon`() =
-        runOnScreen(UnconfinedTestDispatcher()) { screen ->
-            val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
-            val loopJob = launch {
-                runLoop(
-                    events = internalEvents.receiveAsFlow(),
-                    internalEvents = internalEvents,
-                    screen = screen,
-                    initialState = buildAppState(),
-                    keys = Keybindings.DEFAULT,
+        runTest(UnconfinedTestDispatcher()) {
+            terminal.withScreen { screen ->
+                val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
+                val loopJob = launch {
+                    runLoop(
+                        events = internalEvents.receiveAsFlow(),
+                        internalEvents = internalEvents,
+                        screen = screen,
+                        initialState = buildAppState(),
+                        keys = Keybindings.DEFAULT,
+                    )
+                }
+
+                internalEvents.send(UiEvent.Session(AttacksResolved(listOf(aResult(weaponName = "Medium Laser")))))
+                assertEquals(
+                    1,
+                    panelsOnScreen(),
+                    "one energy weapon should raise exactly one panel",
                 )
+
+                internalEvents.send(UiEvent.Quit)
+                loopJob.join()
             }
-
-            internalEvents.send(UiEvent.Session(AttacksResolved(listOf(aResult(weaponName = "Medium Laser")))))
-            assertEquals(
-                1,
-                panelsOnScreen(),
-                "one energy weapon should raise exactly one panel",
-            )
-
-            internalEvents.send(UiEvent.Quit)
-            loopJob.join()
         }
 
     /**
