@@ -23,6 +23,7 @@ import io.archinaut.battletech.tui.screen.Theme
 import io.archinaut.battletech.tui.screen.ThemeLoadException
 import io.archinaut.battletech.tui.screen.defaultThemeName
 import io.archinaut.battletech.tui.screen.resolveTheme
+import io.archinaut.battletech.tui.setup.HostEndpoint
 import io.archinaut.battletech.tui.setup.SetupApp
 import io.archinaut.battletech.tui.setup.SetupMode
 import io.archinaut.battletech.tui.setup.SetupOutcome
@@ -151,11 +152,14 @@ public fun main(args: Array<String>) {
                 .commit(resolveGameOrExit(content, mode.setup)) { localSession = it.connectLocal(content.contribution()) }
             val acceptor = SocketAcceptor(server, mode.port)
             acceptor.start()
-            println("Session ID: ${server.sessionId} — listening on port ${acceptor.boundPort}")
+            // No println here: the alternate screen would hide it until the match is over. The
+            // local seat's log shows the join commands instead.
+            val endpoint = HostEndpoint(addresses(), acceptor.boundPort, server.sessionId)
+            val localSeat = EndpointAnnotatedSession(localSession, endpoint)
             acceptor.use {
                 server.use {
                     screen.withScreen(theme) {
-                        TuiApp(seats = mapOf(localSession.playerId to localSession), it).run()
+                        TuiApp(seats = mapOf(localSession.playerId to localSeat), it).run()
                     }
                 }
             }

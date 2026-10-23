@@ -407,7 +407,7 @@ private class JoinCommand(private val emit: (Mode) -> Unit) : CliktCommand(name 
     private val sessionId by option(
         "--session",
         metavar = "ID",
-        help = "Session ID printed by the host on startup",
+        help = "Session ID the host shows on startup",
     ).required()
 
     override fun run() {

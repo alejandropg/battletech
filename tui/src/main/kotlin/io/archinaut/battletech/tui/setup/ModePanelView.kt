@@ -54,8 +54,8 @@ internal class ModePanelView(
             content.writeLine("Session: ${ep.sessionId}", TEXT_PRIMARY_STYLE)
             content.writeLine("Port: ${ep.port}", TEXT_PRIMARY_STYLE)
             content.newLine()
-            for (address in ep.addresses) {
-                content.writeLine("join $address:${ep.port} --session ${ep.sessionId}", TEXT_PRIMARY_STYLE)
+            for (command in ep.joinCommands) {
+                content.writeLine(command, TEXT_PRIMARY_STYLE)
             }
             content.newLine()
             content.writeLine(if (opponentConnected) "Player 2: connected" else "Player 2: waiting…", TEXT_PRIMARY_STYLE)
