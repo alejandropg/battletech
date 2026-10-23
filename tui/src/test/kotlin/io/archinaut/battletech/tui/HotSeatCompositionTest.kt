@@ -17,6 +17,12 @@ import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.battletech.tui.loop.UiEvent
 import io.archinaut.battletech.tui.loop.runLoop
 import io.archinaut.tenter.terminal.Terminal
+import io.archinaut.tenter.terminal.HeadlessTerminal
+import io.archinaut.tenter.terminal.Screen
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.TestScope
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import com.github.ajalt.mordant.input.KeyboardEvent
 import com.github.ajalt.mordant.input.MouseEvent
 import io.archinaut.tenter.screen.Size
@@ -60,7 +66,18 @@ import kotlin.random.Random
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class HotSeatCompositionTest {
 
-    private val screen = Terminal.headless(width = 120, height = 40)
+    private val terminal = Terminal.headless(width = 120, height = 40)
+
+    /**
+     * [runTest] with [terminal]'s screen open throughout, as `withScreen` holds it around the app in
+     * production.
+     */
+    private fun runOnScreen(
+        context: CoroutineContext = EmptyCoroutineContext,
+        terminal: HeadlessTerminal = this.terminal,
+        body: suspend TestScope.(Screen) -> Unit,
+    ): TestResult = terminal.withScreen { screen -> runTest(context) { body(screen) } }
+
 
     private lateinit var server: GameServer
     private lateinit var seats: Map<PlayerId, ClientGameSession>
@@ -139,7 +156,7 @@ internal class HotSeatCompositionTest {
      */
     @Test
     fun `the TUI drives both seats through the real path - a move lands, the view swings, no waiting-for-opponent flash`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val mover = server.turnState.movement.activePlayer
             val opponent = PlayerId.entries.single { it != mover }
             val moverSeat = seats.getValue(mover)
@@ -205,7 +222,7 @@ internal class HotSeatCompositionTest {
                 internalEvents.send(UiEvent.Resized(Size(120, 40)))
 
                 assertThat(server.stateFor(mover).units.byId(unit.id).position).isEqualTo(destination.position)
-                assertThat(screen.lastFrameText()).doesNotContain("Waiting for opponent")
+                assertThat(terminal.frameText()).doesNotContain("Waiting for opponent")
 
                 // AppState.viewer follows the active player across real client sessions — the
                 // property that only holds because both real seats are in the map.

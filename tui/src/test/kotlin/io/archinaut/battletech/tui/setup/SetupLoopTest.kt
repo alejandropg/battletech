@@ -23,12 +23,29 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import io.archinaut.tenter.terminal.Terminal
-import io.archinaut.battletech.tui.lastFrameText
+import io.archinaut.tenter.terminal.HeadlessTerminal
+import io.archinaut.tenter.terminal.Screen
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.TestScope
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
+import io.archinaut.battletech.tui.frameText
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class SetupLoopTest {
 
-    private val screen = Terminal.headless(width = 120, height = 40)
+    private val terminal = Terminal.headless(width = 120, height = 40)
+
+    /**
+     * [runTest] with [terminal]'s screen open throughout, as `withScreen` holds it around the app in
+     * production.
+     */
+    private fun runOnScreen(
+        context: CoroutineContext = EmptyCoroutineContext,
+        terminal: HeadlessTerminal = this.terminal,
+        body: suspend TestScope.(Screen) -> Unit,
+    ): TestResult = terminal.withScreen { screen -> runTest(context) { body(screen) } }
+
 
     private val map: GameMap = GameMap(
         hexes = (0 until 8).map { row -> HexCoordinates(0, row) }.associateWith { Hex(it) },
@@ -41,12 +58,12 @@ internal class SetupLoopTest {
     private fun initialState(readOnly: Boolean = false) =
         SetupState(catalog = registry.summarize(), registry = registry, readOnly = readOnly)
 
-    private suspend fun run(vararg events: SetupUiEvent, lobby: SetupLobby = NoLobby, initial: SetupState = initialState()): SetupOutcome {
+    private suspend fun Screen.runSetup(vararg events: SetupUiEvent, lobby: SetupLobby = NoLobby, initial: SetupState = initialState()): SetupOutcome {
         val internalEvents = Channel<SetupUiEvent>(Channel.UNLIMITED)
         return setupLoop(
             events = merge(flowOf(*events), internalEvents.receiveAsFlow()),
             internalEvents = internalEvents,
-            screen = screen,
+            screen = this,
             initialState = initial,
             keys = Keybindings.DEFAULT,
             lobby = lobby,
@@ -54,31 +71,31 @@ internal class SetupLoopTest {
     }
 
     @Test
-    fun `stage 1 renders only the MODE panel`() = runTest {
-        run(SetupUiEvent.Quit)
+    fun `stage 1 renders only the MODE panel`() = runOnScreen { screen ->
+        screen.runSetup(SetupUiEvent.Quit)
 
-        val out = screen.lastFrameText()
+        val out = terminal.frameText()
         assertThat(out).contains("MODE")
         assertThat(out).doesNotContain("PLAYER 1")
     }
 
     @Test
-    fun `c locks hot-seat in, reveals the roster panels, and focuses MAP`() = runTest {
-        run(
+    fun `c locks hot-seat in, reveals the roster panels, and focuses MAP`() = runOnScreen { screen ->
+        screen.runSetup(
             SetupUiEvent.Input(KeyboardEvent("c")),
             SetupUiEvent.Quit,
         )
 
-        val out = screen.lastFrameText()
+        val out = terminal.frameText()
         assertThat(out).contains("MAP")
         assertThat(out).contains("PLAYER 1")
         assertThat(out).contains("PLAYER 2")
     }
 
     @Test
-    fun `Enter wraps from PLAYER_2 back to MODE`() = runTest {
+    fun `Enter wraps from PLAYER_2 back to MODE`() = runOnScreen { screen ->
         // Lock hot-seat, then Enter through MAP -> PLAYER_1 -> PLAYER_2 -> MODE (4 presses total).
-        run(
+        screen.runSetup(
             SetupUiEvent.Input(KeyboardEvent("c")),
             SetupUiEvent.Input(KeyboardEvent("Enter")),
             SetupUiEvent.Input(KeyboardEvent("Enter")),
@@ -89,26 +106,26 @@ internal class SetupLoopTest {
         // loop simply runs the full sequence without failing on any of the four presses in a row
         // (a wrap bug would throw or otherwise corrupt state, not crash — so the meaningful check
         // is that MAP is still the reveal-visible panel content after cycling all the way around).
-        assertThat(screen.lastFrameText()).contains("MAP")
+        assertThat(terminal.frameText()).contains("MAP")
     }
 
     @Test
-    fun `Tab cycles panels exactly like Enter`() = runTest {
+    fun `Tab cycles panels exactly like Enter`() = runOnScreen { screen ->
         // Same cycle as the Enter test above, but with Tab — and mixing the two keys, since both
         // bind to SetupAction.NextPanel and must be freely interchangeable mid-cycle.
-        run(
+        screen.runSetup(
             SetupUiEvent.Input(KeyboardEvent("c")),
             SetupUiEvent.Input(KeyboardEvent("Tab")),
             SetupUiEvent.Input(KeyboardEvent("Enter")),
             SetupUiEvent.Input(KeyboardEvent("Tab")),
             SetupUiEvent.Quit,
         )
-        assertThat(screen.lastFrameText()).contains("MAP")
+        assertThat(terminal.frameText()).contains("MAP")
     }
 
     @Test
-    fun `c is refused with a flash when a player has no units`() = runTest {
-        run(
+    fun `c is refused with a flash when a player has no units`() = runOnScreen { screen ->
+        screen.runSetup(
             SetupUiEvent.Input(KeyboardEvent("c")), // lock hot-seat
             SetupUiEvent.Input(KeyboardEvent("2")), // focus MAP
             SetupUiEvent.Input(KeyboardEvent(" ")), // select the only map
@@ -116,12 +133,12 @@ internal class SetupLoopTest {
             SetupUiEvent.Quit,
         )
 
-        assertThat(screen.lastFrameText()).contains("no units")
+        assertThat(terminal.frameText()).contains("no units")
     }
 
     @Test
-    fun `a complete plan commits with the expected MatchPlan`() = runTest {
-        val outcome = run(
+    fun `a complete plan commits with the expected MatchPlan`() = runOnScreen { screen ->
+        val outcome = screen.runSetup(
             SetupUiEvent.Input(KeyboardEvent("c")), // lock hot-seat
             SetupUiEvent.Input(KeyboardEvent("2")), // focus MAP
             SetupUiEvent.Input(KeyboardEvent(" ")), // select the map
@@ -139,17 +156,17 @@ internal class SetupLoopTest {
     }
 
     @Test
-    fun `question mark opens HELP in normal state`() = runTest {
-        run(
+    fun `question mark opens HELP in normal state`() = runOnScreen { screen ->
+        screen.runSetup(
             SetupUiEvent.Input(KeyboardEvent("?")),
             SetupUiEvent.Quit,
         )
 
-        assertThat(screen.lastFrameText()).contains(HELP_TITLE)
+        assertThat(terminal.frameText()).contains(HELP_TITLE)
     }
 
     @Test
-    fun `reselecting a setup panel with its number cycles through every size`() = runTest(UnconfinedTestDispatcher()) {
+    fun `reselecting a setup panel with its number cycles through every size`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<SetupUiEvent>(Channel.UNLIMITED)
         val loopJob = launch {
             setupLoop(
@@ -163,25 +180,25 @@ internal class SetupLoopTest {
         }
 
         internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
-        assertThat(screen.lastFrameText()).contains("PLAYER 1")
-        assertThat(screen.lastFrameText()).doesNotContain("'MECH DATA")
+        assertThat(terminal.frameText()).contains("PLAYER 1")
+        assertThat(terminal.frameText()).doesNotContain("'MECH DATA")
 
         internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
-        assertThat(screen.lastFrameText()).contains("'MECH DATA")
+        assertThat(terminal.frameText()).contains("'MECH DATA")
 
         internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
-        assertThat(screen.lastFrameText()).doesNotContain("PLAYER 1")
+        assertThat(terminal.frameText()).doesNotContain("PLAYER 1")
 
         internalEvents.send(SetupUiEvent.Input(KeyboardEvent("3")))
-        assertThat(screen.lastFrameText()).contains("PLAYER 1")
-        assertThat(screen.lastFrameText()).doesNotContain("'MECH DATA")
+        assertThat(terminal.frameText()).contains("PLAYER 1")
+        assertThat(terminal.frameText()).doesNotContain("'MECH DATA")
 
         internalEvents.send(SetupUiEvent.Quit)
         loopJob.join()
     }
 
     @Test
-    fun `an opponent who leaves keeps the panels but closes the commit gate`() = runTest {
+    fun `an opponent who leaves keeps the panels but closes the commit gate`() = runOnScreen { screen ->
         val hostState = initialState().copy(
             mode = SetupMode.HOST,
             modeLocked = true,
@@ -192,7 +209,7 @@ internal class SetupLoopTest {
                 .withCount(PlayerId.PLAYER_2, "AS7-D", 1),
         )
 
-        val outcome = run(
+        val outcome = screen.runSetup(
             SetupUiEvent.Lobby(LobbyEvent.OpponentLeft),
             SetupUiEvent.Input(KeyboardEvent("c")), // would otherwise commit — the plan is complete
             SetupUiEvent.Quit,
@@ -202,7 +219,7 @@ internal class SetupLoopTest {
         // Quit, not Commit: `c` was refused even though the plan itself is complete. (The refusal
         // message is asserted in SetupStateTest.)
         assertThat(outcome).isEqualTo(SetupOutcome.Quit)
-        assertThat(screen.lastFrameText()).contains("PLAYER 1") // panels stayed
+        assertThat(terminal.frameText()).contains("PLAYER 1") // panels stayed
     }
 
     /**
@@ -212,7 +229,7 @@ internal class SetupLoopTest {
      * map and one mech, so a cursor move here would clamp and prove nothing.
      */
     @Test
-    fun `a read-only mirror keeps browsing and editing keys wired without crashing`() = runTest {
+    fun `a read-only mirror keeps browsing and editing keys wired without crashing`() = runOnScreen { screen ->
         val mirrorState = initialState(readOnly = true).copy(
             modeLocked = true,
             mode = SetupMode.HOST,
@@ -220,7 +237,7 @@ internal class SetupLoopTest {
             opponentEverConnected = true,
         )
 
-        val outcome = run(
+        val outcome = screen.runSetup(
             SetupUiEvent.Input(KeyboardEvent("3")), // focus PLAYER_1 — focus stays live in a mirror
             SetupUiEvent.Input(KeyboardEvent("ArrowDown")), // browsing stays live in a mirror
             SetupUiEvent.Input(KeyboardEvent(" ")), // refused: only the host selects
@@ -229,6 +246,6 @@ internal class SetupLoopTest {
         )
 
         assertThat(outcome).isEqualTo(SetupOutcome.Quit)
-        assertThat(screen.lastFrameText()).contains("PLAYER 1")
+        assertThat(terminal.frameText()).contains("PLAYER 1")
     }
 }

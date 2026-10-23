@@ -63,7 +63,7 @@ public fun renderInPanel(
  * drew. Each call is a fresh terminal, so frames never diff against each other.
  */
 public fun drawFrame(width: Int, height: Int, draw: (Frame) -> Unit): CompletedFrame =
-    Terminal.headless(width, height).draw(draw)
+    Terminal.headless(width, height).withScreen { it.draw(draw) }
 
 /** Row [y], columns [x] until [x] + [width], right-trimmed. */
 public fun Canvas.line(y: Int, x: Int = 0, width: Int = this.width - x): String = line(::get, y, x, width)

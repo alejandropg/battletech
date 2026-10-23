@@ -20,7 +20,7 @@ import io.archinaut.battletech.tui.input.Action
 import io.archinaut.battletech.tui.input.legacyPanelScrollDelta
 import io.archinaut.battletech.tui.input.PanAction
 import io.archinaut.battletech.tui.input.ScrollAction
-import io.archinaut.tenter.terminal.Terminal
+import io.archinaut.tenter.terminal.Screen
 import io.archinaut.tenter.widget.FlashMessage
 
 /** Panel focus order the `Enter`/`Tab` cycle walks — HELP is never in it (see [nextPanel]'s KDoc). */
@@ -34,7 +34,7 @@ private val PANEL_CYCLE_ORDER = listOf(SetupPanelId.MODE, SetupPanelId.MAP, Setu
 internal suspend fun setupLoop(
     events: Flow<SetupUiEvent>,
     internalEvents: SendChannel<SetupUiEvent>,
-    screen: Terminal,
+    screen: Screen,
     initialState: SetupState,
     keys: Keybindings,
     lobby: SetupLobby,
@@ -201,7 +201,6 @@ internal suspend fun setupLoop(
                 }
 
                 is SetupUiEvent.Resized -> {
-                    screen.resize(ui.size.width, ui.size.height)
                     render()
                 }
 

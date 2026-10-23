@@ -34,7 +34,7 @@ import io.archinaut.battletech.tui.input.Action
 import io.archinaut.battletech.tui.input.PanAction
 import io.archinaut.battletech.tui.input.ScrollAction
 import io.archinaut.tenter.widget.FlashMessage
-import io.archinaut.tenter.terminal.Terminal
+import io.archinaut.tenter.terminal.Screen
 import io.archinaut.tenter.widget.panel.PanelHit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -55,7 +55,7 @@ import kotlin.time.Duration.Companion.nanoseconds
 internal suspend fun runLoop(
     events: Flow<UiEvent>,
     internalEvents: SendChannel<UiEvent>,
-    screen: Terminal,
+    screen: Screen,
     initialState: AppState,
     keys: Keybindings,
     buildVolley: (List<AttackResult>, Int, Int) -> AnimationPlayback<PanelPlacement>? =
@@ -285,7 +285,6 @@ internal suspend fun runLoop(
                 }
 
                 is UiEvent.Resized -> {
-                    screen.resize(ui.size.width, ui.size.height)
                     // Panels were placed against the OLD size, so any resize invalidates the whole
                     // layout — not just one that no longer fits. Cancelling is honest and cheap;
                     // re-solving placements mid-flight would make panels jump around instead.

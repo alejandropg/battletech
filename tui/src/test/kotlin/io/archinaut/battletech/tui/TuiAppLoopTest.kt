@@ -55,6 +55,12 @@ import org.junit.jupiter.api.Test
 import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.palette.PaletteColor
 import io.archinaut.tenter.terminal.Terminal
+import io.archinaut.tenter.terminal.HeadlessTerminal
+import io.archinaut.tenter.terminal.Screen
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.TestScope
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.widget.Widget
 import kotlin.time.Duration
@@ -65,16 +71,27 @@ import kotlin.time.Duration.Companion.seconds
 internal class TuiAppLoopTest {
 
     // Width/height must be positive to pass TuiApp.currentSize() checks.
-    private val screen = Terminal.headless(width = 120, height = 40)
+    private val terminal = Terminal.headless(width = 120, height = 40)
+
+    /**
+     * [runTest] with [terminal]'s screen open throughout, as `withScreen` holds it around the app in
+     * production.
+     */
+    private fun runOnScreen(
+        context: CoroutineContext = EmptyCoroutineContext,
+        terminal: HeadlessTerminal = this.terminal,
+        body: suspend TestScope.(Screen) -> Unit,
+    ): TestResult = terminal.withScreen { screen -> runTest(context) { body(screen) } }
+
 
     /** The text of the latest frame the loop drew. */
-    private fun screenText(): String = screen.lastFrameText()
+    private fun screenText(): String = terminal.frameText()
 
     /** Whether [action] made the loop draw a new frame: each draw returns a fresh frame. */
     private inline fun drewAfter(action: () -> Unit): Boolean {
-        val before = screen.lastFrame
+        val before = terminal.frame
         action()
-        return screen.lastFrame !== before
+        return terminal.frame !== before
     }
 
     /**
@@ -116,7 +133,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `scripted Input and Quit flow completes after rendering`() = runTest {
+    fun `scripted Input and Quit flow completes after rendering`() = runOnScreen { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         // Quit is included in the scripted flow — takeWhile stops on Quit and
         // merge cancels all source coroutines so the loop exits cleanly.
@@ -136,11 +153,11 @@ internal class TuiAppLoopTest {
             keys = Keybindings.DEFAULT,
         )
 
-        assertNotNull(screen.lastFrame, "Expected the loop to render")
+        assertTrue(screenText().isNotBlank(), "Expected the loop to render")
     }
 
     @Test
-    fun `the loop renders its initial frame and redraws on input`() = runTest(UnconfinedTestDispatcher()) {
+    fun `the loop renders its initial frame and redraws on input`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -153,7 +170,7 @@ internal class TuiAppLoopTest {
             )
         }
 
-        assertNotNull(screen.lastFrame, "Expected the initial frame before any event")
+        assertTrue(screenText().isNotBlank(), "Expected the initial frame before any event")
         // ArrowDown, not ArrowUp: north from row 0 is off the map and would leave the cursor put.
         assertTrue(drewAfter { internalEvents.send(UiEvent.Input(KeyboardEvent("ArrowDown"))) }, "Expected input to redraw")
 
@@ -169,7 +186,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `flash appears after Not-your-unit trigger`() = runTest(UnconfinedTestDispatcher()) {
+    fun `flash appears after Not-your-unit trigger`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         // Launch runLoop: with UnconfinedTestDispatcher it starts running eagerly
@@ -201,7 +218,7 @@ internal class TuiAppLoopTest {
     }
 
     @Test
-    fun `flash text clears after FlashExpired fires through virtual time`() = runTest(UnconfinedTestDispatcher()) {
+    fun `flash text clears after FlashExpired fires through virtual time`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -237,7 +254,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `Resized event triggers re-render`() = runTest(UnconfinedTestDispatcher()) {
+    fun `Resized event triggers re-render`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -251,11 +268,10 @@ internal class TuiAppLoopTest {
         }
 
         // Initial frame rendered, loop suspended on receive.
-        assertNotNull(screen.lastFrame, "Expected initial frame to be rendered")
+        assertTrue(screenText().isNotBlank(), "Expected initial frame to be rendered")
 
         // Send a resize event — loop processes it and re-renders at the new size.
         assertTrue(drewAfter { internalEvents.send(UiEvent.Resized(Size(160, 45))) }, "Expected Resized to trigger a re-render")
-        assertEquals(160, checkNotNull(screen.lastFrame).width)
 
         internalEvents.send(UiEvent.Quit)
         loopJob.join()
@@ -266,7 +282,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `stale FlashExpired generation is ignored, newer flash stays visible`() = runTest(UnconfinedTestDispatcher()) {
+    fun `stale FlashExpired generation is ignored, newer flash stays visible`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -317,7 +333,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `exception while handling one event does not stop the loop from reaching Quit`() = runTest(UnconfinedTestDispatcher()) {
+    fun `exception while handling one event does not stop the loop from reaching Quit`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -351,7 +367,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `game-over banner renders when MatchEnded event is received with a winner`() = runTest(UnconfinedTestDispatcher()) {
+    fun `game-over banner renders when MatchEnded event is received with a winner`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -375,7 +391,7 @@ internal class TuiAppLoopTest {
     }
 
     @Test
-    fun `game-over banner shows Draw when MatchEnded has a Draw outcome`() = runTest(UnconfinedTestDispatcher()) {
+    fun `game-over banner shows Draw when MatchEnded has a Draw outcome`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -413,7 +429,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `a board click on the enemy unit reaches the phase and flashes`() = runTest(UnconfinedTestDispatcher()) {
+    fun `a board click on the enemy unit reaches the phase and flashes`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -453,7 +469,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `Session AttacksResolved populates lastAttackResults so the results panel appears`() = runTest(UnconfinedTestDispatcher()) {
+    fun `Session AttacksResolved populates lastAttackResults so the results panel appears`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -484,7 +500,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `resync into WEAPON_ATTACK clears a pre-set lastAttackResults`() = runTest(UnconfinedTestDispatcher()) {
+    fun `resync into WEAPON_ATTACK clears a pre-set lastAttackResults`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         // Session is constructed already sitting at WEAPON_ATTACK while the TUI
@@ -535,7 +551,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `Session event does not clear lastAttackResults when phase already matches (no resync)`() = runTest(UnconfinedTestDispatcher()) {
+    fun `Session event does not clear lastAttackResults when phase already matches (no resync)`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         val initialState = buildAppState().copy(lastAttackResults = listOf(aResult()))
 
@@ -569,7 +585,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `SessionNotice recorded in the gameLog renders in the LOG panel with the lan-connect icon`() = runTest(UnconfinedTestDispatcher()) {
+    fun `SessionNotice recorded in the gameLog renders in the LOG panel with the lan-connect icon`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         val initialState = buildAppState()
         val session = initialState.anySession as BattleSession
@@ -604,7 +620,7 @@ internal class TuiAppLoopTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `question mark opens and closes the HELP panel`() = runTest(UnconfinedTestDispatcher()) {
+    fun `question mark opens and closes the HELP panel`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -630,7 +646,7 @@ internal class TuiAppLoopTest {
     }
 
     @Test
-    fun `9 focuses LOG, then minus minimizes it to its stub`() = runTest(UnconfinedTestDispatcher()) {
+    fun `9 focuses LOG, then minus minimizes it to its stub`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -659,7 +675,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `reselecting the focused panel's number cycles its size, and UNIT STATUS shows its compact and full views`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
             val loopJob = launch {
@@ -693,7 +709,7 @@ internal class TuiAppLoopTest {
         }
 
     @Test
-    fun `question mark still opens HELP after the match ends`() = runTest(UnconfinedTestDispatcher()) {
+    fun `question mark still opens HELP after the match ends`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
         val loopJob = launch {
@@ -750,7 +766,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `a board pan survives an unrelated re-render, and cursor movement re-engages follow`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
             val loopJob = launch {
@@ -800,7 +816,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `arrows scroll the focused side panel instead of moving the cursor, and reach the phase again once the board is focused`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
             val loopJob = launch {
@@ -867,7 +883,7 @@ internal class TuiAppLoopTest {
     }
 
     @Test
-    fun `AttacksResolved starts the animation panel`() = runTest(UnconfinedTestDispatcher()) {
+    fun `AttacksResolved starts the animation panel`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         val loopJob = launch {
             runLoop(
@@ -894,7 +910,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `a session event resamples the active animation at the current elapsed time`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val frameIndices = mutableListOf<Int>()
             var clockNanos = 0L
@@ -921,7 +937,7 @@ internal class TuiAppLoopTest {
         }
 
     @Test
-    fun `rendering time is subtracted before scheduling the next wake-up`() = runTest(UnconfinedTestDispatcher()) {
+    fun `rendering time is subtracted before scheduling the next wake-up`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         val frameIndices = mutableListOf<Int>()
         var renderOffset = 0L
@@ -961,7 +977,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `a stale animation token is ignored, and the valid one samples the live frame`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val timerEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val timerSink = object : kotlinx.coroutines.channels.SendChannel<UiEvent> by internalEvents {
@@ -1010,7 +1026,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `a timer from a canceled volley cannot affect a later volley`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val timerEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val timerSink = object : kotlinx.coroutines.channels.SendChannel<UiEvent> by internalEvents {
@@ -1053,7 +1069,7 @@ internal class TuiAppLoopTest {
         }
 
     @Test
-    fun `animation construction failure leaves normal input usable`() = runTest(UnconfinedTestDispatcher()) {
+    fun `animation construction failure leaves normal input usable`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         var factoryCalls = 0
         val loopJob = launch {
@@ -1082,7 +1098,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `active frame sampling failure clears playback and leaves normal input usable`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             var builds = 0
             val loopJob = launch {
@@ -1122,7 +1138,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `animation render failure cancels its timer and allows a later playback`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             var builds = 0
             var draws = 0
@@ -1170,7 +1186,7 @@ internal class TuiAppLoopTest {
         }
 
     @Test
-    fun `the panel disappears on its own once every frame has played`() = runTest(UnconfinedTestDispatcher()) {
+    fun `the panel disappears on its own once every frame has played`() = runOnScreen(UnconfinedTestDispatcher()) { screen ->
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         val loopJob = launch {
             runLoop(
@@ -1200,7 +1216,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `Esc cancels the animation immediately and swallows every other key while it plays`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val loopJob = launch {
                 runLoop(
@@ -1233,7 +1249,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `hot-seat's duplicate AttacksResolved delivery starts exactly one playback`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             var factoryCalls = 0
             val loopJob = launch {
@@ -1270,14 +1286,18 @@ internal class TuiAppLoopTest {
         }
 
     @Test
-    fun `a terminal smaller than the panel never starts the animation`() = runTest(UnconfinedTestDispatcher()) {
-        val smallScreen = Terminal.headless(width = 70, height = 20)
+    fun `a terminal smaller than the panel never starts the animation`() {
+        val small = Terminal.headless(width = 70, height = 20)
+        runOnScreen(UnconfinedTestDispatcher(), small) { screen -> smallTerminalNeverAnimates(screen, small) }
+    }
+
+    private suspend fun TestScope.smallTerminalNeverAnimates(screen: Screen, small: HeadlessTerminal) {
         val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
         val loopJob = launch {
             runLoop(
                 events = internalEvents.receiveAsFlow(),
                 internalEvents = internalEvents,
-                screen = smallScreen,
+                screen = screen,
                 initialState = buildAppState(),
                 keys = Keybindings.DEFAULT,
                 buildVolley = testVolley(TestAnimation()),
@@ -1288,7 +1308,7 @@ internal class TuiAppLoopTest {
         internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
 
         assertFalse(
-            smallScreen.lastFrameText().contains(animationTopBorder),
+            small.frameText().contains(animationTopBorder),
             "A 70x20 terminal has no room for the 72x22 panel — it must never draw",
         )
 
@@ -1302,7 +1322,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `the loop wakes up when each staggered weapon category starts`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             // Long animations so neither finishes while the stagger is under test.
             val firstFrames = mutableListOf<Int>()
@@ -1343,7 +1363,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `resize cancels pending panels and a later volley starts cleanly`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val loopJob = launch {
                 runLoop(
@@ -1377,7 +1397,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `the loop keeps animating while any clip is still visible`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val loopJob = launch {
                 runLoop(
@@ -1411,7 +1431,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `Esc cancels pending panels and restores normal input`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val long = { TestAnimation(frameCount = 500, frameDuration = 10.milliseconds) }
             val loopJob = launch {
@@ -1443,7 +1463,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `the real category lookup drives the overlay — an unknown weapon name plays nothing`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             // No buildVolley override: this exercises WeaponModels.findByName for real.
             val loopJob = launch {
@@ -1469,7 +1489,7 @@ internal class TuiAppLoopTest {
 
     @Test
     fun `the real category lookup draws one panel for a recognised weapon`() =
-        runTest(UnconfinedTestDispatcher()) {
+        runOnScreen(UnconfinedTestDispatcher()) { screen ->
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
             val loopJob = launch {
                 runLoop(

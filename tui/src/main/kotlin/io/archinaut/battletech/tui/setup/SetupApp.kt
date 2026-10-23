@@ -8,7 +8,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
-import io.archinaut.tenter.terminal.Terminal
+import io.archinaut.tenter.terminal.Screen
 import io.archinaut.tenter.terminal.TerminalEvent
 
 internal sealed interface SetupOutcome {
@@ -22,11 +22,11 @@ internal sealed interface SetupOutcome {
 /**
  * Runs the interactive setup screen to completion. Mirrors `io.archinaut.battletech.tui.TuiApp` but *accepts*
  * its terminal rather than constructing it (D17), so `Main.kt` can keep one
- * [io.archinaut.tenter.terminal.withScreen] scope across whichever app runs next. That scope owns the
+ * [io.archinaut.tenter.terminal.Terminal.withScreen] scope across whichever app runs next. That scope owns the
  * alternate screen and cursor; this app's collected input flow owns its own raw-mode lifetime.
  */
 internal class SetupApp(
-    private val screen: Terminal,
+    private val screen: Screen,
     private val keys: Keybindings,
     private val lobby: SetupLobby,
     private val initial: SetupState,

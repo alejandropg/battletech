@@ -33,7 +33,6 @@ import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import kotlin.io.path.Path
 import io.archinaut.tenter.terminal.Terminal
-import io.archinaut.tenter.terminal.withScreen
 
 /** Builds the [ContentCatalog] for one launch: every built-in plus [launch]'s `--add-*` registrations. */
 private fun resolveContentOrExit(launch: Launch): ContentCatalog = try {
@@ -101,14 +100,14 @@ private fun awaitKickstart(server: GameServer, seats: Map<PlayerId, ClientGameSe
 
 /**
  * The one tenter [Terminal] this process uses for its whole run (D17), and the theme its one
- * [withScreen] scope draws with — whether that scope runs only [TuiApp], or [SetupApp] followed by
+ * [Terminal.withScreen] scope draws with — whether that scope runs only [TuiApp], or [SetupApp] followed by
  * [TuiApp] on the interactive path. Creating the terminal writes nothing, so a TUI mode calls this
  * before starting any server: an invalid [themeName] exits here, with nothing yet to clean up.
  * [themeName] null auto-selects from the terminal's detected color support.
  */
 private fun tuiScreen(themeName: String?): Pair<Terminal, Theme> {
-    val screen = Terminal()
-    return screen to (resolveThemeOrExit(themeName) ?: resolveTheme(defaultThemeName(screen.ansiLevel)))
+    val terminal = Terminal()
+    return terminal to (resolveThemeOrExit(themeName) ?: resolveTheme(defaultThemeName(terminal.ansiLevel)))
 }
 
 /**
@@ -120,7 +119,7 @@ public fun main(args: Array<String>) {
 
     when (val mode = launch.mode) {
         is Mode.HotSeat -> {
-            val (screen, theme) = tuiScreen(launch.themeName)
+            val (terminal, theme) = tuiScreen(launch.themeName)
             val content = resolveContentOrExit(launch)
             // Every match commits through LobbyHost now, hot-seat included (D12) — with nothing
             // ever parked here, this is exactly GameServer.host's own behavior.
@@ -137,11 +136,11 @@ public fun main(args: Array<String>) {
             // TuiApp reads currentPhase to build its initial AppState, so composition must
             // absorb the kickstart race here — see awaitKickstart's KDoc.
             awaitKickstart(server, seats)
-            server.use { screen.withScreen(theme) { TuiApp(seats, it).run() } }
+            server.use { terminal.withScreen(theme) { TuiApp(seats, it).run() } }
         }
 
         is Mode.Host -> {
-            val (screen, theme) = tuiScreen(launch.themeName)
+            val (terminal, theme) = tuiScreen(launch.themeName)
             val content = resolveContentOrExit(launch)
             // Commits immediately (today's --map/--unit are already given, D2) — a joiner that
             // connects after this always hits the committed JoinAccepted fast path, never the
@@ -158,8 +157,8 @@ public fun main(args: Array<String>) {
             val localSeat = EndpointAnnotatedSession(localSession, endpoint)
             acceptor.use {
                 server.use {
-                    screen.withScreen(theme) {
-                        TuiApp(seats = mapOf(localSession.playerId to localSeat), it).run()
+                    terminal.withScreen(theme) { screen ->
+                        TuiApp(seats = mapOf(localSession.playerId to localSeat), screen).run()
                     }
                 }
             }
@@ -169,7 +168,7 @@ public fun main(args: Array<String>) {
             // --add-map/--add-mech contribute this seat's registered content to the host's
             // shared asset registry, even though join never SELECTS a map or unit collection of
             // its own — see ContentCatalog.contribution's KDoc.
-            val (screen, theme) = tuiScreen(launch.themeName)
+            val (terminal, theme) = tuiScreen(launch.themeName)
             val content = resolveContentOrExit(launch)
             val lobbyClient = try {
                 LobbyClient.connect(mode.host, mode.port, mode.sessionId, content.contribution())
@@ -183,12 +182,12 @@ public fun main(args: Array<String>) {
 
             if (lobbyClient.isCommitted) {
                 lobbyClient.awaitMatch().use { remote ->
-                    screen.withScreen(theme) { TuiApp(seats = mapOf(remote.playerId to remote), it).run() }
+                    terminal.withScreen(theme) { TuiApp(seats = mapOf(remote.playerId to remote), it).run() }
                 }
             } else {
                 // The match session shares lobbyClient's connection; closing both is harmless.
                 lobbyClient.use {
-                    screen.withScreen(theme) {
+                    terminal.withScreen(theme) { screen ->
                         val initial = SetupState(
                             catalog = lobbyClient.catalog,
                             registry = lobbyClient.registry,
@@ -217,8 +216,8 @@ public fun main(args: Array<String>) {
         // Bare invocation (D1). Nothing is printed on this path (D3): a stray println would
         // corrupt the setup screen's first frame — the host endpoint lives in panel 1 instead.
         Mode.Interactive -> {
-            val (screen, theme) = tuiScreen(launch.themeName)
-            runInteractive(screen, theme, resolveContentOrExit(launch))
+            val (terminal, theme) = tuiScreen(launch.themeName)
+            runInteractive(terminal, theme, resolveContentOrExit(launch))
         }
     }
 }
@@ -231,12 +230,12 @@ public fun main(args: Array<String>) {
  * it is closed only once the match is over, because its acceptor is the one an interactive host
  * has for the whole run (see [LobbyHostAdapter.close]).
  */
-private fun runInteractive(screen: Terminal, theme: Theme, content: ContentCatalog) {
+private fun runInteractive(terminal: Terminal, theme: Theme, content: ContentCatalog) {
     val registry = AssetRegistry.EMPTY.merge(content.contribution()).registry
     val hostAdapter = LobbyHostAdapter(content.contribution())
 
     hostAdapter.use {
-        screen.withScreen(theme) {
+        terminal.withScreen(theme) { screen ->
             val initial = SetupState(catalog = registry.summarize(), registry = registry)
             when (val outcome = SetupApp(screen, Keybindings.DEFAULT, hostAdapter, initial).run()) {
                 SetupOutcome.Quit -> Unit

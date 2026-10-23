@@ -13,7 +13,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
-import io.archinaut.tenter.terminal.Terminal
+import io.archinaut.tenter.terminal.Screen
 import io.archinaut.tenter.terminal.TerminalEvent
 
 /**
@@ -26,15 +26,15 @@ import io.archinaut.tenter.terminal.TerminalEvent
  * [io.archinaut.battletech.network.client.ClientGameSession] never kickstarts at all. This class never builds
  * a session or calls `advance()` itself.
  *
- * [screen] is accepted, not constructed (D17): `Main.kt` builds one tenter [Terminal] for the
- * whole process and hands it, inside one [io.archinaut.tenter.terminal.withScreen] scope, to both
- * the setup screen ([io.archinaut.battletech.tui.setup.SetupApp]) and this class. The scope owns
+ * [screen] is accepted, not constructed (D17): `Main.kt` builds one tenter terminal for the
+ * whole process and hands the [Screen] of its one [io.archinaut.tenter.terminal.Terminal.withScreen] scope
+ * to both the setup screen ([io.archinaut.battletech.tui.setup.SetupApp]) and this class. The scope owns
  * alternate-screen/cursor cleanup; this app's cold input flow acquires and releases raw mode while
  * it is collected, with no flicker at the hand-off between the two screens.
  */
 public class TuiApp(
     private val seats: Map<PlayerId, GameSession>,
-    private val screen: Terminal,
+    private val screen: Screen,
 ) {
 
     /**
@@ -51,7 +51,7 @@ public class TuiApp(
      * ### Single-thread confinement
      * All session mutations, AppState updates, and rendering run on the single
      * [runBlocking] (main) thread. Only the terminal input producer runs on
-     * Dispatchers.IO — that is handled internally by [Terminal.events].
+     * Dispatchers.IO — that is handled internally by [Screen.events].
      *
      * ### Quit ends input collection
      * The keymap's quit chord ends the terminal event flow, which releases raw mode, and is
