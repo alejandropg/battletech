@@ -9,8 +9,9 @@ import io.archinaut.tenter.color.TerminalColor
  * Tenter renders a [TerminalColor] as given without ever consulting the loaded theme.
  *
  * Values use fixed ANSI-16 escapes — for example, `"\033[31;1m"` (bright red) maps to
- * [ANIMATION_DANGER]. [io.archinaut.tenter.screen.Style] has no bold attribute, so a `;1` (bold) escape
- * maps to its bright `9x` code rather than losing the intensity distinction entirely.
+ * [ANIMATION_DANGER]. A `;1` (bold) escape maps to its bright `9x` code rather than
+ * [io.archinaut.tenter.screen.Style]'s `bold` attribute: terminals differ on whether bold also
+ * brightens the color, and the bright code keeps the intensity distinction the same everywhere.
  */
 
 /** `\033[90m` — dim starfield / decaying trail particles. */
