@@ -16,7 +16,7 @@ import io.archinaut.battletech.tui.icon.filledCircleIcon
 import io.archinaut.battletech.tui.icon.infinityIcon
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.text.CellWidth
 import io.archinaut.tenter.widget.RowWriter
 
@@ -99,21 +99,21 @@ internal class UnitStatusView(
             val armor = unit.armor
             val is_ = unit.internalStructure
             draw(SectionHeading("ARMOR"))
-            writeLocation(9, "HD", armor.head, is_.head, ChromeRole.INFO)
+            writeLocation(9, "HD", armor.head, is_.head, StandardRole.INFO)
             newLine()
-            writeLocation(2, "LT", armor.leftTorso, is_.leftTorso, ChromeRole.SUCCESS)
-            writeLocation(9, "CT", armor.centerTorso, is_.centerTorso, ChromeRole.ACCENT)
-            writeLocation(16, "RT", armor.rightTorso, is_.rightTorso, ChromeRole.SUCCESS)
+            writeLocation(2, "LT", armor.leftTorso, is_.leftTorso, StandardRole.SUCCESS)
+            writeLocation(9, "CT", armor.centerTorso, is_.centerTorso, StandardRole.ACCENT)
+            writeLocation(16, "RT", armor.rightTorso, is_.rightTorso, StandardRole.SUCCESS)
             newLine()
             write(3, "r:%2d".format(armor.leftTorsoRear), Style.DEFAULT)
             write(10, "r:%2d".format(armor.centerTorsoRear), Style.DEFAULT)
             write(17, "r:%2d".format(armor.rightTorsoRear), Style.DEFAULT)
             newLine()
-            writeLocation(0, "LA", armor.leftArm, is_.leftArm, ChromeRole.SUCCESS)
-            writeLocation(17, "RA", armor.rightArm, is_.rightArm, ChromeRole.SUCCESS)
+            writeLocation(0, "LA", armor.leftArm, is_.leftArm, StandardRole.SUCCESS)
+            writeLocation(17, "RA", armor.rightArm, is_.rightArm, StandardRole.SUCCESS)
             newLine()
-            writeLocation(3, "LL", armor.leftLeg, is_.leftLeg, ChromeRole.SUCCESS)
-            writeLocation(14, "RL", armor.rightLeg, is_.rightLeg, ChromeRole.SUCCESS)
+            writeLocation(3, "LL", armor.leftLeg, is_.leftLeg, StandardRole.SUCCESS)
+            writeLocation(14, "RL", armor.rightLeg, is_.rightLeg, StandardRole.SUCCESS)
             newLine()
             newLine()
 
@@ -124,17 +124,17 @@ internal class UnitStatusView(
             newLine()
 
             writeLine("Internal Structure", TEXT_PRIMARY_STYLE)
-            writeLocation(9, "HD", is_.head, is_.head, ChromeRole.INFO)
+            writeLocation(9, "HD", is_.head, is_.head, StandardRole.INFO)
             newLine()
-            writeLocation(2, "LT", is_.leftTorso, is_.leftTorso, ChromeRole.SUCCESS)
-            writeLocation(9, "CT", is_.centerTorso, is_.centerTorso, ChromeRole.ACCENT)
-            writeLocation(16, "RT", is_.rightTorso, is_.rightTorso, ChromeRole.SUCCESS)
+            writeLocation(2, "LT", is_.leftTorso, is_.leftTorso, StandardRole.SUCCESS)
+            writeLocation(9, "CT", is_.centerTorso, is_.centerTorso, StandardRole.ACCENT)
+            writeLocation(16, "RT", is_.rightTorso, is_.rightTorso, StandardRole.SUCCESS)
             newLine()
-            writeLocation(0, "LA", is_.leftArm, is_.leftArm, ChromeRole.SUCCESS)
-            writeLocation(17, "RA", is_.rightArm, is_.rightArm, ChromeRole.SUCCESS)
+            writeLocation(0, "LA", is_.leftArm, is_.leftArm, StandardRole.SUCCESS)
+            writeLocation(17, "RA", is_.rightArm, is_.rightArm, StandardRole.SUCCESS)
             newLine()
-            writeLocation(3, "LL", is_.leftLeg, is_.leftLeg, ChromeRole.SUCCESS)
-            writeLocation(14, "RL", is_.rightLeg, is_.rightLeg, ChromeRole.SUCCESS)
+            writeLocation(3, "LL", is_.leftLeg, is_.leftLeg, StandardRole.SUCCESS)
+            writeLocation(14, "RL", is_.rightLeg, is_.rightLeg, StandardRole.SUCCESS)
             repeat(2) { newLine() }
         }
 
@@ -155,7 +155,7 @@ internal class UnitStatusView(
      * zero-[structure] location renders red with a strikethrough (it's gone); an intact location
      * renders in its normal [intactColor].
      */
-    private fun RowWriter.writeLocation(padding: Int, label: String, value: Int, structure: Int, intactColor: ChromeRole) {
+    private fun RowWriter.writeLocation(padding: Int, label: String, value: Int, structure: Int, intactColor: StandardRole) {
         val style = if (structure == 0) DESTROYED_STYLE else Style(intactColor)
         write(padding, "%s:%2d".format(label, value), style)
     }
@@ -194,9 +194,9 @@ internal class UnitStatusView(
     internal companion object {
         internal const val TITLE: String = "UNIT STATUS"
 
-        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
-        private val ACCENT_STYLE = Style(ChromeRole.ACCENT)
-        private val DANGER_STYLE = Style(ChromeRole.DANGER)
+        private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
+        private val ACCENT_STYLE = Style(StandardRole.ACCENT)
+        private val DANGER_STYLE = Style(StandardRole.DANGER)
         private val DESTROYED_STYLE = Style(BoardRole.DESTROYED, strikethrough = true)
     }
 }

@@ -2,7 +2,7 @@ package io.archinaut.battletech.tui.animation
 
 import io.archinaut.battletech.tui.animation.LaserBurstAnimation.Companion.DEFAULT_RADIUS
 import io.archinaut.battletech.tui.animation.LaserBurstAnimation.Companion.DEFAULT_TARGET_Y
-import io.archinaut.tenter.palette.PaletteColor
+import io.archinaut.tenter.color.TerminalColor
 import io.archinaut.tenter.animation.Animation
 import io.archinaut.tenter.screen.Size
 import io.archinaut.tenter.animation.GlyphGrid
@@ -60,14 +60,14 @@ private val MACHINE_GUN_PRIORITY: Map<Char, Int> = mapOf(
 
 private fun machineGunPriority(char: Char): Int = MACHINE_GUN_PRIORITY[char] ?: 0
 
-private val MACHINE_GUN_COLORS: Map<Char, PaletteColor> = mapOf(
+private val MACHINE_GUN_COLORS: Map<Char, TerminalColor> = mapOf(
     '.' to ANIMATION_GRAY, ',' to ANIMATION_GRAY, ':' to ANIMATION_GRAY,
     'c' to ANIMATION_AMBER, 'o' to ANIMATION_WARNING, '-' to ANIMATION_WARNING,
     '=' to ANIMATION_BRIGHT, '+' to ANIMATION_DANGER, '*' to ANIMATION_WARNING,
     '@' to ANIMATION_BRIGHT, 'X' to ANIMATION_BRIGHT, '#' to ANIMATION_BRIGHT,
 )
 
-// See laserStyle: unmapped (i.e. space) falls back to a fixed PaletteColor so no cell ever resolves
+// See laserStyle: unmapped (i.e. space) falls back to a fixed TerminalColor so no cell ever resolves
 // through the loaded theme.
 private fun machineGunStyle(char: Char): Style =
     Style(fg = MACHINE_GUN_COLORS[char] ?: ANIMATION_GRAY, bg = ANIMATION_BACKGROUND)

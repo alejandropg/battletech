@@ -1,7 +1,7 @@
 package io.archinaut.battletech.tui.view
 
 import io.archinaut.battletech.tui.aUnit
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -31,7 +31,7 @@ internal class SpecialUnitStatusListTest {
         assertEquals("PILOT UNCONSCIOUS", buffer.line(3, width = 24).trim())
         assertEquals("PRONE", buffer.line(4, width = 24).trim())
         for (row in 1..4) {
-            assertEquals(ChromeRole.DANGER, buffer.get(0, row).style.fg)
+            assertEquals(StandardRole.DANGER, buffer.get(0, row).style.fg)
         }
     }
 }

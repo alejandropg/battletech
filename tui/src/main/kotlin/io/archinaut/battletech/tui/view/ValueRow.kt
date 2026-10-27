@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.view
 
-import io.archinaut.tenter.palette.ColorRole
+import io.archinaut.tenter.color.ColorRole
 import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.tenter.widget.RowWriter

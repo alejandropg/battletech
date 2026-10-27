@@ -1,12 +1,12 @@
 package io.archinaut.battletech.tui.view
 
-import io.archinaut.battletech.tui.screen.UiRole
+import io.archinaut.battletech.tui.screen.AppRole
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tui.game.phase.DeclaredTargetsRender
 import io.archinaut.battletech.tui.game.phase.DeclaredWeaponEntry
 import io.archinaut.battletech.tui.icon.targetIcon
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.widget.RowWriter
 
 internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : MeasurableWidget {
@@ -18,8 +18,8 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Me
         }
 
         for ((index, entry) in data.entries.withIndex()) {
-            val attackerColor = if (entry.isDraft) UiRole.DRAFT else playerColor(entry.ownerPlayer)
-            val contentColor = if (entry.isDraft) UiRole.DRAFT else ChromeRole.TEXT_PRIMARY
+            val attackerColor = if (entry.isDraft) AppRole.DRAFT else playerColor(entry.ownerPlayer)
+            val contentColor = if (entry.isDraft) AppRole.DRAFT else StandardRole.TEXT_PRIMARY
 
             content.writeLine(entry.attackerId.value, Style(attackerColor))
 
@@ -58,6 +58,6 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Me
     internal companion object {
         const val TITLE: String = "DECLARED TARGETS"
 
-        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
     }
 }

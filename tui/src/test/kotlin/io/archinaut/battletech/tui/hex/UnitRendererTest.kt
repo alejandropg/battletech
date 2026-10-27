@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.hex
 
-import io.archinaut.battletech.tui.screen.UiRole
+import io.archinaut.battletech.tui.screen.AppRole
 import io.archinaut.battletech.tactical.model.HexDirection
 import io.archinaut.battletech.tui.screen.BoardRole
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -147,11 +147,11 @@ internal class UnitRendererTest {
         UnitRenderer.render(
             buffer, 0, 0, "A1", HexDirection.N, BoardRole.PLAYER_1,
             torsoFacing = HexDirection.NE,
-            torsoColor = UiRole.DRAFT,
+            torsoColor = AppRole.DRAFT,
         )
 
         assertEquals(ICON_TORSO_NE, buffer.get(5, 2).symbol)
-        assertEquals(UiRole.DRAFT, buffer.get(5, 2).style.fg)
+        assertEquals(AppRole.DRAFT, buffer.get(5, 2).style.fg)
         // Id and leg-facing arrow stay in the unit color.
         assertEquals(BoardRole.PLAYER_1, buffer.get(4, 3).style.fg)
         assertEquals(BoardRole.PLAYER_1, buffer.get(4, 2).style.fg)

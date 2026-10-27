@@ -3,7 +3,7 @@ package io.archinaut.battletech.tui.view
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.unit.ForeignUnit
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.widget.RowWriter
 
 /**
@@ -18,6 +18,6 @@ internal class ForeignWeaponList(private val unit: ForeignUnit) : MeasurableWidg
     }
 
     private companion object {
-        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
     }
 }

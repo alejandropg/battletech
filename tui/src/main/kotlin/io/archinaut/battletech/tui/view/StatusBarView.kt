@@ -4,7 +4,7 @@ import io.archinaut.battletech.tactical.model.PlayerId
 import io.archinaut.battletech.tactical.model.TurnPhase
 import io.archinaut.battletech.tactical.unit.VisibleUnit
 import io.archinaut.battletech.tui.game.displayName
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Line
 import io.archinaut.tenter.screen.Padding
@@ -74,8 +74,8 @@ internal class StatusBarView(
         private const val COMPACT_SEPARATOR: String = " | "
         private const val UNIT_MESSAGE_SEPARATOR: String = " ┆ "
         private const val MESSAGE_HELP_GAP: Int = 1
-        private val ACCENT_STYLE = Style(ChromeRole.ACCENT)
-        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
+        private val ACCENT_STYLE = Style(StandardRole.ACCENT)
+        private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
         private val PHASE_WIDTH = TurnPhase.entries.maxOf { CellWidth.of(phaseLabel(it)) }
         private val PLAYER_WIDTH = PlayerId.entries.maxOf { CellWidth.of(it.displayName) }
 

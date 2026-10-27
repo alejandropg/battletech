@@ -2,7 +2,7 @@ package io.archinaut.battletech.tui.setup
 
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.widget.RowWriter
 import io.archinaut.tenter.widget.CheckState
 import io.archinaut.tenter.widget.SelectableRow
@@ -32,7 +32,7 @@ internal class ModePanelView(
                 if (!compact) {
                     content.writeLine(
                         "    ${description(candidate)}",
-                        Style(if (index == cursorIndex) ChromeRole.ACCENT else ChromeRole.TEXT_PRIMARY),
+                        Style(if (index == cursorIndex) StandardRole.ACCENT else StandardRole.TEXT_PRIMARY),
                     )
                 }
             }
@@ -73,6 +73,6 @@ internal class ModePanelView(
             SetupMode.HOST -> "host"
         }
 
-        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
     }
 }

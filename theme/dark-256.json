@@ -1,7 +1,7 @@
 {
   "colorSpace": "ansi256",
   "background": "233",
-  "chrome": {
+  "standard": {
     "DEFAULT": "253",
     "TEXT_PRIMARY": "255",
     "TEXT_MUTED": "145",
@@ -15,7 +15,7 @@
     "PANEL_BORDER": "253",
     "PANEL_BORDER_FOCUSED": "40"
   },
-  "ui": {
+  "app": {
     "DRAFT": "145"
   },
   "heatScale": {

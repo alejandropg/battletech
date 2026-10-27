@@ -3,12 +3,12 @@ package io.archinaut.battletech.tui.screen
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.palette.ColorRole
-import io.archinaut.tenter.palette.PaletteColor
+import io.archinaut.tenter.color.StandardRole
+import io.archinaut.tenter.color.ColorRole
+import io.archinaut.tenter.color.TerminalColor
 
 /**
- * On-disk shape of a theme file: one color space plus a value for every [ChromeRole], [UiRole],
+ * On-disk shape of a theme file: one color space plus a value for every [StandardRole], [AppRole],
  * [BoardRole], and [HeatScaleRole], split into semantic tables so a missing or unknown role names
  * where it belongs. Every color value is a string parsed according to [colorSpace] — see
  * [ColorSpace]'s KDoc for the three syntaxes.
@@ -17,8 +17,8 @@ import io.archinaut.tenter.palette.PaletteColor
 internal data class ThemeFile(
     val colorSpace: ColorSpace,
     val background: String,
-    val chrome: Map<String, String> = emptyMap(),
-    val ui: Map<String, String> = emptyMap(),
+    val standard: Map<String, String> = emptyMap(),
+    val app: Map<String, String> = emptyMap(),
     val board: Map<String, String> = emptyMap(),
     val heatScale: Map<String, String> = emptyMap(),
 ) {
@@ -26,9 +26,9 @@ internal data class ThemeFile(
     /** Parses and validates this file into a [Theme] named [name], throwing [ThemeLoadException] on any failure. */
     fun toTheme(name: String): Theme {
         val defaultBackground = parseColor(background, "$name: background")
-        val colors = mutableMapOf<ColorRole, PaletteColor>()
-        resolveRoles(chrome, ChromeRole.entries.associateBy { it.name }, "chrome", name, colors)
-        resolveRoles(ui, UiRole.entries.associateBy { it.name }, "ui", name, colors)
+        val colors = mutableMapOf<ColorRole, TerminalColor>()
+        resolveRoles(standard, StandardRole.entries.associateBy { it.name }, "standard", name, colors)
+        resolveRoles(app, AppRole.entries.associateBy { it.name }, "app", name, colors)
         resolveRoles(board, BoardRole.entries.associateBy { it.name }, "board", name, colors)
         resolveRoles(heatScale, HeatScaleRole.entries.associateBy { it.name }, "heatScale", name, colors)
         return Theme(name, colorSpace.level, defaultBackground, colors)
@@ -39,7 +39,7 @@ internal data class ThemeFile(
         rolesByName: Map<String, R>,
         table: String,
         name: String,
-        into: MutableMap<ColorRole, PaletteColor>,
+        into: MutableMap<ColorRole, TerminalColor>,
     ) {
         for ((key, value) in values) {
             val role = rolesByName[key]
@@ -52,16 +52,16 @@ internal data class ThemeFile(
         }
     }
 
-    private fun parseColor(raw: String, context: String): PaletteColor = try {
-        PaletteColor.parse(raw, colorSpace.level)
+    private fun parseColor(raw: String, context: String): TerminalColor = try {
+        TerminalColor.parse(raw, colorSpace.level)
     } catch (e: IllegalArgumentException) {
         throw ThemeLoadException("$context: invalid $colorSpace color \"$raw\" (${e.message})")
     }
 }
 
 /**
- * The three [PaletteColor] subtypes a theme file can target, one per file — there is no
- * conversion between them (see [PaletteColor]'s KDoc). Each carries its own value syntax:
+ * The three [TerminalColor] subtypes a theme file can target, one per file — there is no
+ * conversion between them (see [TerminalColor]'s KDoc). Each carries its own value syntax:
  * [TRUECOLOR] is `#RRGGBB`, [ANSI256] is a decimal string in `16..255`, [ANSI16] is a decimal
  * string in `30..37` or `90..97`.
  */

@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.view
 
-import io.archinaut.battletech.tui.screen.UiRole
+import io.archinaut.battletech.tui.screen.AppRole
 import io.archinaut.battletech.tactical.model.HexCoordinates
 import io.archinaut.battletech.tactical.model.HexDirection
 import io.archinaut.battletech.tactical.query.projectFor
@@ -12,7 +12,7 @@ import io.archinaut.battletech.tui.hex.HexHighlight
 import io.archinaut.battletech.tui.hex.HexLayout
 import io.archinaut.battletech.tui.icon.destroyedIcon
 import io.archinaut.battletech.tui.screen.BoardRole
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.widget.Viewport
@@ -66,8 +66,8 @@ internal class BoardViewTest {
             assertEquals(coordinateLabels[index], buffer.line(y, rightLabelX, 2))
         }
 
-        assertEquals(ChromeRole.TEXT_SUBTLE, buffer.get(columnLabelStarts[0], 0).style.fg)
-        assertEquals(ChromeRole.TEXT_SUBTLE, buffer.get(0, rowCenters[0]).style.fg)
+        assertEquals(StandardRole.TEXT_SUBTLE, buffer.get(columnLabelStarts[0], 0).style.fg)
+        assertEquals(StandardRole.TEXT_SUBTLE, buffer.get(0, rowCenters[0]).style.fg)
 
         assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X - 1, rowCenters[0]).symbol)
         assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X - 2, rowCenters[0]).symbol)
@@ -178,7 +178,7 @@ internal class BoardViewTest {
     }
 
     @Test
-    fun `draft torso override paints the arrow in ChromeRole DRAFT, distinct from a committed torso twist`() {
+    fun `draft torso override paints the arrow in StandardRole DRAFT, distinct from a committed torso twist`() {
         val draftUnit = aUnit(id = "A1", position = HexCoordinates(0, 0), facing = HexDirection.N)
         val committedUnit = aUnit(id = "B1", position = HexCoordinates(1, 0), facing = HexDirection.N)
             .copy(torsoFacing = HexDirection.NE)
@@ -188,7 +188,7 @@ internal class BoardViewTest {
         val buffer = render(view, 32, 18)
 
         // Draft unit (hex 0,0): torso NE slot is at x+5,y+2 = (9,3) — draft color.
-        assertEquals(UiRole.DRAFT, buffer.get(9, 3).style.fg)
+        assertEquals(AppRole.DRAFT, buffer.get(9, 3).style.fg)
         // Committed unit (hex 1,0): torso NE slot is at x+5,y+2 = (16,5) — player color, no draft entry.
         assertEquals(BoardRole.PLAYER_1, buffer.get(16, 5).style.fg)
     }

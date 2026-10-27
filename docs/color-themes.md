@@ -5,49 +5,50 @@ The TUI's six built-in color themes (`dark`, `light`, `dark-256`, `light-256`, `
 loaded at runtime by `io.archinaut.battletech.tui.screen.resolveTheme` — see that function's KDoc and
 `io.archinaut.battletech.tui.screen.ThemeFile` for the exact resolution and validation rules. This doc covers
 the file format and, since JSON can't hold comments, the design rationale behind the values
-themselves. `io.archinaut.battletech.tui.screen.TuiPaletteTest` enforces every contrast/distinctness/ordering
+themselves. `io.archinaut.battletech.tui.screen.BuiltInThemesTest` enforces every contrast/distinctness/ordering
 guarantee described below against the actual packaged files — if this doc and that test ever
 disagree, the test is authoritative.
 
-Independent Tenter consumers do not need these BattleTech assets. `io.archinaut.tenter.palette.DefaultRolePalette`
-is a ready-to-use ANSI-16 palette for toolkit chrome; terminal-defined ANSI colors determine its
-appearance. Consumers can provide a hand-authored `RolePalette` or use `MapRolePalette` for
-validated file-backed/custom palettes. Palettes are stable for a renderer's lifetime;
+Independent Tenter consumers do not need these BattleTech assets. `io.archinaut.tenter.color.ColorScheme.Default`
+is a ready-to-use ANSI-16 color scheme for Tenter's standard roles; terminal-defined ANSI colors
+determine its appearance. Consumers can provide a hand-authored `ColorScheme` or use `MapColorScheme`
+for validated file-backed/custom color schemes. Color schemes are stable for a renderer's lifetime;
 construct a new renderer/screen scope to change one. The TUI continues to select its existing JSON
 themes, whose values and snapshots are intentionally unchanged.
 
 ## File format
 
 One file per theme, one color space per file — there is no conversion between tiers (see
-`io.archinaut.tenter.palette.PaletteColor`'s KDoc). `colorSpace` selects both the value syntax and the
+`io.archinaut.tenter.color.TerminalColor`'s KDoc). `colorSpace` selects both the value syntax and the
 `AnsiLevel` tier the theme targets:
 
-| `colorSpace` | Value syntax                         | `PaletteColor` subtype |
-|--------------|--------------------------------------|------------------------|
-| `truecolor`  | `#RRGGBB`                            | `TrueColor`            |
-| `ansi256`    | decimal string, `16..255`            | `Xterm256`             |
-| `ansi16`     | decimal string, `30..37` or `90..97` | `Ansi16`               |
+| `colorSpace` | Value syntax                         | `TerminalColor` subtype |
+|--------------|--------------------------------------|-------------------------|
+| `truecolor`  | `#RRGGBB`                            | `TrueColor`             |
+| `ansi256`    | decimal string, `16..255`            | `Ansi256`               |
+| `ansi16`     | decimal string, `30..37` or `90..97` | `Ansi16`                |
 
 ```json
 {
   "colorSpace": "truecolor",
   "background": "#101418",
-  "chrome": { "DEFAULT": "#DDE2E5", "...": "..." },
-  "ui": { "DRAFT": "#A6ADB4" },
+  "standard": { "DEFAULT": "#DDE2E5", "...": "..." },
+  "app": { "DRAFT": "#A6ADB4" },
   "heatScale": { "CURRENT_BG": "#3A3218", "...": "..." },
   "board":  { "PLAYER_1": "#A0F4FF", "...": "..." }
 }
 ```
 
-`chrome` must hold exactly the 12 `io.archinaut.tenter.palette.ChromeRole` names; `ui` must hold exactly the
-`io.archinaut.battletech.tui.screen.UiRole` names (today only `DRAFT`); `board` must hold exactly the
+`standard` must hold exactly the 12 `io.archinaut.tenter.color.StandardRole` names; `app` must hold exactly the
+`io.archinaut.battletech.tui.screen.AppRole` names (today only `DRAFT`); `board` must hold exactly the
 27 `io.archinaut.battletech.tui.screen.BoardRole` names; and `heatScale` must hold exactly the three
 `io.archinaut.battletech.tui.screen.HeatScaleRole` names. A missing or unrecognized role name fails to load with
 a `ThemeLoadException` naming the offending role and table — this is the load-time replacement for
-the compile-time exhaustiveness check a hand-written `RolePalette` object used to get for free (see
-`io.archinaut.tenter.palette.RolePalette`'s KDoc). Custom themes written before the `heatScale` table was added
-must add all three roles, and custom themes that list `DRAFT` under `chrome` must move it to `ui`;
-there is deliberately no unverified fallback color.
+the compile-time exhaustiveness check a hand-written `ColorScheme` object used to get for free (see
+`io.archinaut.tenter.color.ColorScheme`'s KDoc). Custom themes written before the `heatScale` table was added
+must add all three roles, and custom themes that list `DRAFT` under `standard` must move it to `app`.
+Custom themes written before the `chrome` and `ui` tables were renamed must rename them to
+`standard` and `app`; there is deliberately no unverified fallback color and no legacy table name.
 
 Resolution is not theme-specific: `io.archinaut.battletech.tui.screen.ThemeLoader` is a thin adapter over
 `io.archinaut.battletech.tactical.io.ResourceOrFileLoader` (see `docs/architecture.md`), the same generic loader
@@ -66,7 +67,7 @@ packaged theme; otherwise the value is resolved as a built-in name.
 rung is amber, the current-exclusive/projected-inclusive heating interval is red, and the matching
 cooling interval is blue. The arrows remain a redundant non-color cue. `CURRENT_BG` clears 4.5:1
 against `TEXT_PRIMARY`; `HEATING_BG` and `COOLING_BG` each clear 4.5:1 against both `TEXT_MUTED` and
-`DRAFT`, so the projected endpoint and rule text remain legible. `TuiPaletteTest` enforces those
+`DRAFT`, so the projected endpoint and rule text remain legible. `BuiltInThemesTest` enforces those
 pairs for truecolor and ANSI-256 themes and requires all three backgrounds to be distinct. ANSI-16
 themes follow their existing distinctness-only policy because terminal remapping makes measurable
 contrast unknowable.
@@ -90,7 +91,7 @@ OkLab ΔE 0.12 (0.05 under deuteranopia simulation) — effectively the same col
 low contrast. 3:1 (WCAG 1.4.11, non-text/graphical objects) keeps a unit legible over the worst fill
 while freeing the chroma the two sides need to actually look different; `PLAYER_1` stays light and
 clears 4.5:1 on its own, buying a lightness gap that survives color-blind vision too. The two colors
-are additionally required to sit ≥0.15 apart in OkLab (`TuiPaletteTest`'s player-separation test) —
+are additionally required to sit ≥0.15 apart in OkLab (`BuiltInThemesTest`'s player-separation test) —
 contrast-against-background and distinctness-from-each-other are independent properties, and only
 the first was ever checked when the 0.12 pair shipped.
 
@@ -109,7 +110,7 @@ giving it a neutral meaning rather than deleting it kept every other bordered vi
 match-over banner) unchanged. The light tiers use a mid-grey (`#5A6169` truecolor, `241` ansi256)
 rather than white for the unfocused neutral: a literal white/light-grey border fails the 4.5:1
 contrast floor every general role must clear against the light background (`#868B91` truecolor
-measures 3.15:1; `245` ansi256 measures 3.17:1) — `TuiPaletteTest` catches this before it ships.
+measures 3.15:1; `245` ansi256 measures 3.17:1) — `BuiltInThemesTest` catches this before it ships.
 
 **The focused green is as saturated as each tier can afford, and three tiers can't afford any.**
 Focus is signalled by color alone — `Panel.render` swaps the role and nothing else, so there is no
@@ -175,6 +176,6 @@ two target markers, active vs. border, and the terrain icon set — never share 
 Edit (or add) a file under `theme/`; if adding one, also add its name to `theme/index.json`. No
 Kotlin change or rebuild is required to *use* a custom theme (`--theme <path>` loads any theme file
 directly), but a new **built-in** theme should still get the same verification the six shipped ones
-get: extend `io.archinaut.battletech.tui.screen.TuiPaletteTest`'s built-in theme list (it already reads from
+get: extend `io.archinaut.battletech.tui.screen.BuiltInThemesTest`'s built-in theme list (it already reads from
 `ThemeLoader().builtInNames()`, so this is automatic) and confirm it against the contrast/
 distinctness guarantees above before shipping it.

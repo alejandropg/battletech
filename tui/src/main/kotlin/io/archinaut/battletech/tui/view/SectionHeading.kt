@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.view
 
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.text.CellWidth
 import io.archinaut.tenter.widget.MeasurableWidget
@@ -16,6 +16,6 @@ internal class SectionHeading(private val title: String) : MeasurableWidget {
     }
 
     private companion object {
-        private val STYLE = Style(ChromeRole.INFO)
+        private val STYLE = Style(StandardRole.INFO)
     }
 }

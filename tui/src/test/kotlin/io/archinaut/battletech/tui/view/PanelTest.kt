@@ -6,7 +6,7 @@ import io.archinaut.battletech.tui.game.AppState
 import io.archinaut.battletech.tui.game.GamePanelId
 import io.archinaut.battletech.tui.game.phase.MovementPhase
 import io.archinaut.battletech.tui.input.Keybindings
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.widget.panel.Panel
 import io.archinaut.tenter.widget.panel.PanelSet
 import io.archinaut.tenter.widget.panel.PanelMode
@@ -117,7 +117,7 @@ internal class PanelTest {
         val panel = panel()
 
         val focused = renderPanel(panel)
-        assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, focused.get(0, 0).style.fg)
+        assertEquals(StandardRole.PANEL_BORDER_FOCUSED, focused.get(0, 0).style.fg)
 
         val unfocusedPanel = panel()
         val unfocusedSet = PanelSet(
@@ -130,7 +130,7 @@ internal class PanelTest {
         val buffer = Canvas.offscreen(30, 10)
         Panels(inputs, mapOf(GamePanelId.LOG to Rect(0, 0, 15, 10), GamePanelId.BOARD to Rect(15, 0, 15, 10)))
             .render(buffer, unfocusedSet)
-        assertEquals(ChromeRole.PANEL_BORDER, buffer.get(0, 0).style.fg)
+        assertEquals(StandardRole.PANEL_BORDER, buffer.get(0, 0).style.fg)
     }
 
     @Test
@@ -156,6 +156,6 @@ internal class PanelTest {
         val buffer = renderPanel(panel(normal = { stubContent(20) }))
 
         val thumbRow = (1..8).first { buffer.get(29, it).symbol == "▐" }
-        assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, buffer.get(29, thumbRow).style.fg)
+        assertEquals(StandardRole.PANEL_BORDER_FOCUSED, buffer.get(29, thumbRow).style.fg)
     }
 }

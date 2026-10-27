@@ -18,7 +18,7 @@ import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
 import io.archinaut.battletech.tui.view.text
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -128,8 +128,8 @@ internal class MechRecordSheetViewTest {
         val destroyedRow = (0 until buffer.height).first { buffer.line(it).contains("DESTROYED") }
         val unconsciousRow = (0 until buffer.height).first { buffer.line(it).contains("PILOT UNCONSCIOUS") }
         assertEquals(destroyedRow + 1, unconsciousRow)
-        assertEquals(ChromeRole.DANGER, buffer.get(0, destroyedRow).style.fg)
-        assertEquals(ChromeRole.DANGER, buffer.get(0, unconsciousRow).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(0, destroyedRow).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(0, unconsciousRow).style.fg)
     }
 
     @Test

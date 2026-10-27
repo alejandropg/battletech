@@ -5,7 +5,7 @@ import io.archinaut.battletech.tactical.attack.weapon.TargetInfo
 import io.archinaut.battletech.tactical.attack.weapon.WeaponTargetInfo
 import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.widget.CheckState
 import io.archinaut.tenter.widget.RowWriter
 import io.archinaut.tenter.widget.SelectableRow
@@ -32,7 +32,7 @@ internal class TargetsView(
                 target.unitId == primaryTargetId -> " [P]"
                 else -> " [S]"
             }
-            val nameColor = if (isCursorOnTarget) ChromeRole.ACCENT else ChromeRole.TEXT_PRIMARY
+            val nameColor = if (isCursorOnTarget) StandardRole.ACCENT else StandardRole.TEXT_PRIMARY
             val nameLine = "${UnitLabel.of(target.unitId, target.unitName)}$tag"
             content.writeLine(nameLine, Style(nameColor))
 
@@ -54,7 +54,7 @@ internal class TargetsView(
                     else -> CheckState.UNCHECKED
                 }
 
-                val color = if (isDisabled) ChromeRole.DISABLED else ChromeRole.TEXT_PRIMARY
+                val color = if (isDisabled) StandardRole.DISABLED else StandardRole.TEXT_PRIMARY
                 when (weapon) {
                     is WeaponTargetInfo.Available -> {
                         content.draw(
@@ -64,11 +64,11 @@ internal class TargetsView(
                                 selected = isCursorHere,
                                 right = hitChanceLabel(weapon.toHit),
                                 textColor = color,
-                                checkboxColor = if (isDisabled) ChromeRole.DISABLED else null,
+                                checkboxColor = if (isDisabled) StandardRole.DISABLED else null,
                                 glyphs = TUI_CHECKBOX_GLYPHS,
                             ),
                         )
-                        content.writeSubLines(weapon.toHit.displayLabels(), if (isCursorHere) ChromeRole.ACCENT else color)
+                        content.writeSubLines(weapon.toHit.displayLabels(), if (isCursorHere) StandardRole.ACCENT else color)
                     }
                     is WeaponTargetInfo.Unavailable ->
                         content.draw(
@@ -78,7 +78,7 @@ internal class TargetsView(
                                 selected = isCursorHere,
                                 right = "—",
                                 textColor = color,
-                                checkboxColor = if (isDisabled) ChromeRole.DISABLED else null,
+                                checkboxColor = if (isDisabled) StandardRole.DISABLED else null,
                                 glyphs = TUI_CHECKBOX_GLYPHS,
                             ),
                         )
@@ -92,6 +92,6 @@ internal class TargetsView(
     internal companion object {
         internal const val TITLE: String = "TARGETS"
 
-        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
     }
 }

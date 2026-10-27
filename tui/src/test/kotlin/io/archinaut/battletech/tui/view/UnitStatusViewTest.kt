@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.view
 
-import io.archinaut.battletech.tui.screen.UiRole
+import io.archinaut.battletech.tui.screen.AppRole
 import io.archinaut.battletech.tactical.model.HexCoordinates
 import io.archinaut.battletech.tactical.model.HexDirection
 import io.archinaut.battletech.tactical.model.MechLocation
@@ -29,7 +29,7 @@ import io.archinaut.battletech.tui.icon.filledCircleIcon
 import io.archinaut.battletech.tui.icon.infinityIcon
 import io.archinaut.battletech.tui.icon.pilotDeadIcon
 import io.archinaut.battletech.tui.screen.BoardRole
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -94,8 +94,8 @@ internal class UnitStatusViewTest {
         assertEquals(destroyedRow + 1, unconsciousRow)
         assertTrue(destroyedRow > rowContaining(buffer, 20, "A1: Atlas"))
         assertTrue(unconsciousRow < pilotRow)
-        assertEquals(ChromeRole.DANGER, buffer.get(2, destroyedRow).style.fg)
-        assertEquals(ChromeRole.DANGER, buffer.get(2, unconsciousRow).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, destroyedRow).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, unconsciousRow).style.fg)
     }
 
     @Test
@@ -133,7 +133,7 @@ internal class UnitStatusViewTest {
         assertEquals(4, line.split(emptyCircleIcon()).size - 1)
         // First hit dot is red, matching the destroyed-slot convention used elsewhere in this panel.
         val firstDotCol = (2 until 26).first { buffer.get(it, 5).symbol == filledCircleIcon() }
-        assertEquals(ChromeRole.DANGER, buffer.get(firstDotCol, 5).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(firstDotCol, 5).style.fg)
     }
 
     @Test
@@ -147,7 +147,7 @@ internal class UnitStatusViewTest {
         assertEquals(PILOT_DEATH_THRESHOLD - 1, line.split(filledCircleIcon()).size - 1)
         assertEquals(0, line.split(emptyCircleIcon()).size - 1)
         val skullCol = (2 until 26).first { buffer.get(it, 5).symbol == pilotDeadIcon() }
-        assertEquals(ChromeRole.DANGER, buffer.get(skullCol, 5).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(skullCol, 5).style.fg)
     }
 
     @Test
@@ -267,7 +267,7 @@ internal class UnitStatusViewTest {
         val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
-        assertEquals(ChromeRole.DANGER, buffer.get(2, 14).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, 14).style.fg)
     }
 
     @Test
@@ -292,7 +292,7 @@ internal class UnitStatusViewTest {
         val line = (2 until 26).joinToString("") { buffer.get(it, 23).symbol }
         assertTrue(line.contains("HD"))
         assertTrue(line.contains("9"))
-        assertEquals(ChromeRole.INFO, buffer.get(11, 23).style.fg) // 'H' of "HD: 9"
+        assertEquals(StandardRole.INFO, buffer.get(11, 23).style.fg) // 'H' of "HD: 9"
     }
 
     @Test
@@ -328,7 +328,7 @@ internal class UnitStatusViewTest {
         val line = (2 until 26).joinToString("") { buffer.get(it, 24).symbol }
         assertTrue(line.contains("CT"))
         assertTrue(line.contains("47"))
-        assertEquals(ChromeRole.ACCENT, buffer.get(11, 24).style.fg) // 'C' of "CT:47"
+        assertEquals(StandardRole.ACCENT, buffer.get(11, 24).style.fg) // 'C' of "CT:47"
     }
 
     @Test
@@ -380,7 +380,7 @@ internal class UnitStatusViewTest {
 
         val line = (2 until 26).joinToString("") { buffer.get(it, 16).symbol }
         assertTrue(line.contains("Walking +1"))
-        assertEquals(UiRole.DRAFT, buffer.get(2, 16).style.fg)
+        assertEquals(AppRole.DRAFT, buffer.get(2, 16).style.fg)
     }
 
     @Test
@@ -426,7 +426,7 @@ internal class UnitStatusViewTest {
         val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
-        assertEquals(ChromeRole.DANGER, buffer.get(2, 17).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, 17).style.fg)
     }
 
     @Test
@@ -549,7 +549,7 @@ internal class UnitStatusViewTest {
 
         // First dot column should be red (destroyed slot 0 is an Engine slot in CENTER_TORSO).
         val firstDotCol = (2 until 26).first { buffer.get(it, row).symbol == filledCircleIcon() }
-        assertEquals(ChromeRole.DANGER, buffer.get(firstDotCol, row).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(firstDotCol, row).style.fg)
     }
 
     @Test
@@ -597,7 +597,7 @@ internal class UnitStatusViewTest {
 
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).symbol }
         assertEquals("u1: Hunchback", line)
-        assertEquals(ChromeRole.ACCENT, buffer.get(2, 2).style.fg)
+        assertEquals(StandardRole.ACCENT, buffer.get(2, 2).style.fg)
     }
 
     @Test
@@ -610,8 +610,8 @@ internal class UnitStatusViewTest {
         assertEquals(shutdownRow + 1, proneRow)
         assertTrue(shutdownRow > rowContaining(buffer, 30, "u1: Hunchback"))
         assertTrue(proneRow < rowContaining(buffer, 30, "MOVEMENT"))
-        assertEquals(ChromeRole.DANGER, buffer.get(2, shutdownRow).style.fg)
-        assertEquals(ChromeRole.DANGER, buffer.get(2, proneRow).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, shutdownRow).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, proneRow).style.fg)
     }
 
     @Test

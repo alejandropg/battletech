@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.setup
 
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Cell
 import io.archinaut.tenter.screen.Rect
@@ -48,7 +48,7 @@ internal class SplitMaximizedView(
         const val SIDE_GUTTER: Int = 4
         const val DIVIDER_WIDTH: Int = 1
 
-        private val DIVIDER_STYLE = Style(ChromeRole.PANEL_BORDER)
+        private val DIVIDER_STYLE = Style(StandardRole.PANEL_BORDER)
 
         internal fun totalWidth(leftWidth: Int, detailWidth: Int): Int =
             leftWidth + SIDE_GUTTER + if (detailWidth > 0) DIVIDER_WIDTH + SIDE_GUTTER + detailWidth else 0

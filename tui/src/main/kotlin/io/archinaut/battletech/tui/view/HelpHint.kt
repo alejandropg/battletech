@@ -2,7 +2,7 @@ package io.archinaut.battletech.tui.view
 
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.text.CellWidth
 
 /** Canonical right-aligned help hint shared by the TUI's chrome views. */
@@ -17,5 +17,5 @@ internal object HelpHint {
         if (column >= 0) canvas.setString(column, row, LABEL, STYLE)
     }
 
-    private val STYLE = Style(ChromeRole.TEXT_PRIMARY)
+    private val STYLE = Style(StandardRole.TEXT_PRIMARY)
 }

@@ -9,7 +9,7 @@ import io.archinaut.battletech.tactical.unit.PublicWeapon
 import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.battletech.tactical.unit.WeaponMountId
 import io.archinaut.battletech.tui.anArmorLayout
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -76,7 +76,7 @@ internal class TargetStatusViewTest {
 
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).symbol }
         assertEquals("u1: Hunchback", line)
-        assertEquals(ChromeRole.ACCENT, buffer.get(2, 2).style.fg)
+        assertEquals(StandardRole.ACCENT, buffer.get(2, 2).style.fg)
     }
 
     @Test
@@ -89,8 +89,8 @@ internal class TargetStatusViewTest {
         assertEquals(destroyedRow + 1, unconsciousRow)
         assertTrue(destroyedRow > rowContaining(buffer, "u1: Hunchback"))
         assertTrue(unconsciousRow < rowContaining(buffer, "MOVEMENT"))
-        assertEquals(ChromeRole.DANGER, buffer.get(2, destroyedRow).style.fg)
-        assertEquals(ChromeRole.DANGER, buffer.get(2, unconsciousRow).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, destroyedRow).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, unconsciousRow).style.fg)
     }
 
     @Test

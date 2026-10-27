@@ -4,7 +4,7 @@ import io.archinaut.battletech.tactical.model.PlayerId
 import io.archinaut.battletech.tactical.model.TurnPhase
 import io.archinaut.battletech.tui.aUnit
 import io.archinaut.battletech.tui.screen.BoardRole
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -104,7 +104,7 @@ internal class StatusBarViewTest {
         val expected = "W1: Wolverine WVR-6R ┆ Declare weapon fire"
         assertEquals(expected, row(buffer).substring(41, 41 + expected.length))
         for (column in 41 until 41 + expected.length) {
-            assertEquals(ChromeRole.TEXT_PRIMARY, buffer.get(column, 1).style.fg)
+            assertEquals(StandardRole.TEXT_PRIMARY, buffer.get(column, 1).style.fg)
         }
     }
 

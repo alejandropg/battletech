@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.view
 
-import io.archinaut.battletech.tui.screen.UiRole
+import io.archinaut.battletech.tui.screen.AppRole
 import io.archinaut.battletech.tactical.model.PlayerId
 import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.battletech.tui.game.phase.DeclaredAttackerEntry
@@ -59,8 +59,8 @@ internal class DeclaredTargetsViewTest {
 
         val row = rowContaining(buffer, "Wolverine")
         assertTrue(row >= 0) { "Expected to find Wolverine attacker row" }
-        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == UiRole.DRAFT }) {
-            "Expected attacker row to contain UiRole.DRAFT"
+        assertTrue((2 until 28).any { col -> buffer.get(col, row).style.fg == AppRole.DRAFT }) {
+            "Expected attacker row to contain AppRole.DRAFT"
         }
     }
 

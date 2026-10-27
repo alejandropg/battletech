@@ -11,7 +11,7 @@ import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
 import io.archinaut.battletech.tui.view.text
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -47,7 +47,7 @@ internal class CriticalHitTableTest {
         assertEquals(BoardRole.DESTROYED, buffer.get(col, headerRow + 1).style.fg)
         assertTrue(buffer.get(col, headerRow + 1).style.strikethrough == true)
         // Slot 1 ("2. AC/20") was not.
-        assertEquals(ChromeRole.TEXT_PRIMARY, buffer.get(col, headerRow + 2).style.fg)
+        assertEquals(StandardRole.TEXT_PRIMARY, buffer.get(col, headerRow + 2).style.fg)
         assertTrue(buffer.get(col, headerRow + 2).style.strikethrough != true)
     }
 

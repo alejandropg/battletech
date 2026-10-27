@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.animation
 
-import io.archinaut.tenter.palette.PaletteColor
+import io.archinaut.tenter.color.TerminalColor
 import io.archinaut.tenter.animation.Animation
 import io.archinaut.tenter.screen.Size
 import io.archinaut.tenter.animation.GlyphGrid
@@ -59,7 +59,7 @@ private val LASER_PRIORITY: Map<Char, Int> = mapOf(
 
 private fun laserPriority(char: Char): Int = LASER_PRIORITY[char] ?: 0
 
-private val LASER_COLORS: Map<Char, PaletteColor> = mapOf(
+private val LASER_COLORS: Map<Char, TerminalColor> = mapOf(
     '.' to ANIMATION_GRAY, ',' to ANIMATION_GRAY, ':' to ANIMATION_GRAY,
     'o' to ANIMATION_CYAN,
     '=' to ANIMATION_DANGER, '~' to ANIMATION_MAGENTA, '-' to ANIMATION_WARNING,
@@ -68,7 +68,7 @@ private val LASER_COLORS: Map<Char, PaletteColor> = mapOf(
 )
 
 // Unmapped chars are always ' '. The foreground is never actually seen on a space, but must still
-// be a fixed PaletteColor rather than a themed ChromeRole, or resolving this Style's tags would pull
+// be a fixed TerminalColor rather than a themed StandardRole, or resolving this Style's tags would pull
 // the loaded theme's default foreground into an otherwise fully hardcoded palette.
 private fun laserStyle(char: Char): Style =
     Style(fg = LASER_COLORS[char] ?: ANIMATION_GRAY, bg = ANIMATION_BACKGROUND)

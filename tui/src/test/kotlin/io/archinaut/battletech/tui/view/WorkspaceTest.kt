@@ -20,7 +20,7 @@ import io.archinaut.battletech.tui.game.phase.MovementPhase
 import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.tenter.terminal.CompletedFrame
 import io.archinaut.tenter.animation.AnimationPlayback
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Point
 import io.archinaut.tenter.widget.FlashMessage
 import kotlin.random.Random
@@ -173,8 +173,8 @@ internal class WorkspaceTest {
 
         // MOVEMENT's visible panels are UNIT_STATUS then LOG (GamePanels order), each 28 wide,
         // right-aligned against a 120-wide screen: UNIT_STATUS spans 64..91, LOG spans 92..119.
-        assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, buffer.get(92, 4).style.fg, "LOG (focused) border corner")
-        assertEquals(ChromeRole.PANEL_BORDER, buffer.get(64, 4).style.fg, "UNIT_STATUS (unfocused) border corner")
+        assertEquals(StandardRole.PANEL_BORDER_FOCUSED, buffer.get(92, 4).style.fg, "LOG (focused) border corner")
+        assertEquals(StandardRole.PANEL_BORDER, buffer.get(64, 4).style.fg, "UNIT_STATUS (unfocused) border corner")
     }
 
     @Test

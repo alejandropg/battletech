@@ -3,7 +3,7 @@ package io.archinaut.battletech.tui.view
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.unit.VisibleUnit
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.widget.RowWriter
 
 /**
@@ -29,6 +29,6 @@ internal class SpecialUnitStatusList(private val unit: VisibleUnit) : Measurable
     }
 
     private companion object {
-        private val STATUS_STYLE = Style(ChromeRole.DANGER)
+        private val STATUS_STYLE = Style(StandardRole.DANGER)
     }
 }

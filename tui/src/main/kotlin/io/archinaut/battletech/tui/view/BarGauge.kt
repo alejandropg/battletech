@@ -1,7 +1,7 @@
 package io.archinaut.battletech.tui.view
 
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.palette.ColorRole
+import io.archinaut.tenter.color.StandardRole
+import io.archinaut.tenter.color.ColorRole
 import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.text.CellWidth
 import io.archinaut.tenter.widget.MeasurableWidget
@@ -40,10 +40,10 @@ internal class BarGauge(
     }
 
     private companion object {
-        fun defaultColor(value: Int, maxValue: Int): ChromeRole = when {
-            value.toDouble() >= maxValue * 0.7 -> ChromeRole.DANGER
-            value.toDouble() >= maxValue * 0.3 -> ChromeRole.WARNING
-            else -> ChromeRole.INFO
+        fun defaultColor(value: Int, maxValue: Int): StandardRole = when {
+            value.toDouble() >= maxValue * 0.7 -> StandardRole.DANGER
+            value.toDouble() >= maxValue * 0.3 -> StandardRole.WARNING
+            else -> StandardRole.INFO
         }
     }
 }

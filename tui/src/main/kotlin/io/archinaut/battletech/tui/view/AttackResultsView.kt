@@ -7,7 +7,7 @@ import io.archinaut.battletech.tui.game.phase.AttackResultsRender
 import io.archinaut.battletech.tui.icon.attackOutcomeIcon
 import io.archinaut.battletech.tui.icon.targetIcon
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.widget.RowWriter
 
 internal class AttackResultsView(private val data: AttackResultsRender) : MeasurableWidget {
@@ -42,12 +42,12 @@ internal class AttackResultsView(private val data: AttackResultsRender) : Measur
         // + sum(modifiers), so the skill stays derivable by subtraction from what's shown here.
         val isOwnAttacker = data.units.byId(result.attackerId).owner == data.viewer
         val breakdown = if (isOwnAttacker) result.toHit.displayLabels() else result.toHit.modifiers.displayLabels()
-        content.draw(ValueRow("  ${result.weaponName}", hitChanceLabel(result.toHit), breakdown, ChromeRole.TEXT_PRIMARY))
+        content.draw(ValueRow("  ${result.weaponName}", hitChanceLabel(result.toHit), breakdown, StandardRole.TEXT_PRIMARY))
 
         // Block 2: raw roll (left) + outcome (right-aligned, in its own color)
         val hit = result is AttackResult.Hit
         val outcomeText = "${if (hit) "HIT" else "MISS"} ${attackOutcomeIcon(hit)}"
-        val outcomeColor = if (hit) ChromeRole.SUCCESS else ChromeRole.DANGER
+        val outcomeColor = if (hit) StandardRole.SUCCESS else StandardRole.DANGER
         val rollLine = "   ${diceRollLabel(result.toHitRoll)}"
         content.writeRow(rollLine, outcomeText, TEXT_PRIMARY_STYLE, Style(outcomeColor))
 
@@ -82,6 +82,6 @@ internal class AttackResultsView(private val data: AttackResultsRender) : Measur
     internal companion object {
         const val TITLE: String = "ATTACK RESULTS"
 
-        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
     }
 }

@@ -10,7 +10,7 @@ import io.archinaut.battletech.tui.game.PanelVisibility
 import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.battletech.tui.input.KeyGlyph
 import io.archinaut.tenter.animation.AnimationPlayback
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Constraint
 import io.archinaut.tenter.screen.Layout
@@ -26,7 +26,7 @@ import io.archinaut.tenter.widget.panel.PanelHit
 import io.archinaut.tenter.widget.panel.PanelSet
 import io.archinaut.tenter.widget.panel.Panels
 
-private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
+private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
 
 /**
  * Owns the game screen's [PanelSet] — the board plus every side panel — and the status bar/game-over
@@ -152,7 +152,7 @@ private class GameOverBanner(private val outcome: MatchOutcome) : Widget {
         val banner = canvas.region(
             Rect((canvas.width - bannerWidth) / 2, (canvas.height - bannerHeight) / 2, bannerWidth, bannerHeight),
         )
-        val block = Block.bordered(title = "MATCH OVER", borderColor = ChromeRole.ACCENT, titleColor = ChromeRole.ACCENT)
+        val block = Block.bordered(title = "MATCH OVER", borderColor = StandardRole.ACCENT, titleColor = StandardRole.ACCENT)
         Clear.render(banner)
         block.render(banner)
         // Row 2 of the block's inside, centered on the whole banner.
@@ -163,7 +163,7 @@ private class GameOverBanner(private val outcome: MatchOutcome) : Widget {
 
 /**
  * Renders one bordered overlay box at [animation]'s own placement, playing its current frame — a
- * plain border ([ANIMATION_BORDER], not the themed [ChromeRole.PANEL_BORDER] a [Block] would
+ * plain border ([ANIMATION_BORDER], not the themed [StandardRole.PANEL_BORDER] a [Block] would
  * otherwise default to) with no title, badge, or hint text anywhere in it (unlike
  * [GameOverBanner]), so the animation itself is the only thing drawn inside. The border's
  * BACKGROUND is the one cell in this whole panel still themed: [Clear] resets the frame's cells

@@ -17,7 +17,7 @@ import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Cell
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 
 public object HexRenderer {
 
@@ -159,7 +159,7 @@ public object HexRenderer {
     }
 
     private fun renderContent(canvas: Canvas, x: Int, y: Int, bg: BoardRole) {
-        val style = Style(ChromeRole.DEFAULT, bg)
+        val style = Style(StandardRole.DEFAULT, bg)
         val cell = Cell(style = style)
         // Row 1 content (narrow): x+2..x+6
         for (i in 2..6) {

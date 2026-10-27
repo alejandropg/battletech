@@ -1,7 +1,7 @@
 package io.archinaut.battletech.tui.setup
 
 import io.archinaut.battletech.tui.view.HelpHint
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Padding
 import io.archinaut.tenter.screen.Rect
@@ -44,8 +44,8 @@ internal class SetupBannerView(private val prompt: String) : Widget {
         internal const val FALLBACK_TITLE = "BATTLETECH"
         private const val MESSAGE_HELP_GAP = 1
 
-        private val ACCENT_STYLE = Style(ChromeRole.ACCENT)
-        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
+        private val ACCENT_STYLE = Style(StandardRole.ACCENT)
+        private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
         private val BANNER_PADDING = Padding(left = 1, top = 1, right = 1)
 
         private val bannerWidth: Int = BANNER_LINES.maxOf { CellWidth.of(it) }

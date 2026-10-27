@@ -53,7 +53,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.PaletteColor
+import io.archinaut.tenter.color.TerminalColor
 import io.archinaut.tenter.terminal.Terminal
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.widget.Widget
@@ -1586,7 +1586,7 @@ internal class TuiAppLoopTest {
             val glyphs = GlyphGrid(
                 size = size,
                 priority = { if (it == 'A') 1 else 0 },
-                style = { Style(fg = PaletteColor.Ansi16(97)) },
+                style = { Style(fg = TerminalColor.Ansi16(97)) },
             )
             glyphs.put(index % size.width, index % size.height, 'A')
             return object : Widget {

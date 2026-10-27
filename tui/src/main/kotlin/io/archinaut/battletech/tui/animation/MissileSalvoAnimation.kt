@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.animation
 
-import io.archinaut.tenter.palette.PaletteColor
+import io.archinaut.tenter.color.TerminalColor
 import io.archinaut.tenter.animation.Animation
 import io.archinaut.tenter.screen.Size
 import io.archinaut.tenter.animation.GlyphGrid
@@ -67,14 +67,14 @@ private val MISSILE_PRIORITY: Map<Char, Int> = mapOf(
 
 private fun missilePriority(char: Char): Int = MISSILE_PRIORITY[char] ?: 0
 
-private val MISSILE_COLORS: Map<Char, PaletteColor> = mapOf(
+private val MISSILE_COLORS: Map<Char, TerminalColor> = mapOf(
     '.' to ANIMATION_GRAY, ',' to ANIMATION_GRAY, ':' to ANIMATION_CYAN,
     '-' to ANIMATION_BRIGHT, '|' to ANIMATION_BRIGHT, '/' to ANIMATION_BRIGHT, '\\' to ANIMATION_BRIGHT,
     '~' to ANIMATION_BRIGHT_CYAN, '+' to ANIMATION_WARNING, '*' to ANIMATION_BRIGHT,
     'o' to ANIMATION_WARNING, 'O' to ANIMATION_DANGER, '@' to ANIMATION_BRIGHT, '#' to ANIMATION_BRIGHT,
 )
 
-// See laserStyle: unmapped (i.e. space) falls back to a fixed PaletteColor so no cell ever resolves
+// See laserStyle: unmapped (i.e. space) falls back to a fixed TerminalColor so no cell ever resolves
 // through the loaded theme.
 private fun missileStyle(char: Char): Style =
     Style(fg = MISSILE_COLORS[char] ?: ANIMATION_GRAY, bg = ANIMATION_BACKGROUND)

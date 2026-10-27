@@ -2,7 +2,7 @@ package io.archinaut.battletech.tui.setup
 
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.text.CellWidth
 import io.archinaut.tenter.widget.RowWriter
 import io.archinaut.tenter.widget.CheckState
@@ -40,6 +40,6 @@ internal class MapListView(
         internal fun contentWidth(maps: List<String>): Int =
             4 + (maps.maxOfOrNull(CellWidth::of) ?: CellWidth.of("No maps registered"))
 
-        private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
+        private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
     }
 }

@@ -4,8 +4,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.palette.PaletteColor
+import io.archinaut.tenter.color.StandardRole
+import io.archinaut.tenter.color.TerminalColor
 import java.nio.file.Path
 import kotlin.io.path.writeText
 
@@ -16,7 +16,7 @@ internal class ThemeSourceTest {
     fun `every indexed built-in name loads`() {
         for (name in ThemeLoader().builtInNames()) {
             val theme = resolveTheme(name)
-            assertThat(theme.foreground(ChromeRole.DEFAULT)).describedAs(name).isNotNull()
+            assertThat(theme.foreground(StandardRole.DEFAULT)).describedAs(name).isNotNull()
         }
     }
 
@@ -33,7 +33,7 @@ internal class ThemeSourceTest {
 
         val theme = resolveTheme(file.toString())
 
-        assertThat(theme.defaultBackground).isEqualTo(PaletteColor.TrueColor(1, 2, 3))
+        assertThat(theme.defaultBackground).isEqualTo(TerminalColor.TrueColor(1, 2, 3))
     }
 
     @Test
@@ -43,7 +43,7 @@ internal class ThemeSourceTest {
 
         val theme = resolveTheme(file.toString())
 
-        assertThat(theme.defaultBackground).isEqualTo(PaletteColor.TrueColor(0xAB, 0xCD, 0xEF))
+        assertThat(theme.defaultBackground).isEqualTo(TerminalColor.TrueColor(0xAB, 0xCD, 0xEF))
     }
 
     @Test
@@ -67,16 +67,16 @@ internal class ThemeSourceTest {
     }
 
     private fun minimalTrueColorTheme(background: String): String {
-        val chromeEntries = ChromeRole.entries.joinToString(",\n") { "\"${it.name}\": \"#000000\"" }
-        val uiEntries = UiRole.entries.joinToString(",\n") { "\"${it.name}\": \"#000000\"" }
+        val standardEntries = StandardRole.entries.joinToString(",\n") { "\"${it.name}\": \"#000000\"" }
+        val appEntries = AppRole.entries.joinToString(",\n") { "\"${it.name}\": \"#000000\"" }
         val boardEntries = BoardRole.entries.joinToString(",\n") { "\"${it.name}\": \"#000000\"" }
         val heatScaleEntries = HeatScaleRole.entries.joinToString(",\n") { "\"${it.name}\": \"#000000\"" }
         return """
         {
           "colorSpace": "truecolor",
           "background": "$background",
-          "chrome": { $chromeEntries },
-          "ui": { $uiEntries },
+          "standard": { $standardEntries },
+          "app": { $appEntries },
           "board": { $boardEntries },
           "heatScale": { $heatScaleEntries }
         }

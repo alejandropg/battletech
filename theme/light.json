@@ -1,7 +1,7 @@
 {
   "colorSpace": "truecolor",
   "background": "#F8F5EE",
-  "chrome": {
+  "standard": {
     "DEFAULT": "#202428",
     "TEXT_PRIMARY": "#202428",
     "TEXT_MUTED": "#45515B",
@@ -15,7 +15,7 @@
     "PANEL_BORDER": "#5A6169",
     "PANEL_BORDER_FOCUSED": "#007B00"
   },
-  "ui": {
+  "app": {
     "DRAFT": "#59636C"
   },
   "heatScale": {

@@ -19,7 +19,7 @@ import io.archinaut.battletech.tui.aUnit
 import io.archinaut.battletech.tui.icon.initiativeIcon
 import io.archinaut.battletech.tui.icon.movementModeIcon
 import io.archinaut.battletech.tui.icon.unitStoodUpIcon
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.widget.ViewportState
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -97,7 +97,7 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assertEquals(ChromeRole.INFO, buffer.get(2, 2).style.fg)
+        assertEquals(StandardRole.INFO, buffer.get(2, 2).style.fg)
         // Only one header for the single turn: row 3 and row 4 are plain entries, not headers.
         val headerLine = buffer.line(2, 2, 24)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }

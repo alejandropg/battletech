@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.view
 
-import io.archinaut.battletech.tui.screen.UiRole
+import io.archinaut.battletech.tui.screen.AppRole
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.heat.HeatScale
 import io.archinaut.battletech.tactical.heat.projectHeat
@@ -43,6 +43,6 @@ internal class HeatGauges(
     private fun heatBar(heat: Int): BarGauge = BarGauge(barWidth = 20, maxValue = HeatScale.MAX_HEAT, value = heat)
 
     private companion object {
-        private val DRAFT_STYLE = Style(UiRole.DRAFT)
+        private val DRAFT_STYLE = Style(AppRole.DRAFT)
     }
 }

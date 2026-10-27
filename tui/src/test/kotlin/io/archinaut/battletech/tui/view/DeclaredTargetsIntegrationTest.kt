@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.view
 
-import io.archinaut.battletech.tui.screen.UiRole
+import io.archinaut.battletech.tui.screen.AppRole
 import io.archinaut.battletech.tactical.model.GameState
 import io.archinaut.battletech.tactical.model.HexCoordinates
 import io.archinaut.battletech.tactical.model.HexDirection
@@ -56,8 +56,8 @@ internal class DeclaredTargetsIntegrationTest {
 
         val wolfRow = (0 until 30).first { buffer.line(it).contains("wolf") }
         val colors = (2 until 28).map { col -> buffer.get(col, wolfRow).style.fg }.toSet()
-        assertTrue(colors.contains(UiRole.DRAFT)) {
-            "Expected wolf (draft) row to use UiRole.DRAFT, got: $colors"
+        assertTrue(colors.contains(AppRole.DRAFT)) {
+            "Expected wolf (draft) row to use AppRole.DRAFT, got: $colors"
         }
     }
 

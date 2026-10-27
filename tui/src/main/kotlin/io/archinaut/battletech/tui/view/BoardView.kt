@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.view
 
-import io.archinaut.battletech.tui.screen.UiRole
+import io.archinaut.battletech.tui.screen.AppRole
 import io.archinaut.battletech.tactical.model.GameMap
 import io.archinaut.battletech.tactical.model.HexCoordinates
 import io.archinaut.battletech.tactical.model.HexDirection
@@ -16,7 +16,7 @@ import io.archinaut.battletech.tactical.unit.UnitRoster
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.text.CellWidth
 import io.archinaut.tenter.widget.Widget
 
@@ -106,7 +106,7 @@ internal class BoardView(
                     unit.facing,
                     renderColor,
                     torsoFacing = torsoFacing,
-                    torsoColor = if (draftTorso != null) UiRole.DRAFT else renderColor,
+                    torsoColor = if (draftTorso != null) AppRole.DRAFT else renderColor,
                     isDestroyed = unit.isDestroyed,
                 )
             }
@@ -157,7 +157,7 @@ internal class BoardView(
         internal fun preview(map: GameMap): BoardView =
             BoardView(PlayerGameState(UnitRoster(emptyList()), map))
 
-        private val COORDINATE_STYLE: Style = Style(ChromeRole.TEXT_SUBTLE)
+        private val COORDINATE_STYLE: Style = Style(StandardRole.TEXT_SUBTLE)
 
         /** The unscrolled content size needed to draw [map] and its coordinate labels. */
         internal fun contentSize(map: GameMap): Pair<Int, Int> {

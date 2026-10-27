@@ -2,7 +2,7 @@ package io.archinaut.battletech.tui.view
 
 import io.archinaut.battletech.tactical.unit.ForeignUnit
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.widget.RowWriter
 
 /**
@@ -14,10 +14,10 @@ import io.archinaut.tenter.widget.RowWriter
  */
 internal object ForeignUnitPanel {
 
-    private val ACCENT_STYLE = Style(ChromeRole.ACCENT)
-    private val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
-    private val INFO_STYLE = Style(ChromeRole.INFO)
-    private val SUCCESS_STYLE = Style(ChromeRole.SUCCESS)
+    private val ACCENT_STYLE = Style(StandardRole.ACCENT)
+    private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
+    private val INFO_STYLE = Style(StandardRole.INFO)
+    private val SUCCESS_STYLE = Style(StandardRole.SUCCESS)
 
     fun render(content: RowWriter, unit: ForeignUnit) {
         // UNIT

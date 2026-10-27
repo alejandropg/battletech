@@ -7,7 +7,7 @@ import io.archinaut.battletech.tui.icon.torsoArrowIcon
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ColorRole
+import io.archinaut.tenter.color.ColorRole
 
 public object UnitRenderer {
 

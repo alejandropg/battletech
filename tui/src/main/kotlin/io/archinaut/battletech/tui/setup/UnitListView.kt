@@ -3,7 +3,7 @@ package io.archinaut.battletech.tui.setup
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.unit.MechModel
 import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.widget.RowWriter
 import io.archinaut.tenter.widget.CheckState
 import io.archinaut.tenter.widget.SelectableRow
@@ -82,13 +82,13 @@ internal class UnitListView(
     }
 
     private fun drawStatsHeader(content: RowWriter) {
-        content.writeRow("", STATS_HEADER, Style(ChromeRole.TEXT_MUTED))
+        content.writeRow("", STATS_HEADER, Style(StandardRole.TEXT_MUTED))
     }
 
     private companion object {
         const val FIELD_WIDTH = 3
         const val STATS_HEADER = "TON WLK RUN JMP" // 4 * FIELD_WIDTH + 3 separators = 15 chars, must match statsBlock()'s length
         const val LABEL_COUNT_SEPARATOR = "  "
-        val TEXT_PRIMARY_STYLE = Style(ChromeRole.TEXT_PRIMARY)
+        val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
     }
 }

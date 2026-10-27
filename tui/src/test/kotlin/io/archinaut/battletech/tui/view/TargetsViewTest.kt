@@ -9,7 +9,7 @@ import io.archinaut.battletech.tactical.attack.weapon.WeaponTargetInfo
 import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 import io.archinaut.battletech.tui.icon.diceRoll
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -214,7 +214,7 @@ internal class TargetsViewTest {
 
         // Disabled weapon row is rendered in gray
         val rowColors = (0 until width).map { col -> buffer.get(col, lrmRow).style.fg }.toSet()
-        assertTrue(rowColors.contains(ChromeRole.DISABLED)) { "Expected disabled weapon row to use ChromeRole.DISABLED, got: $rowColors" }
+        assertTrue(rowColors.contains(StandardRole.DISABLED)) { "Expected disabled weapon row to use StandardRole.DISABLED, got: $rowColors" }
     }
 
     @Test
