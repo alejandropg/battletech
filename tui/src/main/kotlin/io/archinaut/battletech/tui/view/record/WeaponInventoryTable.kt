@@ -15,7 +15,6 @@ import io.archinaut.tenter.text.CellWidth
 import io.archinaut.tenter.widget.Paragraph
 import io.archinaut.tenter.widget.RowWriter
 import io.archinaut.tenter.widget.Widget
-import io.archinaut.tenter.widget.fixedSize
 
 /**
  * The WEAPONS & EQUIPMENT INVENTORY card: the record sheet's Qty/Type/Loc/Ht/Dmg/Min/Sht/Med/Lng
@@ -59,7 +58,7 @@ internal class WeaponInventoryTable(private val unit: CombatUnit) : MeasurableWi
 
         for (row in groupedRows()) {
             val style = if (row.weapon.destroyed) SheetStyles.DESTROYED else SheetStyles.TEXT_PRIMARY
-            content.draw(TableRow(row, style).fixedSize(content.width, 1))
+            content.draw(TableRow(row, style), height = 1)
         }
     }
 

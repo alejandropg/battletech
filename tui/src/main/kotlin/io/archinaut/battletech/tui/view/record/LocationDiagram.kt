@@ -13,7 +13,6 @@ import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.tenter.widget.RowWriter
 import io.archinaut.tenter.widget.Widget
-import io.archinaut.tenter.widget.fixedSize
 
 /**
  * The record sheet's front-facing paper doll. [armor] and [internalStructure] share one
@@ -31,7 +30,7 @@ internal class LocationDiagram private constructor(
 ) : MeasurableWidget {
 
     override fun write(writer: RowWriter) {
-        writer.draw(painting.fixedSize(writer.width, naturalHeight()))
+        writer.draw(painting, naturalHeight())
     }
 
     /** One body section: armor/structure [remaining] out of [max], and destruction state. */

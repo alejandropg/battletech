@@ -54,11 +54,10 @@ internal class UnitStatusView(
             // Canonical 6-box "Hits" track (record sheet Pilot Data): filled = hits taken,
             // empty = remaining boxes. No "health" concept in the rules — hits accumulate
             // upward, each one forcing a Consciousness roll (PilotHits.kt).
-            val hitsLabel = "Hits".padEnd(9) + ": "
-            content.write(0, hitsLabel, TEXT_PRIMARY_STYLE)
+            val labelEnd = content.write(0, "Hits".padEnd(9) + ": ", TEXT_PRIMARY_STYLE)
             PilotHitsTrack.draw(
                 content,
-                column = CellWidth.of(hitsLabel),
+                column = labelEnd.x,
                 stride = 1,
                 hits = unit.pilotHits,
                 filledStyle = DANGER_STYLE,
@@ -173,9 +172,7 @@ internal class UnitStatusView(
         val capacity = status.capacity
         val destroyedCount = status.hits.coerceIn(0, capacity)
         val label6 = label + " ".repeat((7 - CellWidth.of(label)).coerceAtLeast(0))
-        content.write(2, "$label6: ", TEXT_PRIMARY_STYLE)
-        val dotsStart = 2 + CellWidth.of("$label6: ")
-        var col = dotsStart
+        var col = content.write(2, "$label6: ", TEXT_PRIMARY_STYLE).x
         repeat(destroyedCount) {
             content.write(col, filledCircleIcon(), DANGER_STYLE)
             col += 2
