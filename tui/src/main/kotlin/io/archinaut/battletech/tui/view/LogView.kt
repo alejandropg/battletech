@@ -3,18 +3,17 @@ package io.archinaut.battletech.tui.view
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.query.PlayerGameState
 import io.archinaut.battletech.tactical.session.LogEntry
+import io.archinaut.tenter.screen.Constraint
 import io.archinaut.tenter.text.CellWidth
-import io.archinaut.tenter.widget.Column
-import io.archinaut.tenter.widget.Columns
 import io.archinaut.tenter.widget.Paragraph
+import io.archinaut.tenter.widget.Row
 import io.archinaut.tenter.widget.RowWriter
-import io.archinaut.tenter.widget.Viewport
+import io.archinaut.tenter.widget.panel.Panel
 
 /**
- * Marks its last written row for reveal, so the enclosing [Viewport] follows new entries to
- * the bottom exactly as [TargetsView]'s cursor row does — the same mechanism, not a bespoke
- * bottom-anchor. A consequence: a new entry always scrolls to the bottom, even if the reader had
- * scrolled up to review history.
+ * The game log, oldest entry first. It makes no reveal request: its [Panel] sticks to the bottom,
+ * so new entries stay in view while the reader is at the bottom, and a reader who scrolled up to
+ * review history stays there until they scroll back down.
  */
 internal class LogView(
     private val entries: List<LogEntry>,
@@ -35,21 +34,16 @@ internal class LogView(
 
             for (line in logLines) {
                 // The icon gets its own column so wrapped text hangs indented under the first row.
-                val prefixWidth = CellWidth.of(line.icon) + 1
-                val available = (content.width - prefixWidth).coerceAtLeast(1)
                 content.draw(
-                    Columns(
+                    Row(
                         listOf(
-                            Column(prefixWidth, Paragraph(line.icon)),
-                            Column(available, Paragraph(listOf(line.content), wrap = true)),
+                            Constraint.Length(CellWidth.of(line.icon) + 1) to Paragraph(line.icon),
+                            Constraint.Fill() to Paragraph(listOf(line.content), wrap = true),
                         ),
-                        gutter = 0,
                     ),
                 )
             }
         }
-
-        if (content.row > 0) content.markReveal(row = content.row - 1)
     }
 
     internal companion object {

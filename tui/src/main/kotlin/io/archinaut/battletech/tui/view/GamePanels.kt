@@ -59,7 +59,7 @@ internal object GamePanels {
             ) { frame ->
                 UnitStatusView(frame.unitStatus.subject, frame.state.map, frame.unitStatus.pendingHeat)
             },
-            sidePanel(GamePanelId.LOG, LogView.TITLE, keys) { frame ->
+            sidePanel(GamePanelId.LOG, LogView.TITLE, keys, stickToBottom = true) { frame ->
                 LogView(entries = frame.logEntries, state = frame.state)
             },
             helpPanel(
@@ -95,6 +95,7 @@ internal object GamePanels {
         title: String,
         keys: Keybindings,
         maximized: ((PanelInputs) -> MeasurableWidget)? = null,
+        stickToBottom: Boolean = false,
         build: (PanelInputs) -> MeasurableWidget,
     ): Panel<GamePanelId, PanelInputs> = Panel(
         id = id,
@@ -103,6 +104,7 @@ internal object GamePanels {
         normal = build,
         minimized = { VerticalText(title) },
         maximized = maximized ?: build,
+        stickToBottom = stickToBottom,
     )
 
     private fun normalWidth(id: GamePanelId): Int = if (id == GamePanelId.HELP) HELP_WIDTH else SIDE_WIDTH

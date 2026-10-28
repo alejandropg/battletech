@@ -50,8 +50,11 @@ public fun renderInPanel(
     width: Int = 28,
     height: Int = 30,
     scrollOffset: Int = 0,
+    stickToBottom: Boolean = false,
 ): Canvas {
-    val panels = PanelSet<TestPanel, Unit>(listOf(Panel(TestPanel, title, badge.toString(), normal = { content })))
+    val panels = PanelSet<TestPanel, Unit>(
+        listOf(Panel(TestPanel, title, badge.toString(), normal = { content }, stickToBottom = stickToBottom)),
+    )
     panels.scroll(TestPanel, 0, scrollOffset)
     val canvas = Canvas.offscreen(width, height)
     Panels(Unit, mapOf(TestPanel to Rect(0, 0, width, height))).render(canvas, panels)

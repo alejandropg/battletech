@@ -14,6 +14,8 @@ import io.archinaut.tenter.widget.VerticalText
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.widget.MeasurableWidget
+import io.archinaut.tenter.widget.Paragraph
+import io.archinaut.tenter.widget.revealed
 import io.archinaut.tenter.widget.panel.Panels
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -98,8 +100,10 @@ internal class PanelTest {
     @Test
     fun `resize re-follows a settled reveal without caller reset plumbing`() {
         val revealing = MeasurableWidget { cursor ->
-            repeat(20) { row -> cursor.writeLine("row$row") }
-            cursor.markReveal(row = 15)
+            repeat(20) { row ->
+                val line = Paragraph("row$row")
+                cursor.draw(if (row == 15) line.revealed() else line)
+            }
         }
         val panel = panel(normal = { revealing })
         val set = PanelSet(listOf(panel))

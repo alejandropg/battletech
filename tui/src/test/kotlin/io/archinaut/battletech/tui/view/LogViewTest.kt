@@ -48,7 +48,7 @@ internal class LogViewTest {
         mpSpent = 1,
     )
 
-    /** Render via decorator — pixel-parity regression guard for box/border/coordinate assertions. */
+    /** Render in the LOG panel's chrome, stuck to the bottom as [GamePanels] declares it. */
     private fun renderDecorated(
         view: LogView,
         width: Int = 28,
@@ -61,6 +61,7 @@ internal class LogViewTest {
         width = width,
         height = height,
         scrollOffset = scrollOffset,
+        stickToBottom = true,
     )
 
     @Test
@@ -167,9 +168,8 @@ internal class LogViewTest {
 
     @Test
     fun `when content overflows, the most recent line is at the bottom of the panel`() {
-        // Panel of height 6: content viewport is 3 rows. A fresh render has no previousReveal, so
-        // LogView's last-row reveal (see its KDoc) always follows into view — the same mechanism
-        // TargetsView's cursor row uses, not a bespoke bottom-anchor.
+        // Panel of height 6: content viewport is 3 rows. A fresh panel stuck to the bottom shows
+        // the last rows.
         // Each entry is its own turn, so every entry is preceded by its own header row.
         // The bottom content row stays fixed at y=4 regardless of padding — only the top
         // of the viewport moved down — so this test's row numbers don't shift.
@@ -188,13 +188,12 @@ internal class LogViewTest {
     @Test
     fun `a manual scroll to the top survives a re-render while the log is unchanged`() {
         // The panel-side half of the pan-snap-back defect (see PanelSlotTest's TARGETS
-        // equivalent): once the user has wheeled to a position and the reveal row (the last
-        // line) hasn't moved since, that position must stick rather than re-following.
+        // equivalent): once the user has wheeled away from the bottom, that position must stick.
         val entries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val view = LogView(entries, state = emptyState)
 
-        // First render: no previousReveal, so it follows to the bottom — establishes the reveal.
-        val viewportState = ViewportState()
+        // First render: stuck to the bottom.
+        val viewportState = ViewportState(stickToBottom = true)
         val first = panelViewport(
             title = LogView.TITLE,
             badge = "9",
@@ -203,8 +202,7 @@ internal class LogViewTest {
         render(first, viewportState, 28, 6)
         viewportState.scrollBy(0, -100)
 
-        // Second render: the user has wheeled back to the top; the log hasn't changed, so the
-        // reveal row is identical — the manual offset must be respected, not re-followed.
+        // Second render: the user has wheeled to the top, so the view no longer sticks to the bottom.
         val second = panelViewport(
             title = LogView.TITLE,
             badge = "9",
@@ -220,41 +218,52 @@ internal class LogViewTest {
     }
 
     @Test
-    fun `a new entry re-sticks to the bottom even while manually scrolled away`() {
-        // Accepted tradeoff of following the last-row reveal target like TargetsView's cursor: a
-        // growing log always chases its newest line, the same as it would chase a moving cursor
-        // row — there is no bespoke "let the reader linger on history" carve-out anymore.
+    fun `a new entry stays in view while the reader is at the bottom`() {
         val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
-        val viewportState = ViewportState()
-        val scrolledAway = panelViewport(
-            title = LogView.TITLE,
-            badge = "9",
-            content = LogView(tenEntries, state = emptyState),
-        )
-        render(scrolledAway, viewportState, 28, 6)
-        viewportState.scrollBy(0, -100)
-        val manuallyScrolledUp = panelViewport(
-            title = LogView.TITLE,
-            badge = "9",
-            content = LogView(tenEntries, state = emptyState),
-        )
-        render(manuallyScrolledUp, viewportState, 28, 6)
-        assertEquals(0, viewportState.settled?.offset?.y, "sanity check: scrolled away from the bottom")
+        val viewportState = ViewportState(stickToBottom = true)
+        render(logViewport(tenEntries), viewportState, 28, 6)
 
-        // An eleventh entry arrives; the reveal row moves, so the view follows it to the bottom.
-        val elevenEntries = tenEntries + LogEntry(turn = 11, event = stoodUp())
-        val newEntryArrives = panelViewport(
-            title = LogView.TITLE,
-            badge = "9",
-            content = LogView(elevenEntries, state = emptyState),
-        )
-        val buffer = render(newEntryArrives, viewportState, 28, 6)
+        val buffer = render(logViewport(tenEntries + LogEntry(turn = 11, event = stoodUp())), viewportState, 28, 6)
 
-        val bottomInnerRow = buffer.line(4, 2, 24)
-        assertEquals("${unitStoodUpIcon()} m stood up", bottomInnerRow)
+        assertEquals("${unitStoodUpIcon()} m stood up", buffer.line(4, 2, 24))
         val secondFromBottom = buffer.line(3, 2, 24)
         assert(secondFromBottom.startsWith("── TURN 11 ")) { "Expected header above last entry: '$secondFromBottom'" }
     }
+
+    @Test
+    fun `a new entry leaves a reader who scrolled up on the history they are reading`() {
+        val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
+        val viewportState = ViewportState(stickToBottom = true)
+        render(logViewport(tenEntries), viewportState, 28, 6)
+        viewportState.scrollBy(0, -100)
+        render(logViewport(tenEntries), viewportState, 28, 6)
+
+        render(logViewport(tenEntries + LogEntry(turn = 11, event = stoodUp())), viewportState, 28, 6)
+
+        assertEquals(0, viewportState.settled?.offset?.y, "a new entry must not pull the reader away from history")
+    }
+
+    @Test
+    fun `scrolling back to the bottom follows new entries again`() {
+        val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
+        val viewportState = ViewportState(stickToBottom = true)
+        render(logViewport(tenEntries), viewportState, 28, 6)
+        viewportState.scrollBy(0, -100)
+        render(logViewport(tenEntries), viewportState, 28, 6)
+        viewportState.scrollBy(0, 100)
+        render(logViewport(tenEntries), viewportState, 28, 6)
+
+        val buffer = render(logViewport(tenEntries + LogEntry(turn = 11, event = stoodUp())), viewportState, 28, 6)
+
+        val secondFromBottom = buffer.line(3, 2, 24)
+        assert(secondFromBottom.startsWith("── TURN 11 ")) { "Expected header above last entry: '$secondFromBottom'" }
+    }
+
+    private fun logViewport(entries: List<LogEntry>) = panelViewport(
+        title = LogView.TITLE,
+        badge = "9",
+        content = LogView(entries, state = emptyState),
+    )
 
     @Test
     fun `nerd-font dice icons do not push content past the panel border`() {
