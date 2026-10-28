@@ -3,7 +3,7 @@ package io.archinaut.battletech.tui.screen
 import io.archinaut.battletech.tui.screen.BuiltInThemesTest.Companion.PLAYER_FOREGROUNDS
 import io.archinaut.battletech.tui.screen.BuiltInThemesTest.Companion.SUBTLE_ROLES
 import io.archinaut.battletech.tui.screen.BuiltInThemesTest.Companion.luminance
-import com.github.ajalt.mordant.rendering.AnsiLevel
+import io.archinaut.tenter.color.ColorSpace
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
@@ -33,10 +33,10 @@ internal class BuiltInThemesTest {
     private val loader = ThemeLoader()
     private val allThemes: List<Theme> = loader.builtInNames().map { loader.loadResource("theme/$it.json") }
 
-    private val truecolorThemes = allThemes.filter { it.level == AnsiLevel.TRUECOLOR }
-    private val ansi256Themes = allThemes.filter { it.level == AnsiLevel.ANSI256 }
-    private val ansi16Themes = allThemes.filter { it.level == AnsiLevel.ANSI16 }
-    private val reducedThemes = allThemes.filter { it.level != AnsiLevel.TRUECOLOR }
+    private val truecolorThemes = allThemes.filter { it.space == ColorSpace.TRUECOLOR }
+    private val ansi256Themes = allThemes.filter { it.space == ColorSpace.ANSI256 }
+    private val ansi16Themes = allThemes.filter { it.space == ColorSpace.ANSI16 }
+    private val reducedThemes = allThemes.filter { it.space != ColorSpace.TRUECOLOR }
 
     /** Every role this module resolves: Tenter's standard roles plus BattleTech-specific roles. */
     private val allRoles: List<ColorRole> = StandardRole.entries + BoardRole.entries + HeatScaleRole.entries
@@ -109,13 +109,7 @@ internal class BuiltInThemesTest {
         for (theme in allThemes) {
             for (role in allRoles) {
                 val fg = theme.foreground(role)
-                val expectedType = when (theme.level) {
-                    AnsiLevel.TRUECOLOR -> TerminalColor.TrueColor::class
-                    AnsiLevel.ANSI256 -> TerminalColor.Ansi256::class
-                    AnsiLevel.ANSI16 -> TerminalColor.Ansi16::class
-                    AnsiLevel.NONE -> error("no theme targets AnsiLevel.NONE")
-                }
-                assertThat(fg).describedAs("$theme.foreground($role)").isInstanceOf(expectedType.java)
+                assertThat(fg.space).describedAs("$theme.foreground($role)").isEqualTo(theme.space)
             }
         }
     }

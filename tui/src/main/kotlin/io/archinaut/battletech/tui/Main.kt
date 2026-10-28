@@ -107,7 +107,7 @@ private fun awaitKickstart(server: GameServer, seats: Map<PlayerId, ClientGameSe
  */
 private fun tuiScreen(themeName: String?): Pair<Terminal, Theme> {
     val terminal = Terminal()
-    return terminal to (resolveThemeOrExit(themeName) ?: resolveTheme(defaultThemeName(terminal.ansiLevel)))
+    return terminal to (resolveThemeOrExit(themeName) ?: resolveTheme(defaultThemeName(terminal.colorSpace)))
 }
 
 /**

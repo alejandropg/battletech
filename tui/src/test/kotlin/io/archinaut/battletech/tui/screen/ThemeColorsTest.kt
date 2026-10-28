@@ -1,6 +1,6 @@
 package io.archinaut.battletech.tui.screen
 
-import com.github.ajalt.mordant.rendering.AnsiLevel
+import io.archinaut.tenter.color.ColorSpace
 import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.color.ColorRole
 import io.archinaut.tenter.color.TerminalColor
@@ -59,11 +59,11 @@ internal class ThemeColorsTest {
     }
 
     @Test
-    fun `defaultThemeName maps each detected AnsiLevel to the matching dark theme`() {
-        assertEquals(TerminalColor.TrueColor(16, 20, 24), resolveTheme(defaultThemeName(AnsiLevel.TRUECOLOR)).defaultBackground)
-        assertEquals(TerminalColor.Ansi256(233), resolveTheme(defaultThemeName(AnsiLevel.ANSI256)).defaultBackground)
+    fun `defaultThemeName maps each detected color space to the matching dark theme`() {
+        assertEquals(TerminalColor.TrueColor(16, 20, 24), resolveTheme(defaultThemeName(ColorSpace.TRUECOLOR)).defaultBackground)
+        assertEquals(TerminalColor.Ansi256(233), resolveTheme(defaultThemeName(ColorSpace.ANSI256)).defaultBackground)
 
-        val basic = resolveTheme(defaultThemeName(AnsiLevel.ANSI16))
+        val basic = resolveTheme(defaultThemeName(ColorSpace.ANSI16))
         assertEquals(TerminalColor.Ansi16(37), basic.foreground(StandardRole.DEFAULT))
         assertEquals(TerminalColor.Ansi16(30), basic.defaultBackground)
     }

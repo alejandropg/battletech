@@ -3,6 +3,7 @@ package io.archinaut.battletech.tui.screen
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import io.archinaut.tenter.color.ColorSpace
 import io.archinaut.tenter.color.StandardRole
 
 /** Mirrors `io.archinaut.battletech.tactical.model.map.MapFileTest` for [ThemeFile.toTheme]'s validation. */

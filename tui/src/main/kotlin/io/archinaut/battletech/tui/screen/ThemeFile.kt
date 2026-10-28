@@ -1,10 +1,16 @@
 package io.archinaut.battletech.tui.screen
 
-import com.github.ajalt.mordant.rendering.AnsiLevel
-import kotlinx.serialization.SerialName
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.color.ColorRole
+import io.archinaut.tenter.color.ColorSpace
 import io.archinaut.tenter.color.TerminalColor
 
 /**
@@ -15,6 +21,7 @@ import io.archinaut.tenter.color.TerminalColor
  */
 @Serializable
 internal data class ThemeFile(
+    @Serializable(with = ColorSpaceSerializer::class)
     val colorSpace: ColorSpace,
     val background: String,
     val standard: Map<String, String> = emptyMap(),
@@ -31,7 +38,7 @@ internal data class ThemeFile(
         resolveRoles(app, AppRole.entries.associateBy { it.name }, "app", name, colors)
         resolveRoles(board, BoardRole.entries.associateBy { it.name }, "board", name, colors)
         resolveRoles(heatScale, HeatScaleRole.entries.associateBy { it.name }, "heatScale", name, colors)
-        return Theme(name, colorSpace.level, defaultBackground, colors)
+        return Theme(name, colorSpace, defaultBackground, colors)
     }
 
     private fun <R : ColorRole> resolveRoles(
@@ -53,21 +60,26 @@ internal data class ThemeFile(
     }
 
     private fun parseColor(raw: String, context: String): TerminalColor = try {
-        TerminalColor.parse(raw, colorSpace.level)
+        colorSpace.parse(raw)
     } catch (e: IllegalArgumentException) {
         throw ThemeLoadException("$context: invalid $colorSpace color \"$raw\" (${e.message})")
     }
 }
 
 /**
- * The three [TerminalColor] subtypes a theme file can target, one per file — there is no
- * conversion between them (see [TerminalColor]'s KDoc). Each carries its own value syntax:
- * [TRUECOLOR] is `#RRGGBB`, [ANSI256] is a decimal string in `16..255`, [ANSI16] is a decimal
- * string in `30..37` or `90..97`.
+ * A theme file's [ColorSpace], one per file, written in lowercase: `truecolor`, `ansi256`, or `ansi16`.
+ * There is no conversion between spaces (see [TerminalColor]'s KDoc).
  */
-@Serializable
-internal enum class ColorSpace(internal val level: AnsiLevel) {
-    @SerialName("truecolor") TRUECOLOR(AnsiLevel.TRUECOLOR),
-    @SerialName("ansi256") ANSI256(AnsiLevel.ANSI256),
-    @SerialName("ansi16") ANSI16(AnsiLevel.ANSI16),
+internal object ColorSpaceSerializer : KSerializer<ColorSpace> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ColorSpace", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: ColorSpace) {
+        encoder.encodeString(value.name.lowercase())
+    }
+
+    override fun deserialize(decoder: Decoder): ColorSpace {
+        val raw = decoder.decodeString()
+        return ColorSpace.entries.firstOrNull { it.name.lowercase() == raw }
+            ?: throw SerializationException("unknown color space \"$raw\"; expected truecolor, ansi256, or ansi16")
+    }
 }
