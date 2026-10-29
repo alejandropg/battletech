@@ -100,10 +100,9 @@ internal suspend fun runLoop(
     }
 
     /**
-     * Every render goes through here so the board's settled scroll offset is folded back into
-     * [appState] before the next event is handled — otherwise a click or wheel tick right after a
-     * pan/follow would hit-test or scroll from a stale offset.
-     *
+     * Every render goes through here: it samples the active volley, draws the [workspace], and
+     * schedules the volley's next frame. Each panel settles its own scroll offset as it draws, so
+     * a click or wheel tick right after a pan or follow hit-tests the frame just drawn.
      */
     fun render() {
         val active = activeAnimation

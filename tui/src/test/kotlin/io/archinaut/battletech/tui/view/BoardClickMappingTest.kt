@@ -27,8 +27,8 @@ import io.archinaut.tenter.widget.panel.Panels
  *
  * Deliberately *finds* the glyph rather than computing where it ought to be: a test that derived
  * the expected position from the same constants as the production mapping would agree with it
- * while both were wrong. The conversion below follows the settled viewport observation used by
- * the real panel set.
+ * while both were wrong. The conversion goes through the real panel set's hit test, which reads
+ * the geometry its completed frame painted.
  */
 internal class BoardClickMappingTest {
 

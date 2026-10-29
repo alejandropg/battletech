@@ -32,7 +32,7 @@ internal class SplitMaximizedView(
     internal companion object {
         const val SIDE_GUTTER: Int = 4
 
-        /** The divider down the detail's left edge, with the same gutter after it as before it. */
+        /** The divider down the detail's left edge, with as much space after it as [SIDE_GUTTER] leaves before it. */
         private val DIVIDER = Block(borders = Borders.LEFT, padding = Padding(left = SIDE_GUTTER))
     }
 }
