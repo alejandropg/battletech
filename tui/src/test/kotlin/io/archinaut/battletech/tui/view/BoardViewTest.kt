@@ -17,7 +17,6 @@ import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.widget.Viewport
 import io.archinaut.tenter.widget.ViewportState
-import io.archinaut.tenter.widget.fixedSize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -89,7 +88,7 @@ internal class BoardViewTest {
     }
 
     @Test
-    fun `marks the cursor hex for reveal, for the enclosing Viewport to auto-follow`() {
+    fun `asks to keep the cursor hex visible, for the enclosing Viewport to auto-follow`() {
         val state = aGameState(map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val cursor = HexCoordinates(1, 1)
 
@@ -114,10 +113,10 @@ internal class BoardViewTest {
         assertEquals(null, revealedBy(BoardView(state)))
     }
 
-    /** The reveal request [view] makes, as a 32x18 [Viewport] around it observes it. */
+    /** The reveal request [view]'s scrollable content makes, as a 32x18 [Viewport] around it observes it. */
     private fun revealedBy(view: BoardView): Rect? {
         val state = ViewportState()
-        Viewport(view.fixedSize(32, 18)).render(Canvas.offscreen(32, 18), state)
+        Viewport(view.scrollable()).render(Canvas.offscreen(32, 18), state)
         return checkNotNull(state.settled).revealed
     }
 

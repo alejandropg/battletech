@@ -8,17 +8,17 @@ import io.archinaut.battletech.tactical.unit.CriticalSlotContent
 import io.archinaut.battletech.tactical.unit.SLOT_COUNTS
 import io.archinaut.battletech.tactical.unit.isSlotDestroyed
 import io.archinaut.battletech.tui.view.MechLabels
+import io.archinaut.tenter.screen.Constraint
 import io.archinaut.tenter.screen.Padding
-import io.archinaut.tenter.widget.Column
-import io.archinaut.tenter.widget.Columns
 import io.archinaut.tenter.widget.Block
+import io.archinaut.tenter.widget.Flow
 import io.archinaut.tenter.widget.block
 import io.archinaut.tenter.widget.RowWriter
 
 /**
  * The CRITICAL HIT TABLE card: five 30-column lanes spanning the full record sheet, with the head
  * and center torso sharing the middle lane, each leg below its adjacent torso, and system damage
- * below the left arm. [Columns] keeps each complete lane together when a narrower terminal forces
+ * below the left arm. [Flow] keeps each complete lane together when a narrower terminal forces
  * the table to wrap.
  */
 internal class CriticalHitTable(private val unit: CombatUnit) : MeasurableWidget {
@@ -26,7 +26,7 @@ internal class CriticalHitTable(private val unit: CombatUnit) : MeasurableWidget
     override fun write(content: RowWriter) {
         content.draw(SectionHeading("CRITICAL HIT TABLE"))
 
-        val columns = Columns(
+        val columns = Flow(
             listOf(
                 criticalColumn(listOf(MechLocation.LEFT_ARM), includesSystemDamage = true),
                 criticalColumn(listOf(MechLocation.LEFT_TORSO, MechLocation.LEFT_LEG)),
@@ -34,7 +34,7 @@ internal class CriticalHitTable(private val unit: CombatUnit) : MeasurableWidget
                 criticalColumn(listOf(MechLocation.RIGHT_TORSO, MechLocation.RIGHT_LEG)),
                 criticalColumn(listOf(MechLocation.RIGHT_ARM)),
             ),
-            gutter = 0,
+            spacing = 0,
         )
         content.draw(columns)
     }
@@ -42,10 +42,8 @@ internal class CriticalHitTable(private val unit: CombatUnit) : MeasurableWidget
     private fun criticalColumn(
         locations: List<MechLocation>,
         includesSystemDamage: Boolean = false,
-    ): Column = Column(
-        SheetLayout.CRIT_COLUMN_WIDTH,
-        CriticalColumn(unit, locations, includesSystemDamage),
-    )
+    ): Pair<Constraint.Length, MeasurableWidget> =
+        Constraint.Length(SheetLayout.CRIT_COLUMN_WIDTH) to CriticalColumn(unit, locations, includesSystemDamage)
 
     /** One complete 30-column lane, containing one or two locations and optional system damage. */
     private class CriticalColumn(

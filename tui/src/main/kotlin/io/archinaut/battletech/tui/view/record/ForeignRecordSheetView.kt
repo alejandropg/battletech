@@ -4,8 +4,8 @@ import io.archinaut.battletech.tui.view.SectionHeading
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.unit.ForeignUnit
 import io.archinaut.battletech.tui.view.ForeignWeaponList
-import io.archinaut.tenter.widget.Column
-import io.archinaut.tenter.widget.Columns
+import io.archinaut.tenter.screen.Constraint
+import io.archinaut.tenter.widget.Flow
 import io.archinaut.tenter.widget.Stack
 import io.archinaut.tenter.widget.RowWriter
 
@@ -21,19 +21,19 @@ import io.archinaut.tenter.widget.RowWriter
 internal class ForeignRecordSheetView(private val unit: ForeignUnit) : MeasurableWidget {
 
     override fun write(content: RowWriter) {
-        val upperSections = Columns(
+        val upperSections = Flow(
             listOf(
-                Column(SheetLayout.MECH_DATA_WIDTH, MechDataCard(unit)),
-                Column(SheetLayout.WARRIOR_DATA_WIDTH, MeasurableWidget { }),
-                Column(SheetLayout.WEAPON_INVENTORY_WIDTH, ForeignWeaponInventory(unit)),
+                Constraint.Length(SheetLayout.MECH_DATA_WIDTH) to MechDataCard(unit),
+                Constraint.Length(SheetLayout.WARRIOR_DATA_WIDTH) to MeasurableWidget { },
+                Constraint.Length(SheetLayout.WEAPON_INVENTORY_WIDTH) to ForeignWeaponInventory(unit),
             ),
         )
-        val diagrams = Columns(
+        val diagrams = Flow(
             listOf(
-                Column(SheetLayout.ARMOR_DIAGRAM_WIDTH, LocationDiagram.armor(unit) { false }),
+                Constraint.Length(SheetLayout.ARMOR_DIAGRAM_WIDTH) to LocationDiagram.armor(unit) { false },
             ),
         )
-        content.draw(Stack(listOf(upperSections, diagrams), gutter = 2))
+        content.draw(Stack(listOf(upperSections, diagrams), spacing = 2))
     }
 
     private class ForeignWeaponInventory(private val unit: ForeignUnit) : MeasurableWidget {

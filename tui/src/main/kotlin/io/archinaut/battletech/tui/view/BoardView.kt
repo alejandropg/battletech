@@ -18,14 +18,17 @@ import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.text.CellWidth
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.tenter.widget.Widget
+import io.archinaut.tenter.widget.fixedSize
+import io.archinaut.tenter.widget.revealed
 
 /**
  * The tactical map's content: coordinate labels, every hex, highlight, and unit glyph, drawn at
  * its unscrolled screen position. Purely content — chrome and scrolling belong to the panel
  * [io.archinaut.tenter.widget.panel.Panel] that wraps this view (see its construction in `RunLoop.renderFrame`); the
- * only thing this view contributes to scrolling is marking the cursor hex for reveal via
- * [Canvas.markReveal], so auto-follow keeps it visible.
+ * only thing this view contributes to scrolling is [scrollable]: its size, and the cursor hex as
+ * the area to keep visible, so auto-follow keeps it in view.
  */
 internal class BoardView(
     private val state: PlayerGameState,
@@ -110,11 +113,19 @@ internal class BoardView(
                     isDestroyed = unit.isDestroyed,
                 )
             }
-
-            if (coords == cursorPosition) {
-                canvas.markReveal(Rect(x, y, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT))
-            }
         }
+    }
+
+    /** This board as scrollable content: sized to its map, and asking to keep the cursor hex visible. */
+    internal fun scrollable(): MeasurableWidget {
+        val (width, height) = contentSize(state.map)
+        val sized = fixedSize(width, height)
+        return cursorArea()?.let(sized::revealed) ?: sized
+    }
+
+    private fun cursorArea(): Rect? = cursorPosition?.let { cursor ->
+        val (rawX, rawY) = HexLayout.hexToScreen(cursor.col, cursor.row)
+        Rect(MAP_ORIGIN_X + rawX, MAP_ORIGIN_Y + rawY, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT)
     }
 
     private fun renderCoordinates(canvas: Canvas, mapWidth: Int, mapHeight: Int) {

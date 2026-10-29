@@ -8,12 +8,13 @@ import io.archinaut.tenter.text.CellWidth
 import io.archinaut.tenter.widget.Paragraph
 import io.archinaut.tenter.widget.Row
 import io.archinaut.tenter.widget.RowWriter
+import io.archinaut.tenter.widget.followingEnd
 import io.archinaut.tenter.widget.panel.Panel
 
 /**
- * The game log, oldest entry first. It makes no reveal request: its [Panel] sticks to the bottom,
- * so new entries stay in view while the reader is at the bottom, and a reader who scrolled up to
- * review history stays there until they scroll back down.
+ * The game log, oldest entry first. It follows its own end, so new entries stay in view while the
+ * reader is at the bottom of its [Panel], and a reader who scrolled up to review history stays
+ * there until they scroll back down.
  */
 internal class LogView(
     private val entries: List<LogEntry>,
@@ -21,6 +22,10 @@ internal class LogView(
 ) : MeasurableWidget {
 
     override fun write(content: RowWriter) {
+        content.draw(MeasurableWidget(::writeEntries).followingEnd())
+    }
+
+    private fun writeEntries(content: RowWriter) {
         var lastTurn: Int? = null
 
         for (entry in entries) {

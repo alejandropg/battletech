@@ -48,7 +48,7 @@ internal class LogViewTest {
         mpSpent = 1,
     )
 
-    /** Render in the LOG panel's chrome, stuck to the bottom as [GamePanels] declares it. */
+    /** Render in the LOG panel's chrome, as [GamePanels] declares it; the log follows its own end. */
     private fun renderDecorated(
         view: LogView,
         width: Int = 28,
@@ -61,7 +61,6 @@ internal class LogViewTest {
         width = width,
         height = height,
         scrollOffset = scrollOffset,
-        stickToBottom = true,
     )
 
     @Test
@@ -168,7 +167,7 @@ internal class LogViewTest {
 
     @Test
     fun `when content overflows, the most recent line is at the bottom of the panel`() {
-        // Panel of height 6: content viewport is 3 rows. A fresh panel stuck to the bottom shows
+        // Panel of height 6: content viewport is 3 rows. A fresh log following its end shows
         // the last rows.
         // Each entry is its own turn, so every entry is preceded by its own header row.
         // The bottom content row stays fixed at y=4 regardless of padding — only the top
@@ -192,8 +191,8 @@ internal class LogViewTest {
         val entries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val view = LogView(entries, state = emptyState)
 
-        // First render: stuck to the bottom.
-        val viewportState = ViewportState(stickToBottom = true)
+        // First render: following the log's end.
+        val viewportState = ViewportState()
         val first = panelViewport(
             title = LogView.TITLE,
             badge = "9",
@@ -202,7 +201,7 @@ internal class LogViewTest {
         render(first, viewportState, 28, 6)
         viewportState.scrollBy(0, -100)
 
-        // Second render: the user has wheeled to the top, so the view no longer sticks to the bottom.
+        // Second render: the user has wheeled to the top, so the view no longer follows the log's end.
         val second = panelViewport(
             title = LogView.TITLE,
             badge = "9",
@@ -220,7 +219,7 @@ internal class LogViewTest {
     @Test
     fun `a new entry stays in view while the reader is at the bottom`() {
         val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
-        val viewportState = ViewportState(stickToBottom = true)
+        val viewportState = ViewportState()
         render(logViewport(tenEntries), viewportState, 28, 6)
 
         val buffer = render(logViewport(tenEntries + LogEntry(turn = 11, event = stoodUp())), viewportState, 28, 6)
@@ -233,7 +232,7 @@ internal class LogViewTest {
     @Test
     fun `a new entry leaves a reader who scrolled up on the history they are reading`() {
         val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
-        val viewportState = ViewportState(stickToBottom = true)
+        val viewportState = ViewportState()
         render(logViewport(tenEntries), viewportState, 28, 6)
         viewportState.scrollBy(0, -100)
         render(logViewport(tenEntries), viewportState, 28, 6)
@@ -246,7 +245,7 @@ internal class LogViewTest {
     @Test
     fun `scrolling back to the bottom follows new entries again`() {
         val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
-        val viewportState = ViewportState(stickToBottom = true)
+        val viewportState = ViewportState()
         render(logViewport(tenEntries), viewportState, 28, 6)
         viewportState.scrollBy(0, -100)
         render(logViewport(tenEntries), viewportState, 28, 6)

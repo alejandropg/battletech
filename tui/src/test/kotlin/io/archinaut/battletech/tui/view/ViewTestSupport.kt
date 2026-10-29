@@ -13,6 +13,8 @@ import io.archinaut.tenter.terminal.Terminal
 import io.archinaut.tenter.widget.Block
 import io.archinaut.tenter.widget.FlashMessage
 import io.archinaut.tenter.widget.MeasurableWidget
+import io.archinaut.tenter.widget.Scrollbar
+import io.archinaut.tenter.widget.StatefulWidget
 import io.archinaut.tenter.widget.Viewport
 import io.archinaut.tenter.widget.ViewportState
 import io.archinaut.tenter.widget.Widget
@@ -30,16 +32,22 @@ private object TestPanel : PanelId
 
 /**
  * [content] in a [Viewport] with the chrome a panel gives it — a titled border with horizontal
- * padding, and a top spacer row that scrolls away with the content — for tests that drive the
- * [ViewportState] directly.
+ * padding, a top spacer row that scrolls away with the content, and a vertical scrollbar on the
+ * right border — for tests that drive the [ViewportState] directly.
  */
-public fun panelViewport(content: MeasurableWidget, title: String, badge: String?): Viewport = Viewport(
-    content.block(Block(padding = Padding(top = 1))),
-    block = Block.bordered(title = title, badge = badge, padding = Padding.horizontal(1)),
-)
+public fun panelViewport(content: MeasurableWidget, title: String, badge: String?): StatefulWidget<ViewportState> =
+    object : StatefulWidget<ViewportState> {
+        override fun render(canvas: Canvas, state: ViewportState) {
+            val frame = Block.bordered(title = title, badge = badge, padding = Padding.horizontal(1))
+            frame.render(canvas)
+            val inner = frame.inner(canvas.area)
+            Viewport(content.block(Block(padding = Padding(top = 1)))).render(canvas.region(inner), state)
+            state.settled?.let { Scrollbar.vertical().render(canvas.region(Rect(canvas.width - 1, inner.y, 1, inner.height)), it) }
+        }
+    }
 
 /** Renders [viewport] with [state] into a fresh [width]x[height] canvas and returns it for assertions. */
-public fun render(viewport: Viewport, state: ViewportState, width: Int, height: Int): Canvas =
+public fun render(viewport: StatefulWidget<ViewportState>, state: ViewportState, width: Int, height: Int): Canvas =
     Canvas.offscreen(width, height).also { viewport.render(it, state) }
 
 /** Renders [content] inside the real panel chrome — the pixel-parity regression guard. */
@@ -50,10 +58,9 @@ public fun renderInPanel(
     width: Int = 28,
     height: Int = 30,
     scrollOffset: Int = 0,
-    stickToBottom: Boolean = false,
 ): Canvas {
     val panels = PanelSet<TestPanel, Unit>(
-        listOf(Panel(TestPanel, title, badge.toString(), normal = { content }, stickToBottom = stickToBottom)),
+        listOf(Panel(TestPanel, title, badge.toString(), normal = { content })),
     )
     panels.scroll(TestPanel, 0, scrollOffset)
     val canvas = Canvas.offscreen(width, height)

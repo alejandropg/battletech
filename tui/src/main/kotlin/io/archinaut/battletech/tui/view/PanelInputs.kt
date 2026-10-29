@@ -10,7 +10,6 @@ import io.archinaut.battletech.tui.input.ContextId
 import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.tenter.input.KeySection
 import io.archinaut.tenter.widget.MeasurableWidget
-import io.archinaut.tenter.widget.fixedSize
 
 /**
  * The view-model inputs for one render frame, derived from [AppState] once and
@@ -29,7 +28,7 @@ internal class PanelInputs(private val appState: AppState, private val keys: Key
 
     /** The tactical board's view — see [GamePanels.build]'s board [io.archinaut.tenter.widget.panel.Panel]. */
     val boardView: MeasurableWidget by lazy {
-        val board = BoardView(
+        BoardView(
             appState.state,
             cursorPosition = appState.cursor,
             hexHighlights = renderData.hexHighlights,
@@ -40,9 +39,7 @@ internal class PanelInputs(private val appState: AppState, private val keys: Key
             draftTorsoFacings = renderData.draftTorsoFacings,
             validTargetPositions = renderData.validTargetPositions,
             selectedTargetPosition = renderData.selectedTargetPosition,
-        )
-        val (width, height) = BoardView.contentSize(appState.state.map)
-        board.fixedSize(width, height)
+        ).scrollable()
     }
 
     /**

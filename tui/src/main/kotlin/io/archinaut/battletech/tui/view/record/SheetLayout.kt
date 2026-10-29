@@ -3,12 +3,12 @@ package io.archinaut.battletech.tui.view.record
 /**
  * Column-width budget for the maximized UNIT STATUS record sheet. [SHEET_WIDTH] is derived from
  * the widths below it, rather than restated as its own number, so the two can never drift apart:
- * it is exactly what the four-card top band needs once [io.archinaut.tenter.widget.Columns]' [GUTTER] is
+ * it is exactly what the four-card top band needs once [io.archinaut.tenter.widget.Flow]'s [SPACING] is
  * included. Narrower terminals reflow cards to later bands rather than clipping them.
  */
 internal object SheetLayout {
-    /** [io.archinaut.tenter.widget.Columns]/[io.archinaut.tenter.widget.Stack] gutter used throughout the sheet. */
-    const val GUTTER: Int = 2
+    /** [io.archinaut.tenter.widget.Flow]/[io.archinaut.tenter.widget.Stack] spacing used throughout the sheet. */
+    const val SPACING: Int = 2
 
     const val MECH_DATA_WIDTH: Int = 28
     const val WARRIOR_DATA_WIDTH: Int = 28
@@ -19,8 +19,8 @@ internal object SheetLayout {
     // plus the marker+heat-number column beside it.
     const val HEAT_WIDTH: Int = 30
 
-    const val MAIN_CONTENT_WIDTH: Int = MECH_DATA_WIDTH + GUTTER + WARRIOR_DATA_WIDTH + GUTTER + WEAPON_INVENTORY_WIDTH
-    const val SHEET_WIDTH: Int = MAIN_CONTENT_WIDTH + GUTTER + HEAT_WIDTH
+    const val MAIN_CONTENT_WIDTH: Int = MECH_DATA_WIDTH + SPACING + WARRIOR_DATA_WIDTH + SPACING + WEAPON_INVENTORY_WIDTH
+    const val SHEET_WIDTH: Int = MAIN_CONTENT_WIDTH + SPACING + HEAT_WIDTH
 
     const val ARMOR_DIAGRAM_WIDTH: Int = 58
     const val INTERNAL_STRUCTURE_DIAGRAM_WIDTH: Int = 58
