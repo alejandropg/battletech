@@ -41,20 +41,11 @@ internal class LocationDiagramTest {
         rightLeg = 18,
     )
 
-    /** (row, column) of the first caption beginning with [label]. */
-    private fun CompletedFrame.locate(label: String): Pair<Int, Int> {
-        for (row in 0 until height) {
-            val col = line(row).indexOf(label)
-            if (col >= 0) return row to col
-        }
-        error("label '$label' not found in buffer")
-    }
-
     private fun countGlyph(text: String, glyph: String): Int =
         if (glyph.isEmpty()) 0 else text.split(glyph).size - 1
 
     private fun assertCentered(buffer: CompletedFrame, outline: String) {
-        val (_, column) = buffer.locate(outline)
+        val (column, _) = buffer.find(outline)!!
         val leftMargin = column
         val rightMargin = buffer.width - column - outline.length
 
@@ -103,7 +94,7 @@ internal class LocationDiagramTest {
         ).copy(internalStructure = anInternalStructureLayout(centerTorso = 0))
 
         val buffer = render(LocationDiagram.internalStructure(unit), width = diagramWidth, height = diagramHeight)
-        val (valueRow, valueCol) = buffer.locate("0/31")
+        val (valueCol, valueRow) = buffer.find("0/31")!!
         val contour = buffer.get(38, 7)
 
         assertEquals(BoardRole.DESTROYED, buffer.get(valueCol, valueRow).style.fg)
@@ -120,7 +111,7 @@ internal class LocationDiagramTest {
         )
 
         val buffer = render(LocationDiagram.internalStructure(unit), width = diagramWidth, height = diagramHeight)
-        val (row, col) = buffer.locate("31/31")
+        val (col, row) = buffer.find("31/31")!!
 
         assertFalse(buffer.get(col, row).style.strikethrough == true)
     }
@@ -134,7 +125,7 @@ internal class LocationDiagramTest {
             width = diagramWidth,
             height = diagramHeight,
         )
-        val (valueRow, valueCol) = buffer.locate("47/47")
+        val (valueCol, valueRow) = buffer.find("47/47")!!
 
         assertEquals(BoardRole.DESTROYED, buffer.get(valueCol, valueRow).style.fg)
         assertTrue(buffer.get(valueCol, valueRow).style.strikethrough == true)
@@ -146,10 +137,10 @@ internal class LocationDiagramTest {
 
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val text = buffer.text()
-        val (headRow, _) = buffer.locate("Head 9/9")
-        val (torsoRow, _) = buffer.locate("╭──────╮╭─────────╮╭──────╮")
-        val (rearRow, _) = buffer.locate("│╌╌╌╌││╌╌REAR╌╌╌││╌╌╌╌│")
-        val (legRow, _) = buffer.locate("Leg")
+        val (_, headRow) = buffer.find("Head 9/9")!!
+        val (_, torsoRow) = buffer.find("╭──────╮╭─────────╮╭──────╮")!!
+        val (_, rearRow) = buffer.find("│╌╌╌╌││╌╌REAR╌╌╌││╌╌╌╌│")!!
+        val (_, legRow) = buffer.find("Leg")!!
 
         assertTrue(headRow < torsoRow)
         assertTrue(torsoRow < rearRow)
@@ -190,11 +181,11 @@ internal class LocationDiagramTest {
         val unit = aUnit(armor = exampleArmor)
 
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
-        val (headTopRow, _) = buffer.locate("╭─────╮")
-        val (headBottomRow, _) = buffer.locate("╰─────╯")
-        val (leftRow, leftCol) = buffer.locate("Left")
-        val (rightRow, _) = buffer.locate("Right")
-        val (torsoHeadingRow, _) = buffer.locate("Torso")
+        val (_, headTopRow) = buffer.find("╭─────╮")!!
+        val (_, headBottomRow) = buffer.find("╰─────╯")!!
+        val (leftCol, leftRow) = buffer.find("Left")!!
+        val (_, rightRow) = buffer.find("Right")!!
+        val (_, torsoHeadingRow) = buffer.find("Torso")!!
 
         assertEquals(headTopRow + 1, leftRow)
         assertEquals(headTopRow + 1, rightRow)
@@ -210,10 +201,10 @@ internal class LocationDiagramTest {
 
         val armor = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val internal = render(LocationDiagram.internalStructure(unit), width = diagramWidth, height = diagramHeight)
-        val (_, armorBorderColumn) = armor.locate("╭──────╮╭─────────╮╭──────╮")
-        val (_, internalBorderColumn) = internal.locate("╭────╮╭─────╮╭────╮")
-        val (_, armorValueColumn) = armor.locate("32/32")
-        val (_, internalValueColumn) = internal.locate("21/21")
+        val (armorBorderColumn, _) = armor.find("╭──────╮╭─────────╮╭──────╮")!!
+        val (internalBorderColumn, _) = internal.find("╭────╮╭─────╮╭────╮")!!
+        val (armorValueColumn, _) = armor.find("32/32")!!
+        val (internalValueColumn, _) = internal.find("21/21")!!
 
         assertEquals(armorBorderColumn + 1, armorValueColumn)
         assertEquals(internalBorderColumn + 1, internalValueColumn)
@@ -224,8 +215,8 @@ internal class LocationDiagramTest {
         val unit = aUnit(armor = exampleArmor)
 
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
-        val (frontValueRow, _) = buffer.locate("16/16")
-        val (rearValueRow, _) = buffer.locate("5/5")
+        val (_, frontValueRow) = buffer.find("16/16")!!
+        val (_, rearValueRow) = buffer.find("5/5")!!
 
         assertEquals("16/16", buffer.region(Rect(48, frontValueRow, 5, 1)).line(0))
         assertEquals("╮", buffer.get(53, frontValueRow + 1).symbol)
@@ -245,7 +236,7 @@ internal class LocationDiagramTest {
         val rearValue = "$rearMax/$rearMax"
 
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
-        val (rearValueRow, _) = buffer.locate(rearValue)
+        val (_, rearValueRow) = buffer.find(rearValue)!!
 
         assertEquals(" $rearValue", buffer.region(Rect(29, rearValueRow, rearValue.length + 1, 1)).line(0))
         assertEquals("╰", buffer.get(29, rearValueRow - 1).symbol)
@@ -268,7 +259,7 @@ internal class LocationDiagramTest {
         val unit = aUnit(armor = armor)
 
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
-        val (rearValueRow, _) = buffer.locate("8/8")
+        val (_, rearValueRow) = buffer.find("8/8")!!
 
         assertEquals("╭───╮", buffer.region(Rect(33, rearValueRow + 1, 5, 1)).line(0))
         assertEquals("╭───╮", buffer.region(Rect(43, rearValueRow + 1, 5, 1)).line(0))
@@ -297,7 +288,7 @@ internal class LocationDiagramTest {
         val unit = aUnit(armor = armor)
 
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
-        val (rearValueRow, _) = buffer.locate("8/8")
+        val (_, rearValueRow) = buffer.find("8/8")!!
         val legTop = rearValueRow + 1
         val leftLegX = 37 - expectedWidth - 1
         val legRows = (legMax + expectedWidth - 1) / expectedWidth
@@ -334,7 +325,7 @@ internal class LocationDiagramTest {
         val unit = aUnit(armor = armor)
 
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
-        val (rearValueRow, _) = buffer.locate("8/8")
+        val (_, rearValueRow) = buffer.find("8/8")!!
         val legTop = rearValueRow + 1
 
         assertEquals("╮     ╭", buffer.region(Rect(37, legTop, 7, 1)).line(0))
@@ -373,7 +364,7 @@ internal class LocationDiagramTest {
         val unit = aUnit(armor = unevenArmor)
 
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
-        val (torsoTop, _) = buffer.locate("╭──────╮╭─────────╮╭──────╮")
+        val (_, torsoTop) = buffer.find("╭──────╮╭─────────╮╭──────╮")!!
 
         assertEquals("╰────╯", buffer.region(Rect(29, torsoTop + 8, 6, 1)).line(0))
         assertEquals("╰─────────╯", buffer.region(Rect(35, torsoTop + 8, 11, 1)).line(0))

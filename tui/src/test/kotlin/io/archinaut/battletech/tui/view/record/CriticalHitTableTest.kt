@@ -40,8 +40,7 @@ internal class CriticalHitTableTest {
         val unit = atlas().copy(criticalHits = mapOf(MechLocation.RIGHT_TORSO to setOf(0)))
         val buffer = render(CriticalHitTable(unit), width = SheetLayout.SHEET_WIDTH, height = 60)
 
-        val headerRow = buffer.find("RIGHT TORSO")!!.y
-        val col = buffer.line(headerRow).indexOf("RIGHT TORSO")
+        val (col, headerRow) = buffer.find("RIGHT TORSO")!!
 
         // Slot 0 (line "1. AC/20", right under the header) was destroyed above.
         assertEquals(BoardRole.DESTROYED, buffer.get(col, headerRow + 1).style.fg)

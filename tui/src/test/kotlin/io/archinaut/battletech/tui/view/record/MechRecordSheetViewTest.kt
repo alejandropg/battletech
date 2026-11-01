@@ -138,10 +138,7 @@ internal class MechRecordSheetViewTest {
         val buffer = render(MechRecordSheetView(unit, aGameMap()), width = 200, height = 300)
 
         // Center torso ARMOR value (unaffected by the internal-structure override): 47/47.
-        val (row, col) = (0 until buffer.height).firstNotNullOf { r ->
-            val c = buffer.line(r).indexOf("47/47")
-            if (c >= 0) r to c else null
-        }
+        val (col, row) = buffer.find("47/47")!!
 
         assertEquals(BoardRole.DESTROYED, buffer.get(col, row).style.fg)
         assertTrue(buffer.get(col, row).style.strikethrough == true)

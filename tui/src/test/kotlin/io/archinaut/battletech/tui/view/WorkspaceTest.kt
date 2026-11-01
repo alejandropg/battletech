@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.screen.Rect
 
 /**
  * [Workspace] composes the board, every visible side panel, the status bar, and the game-over
@@ -228,8 +229,9 @@ internal class WorkspaceTest {
         val buffer = workspace.draw(ended, width = 120, height = 40, flash = null)
 
         val titleRow = buffer.find("MATCH OVER")!!.y
-        val left = buffer.line(titleRow).indexOf('╭')
-        val right = buffer.line(titleRow).indexOf('╮')
+        val title = buffer.region(Rect(0, titleRow, buffer.width, 1))
+        val left = title.find("╭")!!.x
+        val right = title.find("╮")!!.x
         for (y in titleRow until titleRow + 7) {
             for (x in left..right) {
                 assertNull(buffer.get(x, y).style.bg, "banner cell ($x, $y) shows the board's background")
