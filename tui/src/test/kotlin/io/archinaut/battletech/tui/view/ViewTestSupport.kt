@@ -4,7 +4,6 @@ import io.archinaut.battletech.tui.animation.PanelPlacement
 import io.archinaut.battletech.tui.game.AppState
 import io.archinaut.tenter.animation.AnimationPlayback
 import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.screen.Cell
 import io.archinaut.tenter.screen.Padding
 import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.terminal.CompletedFrame
@@ -24,9 +23,9 @@ import io.archinaut.tenter.widget.panel.PanelId
 import io.archinaut.tenter.widget.panel.PanelSet
 import io.archinaut.tenter.widget.panel.Panels
 
-/** Renders [widget] into a fresh [width]x[height] canvas and returns it for assertions. */
-public fun render(widget: Widget, width: Int, height: Int): Canvas =
-    Canvas.offscreen(width, height).also(widget::render)
+/** Draws [widget] in a fresh [width]x[height] frame and returns it for assertions. */
+public fun render(widget: Widget, width: Int, height: Int): CompletedFrame =
+    drawFrame(width, height) { it.renderWidget(widget, it.area) }
 
 private object TestPanel : PanelId
 
@@ -46,9 +45,9 @@ public fun panelViewport(content: MeasurableWidget, title: String, badge: String
         }
     }
 
-/** Renders [viewport] with [state] into a fresh [width]x[height] canvas and returns it for assertions. */
-public fun render(viewport: StatefulWidget<ViewportState>, state: ViewportState, width: Int, height: Int): Canvas =
-    Canvas.offscreen(width, height).also { viewport.render(it, state) }
+/** Draws [viewport] with [state] in a fresh [width]x[height] frame and returns it for assertions. */
+public fun render(viewport: StatefulWidget<ViewportState>, state: ViewportState, width: Int, height: Int): CompletedFrame =
+    drawFrame(width, height) { it.renderStatefulWidget(viewport, it.area, state) }
 
 /** Renders [content] inside the real panel chrome — the pixel-parity regression guard. */
 public fun renderInPanel(
@@ -58,14 +57,12 @@ public fun renderInPanel(
     width: Int = 28,
     height: Int = 30,
     scrollOffset: Int = 0,
-): Canvas {
+): CompletedFrame {
     val panels = PanelSet<TestPanel, Unit>(
         listOf(Panel(TestPanel, title, badge.toString(), normal = { content })),
     )
     panels.scroll(TestPanel, 0, scrollOffset)
-    val canvas = Canvas.offscreen(width, height)
-    Panels(Unit, mapOf(TestPanel to Rect(0, 0, width, height))).render(canvas, panels)
-    return canvas
+    return drawFrame(width, height) { it.renderStatefulWidget(Panels(Unit, mapOf(TestPanel to it.area)), it.area, panels) }
 }
 
 /**
@@ -74,21 +71,6 @@ public fun renderInPanel(
  */
 public fun drawFrame(width: Int, height: Int, draw: (Frame) -> Unit): CompletedFrame =
     Terminal.headless(width, height).withScreen { it.draw(draw) }
-
-/** Row [y], columns [x] until [x] + [width], right-trimmed. */
-public fun Canvas.line(y: Int, x: Int = 0, width: Int = this.width - x): String = line(::get, y, x, width)
-
-/** The whole canvas as newline-separated rows — for `contains` assertions. */
-public fun Canvas.text(): String = (0 until height).joinToString("\n") { line(it) }
-
-/** Row [y], columns [x] until [x] + [width], right-trimmed. */
-public fun CompletedFrame.line(y: Int, x: Int = 0, width: Int = this.width - x): String = line(::get, y, x, width)
-
-/** The whole frame as newline-separated rows — for `contains` assertions. */
-public fun CompletedFrame.text(): String = (0 until height).joinToString("\n") { line(it) }
-
-private fun line(get: (Int, Int) -> Cell, y: Int, x: Int, width: Int): String =
-    (x until x + width).joinToString("") { get(it, y).symbol }.trimEnd()
 
 /** Draws one [width]x[height] frame of [appState] through this workspace and returns what it drew. */
 internal fun Workspace.draw(

@@ -9,13 +9,12 @@ import io.archinaut.battletech.tactical.unit.PublicWeapon
 import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.battletech.tactical.unit.WeaponMountId
 import io.archinaut.battletech.tui.anArmorLayout
-import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
-import io.archinaut.battletech.tui.view.text
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.screen.Point
 
 /**
  * [ForeignRecordSheetView] drawn directly, as its own [io.archinaut.tenter.widget.Widget] — not just through
@@ -60,8 +59,8 @@ internal class ForeignRecordSheetViewTest {
     @Test
     fun `leaves a blank warrior-data-width column so the weapons column lines up with the owner sheet`() {
         val buffer = render(ForeignRecordSheetView(aForeignUnit()), width = 200, height = 60)
-        val topRow = (0 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
+        val topRow = buffer.find("'MECH DATA")!!.y
 
-        assertEquals(60, buffer.line(topRow).indexOf("── WEAPONS & EQUIPMENT INVENTORY"))
+        assertEquals(Point(60, topRow), buffer.find("── WEAPONS & EQUIPMENT INVENTORY"))
     }
 }

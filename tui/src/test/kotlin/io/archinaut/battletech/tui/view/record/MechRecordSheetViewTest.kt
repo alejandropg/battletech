@@ -15,15 +15,15 @@ import io.archinaut.battletech.tui.aUnit
 import io.archinaut.battletech.tui.anArmorLayout
 import io.archinaut.battletech.tui.anInternalStructureLayout
 import io.archinaut.battletech.tui.screen.BoardRole
-import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
-import io.archinaut.battletech.tui.view.text
 import io.archinaut.tenter.color.StandardRole
-import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.screen.Rect
+import io.archinaut.tenter.terminal.CompletedFrame
+import io.archinaut.tenter.screen.Point
 
 /** [MechRecordSheetView] — subject dispatch, the width clamp, and the foreign-unit redaction guard. */
 internal class MechRecordSheetViewTest {
@@ -56,10 +56,10 @@ internal class MechRecordSheetViewTest {
         movementThisTurn = MovementThisTurn.Stationary,
     )
 
-    private fun assertTwoBlankRowsBefore(buffer: Canvas, row: Int, width: Int) {
-        assertTrue(buffer.line(row - 1, width = width).isBlank())
-        assertTrue(buffer.line(row - 2, width = width).isBlank())
-        assertFalse(buffer.line(row - 3, width = width).isBlank())
+    private fun assertTwoBlankRowsBefore(buffer: CompletedFrame, row: Int, width: Int) {
+        assertTrue(buffer.region(Rect(0, row - 1, width, 1)).line(0).isBlank())
+        assertTrue(buffer.region(Rect(0, row - 2, width, 1)).line(0).isBlank())
+        assertFalse(buffer.region(Rect(0, row - 3, width, 1)).line(0).isBlank())
     }
 
     @Test
@@ -84,28 +84,28 @@ internal class MechRecordSheetViewTest {
     fun `an own unit lays out cards in the requested grid`() {
         val buffer = render(MechRecordSheetView(atlas(), aGameMap()), width = 200, height = 300)
 
-        val topRow = (0 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
-        assertEquals(0, buffer.line(topRow).indexOf("── 'MECH DATA"))
-        assertEquals(30, buffer.line(topRow).indexOf("── WARRIOR DATA"))
-        assertEquals(60, buffer.line(topRow).indexOf("── WEAPONS & EQUIPMENT INVENTORY"))
-        assertEquals(120, buffer.line(topRow).indexOf("── HEAT "))
+        val topRow = buffer.find("'MECH DATA")!!.y
+        assertEquals(Point(0, topRow), buffer.find("── 'MECH DATA"))
+        assertEquals(Point(30, topRow), buffer.find("── WARRIOR DATA"))
+        assertEquals(Point(60, topRow), buffer.find("── WEAPONS & EQUIPMENT INVENTORY"))
+        assertEquals(Point(120, topRow), buffer.find("── HEAT "))
 
-        val diagramRow = (0 until buffer.height).first { buffer.line(it).contains("ARMOR DIAGRAM") }
-        assertEquals(0, buffer.line(diagramRow).indexOf("── ARMOR DIAGRAM"))
-        assertEquals(60, buffer.line(diagramRow).indexOf("── INTERNAL STRUCTURE DIAGRAM"))
+        val diagramRow = buffer.find("ARMOR DIAGRAM")!!.y
+        assertEquals(Point(0, diagramRow), buffer.find("── ARMOR DIAGRAM"))
+        assertEquals(Point(60, diagramRow), buffer.find("── INTERNAL STRUCTURE DIAGRAM"))
         assertTwoBlankRowsBefore(buffer, diagramRow, SheetLayout.MAIN_CONTENT_WIDTH)
-        assertFalse(buffer.line(diagramRow, x = 120, width = SheetLayout.HEAT_WIDTH).isBlank())
+        assertFalse(buffer.region(Rect(120, diagramRow, SheetLayout.HEAT_WIDTH, 1)).line(0).isBlank())
 
-        val heatScaleRow = (0 until buffer.height).first { buffer.line(it).contains("HEAT SCALE") }
-        val criticalRow = (0 until buffer.height).first { buffer.line(it).contains("CRITICAL HIT TABLE") }
-        assertEquals(0, buffer.line(criticalRow).indexOf("── CRITICAL HIT TABLE"))
+        val heatScaleRow = buffer.find("HEAT SCALE")!!.y
+        val criticalRow = buffer.find("CRITICAL HIT TABLE")!!.y
+        assertEquals(Point(0, criticalRow), buffer.find("── CRITICAL HIT TABLE"))
         assertEquals("─", buffer.get(SheetLayout.SHEET_WIDTH - 1, criticalRow).symbol)
         assertEquals(" ", buffer.get(SheetLayout.SHEET_WIDTH, criticalRow).symbol)
         assertTrue(criticalRow > heatScaleRow + 31)
         assertTwoBlankRowsBefore(buffer, criticalRow, SheetLayout.SHEET_WIDTH)
 
-        val systemRow = (0 until buffer.height).first { buffer.line(it).contains("SYSTEM DAMAGE") }
-        assertEquals(0, buffer.line(systemRow).indexOf("── SYSTEM DAMAGE"))
+        val systemRow = buffer.find("SYSTEM DAMAGE")!!.y
+        assertEquals(Point(0, systemRow), buffer.find("── SYSTEM DAMAGE"))
         assertEquals(criticalRow + 17, systemRow)
         assertEquals("─", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH - 1, systemRow).symbol)
         assertEquals(" ", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH, systemRow).symbol)
@@ -114,7 +114,7 @@ internal class MechRecordSheetViewTest {
     @Test
     fun `an own unit does not repeat the unit label above the grid — MechDataCard already shows it`() {
         val buffer = render(MechRecordSheetView(atlas(), aGameMap()), width = 200, height = 300)
-        val topRow = (0 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
+        val topRow = buffer.find("'MECH DATA")!!.y
 
         assertEquals(0, topRow)
         assertEquals(1, buffer.text().split("A1:").size - 1)
@@ -125,8 +125,8 @@ internal class MechRecordSheetViewTest {
         val unit = atlas().copy(isDestroyed = true, isPilotConscious = false)
         val buffer = render(MechRecordSheetView(unit, aGameMap()), width = 200, height = 300)
 
-        val destroyedRow = (0 until buffer.height).first { buffer.line(it).contains("DESTROYED") }
-        val unconsciousRow = (0 until buffer.height).first { buffer.line(it).contains("PILOT UNCONSCIOUS") }
+        val destroyedRow = buffer.find("DESTROYED")!!.y
+        val unconsciousRow = buffer.find("PILOT UNCONSCIOUS")!!.y
         assertEquals(destroyedRow + 1, unconsciousRow)
         assertEquals(StandardRole.DANGER, buffer.get(0, destroyedRow).style.fg)
         assertEquals(StandardRole.DANGER, buffer.get(0, unconsciousRow).style.fg)
@@ -160,18 +160,18 @@ internal class MechRecordSheetViewTest {
         assertFalse(text.contains("INTERNAL STRUCTURE DIAGRAM"))
         assertFalse(text.contains("Gunnery"))
 
-        val topRow = (0 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
-        assertEquals(0, buffer.line(topRow).indexOf("── 'MECH DATA"))
-        assertEquals(60, buffer.line(topRow).indexOf("── WEAPONS & EQUIPMENT INVENTORY"))
+        val topRow = buffer.find("'MECH DATA")!!.y
+        assertEquals(Point(0, topRow), buffer.find("── 'MECH DATA"))
+        assertEquals(Point(60, topRow), buffer.find("── WEAPONS & EQUIPMENT INVENTORY"))
 
-        val diagramRow = (0 until buffer.height).first { buffer.line(it).contains("ARMOR DIAGRAM") }
+        val diagramRow = buffer.find("ARMOR DIAGRAM")!!.y
         assertTwoBlankRowsBefore(buffer, diagramRow, SheetLayout.MAIN_CONTENT_WIDTH)
     }
 
     @Test
     fun `a foreign unit does not repeat the unit label above the grid — MechDataCard already shows it`() {
         val buffer = render(MechRecordSheetView(aForeignUnit(), aGameMap()), width = 200, height = 60)
-        val topRow = (0 until buffer.height).first { buffer.line(it).contains("'MECH DATA") }
+        val topRow = buffer.find("'MECH DATA")!!.y
 
         assertEquals(0, topRow)
         assertEquals(1, buffer.text().split("H1:").size - 1)

@@ -7,14 +7,13 @@ import io.archinaut.battletech.tactical.unit.HeatSource
 import io.archinaut.battletech.tui.aGameMap
 import io.archinaut.battletech.tui.aUnit
 import io.archinaut.battletech.tui.screen.HeatScaleRole
-import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
 import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.color.ColorRole
-import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.terminal.CompletedFrame
 
 /** [HeatLadder] — the current/projected heat gauges plus the 30-to-0 heat scale rungs. */
 internal class HeatLadderTest {
@@ -22,7 +21,7 @@ internal class HeatLadderTest {
     private fun rowForHeat(headerRow: Int, heat: Int): Int = headerRow + 1 + (30 - heat)
 
     /** An unset background renders as the default one, so it counts as [StandardRole.DEFAULT]. */
-    private fun assertRowBackground(buffer: Canvas, row: Int, expected: ColorRole) {
+    private fun assertRowBackground(buffer: CompletedFrame, row: Int, expected: ColorRole) {
         for (column in 0 until buffer.width) {
             assertEquals(expected, buffer.get(column, row).style.bg ?: StandardRole.DEFAULT, "column $column on row $row")
         }
@@ -35,7 +34,7 @@ internal class HeatLadderTest {
         val unit = aUnit(currentHeat = 9)
         val buffer = render(HeatLadder(unit, aGameMap(), emptyList()), width = 40, height = 60)
 
-        val headerRow = (0 until buffer.height).first { buffer.line(it).contains("HEAT SCALE") }
+        val headerRow = buffer.find("HEAT SCALE")!!.y
 
         val currentRow = rowForHeat(headerRow, 9)
         assertTrue(buffer.line(currentRow).contains("◀"))
@@ -63,7 +62,7 @@ internal class HeatLadderTest {
             height = 60,
         )
 
-        val headerRow = (0 until buffer.height).first { buffer.line(it).contains("HEAT SCALE") }
+        val headerRow = buffer.find("HEAT SCALE")!!.y
 
         assertRowBackground(buffer, rowForHeat(headerRow, 5), HeatScaleRole.CURRENT_BG)
         for (heat in 6..10) {
@@ -83,7 +82,7 @@ internal class HeatLadderTest {
         )
         val buffer = render(HeatLadder(unit, aGameMap(), emptyList()), width = 40, height = 60)
 
-        val headerRow = (0 until buffer.height).first { buffer.line(it).contains("HEAT SCALE") }
+        val headerRow = buffer.find("HEAT SCALE")!!.y
         val currentRow = rowForHeat(headerRow, 7)
 
         assertTrue(buffer.line(currentRow).contains("◀▶"))
@@ -104,7 +103,7 @@ internal class HeatLadderTest {
             height = 60,
         )
 
-        val headerRow = (0 until buffer.height).first { buffer.line(it).contains("HEAT SCALE") }
+        val headerRow = buffer.find("HEAT SCALE")!!.y
 
         assertRowBackground(buffer, rowForHeat(headerRow, 28), HeatScaleRole.CURRENT_BG)
         assertRowBackground(buffer, rowForHeat(headerRow, 29), HeatScaleRole.HEATING_BG)
@@ -117,7 +116,7 @@ internal class HeatLadderTest {
         val unit = aUnit(currentHeat = 0)
         val buffer = render(HeatLadder(unit, aGameMap(), emptyList()), width = 40, height = 60)
 
-        val headerRow = (0 until buffer.height).first { buffer.line(it).contains("HEAT SCALE") }
+        val headerRow = buffer.find("HEAT SCALE")!!.y
         // Movement penalty first kicks in at heat 5 (-1 MP); heat 6, 7 repeat the same rule
         // and must NOT restate it.
         assertTrue(buffer.line(rowForHeat(headerRow, 5)).contains("MP"))

@@ -82,7 +82,7 @@ contrast unknowable.
 | `light-16` | `93` | `91` | `96` |
 
 **`PLAYER_2` sits at a 3:1 contrast floor while every other critical board foreground clears
-4.5:1.** Unit ownership is the one board fact with no redundant non-color cue — `UnitRenderer` draws
+4.5:1.** Unit ownership is the one board fact with no redundant non-color cue — `UnitView` draws
 friendly and enemy mechs with identical glyphs — so the instinct is to hold it to the *strictest*
 floor. That's backwards here: the two requirements fight each other. 4.5:1 against the mid-luminance
 terrain fills only admits colors near L\*≈0.87, and sRGB has almost no chroma left that light —

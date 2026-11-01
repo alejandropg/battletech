@@ -10,9 +10,9 @@ import io.archinaut.battletech.tui.game.phase.DeclaredWeaponEntry
 import io.archinaut.battletech.tui.icon.diceRoll
 import io.archinaut.battletech.tui.icon.targetIcon
 import io.archinaut.battletech.tui.screen.BoardRole
-import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.terminal.CompletedFrame
 
 internal class DeclaredTargetsViewTest {
 
@@ -23,7 +23,7 @@ internal class DeclaredTargetsViewTest {
     private fun attacker(name: String, player: PlayerId, draft: Boolean, vararg targets: DeclaredTargetEntry) =
         DeclaredAttackerEntry(UnitId(name), player, draft, targets.toList())
 
-    private fun rowContaining(buffer: Canvas, text: String): Int =
+    private fun rowContaining(buffer: CompletedFrame, text: String): Int =
         (0 until buffer.height).firstOrNull { row -> text in buffer.line(row) } ?: -1
 
     @Test

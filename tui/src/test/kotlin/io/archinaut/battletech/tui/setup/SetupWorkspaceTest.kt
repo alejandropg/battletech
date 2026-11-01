@@ -12,8 +12,6 @@ import io.archinaut.battletech.tactical.model.content.summarize
 import io.archinaut.battletech.tactical.unit.MechModels
 import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.battletech.tui.view.declaredCycle
-import io.archinaut.battletech.tui.view.line
-import io.archinaut.battletech.tui.view.text
 import io.archinaut.tenter.widget.panel.PanelMode
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -21,6 +19,7 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.screen.Rect
 
 internal class SetupWorkspaceTest {
 
@@ -138,7 +137,7 @@ internal class SetupWorkspaceTest {
         assertEquals(SetupPanelId.MAP, workspace.hitTest(28, panelTop + 1)?.id)
         assertEquals(SetupPanelId.MAP, workspace.hitTest(43, panelTop + 1)?.id)
         assertEquals(SetupPanelId.PLAYER_1, workspace.hitTest(44, panelTop + 1)?.id)
-        assertTrue(buffer.line(panelTop + 3, x = 30, width = 12).contains("long-map"))
+        assertTrue(buffer.region(Rect(30, panelTop + 3, 12, 1)).line(0).contains("long-map"))
     }
 
     @Test

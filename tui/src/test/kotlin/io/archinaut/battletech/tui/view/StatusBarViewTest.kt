@@ -5,9 +5,9 @@ import io.archinaut.battletech.tactical.model.TurnPhase
 import io.archinaut.battletech.tui.aUnit
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.tenter.color.StandardRole
-import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.terminal.CompletedFrame
 
 internal class StatusBarViewTest {
 
@@ -161,6 +161,6 @@ internal class StatusBarViewTest {
         assertEquals("│", buffer.get(79, 1).symbol)
     }
 
-    private fun row(buffer: Canvas, index: Int = 1): String =
+    private fun row(buffer: CompletedFrame, index: Int = 1): String =
         (0 until buffer.width).joinToString("") { buffer.get(it, index).symbol }
 }

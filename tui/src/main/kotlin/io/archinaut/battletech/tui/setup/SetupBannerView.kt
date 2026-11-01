@@ -3,6 +3,10 @@ package io.archinaut.battletech.tui.setup
 import io.archinaut.battletech.tui.view.HelpHint
 import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.screen.Constraint.Fill
+import io.archinaut.tenter.screen.Constraint.Length
+import io.archinaut.tenter.screen.Constraint.Min
+import io.archinaut.tenter.screen.Layout
 import io.archinaut.tenter.screen.Padding
 import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.screen.Style
@@ -34,15 +38,16 @@ internal class SetupBannerView(private val prompt: String) : Widget {
         }
 
         // The prompt stops short of the help hint, so an over-long one ellipsizes before it.
-        val promptRow = titleLines.size
-        val promptWidth = (HelpHint.column(canvas) - MESSAGE_HELP_GAP).coerceAtLeast(0)
-        Paragraph(prompt, TEXT_PRIMARY_STYLE).render(canvas.region(Rect(0, promptRow, promptWidth, 1)))
-        HelpHint.draw(canvas, promptRow)
+        val (promptArea, _, hintArea) = HINT_ROW.split(Rect(0, titleLines.size, canvas.width, 1))
+        Paragraph(prompt, TEXT_PRIMARY_STYLE).render(canvas.region(promptArea))
+        HelpHint.render(canvas.region(hintArea))
     }
 
     internal companion object {
         internal const val FALLBACK_TITLE = "BATTLETECH"
         private const val MESSAGE_HELP_GAP = 1
+        // Min, so the message and the gap give way to the hint before it shrinks.
+        private val HINT_ROW = Layout.horizontal(Fill(1), Length(MESSAGE_HELP_GAP), Min(HelpHint.WIDTH))
 
         private val ACCENT_STYLE = Style(StandardRole.ACCENT)
         private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)

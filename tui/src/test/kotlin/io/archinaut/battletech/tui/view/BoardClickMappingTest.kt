@@ -13,10 +13,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import io.archinaut.tenter.widget.panel.Panel
 import io.archinaut.tenter.widget.panel.PanelSet
-import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.widget.fixedSize
 import io.archinaut.tenter.widget.panel.Panels
+import io.archinaut.tenter.terminal.CompletedFrame
 
 /**
  * Round-trips a click through the REAL frame composition: a unit is rendered onto the board
@@ -42,12 +42,11 @@ internal class BoardClickMappingTest {
 
     /** Renders a whole frame the way `renderFrame` does and returns the screen buffer. */
     private data class Frame(
-        val buffer: Canvas,
+        val buffer: CompletedFrame,
         val panels: PanelSet<GamePanelId, Unit>,
     )
 
     private fun renderFrame(state: PlayerGameState, width: Int = 100, height: Int = 30): Frame {
-        val buffer = Canvas.offscreen(width, height)
         val (mapWidth, mapHeight) = BoardView.contentSize(state.map)
         val panels = PanelSet(
             listOf(
@@ -59,12 +58,12 @@ internal class BoardClickMappingTest {
             ),
         )
         val boardArea = Rect(0, Workspace.STATUS_BAR_HEIGHT, width, height - Workspace.STATUS_BAR_HEIGHT)
-        Panels(Unit, mapOf(GamePanelId.BOARD to boardArea)).render(buffer, panels)
+        val buffer = drawFrame(width, height) { it.renderStatefulWidget(Panels(Unit, mapOf(GamePanelId.BOARD to boardArea)), it.area, panels) }
         return Frame(buffer, panels)
     }
 
     /** The screen cell holding the first character of the [marker] glyph, or null. */
-    private fun findMarker(buffer: Canvas): Pair<Int, Int>? {
+    private fun findMarker(buffer: CompletedFrame): Pair<Int, Int>? {
         for (y in 0 until buffer.height) {
             for (x in 0 until buffer.width - 1) {
                 if (buffer.get(x, y).symbol == "Z" && buffer.get(x + 1, y).symbol == "Z") return x to y

@@ -30,16 +30,16 @@ import io.archinaut.battletech.tui.icon.infinityIcon
 import io.archinaut.battletech.tui.icon.pilotDeadIcon
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.tenter.color.StandardRole
-import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.terminal.CompletedFrame
 
 internal class UnitStatusViewTest {
 
     /** Render via decorator at (0,0) — pixel-parity regression guard for box/coordinates. */
-    private fun renderDecorated(view: UnitStatusView, width: Int = 28, height: Int = 30): Canvas =
+    private fun renderDecorated(view: UnitStatusView, width: Int = 28, height: Int = 30): CompletedFrame =
         renderInPanel(view, badge = '1', title = UnitStatusView.TITLE, width = width, height = height)
 
     private fun aForeignUnit(
@@ -454,7 +454,7 @@ internal class UnitStatusViewTest {
         assertTrue(projectedValueRow.contains("4"))
     }
 
-    private fun rowContaining(buffer: Canvas, height: Int, text: String): Int {
+    private fun rowContaining(buffer: CompletedFrame, height: Int, text: String): Int {
         for (row in 0 until height) {
             val line = (2 until 26).joinToString("") { buffer.get(it, row).symbol }
             if (line.contains(text)) return row

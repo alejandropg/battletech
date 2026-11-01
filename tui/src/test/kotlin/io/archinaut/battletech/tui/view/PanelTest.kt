@@ -11,7 +11,6 @@ import io.archinaut.tenter.widget.panel.Panel
 import io.archinaut.tenter.widget.panel.PanelSet
 import io.archinaut.tenter.widget.panel.PanelMode
 import io.archinaut.tenter.widget.VerticalText
-import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.tenter.widget.Paragraph
@@ -20,6 +19,7 @@ import io.archinaut.tenter.widget.panel.Panels
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.terminal.CompletedFrame
 
 /** Managed panel behavior is exercised through the public [PanelSet] seam. */
 internal class PanelTest {
@@ -51,17 +51,15 @@ internal class PanelTest {
         width: Int = 30,
         height: Int = 10,
         configure: (PanelSet<GamePanelId, PanelInputs>) -> Unit = {},
-    ): Canvas {
+    ): CompletedFrame {
         val set = PanelSet(listOf(panel))
         configure(set)
         return render(set, width, height)
     }
 
     /** Renders LOG across the whole [width]x[height] canvas. */
-    private fun render(set: PanelSet<GamePanelId, PanelInputs>, width: Int = 30, height: Int = 10): Canvas {
-        val buffer = Canvas.offscreen(width, height)
-        Panels(inputs, mapOf(GamePanelId.LOG to Rect(0, 0, width, height))).render(buffer, set)
-        return buffer
+    private fun render(set: PanelSet<GamePanelId, PanelInputs>, width: Int = 30, height: Int = 10): CompletedFrame {
+        return drawFrame(width, height) { it.renderStatefulWidget(Panels(inputs, mapOf(GamePanelId.LOG to it.area)), it.area, set) }
     }
 
     @Test
@@ -131,9 +129,8 @@ internal class PanelTest {
             ),
         )
         unfocusedSet.focus(GamePanelId.BOARD)
-        val buffer = Canvas.offscreen(30, 10)
-        Panels(inputs, mapOf(GamePanelId.LOG to Rect(0, 0, 15, 10), GamePanelId.BOARD to Rect(15, 0, 15, 10)))
-            .render(buffer, unfocusedSet)
+        val panels = Panels(inputs, mapOf(GamePanelId.LOG to Rect(0, 0, 15, 10), GamePanelId.BOARD to Rect(15, 0, 15, 10)))
+        val buffer = drawFrame(30, 10) { it.renderStatefulWidget(panels, it.area, unfocusedSet) }
         assertEquals(StandardRole.PANEL_BORDER, buffer.get(0, 0).style.fg)
     }
 

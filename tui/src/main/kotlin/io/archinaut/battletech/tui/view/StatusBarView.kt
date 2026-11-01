@@ -6,6 +6,10 @@ import io.archinaut.battletech.tactical.unit.VisibleUnit
 import io.archinaut.battletech.tui.game.displayName
 import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
+import io.archinaut.tenter.screen.Constraint.Fill
+import io.archinaut.tenter.screen.Constraint.Length
+import io.archinaut.tenter.screen.Constraint.Min
+import io.archinaut.tenter.screen.Layout
 import io.archinaut.tenter.screen.Line
 import io.archinaut.tenter.screen.Padding
 import io.archinaut.tenter.screen.Rect
@@ -50,9 +54,9 @@ internal class StatusBarView(
             Line(message, TEXT_PRIMARY_STYLE)
 
         // The line stops short of the help hint, so an over-long message ellipsizes before it.
-        val lineWidth = (HelpHint.column(canvas) - MESSAGE_HELP_GAP).coerceAtLeast(0)
-        Paragraph(listOf(line)).render(canvas.region(Rect(0, 0, lineWidth, 1)))
-        HelpHint.draw(canvas, 0)
+        val (lineArea, _, hintArea) = HINT_ROW.split(Rect(0, 0, canvas.width, 1))
+        Paragraph(listOf(line)).render(canvas.region(lineArea))
+        HelpHint.render(canvas.region(hintArea))
     }
 
     private fun paddedContentWidth(message: String): Int =
@@ -74,6 +78,8 @@ internal class StatusBarView(
         private const val COMPACT_SEPARATOR: String = " | "
         private const val UNIT_MESSAGE_SEPARATOR: String = " ┆ "
         private const val MESSAGE_HELP_GAP: Int = 1
+        // Min, so the message and the gap give way to the hint before it shrinks.
+        private val HINT_ROW = Layout.horizontal(Fill(1), Length(MESSAGE_HELP_GAP), Min(HelpHint.WIDTH))
         private val ACCENT_STYLE = Style(StandardRole.ACCENT)
         private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
         private val PHASE_WIDTH = TurnPhase.entries.maxOf { CellWidth.of(phaseLabel(it)) }

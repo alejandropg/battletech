@@ -227,7 +227,7 @@ internal class WorkspaceTest {
 
         val buffer = workspace.draw(ended, width = 120, height = 40, flash = null)
 
-        val titleRow = (0 until buffer.height).first { buffer.line(it).contains("MATCH OVER") }
+        val titleRow = buffer.find("MATCH OVER")!!.y
         val left = buffer.line(titleRow).indexOf('╭')
         val right = buffer.line(titleRow).indexOf('╮')
         for (y in titleRow until titleRow + 7) {

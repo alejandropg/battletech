@@ -13,7 +13,6 @@ import io.archinaut.battletech.tui.hex.HexLayout
 import io.archinaut.battletech.tui.icon.destroyedIcon
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.tenter.color.StandardRole
-import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.widget.Viewport
 import io.archinaut.tenter.widget.ViewportState
@@ -54,15 +53,15 @@ internal class BoardViewTest {
         val columnLabelStarts = listOf(7, 14, 21)
         val bottomLabelY = BoardView.MAP_ORIGIN_Y + mapHeight + BoardView.BOTTOM_LABEL_GAP
         for ((index, x) in columnLabelStarts.withIndex()) {
-            assertEquals(coordinateLabels[index], buffer.line(0, x, 2))
-            assertEquals(coordinateLabels[index], buffer.line(bottomLabelY, x, 2))
+            assertEquals(coordinateLabels[index], buffer.region(Rect(x, 0, 2, 1)).line(0))
+            assertEquals(coordinateLabels[index], buffer.region(Rect(x, bottomLabelY, 2, 1)).line(0))
         }
 
         val rowCenters = listOf(3, 7, 11)
         val rightLabelX = BoardView.MAP_ORIGIN_X + mapWidth + 2
         for ((index, y) in rowCenters.withIndex()) {
-            assertEquals(coordinateLabels[index], buffer.line(y, width = 2))
-            assertEquals(coordinateLabels[index], buffer.line(y, rightLabelX, 2))
+            assertEquals(coordinateLabels[index], buffer.region(Rect(0, y, 2, 1)).line(0))
+            assertEquals(coordinateLabels[index], buffer.region(Rect(rightLabelX, y, 2, 1)).line(0))
         }
 
         assertEquals(StandardRole.TEXT_SUBTLE, buffer.get(columnLabelStarts[0], 0).style.fg)
@@ -116,7 +115,7 @@ internal class BoardViewTest {
     /** The reveal request [view]'s scrollable content makes, as a 32x18 [Viewport] around it observes it. */
     private fun revealedBy(view: BoardView): Rect? {
         val state = ViewportState()
-        Viewport(view.scrollable()).render(Canvas.offscreen(32, 18), state)
+        render(Viewport(view.scrollable()), state, 32, 18)
         return checkNotNull(state.settled).revealed
     }
 

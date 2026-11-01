@@ -20,10 +20,11 @@ import io.archinaut.battletech.tui.icon.initiativeIcon
 import io.archinaut.battletech.tui.icon.movementModeIcon
 import io.archinaut.battletech.tui.icon.unitStoodUpIcon
 import io.archinaut.tenter.color.StandardRole
-import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.widget.ViewportState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.screen.Rect
+import io.archinaut.tenter.terminal.CompletedFrame
 
 internal class LogViewTest {
 
@@ -54,7 +55,7 @@ internal class LogViewTest {
         width: Int = 28,
         height: Int = 10,
         scrollOffset: Int = 0,
-    ): Canvas = renderInPanel(
+    ): CompletedFrame = renderInPanel(
         view,
         badge = '9',
         title = LogView.TITLE,
@@ -80,9 +81,9 @@ internal class LogViewTest {
         val buffer = renderDecorated(view, scrollOffset = 0)
 
         // Inner content starts at x=2, y=2 (past the border and the padding spacer row).
-        val headerLine = buffer.line(2, 2, 24)
+        val headerLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
-        val entryLine = buffer.line(3, 2, 24)
+        val entryLine = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assertEquals("${unitStoodUpIcon()} m stood up", entryLine)
     }
 
@@ -99,10 +100,10 @@ internal class LogViewTest {
 
         assertEquals(StandardRole.INFO, buffer.get(2, 2).style.fg)
         // Only one header for the single turn: row 3 and row 4 are plain entries, not headers.
-        val headerLine = buffer.line(2, 2, 24)
+        val headerLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
-        assert(buffer.line(3, 2, 24).contains("0101→0201")) { "Expected first move entry" }
-        assert(buffer.line(4, 2, 24).contains("0101→0301")) { "Expected second move entry" }
+        assert(buffer.region(Rect(2, 3, 24, 1)).line(0).contains("0101→0201")) { "Expected first move entry" }
+        assert(buffer.region(Rect(2, 4, 24, 1)).line(0).contains("0101→0301")) { "Expected second move entry" }
         assertEquals(null, buffer.get(2, 3).style.fg, "renders in the default color")
     }
 
@@ -111,9 +112,9 @@ internal class LogViewTest {
         val view = LogView(entries = listOf(LogEntry(turn = 10, event = stoodUp())), state = emptyState)
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        val headerLine = buffer.line(2, 2, 24)
+        val headerLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
         assertEquals("── TURN 10 ─────────────", headerLine)
-        val entryLine = buffer.line(3, 2, 24)
+        val entryLine = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assertEquals("${unitStoodUpIcon()} m stood up", entryLine)
     }
 
@@ -129,12 +130,12 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assert(buffer.line(2, 2, 24).startsWith("── TURN 1 ")) { "Expected header at row 2" }
-        assert(buffer.line(3, 2, 24).contains("0101→0201")) { "Expected first move entry" }
-        assert(buffer.line(4, 2, 24).contains("0101→0301")) { "Expected second move entry" }
-        assert(buffer.line(5, 2, 24).contains("0101→0401")) { "Expected third move entry" }
+        assert(buffer.region(Rect(2, 2, 24, 1)).line(0).startsWith("── TURN 1 ")) { "Expected header at row 2" }
+        assert(buffer.region(Rect(2, 3, 24, 1)).line(0).contains("0101→0201")) { "Expected first move entry" }
+        assert(buffer.region(Rect(2, 4, 24, 1)).line(0).contains("0101→0301")) { "Expected second move entry" }
+        assert(buffer.region(Rect(2, 5, 24, 1)).line(0).contains("0101→0401")) { "Expected third move entry" }
         // Below the last entry should be empty inside the box.
-        assertEquals("", buffer.line(6, 2, 24))
+        assertEquals("", buffer.region(Rect(2, 6, 24, 1)).line(0))
     }
 
     @Test
@@ -151,9 +152,9 @@ internal class LogViewTest {
         val buffer = renderDecorated(view, scrollOffset = 0)
 
         // Row 2 is the turn header; the entry text starts wrapping at row 3.
-        assert(buffer.line(2, 2, 24).startsWith("── TURN 2 ")) { "Expected header at row 2" }
-        val line1 = buffer.line(3, 2, 24)
-        val line2 = buffer.line(4, 2, 24)
+        assert(buffer.region(Rect(2, 2, 24, 1)).line(0).startsWith("── TURN 2 ")) { "Expected header at row 2" }
+        val line1 = buffer.region(Rect(2, 3, 24, 1)).line(0)
+        val line2 = buffer.region(Rect(2, 4, 24, 1)).line(0)
         val icon = initiativeIcon()
         assert(line1.startsWith("$icon Initiative: P1")) { "Line 1 should start with the initiative icon: '$line1'" }
         // Continuation line is indented two columns to align under the text on line 1.
@@ -177,10 +178,10 @@ internal class LogViewTest {
         val buffer = renderDecorated(view, height = 6)
 
         // The bottom inner row (y = 4, since box bottom is y=5) should be the most recent entry.
-        val bottomInnerRow = buffer.line(4, 2, 24)
+        val bottomInnerRow = buffer.region(Rect(2, 4, 24, 1)).line(0)
         assertEquals("${unitStoodUpIcon()} m stood up", bottomInnerRow)
         // The row above is that entry's own header.
-        val secondFromBottom = buffer.line(3, 2, 24)
+        val secondFromBottom = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assert(secondFromBottom.startsWith("── TURN 10 ")) { "Expected header above last entry: '$secondFromBottom'" }
     }
 
@@ -210,9 +211,9 @@ internal class LogViewTest {
         val buffer = render(second, viewportState, 28, 6)
 
         assertEquals(0, viewportState.settled?.offset?.y, "a manual scroll to the top must not snap back to the bottom")
-        val firstLine = buffer.line(2, 2, 24)
+        val firstLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
         assert(firstLine.startsWith("── TURN 1 ")) { "Expected header at row 2: '$firstLine'" }
-        val secondLine = buffer.line(3, 2, 24)
+        val secondLine = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assertEquals("${unitStoodUpIcon()} m stood up", secondLine)
     }
 
@@ -224,8 +225,8 @@ internal class LogViewTest {
 
         val buffer = render(logViewport(tenEntries + LogEntry(turn = 11, event = stoodUp())), viewportState, 28, 6)
 
-        assertEquals("${unitStoodUpIcon()} m stood up", buffer.line(4, 2, 24))
-        val secondFromBottom = buffer.line(3, 2, 24)
+        assertEquals("${unitStoodUpIcon()} m stood up", buffer.region(Rect(2, 4, 24, 1)).line(0))
+        val secondFromBottom = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assert(secondFromBottom.startsWith("── TURN 11 ")) { "Expected header above last entry: '$secondFromBottom'" }
     }
 
@@ -254,7 +255,7 @@ internal class LogViewTest {
 
         val buffer = render(logViewport(tenEntries + LogEntry(turn = 11, event = stoodUp())), viewportState, 28, 6)
 
-        val secondFromBottom = buffer.line(3, 2, 24)
+        val secondFromBottom = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assert(secondFromBottom.startsWith("── TURN 11 ")) { "Expected header above last entry: '$secondFromBottom'" }
     }
 
@@ -310,7 +311,7 @@ internal class LogViewTest {
         val view = LogView(entries = listOf(LogEntry(1, moved)), state = stateWithAtlas)
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        val entryLine = buffer.line(3, 2, 24)
+        val entryLine = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assertEquals("${movementModeIcon(MovementMode.WALK)} atlas (1 MP) 0101→0102", entryLine)
 
         // Layout: x=2 icon, x=3 space, x=4..8 "atlas", x=9 space before "(1 MP)".
@@ -344,8 +345,8 @@ internal class LogViewTest {
         // Inner content width = 10 - 4 = 6; prefix (icon + space) = 2; available = 4.
         // "longname" (8 cells) is a single unbroken word wider than capacity, so it hard-splits
         // into "long" then "name", each its own row.
-        assertEquals("${movementModeIcon(MovementMode.WALK)} long", buffer.line(3, 2, 6))
-        assertEquals("  name", buffer.line(4, 2, 6))
+        assertEquals("${movementModeIcon(MovementMode.WALK)} long", buffer.region(Rect(2, 3, 6, 1)).line(0))
+        assertEquals("  name", buffer.region(Rect(2, 4, 6, 1)).line(0))
 
         val color = playerColor(PlayerId.PLAYER_2)
         assertEquals(color, buffer.get(4, 3).style.fg, "'l' of long")

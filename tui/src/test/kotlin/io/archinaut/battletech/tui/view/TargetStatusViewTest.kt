@@ -10,11 +10,11 @@ import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.battletech.tactical.unit.WeaponMountId
 import io.archinaut.battletech.tui.anArmorLayout
 import io.archinaut.tenter.color.StandardRole
-import io.archinaut.tenter.screen.Canvas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.terminal.CompletedFrame
 
 internal class TargetStatusViewTest {
 
@@ -50,7 +50,7 @@ internal class TargetStatusViewTest {
     )
 
     /** Render via decorator at (0,0) — pixel-parity regression guard for box/coordinates. */
-    private fun renderDecorated(view: TargetStatusView, width: Int = 28, height: Int = 30): Canvas =
+    private fun renderDecorated(view: TargetStatusView, width: Int = 28, height: Int = 30): CompletedFrame =
         renderInPanel(view, badge = '4', title = TargetStatusView.TITLE, width = width, height = height)
 
     @Test
@@ -154,7 +154,7 @@ internal class TargetStatusViewTest {
         assertFalse(allText.contains("Piloting"))
     }
 
-    private fun rowContaining(buffer: Canvas, text: String): Int {
+    private fun rowContaining(buffer: CompletedFrame, text: String): Int {
         for (row in 0 until buffer.height) {
             val line = (2 until 26).joinToString("") { buffer.get(it, row).symbol }
             if (line.contains(text)) return row

@@ -189,4 +189,4 @@ internal fun aGameState(
 )
 
 /** The text of what this terminal shows, one line per row. */
-internal fun HeadlessTerminal.frameText(): String = frame.lines().joinToString("\n")
+internal fun HeadlessTerminal.frameText(): String = frame.text()

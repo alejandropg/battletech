@@ -7,10 +7,7 @@ import io.archinaut.battletech.tui.anInternalStructureLayout
 import io.archinaut.battletech.tui.icon.emptyCircleIcon
 import io.archinaut.battletech.tui.icon.filledCircleIcon
 import io.archinaut.battletech.tui.screen.BoardRole
-import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
-import io.archinaut.battletech.tui.view.text
-import io.archinaut.tenter.screen.Canvas
 import kotlin.math.abs
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -19,6 +16,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
+import io.archinaut.tenter.screen.Rect
+import io.archinaut.tenter.terminal.CompletedFrame
 
 /**
  * [LocationDiagram] via its [LocationDiagram.armor]/[LocationDiagram.internalStructure] factories
@@ -43,7 +42,7 @@ internal class LocationDiagramTest {
     )
 
     /** (row, column) of the first caption beginning with [label]. */
-    private fun Canvas.locate(label: String): Pair<Int, Int> {
+    private fun CompletedFrame.locate(label: String): Pair<Int, Int> {
         for (row in 0 until height) {
             val col = line(row).indexOf(label)
             if (col >= 0) return row to col
@@ -54,7 +53,7 @@ internal class LocationDiagramTest {
     private fun countGlyph(text: String, glyph: String): Int =
         if (glyph.isEmpty()) 0 else text.split(glyph).size - 1
 
-    private fun assertCentered(buffer: Canvas, outline: String) {
+    private fun assertCentered(buffer: CompletedFrame, outline: String) {
         val (_, column) = buffer.locate(outline)
         val leftMargin = column
         val rightMargin = buffer.width - column - outline.length
@@ -200,8 +199,8 @@ internal class LocationDiagramTest {
         assertEquals(headTopRow + 1, leftRow)
         assertEquals(headTopRow + 1, rightRow)
         assertEquals(23, leftCol)
-        assertEquals("Left          │", buffer.line(leftRow, x = leftCol, width = 15))
-        assertEquals("│          Right", buffer.line(rightRow, x = 43, width = 16))
+        assertEquals("Left          │", buffer.region(Rect(leftCol, leftRow, 15, 1)).line(0))
+        assertEquals("│          Right", buffer.region(Rect(43, rightRow, 16, 1)).line(0))
         assertEquals(headBottomRow + 1, torsoHeadingRow)
     }
 
@@ -228,9 +227,9 @@ internal class LocationDiagramTest {
         val (frontValueRow, _) = buffer.locate("16/16")
         val (rearValueRow, _) = buffer.locate("5/5")
 
-        assertEquals("16/16", buffer.line(frontValueRow, x = 48, width = 5))
+        assertEquals("16/16", buffer.region(Rect(48, frontValueRow, 5, 1)).line(0))
         assertEquals("╮", buffer.get(53, frontValueRow + 1).symbol)
-        assertEquals("5/5", buffer.line(rearValueRow, x = 48, width = 3))
+        assertEquals("5/5", buffer.region(Rect(48, rearValueRow, 3, 1)).line(0))
         assertEquals("╯", buffer.get(51, rearValueRow - 1).symbol)
     }
 
@@ -248,7 +247,7 @@ internal class LocationDiagramTest {
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val (rearValueRow, _) = buffer.locate(rearValue)
 
-        assertEquals(" $rearValue", buffer.line(rearValueRow, x = 29, width = rearValue.length + 1))
+        assertEquals(" $rearValue", buffer.region(Rect(29, rearValueRow, rearValue.length + 1, 1)).line(0))
         assertEquals("╰", buffer.get(29, rearValueRow - 1).symbol)
     }
 
@@ -271,8 +270,8 @@ internal class LocationDiagramTest {
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val (rearValueRow, _) = buffer.locate("8/8")
 
-        assertEquals("╭───╮", buffer.line(rearValueRow + 1, x = 33, width = 5))
-        assertEquals("╭───╮", buffer.line(rearValueRow + 1, x = 43, width = 5))
+        assertEquals("╭───╮", buffer.region(Rect(33, rearValueRow + 1, 5, 1)).line(0))
+        assertEquals("╭───╮", buffer.region(Rect(43, rearValueRow + 1, 5, 1)).line(0))
     }
 
     @ParameterizedTest
@@ -310,12 +309,12 @@ internal class LocationDiagramTest {
         val expectedFoot = "╰" + "─".repeat(footWidth) + "╯"
         val footRow = legTop + legRows + 2
 
-        assertEquals(expectedTop, buffer.line(legTop, x = leftLegX, width = expectedWidth + 2))
-        assertEquals(expectedTop, buffer.line(legTop, x = 43, width = expectedWidth + 2))
-        assertEquals(expectedFinalRow, buffer.line(legTop + legRows, x = leftLegX, width = expectedWidth + 2))
-        assertEquals(expectedFinalRow, buffer.line(legTop + legRows, x = 43, width = expectedWidth + 2))
-        assertEquals(expectedFoot, buffer.line(footRow, x = leftLegX - 2, width = footWidth + 2))
-        assertEquals(expectedFoot, buffer.line(footRow, x = 43, width = footWidth + 2))
+        assertEquals(expectedTop, buffer.region(Rect(leftLegX, legTop, expectedWidth + 2, 1)).line(0))
+        assertEquals(expectedTop, buffer.region(Rect(43, legTop, expectedWidth + 2, 1)).line(0))
+        assertEquals(expectedFinalRow, buffer.region(Rect(leftLegX, legTop + legRows, expectedWidth + 2, 1)).line(0))
+        assertEquals(expectedFinalRow, buffer.region(Rect(43, legTop + legRows, expectedWidth + 2, 1)).line(0))
+        assertEquals(expectedFoot, buffer.region(Rect(leftLegX - 2, footRow, footWidth + 2, 1)).line(0))
+        assertEquals(expectedFoot, buffer.region(Rect(43, footRow, footWidth + 2, 1)).line(0))
     }
 
     @Test
@@ -338,9 +337,9 @@ internal class LocationDiagramTest {
         val (rearValueRow, _) = buffer.locate("8/8")
         val legTop = rearValueRow + 1
 
-        assertEquals("╮     ╭", buffer.line(legTop, x = 37, width = 7))
-        assertEquals("Leg", buffer.line(legTop + 3, x = 29, width = 3))
-        assertEquals("Leg", buffer.line(legTop + 2, x = 51, width = 3))
+        assertEquals("╮     ╭", buffer.region(Rect(37, legTop, 7, 1)).line(0))
+        assertEquals("Leg", buffer.region(Rect(29, legTop + 3, 3, 1)).line(0))
+        assertEquals("Leg", buffer.region(Rect(51, legTop + 2, 3, 1)).line(0))
     }
 
     @Test
@@ -376,9 +375,9 @@ internal class LocationDiagramTest {
         val buffer = render(LocationDiagram.armor(unit) { false }, width = diagramWidth, height = diagramHeight)
         val (torsoTop, _) = buffer.locate("╭──────╮╭─────────╮╭──────╮")
 
-        assertEquals("╰────╯", buffer.line(torsoTop + 8, x = 29, width = 6))
-        assertEquals("╰─────────╯", buffer.line(torsoTop + 8, x = 35, width = 11))
-        assertEquals("╰────╯", buffer.line(torsoTop + 5, x = 46, width = 6))
+        assertEquals("╰────╯", buffer.region(Rect(29, torsoTop + 8, 6, 1)).line(0))
+        assertEquals("╰─────────╯", buffer.region(Rect(35, torsoTop + 8, 11, 1)).line(0))
+        assertEquals("╰────╯", buffer.region(Rect(46, torsoTop + 5, 6, 1)).line(0))
     }
 
     @Test
@@ -395,21 +394,21 @@ internal class LocationDiagramTest {
         assertTrue(text.contains("Head 3/3"))
         assertTrue(text.contains("31/31"))
         assertFalse(text.contains("REAR"))
-        assertEquals("╭───╮", internal.line(2, x = 38, width = 5))
-        assertEquals("│${pip.repeat(3)}│", internal.line(3, x = 38, width = 5))
-        assertEquals("╭────╮╭─────╮╭────╮", internal.line(7, x = 31, width = 19))
+        assertEquals("╭───╮", internal.region(Rect(38, 2, 5, 1)).line(0))
+        assertEquals("│${pip.repeat(3)}│", internal.region(Rect(38, 3, 5, 1)).line(0))
+        assertEquals("╭────╮╭─────╮╭────╮", internal.region(Rect(31, 7, 19, 1)).line(0))
         assertEquals(
             "│${pip.repeat(4)}││${pip.repeat(5)}││${pip.repeat(4)}│",
-            internal.line(8, x = 31, width = 19),
+            internal.region(Rect(31, 8, 19, 1)).line(0),
         )
-        assertEquals("│$pip   │", internal.line(13, x = 31, width = 6))
-        assertEquals("│$pip    │", internal.line(14, x = 37, width = 7))
-        assertEquals("╭───╮", internal.line(9, x = 25, width = 5))
-        assertEquals("│${pip.repeat(3)}│", internal.line(10, x = 25, width = 5))
-        assertEquals("│${pip.repeat(2)} │", internal.line(15, x = 25, width = 5))
-        assertEquals("╭────╮", internal.line(17, x = 32, width = 6))
-        assertEquals("│${pip.repeat(4)}│", internal.line(18, x = 32, width = 6))
-        assertEquals("│$pip   │", internal.line(23, x = 32, width = 6))
+        assertEquals("│$pip   │", internal.region(Rect(31, 13, 6, 1)).line(0))
+        assertEquals("│$pip    │", internal.region(Rect(37, 14, 7, 1)).line(0))
+        assertEquals("╭───╮", internal.region(Rect(25, 9, 5, 1)).line(0))
+        assertEquals("│${pip.repeat(3)}│", internal.region(Rect(25, 10, 5, 1)).line(0))
+        assertEquals("│${pip.repeat(2)} │", internal.region(Rect(25, 15, 5, 1)).line(0))
+        assertEquals("╭────╮", internal.region(Rect(32, 17, 6, 1)).line(0))
+        assertEquals("│${pip.repeat(4)}│", internal.region(Rect(32, 18, 6, 1)).line(0))
+        assertEquals("│$pip   │", internal.region(Rect(32, 23, 6, 1)).line(0))
         assertEquals(152, countGlyph(text, pip))
     }
 

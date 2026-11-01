@@ -1,14 +1,13 @@
 package io.archinaut.battletech.tui.setup
 
 import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
-import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
-import io.archinaut.battletech.tui.view.text
 import io.archinaut.tenter.color.StandardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.screen.Rect
 
 internal class ModePanelViewTest {
 
@@ -32,8 +31,8 @@ internal class ModePanelViewTest {
         assertEquals(TUI_CHECKBOX_GLYPHS.unchecked, buffer.get(2, 2).symbol)
         assertEquals(StandardRole.TEXT_PRIMARY, buffer.get(4, 0).style.fg)
         assertEquals(StandardRole.ACCENT, buffer.get(4, 2).style.fg)
-        assertEquals("    Both players share this terminal", buffer.line(1, width = 50))
-        assertEquals("    Other players connect with 'join'", buffer.line(3, width = 50))
+        assertEquals("    Both players share this terminal", buffer.region(Rect(0, 1, 50, 1)).line(0))
+        assertEquals("    Other players connect with 'join'", buffer.region(Rect(0, 3, 50, 1)).line(0))
     }
 
     @Test

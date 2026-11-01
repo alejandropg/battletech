@@ -9,8 +9,10 @@ import io.archinaut.battletech.tactical.query.PlayerGameState
 import io.archinaut.battletech.tui.hex.HexGeometry
 import io.archinaut.battletech.tui.hex.HexHighlight
 import io.archinaut.battletech.tui.hex.HexLayout
-import io.archinaut.battletech.tui.hex.HexRenderer
-import io.archinaut.battletech.tui.hex.UnitRenderer
+import io.archinaut.battletech.tui.hex.FacingArrowsView
+import io.archinaut.battletech.tui.hex.FacingKeysView
+import io.archinaut.battletech.tui.hex.HexView
+import io.archinaut.battletech.tui.hex.UnitView
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.battletech.tactical.unit.UnitRoster
 import io.archinaut.tenter.screen.Canvas
@@ -66,12 +68,13 @@ internal class BoardView(
                 ) HexHighlight.NONE
                 else baseHighlight
 
-            HexRenderer.render(canvas, x, y, hex, highlight, movementMode)
+            val area = canvas.region(Rect(x, y, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT))
+            HexView(hex, highlight, movementMode).render(area)
 
             // Facing overlays (drawn after base render, over the reachability dot)
             when (coords) {
                 cursorPosition if facingSelectionFacings != null ->
-                    HexRenderer.renderFacingKeys(canvas, x, y, facingSelectionFacings)
+                    FacingKeysView(facingSelectionFacings).render(area)
 
                 in reachableFacings if highlight != HexHighlight.PATH -> {
                     val facings = reachableFacings.getValue(coords)
@@ -82,7 +85,7 @@ internal class BoardView(
                         else -> BoardRole.MOVE_WALK
                     }
                     val mode = if (coords == pathDestination) movementMode else null
-                    HexRenderer.renderFacingArrows(canvas, x, y, facings, color, mode)
+                    FacingArrowsView(facings, color, mode).render(area)
                 }
             }
 
@@ -103,15 +106,14 @@ internal class BoardView(
                 val id = unit.id.value.take(2)
                 val glyph = if (unit.isProne) id.lowercase() else id
                 val renderColor = if (unit.isDestroyed) BoardRole.DESTROYED else unitColor
-                UnitRenderer.render(
-                    canvas, x, y,
+                UnitView(
                     glyph,
                     unit.facing,
                     renderColor,
                     torsoFacing = torsoFacing,
                     torsoColor = if (draftTorso != null) AppRole.DRAFT else renderColor,
                     isDestroyed = unit.isDestroyed,
-                )
+                ).render(area)
             }
         }
     }

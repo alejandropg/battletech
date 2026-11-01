@@ -2,13 +2,12 @@ package io.archinaut.battletech.tui.setup
 
 import io.archinaut.battletech.tactical.unit.MechModels
 import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
-import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
-import io.archinaut.battletech.tui.view.text
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.screen.Rect
 
 internal class UnitListViewTest {
 
@@ -91,8 +90,8 @@ internal class UnitListViewTest {
         // The count sits right next to the variant id, ahead of the stat columns — not pushed
         // past them, and not shown at all when it's 0. Label text starts at column 4 (cursor
         // glyph + checkbox + one more space), regardless of which glyph the checkbox drew there.
-        assertEquals("AS7-D", buffer.line(as7dRow, 4, statsStart - 4))
-        assertEquals("WHM-6R  12", buffer.line(whm6rRow, 4, statsStart - 4))
+        assertEquals("AS7-D", buffer.region(Rect(4, as7dRow, statsStart - 4, 1)).line(0))
+        assertEquals("WHM-6R  12", buffer.region(Rect(4, whm6rRow, statsStart - 4, 1)).line(0))
     }
 
     @Test
