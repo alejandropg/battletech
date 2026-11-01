@@ -63,8 +63,8 @@ internal class StatusBarViewTest {
         )
 
         for (column in 26 until 34) {
-            assertEquals(BoardRole.PLAYER_1, playerOne.get(column, 1).style.fg)
-            assertEquals(BoardRole.PLAYER_2, playerTwo.get(column, 1).style.fg)
+            assertEquals(BoardRole.PLAYER_1, playerOne.get(column, 1).fg)
+            assertEquals(BoardRole.PLAYER_2, playerTwo.get(column, 1).fg)
         }
     }
 
@@ -104,7 +104,7 @@ internal class StatusBarViewTest {
         val expected = "W1: Wolverine WVR-6R ┆ Declare weapon fire"
         assertEquals(expected, row(buffer).substring(41, 41 + expected.length))
         for (column in 41 until 41 + expected.length) {
-            assertEquals(StandardRole.TEXT_PRIMARY, buffer.get(column, 1).style.fg)
+            assertEquals(StandardRole.TEXT_PRIMARY, buffer.get(column, 1).fg)
         }
     }
 

@@ -98,13 +98,13 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assertEquals(StandardRole.INFO, buffer.get(2, 2).style.fg)
+        assertEquals(StandardRole.INFO, buffer.get(2, 2).fg)
         // Only one header for the single turn: row 3 and row 4 are plain entries, not headers.
         val headerLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
         assert(buffer.region(Rect(2, 3, 24, 1)).line(0).contains("0101→0201")) { "Expected first move entry" }
         assert(buffer.region(Rect(2, 4, 24, 1)).line(0).contains("0101→0301")) { "Expected second move entry" }
-        assertEquals(null, buffer.get(2, 3).style.fg, "renders in the default color")
+        assertEquals(StandardRole.DEFAULT, buffer.get(2, 3).fg, "renders in the default color")
     }
 
     @Test
@@ -315,10 +315,10 @@ internal class LogViewTest {
         assertEquals("${movementModeIcon(MovementMode.WALK)} atlas (1 MP) 0101→0102", entryLine)
 
         // Layout: x=2 icon, x=3 space, x=4..8 "atlas", x=9 space before "(1 MP)".
-        assertEquals(null, buffer.get(2, 3).style.fg, "icon stays default")
-        assertEquals(playerColor(PlayerId.PLAYER_1), buffer.get(4, 3).style.fg, "'a' of atlas")
-        assertEquals(playerColor(PlayerId.PLAYER_1), buffer.get(8, 3).style.fg, "'s' of atlas")
-        assertEquals(null, buffer.get(9, 3).style.fg, "prose after the name stays default")
+        assertEquals(StandardRole.DEFAULT, buffer.get(2, 3).fg, "icon stays default")
+        assertEquals(playerColor(PlayerId.PLAYER_1), buffer.get(4, 3).fg, "'a' of atlas")
+        assertEquals(playerColor(PlayerId.PLAYER_1), buffer.get(8, 3).fg, "'s' of atlas")
+        assertEquals(StandardRole.DEFAULT, buffer.get(9, 3).fg, "prose after the name stays default")
     }
 
     @Test
@@ -349,9 +349,9 @@ internal class LogViewTest {
         assertEquals("  name", buffer.region(Rect(2, 4, 6, 1)).line(0))
 
         val color = playerColor(PlayerId.PLAYER_2)
-        assertEquals(color, buffer.get(4, 3).style.fg, "'l' of long")
-        assertEquals(color, buffer.get(7, 3).style.fg, "'g' of long")
-        assertEquals(color, buffer.get(4, 4).style.fg, "'n' of name")
-        assertEquals(color, buffer.get(7, 4).style.fg, "'e' of name")
+        assertEquals(color, buffer.get(4, 3).fg, "'l' of long")
+        assertEquals(color, buffer.get(7, 3).fg, "'g' of long")
+        assertEquals(color, buffer.get(4, 4).fg, "'n' of name")
+        assertEquals(color, buffer.get(7, 4).fg, "'e' of name")
     }
 }

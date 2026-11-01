@@ -11,6 +11,7 @@ import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.battletech.tui.view.render
 import io.archinaut.tenter.color.StandardRole
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import io.archinaut.tenter.screen.Rect
@@ -43,11 +44,11 @@ internal class CriticalHitTableTest {
         val (col, headerRow) = buffer.find("RIGHT TORSO")!!
 
         // Slot 0 (line "1. AC/20", right under the header) was destroyed above.
-        assertEquals(BoardRole.DESTROYED, buffer.get(col, headerRow + 1).style.fg)
-        assertTrue(buffer.get(col, headerRow + 1).style.strikethrough == true)
+        assertEquals(BoardRole.DESTROYED, buffer.get(col, headerRow + 1).fg)
+        assertTrue(buffer.get(col, headerRow + 1).strikethrough)
         // Slot 1 ("2. AC/20") was not.
-        assertEquals(StandardRole.TEXT_PRIMARY, buffer.get(col, headerRow + 2).style.fg)
-        assertTrue(buffer.get(col, headerRow + 2).style.strikethrough != true)
+        assertEquals(StandardRole.TEXT_PRIMARY, buffer.get(col, headerRow + 2).fg)
+        assertFalse(buffer.get(col, headerRow + 2).strikethrough)
     }
 
     @Test

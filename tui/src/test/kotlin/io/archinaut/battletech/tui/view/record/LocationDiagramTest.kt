@@ -97,10 +97,10 @@ internal class LocationDiagramTest {
         val (valueCol, valueRow) = buffer.find("0/31")!!
         val contour = buffer.get(38, 7)
 
-        assertEquals(BoardRole.DESTROYED, buffer.get(valueCol, valueRow).style.fg)
-        assertTrue(buffer.get(valueCol, valueRow).style.strikethrough == true)
-        assertEquals(BoardRole.DESTROYED, contour.style.fg)
-        assertTrue(contour.style.strikethrough == true)
+        assertEquals(BoardRole.DESTROYED, buffer.get(valueCol, valueRow).fg)
+        assertTrue(buffer.get(valueCol, valueRow).strikethrough)
+        assertEquals(BoardRole.DESTROYED, contour.fg)
+        assertTrue(contour.strikethrough)
     }
 
     @Test
@@ -113,7 +113,7 @@ internal class LocationDiagramTest {
         val buffer = render(LocationDiagram.internalStructure(unit), width = diagramWidth, height = diagramHeight)
         val (col, row) = buffer.find("31/31")!!
 
-        assertFalse(buffer.get(col, row).style.strikethrough == true)
+        assertFalse(buffer.get(col, row).strikethrough)
     }
 
     @Test
@@ -127,8 +127,8 @@ internal class LocationDiagramTest {
         )
         val (valueCol, valueRow) = buffer.find("47/47")!!
 
-        assertEquals(BoardRole.DESTROYED, buffer.get(valueCol, valueRow).style.fg)
-        assertTrue(buffer.get(valueCol, valueRow).style.strikethrough == true)
+        assertEquals(BoardRole.DESTROYED, buffer.get(valueCol, valueRow).fg)
+        assertTrue(buffer.get(valueCol, valueRow).strikethrough)
     }
 
     @Test

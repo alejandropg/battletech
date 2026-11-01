@@ -94,8 +94,8 @@ internal class UnitStatusViewTest {
         assertEquals(destroyedRow + 1, unconsciousRow)
         assertTrue(destroyedRow > rowContaining(buffer, 20, "A1: Atlas"))
         assertTrue(unconsciousRow < pilotRow)
-        assertEquals(StandardRole.DANGER, buffer.get(2, destroyedRow).style.fg)
-        assertEquals(StandardRole.DANGER, buffer.get(2, unconsciousRow).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, destroyedRow).fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, unconsciousRow).fg)
     }
 
     @Test
@@ -133,7 +133,7 @@ internal class UnitStatusViewTest {
         assertEquals(4, line.split(emptyCircleIcon()).size - 1)
         // First hit dot is red, matching the destroyed-slot convention used elsewhere in this panel.
         val firstDotCol = (2 until 26).first { buffer.get(it, 5).symbol == filledCircleIcon() }
-        assertEquals(StandardRole.DANGER, buffer.get(firstDotCol, 5).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(firstDotCol, 5).fg)
     }
 
     @Test
@@ -147,7 +147,7 @@ internal class UnitStatusViewTest {
         assertEquals(PILOT_DEATH_THRESHOLD - 1, line.split(filledCircleIcon()).size - 1)
         assertEquals(0, line.split(emptyCircleIcon()).size - 1)
         val skullCol = (2 until 26).first { buffer.get(it, 5).symbol == pilotDeadIcon() }
-        assertEquals(StandardRole.DANGER, buffer.get(skullCol, 5).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(skullCol, 5).fg)
     }
 
     @Test
@@ -267,7 +267,7 @@ internal class UnitStatusViewTest {
         val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
-        assertEquals(StandardRole.DANGER, buffer.get(2, 14).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, 14).fg)
     }
 
     @Test
@@ -292,7 +292,7 @@ internal class UnitStatusViewTest {
         val line = (2 until 26).joinToString("") { buffer.get(it, 23).symbol }
         assertTrue(line.contains("HD"))
         assertTrue(line.contains("9"))
-        assertEquals(StandardRole.INFO, buffer.get(11, 23).style.fg) // 'H' of "HD: 9"
+        assertEquals(StandardRole.INFO, buffer.get(11, 23).fg) // 'H' of "HD: 9"
     }
 
     @Test
@@ -304,8 +304,8 @@ internal class UnitStatusViewTest {
         val buffer = renderDecorated(view)
 
         // HD value row: cy=23, "HD: 9" starts at cx+9=11
-        assertEquals(BoardRole.DESTROYED, buffer.get(11, 23).style.fg)
-        assertTrue(buffer.get(11, 23).style.strikethrough == true)
+        assertEquals(BoardRole.DESTROYED, buffer.get(11, 23).fg)
+        assertTrue(buffer.get(11, 23).strikethrough)
     }
 
     @Test
@@ -315,7 +315,7 @@ internal class UnitStatusViewTest {
         val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view)
 
-        assertFalse(buffer.get(11, 23).style.strikethrough == true)
+        assertFalse(buffer.get(11, 23).strikethrough)
     }
 
     @Test
@@ -328,7 +328,7 @@ internal class UnitStatusViewTest {
         val line = (2 until 26).joinToString("") { buffer.get(it, 24).symbol }
         assertTrue(line.contains("CT"))
         assertTrue(line.contains("47"))
-        assertEquals(StandardRole.ACCENT, buffer.get(11, 24).style.fg) // 'C' of "CT:47"
+        assertEquals(StandardRole.ACCENT, buffer.get(11, 24).fg) // 'C' of "CT:47"
     }
 
     @Test
@@ -340,7 +340,7 @@ internal class UnitStatusViewTest {
         // Rear row: cy=25, CT rear "r: 8" starts at cx+10=12
         val line = (2 until 26).joinToString("") { buffer.get(it, 25).symbol }
         assertTrue(line.contains("r"))
-        assertEquals(null, buffer.get(12, 25).style.fg, "'r' of CT rear renders in the default color")
+        assertEquals(StandardRole.DEFAULT, buffer.get(12, 25).fg, "'r' of CT rear renders in the default color")
     }
 
     @Test
@@ -369,7 +369,7 @@ internal class UnitStatusViewTest {
         // Source line under the bar and the heat value line (row 16).
         val line = (2 until 26).joinToString("") { buffer.get(it, 16).symbol }
         assertTrue(line.contains("Running +2"))
-        assertEquals(null, buffer.get(2, 16).style.fg, "renders in the default color")
+        assertEquals(StandardRole.DEFAULT, buffer.get(2, 16).fg, "renders in the default color")
     }
 
     @Test
@@ -380,7 +380,7 @@ internal class UnitStatusViewTest {
 
         val line = (2 until 26).joinToString("") { buffer.get(it, 16).symbol }
         assertTrue(line.contains("Walking +1"))
-        assertEquals(AppRole.DRAFT, buffer.get(2, 16).style.fg)
+        assertEquals(AppRole.DRAFT, buffer.get(2, 16).fg)
     }
 
     @Test
@@ -426,7 +426,7 @@ internal class UnitStatusViewTest {
         val view = UnitStatusView(unit, aGameMap())
         val buffer = renderDecorated(view, height = 20)
 
-        assertEquals(StandardRole.DANGER, buffer.get(2, 17).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, 17).fg)
     }
 
     @Test
@@ -500,7 +500,7 @@ internal class UnitStatusViewTest {
 
         val row = rowContaining(buffer, 60, "Medium Laser")
         val nameCol = (2 until 26).first { buffer.get(it, row).symbol == "M" }
-        assertTrue(buffer.get(nameCol, row).style.strikethrough == true)
+        assertTrue(buffer.get(nameCol, row).strikethrough)
     }
 
     @Test
@@ -519,7 +519,7 @@ internal class UnitStatusViewTest {
 
         val row = rowContaining(buffer, 60, "Medium Laser")
         val nameCol = (2 until 26).first { buffer.get(it, row).symbol == "M" }
-        assertFalse(buffer.get(nameCol, row).style.strikethrough == true)
+        assertFalse(buffer.get(nameCol, row).strikethrough)
     }
 
     @Test
@@ -549,7 +549,7 @@ internal class UnitStatusViewTest {
 
         // First dot column should be red (destroyed slot 0 is an Engine slot in CENTER_TORSO).
         val firstDotCol = (2 until 26).first { buffer.get(it, row).symbol == filledCircleIcon() }
-        assertEquals(StandardRole.DANGER, buffer.get(firstDotCol, row).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(firstDotCol, row).fg)
     }
 
     @Test
@@ -597,7 +597,7 @@ internal class UnitStatusViewTest {
 
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).symbol }
         assertEquals("u1: Hunchback", line)
-        assertEquals(StandardRole.ACCENT, buffer.get(2, 2).style.fg)
+        assertEquals(StandardRole.ACCENT, buffer.get(2, 2).fg)
     }
 
     @Test
@@ -610,8 +610,8 @@ internal class UnitStatusViewTest {
         assertEquals(shutdownRow + 1, proneRow)
         assertTrue(shutdownRow > rowContaining(buffer, 30, "u1: Hunchback"))
         assertTrue(proneRow < rowContaining(buffer, 30, "MOVEMENT"))
-        assertEquals(StandardRole.DANGER, buffer.get(2, shutdownRow).style.fg)
-        assertEquals(StandardRole.DANGER, buffer.get(2, proneRow).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, shutdownRow).fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, proneRow).fg)
     }
 
     @Test

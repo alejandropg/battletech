@@ -76,7 +76,7 @@ internal class TargetStatusViewTest {
 
         val line = (2 until 15).joinToString("") { buffer.get(it, 2).symbol }
         assertEquals("u1: Hunchback", line)
-        assertEquals(StandardRole.ACCENT, buffer.get(2, 2).style.fg)
+        assertEquals(StandardRole.ACCENT, buffer.get(2, 2).fg)
     }
 
     @Test
@@ -89,8 +89,8 @@ internal class TargetStatusViewTest {
         assertEquals(destroyedRow + 1, unconsciousRow)
         assertTrue(destroyedRow > rowContaining(buffer, "u1: Hunchback"))
         assertTrue(unconsciousRow < rowContaining(buffer, "MOVEMENT"))
-        assertEquals(StandardRole.DANGER, buffer.get(2, destroyedRow).style.fg)
-        assertEquals(StandardRole.DANGER, buffer.get(2, unconsciousRow).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, destroyedRow).fg)
+        assertEquals(StandardRole.DANGER, buffer.get(2, unconsciousRow).fg)
     }
 
     @Test

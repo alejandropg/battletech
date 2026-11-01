@@ -55,7 +55,7 @@ internal class DeclaredTargetsIntegrationTest {
         val buffer = render(DeclaredTargetsView(renderData), 28, 30)
 
         val wolfRow = (0 until 30).first { buffer.line(it).contains("wolf") }
-        val colors = (2 until 28).map { col -> buffer.get(col, wolfRow).style.fg }.toSet()
+        val colors = (2 until 28).map { col -> buffer.get(col, wolfRow).fg }.toSet()
         assertTrue(colors.contains(AppRole.DRAFT)) {
             "Expected wolf (draft) row to use AppRole.DRAFT, got: $colors"
         }

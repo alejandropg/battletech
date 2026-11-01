@@ -64,8 +64,8 @@ internal class BoardViewTest {
             assertEquals(coordinateLabels[index], buffer.region(Rect(rightLabelX, y, 2, 1)).line(0))
         }
 
-        assertEquals(StandardRole.TEXT_SUBTLE, buffer.get(columnLabelStarts[0], 0).style.fg)
-        assertEquals(StandardRole.TEXT_SUBTLE, buffer.get(0, rowCenters[0]).style.fg)
+        assertEquals(StandardRole.TEXT_SUBTLE, buffer.get(columnLabelStarts[0], 0).fg)
+        assertEquals(StandardRole.TEXT_SUBTLE, buffer.get(0, rowCenters[0]).fg)
 
         assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X - 1, rowCenters[0]).symbol)
         assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X - 2, rowCenters[0]).symbol)
@@ -145,7 +145,7 @@ internal class BoardViewTest {
         val buffer = render(view, 30, 18)
 
         // Hex at (1,1) border '/' offset by +1,+1 within the hex glyph (row1)
-        assertEquals(BoardRole.BOARD_ACTIVE, buffer.get(12, 8).style.fg)
+        assertEquals(BoardRole.BOARD_ACTIVE, buffer.get(12, 8).fg)
     }
 
     @Test
@@ -159,9 +159,9 @@ internal class BoardViewTest {
         // "renders unit id on hex" test above), with a skull marker left of the id at charX=7.
         assertEquals("A", buffer.get(8, 4).symbol)
         assertEquals("1", buffer.get(9, 4).symbol)
-        assertEquals(BoardRole.DESTROYED, buffer.get(9, 4).style.fg)
+        assertEquals(BoardRole.DESTROYED, buffer.get(9, 4).fg)
         assertEquals(destroyedIcon(), buffer.get(7, 4).symbol)
-        assertEquals(BoardRole.DESTROYED, buffer.get(7, 4).style.fg)
+        assertEquals(BoardRole.DESTROYED, buffer.get(7, 4).fg)
     }
 
     @Test
@@ -186,9 +186,9 @@ internal class BoardViewTest {
         val buffer = render(view, 32, 18)
 
         // Draft unit (hex 0,0): torso NE slot is at x+5,y+2 = (9,3) — draft color.
-        assertEquals(AppRole.DRAFT, buffer.get(9, 3).style.fg)
+        assertEquals(AppRole.DRAFT, buffer.get(9, 3).fg)
         // Committed unit (hex 1,0): torso NE slot is at x+5,y+2 = (16,5) — player color, no draft entry.
-        assertEquals(BoardRole.PLAYER_1, buffer.get(16, 5).style.fg)
+        assertEquals(BoardRole.PLAYER_1, buffer.get(16, 5).fg)
     }
 
     @Test

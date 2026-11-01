@@ -11,7 +11,6 @@ import io.archinaut.battletech.tui.icon.terrainIcon
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.screen.Cell
 import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.widget.Widget
 
@@ -71,32 +70,32 @@ internal class HexView(
         }
         val style = Style(fg, bg)
         // Row 1: " /     \ "
-        canvas.set(1, 1, Cell("/", style))
-        canvas.set(7, 1, Cell("\\", style))
+        canvas.set(1, 1, "/", style)
+        canvas.set(7, 1, "\\", style)
         // Row 2: "/       \"
-        canvas.set(0, 2, Cell("/", style))
-        canvas.set(8, 2, Cell("\\", style))
+        canvas.set(0, 2, "/", style)
+        canvas.set(8, 2, "\\", style)
         // Row 3: "\       /"
-        canvas.set(0, 3, Cell("\\", style))
-        canvas.set(8, 3, Cell("/", style))
+        canvas.set(0, 3, "\\", style)
+        canvas.set(8, 3, "/", style)
         // Row 4: " \_____/ "
-        canvas.set(1, 4, Cell("\\", style))
+        canvas.set(1, 4, "\\", style)
         for (i in 2..6) {
-            canvas.set(i, 4, Cell("_", style))
+            canvas.set(i, 4, "_", style)
         }
-        canvas.set(7, 4, Cell("/", style))
+        canvas.set(7, 4, "/", style)
     }
 
     private fun renderContent(canvas: Canvas, bg: BoardRole) {
-        val cell = Cell(style = Style(StandardRole.DEFAULT, bg))
+        val style = Style(StandardRole.DEFAULT, bg)
         // Row 1 content (narrow): 2..6
         for (i in 2..6) {
-            canvas.set(i, 1, cell)
+            canvas.set(i, 1, " ", style)
         }
         // Rows 2 and 3 content (wide): 1..7
         for (row in 2..3) {
             for (i in 1..7) {
-                canvas.set(i, row, cell)
+                canvas.set(i, row, " ", style)
             }
         }
     }
@@ -109,7 +108,7 @@ internal class HexView(
             Terrain.WATER       -> BoardRole.TERRAIN_WATER_ICON
             Terrain.ROUGH       -> BoardRole.TERRAIN_ROUGH_ICON
         }
-        canvas.set(2, 1, Cell(terrainIcon(terrain), Style(color, bg)))
+        canvas.set(2, 1, terrainIcon(terrain), Style(color, bg))
     }
 
     /**
@@ -122,7 +121,7 @@ internal class HexView(
     private fun renderLevelBadge(canvas: Canvas, elevation: Int, depth: Int) {
         if (elevation != 0) {
             val style = Style(BoardRole.ELEVATION_BADGE_FG, elevationBadgeBg(elevation))
-            canvas.set(6, 1, Cell(elevationIcon(elevation), style))
+            canvas.set(6, 1, elevationIcon(elevation), style)
         } else if (depth != 0) {
             canvas.setString(6, 1, depthIcon(depth), Style(fg = BoardRole.ELEVATION_BADGE_FG))
         }

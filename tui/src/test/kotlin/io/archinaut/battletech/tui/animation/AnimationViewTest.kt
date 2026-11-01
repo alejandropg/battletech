@@ -19,9 +19,9 @@ internal class AnimationViewTest {
         for (y in 0 until animation.size.height) {
             for (x in 0 until animation.size.width) {
                 val cell = buffer.get(x, y)
-                assertEquals(ANIMATION_BACKGROUND, cell.style.bg, "cell ($x,$y) background is not the fixed animation background")
-                assertTrue(cell.style.fg is TerminalColor, "cell ($x,$y) fg is not a fixed TerminalColor")
-                assertTrue(cell.style.fg !is StandardRole, "cell ($x,$y) fg resolved through a themed StandardRole")
+                assertEquals(ANIMATION_BACKGROUND, cell.bg, "cell ($x,$y) background is not the fixed animation background")
+                assertTrue(cell.fg is TerminalColor, "cell ($x,$y) fg is not a fixed TerminalColor")
+                assertTrue(cell.fg !is StandardRole, "cell ($x,$y) fg resolved through a themed StandardRole")
                 if (cell.symbol != " ") sawNonSpace = true
             }
         }

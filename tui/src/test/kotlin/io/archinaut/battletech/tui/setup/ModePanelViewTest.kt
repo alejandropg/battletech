@@ -29,8 +29,8 @@ internal class ModePanelViewTest {
         assertEquals("▶", buffer.get(0, 2).symbol)
         assertEquals(TUI_CHECKBOX_GLYPHS.checked, buffer.get(2, 0).symbol)
         assertEquals(TUI_CHECKBOX_GLYPHS.unchecked, buffer.get(2, 2).symbol)
-        assertEquals(StandardRole.TEXT_PRIMARY, buffer.get(4, 0).style.fg)
-        assertEquals(StandardRole.ACCENT, buffer.get(4, 2).style.fg)
+        assertEquals(StandardRole.TEXT_PRIMARY, buffer.get(4, 0).fg)
+        assertEquals(StandardRole.ACCENT, buffer.get(4, 2).fg)
         assertEquals("    Both players share this terminal", buffer.region(Rect(0, 1, 50, 1)).line(0))
         assertEquals("    Other players connect with 'join'", buffer.region(Rect(0, 3, 50, 1)).line(0))
     }

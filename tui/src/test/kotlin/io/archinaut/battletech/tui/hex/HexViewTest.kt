@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 import io.archinaut.battletech.tui.view.drawFrame
 import io.archinaut.tenter.screen.Rect
+import io.archinaut.tenter.color.StandardRole
 
 internal class HexViewTest {
 
@@ -41,7 +42,7 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-        assertEquals(BoardRole.TERRAIN_CLEAR_BG, frame.get(4, 3).style.bg)
+        assertEquals(BoardRole.TERRAIN_CLEAR_BG, frame.get(4, 3).bg)
     }
 
     @Test
@@ -50,8 +51,8 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(4, 3).style.bg)
-        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_ICON, frame.get(2, 1).style.fg)
+        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(4, 3).bg)
+        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_ICON, frame.get(2, 1).fg)
     }
 
     @Test
@@ -60,8 +61,8 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-        assertEquals(BoardRole.TERRAIN_WOODS_HEAVY_BG, frame.get(4, 3).style.bg)
-        assertEquals(BoardRole.TERRAIN_WOODS_HEAVY_ICON, frame.get(2, 1).style.fg)
+        assertEquals(BoardRole.TERRAIN_WOODS_HEAVY_BG, frame.get(4, 3).bg)
+        assertEquals(BoardRole.TERRAIN_WOODS_HEAVY_ICON, frame.get(2, 1).fg)
     }
 
     @Test
@@ -70,8 +71,8 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-        assertEquals(BoardRole.TERRAIN_ROUGH_BG, frame.get(4, 3).style.bg)
-        assertEquals(BoardRole.TERRAIN_ROUGH_ICON, frame.get(2, 1).style.fg)
+        assertEquals(BoardRole.TERRAIN_ROUGH_BG, frame.get(4, 3).bg)
+        assertEquals(BoardRole.TERRAIN_ROUGH_ICON, frame.get(2, 1).fg)
     }
 
     @Test
@@ -80,8 +81,8 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-        assertEquals(BoardRole.TERRAIN_WATER_SHALLOW_BG, frame.get(4, 3).style.bg)
-        assertEquals(BoardRole.TERRAIN_WATER_ICON, frame.get(2, 1).style.fg)
+        assertEquals(BoardRole.TERRAIN_WATER_SHALLOW_BG, frame.get(4, 3).bg)
+        assertEquals(BoardRole.TERRAIN_WATER_ICON, frame.get(2, 1).fg)
     }
 
     @Test
@@ -90,9 +91,9 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-        assertEquals(BoardRole.TERRAIN_WATER_DEEP_BG, frame.get(4, 3).style.bg)
+        assertEquals(BoardRole.TERRAIN_WATER_DEEP_BG, frame.get(4, 3).bg)
         // The water terrain icon color does not vary with depth — only the fill does.
-        assertEquals(BoardRole.TERRAIN_WATER_ICON, frame.get(2, 1).style.fg)
+        assertEquals(BoardRole.TERRAIN_WATER_ICON, frame.get(2, 1).fg)
     }
 
     @Test
@@ -101,8 +102,8 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-        assertEquals(BoardRole.TERRAIN_WATER_VERY_DEEP_BG, frame.get(4, 3).style.bg)
-        assertEquals(BoardRole.TERRAIN_WATER_ICON, frame.get(2, 1).style.fg)
+        assertEquals(BoardRole.TERRAIN_WATER_VERY_DEEP_BG, frame.get(4, 3).bg)
+        assertEquals(BoardRole.TERRAIN_WATER_ICON, frame.get(2, 1).fg)
     }
 
     @Test
@@ -144,7 +145,7 @@ internal class HexViewTest {
                 else -> BoardRole.TERRAIN_WATER_VERY_DEEP_BG
             }
             assertEquals(String(Character.toChars(codePoint)), badge.symbol, "depth=$depth")
-            assertEquals(expectedBg, badge.style.bg, "depth=$depth")
+            assertEquals(expectedBg, badge.bg, "depth=$depth")
         }
     }
 
@@ -163,7 +164,7 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-        assertEquals(BoardRole.TERRAIN_CLEAR_BG, frame.get(6, 1).style.bg)
+        assertEquals(BoardRole.TERRAIN_CLEAR_BG, frame.get(6, 1).bg)
     }
 
     @Test
@@ -177,7 +178,7 @@ internal class HexViewTest {
         for ((hex, expectedFill) in cases) {
             val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
             // Content cell away from the badge column (x+6) — the fill, not the badge.
-            assertEquals(expectedFill, frame.get(4, 3).style.bg, "terrain=${hex.terrain} elevation=${hex.elevation}")
+            assertEquals(expectedFill, frame.get(4, 3).bg, "terrain=${hex.terrain} elevation=${hex.elevation}")
         }
     }
 
@@ -187,7 +188,7 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-        assertEquals(BoardRole.TERRAIN_CLEAR_BG, frame.get(4, 3).style.bg)
+        assertEquals(BoardRole.TERRAIN_CLEAR_BG, frame.get(4, 3).bg)
     }
 
     @Test
@@ -201,9 +202,9 @@ internal class HexViewTest {
 
             val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-            assertEquals(expectedFill, frame.get(4, 3).style.bg, "content cell, elevation=$elevation")
-            assertEquals(expectedFill, frame.get(0, 2).style.bg, "border cell, elevation=$elevation")
-            assertEquals(expectedFill, frame.get(6, 1).style.bg, "badge cell, elevation=$elevation")
+            assertEquals(expectedFill, frame.get(4, 3).bg, "content cell, elevation=$elevation")
+            assertEquals(expectedFill, frame.get(0, 2).bg, "border cell, elevation=$elevation")
+            assertEquals(expectedFill, frame.get(6, 1).bg, "badge cell, elevation=$elevation")
         }
     }
 
@@ -214,8 +215,8 @@ internal class HexViewTest {
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
         val badge = frame.get(6, 1)
-        assertEquals(BoardRole.ELEVATION_1_BADGE_BG, badge.style.bg)
-        assertEquals(BoardRole.ELEVATION_BADGE_FG, badge.style.fg)
+        assertEquals(BoardRole.ELEVATION_1_BADGE_BG, badge.bg)
+        assertEquals(BoardRole.ELEVATION_BADGE_FG, badge.fg)
     }
 
     @Test
@@ -224,7 +225,7 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-        assertEquals(BoardRole.ELEVATION_2_BADGE_BG, frame.get(6, 1).style.bg)
+        assertEquals(BoardRole.ELEVATION_2_BADGE_BG, frame.get(6, 1).bg)
     }
 
     @Test
@@ -234,7 +235,7 @@ internal class HexViewTest {
 
             val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-            assertEquals(BoardRole.ELEVATION_HIGH_BADGE_BG, frame.get(6, 1).style.bg, "elevation=$elevation")
+            assertEquals(BoardRole.ELEVATION_HIGH_BADGE_BG, frame.get(6, 1).bg, "elevation=$elevation")
         }
     }
 
@@ -244,9 +245,9 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-        assertEquals(BoardRole.ELEVATION_1_BADGE_BG, frame.get(6, 1).style.bg, "badge cell")
-        assertNotEquals(BoardRole.ELEVATION_1_BADGE_BG, frame.get(4, 3).style.bg, "content cell keeps the terrain fill")
-        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(4, 3).style.bg)
+        assertEquals(BoardRole.ELEVATION_1_BADGE_BG, frame.get(6, 1).bg, "badge cell")
+        assertNotEquals(BoardRole.ELEVATION_1_BADGE_BG, frame.get(4, 3).bg, "content cell keeps the terrain fill")
+        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(4, 3).bg)
     }
 
     // ---- background inheritance across the border / adjacent hexes -----------------------------
@@ -258,7 +259,7 @@ internal class HexViewTest {
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
         assertEquals("/", frame.get(0, 2).symbol) // left border glyph
-        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(0, 2).style.bg)
+        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(0, 2).bg)
     }
 
     @Test
@@ -268,9 +269,9 @@ internal class HexViewTest {
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
         // Top edge (row 0) belongs to the hex above — this hex leaves its background unset.
-        assertEquals(null, frame.get(2, 0).style.bg)
+        assertEquals(StandardRole.DEFAULT, frame.get(2, 0).bg)
         // Bottom edge (row 4) is this hex's own — tinted.
-        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(2, 4).style.bg)
+        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(2, 4).bg)
     }
 
     @Test
@@ -285,7 +286,7 @@ internal class HexViewTest {
             it.renderWidget(HexView(clear, HexHighlight.NONE), Rect(0, HexGeometry.ROW_STRIDE, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT))
         }
 
-        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(2, HexGeometry.ROW_STRIDE).style.bg)
+        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(2, HexGeometry.ROW_STRIDE).bg)
     }
 
     @Test
@@ -295,7 +296,7 @@ internal class HexViewTest {
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.REACHABLE_WALK), it.area) }
 
         assertEquals(".", frame.get(4, 2).symbol)
-        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(4, 2).style.bg)
+        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(4, 2).bg)
     }
 
     @Test
@@ -308,7 +309,7 @@ internal class HexViewTest {
         }
 
         // N arrow sits at (x+4, y+2)
-        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(4, 2).style.bg)
+        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(4, 2).bg)
     }
 
     @Test
@@ -321,8 +322,8 @@ internal class HexViewTest {
         }
 
         assertEquals("w", frame.get(4, 2).symbol)
-        assertEquals(BoardRole.BOARD_ACTIVE, frame.get(4, 2).style.fg)
-        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(4, 2).style.bg)
+        assertEquals(BoardRole.BOARD_ACTIVE, frame.get(4, 2).fg)
+        assertEquals(BoardRole.TERRAIN_WOODS_LIGHT_BG, frame.get(4, 2).bg)
     }
 
     // ---- cursor / highlight colors --------------------------------------------------------------
@@ -333,9 +334,9 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.CURSOR), it.area) }
 
-        assertEquals(BoardRole.BOARD_ACTIVE, frame.get(1, 1).style.fg) // '/' border
-        assertEquals(BoardRole.BOARD_ACTIVE, frame.get(7, 1).style.fg) // '\' border
-        assertEquals(BoardRole.BOARD_ACTIVE, frame.get(2, 0).style.fg) // '_' top
+        assertEquals(BoardRole.BOARD_ACTIVE, frame.get(1, 1).fg) // '/' border
+        assertEquals(BoardRole.BOARD_ACTIVE, frame.get(7, 1).fg) // '\' border
+        assertEquals(BoardRole.BOARD_ACTIVE, frame.get(2, 0).fg) // '_' top
     }
 
     @Test
@@ -344,7 +345,7 @@ internal class HexViewTest {
 
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.NONE), it.area) }
 
-        assertEquals(BoardRole.BOARD_BORDER, frame.get(1, 1).style.fg)
+        assertEquals(BoardRole.BOARD_BORDER, frame.get(1, 1).fg)
     }
 
     @Test
@@ -354,7 +355,7 @@ internal class HexViewTest {
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.REACHABLE_WALK), it.area) }
 
         assertEquals(".", frame.get(4, 2).symbol)
-        assertEquals(BoardRole.MOVE_WALK, frame.get(4, 2).style.fg)
+        assertEquals(BoardRole.MOVE_WALK, frame.get(4, 2).fg)
     }
 
     @Test
@@ -364,7 +365,7 @@ internal class HexViewTest {
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.REACHABLE_RUN), it.area) }
 
         assertEquals(".", frame.get(4, 2).symbol)
-        assertEquals(BoardRole.MOVE_RUN, frame.get(4, 2).style.fg)
+        assertEquals(BoardRole.MOVE_RUN, frame.get(4, 2).fg)
     }
 
     @Test
@@ -374,7 +375,7 @@ internal class HexViewTest {
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.REACHABLE_JUMP), it.area) }
 
         assertEquals(".", frame.get(4, 2).symbol)
-        assertEquals(BoardRole.MOVE_JUMP, frame.get(4, 2).style.fg)
+        assertEquals(BoardRole.MOVE_JUMP, frame.get(4, 2).fg)
     }
 
     @Test
@@ -384,7 +385,7 @@ internal class HexViewTest {
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.PATH), it.area) }
 
         assertEquals("*", frame.get(4, 2).symbol)
-        assertEquals(BoardRole.BOARD_ACTIVE, frame.get(4, 2).style.fg)
+        assertEquals(BoardRole.BOARD_ACTIVE, frame.get(4, 2).fg)
     }
 
     @Test
@@ -421,7 +422,7 @@ internal class HexViewTest {
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.ATTACK_RANGE), it.area) }
 
         assertEquals(".", frame.get(4, 2).symbol)
-        assertEquals(BoardRole.ATTACK_RANGE, frame.get(4, 2).style.fg)
+        assertEquals(BoardRole.ATTACK_RANGE, frame.get(4, 2).fg)
     }
 
     // ---- LOS / selected-target markers: relocated to the safe top-center cell (x+4, y+1) --------
@@ -433,7 +434,7 @@ internal class HexViewTest {
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.LINE_OF_SIGHT), it.area) }
 
         assertEquals(".", frame.get(4, 1).symbol)
-        assertEquals(BoardRole.LINE_OF_SIGHT, frame.get(4, 1).style.fg)
+        assertEquals(BoardRole.LINE_OF_SIGHT, frame.get(4, 1).fg)
         // Not at the movement-overlay cell — LOS and movement overlays never collide.
         assertNotEquals(".", frame.get(4, 2).symbol)
     }
@@ -445,7 +446,7 @@ internal class HexViewTest {
         val frame = drawFrame(9, 5) { it.renderWidget(HexView(hex, HexHighlight.LINE_OF_SIGHT_SELECTED), it.area) }
 
         assertEquals(targetIcon(), frame.get(4, 1).symbol)
-        assertEquals(BoardRole.TARGET_SELECTED, frame.get(4, 1).style.fg)
+        assertEquals(BoardRole.TARGET_SELECTED, frame.get(4, 1).fg)
     }
 
     @Test
@@ -460,6 +461,6 @@ internal class HexViewTest {
         }
 
         assertEquals(".", frame.get(4, 1).symbol, "LOS marker must still be present after the unit renders")
-        assertEquals(BoardRole.LINE_OF_SIGHT, frame.get(4, 1).style.fg)
+        assertEquals(BoardRole.LINE_OF_SIGHT, frame.get(4, 1).fg)
     }
 }

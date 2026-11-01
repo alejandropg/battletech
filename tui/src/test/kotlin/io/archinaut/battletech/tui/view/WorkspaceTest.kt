@@ -174,8 +174,8 @@ internal class WorkspaceTest {
 
         // MOVEMENT's visible panels are UNIT_STATUS then LOG (GamePanels order), each 28 wide,
         // right-aligned against a 120-wide screen: UNIT_STATUS spans 64..91, LOG spans 92..119.
-        assertEquals(StandardRole.PANEL_BORDER_FOCUSED, buffer.get(92, 4).style.fg, "LOG (focused) border corner")
-        assertEquals(StandardRole.PANEL_BORDER, buffer.get(64, 4).style.fg, "UNIT_STATUS (unfocused) border corner")
+        assertEquals(StandardRole.PANEL_BORDER_FOCUSED, buffer.get(92, 4).fg, "LOG (focused) border corner")
+        assertEquals(StandardRole.PANEL_BORDER, buffer.get(64, 4).fg, "UNIT_STATUS (unfocused) border corner")
     }
 
     @Test
@@ -234,7 +234,7 @@ internal class WorkspaceTest {
         val right = title.find("╮")!!.x
         for (y in titleRow until titleRow + 7) {
             for (x in left..right) {
-                assertNull(buffer.get(x, y).style.bg, "banner cell ($x, $y) shows the board's background")
+                assertEquals(StandardRole.DEFAULT, buffer.get(x, y).bg, "banner cell ($x, $y) shows the board's background")
             }
         }
         val interior = (left + 1 until right).joinToString("") { buffer.get(it, titleRow + 1).symbol }
@@ -255,7 +255,7 @@ internal class WorkspaceTest {
         val border = (5..right).flatMap { x -> listOf(x to 5, x to bottom) } +
             (5..bottom).flatMap { y -> listOf(5 to y, right to y) }
         for ((x, y) in border) {
-            assertNull(buffer.get(x, y).style.bg, "border cell ($x, $y) shows the board's background")
+            assertEquals(StandardRole.DEFAULT, buffer.get(x, y).bg, "border cell ($x, $y) shows the board's background")
         }
     }
 
@@ -318,7 +318,7 @@ internal class WorkspaceTest {
     private fun hasFixedAnimationBackground(buffer: CompletedFrame): Boolean {
         for (y in 0 until buffer.height) {
             for (x in 0 until buffer.width) {
-                if (buffer.get(x, y).style.bg == ANIMATION_BACKGROUND) return true
+                if (buffer.get(x, y).bg == ANIMATION_BACKGROUND) return true
             }
         }
         return false

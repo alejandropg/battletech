@@ -128,8 +128,8 @@ internal class MechRecordSheetViewTest {
         val destroyedRow = buffer.find("DESTROYED")!!.y
         val unconsciousRow = buffer.find("PILOT UNCONSCIOUS")!!.y
         assertEquals(destroyedRow + 1, unconsciousRow)
-        assertEquals(StandardRole.DANGER, buffer.get(0, destroyedRow).style.fg)
-        assertEquals(StandardRole.DANGER, buffer.get(0, unconsciousRow).style.fg)
+        assertEquals(StandardRole.DANGER, buffer.get(0, destroyedRow).fg)
+        assertEquals(StandardRole.DANGER, buffer.get(0, unconsciousRow).fg)
     }
 
     @Test
@@ -140,8 +140,8 @@ internal class MechRecordSheetViewTest {
         // Center torso ARMOR value (unaffected by the internal-structure override): 47/47.
         val (col, row) = buffer.find("47/47")!!
 
-        assertEquals(BoardRole.DESTROYED, buffer.get(col, row).style.fg)
-        assertTrue(buffer.get(col, row).style.strikethrough == true)
+        assertEquals(BoardRole.DESTROYED, buffer.get(col, row).fg)
+        assertTrue(buffer.get(col, row).strikethrough)
     }
 
     @Test

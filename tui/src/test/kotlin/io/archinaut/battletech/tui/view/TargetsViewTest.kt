@@ -213,7 +213,7 @@ internal class TargetsViewTest {
         assertTrue("13" !in lrmLine) { "Expected no target number sentinel on the unavailable weapon's row: $lrmLine" }
 
         // Disabled weapon row is rendered in gray
-        val rowColors = (0 until width).map { col -> buffer.get(col, lrmRow).style.fg }.toSet()
+        val rowColors = (0 until width).map { col -> buffer.get(col, lrmRow).fg }.toSet()
         assertTrue(rowColors.contains(StandardRole.DISABLED)) { "Expected disabled weapon row to use StandardRole.DISABLED, got: $rowColors" }
     }
 

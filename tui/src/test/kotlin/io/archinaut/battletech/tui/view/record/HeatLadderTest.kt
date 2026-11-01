@@ -23,7 +23,7 @@ internal class HeatLadderTest {
     /** An unset background renders as the default one, so it counts as [StandardRole.DEFAULT]. */
     private fun assertRowBackground(buffer: CompletedFrame, row: Int, expected: ColorRole) {
         for (column in 0 until buffer.width) {
-            assertEquals(expected, buffer.get(column, row).style.bg ?: StandardRole.DEFAULT, "column $column on row $row")
+            assertEquals(expected, buffer.get(column, row).bg ?: StandardRole.DEFAULT, "column $column on row $row")
         }
     }
 
@@ -38,15 +38,15 @@ internal class HeatLadderTest {
 
         val currentRow = rowForHeat(headerRow, 9)
         assertTrue(buffer.line(currentRow).contains("◀"))
-        assertEquals(StandardRole.TEXT_PRIMARY, buffer.get(0, currentRow).style.fg)
+        assertEquals(StandardRole.TEXT_PRIMARY, buffer.get(0, currentRow).fg)
         assertRowBackground(buffer, currentRow, HeatScaleRole.CURRENT_BG)
 
         val projectedRow = rowForHeat(headerRow, 0)
         assertTrue(buffer.line(projectedRow).contains("▶"))
-        assertEquals(AppRole.DRAFT, buffer.get(0, projectedRow).style.fg)
+        assertEquals(AppRole.DRAFT, buffer.get(0, projectedRow).fg)
         assertRowBackground(buffer, projectedRow, HeatScaleRole.COOLING_BG)
         assertRowBackground(buffer, rowForHeat(headerRow, 5), HeatScaleRole.COOLING_BG)
-        assertEquals(StandardRole.TEXT_MUTED, buffer.get(0, rowForHeat(headerRow, 5)).style.fg)
+        assertEquals(StandardRole.TEXT_MUTED, buffer.get(0, rowForHeat(headerRow, 5)).fg)
         assertRowBackground(buffer, rowForHeat(headerRow, 10), StandardRole.DEFAULT)
     }
 
@@ -68,8 +68,8 @@ internal class HeatLadderTest {
         for (heat in 6..10) {
             assertRowBackground(buffer, rowForHeat(headerRow, heat), HeatScaleRole.HEATING_BG)
         }
-        assertEquals(StandardRole.TEXT_MUTED, buffer.get(0, rowForHeat(headerRow, 7)).style.fg)
-        assertEquals(AppRole.DRAFT, buffer.get(0, rowForHeat(headerRow, 10)).style.fg)
+        assertEquals(StandardRole.TEXT_MUTED, buffer.get(0, rowForHeat(headerRow, 7)).fg)
+        assertEquals(AppRole.DRAFT, buffer.get(0, rowForHeat(headerRow, 10)).fg)
         assertRowBackground(buffer, rowForHeat(headerRow, 4), StandardRole.DEFAULT)
         assertRowBackground(buffer, rowForHeat(headerRow, 11), StandardRole.DEFAULT)
     }

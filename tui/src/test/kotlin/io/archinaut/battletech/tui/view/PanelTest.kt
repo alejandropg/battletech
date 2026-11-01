@@ -119,7 +119,7 @@ internal class PanelTest {
         val panel = panel()
 
         val focused = renderPanel(panel)
-        assertEquals(StandardRole.PANEL_BORDER_FOCUSED, focused.get(0, 0).style.fg)
+        assertEquals(StandardRole.PANEL_BORDER_FOCUSED, focused.get(0, 0).fg)
 
         val unfocusedPanel = panel()
         val unfocusedSet = PanelSet(
@@ -131,7 +131,7 @@ internal class PanelTest {
         unfocusedSet.focus(GamePanelId.BOARD)
         val panels = Panels(inputs, mapOf(GamePanelId.LOG to Rect(0, 0, 15, 10), GamePanelId.BOARD to Rect(15, 0, 15, 10)))
         val buffer = drawFrame(30, 10) { it.renderStatefulWidget(panels, it.area, unfocusedSet) }
-        assertEquals(StandardRole.PANEL_BORDER, buffer.get(0, 0).style.fg)
+        assertEquals(StandardRole.PANEL_BORDER, buffer.get(0, 0).fg)
     }
 
     @Test
@@ -157,6 +157,6 @@ internal class PanelTest {
         val buffer = renderPanel(panel(normal = { stubContent(20) }))
 
         val thumbRow = (1..8).first { buffer.get(29, it).symbol == "▐" }
-        assertEquals(StandardRole.PANEL_BORDER_FOCUSED, buffer.get(29, thumbRow).style.fg)
+        assertEquals(StandardRole.PANEL_BORDER_FOCUSED, buffer.get(29, thumbRow).fg)
     }
 }

@@ -32,7 +32,7 @@ internal class SpecialUnitStatusListTest {
         assertEquals("PILOT UNCONSCIOUS", buffer.region(Rect(0, 3, 24, 1)).line(0).trim())
         assertEquals("PRONE", buffer.region(Rect(0, 4, 24, 1)).line(0).trim())
         for (row in 1..4) {
-            assertEquals(StandardRole.DANGER, buffer.get(0, row).style.fg)
+            assertEquals(StandardRole.DANGER, buffer.get(0, row).fg)
         }
     }
 }

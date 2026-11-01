@@ -59,7 +59,7 @@ internal class UnitViewTest {
         assertEquals("A", frame.get(4, 3).symbol)
         assertEquals("1", frame.get(5, 3).symbol)
         assertEquals(ICON_ROBOT_DEAD, frame.get(3, 3).symbol)
-        assertEquals(BoardRole.PLAYER_1, frame.get(3, 3).style.fg)
+        assertEquals(BoardRole.PLAYER_1, frame.get(3, 3).fg)
     }
 
     @Test
@@ -123,17 +123,17 @@ internal class UnitViewTest {
         val frame = drawFrame(9, 5) { it.renderWidget(UnitView("A1", HexDirection.N, BoardRole.PLAYER_1, torsoFacing = HexDirection.NE, torsoColor = AppRole.DRAFT), it.area) }
 
         assertEquals(ICON_TORSO_NE, frame.get(5, 2).symbol)
-        assertEquals(AppRole.DRAFT, frame.get(5, 2).style.fg)
+        assertEquals(AppRole.DRAFT, frame.get(5, 2).fg)
         // Id and leg-facing arrow stay in the unit color.
-        assertEquals(BoardRole.PLAYER_1, frame.get(4, 3).style.fg)
-        assertEquals(BoardRole.PLAYER_1, frame.get(4, 2).style.fg)
+        assertEquals(BoardRole.PLAYER_1, frame.get(4, 3).fg)
+        assertEquals(BoardRole.PLAYER_1, frame.get(4, 2).fg)
     }
 
     @Test
     fun `torso arrow defaults to unit color when torsoColor is omitted`() {
         val frame = drawFrame(9, 5) { it.renderWidget(UnitView("A1", HexDirection.N, BoardRole.PLAYER_1, torsoFacing = HexDirection.NE), it.area) }
 
-        assertEquals(BoardRole.PLAYER_1, frame.get(5, 2).style.fg)
+        assertEquals(BoardRole.PLAYER_1, frame.get(5, 2).fg)
     }
 
     @Test
