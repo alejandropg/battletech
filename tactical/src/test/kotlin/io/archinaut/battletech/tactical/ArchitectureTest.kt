@@ -18,9 +18,9 @@ import org.junit.jupiter.api.Test
  */
 class ArchitectureTest {
 
-    private val mainFiles = Konsist.scopeFromProject()
+    private val mainFiles = Konsist.scopeFromProduction("tactical")
         .files
-        .filter { it.packagee?.name?.startsWith("io.archinaut.battletech.tactical.") == true && !it.path.contains("/test/") }
+        .filter { it.packagee?.name?.startsWith("io.archinaut.battletech.tactical.") == true }
 
     private val allowed: Map<String, Set<String>> = mapOf(
         "dice" to emptySet(),

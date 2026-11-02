@@ -19,9 +19,7 @@ import org.junit.jupiter.api.Test
  */
 class ArchitectureTest {
 
-    private val mainFiles = Konsist.scopeFromProject()
-        .files
-        .filter { it.path.contains("/tui/") && !it.path.contains("/test/") }
+    private val mainFiles = Konsist.scopeFromProduction("tui").files
 
     // KoFile.name is the base name without extension (confirmed against Konsist's own behavior
     // here) — unlike the path-based check this replaced, which compared the full ".../Main.kt" path.
