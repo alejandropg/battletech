@@ -60,7 +60,7 @@ tasks.named("startShadowScripts") {
     dependsOn(tasks.named("jar"))
 }
 
-val createExecutable by tasks.registering {
+val createExecutable = tasks.register("createExecutable") {
     group = "distribution"
     description = "Creates a self-executing tui binary (Unix/macOS)"
     dependsOn(tasks.shadowJar)
