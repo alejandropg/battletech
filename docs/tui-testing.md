@@ -140,8 +140,9 @@ tmux send-keys -t btech -H 1b 5b 4d <cb> <x+33> <y+33>
 - `cb`: `20` left press, `60` wheel-up, `61` wheel-down (hex).
 - Coordinates are 0-based cell positions plus 33, one byte each; a value ≥ 128 (column or row
   ≥ 95) must be UTF-8 encoded instead (e.g. column 154 → 187 → `c2 bb`).
-- On posix, Mordant 3.0.2 reports wheel ticks as left/right presses; see `legacyPanelScrollDelta`
-  (`tui/.../input/LegacyPanelMouse.kt`) for why side panels scroll anyway.
+- Mordant also parses SGR reports, which take decimal 1-based coordinates of any size:
+  `tmux send-keys -t btech -l $'\e[<64;155;10M'` is a wheel-up at column 154, row 9
+  (`0` left press, `64` wheel-up, `65` wheel-down).
 
 ### Theme visual checklist
 

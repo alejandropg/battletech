@@ -16,7 +16,7 @@ import io.archinaut.battletech.tui.input.BoardMouse
 import io.archinaut.battletech.tui.input.ChromeAction
 import io.archinaut.battletech.tui.input.ContextId
 import io.archinaut.battletech.tui.input.Keybindings
-import io.archinaut.battletech.tui.input.legacyPanelScrollDelta
+import io.archinaut.battletech.tui.input.wheelScrollDelta
 import io.archinaut.battletech.tui.view.Workspace
 import com.github.ajalt.mordant.input.InputEvent
 import com.github.ajalt.mordant.input.KeyboardEvent
@@ -178,18 +178,10 @@ internal suspend fun runLoop(
                         return@collect
                     }
 
-                    // Handle scroll events before any other input dispatch.
-                    // The app-local fallback preserves the known Mordant workaround only for
-                    // side panels; the toolkit itself treats ordinary buttons as clicks.
                     if (event is MouseEvent) {
-                        val hit = workspace.hitTest(event.x, event.y)
-                        val panelId = hit?.id
-                        val delta = legacyPanelScrollDelta(
-                            event,
-                            sidePanel = panelId != null && panelId != GamePanelId.BOARD,
-                        )
+                        val delta = wheelScrollDelta(event)
                         if (delta != null) {
-                            panelId?.let { workspace.scrollPanel(it, delta) }
+                            workspace.hitTest(event.x, event.y)?.id?.let { workspace.scrollPanel(it, delta) }
                             render()
                             return@collect  // scroll events never reach phases
                         }

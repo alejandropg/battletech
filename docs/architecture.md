@@ -232,8 +232,8 @@ The setup screen renders MODE/MAP/PLAYER 1/PLAYER 2 as equal-width columns — `
 reserves four slots, sizes a minimized panel to its compact list's width each frame, and keeps
 HELP at the game screen's HELP width.
 
-The TUI's `legacyPanelScrollDelta` keeps its Mordant-version compatibility fallback for side
-panels. Board clicks use `PanelSet.hitTest`'s content point and the board's label/hex geometry.
+A wheel tick scrolls the panel under the pointer (`wheelScrollDelta`). Board clicks use
+`PanelSet.hitTest`'s content point and the board's label/hex geometry.
 
 This is not uniformity for its own sake. When the local player had a private path (a `submitCommand` override on `GameServer`), the seat check existed twice — derived from the connection's assigned seat on the remote path, a hardcoded `PlayerId.PLAYER_1` on the local one — and the two could disagree. They did: with both seats remote, a `PLAYER_1` command passed both gates despite the class documenting that it "stays frozen". Making the local player a client deletes the second path, so the guarantee ("neither side can act as another seat's") has one place to live. The same collapse happened in the TUI, where `localPlayer: PlayerId?` pinned the viewer *and* gated input, both keyed on null-means-hot-seat; `TuiApp` now takes the seats it drives (`Map<PlayerId, GameSession>`) and hot-seat simply holds both, so the gate never fires because of what the map contains rather than because anything checked.
 

@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import io.archinaut.battletech.tui.input.Action
-import io.archinaut.battletech.tui.input.legacyPanelScrollDelta
+import io.archinaut.battletech.tui.input.wheelScrollDelta
 import io.archinaut.battletech.tui.input.PanAction
 import io.archinaut.battletech.tui.input.ScrollAction
 import io.archinaut.tenter.terminal.Screen
@@ -93,10 +93,9 @@ internal suspend fun setupLoop(
                     val event = ui.event
 
                     if (event is MouseEvent) {
-                        val panelId = workspace.hitTest(event.x, event.y)?.id
-                        val delta = legacyPanelScrollDelta(event, sidePanel = panelId != null)
+                        val delta = wheelScrollDelta(event)
                         if (delta != null) {
-                            panelId?.let { workspace.scrollPanel(it, delta) }
+                            workspace.hitTest(event.x, event.y)?.id?.let { workspace.scrollPanel(it, delta) }
                             render()
                             return@collect
                         }
