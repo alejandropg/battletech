@@ -36,13 +36,13 @@ internal class UnitListView(
     private val mechFor: ((String) -> MechModel?)? = null,
 ) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
+    override fun write(writer: RowWriter) {
         if (variants.isEmpty()) {
-            content.writeLine("No mechs registered", TEXT_PRIMARY_STYLE)
+            writer.writeLine("No mechs registered", TEXT_PRIMARY_STYLE)
             return
         }
 
-        if (mechFor != null) drawStatsHeader(content)
+        if (mechFor != null) drawStatsHeader(writer)
 
         for ((index, variant) in variants.withIndex()) {
             val isCursorHere = index == cursorIndex
@@ -54,7 +54,7 @@ internal class UnitListView(
             val state = if (count == 0) CheckState.UNCHECKED else CheckState.CHECKED
             val label = if (mechFor == null || count == 0) variant else "$variant$LABEL_COUNT_SEPARATOR$countLabel"
             val right = if (mechFor == null) countLabel else statsBlock(mechFor(variant))
-            content.draw(
+            writer.draw(
                 SelectableRow(
                     label = label,
                     checkState = state,
@@ -81,8 +81,8 @@ internal class UnitListView(
         return values.joinToString(" ") { it.padStart(FIELD_WIDTH) }
     }
 
-    private fun drawStatsHeader(content: RowWriter) {
-        content.writeRow("", STATS_HEADER, Style(StandardRole.TEXT_MUTED))
+    private fun drawStatsHeader(writer: RowWriter) {
+        writer.writeRow("", STATS_HEADER, Style(StandardRole.TEXT_MUTED))
     }
 
     private companion object {

@@ -14,26 +14,26 @@ import io.archinaut.tenter.widget.RowWriter
 /** The SYSTEM DAMAGE card: hit tracks and penalties for the 'Mech's shared components. */
 internal class SystemDamageTable(private val unit: CombatUnit) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
-        content.draw(SectionHeading("SYSTEM DAMAGE"))
+    override fun write(writer: RowWriter) {
+        writer.draw(SectionHeading("SYSTEM DAMAGE"))
         val track = PipTrack(filledCircleIcon(), emptyCircleIcon(), perRow = 12)
         for (status in unit.criticalDamageStatus()) {
-            writeComponentStatus(content, track, status)
+            writeComponentStatus(writer, track, status)
         }
     }
 
-    private fun writeComponentStatus(content: RowWriter, track: PipTrack, status: ComponentCritStatus) {
+    private fun writeComponentStatus(writer: RowWriter, track: PipTrack, status: ComponentCritStatus) {
         val label = MechLabels.component(status.component).padEnd(PIP_COLUMN)
-        val row = content.row
-        content.write(0, label, SheetStyles.TEXT_PRIMARY)
+        val row = writer.row
+        writer.write(0, label, SheetStyles.TEXT_PRIMARY)
         track.forEachPip(
             used = status.hits,
             capacity = status.capacity,
             usedStyle = SheetStyles.DANGER,
             emptyStyle = SheetStyles.TEXT_PRIMARY,
-        ) { column, pipRow, glyph, style -> content.write(PIP_COLUMN + column, glyph, style, row = row + pipRow) }
-        repeat(track.rows(status.capacity)) { content.newLine() }
-        for (penalty in status.penalties) content.writeLine("  ${formatCritEffect(penalty)}", SheetStyles.DANGER)
+        ) { column, pipRow, glyph, style -> writer.write(PIP_COLUMN + column, glyph, style, row = row + pipRow) }
+        repeat(track.rows(status.capacity)) { writer.newLine() }
+        for (penalty in status.penalties) writer.writeLine("  ${formatCritEffect(penalty)}", SheetStyles.DANGER)
     }
 
     private companion object {

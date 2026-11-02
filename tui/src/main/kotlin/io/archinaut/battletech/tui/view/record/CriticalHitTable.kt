@@ -23,8 +23,8 @@ import io.archinaut.tenter.widget.RowWriter
  */
 internal class CriticalHitTable(private val unit: CombatUnit) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
-        content.draw(SectionHeading("CRITICAL HIT TABLE"))
+    override fun write(writer: RowWriter) {
+        writer.draw(SectionHeading("CRITICAL HIT TABLE"))
 
         val columns = Flow(
             listOf(
@@ -36,7 +36,7 @@ internal class CriticalHitTable(private val unit: CombatUnit) : MeasurableWidget
             ),
             spacing = 0,
         )
-        content.draw(columns)
+        writer.draw(columns)
     }
 
     private fun criticalColumn(
@@ -52,21 +52,21 @@ internal class CriticalHitTable(private val unit: CombatUnit) : MeasurableWidget
         private val includesSystemDamage: Boolean,
     ) : MeasurableWidget {
 
-        override fun write(content: RowWriter) {
+        override fun write(writer: RowWriter) {
             locations.forEachIndexed { index, location ->
-                if (index > 0) content.newLine()
-                writeLocation(content, location)
+                if (index > 0) writer.newLine()
+                writeLocation(writer, location)
             }
 
             if (includesSystemDamage) {
-                repeat(SYSTEM_DAMAGE_GAP) { content.newLine() }
+                repeat(SYSTEM_DAMAGE_GAP) { writer.newLine() }
                 val margin = SheetLayout.CRIT_COLUMN_WIDTH - SheetLayout.SYSTEM_DAMAGE_WIDTH
-                content.draw(SystemDamageTable(unit).block(Block(padding = Padding(right = margin))))
+                writer.draw(SystemDamageTable(unit).block(Block(padding = Padding(right = margin))))
             }
         }
 
-        private fun writeLocation(content: RowWriter, location: MechLocation) {
-            content.writeLine(MechLabels.location(location).uppercase(), SheetStyles.ACCENT)
+        private fun writeLocation(writer: RowWriter, location: MechLocation) {
+            writer.writeLine(MechLabels.location(location).uppercase(), SheetStyles.ACCENT)
             val slots = unit.criticalLayout.slotsAt(location)
             val slotCount = SLOT_COUNTS.getValue(location)
             for (index in 0 until slotCount) {
@@ -76,7 +76,7 @@ internal class CriticalHitTable(private val unit: CombatUnit) : MeasurableWidget
                     else -> MechLabels.criticalSlotContent(slot) { unit.weapons }
                 }
                 val style = if (destroyed) SheetStyles.DESTROYED else SheetStyles.TEXT_PRIMARY
-                content.writeLine("${(index + 1).toString().padStart(2)}. $label", style)
+                writer.writeLine("${(index + 1).toString().padStart(2)}. $label", style)
             }
         }
 

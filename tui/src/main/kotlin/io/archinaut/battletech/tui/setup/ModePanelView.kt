@@ -18,10 +18,10 @@ internal class ModePanelView(
     private val compact: Boolean = false,
 ) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
+    override fun write(writer: RowWriter) {
         if (!modeLocked || compact) {
             for ((index, candidate) in SetupMode.entries.withIndex()) {
-                content.draw(
+                writer.draw(
                     SelectableRow(
                         label = label(candidate),
                         checkState = if (candidate == mode) CheckState.CHECKED else CheckState.UNCHECKED,
@@ -30,7 +30,7 @@ internal class ModePanelView(
                     ),
                 )
                 if (!compact) {
-                    content.writeLine(
+                    writer.writeLine(
                         "    ${description(candidate)}",
                         Style(if (index == cursorIndex) StandardRole.ACCENT else StandardRole.TEXT_PRIMARY),
                     )
@@ -39,7 +39,7 @@ internal class ModePanelView(
             return
         }
 
-        content.draw(
+        writer.draw(
             SelectableRow(
                 label = label(mode),
                 checkState = CheckState.CHECKED,
@@ -50,15 +50,15 @@ internal class ModePanelView(
 
         val ep = endpoint
         if (mode == SetupMode.HOST && ep != null) {
-            content.newLine()
-            content.writeLine("Session: ${ep.sessionId}", TEXT_PRIMARY_STYLE)
-            content.writeLine("Port: ${ep.port}", TEXT_PRIMARY_STYLE)
-            content.newLine()
+            writer.newLine()
+            writer.writeLine("Session: ${ep.sessionId}", TEXT_PRIMARY_STYLE)
+            writer.writeLine("Port: ${ep.port}", TEXT_PRIMARY_STYLE)
+            writer.newLine()
             for (command in ep.joinCommands) {
-                content.writeLine(command, TEXT_PRIMARY_STYLE)
+                writer.writeLine(command, TEXT_PRIMARY_STYLE)
             }
-            content.newLine()
-            content.writeLine(if (opponentConnected) "Player 2: connected" else "Player 2: waiting…", TEXT_PRIMARY_STYLE)
+            writer.newLine()
+            writer.writeLine(if (opponentConnected) "Player 2: connected" else "Player 2: waiting…", TEXT_PRIMARY_STYLE)
         }
     }
 

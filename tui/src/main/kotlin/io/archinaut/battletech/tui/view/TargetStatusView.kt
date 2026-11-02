@@ -6,8 +6,8 @@ import io.archinaut.tenter.widget.RowWriter
 
 internal class TargetStatusView(private val unit: ForeignUnit) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
-        ForeignUnitPanel.render(content, unit)
+    override fun write(writer: RowWriter) {
+        ForeignUnitPanel.render(writer, unit)
     }
 
     internal companion object {

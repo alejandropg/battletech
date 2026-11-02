@@ -21,7 +21,7 @@ internal class OwnRecordSheetView(
     private val pendingHeat: List<HeatSource>,
 ) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
+    override fun write(writer: RowWriter) {
         val upperSections = Flow(
             listOf(
                 Constraint.Length(SheetLayout.MECH_DATA_WIDTH) to MechDataCard(unit),
@@ -49,6 +49,6 @@ internal class OwnRecordSheetView(
             ),
         )
 
-        content.draw(Stack(listOf(upperBand, CriticalHitTable(unit)), spacing = 2))
+        writer.draw(Stack(listOf(upperBand, CriticalHitTable(unit)), spacing = 2))
     }
 }

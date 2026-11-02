@@ -16,16 +16,16 @@ internal class MapListView(
     private val cursorIndex: Int,
 ) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
+    override fun write(writer: RowWriter) {
         if (maps.isEmpty()) {
-            content.writeLine("No maps registered", TEXT_PRIMARY_STYLE)
+            writer.writeLine("No maps registered", TEXT_PRIMARY_STYLE)
             return
         }
 
         for ((index, name) in maps.withIndex()) {
             val isCursorHere = index == cursorIndex
             val state = if (name == selected) CheckState.CHECKED else CheckState.UNCHECKED
-            content.draw(
+            writer.draw(
                 SelectableRow(
                     label = name,
                     checkState = state,

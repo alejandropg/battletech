@@ -31,13 +31,13 @@ internal class HeatLadder(
     private val pendingHeat: List<HeatSource>,
 ) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
-        content.draw(SectionHeading("HEAT"))
-        content.draw(HeatGauges(unit, map, pendingHeat))
-        content.newLine()
+    override fun write(writer: RowWriter) {
+        writer.draw(SectionHeading("HEAT"))
+        writer.draw(HeatGauges(unit, map, pendingHeat))
+        writer.newLine()
 
         val projection = projectHeat(unit, map, pendingHeat)
-        content.draw(SectionHeading("HEAT SCALE"))
+        writer.draw(SectionHeading("HEAT SCALE"))
         for (heat in HeatScale.MAX_HEAT downTo 0) {
             val slots = HeatPenalties.categories(heat)
             val slotsBelow = if (heat > 0) HeatPenalties.categories(heat - 1) else List(slots.size) { null }
@@ -56,8 +56,8 @@ internal class HeatLadder(
             }
             val background = heatBackground(heat, unit.currentHeat, projection.projected)
             val style = background?.let { foregroundStyle.copy(bg = it) } ?: foregroundStyle
-            if (background != null) content.write(0, " ".repeat(content.width), style)
-            content.writeRow("$marker %2d".format(heat), changed.joinToString(", "), style)
+            if (background != null) writer.write(0, " ".repeat(writer.width), style)
+            writer.writeRow("$marker %2d".format(heat), changed.joinToString(", "), style)
         }
     }
 

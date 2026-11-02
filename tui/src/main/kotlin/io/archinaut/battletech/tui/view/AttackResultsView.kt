@@ -12,28 +12,28 @@ import io.archinaut.tenter.widget.RowWriter
 
 internal class AttackResultsView(private val data: AttackResultsRender) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
+    override fun write(writer: RowWriter) {
 
         val byAttacker = data.results.groupBy { it.attackerId }
 
         for ((attackerId, attackerResults) in byAttacker) {
             val attackerColor = playerColor(data.units.byId(attackerId).owner)
-            content.writeLine(attackerId.value, Style(attackerColor))
+            writer.writeLine(attackerId.value, Style(attackerColor))
 
             val byTarget = attackerResults.groupBy { it.targetId }
 
             for ((targetId, targetResults) in byTarget) {
                 val targetLine = "${targetIcon()} ${targetId.value}"
-                content.writeLine(targetLine, TEXT_PRIMARY_STYLE)
+                writer.writeLine(targetLine, TEXT_PRIMARY_STYLE)
 
                 for (result in targetResults) {
-                    renderWeaponResult(content, result)
+                    renderWeaponResult(writer, result)
                 }
             }
         }
     }
 
-    private fun renderWeaponResult(content: RowWriter, result: AttackResult) {
+    private fun renderWeaponResult(writer: RowWriter, result: AttackResult) {
         // Block 1: unified hit widget (weapon name, TN, success %, modifiers)
         // The TN and modifier breakdown are both observable (announced at the table), so
         // AttackResult itself is never redacted (see GameEvent.redactFor's KDoc) — but the
@@ -42,29 +42,29 @@ internal class AttackResultsView(private val data: AttackResultsRender) : Measur
         // + sum(modifiers), so the skill stays derivable by subtraction from what's shown here.
         val isOwnAttacker = data.units.byId(result.attackerId).owner == data.viewer
         val breakdown = if (isOwnAttacker) result.toHit.displayLabels() else result.toHit.modifiers.displayLabels()
-        content.draw(ValueRow("  ${result.weaponName}", hitChanceLabel(result.toHit), breakdown, StandardRole.TEXT_PRIMARY))
+        writer.draw(ValueRow("  ${result.weaponName}", hitChanceLabel(result.toHit), breakdown, StandardRole.TEXT_PRIMARY))
 
         // Block 2: raw roll (left) + outcome (right-aligned, in its own color)
         val hit = result is AttackResult.Hit
         val outcomeText = "${if (hit) "HIT" else "MISS"} ${attackOutcomeIcon(hit)}"
         val outcomeColor = if (hit) StandardRole.SUCCESS else StandardRole.DANGER
         val rollLine = "   ${diceRollLabel(result.toHitRoll)}"
-        content.writeRow(rollLine, outcomeText, TEXT_PRIMARY_STYLE, Style(outcomeColor))
+        writer.writeRow(rollLine, outcomeText, TEXT_PRIMARY_STYLE, Style(outcomeColor))
 
         // Block 3: location + damage (hit only)
         if (result is AttackResult.ClusterHit) {
             val total = result.locationHits.sumOf { it.damage }
-            content.writeRow("   ${result.missilesHit} missiles", "$total dmg", TEXT_PRIMARY_STYLE)
+            writer.writeRow("   ${result.missilesHit} missiles", "$total dmg", TEXT_PRIMARY_STYLE)
             val byLocation = LinkedHashMap<HitLocation, Int>()
             for (locationHit in result.locationHits) {
                 byLocation.merge(locationHit.location, locationHit.damage, Int::plus)
             }
             for ((loc, dmg) in byLocation) {
-                content.writeRow("   → ${hitLocationName(loc)}", "$dmg dmg", TEXT_PRIMARY_STYLE)
+                writer.writeRow("   → ${hitLocationName(loc)}", "$dmg dmg", TEXT_PRIMARY_STYLE)
             }
         } else if (result is AttackResult.SingleHit) {
             val hitLoc = result.locationHits.first().location
-            content.writeLine("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", TEXT_PRIMARY_STYLE)
+            writer.writeLine("   → ${hitLocationName(hitLoc)}   ${result.damageApplied} dmg", TEXT_PRIMARY_STYLE)
         }
     }
 

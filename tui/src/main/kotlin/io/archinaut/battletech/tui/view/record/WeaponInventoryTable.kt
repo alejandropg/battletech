@@ -50,15 +50,15 @@ internal class WeaponInventoryTable(private val unit: CombatUnit) : MeasurableWi
         Column("Ammo", 54, 4, Align.RIGHT) { ammoLabel(it.weapon) },
     )
 
-    override fun write(content: RowWriter) {
-        content.draw(SectionHeading("WEAPONS & EQUIPMENT INVENTORY"))
+    override fun write(writer: RowWriter) {
+        writer.draw(SectionHeading("WEAPONS & EQUIPMENT INVENTORY"))
 
-        for (column in columns) content.write(column.x, column.label, SheetStyles.TEXT_MUTED)
-        content.newLine()
+        for (column in columns) writer.write(column.x, column.label, SheetStyles.TEXT_MUTED)
+        writer.newLine()
 
         for (row in groupedRows()) {
             val style = if (row.weapon.destroyed) SheetStyles.DESTROYED else SheetStyles.TEXT_PRIMARY
-            content.draw(TableRow(row, style), height = 1)
+            writer.draw(TableRow(row, style), height = 1)
         }
     }
 

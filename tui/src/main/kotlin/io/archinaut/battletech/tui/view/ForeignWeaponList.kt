@@ -13,8 +13,8 @@ import io.archinaut.tenter.widget.RowWriter
  * their own header ("WEAPONS" vs. "WEAPONS & EQUIPMENT INVENTORY") before drawing this.
  */
 internal class ForeignWeaponList(private val unit: ForeignUnit) : MeasurableWidget {
-    override fun write(content: RowWriter) {
-        for (weapon in unit.weapons) content.writeLine("  ${weapon.name}", TEXT_PRIMARY_STYLE)
+    override fun write(writer: RowWriter) {
+        for (weapon in unit.weapons) writer.writeLine("  ${weapon.name}", TEXT_PRIMARY_STYLE)
     }
 
     private companion object {

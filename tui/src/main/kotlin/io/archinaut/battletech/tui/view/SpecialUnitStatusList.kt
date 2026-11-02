@@ -13,7 +13,7 @@ import io.archinaut.tenter.widget.RowWriter
  */
 internal class SpecialUnitStatusList(private val unit: VisibleUnit) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
+    override fun write(writer: RowWriter) {
         val statuses = buildList {
             if (unit.isDestroyed) add("DESTROYED")
             if (unit.isShutdown) add("SHUTDOWN")
@@ -22,9 +22,9 @@ internal class SpecialUnitStatusList(private val unit: VisibleUnit) : Measurable
         }
         if (statuses.isEmpty()) return
 
-        content.newLine()
+        writer.newLine()
         for (status in statuses) {
-            content.writeLine(status, STATUS_STYLE)
+            writer.writeLine(status, STATUS_STYLE)
         }
     }
 

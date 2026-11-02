@@ -11,9 +11,9 @@ import io.archinaut.tenter.widget.RowWriter
 
 internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
+    override fun write(writer: RowWriter) {
         if (data.entries.isEmpty()) {
-            content.writeLine("No declarations", TEXT_PRIMARY_STYLE)
+            writer.writeLine("No declarations", TEXT_PRIMARY_STYLE)
             return
         }
 
@@ -21,16 +21,16 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Me
             val attackerColor = if (entry.isDraft) AppRole.DRAFT else playerColor(entry.ownerPlayer)
             val contentColor = if (entry.isDraft) AppRole.DRAFT else StandardRole.TEXT_PRIMARY
 
-            content.writeLine(entry.attackerId.value, Style(attackerColor))
+            writer.writeLine(entry.attackerId.value, Style(attackerColor))
 
             for (target in entry.targets) {
                 val tag = if (target.isPrimary) "[P]" else "[S]"
                 val targetLine = "${targetIcon()} ${target.targetId.value} $tag"
-                content.writeLine(targetLine, Style(contentColor))
+                writer.writeLine(targetLine, Style(contentColor))
 
                 for (weapon in target.weapons) {
                     when (weapon) {
-                        is DeclaredWeaponEntry.Detailed -> content.draw(
+                        is DeclaredWeaponEntry.Detailed -> writer.draw(
                             ValueRow(
                                 "    ${weapon.weaponName}",
                                 hitChanceLabel(weapon.targetDiceRoll, weapon.successChance),
@@ -43,14 +43,14 @@ internal class DeclaredTargetsView(private val data: DeclaredTargetsRender) : Me
                         // that math is computed from the attacker's gunnery/heat/sensor
                         // crits. The type carries no such fields; see DeclaredWeaponEntry.
                         is DeclaredWeaponEntry.Undisclosed ->
-                            content.writeLine("    ${weapon.weaponName}", Style(contentColor))
+                            writer.writeLine("    ${weapon.weaponName}", Style(contentColor))
                     }
                 }
             }
 
             // Blank line between attackers, but only if there's a next entry
             if (index < data.entries.size - 1) {
-                content.newLine()
+                writer.newLine()
             }
         }
     }

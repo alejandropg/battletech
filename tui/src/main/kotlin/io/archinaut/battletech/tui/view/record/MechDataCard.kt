@@ -16,13 +16,13 @@ import io.archinaut.tenter.widget.RowWriter
  */
 internal class MechDataCard(private val unit: VisibleUnit) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
-        content.draw(SectionHeading("'MECH DATA"))
-        content.writeLine(UnitLabel.of(unit), SheetStyles.ACCENT)
-        content.writeLine("Tonnage : ${unit.tonnage}", SheetStyles.TEXT_PRIMARY)
-        content.writeLine("Walking : ${unit.walkingMP}", SheetStyles.TEXT_PRIMARY)
-        content.writeLine("Running : ${unit.runningMP}", SheetStyles.TEXT_PRIMARY)
-        if (unit.jumpMP > 0) content.writeLine("Jumping : ${unit.jumpMP}", SheetStyles.TEXT_PRIMARY)
-        content.draw(SpecialUnitStatusList(unit))
+    override fun write(writer: RowWriter) {
+        writer.draw(SectionHeading("'MECH DATA"))
+        writer.writeLine(UnitLabel.of(unit), SheetStyles.ACCENT)
+        writer.writeLine("Tonnage : ${unit.tonnage}", SheetStyles.TEXT_PRIMARY)
+        writer.writeLine("Walking : ${unit.walkingMP}", SheetStyles.TEXT_PRIMARY)
+        writer.writeLine("Running : ${unit.runningMP}", SheetStyles.TEXT_PRIMARY)
+        if (unit.jumpMP > 0) writer.writeLine("Jumping : ${unit.jumpMP}", SheetStyles.TEXT_PRIMARY)
+        writer.draw(SpecialUnitStatusList(unit))
     }
 }

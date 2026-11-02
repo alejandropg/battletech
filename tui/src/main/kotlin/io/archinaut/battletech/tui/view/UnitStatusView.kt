@@ -26,14 +26,14 @@ internal class UnitStatusView(
     private val pendingHeat: List<HeatSource> = emptyList(),
 ) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
+    override fun write(writer: RowWriter) {
         when (subject) {
             null -> {
-                content.writeLine("No unit selected", TEXT_PRIMARY_STYLE)
+                writer.writeLine("No unit selected", TEXT_PRIMARY_STYLE)
                 return
             }
             is ForeignUnit -> {
-                ForeignUnitPanel.render(content, subject)
+                ForeignUnitPanel.render(writer, subject)
                 return
             }
             is CombatUnit -> Unit
@@ -42,35 +42,35 @@ internal class UnitStatusView(
         val unit = subject
 
         // UNIT
-        with(content) {
+        with(writer) {
             writeLine(UnitLabel.of(unit), ACCENT_STYLE)
             draw(SpecialUnitStatusList(unit))
             newLine()
         }
 
         // PILOT
-        with(content) {
+        with(writer) {
             draw(SectionHeading("PILOT"))
             // Canonical 6-box "Hits" track (record sheet Pilot Data): filled = hits taken,
             // empty = remaining boxes. No "health" concept in the rules — hits accumulate
             // upward, each one forcing a Consciousness roll (PilotHits.kt).
-            val labelEnd = content.write(0, "Hits".padEnd(9) + ": ", TEXT_PRIMARY_STYLE)
+            val labelEnd = writer.write(0, "Hits".padEnd(9) + ": ", TEXT_PRIMARY_STYLE)
             PilotHitsTrack.draw(
-                content,
+                writer,
                 column = labelEnd.x,
                 stride = 1,
                 hits = unit.pilotHits,
                 filledStyle = DANGER_STYLE,
                 emptyStyle = TEXT_PRIMARY_STYLE,
             )
-            content.newLine()
+            writer.newLine()
             writeLine("Gunnery  : ${unit.gunnerySkill}", TEXT_PRIMARY_STYLE)
             writeLine("Piloting : ${unit.pilotingSkill}", TEXT_PRIMARY_STYLE)
             newLine()
         }
 
         // MOVEMENT
-        with(content) {
+        with(writer) {
             draw(SectionHeading("MOVEMENT"))
             writeLine("Walk : ${unit.walkingMP}    Run : ${unit.runningMP}", TEXT_PRIMARY_STYLE)
             if (unit.jumpMP > 0) writeLine("Jump : ${unit.jumpMP}", TEXT_PRIMARY_STYLE)
@@ -78,7 +78,7 @@ internal class UnitStatusView(
         }
 
         // HEAT
-        with(content) {
+        with(writer) {
             draw(SectionHeading("HEAT"))
             draw(HeatGauges(unit, map, pendingHeat))
 
@@ -94,7 +94,7 @@ internal class UnitStatusView(
         }
 
         // ARMOR
-        with(content) {
+        with(writer) {
             val armor = unit.armor
             val is_ = unit.internalStructure
             draw(SectionHeading("ARMOR"))
@@ -118,7 +118,7 @@ internal class UnitStatusView(
 
             writeLine("Critical hit points", TEXT_PRIMARY_STYLE)
             for (status in unit.criticalDamageStatus()) {
-                writeCritDots(content, status)
+                writeCritDots(writer, status)
             }
             newLine()
 
@@ -138,7 +138,7 @@ internal class UnitStatusView(
         }
 
         // WEAPONS
-        with(content) {
+        with(writer) {
             draw(SectionHeading("WEAPONS"))
             for (weapon in unit.weapons) {
                 val style = if (weapon.destroyed) DESTROYED_STYLE else TEXT_PRIMARY_STYLE
@@ -167,24 +167,24 @@ internal class UnitStatusView(
      * [io.archinaut.battletech.tactical.unit.criticalDamageStatus]; the only thing decided here is the
      * column label for [status].component.
      */
-    private fun writeCritDots(content: RowWriter, status: ComponentCritStatus) {
+    private fun writeCritDots(writer: RowWriter, status: ComponentCritStatus) {
         val label = MechLabels.component(status.component)
         val capacity = status.capacity
         val destroyedCount = status.hits.coerceIn(0, capacity)
         val label6 = label + " ".repeat((7 - CellWidth.of(label)).coerceAtLeast(0))
-        var col = content.write(2, "$label6: ", TEXT_PRIMARY_STYLE).x
+        var col = writer.write(2, "$label6: ", TEXT_PRIMARY_STYLE).x
         repeat(destroyedCount) {
-            content.write(col, filledCircleIcon(), DANGER_STYLE)
+            writer.write(col, filledCircleIcon(), DANGER_STYLE)
             col += 2
         }
         repeat(capacity - destroyedCount) {
-            content.write(col, emptyCircleIcon(), TEXT_PRIMARY_STYLE)
+            writer.write(col, emptyCircleIcon(), TEXT_PRIMARY_STYLE)
             col += 2
         }
-        content.newLine()
+        writer.newLine()
         for (penalty in status.penalties) {
-            content.write(4, formatCritEffect(penalty), DANGER_STYLE)
-            content.newLine()
+            writer.write(4, formatCritEffect(penalty), DANGER_STYLE)
+            writer.newLine()
         }
     }
 

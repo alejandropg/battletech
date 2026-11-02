@@ -19,9 +19,9 @@ internal class TargetsView(
     private val cursorWeaponIndex: Int = 0,
 ) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
+    override fun write(writer: RowWriter) {
         if (targets.isEmpty()) {
-            content.writeLine("No targets", TEXT_PRIMARY_STYLE)
+            writer.writeLine("No targets", TEXT_PRIMARY_STYLE)
             return
         }
 
@@ -34,7 +34,7 @@ internal class TargetsView(
             }
             val nameColor = if (isCursorOnTarget) StandardRole.ACCENT else StandardRole.TEXT_PRIMARY
             val nameLine = "${UnitLabel.of(target.unitId, target.unitName)}$tag"
-            content.writeLine(nameLine, Style(nameColor))
+            writer.writeLine(nameLine, Style(nameColor))
 
             val assignedToThisTarget = weaponAssignments[target.unitId] ?: emptySet()
             val assignedToOtherTargets = weaponAssignments.entries
@@ -57,7 +57,7 @@ internal class TargetsView(
                 val color = if (isDisabled) StandardRole.DISABLED else StandardRole.TEXT_PRIMARY
                 when (weapon) {
                     is WeaponTargetInfo.Available -> {
-                        content.draw(
+                        writer.draw(
                             SelectableRow(
                                 label = weapon.weaponName,
                                 checkState = state,
@@ -68,10 +68,10 @@ internal class TargetsView(
                                 glyphs = TUI_CHECKBOX_GLYPHS,
                             ),
                         )
-                        content.writeSubLines(weapon.toHit.displayLabels(), if (isCursorHere) StandardRole.ACCENT else color)
+                        writer.writeSubLines(weapon.toHit.displayLabels(), if (isCursorHere) StandardRole.ACCENT else color)
                     }
                     is WeaponTargetInfo.Unavailable ->
-                        content.draw(
+                        writer.draw(
                             SelectableRow(
                                 label = weapon.weaponName,
                                 checkState = state,
@@ -85,7 +85,7 @@ internal class TargetsView(
                 }
             }
 
-            content.newLine() // blank line between targets
+            writer.newLine() // blank line between targets
         }
     }
 

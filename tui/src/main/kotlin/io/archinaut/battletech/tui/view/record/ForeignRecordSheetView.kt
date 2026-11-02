@@ -20,7 +20,7 @@ import io.archinaut.tenter.widget.RowWriter
  */
 internal class ForeignRecordSheetView(private val unit: ForeignUnit) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
+    override fun write(writer: RowWriter) {
         val upperSections = Flow(
             listOf(
                 Constraint.Length(SheetLayout.MECH_DATA_WIDTH) to MechDataCard(unit),
@@ -33,13 +33,13 @@ internal class ForeignRecordSheetView(private val unit: ForeignUnit) : Measurabl
                 Constraint.Length(SheetLayout.ARMOR_DIAGRAM_WIDTH) to LocationDiagram.armor(unit) { false },
             ),
         )
-        content.draw(Stack(listOf(upperSections, diagrams), spacing = 2))
+        writer.draw(Stack(listOf(upperSections, diagrams), spacing = 2))
     }
 
     private class ForeignWeaponInventory(private val unit: ForeignUnit) : MeasurableWidget {
-        override fun write(content: RowWriter) {
-            content.draw(SectionHeading("WEAPONS & EQUIPMENT INVENTORY"))
-            content.draw(ForeignWeaponList(unit))
+        override fun write(writer: RowWriter) {
+            writer.draw(SectionHeading("WEAPONS & EQUIPMENT INVENTORY"))
+            writer.draw(ForeignWeaponList(unit))
         }
     }
 }

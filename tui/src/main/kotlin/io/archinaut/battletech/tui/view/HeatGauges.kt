@@ -23,21 +23,21 @@ internal class HeatGauges(
     private val pendingHeat: List<HeatSource>,
 ) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
+    override fun write(writer: RowWriter) {
         val projection = projectHeat(unit, map, pendingHeat)
-        content.writeLine("Current")
-        content.draw(heatBar(unit.currentHeat))
-        for (source in projection.committed) content.writeLine("  ${source.label} +${source.amount}")
-        for (source in projection.pending) content.writeLine("  ${source.label} +${source.amount}", DRAFT_STYLE)
+        writer.writeLine("Current")
+        writer.draw(heatBar(unit.currentHeat))
+        for (source in projection.committed) writer.writeLine("  ${source.label} +${source.amount}")
+        for (source in projection.pending) writer.writeLine("  ${source.label} +${source.amount}", DRAFT_STYLE)
 
         val sink = unit.heatSink
         val sinkSuffix =
             if (sink.type.sinkRatio == 1) "${sink.type.name} ${projection.dissipation}"
             else "${sink.type.name} ${sink.units}(${projection.dissipation})"
-        content.draw(BarGauge(barWidth = 10, maxValue = projection.dissipation, value = projection.dissipated, suffix = sinkSuffix))
+        writer.draw(BarGauge(barWidth = 10, maxValue = projection.dissipation, value = projection.dissipated, suffix = sinkSuffix))
 
-        content.writeLine("Projected")
-        content.draw(heatBar(projection.projected))
+        writer.writeLine("Projected")
+        writer.draw(heatBar(projection.projected))
     }
 
     private fun heatBar(heat: Int): BarGauge = BarGauge(barWidth = 20, maxValue = HeatScale.MAX_HEAT, value = heat)

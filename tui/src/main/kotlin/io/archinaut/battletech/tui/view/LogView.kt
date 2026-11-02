@@ -21,11 +21,11 @@ internal class LogView(
     private val state: PlayerGameState,
 ) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
-        content.draw(MeasurableWidget(::writeEntries).followingEnd())
+    override fun write(writer: RowWriter) {
+        writer.draw(MeasurableWidget(::writeEntries).followingEnd())
     }
 
-    private fun writeEntries(content: RowWriter) {
+    private fun writeEntries(writer: RowWriter) {
         var lastTurn: Int? = null
 
         for (entry in entries) {
@@ -33,13 +33,13 @@ internal class LogView(
             if (logLines.isEmpty()) continue
 
             if (entry.turn != lastTurn) {
-                content.draw(SectionHeading("TURN ${entry.turn}"))
+                writer.draw(SectionHeading("TURN ${entry.turn}"))
                 lastTurn = entry.turn
             }
 
             for (line in logLines) {
                 // The icon gets its own column so wrapped text hangs indented under the first row.
-                content.draw(
+                writer.draw(
                     Row(
                         listOf(
                             Constraint.Length(CellWidth.of(line.icon) + 1) to Paragraph(line.icon),

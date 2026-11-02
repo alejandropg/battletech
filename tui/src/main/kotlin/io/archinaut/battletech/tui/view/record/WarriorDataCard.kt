@@ -15,30 +15,30 @@ import io.archinaut.tenter.widget.RowWriter
  */
 internal class WarriorDataCard(private val unit: CombatUnit) : MeasurableWidget {
 
-    override fun write(content: RowWriter) {
-        content.draw(SectionHeading("WARRIOR DATA"))
-        content.writeLine("Gunnery  : ${unit.gunnerySkill}", SheetStyles.TEXT_PRIMARY)
-        content.writeLine("Piloting : ${unit.pilotingSkill}", SheetStyles.TEXT_PRIMARY)
-        content.newLine()
+    override fun write(writer: RowWriter) {
+        writer.draw(SectionHeading("WARRIOR DATA"))
+        writer.writeLine("Gunnery  : ${unit.gunnerySkill}", SheetStyles.TEXT_PRIMARY)
+        writer.writeLine("Piloting : ${unit.pilotingSkill}", SheetStyles.TEXT_PRIMARY)
+        writer.newLine()
 
-        content.writeLine("Hits Taken", SheetStyles.TEXT_PRIMARY)
+        writer.writeLine("Hits Taken", SheetStyles.TEXT_PRIMARY)
         PilotHitsTrack.draw(
-            content,
+            writer,
             column = 0,
             stride = 2,
             hits = unit.pilotHits,
             filledStyle = SheetStyles.DANGER,
             emptyStyle = SheetStyles.TEXT_PRIMARY,
         )
-        content.newLine()
+        writer.newLine()
 
-        content.writeLine("Consciousness#", SheetStyles.TEXT_MUTED)
+        writer.writeLine("Consciousness#", SheetStyles.TEXT_MUTED)
         var col = 0
         for (i in 1..PILOT_DEATH_THRESHOLD) {
             val label = consciousnessTarget(i)?.toString() ?: "Dead"
-            content.write(col, label, SheetStyles.TEXT_MUTED)
+            writer.write(col, label, SheetStyles.TEXT_MUTED)
             col += 3
         }
-        content.newLine()
+        writer.newLine()
     }
 }
