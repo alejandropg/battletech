@@ -20,10 +20,9 @@ internal class HeatLadderTest {
 
     private fun rowForHeat(headerRow: Int, heat: Int): Int = headerRow + 1 + (30 - heat)
 
-    /** An unset background renders as the default one, so it counts as [StandardRole.DEFAULT]. */
     private fun assertRowBackground(buffer: CompletedFrame, row: Int, expected: ColorRole) {
         for (column in 0 until buffer.width) {
-            assertEquals(expected, buffer.get(column, row).bg ?: StandardRole.DEFAULT, "column $column on row $row")
+            assertEquals(expected, buffer.get(column, row).bg, "column $column on row $row")
         }
     }
 
