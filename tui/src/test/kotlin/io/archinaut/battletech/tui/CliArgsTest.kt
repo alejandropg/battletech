@@ -5,10 +5,10 @@ import com.github.ajalt.mordant.terminal.Terminal
 import com.github.ajalt.mordant.terminal.TerminalRecorder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 import kotlin.io.path.writeText
@@ -28,7 +28,7 @@ internal class CliArgsTest {
 
     private fun failing(vararg args: String): ExitCalled {
         val recorder = TerminalRecorder(ansiLevel = AnsiLevel.NONE)
-        return assertThrows(ExitCalled::class.java) {
+        return assertThrows<ExitCalled> {
             parseArgs(arrayOf(*args), Terminal(terminalInterface = recorder)) {
                 throw ExitCalled(it, recorder.output())
             }
