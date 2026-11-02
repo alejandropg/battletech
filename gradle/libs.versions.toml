@@ -36,4 +36,4 @@ kotlin-serialization-plugin = { module = "org.jetbrains.kotlin:kotlin-serializat
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 
 [bundles]
-junit = ["junit-jupiter-api", "junit-jupiter-engine", "junit-jupiter-params"]
+junit = ["junit-jupiter-api", "junit-jupiter-params"]
