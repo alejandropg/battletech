@@ -8,12 +8,11 @@ import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.battletech.tactical.unit.createUnit
 import io.archinaut.battletech.tui.icon.ammoIcon
 import io.archinaut.battletech.tui.icon.infinityIcon
-import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
-import io.archinaut.battletech.tui.view.text
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.screen.Rect
 
 /** [WeaponInventoryTable], driven by a real Atlas AS7-D built through the production [MechModels] path. */
 internal class WeaponInventoryTableTest {
@@ -39,7 +38,7 @@ internal class WeaponInventoryTableTest {
     fun `right aligns weapon values within inventory columns`() {
         val buffer = render(WeaponInventoryTable(atlas()), width = 120, height = 20)
         val rows = (0 until buffer.height).map {
-            buffer.line(it, width = SheetLayout.WEAPON_INVENTORY_WIDTH)
+            buffer.region(Rect(0, it, SheetLayout.WEAPON_INVENTORY_WIDTH, 1)).line(0)
         }
         val ac20Row = rows.first { it.contains("AC/20") }
         val mediumLaserRow = rows.first { it.contains("Medium Laser") }

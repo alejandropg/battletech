@@ -5,10 +5,8 @@ import io.archinaut.battletech.tactical.query.PlayerGameState
 import io.archinaut.battletech.tactical.query.projectFor
 import io.archinaut.battletech.tui.aGameMap
 import io.archinaut.battletech.tui.aGameState
-import io.archinaut.tenter.view.ScrollState
-import io.archinaut.tenter.view.ViewportState
-import io.archinaut.tenter.view.fixedContent
-import io.archinaut.tenter.view.scrollingPanel
+import io.archinaut.tenter.widget.ScrollState
+import io.archinaut.tenter.widget.ViewportState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -25,14 +23,9 @@ internal class BoardScrollFollowTest {
         recenter: Boolean = false,
     ): ScrollState {
         if (recenter) state.requestRecenter()
-        val (width, height) = BoardView.contentSize(gameState.map)
-        val view = scrollingPanel(
-            title = "TACTICAL MAP",
-            badge = null,
-            content = fixedContent(width, height, BoardView(gameState, cursorPosition = cursor)),
-            state = state,
-        )
-        render(view, 80, 24)
+        // The board inside the same chrome a panel gives it.
+        val board = BoardView(gameState, cursorPosition = cursor).scrollable()
+        render(panelViewport(board, title = "TACTICAL MAP", badge = null), state, 80, 24)
         return checkNotNull(state.settled) { "no drawable frame" }
     }
 

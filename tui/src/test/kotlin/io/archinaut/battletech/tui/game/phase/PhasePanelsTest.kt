@@ -39,7 +39,7 @@ internal class PhasePanelsTest {
     }
 
     @Test
-    fun `no phase ever declares BOARD — it is the PanelSet's main panel, not a side panel`() {
+    fun `no phase ever declares BOARD — it is the game screen's main panel, not a side panel`() {
         val phases = listOf(
             MovementPhase.SelectingUnit,
             AttackPhase.SelectingAttacker(TurnPhase.WEAPON_ATTACK),

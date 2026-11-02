@@ -1,8 +1,8 @@
 package io.archinaut.battletech.tui.animation
 
 import io.archinaut.battletech.tui.view.render
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.palette.FixedColorRole
+import io.archinaut.tenter.color.StandardRole
+import io.archinaut.tenter.color.TerminalColor
 import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 internal class AnimationViewTest {
 
     @Test
-    fun `every cell renders opaque with a hardcoded FixedColorRole, never a themed ChromeRole`() {
+    fun `every cell renders opaque with a hardcoded TerminalColor, never a themed StandardRole`() {
         val animation = LaserBurstAnimation(random = Random(11))
         val buffer = render(animation.frame(0), animation.size.width, animation.size.height)
 
@@ -19,10 +19,10 @@ internal class AnimationViewTest {
         for (y in 0 until animation.size.height) {
             for (x in 0 until animation.size.width) {
                 val cell = buffer.get(x, y)
-                assertEquals(ANIMATION_BACKGROUND, cell.style.bg, "cell ($x,$y) background is not the fixed animation background")
-                assertTrue(cell.style.fg is FixedColorRole, "cell ($x,$y) fg is not a FixedColorRole")
-                assertTrue(cell.style.fg !is ChromeRole, "cell ($x,$y) fg resolved through a themed ChromeRole")
-                if (cell.char != " ") sawNonSpace = true
+                assertEquals(ANIMATION_BACKGROUND, cell.bg, "cell ($x,$y) background is not the fixed animation background")
+                assertTrue(cell.fg is TerminalColor, "cell ($x,$y) fg is not a fixed TerminalColor")
+                assertTrue(cell.fg !is StandardRole, "cell ($x,$y) fg resolved through a themed StandardRole")
+                if (cell.symbol != " ") sawNonSpace = true
             }
         }
         assertTrue(sawNonSpace, "expected the frame to draw at least one visible glyph")

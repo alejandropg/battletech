@@ -27,8 +27,8 @@ import io.archinaut.battletech.tui.input.BrowsingAction
 import io.archinaut.battletech.tui.input.ContextId
 import io.archinaut.battletech.tui.input.FacingAction
 import io.archinaut.battletech.tui.input.IdleAction
-import io.archinaut.tenter.input.InputAction
-import io.archinaut.tenter.view.FlashMessage
+import io.archinaut.battletech.tui.input.Action
+import io.archinaut.tenter.widget.FlashMessage
 
 internal const val SELECT_FACING_PROMPT = "Select facing"
 
@@ -39,7 +39,7 @@ internal sealed interface MovementPhase : Phase {
 
         override val keyContext: ContextId get() = ContextId.MOVEMENT_IDLE
 
-        override fun handle(action: InputAction, app: AppState): Transition? {
+        override fun handle(action: Action, app: AppState): Transition? {
             val turnState = app.turnState
             // Host mode renders (and accepts input) before the session's advance() kickstart
             // fires — the movement impulse sequence is empty until a client joins. Every other
@@ -125,7 +125,7 @@ internal sealed interface MovementPhase : Phase {
 
         override val keyContext: ContextId get() = ContextId.BROWSING
 
-        override fun handle(action: InputAction, app: AppState): Transition? {
+        override fun handle(action: Action, app: AppState): Transition? {
             val newCursor = when (action) {
                 is BrowsingAction.MoveCursor -> moveCursor(app.cursor, action.direction, app.state.map)
                 is BoardClick -> action.coords
@@ -225,7 +225,7 @@ internal sealed interface MovementPhase : Phase {
 
         override val keyContext: ContextId get() = ContextId.FACING
 
-        override fun handle(action: InputAction, app: AppState): Transition? = when (action) {
+        override fun handle(action: Action, app: AppState): Transition? = when (action) {
             is FacingAction -> when (action) {
                 is FacingAction.Cancel -> onCancel(app)
                 is FacingAction.SelectFacing -> commitByFacing(app, action.direction)

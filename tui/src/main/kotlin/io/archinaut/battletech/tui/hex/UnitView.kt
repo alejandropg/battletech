@@ -6,23 +6,27 @@ import io.archinaut.battletech.tui.icon.facingArrowIcon
 import io.archinaut.battletech.tui.icon.torsoArrowIcon
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.palette.ColorRole
+import io.archinaut.tenter.screen.Style
+import io.archinaut.tenter.color.ColorRole
+import io.archinaut.tenter.widget.Widget
 
-public object UnitRenderer {
+/**
+ * A unit inside its hex's [HexGeometry.HEX_WIDTH] x [HexGeometry.HEX_HEIGHT] area: its two-character
+ * [id] and [facing] arrow in [color], a [torsoFacing] arrow in [torsoColor] when the torso is
+ * twisted, and a destroyed marker when [isDestroyed].
+ */
+internal class UnitView(
+    private val id: String,
+    private val facing: HexDirection,
+    private val color: BoardRole,
+    private val torsoFacing: HexDirection? = null,
+    private val torsoColor: ColorRole = color,
+    private val isDestroyed: Boolean = false,
+) : Widget {
 
-    public fun render(
-        canvas: Canvas,
-        x: Int,
-        y: Int,
-        id: String,
-        facing: HexDirection,
-        color: BoardRole,
-        torsoFacing: HexDirection? = null,
-        torsoColor: ColorRole = color,
-        isDestroyed: Boolean = false,
-    ) {
+    override fun render(canvas: Canvas) {
         val (arrowChar, arrowOffset) = facingArrowIcon(facing)
-        val arrowX = x + arrowOffset
+        val arrowX = arrowOffset
         val southFacing = facing == HexDirection.SE || facing == HexDirection.S || facing == HexDirection.SW
         val idRow = if (southFacing) 2 else 3
         val arrowRow = if (southFacing) 3 else 2
@@ -36,7 +40,7 @@ public object UnitRenderer {
             val (twistChar, torsoOffset) = torsoArrowIcon(torsoFacing)
             val torsoSouth = torsoFacing == HexDirection.SE || torsoFacing == HexDirection.S || torsoFacing == HexDirection.SW
             torsoChar = twistChar
-            torsoX = x + torsoOffset
+            torsoX = torsoOffset
             torsoRow = if (torsoSouth) 3 else 2
         } else {
             torsoChar = null
@@ -44,12 +48,12 @@ public object UnitRenderer {
             torsoRow = null
         }
         val torsoInIdRow = torsoRow == idRow
-        val idShiftedForTorso = torsoInIdRow && torsoX == x + 5
+        val idShiftedForTorso = torsoInIdRow && torsoX == 5
 
-        val idBaseX = if (idShiftedForTorso) x + 3 else x + 4
+        val idBaseX = if (idShiftedForTorso) 3 else 4
         id.take(2).forEachIndexed { index, char ->
             val cellX = idBaseX + index
-            canvas.setFg(cellX, y + idRow, char.toString(), color)
+            canvas.setString(cellX, idRow, char.toString(), Style(fg = color))
         }
 
         if (isDestroyed) {
@@ -58,18 +62,17 @@ public object UnitRenderer {
             // column the facing arrow already claimed there.
             val markerRow = if (torsoInIdRow) arrowRow else idRow
             val markerX = if (torsoInIdRow) {
-                if (arrowX == x + 4) x + 3 else x + 4
+                if (arrowX == 4) 3 else 4
             } else {
-                x + 3
+                3
             }
-            canvas.setFg(markerX, y + markerRow, destroyedIcon(), color)
+            canvas.setString(markerX, markerRow, destroyedIcon(), Style(fg = color))
         }
 
-        canvas.setFg(arrowX, y + arrowRow, arrowChar, color)
+        canvas.setString(arrowX, arrowRow, arrowChar, Style(fg = color))
 
         if (torsoChar != null && torsoX != null && torsoRow != null) {
-            canvas.setFg(torsoX, y + torsoRow, torsoChar, torsoColor)
+            canvas.setString(torsoX, torsoRow, torsoChar, Style(fg = torsoColor))
         }
     }
-
 }

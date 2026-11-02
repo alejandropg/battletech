@@ -65,17 +65,16 @@ import io.archinaut.battletech.tui.icon.unitFellIcon
 import io.archinaut.battletech.tui.icon.unitRestartedIcon
 import io.archinaut.battletech.tui.icon.unitShutdownIcon
 import io.archinaut.battletech.tui.icon.unitStoodUpIcon
-import io.archinaut.tenter.screen.StyledText
-import io.archinaut.tenter.screen.joinStyled
-import io.archinaut.tenter.screen.styled
+import io.archinaut.tenter.screen.Line
+import io.archinaut.tenter.screen.Style
 
 internal object GameLogFormatter {
 
-    data class LogLine(val icon: String, val content: StyledText) {
-        constructor(icon: String, text: String) : this(icon, StyledText.of(text))
+    data class LogLine(val icon: String, val content: Line) {
+        constructor(icon: String, text: String) : this(icon, Line(text))
 
         /** Plain-text projection for un-styled consumers ([io.archinaut.battletech.tui.GameEventPrinter], assertions). */
-        val text: String get() = content.plain
+        val text: String get() = content.spans.joinToString("") { it.text }
     }
 
     /** Renders an event as one or more log lines, each with its own icon (e.g. one per twisted unit). */
@@ -90,25 +89,17 @@ internal object GameLogFormatter {
             listOf(
                 LogLine(
                     initiativeIcon(),
-                    styled {
-                        append("Initiative: ")
-                        append(playerName(PlayerId.PLAYER_1))
-                        append(" ${diceRollLabel(p1)}, ")
-                        append(playerName(PlayerId.PLAYER_2))
-                        append(" ${diceRollLabel(p2)} — ")
-                        append(playerName(event.initiative.loser))
-                        append(" moves first")
-                    },
+                    Line("Initiative: ") +
+                        playerName(PlayerId.PLAYER_1) + Line(" ${diceRollLabel(p1)}, ") +
+                        playerName(PlayerId.PLAYER_2) + Line(" ${diceRollLabel(p2)} — ") +
+                        playerName(event.initiative.loser) + Line(" moves first"),
                 ),
             )
         }
         is UnitMoved -> listOf(
             LogLine(
                 movementModeIcon(event.mode),
-                styled {
-                    append(unitName(event.unitId, state))
-                    append(" (${event.mpSpent} MP) ${hexLabel(event.from)}→${hexLabel(event.to)}")
-                },
+                unitName(event.unitId, state) + Line(" (${event.mpSpent} MP) ${hexLabel(event.from)}→${hexLabel(event.to)}"),
             ),
         )
         is AttacksResolved -> {
@@ -116,13 +107,8 @@ internal object GameLogFormatter {
             val hits = event.results.filterIsInstance<AttackResult.Hit>()
             val damage = hits.sumOf { it.damageApplied }
             val destroyed = destroyedClause(hits.map { it.targetId to it.damage }, state)
-            val content = styled {
-                append("Attacks: $fired fired, ${hits.size} hit, $damage damage")
-                if (destroyed != null) {
-                    append(" — ")
-                    append(destroyed)
-                }
-            }
+            val summary = Line("Attacks: $fired fired, ${hits.size} hit, $damage damage")
+            val content = if (destroyed == null) summary else summary + Line(" — ") + destroyed
             val icon = if (hits.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else attacksResolvedIcon()
             val lines = mutableListOf(LogLine(icon, content))
             // For every hit, append a detail line showing the location(s) struck (and missile count for clusters).
@@ -133,15 +119,9 @@ internal object GameLogFormatter {
             val parts = event.heatBefore
                 .filterValues { it > 0 }
                 .map { (unitId, before) ->
-                    styled {
-                        append(unitName(unitId, state))
-                        append(" $before→${event.heatAfter[unitId] ?: 0}")
-                    }
+                    unitName(unitId, state) + Line(" $before→${event.heatAfter[unitId] ?: 0}")
                 }
-            val content = if (parts.isEmpty()) StyledText.of("Heat: no heat to dissipate") else styled {
-                append("Heat: ")
-                append(parts.joinStyled(", "))
-            }
+            val content = if (parts.isEmpty()) Line("Heat: no heat to dissipate") else Line("Heat: ") + parts.joinLines(", ")
             val before = event.heatBefore.values.sum()
             val after = event.heatAfter.values.sum()
             listOf(LogLine(heatChangeIcon(wentUp = after > before), content))
@@ -151,28 +131,20 @@ internal object GameLogFormatter {
             val hits = event.results.filterIsInstance<PhysicalAttackResult.Hit>()
             val damage = hits.sumOf { it.damageApplied }
             val destroyed = destroyedClause(hits.map { it.targetId to it.damage }, state)
-            val content = styled {
-                append("Physical attacks: $made made, ${hits.size} hit, $damage damage")
-                if (destroyed != null) {
-                    append(" — ")
-                    append(destroyed)
-                }
-            }
+            val summary = Line("Physical attacks: $made made, ${hits.size} hit, $damage damage")
+            val content = if (destroyed == null) summary else summary + Line(" — ") + destroyed
             val icon = if (hits.any { r -> r.damage.any { it.destroyed } }) locationDestroyedIcon() else physicalAttacksResolvedIcon()
             val lines = mutableListOf(LogLine(icon, content))
             hits.forEach { result -> lines.add(physicalDetailLine(result, state)) }
             lines
         }
         is UnitFell -> listOf(
-            LogLine(unitFellIcon(), styled { append(unitName(event.unitId, state)); append(" fell — ${event.fall.damage} damage") }),
+            LogLine(unitFellIcon(), unitName(event.unitId, state) + Line(" fell — ${event.fall.damage} damage")),
         )
         is UnitStoodUp -> listOf(
             LogLine(
                 unitStoodUpIcon(),
-                styled {
-                    append(unitName(event.unitId, state))
-                    append(if (event.stoodUp) " stood up" else " failed to stand")
-                },
+                unitName(event.unitId, state) + Line(if (event.stoodUp) " stood up" else " failed to stand"),
             ),
         )
         is UnitShutdown -> {
@@ -181,25 +153,22 @@ internal object GameLogFormatter {
                 is UnitShutdown.AvoidFailed -> " shut down from heat"
                 is UnitShutdown.Undisclosed -> " shut down"
             }
-            listOf(LogLine(unitShutdownIcon(), styled { append(unitName(event.unitId, state)); append(suffix) }))
+            listOf(LogLine(unitShutdownIcon(), unitName(event.unitId, state) + Line(suffix)))
         }
         is UnitRestarted -> listOf(
-            LogLine(unitRestartedIcon(), styled { append(unitName(event.unitId, state)); append(" restarted") }),
+            LogLine(unitRestartedIcon(), unitName(event.unitId, state) + Line(" restarted")),
         )
         is AmmoExploded -> {
             val suffix = when (event) {
                 is AmmoExploded.Detailed -> " ammo explosion: ${event.ammoType.name} (${event.damage} damage)"
                 is AmmoExploded.Undisclosed -> " ammo explosion (${event.damage} damage)"
             }
-            listOf(LogLine(ammoExplosionIcon(), styled { append(unitName(event.unitId, state)); append(suffix) }))
+            listOf(LogLine(ammoExplosionIcon(), unitName(event.unitId, state) + Line(suffix)))
         }
         is UnitDestroyed -> listOf(
             LogLine(
                 destroyedIcon(),
-                styled {
-                    append(unitName(event.unitId, state))
-                    append(" destroyed (${destructionReasonLabel(event.reason)})")
-                },
+                unitName(event.unitId, state) + Line(" destroyed (${destructionReasonLabel(event.reason)})"),
             ),
         )
         is MatchEnded -> when (val outcome = event.outcome) {
@@ -207,7 +176,7 @@ internal object GameLogFormatter {
             is MatchOutcome.Victory -> listOf(
                 LogLine(
                     matchEndedIcon(),
-                    styled { append("Match over — "); append(playerName(outcome.winner)); append(" wins!") },
+                    Line("Match over — ") + playerName(outcome.winner) + Line(" wins!"),
                 ),
             )
         }
@@ -217,50 +186,44 @@ internal object GameLogFormatter {
                 listOf(
                     LogLine(
                         criticalHitIcon(event.content),
-                        styled {
-                            append(unitName(event.unitId, state))
-                            append(" critical hit: $component in ${MechLabels.location(event.location)}")
-                        },
+                        unitName(event.unitId, state) + Line(" critical hit: $component in ${MechLabels.location(event.location)}"),
                     ),
                 )
             }
             is CriticalHit.Undisclosed -> listOf(
-                LogLine(undisclosedCriticalHitIcon(), styled { append(unitName(event.unitId, state)); append(" takes a critical hit") }),
+                LogLine(undisclosedCriticalHitIcon(), unitName(event.unitId, state) + Line(" takes a critical hit")),
             )
         }
         is PilotHit -> when (event) {
             // The 6th hit kills the pilot outright — call it out with its own line and
             // the pilot-dead skull, rather than folding it into the generic wounded text.
             is PilotHit.Fatal -> listOf(
-                LogLine(pilotDeadIcon(), styled { append(unitName(event.unitId, state)); append(" pilot killed") }),
+                LogLine(pilotDeadIcon(), unitName(event.unitId, state) + Line(" pilot killed")),
             )
             is PilotHit.Checked -> listOf(
                 LogLine(
                     pilotWoundedIcon(),
-                    styled {
-                        append(unitName(event.unitId, state))
-                        append(" pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)")
-                    },
+                    unitName(event.unitId, state) + Line(" pilot wounded (${event.pilotHits} hit${if (event.pilotHits == 1) "" else "s"} total)"),
                 ),
             )
             is PilotHit.Undisclosed -> listOf(
-                LogLine(pilotWoundedIcon(), styled { append(unitName(event.unitId, state)); append(" pilot wounded") }),
+                LogLine(pilotWoundedIcon(), unitName(event.unitId, state) + Line(" pilot wounded")),
             )
         }
         is PilotKnockedUnconscious -> listOf(
-            LogLine(pilotUnconsciousIcon(), styled { append(unitName(event.unitId, state)); append(" pilot knocked unconscious") }),
+            LogLine(pilotUnconsciousIcon(), unitName(event.unitId, state) + Line(" pilot knocked unconscious")),
         )
         // Both leaves render identically: the recovery roll was never printed, so redacting
         // it is wire-only and costs no rendering fidelity (see GameEvent.redactFor's KDoc).
         is PilotRecoveredConsciousness -> listOf(
-            LogLine(pilotConsciousIcon(), styled { append(unitName(event.unitId, state)); append(" pilot regained consciousness") }),
+            LogLine(pilotConsciousIcon(), unitName(event.unitId, state) + Line(" pilot regained consciousness")),
         )
         is SessionNotice -> listOf(LogLine(sessionNoticeIcon(), event.text))
         is PlayerConnected -> listOf(
-            LogLine(sessionNoticeIcon(), styled { append(playerName(event.player)); append(" connected") }),
+            LogLine(sessionNoticeIcon(), playerName(event.player) + Line(" connected")),
         )
         is PlayerDisconnected -> listOf(
-            LogLine(sessionNoticeIcon(), styled { append(playerName(event.player)); append(" disconnected — waiting for rejoin…") }),
+            LogLine(sessionNoticeIcon(), playerName(event.player) + Line(" disconnected — waiting for rejoin…")),
         )
         is SessionOpened -> listOf(LogLine(sessionNoticeIcon(), "Session ID: ${event.sessionId}"))
         is HostConnectionLost ->
@@ -272,10 +235,7 @@ internal object GameLogFormatter {
             listOf(
                 LogLine(
                     icon,
-                    styled {
-                        append(playerName(event.player))
-                        append("'s local $noun '${event.id}' differs from the registered one — using the registered $noun")
-                    },
+                    playerName(event.player) + Line("'s local $noun '${event.id}' differs from the registered one — using the registered $noun"),
                 ),
             )
         }
@@ -293,13 +253,13 @@ internal object GameLogFormatter {
             val groupParts = result.locationHits.joinToString(", ") { "${locationLabel(it.location)} (${it.damage} dmg)" }
             return LogLine(
                 attackOutcomeIcon(hit = true),
-                styled { append(weapon); append(": ${result.missilesHit} missiles ($total dmg) → $groupParts") },
+                weapon + Line(": ${result.missilesHit} missiles ($total dmg) → $groupParts"),
             )
         }
         val hit = result.locationHits.first()
         return LogLine(
             attackOutcomeIcon(hit = true),
-            styled { append(weapon); append(" → ${locationLabel(hit.location)} (${hit.damage} dmg)") },
+            weapon + Line(" → ${locationLabel(hit.location)} (${hit.damage} dmg)"),
         )
     }
 
@@ -307,15 +267,12 @@ internal object GameLogFormatter {
     private fun physicalDetailLine(result: PhysicalAttackResult.Hit, state: PlayerGameState): LogLine =
         LogLine(
             attackOutcomeIcon(hit = true),
-            styled {
-                append(playerColored(result.attackName, result.attackerId, state))
-                append(" → ${locationLabel(result.hitLocation)} (${result.damageApplied} dmg)")
-            },
+            playerColored(result.attackName, result.attackerId, state) + Line(" → ${locationLabel(result.hitLocation)} (${result.damageApplied} dmg)"),
         )
 
     private fun torsoFacingLines(event: TorsoFacingsApplied, state: PlayerGameState): List<LogLine> =
         event.facings.entries.map { (unitId, dir) ->
-            LogLine(torsoArrowIcon(dir).first, styled { append(unitName(unitId, state)); append(" torso → $dir") })
+            LogLine(torsoArrowIcon(dir).first, unitName(unitId, state) + Line(" torso → $dir"))
         }
 
     private fun attackDeclarationLines(event: AttackDeclarationsRecorded, state: PlayerGameState): List<LogLine> =
@@ -325,15 +282,11 @@ internal object GameLogFormatter {
                 val weaponNames = targetDecls.joinToString(", ") { decl ->
                     attacker.weapons.getOrNull(decl.weaponIndex)?.name ?: "weapon#${decl.weaponIndex}"
                 }
-                styled { append(unitName(targetId, state)); append(" ($weaponNames)") }
+                unitName(targetId, state) + Line(" ($weaponNames)")
             }
             LogLine(
                 targetIcon(),
-                styled {
-                    append(unitName(attackerId, state))
-                    append(" → ")
-                    append(perTarget.joinStyled(", "))
-                },
+                unitName(attackerId, state) + Line(" → ") + perTarget.joinLines(", "),
             )
         }
 
@@ -346,18 +299,18 @@ internal object GameLogFormatter {
     }
 
     /** A unit's name in its owner's board color. */
-    private fun unitName(unitId: UnitId, state: PlayerGameState): StyledText =
+    private fun unitName(unitId: UnitId, state: PlayerGameState): Line =
         playerColored(unitId.value, unitId, state)
 
     /** [text] in the color of the player owning [unitId] — the default style if [unitId] isn't in the roster. */
-    private fun playerColored(text: String, unitId: UnitId, state: PlayerGameState): StyledText =
+    private fun playerColored(text: String, unitId: UnitId, state: PlayerGameState): Line =
         owner(unitId, state)
-            ?.let { StyledText.of(text, playerColor(it)) }
-            ?: StyledText.of(text)
+            ?.let { Line(text, Style(playerColor(it))) }
+            ?: Line(text)
 
     /** A seat label ("P1"/"P2") in that seat's board color. */
-    private fun playerName(player: PlayerId): StyledText =
-        StyledText.of(playerLabel(player), playerColor(player))
+    private fun playerName(player: PlayerId): Line =
+        Line(playerLabel(player), Style(playerColor(player)))
 
     /**
      * Deliberately not [PlayerGameState.units]' `byId` — that throws `UnknownUnitException` on
@@ -371,15 +324,19 @@ internal object GameLogFormatter {
     private fun hexLabel(coord: HexCoordinates): String =
         "%02d%02d".format(coord.col + 1, coord.row + 1)
 
-    private fun destroyedClause(targetsAndDamage: List<Pair<UnitId, List<LocationDamage>>>, state: PlayerGameState): StyledText? {
+    private fun destroyedClause(targetsAndDamage: List<Pair<UnitId, List<LocationDamage>>>, state: PlayerGameState): Line? {
         val parts = targetsAndDamage.flatMap { (targetId, steps) ->
             steps.filter { it.destroyed }.map { step ->
-                styled { append(unitName(targetId, state)); append(" ${locationLabel(step.location)}") }
+                unitName(targetId, state) + Line(" ${locationLabel(step.location)}")
             }
         }
         if (parts.isEmpty()) return null
-        return styled { append(parts.joinStyled(", ")); append(" destroyed") }
+        return parts.joinLines(", ") + Line(" destroyed")
     }
 
     private fun locationLabel(location: MechLocation): String = MechLabels.location(location)
+
+    /** [joinToString] for styled fragments; the separator is unstyled. */
+    private fun List<Line>.joinLines(separator: String): Line =
+        reduce { joined, part -> joined + Line(separator) + part }
 }

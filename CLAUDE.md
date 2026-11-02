@@ -15,7 +15,7 @@ Not needed for everyday context — read the row's doc when its trigger applies.
 | `docs/build.md` | Touching `buildSrc/`, a `build.gradle.kts`, module dependencies, or `unit/`/`map/`/`mech/`/`theme/`/shadow-jar packaging. |
 | `docs/wire-protocol.md` | Adding or changing a wire-crossing `@Serializable sealed` variant, a failing wire-discriminator test, or a non-additive protocol change. |
 | `docs/tui-testing.md` | Hand-checking TUI rendering that can't be expressed as a unit test; automated tests are the primary strategy. |
-| `docs/color-themes.md` | Touching `theme/*.json`, palette roles, or the theme contrast/distinctness guarantees. |
+| `docs/color-themes.md` | Touching `theme/*.json`, color roles, or the theme contrast/distinctness guarantees. |
 | `docs/unit-files.md` | Touching `unit/*.json` or unit-collection loading and validation. |
 | `docs/mech-files.md` | Touching `mech/*.json`, mech collection loading, or stable weapon identifiers used by those files. |
 

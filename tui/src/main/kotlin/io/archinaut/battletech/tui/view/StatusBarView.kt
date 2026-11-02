@@ -4,57 +4,59 @@ import io.archinaut.battletech.tactical.model.PlayerId
 import io.archinaut.battletech.tactical.model.TurnPhase
 import io.archinaut.battletech.tactical.unit.VisibleUnit
 import io.archinaut.battletech.tui.game.displayName
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.screen.Cell
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.Insets
-import io.archinaut.tenter.screen.StyledText
-import io.archinaut.tenter.screen.styled
+import io.archinaut.tenter.screen.Constraint.Fill
+import io.archinaut.tenter.screen.Constraint.Length
+import io.archinaut.tenter.screen.Constraint.Min
+import io.archinaut.tenter.screen.Layout
+import io.archinaut.tenter.screen.Line
+import io.archinaut.tenter.screen.Padding
+import io.archinaut.tenter.screen.Rect
+import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.text.CellWidth
-import io.archinaut.tenter.text.TextTruncation
-import io.archinaut.tenter.view.Bordered
-import io.archinaut.tenter.view.TextCursor
-import io.archinaut.tenter.view.View
+import io.archinaut.tenter.widget.Block
+import io.archinaut.tenter.widget.Paragraph
+import io.archinaut.tenter.widget.Widget
 
 internal class StatusBarView(
     private val phase: TurnPhase,
     private val prompt: String,
     private val activePlayer: PlayerId? = null,
     private val actionUnit: VisibleUnit? = null,
-) : View {
+) : Widget {
 
-    override fun draw(canvas: Canvas) {
-        Bordered(gutters = STATUS_BAR_PADDING, content = Content()).draw(canvas)
+    override fun render(canvas: Canvas) {
+        val block = Block.bordered(padding = STATUS_BAR_PADDING)
+        block.render(canvas)
+        renderContent(block.inner(canvas))
     }
 
-    private inner class Content : View {
-        override fun draw(canvas: Canvas) {
-            val message = messageText()
-            val compact = paddedContentWidth(message) > canvas.width
-            val leadingPadding = if (compact) "" else LEADING_PADDING
-            val phaseText = if (compact) phaseLabel(phase) else centeredPhaseLabel(phase)
-            val separator = if (compact) COMPACT_SEPARATOR else PADDED_SEPARATOR
-            val playerWidth = if (compact) activePlayer?.let { CellWidth.of(it.displayName) } ?: 0 else PLAYER_WIDTH
+    private fun renderContent(canvas: Canvas) {
+        val message = messageText()
+        val compact = paddedContentWidth(message) > canvas.width
+        val leadingPadding = if (compact) "" else LEADING_PADDING
+        val phaseText = if (compact) phaseLabel(phase) else centeredPhaseLabel(phase)
+        val separator = if (compact) COMPACT_SEPARATOR else PADDED_SEPARATOR
+        val playerWidth = if (compact) activePlayer?.let { CellWidth.of(it.displayName) } ?: 0 else PLAYER_WIDTH
 
-            val prefix = styled {
-                append(leadingPadding)
-                append(phaseText, ACCENT_STYLE)
-                append(separator, TEXT_PRIMARY_STYLE)
-                if (activePlayer != null) {
-                    append(activePlayer.displayName, Cell.Style(playerColor(activePlayer)))
-                    append(" ".repeat(playerWidth - CellWidth.of(activePlayer.displayName)))
-                } else {
-                    append(" ".repeat(playerWidth))
-                }
-                append(separator, TEXT_PRIMARY_STYLE)
-            }
-
-            val helpColumn = HelpHint.column(canvas)
-            val messageWidth = (helpColumn - MESSAGE_HELP_GAP - prefix.width).coerceAtLeast(0)
-            TextCursor(canvas).writeLine(prefix + StyledText.of(TextTruncation.ellipsize(message, messageWidth), TEXT_PRIMARY_STYLE))
-
-            HelpHint.draw(canvas, 0)
+        val player = if (activePlayer != null) {
+            Line(activePlayer.displayName, Style(playerColor(activePlayer))) +
+                Line(" ".repeat(playerWidth - CellWidth.of(activePlayer.displayName)))
+        } else {
+            Line(" ".repeat(playerWidth))
         }
+        val line = Line(leadingPadding) +
+            Line(phaseText, ACCENT_STYLE) +
+            Line(separator, TEXT_PRIMARY_STYLE) +
+            player +
+            Line(separator, TEXT_PRIMARY_STYLE) +
+            Line(message, TEXT_PRIMARY_STYLE)
+
+        // The line stops short of the help hint, so an over-long message ellipsizes before it.
+        val (lineArea, _, hintArea) = HINT_ROW.split(Rect(0, 0, canvas.width, 1))
+        Paragraph(listOf(line)).render(canvas.region(lineArea))
+        HelpHint.render(canvas.region(hintArea))
     }
 
     private fun paddedContentWidth(message: String): Int =
@@ -76,8 +78,10 @@ internal class StatusBarView(
         private const val COMPACT_SEPARATOR: String = " | "
         private const val UNIT_MESSAGE_SEPARATOR: String = " ┆ "
         private const val MESSAGE_HELP_GAP: Int = 1
-        private val ACCENT_STYLE = Cell.Style(ChromeRole.ACCENT)
-        private val TEXT_PRIMARY_STYLE = Cell.Style(ChromeRole.TEXT_PRIMARY)
+        // Min, so the message and the gap give way to the hint before it shrinks.
+        private val HINT_ROW = Layout.horizontal(Fill(1), Length(MESSAGE_HELP_GAP), Min(HelpHint.WIDTH))
+        private val ACCENT_STYLE = Style(StandardRole.ACCENT)
+        private val TEXT_PRIMARY_STYLE = Style(StandardRole.TEXT_PRIMARY)
         private val PHASE_WIDTH = TurnPhase.entries.maxOf { CellWidth.of(phaseLabel(it)) }
         private val PLAYER_WIDTH = PlayerId.entries.maxOf { CellWidth.of(it.displayName) }
 
@@ -85,7 +89,7 @@ internal class StatusBarView(
          * The status bar is only [Workspace.STATUS_BAR_HEIGHT] = 3 rows tall: border alone
          * takes 2 and the phase, player, prompt, and help hint share the remaining row.
          */
-        private val STATUS_BAR_PADDING = Insets(left = 1, right = 1)
+        private val STATUS_BAR_PADDING = Padding(left = 1, right = 1)
 
         private fun phaseLabel(phase: TurnPhase): String = phase.name.replace('_', ' ')
 

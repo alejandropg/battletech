@@ -1,18 +1,17 @@
 package io.archinaut.battletech.tui.animation
 
 import io.archinaut.tenter.animation.Animation
-import io.archinaut.tenter.animation.AnimationSize
-import io.archinaut.tenter.view.Bordered
+import io.archinaut.tenter.screen.Size
 
 /** A panel's absolute top-left on screen, border included. */
 internal data class PanelPlacement(val x: Int, val y: Int)
 
-/** The outer dimensions of this animation when wrapped in a [Bordered] panel. */
-internal val AnimationSize.panelSize: AnimationSize
-    get() = AnimationSize(
-        width = width + Bordered.BORDER.left + Bordered.BORDER.right,
-        height = height + Bordered.BORDER.top + Bordered.BORDER.bottom,
-    )
+/**
+ * The outer dimensions of this animation when wrapped in a panel: a bordered
+ * [io.archinaut.tenter.widget.Block] adds one cell on every side.
+ */
+internal val Size.panelSize: Size
+    get() = Size(width = width + 2, height = height + 2)
 
 /**
  * Places up to 3 animation panels at FIXED offsets from the screen centre. Which

@@ -6,18 +6,20 @@ import io.archinaut.battletech.tui.game.AppState
 import io.archinaut.battletech.tui.game.GamePanelId
 import io.archinaut.battletech.tui.game.phase.MovementPhase
 import io.archinaut.battletech.tui.input.Keybindings
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.panel.Panel
-import io.archinaut.tenter.panel.PanelSet
-import io.archinaut.tenter.panel.PanelState
-import io.archinaut.tenter.panel.VerticalTitleView
-import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.screen.ScreenBuffer
-import io.archinaut.tenter.view.ContentView
-import io.archinaut.tenter.view.contentView
+import io.archinaut.tenter.color.StandardRole
+import io.archinaut.tenter.widget.panel.Panel
+import io.archinaut.tenter.widget.panel.PanelSet
+import io.archinaut.tenter.widget.panel.PanelMode
+import io.archinaut.tenter.widget.VerticalText
+import io.archinaut.tenter.screen.Rect
+import io.archinaut.tenter.widget.MeasurableWidget
+import io.archinaut.tenter.widget.Paragraph
+import io.archinaut.tenter.widget.revealed
+import io.archinaut.tenter.widget.panel.Panels
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.terminal.CompletedFrame
 
 /** Managed panel behavior is exercised through the public [PanelSet] seam. */
 internal class PanelTest {
@@ -27,67 +29,64 @@ internal class PanelTest {
         Keybindings.DEFAULT,
     )
 
-    private fun stubContent(lines: Int): ContentView = contentView { cursor ->
+    private fun stubContent(lines: Int): MeasurableWidget = MeasurableWidget { cursor ->
         repeat(lines) { row -> cursor.writeLine("row$row") }
     }
 
     private fun panel(
-        normal: (PanelInputs) -> ContentView = { stubContent(3) },
-        minimized: ((PanelInputs) -> ContentView)? = null,
-        maximized: ((PanelInputs) -> ContentView)? = null,
-    ): GamePanel = Panel(
+        normal: (PanelInputs) -> MeasurableWidget = { stubContent(3) },
+        minimized: ((PanelInputs) -> MeasurableWidget)? = null,
+        maximized: ((PanelInputs) -> MeasurableWidget)? = null,
+    ): Panel<GamePanelId, PanelInputs> = Panel(
         id = GamePanelId.LOG,
         title = "T",
         badge = "9",
-        normal = { Panel.Presentation.fixedWidth(normal(it), 28) },
-        minimized = minimized?.let { build -> { Panel.Presentation.fixedWidth(build(it), Panel.MINIMIZED_WIDTH) } },
-        maximized = maximized?.let { build -> { Panel.Presentation.allocated(build(it)) } },
+        normal = normal,
+        minimized = minimized,
+        maximized = maximized,
     )
 
     private fun renderPanel(
-        panel: GamePanel,
+        panel: Panel<GamePanelId, PanelInputs>,
         width: Int = 30,
         height: Int = 10,
-        configure: (GamePanelSet) -> Unit = {},
-    ): ScreenBuffer {
-        val set = PanelSet.uniform(listOf(panel))
+        configure: (PanelSet<GamePanelId, PanelInputs>) -> Unit = {},
+    ): CompletedFrame {
+        val set = PanelSet(listOf(panel))
         configure(set)
-        val buffer = ScreenBuffer(width, height)
-        set.render(Canvas.of(buffer), inputs, visible = setOf(GamePanelId.LOG), reservedTop = 0)
-        return buffer
+        return render(set, width, height)
     }
 
-    private fun render(set: GamePanelSet, width: Int = 30, height: Int = 10): ScreenBuffer {
-        val buffer = ScreenBuffer(width, height)
-        set.render(Canvas.of(buffer), inputs, visible = setOf(GamePanelId.LOG), reservedTop = 0)
-        return buffer
+    /** Renders LOG across the whole [width]x[height] canvas. */
+    private fun render(set: PanelSet<GamePanelId, PanelInputs>, width: Int = 30, height: Int = 10): CompletedFrame {
+        return drawFrame(width, height) { it.renderStatefulWidget(Panels(inputs, mapOf(GamePanelId.LOG to it.area)), it.area, set) }
     }
 
     @Test
-    fun `presentation width and state are observed through the set`() {
-        val panel = panel()
-        val set = PanelSet.uniform(listOf(panel))
+    fun `area and mode are observed through the set`() {
+        val set = PanelSet(listOf(panel()))
+        render(set)
 
-        assertEquals(PanelState.NORMAL, set.stateOf(GamePanelId.LOG))
-        assertEquals(30, set.render(Canvas.of(ScreenBuffer(30, 10)), inputs, setOf(GamePanelId.LOG), 0).sides.single().outer.width)
+        assertEquals(PanelMode.NORMAL, set.modeOf(GamePanelId.LOG))
+        assertEquals(30, checkNotNull(set.layout).slots.single().outer.width)
     }
 
     @Test
     fun `renders chrome even when content draws nothing`() {
-        val buffer = renderPanel(panel(normal = { contentView { } }))
+        val buffer = renderPanel(panel(normal = { MeasurableWidget { } }))
 
-        assertEquals("╭", buffer.get(0, 0).char)
-        assertEquals("9", buffer.get(3, 0).char)
+        assertEquals("╭", buffer.get(0, 0).symbol)
+        assertEquals("9", buffer.get(3, 0).symbol)
     }
 
     @Test
     fun `scroll offset persists and is only observed after rendering`() {
         val unscrolled = renderPanel(panel(normal = { stubContent(20) }))
         val panel = panel(normal = { stubContent(20) })
-        val set = PanelSet.uniform(listOf(panel))
+        val set = PanelSet(listOf(panel))
 
         val firstAfterScroll = run {
-            set.scrollFocused(0, 3)
+            set.scroll(set.focused, 0, 3)
             render(set)
         }
         val secondAfterScroll = render(set)
@@ -98,15 +97,17 @@ internal class PanelTest {
 
     @Test
     fun `resize re-follows a settled reveal without caller reset plumbing`() {
-        val revealing = contentView { cursor ->
-            repeat(20) { row -> cursor.writeLine("row$row") }
-            cursor.markRevealAt(15)
+        val revealing = MeasurableWidget { cursor ->
+            repeat(20) { row ->
+                val line = Paragraph("row$row")
+                cursor.draw(if (row == 15) line.revealed() else line)
+            }
         }
         val panel = panel(normal = { revealing })
-        val set = PanelSet.uniform(listOf(panel))
+        val set = PanelSet(listOf(panel))
 
         render(set)
-        set.scrollFocused(0, -100)
+        set.scroll(set.focused, 0, -100)
         val stayedAway = render(set)
         val forced = render(set, height = 8)
 
@@ -118,35 +119,36 @@ internal class PanelTest {
         val panel = panel()
 
         val focused = renderPanel(panel)
-        assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, focused.get(0, 0).style.fg)
+        assertEquals(StandardRole.PANEL_BORDER_FOCUSED, focused.get(0, 0).fg)
 
         val unfocusedPanel = panel()
-        val unfocusedSet = PanelSet.uniform(listOf(unfocusedPanel, Panel(
-            id = GamePanelId.BOARD,
-            title = "B",
-            normal = { Panel.Presentation.allocated(contentView { }) },
-        )))
+        val unfocusedSet = PanelSet(
+            listOf(
+                unfocusedPanel,
+                Panel(id = GamePanelId.BOARD, title = "B", normal = { MeasurableWidget { } }),
+            ),
+        )
         unfocusedSet.focus(GamePanelId.BOARD)
-        val buffer = ScreenBuffer(30, 10)
-        unfocusedSet.render(Canvas.of(buffer), inputs, setOf(GamePanelId.LOG, GamePanelId.BOARD), 0)
-        assertEquals(ChromeRole.PANEL_BORDER, buffer.get(0, 0).style.fg)
+        val panels = Panels(inputs, mapOf(GamePanelId.LOG to Rect(0, 0, 15, 10), GamePanelId.BOARD to Rect(15, 0, 15, 10)))
+        val buffer = drawFrame(30, 10) { it.renderStatefulWidget(panels, it.area, unfocusedSet) }
+        assertEquals(StandardRole.PANEL_BORDER, buffer.get(0, 0).fg)
     }
 
     @Test
-    fun `minimized presentation owns its width and never builds normal content`() {
+    fun `minimized content never builds normal content`() {
         var normalBuilds = 0
         val panel = panel(
             normal = {
                 normalBuilds++
                 stubContent(3)
             },
-            minimized = { VerticalTitleView("LOG") },
+            minimized = { VerticalText("LOG") },
         )
 
-        val buffer = renderPanel(panel, width = Panel.MINIMIZED_WIDTH, configure = { it.cycleFocusedState(-1) })
+        val buffer = renderPanel(panel, width = GamePanels.MINIMIZED_WIDTH, configure = { it.cycleFocusedMode(-1) })
 
-        assertEquals("9", buffer.get(3, 0).char)
-        assertEquals("L", buffer.get(3, 2).char)
+        assertEquals("9", buffer.get(3, 0).symbol)
+        assertEquals("L", buffer.get(3, 2).symbol)
         assertEquals(0, normalBuilds)
     }
 
@@ -154,7 +156,7 @@ internal class PanelTest {
     fun `a focused panel's scrollbar thumb uses the focus color`() {
         val buffer = renderPanel(panel(normal = { stubContent(20) }))
 
-        val thumbRow = (1..8).first { buffer.get(29, it).char == "▐" }
-        assertEquals(ChromeRole.PANEL_BORDER_FOCUSED, buffer.get(29, thumbRow).style.fg)
+        val thumbRow = (1..8).first { buffer.get(29, it).symbol == "▐" }
+        assertEquals(StandardRole.PANEL_BORDER_FOCUSED, buffer.get(29, thumbRow).fg)
     }
 }

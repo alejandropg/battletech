@@ -31,7 +31,7 @@ import io.archinaut.battletech.tui.input.AttackAction
 import io.archinaut.battletech.tui.input.BoardClick
 import io.archinaut.battletech.tui.input.ContextId
 import io.archinaut.battletech.tui.input.IdleAction
-import io.archinaut.tenter.input.InputAction
+import io.archinaut.battletech.tui.input.Action
 
 internal const val DECLARING_PROMPT = "Declare weapon fire"
 
@@ -57,7 +57,7 @@ internal sealed interface AttackPhase : Phase {
 
         override val keyContext: ContextId get() = ContextId.WEAPON_IDLE
 
-        override fun handle(action: InputAction, app: AppState): Transition? {
+        override fun handle(action: Action, app: AppState): Transition? {
             val turnState = app.turnState
             // The attack impulse sequence may not be seeded yet (fresh TurnState.NULL, or a
             // host-mode render before the roster completes and the session's advance() kickstart
@@ -123,7 +123,7 @@ internal sealed interface AttackPhase : Phase {
 
         override val keyContext: ContextId get() = ContextId.WEAPON_DECLARING
 
-        override fun handle(action: InputAction, app: AppState): Transition? {
+        override fun handle(action: Action, app: AppState): Transition? {
             // Compute view + targets once per event; pass into pure allocation methods.
             val attacker = app.ownUnit(unitId)
             val view = app.view

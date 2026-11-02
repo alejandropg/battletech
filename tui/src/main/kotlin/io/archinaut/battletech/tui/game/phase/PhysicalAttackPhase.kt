@@ -16,8 +16,8 @@ import io.archinaut.battletech.tui.input.AttackAction
 import io.archinaut.battletech.tui.input.BoardClick
 import io.archinaut.battletech.tui.input.ContextId
 import io.archinaut.battletech.tui.input.IdleAction
-import io.archinaut.tenter.input.InputAction
-import io.archinaut.tenter.view.FlashMessage
+import io.archinaut.battletech.tui.input.Action
+import io.archinaut.tenter.widget.FlashMessage
 
 internal const val PHYSICAL_DECLARING_PROMPT = "Declare punch/kick"
 
@@ -35,7 +35,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
 
         override val keyContext: ContextId get() = ContextId.PHYSICAL_IDLE
 
-        override fun handle(action: InputAction, app: AppState): Transition? {
+        override fun handle(action: Action, app: AppState): Transition? {
             val turnState = app.turnState
             // Mirrors AttackPhase.SelectingAttacker's / MovementPhase.SelectingUnit's guard: the
             // (shared) attack impulse sequence may not be seeded yet, and every other field this
@@ -73,7 +73,7 @@ internal sealed interface PhysicalAttackPhase : Phase {
 
         override val keyContext: ContextId get() = ContextId.PHYSICAL_DECLARING
 
-        override fun handle(action: InputAction, app: AppState): Transition? = when (action) {
+        override fun handle(action: Action, app: AppState): Transition? = when (action) {
             is BoardClick -> Transition(app)
             is AttackAction -> when (action) {
                 is AttackAction.NavigateWeapons -> Transition(app.copy(phase = navigate(action.delta, app)))

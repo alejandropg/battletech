@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.battletech.tui.screen.AppRole
 import io.archinaut.battletech.tactical.model.HexCoordinates
 import io.archinaut.battletech.tactical.model.HexDirection
 import io.archinaut.battletech.tactical.query.projectFor
@@ -11,11 +12,10 @@ import io.archinaut.battletech.tui.hex.HexHighlight
 import io.archinaut.battletech.tui.hex.HexLayout
 import io.archinaut.battletech.tui.icon.destroyedIcon
 import io.archinaut.battletech.tui.screen.BoardRole
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.screen.RevealRect
-import io.archinaut.tenter.screen.ScreenBuffer
-import io.archinaut.tenter.view.Viewport
+import io.archinaut.tenter.color.StandardRole
+import io.archinaut.tenter.screen.Rect
+import io.archinaut.tenter.widget.Viewport
+import io.archinaut.tenter.widget.ViewportState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -34,11 +34,11 @@ internal class BoardViewTest {
         val buffer = render(view, 32, 18)
 
         // Hex at (0,0): '/' at charX=4, charY=1+2
-        assertEquals("/", buffer.get(4, 3).char)
+        assertEquals("/", buffer.get(4, 3).symbol)
         // Hex at (1,0): '/' at charX=4+7+1, charY=1+2+1
-        assertEquals("/", buffer.get(12, 4).char)
+        assertEquals("/", buffer.get(12, 4).symbol)
         // Hex at (2,0): '/' at charX=4+14, charY=1+2
-        assertEquals("/", buffer.get(18, 3).char)
+        assertEquals("/", buffer.get(18, 3).symbol)
     }
 
     @Test
@@ -53,25 +53,25 @@ internal class BoardViewTest {
         val columnLabelStarts = listOf(7, 14, 21)
         val bottomLabelY = BoardView.MAP_ORIGIN_Y + mapHeight + BoardView.BOTTOM_LABEL_GAP
         for ((index, x) in columnLabelStarts.withIndex()) {
-            assertEquals(coordinateLabels[index], buffer.line(0, x, 2))
-            assertEquals(coordinateLabels[index], buffer.line(bottomLabelY, x, 2))
+            assertEquals(coordinateLabels[index], buffer.region(Rect(x, 0, 2, 1)).line(0))
+            assertEquals(coordinateLabels[index], buffer.region(Rect(x, bottomLabelY, 2, 1)).line(0))
         }
 
         val rowCenters = listOf(3, 7, 11)
         val rightLabelX = BoardView.MAP_ORIGIN_X + mapWidth + 2
         for ((index, y) in rowCenters.withIndex()) {
-            assertEquals(coordinateLabels[index], buffer.line(y, width = 2))
-            assertEquals(coordinateLabels[index], buffer.line(y, rightLabelX, 2))
+            assertEquals(coordinateLabels[index], buffer.region(Rect(0, y, 2, 1)).line(0))
+            assertEquals(coordinateLabels[index], buffer.region(Rect(rightLabelX, y, 2, 1)).line(0))
         }
 
-        assertEquals(ChromeRole.TEXT_SUBTLE, buffer.get(columnLabelStarts[0], 0).style.fg)
-        assertEquals(ChromeRole.TEXT_SUBTLE, buffer.get(0, rowCenters[0]).style.fg)
+        assertEquals(StandardRole.TEXT_SUBTLE, buffer.get(columnLabelStarts[0], 0).fg)
+        assertEquals(StandardRole.TEXT_SUBTLE, buffer.get(0, rowCenters[0]).fg)
 
-        assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X - 1, rowCenters[0]).char)
-        assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X - 2, rowCenters[0]).char)
-        assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X + mapWidth, rowCenters[0]).char)
-        assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X + mapWidth + 1, rowCenters[0]).char)
-        assertEquals(" ", buffer.get(columnLabelStarts[0], BoardView.MAP_ORIGIN_Y + mapHeight).char)
+        assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X - 1, rowCenters[0]).symbol)
+        assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X - 2, rowCenters[0]).symbol)
+        assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X + mapWidth, rowCenters[0]).symbol)
+        assertEquals(" ", buffer.get(BoardView.MAP_ORIGIN_X + mapWidth + 1, rowCenters[0]).symbol)
+        assertEquals(" ", buffer.get(columnLabelStarts[0], BoardView.MAP_ORIGIN_Y + mapHeight).symbol)
     }
 
     @Test
@@ -82,40 +82,41 @@ internal class BoardViewTest {
         val buffer = render(view, 32, 18)
 
         // Unit id "A1" at hex center: charX=4+4, charY=1+3 for north-facing units
-        assertEquals("A", buffer.get(8, 4).char)
-        assertEquals("1", buffer.get(9, 4).char)
+        assertEquals("A", buffer.get(8, 4).symbol)
+        assertEquals("1", buffer.get(9, 4).symbol)
     }
 
     @Test
-    fun `marks the cursor hex for reveal, for the enclosing Viewport to auto-follow`() {
+    fun `asks to keep the cursor hex visible, for the enclosing Viewport to auto-follow`() {
         val state = aGameState(map = aGameMap()).projectFor(viewer = null, revealAll = true)
         val cursor = HexCoordinates(1, 1)
-        val view = BoardView(state, cursorPosition = cursor)
-        val canvas = Canvas.of(ScreenBuffer(32, 18))
 
-        view.draw(canvas)
+        val revealed = revealedBy(BoardView(state, cursorPosition = cursor))
 
         val (x, y) = HexLayout.hexToScreen(cursor.col, cursor.row)
         assertEquals(
-            RevealRect(
+            Rect(
                 BoardView.MAP_ORIGIN_X + x,
                 BoardView.MAP_ORIGIN_Y + y,
                 HexGeometry.HEX_WIDTH,
                 HexGeometry.HEX_HEIGHT,
             ),
-            canvas.revealRect(),
+            revealed,
         )
     }
 
     @Test
     fun `no cursor means no reveal is marked`() {
         val state = aGameState(map = aGameMap()).projectFor(viewer = null, revealAll = true)
-        val view = BoardView(state)
-        val canvas = Canvas.of(ScreenBuffer(32, 18))
 
-        view.draw(canvas)
+        assertEquals(null, revealedBy(BoardView(state)))
+    }
 
-        assertEquals(null, canvas.revealRect())
+    /** The reveal request [view]'s scrollable content makes, as a 32x18 [Viewport] around it observes it. */
+    private fun revealedBy(view: BoardView): Rect? {
+        val state = ViewportState()
+        render(Viewport(view.scrollable()), state, 32, 18)
+        return checkNotNull(state.settled).revealed
     }
 
     @Test
@@ -144,7 +145,7 @@ internal class BoardViewTest {
         val buffer = render(view, 30, 18)
 
         // Hex at (1,1) border '/' offset by +1,+1 within the hex glyph (row1)
-        assertEquals(BoardRole.BOARD_ACTIVE, buffer.get(12, 8).style.fg)
+        assertEquals(BoardRole.BOARD_ACTIVE, buffer.get(12, 8).fg)
     }
 
     @Test
@@ -156,11 +157,11 @@ internal class BoardViewTest {
 
         // Unit id "A1" at hex center: charX=8/9, charY=4 (same cells as the id in the
         // "renders unit id on hex" test above), with a skull marker left of the id at charX=7.
-        assertEquals("A", buffer.get(8, 4).char)
-        assertEquals("1", buffer.get(9, 4).char)
-        assertEquals(BoardRole.DESTROYED, buffer.get(9, 4).style.fg)
-        assertEquals(destroyedIcon(), buffer.get(7, 4).char)
-        assertEquals(BoardRole.DESTROYED, buffer.get(7, 4).style.fg)
+        assertEquals("A", buffer.get(8, 4).symbol)
+        assertEquals("1", buffer.get(9, 4).symbol)
+        assertEquals(BoardRole.DESTROYED, buffer.get(9, 4).fg)
+        assertEquals(destroyedIcon(), buffer.get(7, 4).symbol)
+        assertEquals(BoardRole.DESTROYED, buffer.get(7, 4).fg)
     }
 
     @Test
@@ -170,12 +171,12 @@ internal class BoardViewTest {
         val view = BoardView(state)
         val buffer = render(view, 32, 18)
 
-        assertEquals("a", buffer.get(8, 4).char)
-        assertEquals("1", buffer.get(9, 4).char)
+        assertEquals("a", buffer.get(8, 4).symbol)
+        assertEquals("1", buffer.get(9, 4).symbol)
     }
 
     @Test
-    fun `draft torso override paints the arrow in ChromeRole DRAFT, distinct from a committed torso twist`() {
+    fun `draft torso override paints the arrow in StandardRole DRAFT, distinct from a committed torso twist`() {
         val draftUnit = aUnit(id = "A1", position = HexCoordinates(0, 0), facing = HexDirection.N)
         val committedUnit = aUnit(id = "B1", position = HexCoordinates(1, 0), facing = HexDirection.N)
             .copy(torsoFacing = HexDirection.NE)
@@ -185,9 +186,9 @@ internal class BoardViewTest {
         val buffer = render(view, 32, 18)
 
         // Draft unit (hex 0,0): torso NE slot is at x+5,y+2 = (9,3) — draft color.
-        assertEquals(ChromeRole.DRAFT, buffer.get(9, 3).style.fg)
+        assertEquals(AppRole.DRAFT, buffer.get(9, 3).fg)
         // Committed unit (hex 1,0): torso NE slot is at x+5,y+2 = (16,5) — player color, no draft entry.
-        assertEquals(BoardRole.PLAYER_1, buffer.get(16, 5).style.fg)
+        assertEquals(BoardRole.PLAYER_1, buffer.get(16, 5).fg)
     }
 
     @Test
@@ -201,7 +202,7 @@ internal class BoardViewTest {
         val buffer = render(view, 32, 18)
 
         // Hex center is at x+4, y+2 from hex render origin
-        assertEquals(".", buffer.get(15, 5).char)
-        assertEquals("*", buffer.get(22, 3).char)
+        assertEquals(".", buffer.get(15, 5).symbol)
+        assertEquals("*", buffer.get(22, 3).symbol)
     }
 }

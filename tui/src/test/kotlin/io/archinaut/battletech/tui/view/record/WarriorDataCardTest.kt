@@ -5,9 +5,7 @@ import io.archinaut.battletech.tui.aUnit
 import io.archinaut.battletech.tui.icon.emptyCircleIcon
 import io.archinaut.battletech.tui.icon.filledCircleIcon
 import io.archinaut.battletech.tui.icon.pilotDeadIcon
-import io.archinaut.battletech.tui.view.line
 import io.archinaut.battletech.tui.view.render
-import io.archinaut.battletech.tui.view.text
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -41,7 +39,7 @@ internal class WarriorDataCardTest {
     @Test
     fun `prints the consciousness target row without restating the rule table`() {
         val buffer = render(WarriorDataCard(aUnit()), width = 36, height = 10)
-        val labelRow = (0 until buffer.height).first { buffer.line(it).contains("Consciousness#") }
+        val labelRow = buffer.find("Consciousness#")!!.y
         val valuesRow = buffer.line(labelRow + 1)
 
         for (target in listOf("3", "5", "7", "10", "11", "Dead")) {

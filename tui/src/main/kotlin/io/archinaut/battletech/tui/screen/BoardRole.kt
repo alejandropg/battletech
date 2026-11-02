@@ -1,15 +1,15 @@
 package io.archinaut.battletech.tui.screen
 
-import io.archinaut.tenter.palette.ColorRole
+import io.archinaut.tenter.color.ColorRole
 
 /**
  * The tactical-board-specific color roles: terrain, movement, player, and elevation semantics
- * that have no meaning to `tenter`'s generic widgets. Every [io.archinaut.battletech.tui.screen.RolePalette]
- * (via [io.archinaut.tenter.palette.RolePalette]) resolves these alongside [io.archinaut.tenter.palette.ChromeRole] — see
- * [ColorRole]'s KDoc for the two-enum `when` shape every palette implements.
+ * that have no meaning to `tenter`'s generic widgets. Every [Theme]
+ * (a [io.archinaut.tenter.color.ColorScheme]) resolves these alongside [io.archinaut.tenter.color.StandardRole] — see
+ * [ColorRole]'s KDoc for the two-enum `when` shape every color scheme implements.
  *
  * Several roles deliberately resolve to the same value in some themes (e.g. `ACCENT`/
- * `BOARD_ACTIVE` from [io.archinaut.tenter.palette.ChromeRole], or `DANGER`/[TARGET_SELECTED] here). That is
+ * `BOARD_ACTIVE` from [io.archinaut.tenter.color.StandardRole], or `DANGER`/[TARGET_SELECTED] here). That is
  * intentional, not duplication: they are semantically distinct call sites that happen to share a
  * color today, and keeping them separate lets a theme diverge them later without touching a
  * single call site. Do not merge them into one entry.

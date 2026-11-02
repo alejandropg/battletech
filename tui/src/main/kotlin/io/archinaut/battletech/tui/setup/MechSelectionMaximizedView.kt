@@ -7,10 +7,9 @@ import io.archinaut.battletech.tactical.unit.MechModel
 import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.battletech.tactical.unit.createUnit
 import io.archinaut.battletech.tui.view.record.MechRecordSheetView
-import io.archinaut.battletech.tui.view.record.SheetLayout
 import io.archinaut.tenter.text.CellWidth
-import io.archinaut.tenter.view.ContentLayout
-import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.widget.MeasurableWidget
+import io.archinaut.tenter.widget.RowWriter
 
 /** Prepared maximized roster selection with the selected record sheet as its detail child. */
 internal class MechSelectionMaximizedView(
@@ -18,13 +17,17 @@ internal class MechSelectionMaximizedView(
     private val counts: (String) -> Int,
     private val cursorIndex: Int,
     private val mechFor: (String) -> MechModel?,
-) : ContentView {
+) : MeasurableWidget {
 
-    override fun layout(availableWidth: Int): ContentLayout = SplitMaximizedView(
-        leftWidth = listWidth(),
-        left = UnitListView(variants, counts, cursorIndex),
-        detail = MechRecordSheetView(selectedUnit(), GameMap(emptyMap())),
-    ).layout(availableWidth)
+    override fun write(writer: RowWriter) {
+        writer.draw(
+            SplitMaximizedView(
+                leftWidth = listWidth(),
+                left = UnitListView(variants, counts, cursorIndex),
+                detail = MechRecordSheetView(selectedUnit(), GameMap(emptyMap())),
+            ),
+        )
+    }
 
     private fun selectedUnit(): io.archinaut.battletech.tactical.unit.VisibleUnit? = selectedModel()?.let { model ->
         model.createUnit(

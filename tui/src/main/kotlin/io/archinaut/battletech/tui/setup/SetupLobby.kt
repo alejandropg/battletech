@@ -7,7 +7,10 @@ internal data class HostEndpoint(
     val addresses: List<String>,
     val port: Int,
     val sessionId: String,
-)
+) {
+    /** The command a peer runs to join, once per address this host listens on. */
+    val joinCommands: List<String> get() = addresses.map { address -> "join $address:$port --session $sessionId" }
+}
 
 internal sealed interface LobbyEvent {
     /** The opponent parked; [registry] is the merged registry the panels must list from. */

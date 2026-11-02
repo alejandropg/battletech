@@ -4,9 +4,9 @@ import io.archinaut.battletech.tactical.model.PlayerId
 import io.archinaut.battletech.tui.input.ContextId
 import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.tenter.input.KeySection
-import io.archinaut.tenter.panel.Panel
+import io.archinaut.battletech.tui.view.GamePanels
 import io.archinaut.tenter.text.CellWidth
-import io.archinaut.tenter.view.ContentView
+import io.archinaut.tenter.widget.MeasurableWidget
 
 /**
  * The per-frame view-model for the setup screen, mirroring `io.archinaut.battletech.tui.view.PanelInputs`:
@@ -14,7 +14,7 @@ import io.archinaut.tenter.view.ContentView
  */
 internal class SetupPanelInputs(private val state: SetupState, private val keys: Keybindings) {
 
-    val modeView: ContentView by lazy {
+    val modeView: MeasurableWidget by lazy {
         ModePanelView(
             mode = state.mode,
             modeLocked = state.modeLocked,
@@ -24,7 +24,7 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
         )
     }
 
-    val minimizedModeView: ContentView by lazy {
+    val minimizedModeView: MeasurableWidget by lazy {
         ModePanelView(
             mode = state.mode,
             modeLocked = state.modeLocked,
@@ -35,7 +35,7 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
         )
     }
 
-    val mapView: ContentView by lazy {
+    val mapView: MeasurableWidget by lazy {
         MapListView(
             maps = state.catalog.maps,
             selected = state.plan.mapName,
@@ -52,13 +52,13 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
         )
     }
 
-    val maximizedMapView: ContentView get() = maximizedMapSelection
+    val maximizedMapView: MeasurableWidget get() = maximizedMapSelection
 
-    val player1View: ContentView by lazy { playerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1) }
-    val player2View: ContentView by lazy { playerView(PlayerId.PLAYER_2, SetupPanelId.PLAYER_2) }
+    val player1View: MeasurableWidget by lazy { playerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1) }
+    val player2View: MeasurableWidget by lazy { playerView(PlayerId.PLAYER_2, SetupPanelId.PLAYER_2) }
 
-    val minimizedPlayer1View: ContentView by lazy { minimizedPlayerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1) }
-    val minimizedPlayer2View: ContentView by lazy { minimizedPlayerView(PlayerId.PLAYER_2, SetupPanelId.PLAYER_2) }
+    val minimizedPlayer1View: MeasurableWidget by lazy { minimizedPlayerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1) }
+    val minimizedPlayer2View: MeasurableWidget by lazy { minimizedPlayerView(PlayerId.PLAYER_2, SetupPanelId.PLAYER_2) }
 
     private val maximizedPlayer1Selection: MechSelectionMaximizedView by lazy {
         maximizedPlayerView(PlayerId.PLAYER_1, SetupPanelId.PLAYER_1)
@@ -67,16 +67,19 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
         maximizedPlayerView(PlayerId.PLAYER_2, SetupPanelId.PLAYER_2)
     }
 
-    val maximizedPlayer1View: ContentView get() = maximizedPlayer1Selection
-    val maximizedPlayer2View: ContentView get() = maximizedPlayer2Selection
+    val maximizedPlayer1View: MeasurableWidget get() = maximizedPlayer1Selection
+    val maximizedPlayer2View: MeasurableWidget get() = maximizedPlayer2Selection
 
-    val minimizedModeWidth: Int
-        get() = compactListPanelWidth(SetupMode.entries.map(ModePanelView::label))
+    /** The outer width of [panel]'s minimized compact list, sized to fit this frame's content. */
+    fun minimizedWidth(panel: SetupPanelId): Int = when (panel) {
+        SetupPanelId.MODE -> compactListPanelWidth(SetupMode.entries.map(ModePanelView::label))
+        SetupPanelId.MAP -> compactListPanelWidth(state.catalog.maps, emptyMessage = "No maps registered")
+        SetupPanelId.PLAYER_1 -> minimizedPlayerWidth(PlayerId.PLAYER_1)
+        SetupPanelId.PLAYER_2 -> minimizedPlayerWidth(PlayerId.PLAYER_2)
+        SetupPanelId.HELP -> error("HELP has no minimized mode")
+    }
 
-    val minimizedMapWidth: Int
-        get() = compactListPanelWidth(state.catalog.maps, emptyMessage = "No maps registered")
-
-    fun minimizedPlayerWidth(player: PlayerId): Int = compactListPanelWidth(
+    private fun minimizedPlayerWidth(player: PlayerId): Int = compactListPanelWidth(
         names = state.catalog.mechs,
         rightWidths = state.catalog.mechs.map { counts(player, it).toString().length },
         emptyMessage = "No mechs registered",
@@ -86,14 +89,14 @@ internal class SetupPanelInputs(private val state: SetupState, private val keys:
         listOf(keys.hints(ContextId.SETUP), keys.hints(ContextId.CHROME))
     }
 
-    private fun playerView(player: PlayerId, panel: SetupPanelId): ContentView = UnitListView(
+    private fun playerView(player: PlayerId, panel: SetupPanelId): MeasurableWidget = UnitListView(
         variants = state.catalog.mechs,
         counts = { variant -> state.plan.count(player, variant) },
         cursorIndex = state.cursors[panel] ?: 0,
         mechFor = state.registry::mech,
     )
 
-    private fun minimizedPlayerView(player: PlayerId, panel: SetupPanelId): ContentView = UnitListView(
+    private fun minimizedPlayerView(player: PlayerId, panel: SetupPanelId): MeasurableWidget = UnitListView(
         variants = state.catalog.mechs,
         counts = { variant -> state.plan.count(player, variant) },
         cursorIndex = state.cursors[panel] ?: 0,
@@ -117,5 +120,5 @@ private fun compactListPanelWidth(
     val widestName = names.maxOfOrNull(CellWidth::of) ?: CellWidth.of(emptyMessage)
     val widestRight = rightWidths.maxOrNull() ?: 0
     val rowWidth = 4 + widestName + if (widestRight > 0) 1 + widestRight else 0
-    return (rowWidth + 4).coerceAtLeast(Panel.MINIMIZED_WIDTH)
+    return (rowWidth + 4).coerceAtLeast(GamePanels.MINIMIZED_WIDTH)
 }

@@ -9,9 +9,7 @@ import io.archinaut.battletech.tactical.attack.weapon.WeaponTargetInfo
 import io.archinaut.battletech.tactical.unit.UnitId
 import io.archinaut.battletech.tui.icon.TUI_CHECKBOX_GLYPHS
 import io.archinaut.battletech.tui.icon.diceRoll
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.widget.CheckState
-import io.archinaut.tenter.widget.checkboxIcon
+import io.archinaut.tenter.color.StandardRole
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -150,7 +148,7 @@ internal class TargetsViewTest {
 
         val output = renderToString(view)
 
-        assertTrue(output.contains(checkboxIcon(CheckState.CHECKED, TUI_CHECKBOX_GLYPHS)))
+        assertTrue(output.contains(TUI_CHECKBOX_GLYPHS.checked))
     }
 
     @Test
@@ -215,8 +213,8 @@ internal class TargetsViewTest {
         assertTrue("13" !in lrmLine) { "Expected no target number sentinel on the unavailable weapon's row: $lrmLine" }
 
         // Disabled weapon row is rendered in gray
-        val rowColors = (0 until width).map { col -> buffer.get(col, lrmRow).style.fg }.toSet()
-        assertTrue(rowColors.contains(ChromeRole.DISABLED)) { "Expected disabled weapon row to use ChromeRole.DISABLED, got: $rowColors" }
+        val rowColors = (0 until width).map { col -> buffer.get(col, lrmRow).fg }.toSet()
+        assertTrue(rowColors.contains(StandardRole.DISABLED)) { "Expected disabled weapon row to use StandardRole.DISABLED, got: $rowColors" }
     }
 
     @Test

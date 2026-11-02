@@ -4,18 +4,18 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import io.archinaut.tenter.animation.Animation
-import io.archinaut.tenter.animation.AnimationSize
+import io.archinaut.tenter.screen.Size
 import io.archinaut.tenter.animation.GlyphGrid
-import io.archinaut.tenter.screen.Cell
+import io.archinaut.tenter.screen.Style
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-private class SizedAnimation(override val size: AnimationSize) : Animation {
+private class SizedAnimation(override val size: Size) : Animation {
     override val frameCount: Int = 1
     override val frameDuration: Duration = 1.milliseconds
 
-    override fun frame(index: Int): GlyphGrid = GlyphGrid(size, { 0 }, { Cell.Style() })
+    override fun frame(index: Int): GlyphGrid = GlyphGrid(size, { 0 }, { Style() })
 }
 
 internal class AnimationLayoutTest {
@@ -138,8 +138,8 @@ internal class AnimationLayoutTest {
 
     @Test
     fun `each animation is placed using its own bordered size`() {
-        val small = SizedAnimation(AnimationSize(width = 10, height = 5))
-        val large = SizedAnimation(AnimationSize(width = 100, height = 30))
+        val small = SizedAnimation(Size(width = 10, height = 5))
+        val large = SizedAnimation(Size(width = 100, height = 30))
 
         val placements = AnimationLayout.place(listOf(small, large), screenWidth = 120, screenHeight = 40)
 
@@ -152,8 +152,8 @@ internal class AnimationLayoutTest {
 
     @Test
     fun `one oversized animation rejects the whole volley`() {
-        val small = SizedAnimation(AnimationSize(width = 10, height = 5))
-        val oversized = SizedAnimation(AnimationSize(width = 121, height = 5))
+        val small = SizedAnimation(Size(width = 10, height = 5))
+        val oversized = SizedAnimation(Size(width = 121, height = 5))
 
         assertTrue(AnimationLayout.place(listOf(small, oversized), 120, 40).isEmpty())
     }

@@ -6,11 +6,11 @@ import io.archinaut.battletech.tactical.session.CommandResult
 import io.archinaut.battletech.tactical.unit.CombatUnit
 import io.archinaut.battletech.tactical.unit.VisibleUnit
 import io.archinaut.battletech.tui.game.AppState
-import io.archinaut.tenter.view.FlashMessage
+import io.archinaut.tenter.widget.FlashMessage
 import io.archinaut.battletech.tui.game.moveCursor
 import io.archinaut.battletech.tui.input.BoardClick
 import io.archinaut.battletech.tui.input.IdleAction
-import io.archinaut.tenter.input.InputAction
+import io.archinaut.battletech.tui.input.Action
 
 /**
  * A short flash for a rejected command, or null if [result] was accepted.
@@ -84,7 +84,7 @@ internal fun selectOwnUnit(
  * are acting moves and pass through [localTurnGuard].
  */
 internal fun handleUnitSelection(
-    action: InputAction,
+    action: Action,
     app: AppState,
     activePlayer: () -> PlayerId,
     selectableUnits: () -> List<VisibleUnit>,

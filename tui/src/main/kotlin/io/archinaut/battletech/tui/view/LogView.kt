@@ -1,24 +1,31 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.query.PlayerGameState
 import io.archinaut.battletech.tactical.session.LogEntry
-import io.archinaut.tenter.screen.styled
+import io.archinaut.tenter.screen.Constraint
 import io.archinaut.tenter.text.CellWidth
-import io.archinaut.tenter.view.TextCursor
-import io.archinaut.tenter.view.Viewport
+import io.archinaut.tenter.widget.Paragraph
+import io.archinaut.tenter.widget.Row
+import io.archinaut.tenter.widget.RowWriter
+import io.archinaut.tenter.widget.followingEnd
+import io.archinaut.tenter.widget.panel.Panel
 
 /**
- * Marks its last written row for reveal, so the enclosing [Viewport] follows new entries to
- * the bottom exactly as [TargetsView]'s cursor row does — the same mechanism, not a bespoke
- * bottom-anchor. A consequence: a new entry always scrolls to the bottom, even if the reader had
- * scrolled up to review history.
+ * The game log, oldest entry first. It follows its own end, so new entries stay in view while the
+ * reader is at the bottom of its [Panel], and a reader who scrolled up to review history stays
+ * there until they scroll back down.
  */
 internal class LogView(
     private val entries: List<LogEntry>,
     private val state: PlayerGameState,
-) : PreparedTextView() {
+) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
+    override fun write(content: RowWriter) {
+        content.draw(MeasurableWidget(::writeEntries).followingEnd())
+    }
+
+    private fun writeEntries(content: RowWriter) {
         var lastTurn: Int? = null
 
         for (entry in entries) {
@@ -26,27 +33,22 @@ internal class LogView(
             if (logLines.isEmpty()) continue
 
             if (entry.turn != lastTurn) {
-                content.writeHeader("TURN ${entry.turn}")
+                content.draw(SectionHeading("TURN ${entry.turn}"))
                 lastTurn = entry.turn
             }
 
             for (line in logLines) {
-                val prefixWidth = CellWidth.of(line.icon) + 1
-                val indent = " ".repeat(prefixWidth)
-                val available = content.width - prefixWidth
-
-                line.content.wrap(available, available).forEachIndexed { i, wrapped ->
-                    content.writeLine(
-                        styled {
-                            append(if (i == 0) "${line.icon} " else indent)
-                            append(wrapped)
-                        },
-                    )
-                }
+                // The icon gets its own column so wrapped text hangs indented under the first row.
+                content.draw(
+                    Row(
+                        listOf(
+                            Constraint.Length(CellWidth.of(line.icon) + 1) to Paragraph(line.icon),
+                            Constraint.Fill() to Paragraph(listOf(line.content), wrap = true),
+                        ),
+                    ),
+                )
             }
         }
-
-        if (content.row > 0) content.markRevealAt(content.row - 1)
     }
 
     internal companion object {

@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.battletech.tui.screen.AppRole
 import io.archinaut.battletech.tactical.model.GameMap
 import io.archinaut.battletech.tactical.model.HexCoordinates
 import io.archinaut.battletech.tactical.model.HexDirection
@@ -8,24 +9,28 @@ import io.archinaut.battletech.tactical.query.PlayerGameState
 import io.archinaut.battletech.tui.hex.HexGeometry
 import io.archinaut.battletech.tui.hex.HexHighlight
 import io.archinaut.battletech.tui.hex.HexLayout
-import io.archinaut.battletech.tui.hex.HexRenderer
-import io.archinaut.battletech.tui.hex.UnitRenderer
+import io.archinaut.battletech.tui.hex.FacingArrowsView
+import io.archinaut.battletech.tui.hex.FacingKeysView
+import io.archinaut.battletech.tui.hex.HexView
+import io.archinaut.battletech.tui.hex.UnitView
 import io.archinaut.battletech.tui.screen.BoardRole
 import io.archinaut.battletech.tactical.unit.UnitRoster
 import io.archinaut.tenter.screen.Canvas
-import io.archinaut.tenter.screen.Cell
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.screen.Rect
+import io.archinaut.tenter.screen.Style
+import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.text.CellWidth
-import io.archinaut.tenter.view.Bordered
-import io.archinaut.tenter.view.View
-import io.archinaut.tenter.view.Viewport
+import io.archinaut.tenter.widget.MeasurableWidget
+import io.archinaut.tenter.widget.Widget
+import io.archinaut.tenter.widget.fixedSize
+import io.archinaut.tenter.widget.revealed
 
 /**
  * The tactical map's content: coordinate labels, every hex, highlight, and unit glyph, drawn at
- * its unscrolled screen position. Purely content — chrome and scrolling belong to the
- * [Bordered]/[Viewport] that wraps this view (see its construction in `RunLoop.renderFrame`); the
- * only thing this view contributes to scrolling is marking the cursor hex for reveal via
- * [Canvas.markReveal], so auto-follow keeps it visible.
+ * its unscrolled screen position. Purely content — chrome and scrolling belong to the panel
+ * [io.archinaut.tenter.widget.panel.Panel] that wraps this view (see its construction in `RunLoop.renderFrame`); the
+ * only thing this view contributes to scrolling is [scrollable]: its size, and the cursor hex as
+ * the area to keep visible, so auto-follow keeps it in view.
  */
 internal class BoardView(
     private val state: PlayerGameState,
@@ -38,9 +43,9 @@ internal class BoardView(
     private val draftTorsoFacings: Map<HexCoordinates, HexDirection> = emptyMap(),
     private val validTargetPositions: Set<HexCoordinates> = emptySet(),
     private val selectedTargetPosition: HexCoordinates? = null,
-) : View {
+) : Widget {
 
-    override fun draw(canvas: Canvas) {
+    override fun render(canvas: Canvas) {
         val (mapWidth, mapHeight) = mapSize(state.map)
         renderCoordinates(canvas, mapWidth, mapHeight)
 
@@ -63,12 +68,13 @@ internal class BoardView(
                 ) HexHighlight.NONE
                 else baseHighlight
 
-            HexRenderer.render(canvas, x, y, hex, highlight, movementMode)
+            val area = canvas.region(Rect(x, y, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT))
+            HexView(hex, highlight, movementMode).render(area)
 
             // Facing overlays (drawn after base render, over the reachability dot)
             when (coords) {
                 cursorPosition if facingSelectionFacings != null ->
-                    HexRenderer.renderFacingKeys(canvas, x, y, facingSelectionFacings)
+                    FacingKeysView(facingSelectionFacings).render(area)
 
                 in reachableFacings if highlight != HexHighlight.PATH -> {
                     val facings = reachableFacings.getValue(coords)
@@ -79,7 +85,7 @@ internal class BoardView(
                         else -> BoardRole.MOVE_WALK
                     }
                     val mode = if (coords == pathDestination) movementMode else null
-                    HexRenderer.renderFacingArrows(canvas, x, y, facings, color, mode)
+                    FacingArrowsView(facings, color, mode).render(area)
                 }
             }
 
@@ -100,21 +106,28 @@ internal class BoardView(
                 val id = unit.id.value.take(2)
                 val glyph = if (unit.isProne) id.lowercase() else id
                 val renderColor = if (unit.isDestroyed) BoardRole.DESTROYED else unitColor
-                UnitRenderer.render(
-                    canvas, x, y,
+                UnitView(
                     glyph,
                     unit.facing,
                     renderColor,
                     torsoFacing = torsoFacing,
-                    torsoColor = if (draftTorso != null) ChromeRole.DRAFT else renderColor,
+                    torsoColor = if (draftTorso != null) AppRole.DRAFT else renderColor,
                     isDestroyed = unit.isDestroyed,
-                )
-            }
-
-            if (coords == cursorPosition) {
-                canvas.markReveal(x, y, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT)
+                ).render(area)
             }
         }
+    }
+
+    /** This board as scrollable content: sized to its map, and asking to keep the cursor hex visible. */
+    internal fun scrollable(): MeasurableWidget {
+        val (width, height) = contentSize(state.map)
+        val sized = fixedSize(width, height)
+        return cursorArea()?.let(sized::revealed) ?: sized
+    }
+
+    private fun cursorArea(): Rect? = cursorPosition?.let { cursor ->
+        val (rawX, rawY) = HexLayout.hexToScreen(cursor.col, cursor.row)
+        Rect(MAP_ORIGIN_X + rawX, MAP_ORIGIN_Y + rawY, HexGeometry.HEX_WIDTH, HexGeometry.HEX_HEIGHT)
     }
 
     private fun renderCoordinates(canvas: Canvas, mapWidth: Int, mapHeight: Int) {
@@ -126,8 +139,8 @@ internal class BoardView(
             val label = coordinateLabel(col + 1)
             val centerX = MAP_ORIGIN_X + col * HexGeometry.COL_STRIDE + HexGeometry.HEX_WIDTH / 2
             val labelX = centerX - CellWidth.of(label) / 2
-            canvas.writeString(labelX, 0, label, COORDINATE_STYLE)
-            canvas.writeString(
+            canvas.setString(labelX, 0, label, COORDINATE_STYLE)
+            canvas.setString(
                 labelX,
                 MAP_ORIGIN_Y + mapHeight + BOTTOM_LABEL_GAP,
                 label,
@@ -138,8 +151,8 @@ internal class BoardView(
         for (row in 0..maxRow) {
             val label = coordinateLabel(row + 1)
             val labelY = MAP_ORIGIN_Y + row * HexGeometry.ROW_STRIDE + HexGeometry.HEX_HEIGHT / 2
-            canvas.writeString(0, labelY, label, COORDINATE_STYLE)
-            canvas.writeString(MAP_ORIGIN_X + mapWidth + SIDE_LABEL_GAP, labelY, label, COORDINATE_STYLE)
+            canvas.setString(0, labelY, label, COORDINATE_STYLE)
+            canvas.setString(MAP_ORIGIN_X + mapWidth + SIDE_LABEL_GAP, labelY, label, COORDINATE_STYLE)
         }
     }
 
@@ -157,7 +170,7 @@ internal class BoardView(
         internal fun preview(map: GameMap): BoardView =
             BoardView(PlayerGameState(UnitRoster(emptyList()), map))
 
-        private val COORDINATE_STYLE: Cell.Style = Cell.Style(ChromeRole.TEXT_SUBTLE)
+        private val COORDINATE_STYLE: Style = Style(StandardRole.TEXT_SUBTLE)
 
         /** The unscrolled content size needed to draw [map] and its coordinate labels. */
         internal fun contentSize(map: GameMap): Pair<Int, Int> {

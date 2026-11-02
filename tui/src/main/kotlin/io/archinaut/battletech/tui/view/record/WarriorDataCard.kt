@@ -1,21 +1,22 @@
 package io.archinaut.battletech.tui.view.record
 
+import io.archinaut.battletech.tui.view.SectionHeading
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.attack.consciousnessTarget
 import io.archinaut.battletech.tactical.unit.CombatUnit
 import io.archinaut.battletech.tactical.unit.PILOT_DEATH_THRESHOLD
 import io.archinaut.battletech.tui.view.PilotHitsTrack
-import io.archinaut.tenter.view.TextCursor
-import io.archinaut.battletech.tui.view.PreparedTextView
+import io.archinaut.tenter.widget.RowWriter
 
 /**
  * The WARRIOR DATA card: gunnery/piloting skill, the 6-box Hits Taken track, and the
  * Consciousness# row printed beneath it on the paper sheet — the 2d6 target for each hit count,
  * read from [consciousnessTarget] rather than restated here.
  */
-internal class WarriorDataCard(private val unit: CombatUnit) : PreparedTextView() {
+internal class WarriorDataCard(private val unit: CombatUnit) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
-        content.writeHeader("WARRIOR DATA")
+    override fun write(content: RowWriter) {
+        content.draw(SectionHeading("WARRIOR DATA"))
         content.writeLine("Gunnery  : ${unit.gunnerySkill}", SheetStyles.TEXT_PRIMARY)
         content.writeLine("Piloting : ${unit.pilotingSkill}", SheetStyles.TEXT_PRIMARY)
         content.newLine()

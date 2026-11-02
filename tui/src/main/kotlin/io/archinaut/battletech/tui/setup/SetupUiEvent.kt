@@ -1,7 +1,7 @@
 package io.archinaut.battletech.tui.setup
 
 import com.github.ajalt.mordant.input.InputEvent
-import com.github.ajalt.mordant.rendering.Size
+import io.archinaut.tenter.screen.Size
 
 /** Events the setup screen's loop multiplexes — mirrors `io.archinaut.battletech.tui.loop.UiEvent`. */
 internal sealed interface SetupUiEvent {

@@ -1,10 +1,11 @@
 package io.archinaut.battletech.tui.view.record
 
+import io.archinaut.battletech.tui.view.SectionHeading
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.unit.VisibleUnit
 import io.archinaut.battletech.tui.view.SpecialUnitStatusList
 import io.archinaut.battletech.tui.view.UnitLabel
-import io.archinaut.tenter.view.TextCursor
-import io.archinaut.battletech.tui.view.PreparedTextView
+import io.archinaut.tenter.widget.RowWriter
 
 /**
  * The 'MECH DATA card: identity, tonnage, movement points, and public special statuses —
@@ -13,10 +14,10 @@ import io.archinaut.battletech.tui.view.PreparedTextView
  * [io.archinaut.battletech.tactical.unit.CombatUnit]-typed so the same card serves both
  * [io.archinaut.battletech.tui.view.record.MechRecordSheetView] and [ForeignRecordSheetView].
  */
-internal class MechDataCard(private val unit: VisibleUnit) : PreparedTextView() {
+internal class MechDataCard(private val unit: VisibleUnit) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
-        content.writeHeader("'MECH DATA")
+    override fun write(content: RowWriter) {
+        content.draw(SectionHeading("'MECH DATA"))
         content.writeLine(UnitLabel.of(unit), SheetStyles.ACCENT)
         content.writeLine("Tonnage : ${unit.tonnage}", SheetStyles.TEXT_PRIMARY)
         content.writeLine("Walking : ${unit.walkingMP}", SheetStyles.TEXT_PRIMARY)

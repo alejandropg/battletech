@@ -8,18 +8,13 @@ import io.archinaut.battletech.tui.game.mapToTuiPhase
 import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.battletech.tui.loop.UiEvent
 import io.archinaut.battletech.tui.loop.runLoop
-import com.github.ajalt.mordant.input.MouseTracking
-import com.github.ajalt.mordant.rendering.Size
-import com.github.ajalt.mordant.terminal.Terminal
+import io.archinaut.battletech.tui.input.uiEvents
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
-import io.archinaut.tenter.screen.ScreenRenderer
+import io.archinaut.tenter.terminal.Screen
 import io.archinaut.tenter.terminal.TerminalEvent
-import io.archinaut.tenter.terminal.inputEvents
-import io.archinaut.tenter.terminal.resizeEvents
 
 /**
  * [seats] is the set of seats this process drives, each mapped to the [GameSession] that seat
@@ -31,16 +26,15 @@ import io.archinaut.tenter.terminal.resizeEvents
  * [io.archinaut.battletech.network.client.ClientGameSession] never kickstarts at all. This class never builds
  * a session or calls `advance()` itself.
  *
- * [terminal]/[renderer] are accepted, not constructed (D17): `Main.kt` builds one [Terminal] +
- * [ScreenRenderer] inside one [io.archinaut.tenter.terminal.withScreen] scope for the whole process and hands
- * the same pair to both the setup screen ([io.archinaut.battletech.tui.setup.SetupApp]) and this class. The
- * scope owns alternate-screen/cursor cleanup; this app's cold input flow acquires and releases
- * raw mode while it is collected, with no flicker at the hand-off between the two screens.
+ * [screen] is accepted, not constructed (D17): `Main.kt` builds one tenter terminal for the
+ * whole process and hands the [Screen] of its one [io.archinaut.tenter.terminal.Terminal.withScreen] scope
+ * to both the setup screen ([io.archinaut.battletech.tui.setup.SetupApp]) and this class. The scope owns
+ * alternate-screen/cursor cleanup; this app's cold input flow acquires and releases raw mode while
+ * it is collected, with no flicker at the hand-off between the two screens.
  */
 public class TuiApp(
     private val seats: Map<PlayerId, GameSession>,
-    private val terminal: Terminal,
-    private val renderer: ScreenRenderer,
+    private val screen: Screen,
 ) {
 
     /**
@@ -57,13 +51,11 @@ public class TuiApp(
      * ### Single-thread confinement
      * All session mutations, AppState updates, and rendering run on the single
      * [runBlocking] (main) thread. Only the terminal input producer runs on
-     * Dispatchers.IO — that is handled internally by [io.archinaut.tenter.terminal.inputEvents].
+     * Dispatchers.IO — that is handled internally by [Screen.events].
      *
-     * ### Quit is not flow cancellation
-     * Quit is detected inside [io.archinaut.tenter.terminal.inputEvents] using the keymap's predicate, which emits a
-     * [TerminalEvent.Quit], mapped below to [UiEvent.Quit], and then naturally completes its
-     * flow. We never cancel the flow externally as a quit mechanism — doing so would leave the
-     * terminal in raw mode.
+     * ### Quit ends input collection
+     * The keymap's quit chord ends the terminal event flow, which releases raw mode, and is
+     * replaced by [UiEvent.Quit] — see [uiEvents] — so [runLoop] stops on its own sentinel.
      */
     public fun run() {
         val keys = Keybindings.DEFAULT
@@ -82,13 +74,11 @@ public class TuiApp(
             try {
                 runLoop(
                     events = merge(
-                        terminal.inputEvents(MouseTracking.Normal, isQuit = keys::isQuit).map { it.toUiEvent() },
-                        terminal.resizeEvents().map { it.toUiEvent() },
+                        screen.uiEvents(keys, quit = UiEvent.Quit) { it.toUiEvent() },
                         internalEvents.receiveAsFlow(),
                     ),
                     internalEvents = internalEvents,
-                    terminal = terminal,
-                    renderer = renderer,
+                    screen = screen,
                     initialState = appState,
                     keys = keys,
                 )
@@ -102,6 +92,5 @@ public class TuiApp(
 /** tenter's generic [TerminalEvent] mapped onto this app's own [UiEvent] hierarchy — see [UiEvent]'s KDoc for why it has a [UiEvent.Session] arm tenter cannot know about. */
 private fun TerminalEvent.toUiEvent(): UiEvent = when (this) {
     is TerminalEvent.Input -> UiEvent.Input(event)
-    is TerminalEvent.Resized -> UiEvent.Resized(Size(size.width, size.height))
-    TerminalEvent.Quit -> UiEvent.Quit
+    is TerminalEvent.Resized -> UiEvent.Resized(size)
 }

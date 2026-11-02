@@ -1,10 +1,11 @@
 package io.archinaut.battletech.tui.view
 
 import io.archinaut.battletech.tui.aUnit
-import io.archinaut.tenter.palette.ChromeRole
+import io.archinaut.tenter.color.StandardRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.screen.Rect
 
 internal class SpecialUnitStatusListTest {
 
@@ -25,13 +26,13 @@ internal class SpecialUnitStatusListTest {
         )
         val buffer = render(SpecialUnitStatusList(unit), width = 24, height = 8)
 
-        assertTrue(buffer.line(0, width = 24).isBlank())
-        assertEquals("DESTROYED", buffer.line(1, width = 24).trim())
-        assertEquals("SHUTDOWN", buffer.line(2, width = 24).trim())
-        assertEquals("PILOT UNCONSCIOUS", buffer.line(3, width = 24).trim())
-        assertEquals("PRONE", buffer.line(4, width = 24).trim())
+        assertTrue(buffer.region(Rect(0, 0, 24, 1)).line(0).isBlank())
+        assertEquals("DESTROYED", buffer.region(Rect(0, 1, 24, 1)).line(0).trim())
+        assertEquals("SHUTDOWN", buffer.region(Rect(0, 2, 24, 1)).line(0).trim())
+        assertEquals("PILOT UNCONSCIOUS", buffer.region(Rect(0, 3, 24, 1)).line(0).trim())
+        assertEquals("PRONE", buffer.region(Rect(0, 4, 24, 1)).line(0).trim())
         for (row in 1..4) {
-            assertEquals(ChromeRole.DANGER, buffer.get(0, row).style.fg)
+            assertEquals(StandardRole.DANGER, buffer.get(0, row).fg)
         }
     }
 }

@@ -19,12 +19,12 @@ import io.archinaut.battletech.tui.aUnit
 import io.archinaut.battletech.tui.icon.initiativeIcon
 import io.archinaut.battletech.tui.icon.movementModeIcon
 import io.archinaut.battletech.tui.icon.unitStoodUpIcon
-import io.archinaut.tenter.palette.ChromeRole
-import io.archinaut.tenter.screen.ScreenBuffer
-import io.archinaut.tenter.view.ViewportState
-import io.archinaut.tenter.view.scrollingPanel
+import io.archinaut.tenter.color.StandardRole
+import io.archinaut.tenter.widget.ViewportState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import io.archinaut.tenter.screen.Rect
+import io.archinaut.tenter.terminal.CompletedFrame
 
 internal class LogViewTest {
 
@@ -49,13 +49,13 @@ internal class LogViewTest {
         mpSpent = 1,
     )
 
-    /** Render via decorator — pixel-parity regression guard for box/border/coordinate assertions. */
+    /** Render in the LOG panel's chrome, as [GamePanels] declares it; the log follows its own end. */
     private fun renderDecorated(
         view: LogView,
         width: Int = 28,
         height: Int = 10,
-        scrollOffset: Int? = null,
-    ): ScreenBuffer = renderInPanel(
+        scrollOffset: Int = 0,
+    ): CompletedFrame = renderInPanel(
         view,
         badge = '9',
         title = LogView.TITLE,
@@ -69,7 +69,7 @@ internal class LogViewTest {
         val view = LogView(entries = emptyList(), state = emptyState)
         val buffer = renderDecorated(view)
 
-        val topRow = (0 until 28).joinToString("") { buffer.get(it, 0).char }
+        val topRow = (0 until 28).joinToString("") { buffer.get(it, 0).symbol }
         assertEquals('╭', topRow[0])
         assertEquals('╮', topRow[27])
         assert(topRow.contains("LOG")) { "Top border should contain 'LOG', got: $topRow" }
@@ -81,9 +81,9 @@ internal class LogViewTest {
         val buffer = renderDecorated(view, scrollOffset = 0)
 
         // Inner content starts at x=2, y=2 (past the border and the padding spacer row).
-        val headerLine = buffer.line(2, 2, 24)
+        val headerLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
-        val entryLine = buffer.line(3, 2, 24)
+        val entryLine = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assertEquals("${unitStoodUpIcon()} m stood up", entryLine)
     }
 
@@ -98,13 +98,13 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assertEquals(ChromeRole.INFO, buffer.get(2, 2).style.fg)
+        assertEquals(StandardRole.INFO, buffer.get(2, 2).fg)
         // Only one header for the single turn: row 3 and row 4 are plain entries, not headers.
-        val headerLine = buffer.line(2, 2, 24)
+        val headerLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
         assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
-        assert(buffer.line(3, 2, 24).contains("0101→0201")) { "Expected first move entry" }
-        assert(buffer.line(4, 2, 24).contains("0101→0301")) { "Expected second move entry" }
-        assertEquals(ChromeRole.DEFAULT, buffer.get(2, 3).style.fg)
+        assert(buffer.region(Rect(2, 3, 24, 1)).line(0).contains("0101→0201")) { "Expected first move entry" }
+        assert(buffer.region(Rect(2, 4, 24, 1)).line(0).contains("0101→0301")) { "Expected second move entry" }
+        assertEquals(StandardRole.DEFAULT, buffer.get(2, 3).fg, "renders in the default color")
     }
 
     @Test
@@ -112,9 +112,9 @@ internal class LogViewTest {
         val view = LogView(entries = listOf(LogEntry(turn = 10, event = stoodUp())), state = emptyState)
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        val headerLine = buffer.line(2, 2, 24)
+        val headerLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
         assertEquals("── TURN 10 ─────────────", headerLine)
-        val entryLine = buffer.line(3, 2, 24)
+        val entryLine = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assertEquals("${unitStoodUpIcon()} m stood up", entryLine)
     }
 
@@ -130,12 +130,12 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assert(buffer.line(2, 2, 24).startsWith("── TURN 1 ")) { "Expected header at row 2" }
-        assert(buffer.line(3, 2, 24).contains("0101→0201")) { "Expected first move entry" }
-        assert(buffer.line(4, 2, 24).contains("0101→0301")) { "Expected second move entry" }
-        assert(buffer.line(5, 2, 24).contains("0101→0401")) { "Expected third move entry" }
+        assert(buffer.region(Rect(2, 2, 24, 1)).line(0).startsWith("── TURN 1 ")) { "Expected header at row 2" }
+        assert(buffer.region(Rect(2, 3, 24, 1)).line(0).contains("0101→0201")) { "Expected first move entry" }
+        assert(buffer.region(Rect(2, 4, 24, 1)).line(0).contains("0101→0301")) { "Expected second move entry" }
+        assert(buffer.region(Rect(2, 5, 24, 1)).line(0).contains("0101→0401")) { "Expected third move entry" }
         // Below the last entry should be empty inside the box.
-        assertEquals("", buffer.line(6, 2, 24))
+        assertEquals("", buffer.region(Rect(2, 6, 24, 1)).line(0))
     }
 
     @Test
@@ -152,9 +152,9 @@ internal class LogViewTest {
         val buffer = renderDecorated(view, scrollOffset = 0)
 
         // Row 2 is the turn header; the entry text starts wrapping at row 3.
-        assert(buffer.line(2, 2, 24).startsWith("── TURN 2 ")) { "Expected header at row 2" }
-        val line1 = buffer.line(3, 2, 24)
-        val line2 = buffer.line(4, 2, 24)
+        assert(buffer.region(Rect(2, 2, 24, 1)).line(0).startsWith("── TURN 2 ")) { "Expected header at row 2" }
+        val line1 = buffer.region(Rect(2, 3, 24, 1)).line(0)
+        val line2 = buffer.region(Rect(2, 4, 24, 1)).line(0)
         val icon = initiativeIcon()
         assert(line1.startsWith("$icon Initiative: P1")) { "Line 1 should start with the initiative icon: '$line1'" }
         // Continuation line is indented two columns to align under the text on line 1.
@@ -168,9 +168,8 @@ internal class LogViewTest {
 
     @Test
     fun `when content overflows, the most recent line is at the bottom of the panel`() {
-        // Panel of height 6: content viewport is 3 rows. A fresh render has no previousReveal, so
-        // LogView's last-row reveal (see its KDoc) always follows into view — the same mechanism
-        // TargetsView's cursor row uses, not a bespoke bottom-anchor.
+        // Panel of height 6: content viewport is 3 rows. A fresh log following its end shows
+        // the last rows.
         // Each entry is its own turn, so every entry is preceded by its own header row.
         // The bottom content row stays fixed at y=4 regardless of padding — only the top
         // of the viewport moved down — so this test's row numbers don't shift.
@@ -179,88 +178,92 @@ internal class LogViewTest {
         val buffer = renderDecorated(view, height = 6)
 
         // The bottom inner row (y = 4, since box bottom is y=5) should be the most recent entry.
-        val bottomInnerRow = buffer.line(4, 2, 24)
+        val bottomInnerRow = buffer.region(Rect(2, 4, 24, 1)).line(0)
         assertEquals("${unitStoodUpIcon()} m stood up", bottomInnerRow)
         // The row above is that entry's own header.
-        val secondFromBottom = buffer.line(3, 2, 24)
+        val secondFromBottom = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assert(secondFromBottom.startsWith("── TURN 10 ")) { "Expected header above last entry: '$secondFromBottom'" }
     }
 
     @Test
     fun `a manual scroll to the top survives a re-render while the log is unchanged`() {
         // The panel-side half of the pan-snap-back defect (see PanelSlotTest's TARGETS
-        // equivalent): once the user has wheeled to a position and the reveal row (the last
-        // line) hasn't moved since, that position must stick rather than re-following.
+        // equivalent): once the user has wheeled away from the bottom, that position must stick.
         val entries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val view = LogView(entries, state = emptyState)
 
-        // First render: no previousReveal, so it follows to the bottom — establishes the reveal.
+        // First render: following the log's end.
         val viewportState = ViewportState()
-        val first = scrollingPanel(
+        val first = panelViewport(
             title = LogView.TITLE,
             badge = "9",
             content = view,
-            state = viewportState,
         )
-        render(first, 28, 6)
+        render(first, viewportState, 28, 6)
         viewportState.scrollBy(0, -100)
 
-        // Second render: the user has wheeled back to the top; the log hasn't changed, so the
-        // reveal row is identical — the manual offset must be respected, not re-followed.
-        val second = scrollingPanel(
+        // Second render: the user has wheeled to the top, so the view no longer follows the log's end.
+        val second = panelViewport(
             title = LogView.TITLE,
             badge = "9",
             content = view,
-            state = viewportState,
         )
-        val buffer = render(second, 28, 6)
+        val buffer = render(second, viewportState, 28, 6)
 
         assertEquals(0, viewportState.settled?.offset?.y, "a manual scroll to the top must not snap back to the bottom")
-        val firstLine = buffer.line(2, 2, 24)
+        val firstLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
         assert(firstLine.startsWith("── TURN 1 ")) { "Expected header at row 2: '$firstLine'" }
-        val secondLine = buffer.line(3, 2, 24)
+        val secondLine = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assertEquals("${unitStoodUpIcon()} m stood up", secondLine)
     }
 
     @Test
-    fun `a new entry re-sticks to the bottom even while manually scrolled away`() {
-        // Accepted tradeoff of following the last-row reveal target like TargetsView's cursor: a
-        // growing log always chases its newest line, the same as it would chase a moving cursor
-        // row — there is no bespoke "let the reader linger on history" carve-out anymore.
+    fun `a new entry stays in view while the reader is at the bottom`() {
         val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
         val viewportState = ViewportState()
-        val scrolledAway = scrollingPanel(
-            title = LogView.TITLE,
-            badge = "9",
-            content = LogView(tenEntries, state = emptyState),
-            state = viewportState,
-        )
-        render(scrolledAway, 28, 6)
-        viewportState.scrollBy(0, -100)
-        val manuallyScrolledUp = scrollingPanel(
-            title = LogView.TITLE,
-            badge = "9",
-            content = LogView(tenEntries, state = emptyState),
-            state = viewportState,
-        )
-        render(manuallyScrolledUp, 28, 6)
-        assertEquals(0, viewportState.settled?.offset?.y, "sanity check: scrolled away from the bottom")
+        render(logViewport(tenEntries), viewportState, 28, 6)
 
-        // An eleventh entry arrives; the reveal row moves, so the view follows it to the bottom.
-        val elevenEntries = tenEntries + LogEntry(turn = 11, event = stoodUp())
-        val newEntryArrives = scrollingPanel(
-            title = LogView.TITLE,
-            badge = "9",
-            content = LogView(elevenEntries, state = emptyState),
-            state = viewportState,
-        )
-        val buffer = render(newEntryArrives, 28, 6)
+        val buffer = render(logViewport(tenEntries + LogEntry(turn = 11, event = stoodUp())), viewportState, 28, 6)
 
-        val bottomInnerRow = buffer.line(4, 2, 24)
-        assertEquals("${unitStoodUpIcon()} m stood up", bottomInnerRow)
-        val secondFromBottom = buffer.line(3, 2, 24)
+        assertEquals("${unitStoodUpIcon()} m stood up", buffer.region(Rect(2, 4, 24, 1)).line(0))
+        val secondFromBottom = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assert(secondFromBottom.startsWith("── TURN 11 ")) { "Expected header above last entry: '$secondFromBottom'" }
     }
+
+    @Test
+    fun `a new entry leaves a reader who scrolled up on the history they are reading`() {
+        val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
+        val viewportState = ViewportState()
+        render(logViewport(tenEntries), viewportState, 28, 6)
+        viewportState.scrollBy(0, -100)
+        render(logViewport(tenEntries), viewportState, 28, 6)
+
+        render(logViewport(tenEntries + LogEntry(turn = 11, event = stoodUp())), viewportState, 28, 6)
+
+        assertEquals(0, viewportState.settled?.offset?.y, "a new entry must not pull the reader away from history")
+    }
+
+    @Test
+    fun `scrolling back to the bottom follows new entries again`() {
+        val tenEntries = (1..10).map { LogEntry(turn = it, event = stoodUp()) }
+        val viewportState = ViewportState()
+        render(logViewport(tenEntries), viewportState, 28, 6)
+        viewportState.scrollBy(0, -100)
+        render(logViewport(tenEntries), viewportState, 28, 6)
+        viewportState.scrollBy(0, 100)
+        render(logViewport(tenEntries), viewportState, 28, 6)
+
+        val buffer = render(logViewport(tenEntries + LogEntry(turn = 11, event = stoodUp())), viewportState, 28, 6)
+
+        val secondFromBottom = buffer.region(Rect(2, 3, 24, 1)).line(0)
+        assert(secondFromBottom.startsWith("── TURN 11 ")) { "Expected header above last entry: '$secondFromBottom'" }
+    }
+
+    private fun logViewport(entries: List<LogEntry>) = panelViewport(
+        title = LogView.TITLE,
+        badge = "9",
+        content = LogView(entries, state = emptyState),
+    )
 
     @Test
     fun `nerd-font dice icons do not push content past the panel border`() {
@@ -281,11 +284,11 @@ internal class LogViewTest {
         // Right border column must stay '│' on every row inside the panel —
         // no cell on the right border should have been overwritten by leaking content.
         for (y in 1..4) {
-            assertEquals("│", buffer.get(39, y).char, "right border at row $y")
+            assertEquals("│", buffer.get(39, y).symbol, "right border at row $y")
         }
         // Each dice icon must occupy exactly one cell as a full surrogate-pair string,
         // not a split half-surrogate per cell. Row 2 is the turn header; the entry is on row 3.
-        val entryLine = (2 until 38).joinToString("") { buffer.get(it, 3).char }.trimEnd()
+        val entryLine = (2 until 38).joinToString("") { buffer.get(it, 3).symbol }.trimEnd()
         val dice4 = String(Character.toChars(0xF01CD))
         assert(entryLine.contains(dice4)) { "entry line should contain dice_4 glyph: '$entryLine'" }
     }
@@ -308,14 +311,14 @@ internal class LogViewTest {
         val view = LogView(entries = listOf(LogEntry(1, moved)), state = stateWithAtlas)
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        val entryLine = buffer.line(3, 2, 24)
+        val entryLine = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assertEquals("${movementModeIcon(MovementMode.WALK)} atlas (1 MP) 0101→0102", entryLine)
 
         // Layout: x=2 icon, x=3 space, x=4..8 "atlas", x=9 space before "(1 MP)".
-        assertEquals(ChromeRole.DEFAULT, buffer.get(2, 3).style.fg, "icon stays default")
-        assertEquals(playerColor(PlayerId.PLAYER_1), buffer.get(4, 3).style.fg, "'a' of atlas")
-        assertEquals(playerColor(PlayerId.PLAYER_1), buffer.get(8, 3).style.fg, "'s' of atlas")
-        assertEquals(ChromeRole.DEFAULT, buffer.get(9, 3).style.fg, "prose after the name stays default")
+        assertEquals(StandardRole.DEFAULT, buffer.get(2, 3).fg, "icon stays default")
+        assertEquals(playerColor(PlayerId.PLAYER_1), buffer.get(4, 3).fg, "'a' of atlas")
+        assertEquals(playerColor(PlayerId.PLAYER_1), buffer.get(8, 3).fg, "'s' of atlas")
+        assertEquals(StandardRole.DEFAULT, buffer.get(9, 3).fg, "prose after the name stays default")
     }
 
     @Test
@@ -342,13 +345,13 @@ internal class LogViewTest {
         // Inner content width = 10 - 4 = 6; prefix (icon + space) = 2; available = 4.
         // "longname" (8 cells) is a single unbroken word wider than capacity, so it hard-splits
         // into "long" then "name", each its own row.
-        assertEquals("${movementModeIcon(MovementMode.WALK)} long", buffer.line(3, 2, 6))
-        assertEquals("  name", buffer.line(4, 2, 6))
+        assertEquals("${movementModeIcon(MovementMode.WALK)} long", buffer.region(Rect(2, 3, 6, 1)).line(0))
+        assertEquals("  name", buffer.region(Rect(2, 4, 6, 1)).line(0))
 
         val color = playerColor(PlayerId.PLAYER_2)
-        assertEquals(color, buffer.get(4, 3).style.fg, "'l' of long")
-        assertEquals(color, buffer.get(7, 3).style.fg, "'g' of long")
-        assertEquals(color, buffer.get(4, 4).style.fg, "'n' of name")
-        assertEquals(color, buffer.get(7, 4).style.fg, "'e' of name")
+        assertEquals(color, buffer.get(4, 3).fg, "'l' of long")
+        assertEquals(color, buffer.get(7, 3).fg, "'g' of long")
+        assertEquals(color, buffer.get(4, 4).fg, "'n' of name")
+        assertEquals(color, buffer.get(7, 4).fg, "'e' of name")
     }
 }

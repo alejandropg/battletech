@@ -3,21 +3,21 @@ package io.archinaut.battletech.tui.animation
 import io.archinaut.battletech.tui.view.render
 import io.archinaut.tenter.animation.Animation
 import io.archinaut.tenter.screen.Cell
-import io.archinaut.tenter.screen.ScreenBuffer
 import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
+import io.archinaut.tenter.terminal.CompletedFrame
 
 /** Renders every cell of [this] frame as one string per row, for equality/content assertions. */
-private fun Animation.rendered(index: Int): ScreenBuffer = render(frame(index), size.width, size.height)
+private fun Animation.rendered(index: Int): CompletedFrame = render(frame(index), size.width, size.height)
 
-private fun ScreenBuffer.rows(): List<String> =
-    (0 until height).map { y -> (0 until width).map { x -> get(x, y).char }.joinToString("") }
+private fun CompletedFrame.rows(): List<String> =
+    (0 until height).map { y -> (0 until width).map { x -> get(x, y).symbol }.joinToString("") }
 
-private fun ScreenBuffer.cells(): List<Cell> =
+private fun CompletedFrame.cells(): List<Cell> =
     (0 until height).flatMap { y -> (0 until width).map { x -> get(x, y) } }
 
 internal class WeaponAnimationTest {
@@ -80,7 +80,7 @@ internal class WeaponAnimationTest {
                 animation.frame(animation.frameCount - 1)
                 val actual = render(retained, animation.size.width, animation.size.height)
 
-                assertEquals(expected.cells(), actual.cells())
+                assertEquals(expected, actual)
             }
         }
 

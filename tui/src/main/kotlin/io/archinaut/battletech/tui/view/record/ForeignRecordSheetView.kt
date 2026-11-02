@@ -1,13 +1,13 @@
 package io.archinaut.battletech.tui.view.record
 
+import io.archinaut.battletech.tui.view.SectionHeading
+import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.battletech.tactical.unit.ForeignUnit
 import io.archinaut.battletech.tui.view.ForeignWeaponList
-import io.archinaut.tenter.view.Columns
-import io.archinaut.tenter.view.Stack
-import io.archinaut.tenter.view.TextCursor
-import io.archinaut.tenter.view.ContentView
-import io.archinaut.tenter.view.contentView
-import io.archinaut.battletech.tui.view.PreparedTextView
+import io.archinaut.tenter.screen.Constraint
+import io.archinaut.tenter.widget.Flow
+import io.archinaut.tenter.widget.Stack
+import io.archinaut.tenter.widget.RowWriter
 
 /**
  * The maximized record sheet for a unit the viewer does NOT own: 'Mech data, weapon names, and
@@ -18,27 +18,27 @@ import io.archinaut.battletech.tui.view.PreparedTextView
  * private data. [MechDataCard] already prints [unit]'s name/id, so nothing repeats it above the
  * grid.
  */
-internal class ForeignRecordSheetView(private val unit: ForeignUnit) : PreparedTextView() {
+internal class ForeignRecordSheetView(private val unit: ForeignUnit) : MeasurableWidget {
 
-    override fun render(content: TextCursor) {
-        val upperSections = Columns(
+    override fun write(content: RowWriter) {
+        val upperSections = Flow(
             listOf(
-                Columns.Child(SheetLayout.MECH_DATA_WIDTH, MechDataCard(unit)),
-                Columns.Child(SheetLayout.WARRIOR_DATA_WIDTH, contentView { }),
-                Columns.Child(SheetLayout.WEAPON_INVENTORY_WIDTH, ForeignWeaponInventory(unit)),
+                Constraint.Length(SheetLayout.MECH_DATA_WIDTH) to MechDataCard(unit),
+                Constraint.Length(SheetLayout.WARRIOR_DATA_WIDTH) to MeasurableWidget { },
+                Constraint.Length(SheetLayout.WEAPON_INVENTORY_WIDTH) to ForeignWeaponInventory(unit),
             ),
         )
-        val diagrams = Columns(
+        val diagrams = Flow(
             listOf(
-                Columns.Child(SheetLayout.ARMOR_DIAGRAM_WIDTH, LocationDiagram.armor(unit) { false }),
+                Constraint.Length(SheetLayout.ARMOR_DIAGRAM_WIDTH) to LocationDiagram.armor(unit) { false },
             ),
         )
-        content.draw(Stack(listOf(upperSections, diagrams), gutter = 2))
+        content.draw(Stack(listOf(upperSections, diagrams), spacing = 2))
     }
 
-    private class ForeignWeaponInventory(private val unit: ForeignUnit) : PreparedTextView() {
-        override fun render(content: TextCursor) {
-            content.writeHeader("WEAPONS & EQUIPMENT INVENTORY")
+    private class ForeignWeaponInventory(private val unit: ForeignUnit) : MeasurableWidget {
+        override fun write(content: RowWriter) {
+            content.draw(SectionHeading("WEAPONS & EQUIPMENT INVENTORY"))
             content.draw(ForeignWeaponList(unit))
         }
     }

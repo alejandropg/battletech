@@ -1,7 +1,7 @@
 {
   "colorSpace": "truecolor",
   "background": "#F8F5EE",
-  "chrome": {
+  "standard": {
     "DEFAULT": "#202428",
     "TEXT_PRIMARY": "#202428",
     "TEXT_MUTED": "#45515B",
@@ -11,10 +11,12 @@
     "SUCCESS": "#245A27",
     "WARNING": "#604A00",
     "DANGER": "#8F1827",
-    "DRAFT": "#59636C",
     "DISABLED": "#737B82",
     "PANEL_BORDER": "#5A6169",
     "PANEL_BORDER_FOCUSED": "#007B00"
+  },
+  "app": {
+    "DRAFT": "#59636C"
   },
   "heatScale": {
     "CURRENT_BG": "#F1E0AE",
