@@ -303,79 +303,9 @@ internal class LocationDiagram private constructor(
             return topY + frontRows + 1
         }
 
-        val frontStyle = front.style
-        drawTop(canvas, x, topY, frontWidth, frontStyle)
-        drawPipRows(canvas, front, x, topY + 1, frontWidth, frontRows)
-
-        val rearWidth = rear.width
-        val rearX = when (side) {
-            BodySide.LEFT -> x + frontWidth - rearWidth
-            BodySide.CENTER, BodySide.RIGHT -> x
-        }
-        val rearStyle = rear.location.style
-
-        val transitionY = topY + frontRows + 1
-        drawTorsoTransition(canvas, side, x, transitionY, frontWidth, frontStyle)
-        val separatorY = transitionY + 1
-        drawRearSeparator(canvas, side, rearX, separatorY, rearWidth, rearStyle)
-        drawPipRows(canvas, rear.location, rearX, separatorY + 1, rearWidth, rear.rows)
-        val bottomY = separatorY + rear.rows + 1
-        drawBottom(canvas, rearX, bottomY, rearWidth, rearStyle)
-        when (side) {
-            BodySide.LEFT -> canvas.setString(rearX + 1, bottomY + 1, value(rear.location), rearStyle)
-            BodySide.CENTER ->
-                drawCentered(canvas, rearX, rearWidth + 2, bottomY + 1, value(rear.location), rearStyle)
-            BodySide.RIGHT -> drawRightAligned(
-                canvas,
-                rearX,
-                rearWidth + 2,
-                bottomY + 1,
-                value(rear.location),
-                rearStyle,
-                rightPadding = 1,
-            )
-        }
-        return bottomY
-    }
-
-    private fun drawTorsoTransition(
-        canvas: Canvas,
-        side: BodySide,
-        x: Int,
-        y: Int,
-        width: Int,
-        style: Style,
-    ) {
-        when (side) {
-            BodySide.LEFT -> {
-                canvas.setString(x + 1, y, "╲", style)
-                canvas.setString(x + width + 1, y, "│", style)
-            }
-            BodySide.CENTER -> drawEmptyRow(canvas, x, y, width, style)
-            BodySide.RIGHT -> {
-                canvas.setString(x, y, "│", style)
-                canvas.setString(x + width, y, "╱", style)
-            }
-        }
-    }
-
-    private fun drawRearSeparator(
-        canvas: Canvas,
-        side: BodySide,
-        x: Int,
-        y: Int,
-        width: Int,
-        style: Style,
-    ) {
-        val separator = if (side == BodySide.CENTER) centeredRearSeparator(width) else "╌".repeat(width)
-        canvas.setString(x, y, "│" + separator + "│", style)
-    }
-
-    private fun centeredRearSeparator(width: Int): String {
-        val fill = width - CellWidth.of(REAR_LABEL)
-        require(fill >= 0) { "center rear torso width must fit $REAR_LABEL" }
-        val leftFill = fill / 2
-        return "╌".repeat(leftFill) + REAR_LABEL + "╌".repeat(fill - leftFill)
+        TorsoWithRearView(front, frontWidth, frontRows, rear.location, rear.width, rear.rows, side)
+            .render(canvas.region(Rect(x, topY, frontWidth + 2, frontRows + rear.rows + 5)))
+        return topY + frontRows + rear.rows + 3
     }
 
     private fun drawArm(
@@ -385,30 +315,10 @@ internal class LocationDiagram private constructor(
         x: Int,
         topY: Int,
         width: Int,
-    ): Int {
-        val style = location.style
+    ) {
         val rows = rowsFor(location.max, width)
-        drawTop(canvas, x, topY, width, style)
-        drawPipRows(canvas, location, x, topY + 1, width, rows)
-        val transitionY = topY + rows + 1
-        val narrowX = when (side) {
-            BodySide.LEFT -> {
-                canvas.setString(x, transitionY, "│", style)
-                canvas.setString(x + width, transitionY, "╱", style)
-                x
-            }
-            BodySide.RIGHT -> {
-                canvas.setString(x + 1, transitionY, "╲", style)
-                canvas.setString(x + width + 1, transitionY, "│", style)
-                x + 1
-            }
-            BodySide.CENTER -> error("an arm must be left or right")
-        }
-        drawEmptyRow(canvas, narrowX, transitionY + 1, width - 1, style)
-        val bottomY = transitionY + 2
-        drawBottom(canvas, narrowX, bottomY, width - 1, style)
+        ArmView(location, side, width, rows).render(canvas.region(Rect(x, topY, width + 2, rows + 4)))
         drawLimbCaption(canvas, location, side, x, width, topY + maxOf(2, rows / 2), "Arm")
-        return bottomY
     }
 
     private fun drawLeg(
@@ -418,29 +328,11 @@ internal class LocationDiagram private constructor(
         x: Int,
         topY: Int,
         width: Int,
-    ): Int {
-        val style = location.style
+    ) {
         val rows = rowsFor(location.max, width)
-        drawTop(canvas, x, topY, width, style)
-        drawPipRows(canvas, location, x, topY + 1, width, rows)
-        val transitionY = topY + rows + 1
-        val footX = when (side) {
-            BodySide.LEFT -> {
-                canvas.setString(x - 1, transitionY, "╱", style)
-                canvas.setString(x + width + 1, transitionY, "│", style)
-                x - 2
-            }
-            BodySide.RIGHT -> {
-                canvas.setString(x, transitionY, "│", style)
-                canvas.setString(x + width + 2, transitionY, "╲", style)
-                x
-            }
-            BodySide.CENTER -> error("a leg must be left or right")
-        }
-        val bottomY = transitionY + 1
-        drawBottom(canvas, footX, bottomY, width + 2, style)
+        val left = x - LegView.boxOffset(side)
+        LegView(location, side, width, rows).render(canvas.region(Rect(left, topY, width + 4, rows + 3)))
         drawLimbCaption(canvas, location, side, x, width, topY + maxOf(2, rows / 2), "Leg")
-        return bottomY
     }
 
     private fun drawLimbCaption(
@@ -464,23 +356,6 @@ internal class LocationDiagram private constructor(
             }
             BodySide.CENTER -> error("a limb must be left or right")
         }
-    }
-
-    private fun drawPipRows(canvas: Canvas, location: Location, x: Int, y: Int, width: Int, rows: Int) {
-        PipRowsView(location, width, rows).render(canvas.region(Rect(x, y, width + 2, rows)))
-    }
-
-    private fun drawTop(canvas: Canvas, x: Int, y: Int, width: Int, style: Style) {
-        canvas.setString(x, y, "╭" + "─".repeat(width) + "╮", style)
-    }
-
-    private fun drawBottom(canvas: Canvas, x: Int, y: Int, width: Int, style: Style) {
-        canvas.setString(x, y, "╰" + "─".repeat(width) + "╯", style)
-    }
-
-    private fun drawEmptyRow(canvas: Canvas, x: Int, y: Int, width: Int, style: Style) {
-        canvas.setString(x, y, "│", style)
-        canvas.setString(x + width + 1, y, "│", style)
     }
 
     private fun drawCentered(
@@ -517,12 +392,6 @@ internal class LocationDiagram private constructor(
         }
 
     private fun value(location: Location): String = location.remaining.toString() + "/" + location.max
-
-    private enum class BodySide {
-        LEFT,
-        CENTER,
-        RIGHT,
-    }
 
     private data class DiagramSizes(
         val head: Int,
@@ -576,7 +445,6 @@ internal class LocationDiagram private constructor(
         private const val RIGHT_SIDE_LABEL = "Right"
         private const val ARM_TORSO_GAP = 1
         private const val LEG_INNER_GAP = 5
-        private const val REAR_LABEL = "REAR"
 
         private val ARMOR_SIZES = DiagramSizes(
             head = 5,

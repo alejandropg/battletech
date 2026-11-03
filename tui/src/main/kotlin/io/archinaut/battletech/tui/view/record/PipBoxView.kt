@@ -12,9 +12,14 @@ internal class PipBoxView(
 ) : Widget {
 
     override fun render(canvas: Canvas) {
-        val edge = "─".repeat(width)
-        canvas.setString(0, 0, "╭$edge╮", location.style)
+        canvas.setString(0, 0, topEdge(width), location.style)
         PipRowsView(location, width, rows).render(canvas.region(Rect(0, 1, width + 2, rows)))
-        canvas.setString(0, rows + 1, "╰$edge╯", location.style)
+        canvas.setString(0, rows + 1, bottomEdge(width), location.style)
     }
 }
+
+/** A rounded box's top border around [width] inner columns: `width + 2` cells. */
+internal fun topEdge(width: Int): String = "╭" + "─".repeat(width) + "╮"
+
+/** A rounded box's bottom border around [width] inner columns: `width + 2` cells. */
+internal fun bottomEdge(width: Int): String = "╰" + "─".repeat(width) + "╯"
