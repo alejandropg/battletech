@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test
 import io.archinaut.tenter.terminal.Terminal
 import io.archinaut.tenter.terminal.Screen
 import io.archinaut.battletech.tui.frameText
+import io.archinaut.battletech.tui.RecordingErrorLog
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class SetupLoopTest {
@@ -161,6 +162,33 @@ internal class SetupLoopTest {
             )
 
             assertThat(terminal.frameText()).contains(HELP_TITLE)
+        }
+    }
+
+    @Test
+    fun `an exception while handling an event is logged and flashed, and the loop keeps going`() = runTest {
+        val failingHost = object : SetupLobby by NoLobby {
+            override fun beginHosting(): HostEndpoint = throw IllegalStateException("port in use")
+        }
+        val errorLog = RecordingErrorLog()
+        terminal.withScreen { screen ->
+            val internalEvents = Channel<SetupUiEvent>(Channel.UNLIMITED)
+            val outcome = setupLoop(
+                events = merge(
+                    flowOf(SetupUiEvent.Input(KeyboardEvent("c")), SetupUiEvent.Quit),
+                    internalEvents.receiveAsFlow(),
+                ),
+                internalEvents = internalEvents,
+                screen = screen,
+                initialState = initialState().copy(mode = SetupMode.HOST),
+                keys = Keybindings.DEFAULT,
+                lobby = failingHost,
+                errorLog = errorLog,
+            )
+
+            assertThat(outcome).isEqualTo(SetupOutcome.Quit)
+            assertThat(errorLog.records.map { it.second.message }).containsExactly("port in use")
+            assertThat(terminal.frameText()).contains("internal error: port in use — logged")
         }
     }
 

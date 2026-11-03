@@ -331,6 +331,7 @@ internal class TuiAppLoopTest {
     @Test
     fun `exception while handling one event does not stop the loop from reaching Quit`() = runTest(UnconfinedTestDispatcher()) {
         terminal.withScreen { screen ->
+            val errorLog = RecordingErrorLog()
             val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
 
             val loopJob = launch {
@@ -341,12 +342,20 @@ internal class TuiAppLoopTest {
                     initialState = buildAppState(),
                     keys = Keybindings.DEFAULT,
                     buildVolley = { _, _, _ -> throw IllegalStateException("volley construction failed") },
+                    errorLog = errorLog,
                 )
             }
 
             // Resolving attacks builds the weapon-fire volley, which throws here — a stand-in for
             // any bug surfacing during event handling.
             internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
+
+            // Reported through the log and a flash, never stderr drawn over the frame.
+            assertEquals(listOf("volley construction failed"), errorLog.records.map { it.second.message })
+            assertTrue(
+                screenText().contains("internal error: volley construction failed — logged"),
+                "Expected the status bar to flash the swallowed error",
+            )
 
             // The loop must still be alive and processing events after the failure.
             assertTrue(
@@ -1118,6 +1127,7 @@ internal class TuiAppLoopTest {
                         factoryCalls++
                         if (factoryCalls == 1) error("factory failure") else null
                     },
+                    errorLog = RecordingErrorLog(),
                 )
             }
 
@@ -1136,6 +1146,7 @@ internal class TuiAppLoopTest {
     fun `active frame sampling failure clears playback and leaves normal input usable`() =
         runTest(UnconfinedTestDispatcher()) {
             terminal.withScreen { screen ->
+                val errorLog = RecordingErrorLog()
                 val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
                 var builds = 0
                 val loopJob = launch {
@@ -1157,11 +1168,14 @@ internal class TuiAppLoopTest {
                             testVolley(animation)(emptyList(), width, height)
                         },
                         nowNanos = { testScheduler.currentTime * 1_000_000L },
+                        errorLog = errorLog,
                     )
                 }
 
                 internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-                advanceTimeBy(10.milliseconds)
+                // Frame 1 fails at 10 ms; the error flash it raises is drawn once, then nothing more.
+                advanceTimeBy(20.milliseconds)
+                assertEquals(listOf("frame sampling failure"), errorLog.records.map { it.second.message })
                 assertFalse(drewAfter { advanceTimeBy(100.milliseconds) }, "a sampling failure must cancel the timer")
 
                 assertTrue(
@@ -1178,6 +1192,7 @@ internal class TuiAppLoopTest {
     fun `animation render failure cancels its timer and allows a later playback`() =
         runTest(UnconfinedTestDispatcher()) {
             terminal.withScreen { screen ->
+                val errorLog = RecordingErrorLog()
                 val internalEvents = Channel<UiEvent>(Channel.UNLIMITED)
                 var builds = 0
                 var draws = 0
@@ -1204,11 +1219,14 @@ internal class TuiAppLoopTest {
                             testVolley(animation)(emptyList(), width, height)
                         },
                         nowNanos = { testScheduler.currentTime * 1_000_000L },
+                        errorLog = errorLog,
                     )
                 }
 
                 internalEvents.send(UiEvent.Session(AttacksResolved(emptyList())))
-                advanceTimeBy(10.milliseconds)
+                // Frame 1 fails at 10 ms; the error flash it raises is drawn once, then nothing more.
+                advanceTimeBy(20.milliseconds)
+                assertEquals(listOf("frame draw failure"), errorLog.records.map { it.second.message })
                 assertFalse(drewAfter { advanceTimeBy(100.milliseconds) }, "a failed animation must cancel its timer")
 
                 assertTrue(

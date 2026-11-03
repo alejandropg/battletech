@@ -4,6 +4,8 @@ import io.archinaut.battletech.tactical.attack.AttackResult
 import io.archinaut.battletech.tactical.model.TurnPhase
 import io.archinaut.battletech.tactical.session.AttacksResolved
 import io.archinaut.battletech.tactical.session.MatchEnded
+import io.archinaut.battletech.tui.ErrorLog
+import io.archinaut.battletech.tui.internalErrorText
 import io.archinaut.battletech.tui.animation.WeaponAnimations
 import io.archinaut.battletech.tui.animation.PanelPlacement
 import io.archinaut.battletech.tui.game.AppState
@@ -39,6 +41,7 @@ import io.archinaut.tenter.widget.panel.PanelHit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Headless-testable event loop. Collects [events] until [UiEvent.Quit] is seen.
@@ -51,6 +54,9 @@ import kotlin.time.Duration.Companion.nanoseconds
  * [buildVolley] turns a resolved volley's results into the overlay that plays for it — one panel
  * per distinct weapon category fired, already placed on a screen of the given size. Defaults to
  * [WeaponAnimations.volleyFor]; a test overrides it to pin both which animations play and where.
+ *
+ * A throwable raised while handling one event goes to [errorLog], never stderr — which would draw
+ * over the frame — and the user sees a flash saying where its details went.
  */
 internal suspend fun runLoop(
     events: Flow<UiEvent>,
@@ -61,6 +67,7 @@ internal suspend fun runLoop(
     buildVolley: (List<AttackResult>, Int, Int) -> AnimationPlayback<PanelPlacement>? =
         { results, width, height -> WeaponAnimations.volleyFor(results, width, height) },
     nowNanos: () -> Long = System::nanoTime,
+    errorLog: ErrorLog = ErrorLog.DEFAULT,
 ): Unit = coroutineScope {
     var appState = initialState
     var activeFlash: FlashMessage? = null
@@ -140,6 +147,18 @@ internal suspend fun runLoop(
         } catch (t: Throwable) {
             if (activeAnimation != null) stopVolley()
             throw t
+        }
+    }
+
+    /** Shows [flash] until its own expiry event comes back — one live flash at a time. */
+    fun showFlash(flash: FlashMessage) {
+        activeFlash = flash
+        flashGeneration++
+        val gen = flashGeneration
+        flashJob?.cancel()
+        flashJob = launch {
+            delay(flash.duration)
+            internalEvents.send(UiEvent.FlashExpired(gen))
         }
     }
 
@@ -260,17 +279,7 @@ internal suspend fun runLoop(
                     }
                     appState = transition.app
 
-                    val flash = transition.flash
-                    if (flash != null) {
-                        activeFlash = flash
-                        flashGeneration++
-                        val gen = flashGeneration
-                        flashJob?.cancel()
-                        flashJob = launch {
-                            delay(flash.duration)
-                            internalEvents.send(UiEvent.FlashExpired(gen))
-                        }
-                    }
+                    transition.flash?.let(::showFlash)
 
                     render()
                 }
@@ -338,8 +347,15 @@ internal suspend fun runLoop(
             // Deliberately swallowed: an exception escaping collect would cancel this scope from
             // outside, including the raw-mode input reader — see Tenter's `events` KDoc for how
             // collection owns raw mode.
-            System.err.println("Unhandled throwable while processing $ui:")
-            e.printStackTrace()
+            showFlash(FlashMessage(internalErrorText(e, errorLog.record(ui.toString(), e)), ERROR_FLASH_DURATION))
+            try {
+                render()
+            } catch (c: CancellationException) {
+                throw c
+            } catch (t: Throwable) {
+                // The frame itself is what fails: record it, and let the next event try again.
+                errorLog.record("rendering the error flash for $ui", t)
+            }
         }
     }
 
@@ -347,6 +363,9 @@ internal suspend fun runLoop(
     flashJob?.cancel()
     stopVolley()
 }
+
+/** How long an internal-error flash stays up: longer than a prompt, so its log path can be read. */
+internal val ERROR_FLASH_DURATION: Duration = 6.seconds
 
 /**
  * What [event] means in this frame, or null when nothing live is bound to it.

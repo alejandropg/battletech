@@ -1,6 +1,9 @@
 package io.archinaut.battletech.tui.setup
 
 import io.archinaut.battletech.tactical.model.content.summarize
+import io.archinaut.battletech.tui.ErrorLog
+import io.archinaut.battletech.tui.internalErrorText
+import io.archinaut.battletech.tui.loop.ERROR_FLASH_DURATION
 import io.archinaut.battletech.tui.hex.HexGeometry
 import io.archinaut.battletech.tui.input.ChromeAction
 import io.archinaut.battletech.tui.input.ContextId
@@ -30,6 +33,8 @@ private val PANEL_CYCLE_ORDER = listOf(SetupPanelId.MODE, SetupPanelId.MAP, Setu
  * Headless-testable event loop for the interactive setup screen. Mirrors `io.archinaut.battletech.tui.loop.
  * runLoop`'s shape deliberately, rather than generalising the two into one — see the plan this
  * package implements.
+ *
+ * As in `runLoop`, a throwable raised while handling one event goes to [errorLog] and a flash, never stderr.
  */
 internal suspend fun setupLoop(
     events: Flow<SetupUiEvent>,
@@ -38,6 +43,7 @@ internal suspend fun setupLoop(
     initialState: SetupState,
     keys: Keybindings,
     lobby: SetupLobby,
+    errorLog: ErrorLog = ErrorLog.DEFAULT,
 ): SetupOutcome = coroutineScope {
     var state = initialState
     var activeFlash: FlashMessage? = null
@@ -67,9 +73,8 @@ internal suspend fun setupLoop(
         internalEvents.trySend(SetupUiEvent.Quit)
     }
 
-    /** Shows [message] until its own expiry event comes back — one live flash at a time. */
-    fun flash(message: String) {
-        val shown = FlashMessage(message)
+    /** Shows [shown] until its own expiry event comes back — one live flash at a time. */
+    fun flash(shown: FlashMessage) {
         activeFlash = shown
         flashGeneration++
         val gen = flashGeneration
@@ -190,7 +195,7 @@ internal suspend fun setupLoop(
 
                             if (!wasRostersVisible && state.rostersVisible) workspace.focus(SetupPanelId.MAP)
 
-                            transition.flash?.let { flash(it.text) }
+                            transition.flash?.let(::flash)
 
                             render()
                         }
@@ -228,7 +233,7 @@ internal suspend fun setupLoop(
                         // Panels and selections stay (opponentEverConnected is latched); only
                         // the commit gate closes, and the flash says why.
                         state = state.copy(opponentConnected = false)
-                        flash("player 2 disconnected — waiting for them to rejoin")
+                        flash(FlashMessage("player 2 disconnected — waiting for them to rejoin"))
                         render()
                     }
                     is LobbyEvent.SelectionsChanged -> {
@@ -246,8 +251,14 @@ internal suspend fun setupLoop(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            System.err.println("Unhandled throwable while processing $ui:")
-            e.printStackTrace()
+            flash(FlashMessage(internalErrorText(e, errorLog.record(ui.toString(), e)), ERROR_FLASH_DURATION))
+            try {
+                render()
+            } catch (c: CancellationException) {
+                throw c
+            } catch (t: Throwable) {
+                errorLog.record("rendering the error flash for $ui", t)
+            }
         }
     }
 

@@ -123,7 +123,9 @@ Both components encode BattleTech application policy:
 
 - **`RunLoop`** (`tui/loop/RunLoop.kt`) is BattleTech's own event-dispatch policy — phase
   handling, match-over gating, flash-message lifecycle, session resync — built *from*
-  `io.archinaut.tenter.terminal`'s event flow and `Terminal.draw`.
+  `io.archinaut.tenter.terminal`'s event flow and `Terminal.draw`. A throwable it swallows to stay
+  alive goes to an `ErrorLog` (a file in the temp directory) and a flash, never to stderr, which
+  would draw over the frame and vanish with the alternate screen; `SetupLoop` does the same.
 - **`Workspace`** (`tui/view/Workspace.kt`) is the controller half — focus, scroll, hit-testing
   over the `PanelSet` it owns — and **`GameScreen`** (`tui/view/GameScreen.kt`) the frame
   *composition*: a `StatefulWidget` over that `PanelSet` deciding where the board and which panels
