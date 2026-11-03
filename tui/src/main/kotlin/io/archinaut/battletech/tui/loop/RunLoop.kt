@@ -357,7 +357,7 @@ internal suspend fun runLoop(
  * hand, or clicking would still drive the game after the match was over.
  *
  * Split out of [runLoop]'s collect block so that agreement is directly testable. It cannot be
- * observed through rendered output: once `matchEnded` is set, `Workspace.render` swaps the status
+ * observed through rendered output: once `matchEnded` is set, `GameScreen` swaps the status
  * bar for the match-over line and stops drawing flash text at all, so a blocked and an unblocked
  * input produce the same frame.
  */

@@ -420,7 +420,7 @@ internal class TuiAppLoopTest {
     // Test 7: a board click reaches the phase.
     //
     // The match-ended input block that used to be tested here now lives in
-    // RunLoopInputResolutionTest: once the match is over, Workspace.render swaps
+    // RunLoopInputResolutionTest: once the match is over, GameScreen swaps
     // the status bar for the match-over line and stops drawing flash text at all,
     // so a blocked input and a handled one render identically and any assertion
     // on rendered output passes whether or not the block exists.

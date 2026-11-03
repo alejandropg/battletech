@@ -21,7 +21,7 @@ import io.archinaut.tenter.terminal.CompletedFrame
 /**
  * Round-trips a click through the REAL frame composition: a unit is rendered onto the board
  * exactly as `RunLoop.renderFrame` composes it (status bar, board region at
- * [Workspace.STATUS_BAR_HEIGHT], panel chrome, [BoardView] content), its glyph is
+ * [GameScreen.STATUS_BAR_HEIGHT], panel chrome, [BoardView] content), its glyph is
  * located by scanning the resulting screen buffer, and that screen position is fed back through
  * [BoardMouse.mapContentToHex].
  *
@@ -57,7 +57,7 @@ internal class BoardClickMappingTest {
                 ),
             ),
         )
-        val boardArea = Rect(0, Workspace.STATUS_BAR_HEIGHT, width, height - Workspace.STATUS_BAR_HEIGHT)
+        val boardArea = Rect(0, GameScreen.STATUS_BAR_HEIGHT, width, height - GameScreen.STATUS_BAR_HEIGHT)
         val buffer = drawFrame(width, height) { it.renderStatefulWidget(Panels(Unit, mapOf(GamePanelId.BOARD to boardArea)), it.area, panels) }
         return Frame(buffer, panels)
     }

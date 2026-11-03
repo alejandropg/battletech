@@ -28,7 +28,7 @@ import io.archinaut.tenter.screen.Point
 
 /**
  * [resolveInput] is where "what input is live this frame" is decided, and the only place the
- * match-ended block can be checked at all: once the match is over `Workspace.render` swaps the
+ * match-ended block can be checked at all: once the match is over `GameScreen` swaps the
  * status bar for the match-over line and stops drawing flash text, so a blocked input and a
  * handled one render identically. A loop-level test asserting the absence of a flash after
  * `MatchEnded` therefore passes whether or not the block exists — which is exactly what the two

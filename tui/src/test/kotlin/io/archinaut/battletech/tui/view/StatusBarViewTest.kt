@@ -15,9 +15,9 @@ internal class StatusBarViewTest {
     fun `renders all status information on one bordered line`() {
         val view = StatusBarView(TurnPhase.MOVEMENT, "Jump (5 MP) (+3 to-hit)", PlayerId.PLAYER_2)
 
-        val buffer = render(view, 120, Workspace.STATUS_BAR_HEIGHT)
+        val buffer = render(view, 120, GameScreen.STATUS_BAR_HEIGHT)
 
-        assertEquals(3, Workspace.STATUS_BAR_HEIGHT)
+        assertEquals(3, GameScreen.STATUS_BAR_HEIGHT)
         assertEquals("╭" + "─".repeat(118) + "╮", row(buffer, 0))
         assertEquals("   MOVEMENT    ", row(buffer).substring(4, 19))
         assertEquals("   |   ", row(buffer).substring(19, 26))
@@ -33,12 +33,12 @@ internal class StatusBarViewTest {
         val shortPhase = render(
             StatusBarView(TurnPhase.END, "Complete", PlayerId.PLAYER_1),
             120,
-            Workspace.STATUS_BAR_HEIGHT,
+            GameScreen.STATUS_BAR_HEIGHT,
         )
         val longPhase = render(
             StatusBarView(TurnPhase.PHYSICAL_ATTACK, "Select attack", PlayerId.PLAYER_1),
             120,
-            Workspace.STATUS_BAR_HEIGHT,
+            GameScreen.STATUS_BAR_HEIGHT,
         )
 
         assertEquals("      END      ", row(shortPhase).substring(4, 19))
@@ -54,12 +54,12 @@ internal class StatusBarViewTest {
         val playerOne = render(
             StatusBarView(TurnPhase.MOVEMENT, "Select destination", PlayerId.PLAYER_1),
             120,
-            Workspace.STATUS_BAR_HEIGHT,
+            GameScreen.STATUS_BAR_HEIGHT,
         )
         val playerTwo = render(
             StatusBarView(TurnPhase.MOVEMENT, "Select destination", PlayerId.PLAYER_2),
             120,
-            Workspace.STATUS_BAR_HEIGHT,
+            GameScreen.STATUS_BAR_HEIGHT,
         )
 
         for (column in 26 until 34) {
@@ -72,7 +72,7 @@ internal class StatusBarViewTest {
     fun `reserves a blank fixed-width player field when no player is active`() {
         val view = StatusBarView(TurnPhase.END, "All phases complete")
 
-        val buffer = render(view, 120, Workspace.STATUS_BAR_HEIGHT)
+        val buffer = render(view, 120, GameScreen.STATUS_BAR_HEIGHT)
 
         assertEquals(" ".repeat(8), row(buffer).substring(26, 34))
         assertEquals("|", row(buffer).substring(22, 23))
@@ -84,7 +84,7 @@ internal class StatusBarViewTest {
     fun `leaves prompt unchanged when it has no player prefix`() {
         val view = StatusBarView(TurnPhase.MOVEMENT, "Jump (5 MP)", PlayerId.PLAYER_2)
 
-        val buffer = render(view, 120, Workspace.STATUS_BAR_HEIGHT)
+        val buffer = render(view, 120, GameScreen.STATUS_BAR_HEIGHT)
 
         assertEquals("Jump (5 MP)", row(buffer).substring(41, 52))
     }
@@ -99,7 +99,7 @@ internal class StatusBarViewTest {
             actionUnit = unit,
         )
 
-        val buffer = render(view, 120, Workspace.STATUS_BAR_HEIGHT)
+        val buffer = render(view, 120, GameScreen.STATUS_BAR_HEIGHT)
 
         val expected = "W1: Wolverine WVR-6R ┆ Declare weapon fire"
         assertEquals(expected, row(buffer).substring(41, 41 + expected.length))
@@ -113,7 +113,7 @@ internal class StatusBarViewTest {
         for (width in listOf(100, 120, 140)) {
             val view = StatusBarView(TurnPhase.MOVEMENT, "Select destination", PlayerId.PLAYER_1)
 
-            val buffer = render(view, width, Workspace.STATUS_BAR_HEIGHT)
+            val buffer = render(view, width, GameScreen.STATUS_BAR_HEIGHT)
 
             assertEquals("? : help", row(buffer).substring(width - 10, width - 2))
             assertEquals(" ", buffer.get(width - 2, 1).symbol)
@@ -125,7 +125,7 @@ internal class StatusBarViewTest {
     fun `removes hunk padding when padded content does not fit`() {
         val view = StatusBarView(TurnPhase.MOVEMENT, "Select destination", PlayerId.PLAYER_1)
 
-        val buffer = render(view, 69, Workspace.STATUS_BAR_HEIGHT)
+        val buffer = render(view, 69, GameScreen.STATUS_BAR_HEIGHT)
 
         assertEquals("MOVEMENT | Player 1 | Select destination", row(buffer).substring(2, 42))
         assertEquals("? : help", row(buffer).substring(59, 67))
@@ -136,7 +136,7 @@ internal class StatusBarViewTest {
     fun `does not reserve absent player padding in compact layout`() {
         val view = StatusBarView(TurnPhase.END, "All phases complete and the match is over")
 
-        val buffer = render(view, 50, Workspace.STATUS_BAR_HEIGHT)
+        val buffer = render(view, 50, GameScreen.STATUS_BAR_HEIGHT)
 
         assertEquals("END |  | All phases complete and the…", row(buffer).substring(2, 39))
         assertEquals("? : help", row(buffer).substring(40, 48))
@@ -152,7 +152,7 @@ internal class StatusBarViewTest {
             actionUnit = unit,
         )
 
-        val buffer = render(view, 80, Workspace.STATUS_BAR_HEIGHT)
+        val buffer = render(view, 80, GameScreen.STATUS_BAR_HEIGHT)
 
         val expected = "W1: Wolverine WVR-6R ┆ ${"x".repeat(21)}…"
         assertEquals(expected, row(buffer).substring(24, 69))

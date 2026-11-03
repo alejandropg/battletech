@@ -86,7 +86,7 @@ internal class StatusBarView(
         private val PLAYER_WIDTH = PlayerId.entries.maxOf { CellWidth.of(it.displayName) }
 
         /**
-         * The status bar is only [Workspace.STATUS_BAR_HEIGHT] = 3 rows tall: border alone
+         * The status bar is only [GameScreen.STATUS_BAR_HEIGHT] = 3 rows tall: border alone
          * takes 2 and the phase, player, prompt, and help hint share the remaining row.
          */
         private val STATUS_BAR_PADDING = Padding(left = 1, right = 1)
