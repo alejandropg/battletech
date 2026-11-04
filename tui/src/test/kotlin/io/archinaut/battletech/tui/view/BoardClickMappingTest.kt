@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.tenter.widget.Title
 import io.archinaut.battletech.tactical.model.HexCoordinates
 import io.archinaut.battletech.tactical.query.PlayerGameState
 import io.archinaut.battletech.tactical.query.projectFor
@@ -52,7 +53,7 @@ internal class BoardClickMappingTest {
             listOf(
                 Panel<GamePanelId, Unit>(
                     id = GamePanelId.BOARD,
-                    title = "TACTICAL MAP",
+                    title = Title("TACTICAL MAP"),
                     normal = { BoardView(state).fixedSize(mapWidth, mapHeight) },
                 ),
             ),

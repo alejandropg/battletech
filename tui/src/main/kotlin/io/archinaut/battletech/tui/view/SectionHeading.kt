@@ -1,21 +1,23 @@
 package io.archinaut.battletech.tui.view
 
 import io.archinaut.tenter.color.StandardRole
-import io.archinaut.tenter.screen.Style
-import io.archinaut.tenter.text.CellWidth
+import io.archinaut.tenter.widget.Block
+import io.archinaut.tenter.widget.Borders
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.tenter.widget.RowWriter
+import io.archinaut.tenter.widget.Title
 
-/** One `── TITLE ─────` rule across the whole width, opening a section of a panel or card. */
-internal class SectionHeading(private val title: String) : MeasurableWidget {
+/** One `─── TITLE ─────` rule across the whole width, opening a section of a panel or card. */
+internal class SectionHeading(title: String) : MeasurableWidget {
+
+    private val rule = Block(
+        title = Title(title),
+        borders = Borders.TOP,
+        borderColor = StandardRole.INFO,
+        titleColor = StandardRole.INFO,
+    )
 
     override fun write(writer: RowWriter) {
-        val prefix = "── $title "
-        val fill = (writer.width - CellWidth.of(prefix)).coerceAtLeast(0)
-        writer.writeLine(prefix + "─".repeat(fill), STYLE)
-    }
-
-    private companion object {
-        private val STYLE = Style(StandardRole.INFO)
+        writer.draw(rule, 1)
     }
 }

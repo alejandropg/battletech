@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.tenter.widget.Title
 import io.archinaut.battletech.tui.animation.PanelPlacement
 import io.archinaut.battletech.tui.game.AppState
 import io.archinaut.tenter.animation.AnimationPlayback
@@ -37,7 +38,7 @@ private object TestPanel : PanelId
 public fun panelViewport(content: MeasurableWidget, title: String, badge: String?): StatefulWidget<ViewportState> =
     object : StatefulWidget<ViewportState> {
         override fun render(canvas: Canvas, state: ViewportState) {
-            val frame = Block.bordered(title = title, badge = badge, padding = Padding.horizontal(1))
+            val frame = Block.bordered(title = Title(title, badge = badge), padding = Padding.horizontal(1))
             frame.render(canvas)
             val inner = frame.inner(canvas.area)
             Viewport(content.block(Block(padding = Padding(top = 1)))).render(canvas.region(inner), state)
@@ -59,7 +60,7 @@ public fun renderInPanel(
     scrollOffset: Int = 0,
 ): CompletedFrame {
     val panels = PanelSet<TestPanel, Unit>(
-        listOf(Panel(TestPanel, title, badge.toString(), normal = { content })),
+        listOf(Panel(TestPanel, Title(title, badge = badge.toString()), normal = { content })),
     )
     panels.scroll(TestPanel, 0, scrollOffset)
     return drawFrame(width, height) { it.renderStatefulWidget(Panels(Unit, mapOf(TestPanel to it.area)), it.area, panels) }

@@ -85,27 +85,27 @@ internal class MechRecordSheetViewTest {
         val buffer = render(MechRecordSheetView(atlas(), aGameMap()), width = 200, height = 300)
 
         val topRow = buffer.find("'MECH DATA")!!.y
-        assertEquals(Point(0, topRow), buffer.find("── 'MECH DATA"))
-        assertEquals(Point(30, topRow), buffer.find("── WARRIOR DATA"))
-        assertEquals(Point(60, topRow), buffer.find("── WEAPONS & EQUIPMENT INVENTORY"))
-        assertEquals(Point(120, topRow), buffer.find("── HEAT "))
+        assertEquals(Point(0, topRow), buffer.find("─── 'MECH DATA"))
+        assertEquals(Point(30, topRow), buffer.find("─── WARRIOR DATA"))
+        assertEquals(Point(60, topRow), buffer.find("─── WEAPONS & EQUIPMENT INVENTORY"))
+        assertEquals(Point(120, topRow), buffer.find("─── HEAT "))
 
         val diagramRow = buffer.find("ARMOR DIAGRAM")!!.y
-        assertEquals(Point(0, diagramRow), buffer.find("── ARMOR DIAGRAM"))
-        assertEquals(Point(60, diagramRow), buffer.find("── INTERNAL STRUCTURE DIAGRAM"))
+        assertEquals(Point(0, diagramRow), buffer.find("─── ARMOR DIAGRAM"))
+        assertEquals(Point(60, diagramRow), buffer.find("─── INTERNAL STRUCTURE DIAGRAM"))
         assertTwoBlankRowsBefore(buffer, diagramRow, SheetLayout.MAIN_CONTENT_WIDTH)
         assertFalse(buffer.region(Rect(120, diagramRow, SheetLayout.HEAT_WIDTH, 1)).line(0).isBlank())
 
         val heatScaleRow = buffer.find("HEAT SCALE")!!.y
         val criticalRow = buffer.find("CRITICAL HIT TABLE")!!.y
-        assertEquals(Point(0, criticalRow), buffer.find("── CRITICAL HIT TABLE"))
+        assertEquals(Point(0, criticalRow), buffer.find("─── CRITICAL HIT TABLE"))
         assertEquals("─", buffer.get(SheetLayout.SHEET_WIDTH - 1, criticalRow).symbol)
         assertEquals(" ", buffer.get(SheetLayout.SHEET_WIDTH, criticalRow).symbol)
         assertTrue(criticalRow > heatScaleRow + 31)
         assertTwoBlankRowsBefore(buffer, criticalRow, SheetLayout.SHEET_WIDTH)
 
         val systemRow = buffer.find("SYSTEM DAMAGE")!!.y
-        assertEquals(Point(0, systemRow), buffer.find("── SYSTEM DAMAGE"))
+        assertEquals(Point(0, systemRow), buffer.find("─── SYSTEM DAMAGE"))
         assertEquals(criticalRow + 17, systemRow)
         assertEquals("─", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH - 1, systemRow).symbol)
         assertEquals(" ", buffer.get(SheetLayout.SYSTEM_DAMAGE_WIDTH, systemRow).symbol)
@@ -158,8 +158,8 @@ internal class MechRecordSheetViewTest {
         assertFalse(text.contains("Gunnery"))
 
         val topRow = buffer.find("'MECH DATA")!!.y
-        assertEquals(Point(0, topRow), buffer.find("── 'MECH DATA"))
-        assertEquals(Point(60, topRow), buffer.find("── WEAPONS & EQUIPMENT INVENTORY"))
+        assertEquals(Point(0, topRow), buffer.find("─── 'MECH DATA"))
+        assertEquals(Point(60, topRow), buffer.find("─── WEAPONS & EQUIPMENT INVENTORY"))
 
         val diagramRow = buffer.find("ARMOR DIAGRAM")!!.y
         assertTwoBlankRowsBefore(buffer, diagramRow, SheetLayout.MAIN_CONTENT_WIDTH)

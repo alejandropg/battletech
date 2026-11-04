@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.tenter.widget.Title
 import io.archinaut.battletech.tactical.model.HexCoordinates
 import io.archinaut.battletech.tui.aGameState
 import io.archinaut.battletech.tui.game.AppState
@@ -39,8 +40,7 @@ internal class PanelTest {
         maximized: ((PanelInputs) -> MeasurableWidget)? = null,
     ): Panel<GamePanelId, PanelInputs> = Panel(
         id = GamePanelId.LOG,
-        title = "T",
-        badge = "9",
+        title = Title("T", badge = "9"),
         normal = normal,
         minimized = minimized,
         maximized = maximized,
@@ -125,7 +125,7 @@ internal class PanelTest {
         val unfocusedSet = PanelSet(
             listOf(
                 unfocusedPanel,
-                Panel(id = GamePanelId.BOARD, title = "B", normal = { MeasurableWidget { } }),
+                Panel(id = GamePanelId.BOARD, title = Title("B"), normal = { MeasurableWidget { } }),
             ),
         )
         unfocusedSet.focus(GamePanelId.BOARD)

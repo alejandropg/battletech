@@ -66,7 +66,7 @@ internal class CriticalHitTableTest {
         assertEquals(Point(60, criticalRow + 9), buffer.find("CENTER TORSO"))
         assertEquals(Point(30, criticalRow + 15), buffer.find("LEFT LEG"))
         assertEquals(Point(90, criticalRow + 15), buffer.find("RIGHT LEG"))
-        assertEquals("── SYSTEM DAMAGE ───", buffer.region(Rect(0, criticalRow + 17, SheetLayout.SYSTEM_DAMAGE_WIDTH, 1)).line(0))
+        assertEquals("─── SYSTEM DAMAGE ──", buffer.region(Rect(0, criticalRow + 17, SheetLayout.SYSTEM_DAMAGE_WIDTH, 1)).line(0))
     }
 
     @Test

@@ -82,7 +82,7 @@ internal class LogViewTest {
 
         // Inner content starts at x=2, y=2 (past the border and the padding spacer row).
         val headerLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
-        assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
+        assert(headerLine.startsWith("─── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
         val entryLine = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assertEquals("${unitStoodUpIcon()} m stood up", entryLine)
     }
@@ -101,7 +101,7 @@ internal class LogViewTest {
         assertEquals(StandardRole.INFO, buffer.get(2, 2).fg)
         // Only one header for the single turn: row 3 and row 4 are plain entries, not headers.
         val headerLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
-        assert(headerLine.startsWith("── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
+        assert(headerLine.startsWith("─── TURN 2 ")) { "Expected turn header, got: '$headerLine'" }
         assert(buffer.region(Rect(2, 3, 24, 1)).line(0).contains("0101→0201")) { "Expected first move entry" }
         assert(buffer.region(Rect(2, 4, 24, 1)).line(0).contains("0101→0301")) { "Expected second move entry" }
         assertEquals(StandardRole.DEFAULT, buffer.get(2, 3).fg, "renders in the default color")
@@ -113,7 +113,7 @@ internal class LogViewTest {
         val buffer = renderDecorated(view, scrollOffset = 0)
 
         val headerLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
-        assertEquals("── TURN 10 ─────────────", headerLine)
+        assertEquals("─── TURN 10 ────────────", headerLine)
         val entryLine = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assertEquals("${unitStoodUpIcon()} m stood up", entryLine)
     }
@@ -130,7 +130,7 @@ internal class LogViewTest {
         )
         val buffer = renderDecorated(view, scrollOffset = 0)
 
-        assert(buffer.region(Rect(2, 2, 24, 1)).line(0).startsWith("── TURN 1 ")) { "Expected header at row 2" }
+        assert(buffer.region(Rect(2, 2, 24, 1)).line(0).startsWith("─── TURN 1 ")) { "Expected header at row 2" }
         assert(buffer.region(Rect(2, 3, 24, 1)).line(0).contains("0101→0201")) { "Expected first move entry" }
         assert(buffer.region(Rect(2, 4, 24, 1)).line(0).contains("0101→0301")) { "Expected second move entry" }
         assert(buffer.region(Rect(2, 5, 24, 1)).line(0).contains("0101→0401")) { "Expected third move entry" }
@@ -152,7 +152,7 @@ internal class LogViewTest {
         val buffer = renderDecorated(view, scrollOffset = 0)
 
         // Row 2 is the turn header; the entry text starts wrapping at row 3.
-        assert(buffer.region(Rect(2, 2, 24, 1)).line(0).startsWith("── TURN 2 ")) { "Expected header at row 2" }
+        assert(buffer.region(Rect(2, 2, 24, 1)).line(0).startsWith("─── TURN 2 ")) { "Expected header at row 2" }
         val line1 = buffer.region(Rect(2, 3, 24, 1)).line(0)
         val line2 = buffer.region(Rect(2, 4, 24, 1)).line(0)
         val icon = initiativeIcon()
@@ -182,7 +182,7 @@ internal class LogViewTest {
         assertEquals("${unitStoodUpIcon()} m stood up", bottomInnerRow)
         // The row above is that entry's own header.
         val secondFromBottom = buffer.region(Rect(2, 3, 24, 1)).line(0)
-        assert(secondFromBottom.startsWith("── TURN 10 ")) { "Expected header above last entry: '$secondFromBottom'" }
+        assert(secondFromBottom.startsWith("─── TURN 10 ")) { "Expected header above last entry: '$secondFromBottom'" }
     }
 
     @Test
@@ -212,7 +212,7 @@ internal class LogViewTest {
 
         assertEquals(0, viewportState.settled?.offset?.y, "a manual scroll to the top must not snap back to the bottom")
         val firstLine = buffer.region(Rect(2, 2, 24, 1)).line(0)
-        assert(firstLine.startsWith("── TURN 1 ")) { "Expected header at row 2: '$firstLine'" }
+        assert(firstLine.startsWith("─── TURN 1 ")) { "Expected header at row 2: '$firstLine'" }
         val secondLine = buffer.region(Rect(2, 3, 24, 1)).line(0)
         assertEquals("${unitStoodUpIcon()} m stood up", secondLine)
     }
@@ -227,7 +227,7 @@ internal class LogViewTest {
 
         assertEquals("${unitStoodUpIcon()} m stood up", buffer.region(Rect(2, 4, 24, 1)).line(0))
         val secondFromBottom = buffer.region(Rect(2, 3, 24, 1)).line(0)
-        assert(secondFromBottom.startsWith("── TURN 11 ")) { "Expected header above last entry: '$secondFromBottom'" }
+        assert(secondFromBottom.startsWith("─── TURN 11 ")) { "Expected header above last entry: '$secondFromBottom'" }
     }
 
     @Test
@@ -256,7 +256,7 @@ internal class LogViewTest {
         val buffer = render(logViewport(tenEntries + LogEntry(turn = 11, event = stoodUp())), viewportState, 28, 6)
 
         val secondFromBottom = buffer.region(Rect(2, 3, 24, 1)).line(0)
-        assert(secondFromBottom.startsWith("── TURN 11 ")) { "Expected header above last entry: '$secondFromBottom'" }
+        assert(secondFromBottom.startsWith("─── TURN 11 ")) { "Expected header above last entry: '$secondFromBottom'" }
     }
 
     private fun logViewport(entries: List<LogEntry>) = panelViewport(

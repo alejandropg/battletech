@@ -1,5 +1,9 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.tenter.widget.Title
+import io.archinaut.tenter.widget.Paragraph
+import io.archinaut.tenter.screen.Size
+import com.github.ajalt.mordant.rendering.TextAlign
 import io.archinaut.battletech.tactical.model.MatchOutcome
 import io.archinaut.battletech.tui.animation.ANIMATION_BORDER
 import io.archinaut.battletech.tui.animation.PanelPlacement
@@ -105,15 +109,22 @@ private class GameOverBanner(private val outcome: MatchOutcome) : Widget {
         val bannerWidth = maxOf(CellWidth.of(winnerLine) + 8, 24)
         val bannerHeight = 7
         if (bannerWidth > canvas.width || bannerHeight > canvas.height) return
-        val banner = canvas.region(
-            Rect((canvas.width - bannerWidth) / 2, (canvas.height - bannerHeight) / 2, bannerWidth, bannerHeight),
+        val banner = canvas.region(canvas.area.aligned(Size(bannerWidth, bannerHeight)))
+        val block = Block.bordered(
+            title = Title("MATCH OVER", align = TextAlign.CENTER),
+            borderColor = StandardRole.ACCENT,
+            titleColor = StandardRole.ACCENT,
         )
-        val block = Block.bordered(title = "MATCH OVER", borderColor = StandardRole.ACCENT, titleColor = StandardRole.ACCENT)
         Clear.render(banner)
         block.render(banner)
-        // Row 2 of the block's inside, centered on the whole banner.
-        val column = (bannerWidth - CellWidth.of(winnerLine)) / 2 - 1
-        block.inner(banner).setString(column, 2, winnerLine, TEXT_PRIMARY_STYLE)
+        val inside = block.inner(banner)
+        Paragraph(winnerLine, TEXT_PRIMARY_STYLE, align = TextAlign.CENTER)
+            .render(inside.region(Rect(0, WINNER_ROW, inside.width, 1)))
+    }
+
+    private companion object {
+        /** The winner line's row inside the block, below a blank one. */
+        const val WINNER_ROW: Int = 2
     }
 }
 

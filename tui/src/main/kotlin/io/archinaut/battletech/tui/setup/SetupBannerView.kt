@@ -1,5 +1,7 @@
 package io.archinaut.battletech.tui.setup
 
+import io.archinaut.tenter.screen.Line
+import com.github.ajalt.mordant.rendering.TextAlign
 import io.archinaut.battletech.tui.view.HelpHint
 import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
@@ -32,10 +34,8 @@ internal class SetupBannerView(private val prompt: String) : Widget {
 
     private fun renderContent(canvas: Canvas) {
         val titleLines = if (canvas.width >= bannerWidth) BANNER_LINES else listOf(FALLBACK_TITLE)
-        titleLines.forEachIndexed { row, line ->
-            val left = ((canvas.width - CellWidth.of(line)) / 2).coerceAtLeast(0)
-            canvas.setString(left, row, line, ACCENT_STYLE)
-        }
+        Paragraph(titleLines.map { Line(it, ACCENT_STYLE) }, align = TextAlign.CENTER)
+            .render(canvas.region(Rect(0, 0, canvas.width, titleLines.size)))
 
         // The prompt stops short of the help hint, so an over-long one ellipsizes before it.
         val (promptArea, _, hintArea) = HINT_ROW.split(Rect(0, titleLines.size, canvas.width, 1))

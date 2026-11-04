@@ -90,7 +90,7 @@ internal class UnitStatusViewTest {
 
         val destroyedRow = rowContaining(buffer, 20, "DESTROYED")
         val unconsciousRow = rowContaining(buffer, 20, "PILOT UNCONSCIOUS")
-        val pilotRow = rowContaining(buffer, 20, "── PILOT")
+        val pilotRow = rowContaining(buffer, 20, "─── PILOT")
         assertEquals(destroyedRow + 1, unconsciousRow)
         assertTrue(destroyedRow > rowContaining(buffer, 20, "A1: Atlas"))
         assertTrue(unconsciousRow < pilotRow)

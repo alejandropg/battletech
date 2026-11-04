@@ -4,19 +4,20 @@ import io.archinaut.battletech.tactical.model.PlayerId
 import io.archinaut.battletech.tactical.model.TurnPhase
 import io.archinaut.battletech.tactical.unit.VisibleUnit
 import io.archinaut.battletech.tui.game.displayName
+import com.github.ajalt.mordant.rendering.TextAlign
 import io.archinaut.tenter.color.StandardRole
 import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Constraint.Fill
 import io.archinaut.tenter.screen.Constraint.Length
 import io.archinaut.tenter.screen.Constraint.Min
 import io.archinaut.tenter.screen.Layout
-import io.archinaut.tenter.screen.Line
 import io.archinaut.tenter.screen.Padding
 import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.text.CellWidth
 import io.archinaut.tenter.widget.Block
 import io.archinaut.tenter.widget.Paragraph
+import io.archinaut.tenter.widget.Row
 import io.archinaut.tenter.widget.Widget
 
 internal class StatusBarView(
@@ -35,32 +36,30 @@ internal class StatusBarView(
     private fun renderContent(canvas: Canvas) {
         val message = messageText()
         val compact = paddedContentWidth(message) > canvas.width
-        val leadingPadding = if (compact) "" else LEADING_PADDING
-        val phaseText = if (compact) phaseLabel(phase) else centeredPhaseLabel(phase)
         val separator = if (compact) COMPACT_SEPARATOR else PADDED_SEPARATOR
+        val phaseWidth = if (compact) CellWidth.of(phaseLabel(phase)) else PHASE_WIDTH
         val playerWidth = if (compact) activePlayer?.let { CellWidth.of(it.displayName) } ?: 0 else PLAYER_WIDTH
+        val player = activePlayer?.let { Paragraph(it.displayName, Style(playerColor(it))) } ?: Paragraph("")
+        val separatorField = Length(CellWidth.of(separator)) to Paragraph(separator, TEXT_PRIMARY_STYLE)
+        val fields = Row(
+            listOf(
+                Length(phaseWidth) to Paragraph(phaseLabel(phase), ACCENT_STYLE, align = TextAlign.CENTER),
+                separatorField,
+                Length(playerWidth) to player,
+                separatorField,
+                Fill(1) to Paragraph(message, TEXT_PRIMARY_STYLE),
+            ),
+        )
 
-        val player = if (activePlayer != null) {
-            Line(activePlayer.displayName, Style(playerColor(activePlayer))) +
-                Line(" ".repeat(playerWidth - CellWidth.of(activePlayer.displayName)))
-        } else {
-            Line(" ".repeat(playerWidth))
-        }
-        val line = Line(leadingPadding) +
-            Line(phaseText, ACCENT_STYLE) +
-            Line(separator, TEXT_PRIMARY_STYLE) +
-            player +
-            Line(separator, TEXT_PRIMARY_STYLE) +
-            Line(message, TEXT_PRIMARY_STYLE)
-
-        // The line stops short of the help hint, so an over-long message ellipsizes before it.
+        // The fields stop short of the help hint, so an over-long message ellipsizes before it.
         val (lineArea, _, hintArea) = HINT_ROW.split(Rect(0, 0, canvas.width, 1))
-        Paragraph(listOf(line)).render(canvas.region(lineArea))
+        val leadingPadding = Padding(left = if (compact) 0 else LEADING_PADDING)
+        fields.render(canvas.region(lineArea.inner(leadingPadding)))
         HelpHint.render(canvas.region(hintArea))
     }
 
     private fun paddedContentWidth(message: String): Int =
-        CellWidth.of(LEADING_PADDING) +
+        LEADING_PADDING +
             PHASE_WIDTH +
             CellWidth.of(PADDED_SEPARATOR) +
             PLAYER_WIDTH +
@@ -73,7 +72,7 @@ internal class StatusBarView(
         actionUnit?.let { "${UnitLabel.of(it)}$UNIT_MESSAGE_SEPARATOR$prompt" } ?: prompt
 
     private companion object {
-        private const val LEADING_PADDING: String = "  "
+        private const val LEADING_PADDING: Int = 2
         private const val PADDED_SEPARATOR: String = "   |   "
         private const val COMPACT_SEPARATOR: String = " | "
         private const val UNIT_MESSAGE_SEPARATOR: String = " ┆ "
@@ -92,12 +91,5 @@ internal class StatusBarView(
         private val STATUS_BAR_PADDING = Padding(left = 1, right = 1)
 
         private fun phaseLabel(phase: TurnPhase): String = phase.name.replace('_', ' ')
-
-        private fun centeredPhaseLabel(phase: TurnPhase): String {
-            val label = phaseLabel(phase)
-            val padding = PHASE_WIDTH - CellWidth.of(label)
-            val leftPadding = padding / 2
-            return " ".repeat(leftPadding) + label + " ".repeat(padding - leftPadding)
-        }
     }
 }

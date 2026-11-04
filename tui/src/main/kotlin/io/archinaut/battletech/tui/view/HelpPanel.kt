@@ -1,5 +1,6 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.tenter.widget.Title
 import io.archinaut.tenter.input.KeySection
 import io.archinaut.tenter.widget.KeyHelp
 import io.archinaut.tenter.widget.panel.Panel
@@ -19,8 +20,7 @@ internal fun <K : PanelId, I> helpPanel(
     sections: (I) -> List<KeySection>,
 ): Panel<K, I> = Panel(
     id = id,
-    title = HELP_TITLE,
-    badge = badge?.toString(),
+    title = Title(HELP_TITLE, badge = badge?.toString()),
     normal = { KeyHelp(sections(it)) },
     // No minimized state — ? dismisses HELP instead (see AppState.helpOpen / SetupState.helpOpen).
     maximized = { KeyHelp(sections(it)) },

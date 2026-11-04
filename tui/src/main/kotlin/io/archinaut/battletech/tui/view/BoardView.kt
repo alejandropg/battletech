@@ -1,5 +1,7 @@
 package io.archinaut.battletech.tui.view
 
+import io.archinaut.tenter.widget.Paragraph
+import com.github.ajalt.mordant.rendering.TextAlign
 import io.archinaut.battletech.tui.screen.AppRole
 import io.archinaut.battletech.tactical.model.GameMap
 import io.archinaut.battletech.tactical.model.HexCoordinates
@@ -19,7 +21,6 @@ import io.archinaut.tenter.screen.Canvas
 import io.archinaut.tenter.screen.Rect
 import io.archinaut.tenter.screen.Style
 import io.archinaut.tenter.color.StandardRole
-import io.archinaut.tenter.text.CellWidth
 import io.archinaut.tenter.widget.MeasurableWidget
 import io.archinaut.tenter.widget.Widget
 import io.archinaut.tenter.widget.fixedSize
@@ -136,16 +137,12 @@ internal class BoardView(
         val maxRow = coordinates.maxOfOrNull { it.row } ?: return
 
         for (col in 0..maxCol) {
-            val label = coordinateLabel(col + 1)
-            val centerX = MAP_ORIGIN_X + col * HexGeometry.COL_STRIDE + HexGeometry.HEX_WIDTH / 2
-            val labelX = centerX - CellWidth.of(label) / 2
-            canvas.setString(labelX, 0, label, COORDINATE_STYLE)
-            canvas.setString(
-                labelX,
-                MAP_ORIGIN_Y + mapHeight + BOTTOM_LABEL_GAP,
-                label,
-                COORDINATE_STYLE,
-            )
+            // Centered over its hex column, above and below the map.
+            val label = Paragraph(coordinateLabel(col + 1), COORDINATE_STYLE, align = TextAlign.CENTER)
+            val columnX = MAP_ORIGIN_X + col * HexGeometry.COL_STRIDE
+            for (y in listOf(0, MAP_ORIGIN_Y + mapHeight + BOTTOM_LABEL_GAP)) {
+                label.render(canvas.region(Rect(columnX, y, HexGeometry.HEX_WIDTH, 1)))
+            }
         }
 
         for (row in 0..maxRow) {

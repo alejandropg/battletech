@@ -61,6 +61,6 @@ internal class ForeignRecordSheetViewTest {
         val buffer = render(ForeignRecordSheetView(aForeignUnit()), width = 200, height = 60)
         val topRow = buffer.find("'MECH DATA")!!.y
 
-        assertEquals(Point(60, topRow), buffer.find("── WEAPONS & EQUIPMENT INVENTORY"))
+        assertEquals(Point(60, topRow), buffer.find("─── WEAPONS & EQUIPMENT INVENTORY"))
     }
 }
