@@ -1,6 +1,7 @@
 package io.archinaut.battletech.tui.view
 
 import io.archinaut.tenter.color.StandardRole
+import io.archinaut.tenter.screen.Padding
 import io.archinaut.tenter.widget.Block
 import io.archinaut.tenter.widget.Borders
 import io.archinaut.tenter.widget.MeasurableWidget
@@ -11,7 +12,8 @@ import io.archinaut.tenter.widget.Title
 internal class SectionHeading(title: String) : MeasurableWidget {
 
     private val rule = Block(
-        title = Title(title),
+        // A dash of its own before the text gives the rule its longer lead.
+        titles = listOf(Title("─ $title", padding = Padding(right = 1))),
         borders = Borders.TOP,
         borderColor = StandardRole.INFO,
         titleColor = StandardRole.INFO,

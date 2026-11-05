@@ -1,6 +1,5 @@
 package io.archinaut.battletech.tui.view
 
-import io.archinaut.tenter.widget.Title
 import io.archinaut.battletech.tui.game.GamePanelId
 import io.archinaut.battletech.tui.input.ChromeAction
 import io.archinaut.battletech.tui.input.Keybindings
@@ -25,7 +24,7 @@ internal object GamePanels {
     fun build(keys: Keybindings): PanelSet<GamePanelId, PanelInputs> {
         val board: Panel<GamePanelId, PanelInputs> = Panel(
             id = GamePanelId.BOARD,
-            title = Title("TACTICAL MAP", badge = keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.BOARD)).toString()),
+            titles = panelTitles(keys.badgeFor(ChromeAction.FocusPanel(GamePanelId.BOARD)), "TACTICAL MAP"),
             normal = { it.boardView },
         )
 
@@ -98,7 +97,7 @@ internal object GamePanels {
         build: (PanelInputs) -> MeasurableWidget,
     ): Panel<GamePanelId, PanelInputs> = Panel(
         id = id,
-        title = Title(title, badge = keys.badgeFor(ChromeAction.FocusPanel(id)).toString()),
+        titles = panelTitles(keys.badgeFor(ChromeAction.FocusPanel(id)), title),
         normal = build,
         minimized = { VerticalText(title) },
         maximized = maximized ?: build,

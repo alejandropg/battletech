@@ -35,10 +35,10 @@ private object TestPanel : PanelId
  * padding, a top spacer row that scrolls away with the content, and a vertical scrollbar on the
  * right border — for tests that drive the [ViewportState] directly.
  */
-public fun panelViewport(content: MeasurableWidget, title: String, badge: String?): StatefulWidget<ViewportState> =
+public fun panelViewport(content: MeasurableWidget, title: String, badge: Char?): StatefulWidget<ViewportState> =
     object : StatefulWidget<ViewportState> {
         override fun render(canvas: Canvas, state: ViewportState) {
-            val frame = Block.bordered(title = Title(title, badge = badge), padding = Padding.horizontal(1))
+            val frame = Block.bordered(titles = panelTitles(badge, title), padding = Padding.horizontal(1))
             frame.render(canvas)
             val inner = frame.inner(canvas.area)
             Viewport(content.block(Block(padding = Padding(top = 1)))).render(canvas.region(inner), state)
@@ -60,7 +60,7 @@ public fun renderInPanel(
     scrollOffset: Int = 0,
 ): CompletedFrame {
     val panels = PanelSet<TestPanel, Unit>(
-        listOf(Panel(TestPanel, Title(title, badge = badge.toString()), normal = { content })),
+        listOf(Panel(TestPanel, panelTitles(badge, title), normal = { content })),
     )
     panels.scroll(TestPanel, 0, scrollOffset)
     return drawFrame(width, height) { it.renderStatefulWidget(Panels(Unit, mapOf(TestPanel to it.area)), it.area, panels) }

@@ -53,7 +53,7 @@ internal class BoardClickMappingTest {
             listOf(
                 Panel<GamePanelId, Unit>(
                     id = GamePanelId.BOARD,
-                    title = Title("TACTICAL MAP"),
+                    titles = listOf(Title("TACTICAL MAP")),
                     normal = { BoardView(state).fixedSize(mapWidth, mapHeight) },
                 ),
             ),

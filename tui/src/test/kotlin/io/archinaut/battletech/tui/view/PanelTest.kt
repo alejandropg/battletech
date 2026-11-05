@@ -40,7 +40,7 @@ internal class PanelTest {
         maximized: ((PanelInputs) -> MeasurableWidget)? = null,
     ): Panel<GamePanelId, PanelInputs> = Panel(
         id = GamePanelId.LOG,
-        title = Title("T", badge = "9"),
+        titles = panelTitles('9', "T"),
         normal = normal,
         minimized = minimized,
         maximized = maximized,
@@ -125,7 +125,7 @@ internal class PanelTest {
         val unfocusedSet = PanelSet(
             listOf(
                 unfocusedPanel,
-                Panel(id = GamePanelId.BOARD, title = Title("B"), normal = { MeasurableWidget { } }),
+                Panel(id = GamePanelId.BOARD, titles = listOf(Title("B")), normal = { MeasurableWidget { } }),
             ),
         )
         unfocusedSet.focus(GamePanelId.BOARD)

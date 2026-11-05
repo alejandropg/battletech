@@ -196,7 +196,7 @@ internal class LogViewTest {
         val viewportState = ViewportState()
         val first = panelViewport(
             title = LogView.TITLE,
-            badge = "9",
+            badge = '9',
             content = view,
         )
         render(first, viewportState, 28, 6)
@@ -205,7 +205,7 @@ internal class LogViewTest {
         // Second render: the user has wheeled to the top, so the view no longer follows the log's end.
         val second = panelViewport(
             title = LogView.TITLE,
-            badge = "9",
+            badge = '9',
             content = view,
         )
         val buffer = render(second, viewportState, 28, 6)
@@ -261,7 +261,7 @@ internal class LogViewTest {
 
     private fun logViewport(entries: List<LogEntry>) = panelViewport(
         title = LogView.TITLE,
-        badge = "9",
+        badge = '9',
         content = LogView(entries, state = emptyState),
     )
 

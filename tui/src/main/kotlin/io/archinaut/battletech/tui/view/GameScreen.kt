@@ -111,7 +111,7 @@ private class GameOverBanner(private val outcome: MatchOutcome) : Widget {
         if (bannerWidth > canvas.width || bannerHeight > canvas.height) return
         val banner = canvas.region(canvas.area.aligned(Size(bannerWidth, bannerHeight)))
         val block = Block.bordered(
-            title = Title("MATCH OVER", align = TextAlign.CENTER),
+            titles = listOf(Title("MATCH OVER", align = TextAlign.CENTER)),
             borderColor = StandardRole.ACCENT,
             titleColor = StandardRole.ACCENT,
         )
@@ -131,7 +131,7 @@ private class GameOverBanner(private val outcome: MatchOutcome) : Widget {
 /**
  * One bordered overlay box at [animation]'s own placement within the screen canvas it renders
  * into, playing its current frame — a plain border ([ANIMATION_BORDER], not the themed
- * [StandardRole.PANEL_BORDER] a [Block] would otherwise default to) with no title, badge, or hint
+ * [StandardRole.PANEL_BORDER] a [Block] would otherwise default to) with no title or hint
  * text anywhere in it (unlike [GameOverBanner]), so the animation itself is the only thing drawn
  * inside. The border's BACKGROUND is the one cell in this whole panel still themed: [Clear] resets
  * the box's cells to the default background, so the board doesn't show through, and [Block] paints

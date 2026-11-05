@@ -1,10 +1,10 @@
 package io.archinaut.battletech.tui.setup
 
-import io.archinaut.tenter.widget.Title
 import io.archinaut.battletech.tui.input.ChromeAction
 import io.archinaut.battletech.tui.input.Keybindings
 import io.archinaut.battletech.tui.view.GamePanels
 import io.archinaut.battletech.tui.view.helpPanel
+import io.archinaut.battletech.tui.view.panelTitles
 import io.archinaut.tenter.screen.Constraint
 import io.archinaut.tenter.screen.Layout
 import io.archinaut.tenter.screen.Rect
@@ -23,27 +23,27 @@ internal object SetupPanels {
         listOf(
             Panel(
                 id = SetupPanelId.MODE,
-                title = Title("MODE", badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.MODE)).toString()),
+                titles = panelTitles(keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.MODE)), "MODE"),
                 normal = { it.modeView },
                 minimized = { it.minimizedModeView },
             ),
             Panel(
                 id = SetupPanelId.MAP,
-                title = Title("MAP", badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.MAP)).toString()),
+                titles = panelTitles(keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.MAP)), "MAP"),
                 normal = { it.mapView },
                 maximized = { it.maximizedMapView },
                 minimized = { it.mapView },
             ),
             Panel(
                 id = SetupPanelId.PLAYER_1,
-                title = Title("PLAYER 1", badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.PLAYER_1)).toString()),
+                titles = panelTitles(keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.PLAYER_1)), "PLAYER 1"),
                 normal = { it.player1View },
                 maximized = { it.maximizedPlayer1View },
                 minimized = { it.minimizedPlayer1View },
             ),
             Panel(
                 id = SetupPanelId.PLAYER_2,
-                title = Title("PLAYER 2", badge = keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.PLAYER_2)).toString()),
+                titles = panelTitles(keys.badgeFor(ChromeAction.FocusPanel(SetupPanelId.PLAYER_2)), "PLAYER 2"),
                 normal = { it.player2View },
                 maximized = { it.maximizedPlayer2View },
                 minimized = { it.minimizedPlayer2View },
