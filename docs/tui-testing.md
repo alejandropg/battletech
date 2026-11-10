@@ -105,7 +105,7 @@ Kill both sessions when done (`tmux kill-session -t host`, `tmux kill-session -t
 
 ```bash
 tmux new-session -d -s btech -x 220 -y 50
-tmux send-keys -t btech 'java -jar tui/build/libs/tui.jar hot-seat --theme dark' Enter && sleep 3
+tmux send-keys -t btech 'java -jar tui/build/libs/tui.jar --theme dark hot-seat' Enter && sleep 3
 tmux capture-pane -t btech -pe                # inspect output, WITH styling (see below)
 tmux send-keys -t btech '<key>' ''            # send keystroke ('Tab','Enter','Escape','Up','c'…)
 tmux kill-session -t btech
@@ -117,12 +117,12 @@ when done.
 Launch with any of the six themes to spot-check it specifically:
 
 ```bash
-java -jar tui/build/libs/tui.jar hot-seat --theme dark
-java -jar tui/build/libs/tui.jar hot-seat --theme light
-java -jar tui/build/libs/tui.jar hot-seat --theme dark-256
-java -jar tui/build/libs/tui.jar hot-seat --theme light-256
-java -jar tui/build/libs/tui.jar hot-seat --theme dark-16
-java -jar tui/build/libs/tui.jar hot-seat --theme light-16
+java -jar tui/build/libs/tui.jar --theme dark hot-seat
+java -jar tui/build/libs/tui.jar --theme light hot-seat
+java -jar tui/build/libs/tui.jar --theme dark-256 hot-seat
+java -jar tui/build/libs/tui.jar --theme light-256 hot-seat
+java -jar tui/build/libs/tui.jar --theme dark-16 hot-seat
+java -jar tui/build/libs/tui.jar --theme light-16 hot-seat
 ```
 
 **Use `capture-pane -pe`, not plain `-p`, when checking a theme.** Plain `-p` strips all ANSI
