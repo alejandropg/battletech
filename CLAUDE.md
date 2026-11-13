@@ -23,7 +23,7 @@ Not needed for everyday context — read the row's doc when its trigger applies.
 
 - Kotlin 2.4
 - JVM 25
-- Gradle 9.8.x (Kotlin DSL, convention plugins in `buildSrc/`)
+- Gradle 9.9.x (Kotlin DSL, convention plugins in `buildSrc/`)
 - JUnit Jupiter + MockK + AssertJ for tests
 - `explicitApi()` is on repo-wide — declare `public`/`internal` explicitly.
 
